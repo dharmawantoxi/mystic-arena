@@ -52,6 +52,31 @@ func _boot() -> void:
 				break
 
 	_expect(GameManager.state == "playing", "Level 1 must enter playing state")
+
+	# Fase 3: bake map statik (tekstur tunggal dari renderer pygame) harus
+	# AKTIF — asetnya ikut repo, jadi headless CI pun wajib memakainya dan
+	# bukan fallback prosedural.
+	var amap = get_tree().get_first_node_in_group("arena_map")
+	_expect(amap != null, "ArenaMap must be in group arena_map")
+	if amap != null:
+		_expect(amap.procedural_fallback == false,
+				"static map bake must be active (procedural_fallback == false)")
+		_expect(amap._baked_map != null and amap._baked_map.visible,
+				"BakedMap sprite must exist and be visible")
+
+	# Fase 5d: level intro kini membekukan gameplay sampai SPACE/ENTER/klik.
+	# Smoke test butuh combat berjalan -> skip lewat jalur input Main.
+	var intro = _main.get("_level_intro")
+	if is_instance_valid(intro) and intro.cinematic_active():
+		var ev: InputEventKey = InputEventKey.new()
+		ev.keycode = KEY_SPACE
+		ev.pressed = true
+		_main._on_key(ev)
+		await get_tree().process_frame
+		_expect(not get_tree().paused, "Skipping level intro must unpause the tree")
+		_expect(not GameManager.is_paused, "Skipping level intro must resume gold/wave")
+	else:
+		_expect(false, "Level intro should be active after start_level")
 	_expect(GameManager.level_number == 1, "Level number must be 1")
 	_expect(GameManager.wave_number >= 1, "Wave 1 must have started")
 	_expect(_count_group("heroes") >= 10, "Starter + enemy rosters must spawn heroes")
@@ -102,6 +127,8 @@ func _finish() -> void:
 	if _done:
 		return
 	_done = true
+	get_tree().paused = false
+	GameManager.set_paused(false)
 	if is_instance_valid(_main):
 		_main.free()
 	GameManager.in_menu = true

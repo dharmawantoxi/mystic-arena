@@ -112,6 +112,10 @@ def export_bosses():
                 "range": v.get("range", 50),
                 "attack_cooldown": v.get("attack_cooldown", 40),
                 "boss_class": v.get("boss_class", "mini"),
+                # gold_reward: dibaca BossDeathFX Godot (fase 5d) untuk teks
+                # "+ X GOLD" di perayaan true boss (paritas boss.gold_reward
+                # bosses/base_boss.py:394).
+                "gold_reward": v.get("gold_reward", 0),
                 "color": "#%02x%02x%02x" % v.get("color", (150,100,200)) if isinstance(v.get("color"), tuple) else v.get("color","#aaaaaa"),
                 "entrance_color": "#%02x%02x%02x" % v.get("entrance_color", (200,150,255)) if isinstance(v.get("entrance_color"), tuple) else v.get("entrance_color","#ffffff"),
             }
@@ -534,6 +538,146 @@ def export_sounds():
             shutil.copy2(src, dst)
             copied += 1
     print(f"[convert] sounds: {copied} file -> {dst_dir}")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# FASE 3 — BAKE MAP STATIK PER TEMA (tekstur tunggal, bukan TileSet)
+# ═══════════════════════════════════════════════════════════════════
+#
+# Kenapa tekstur tunggal, bukan TileSet .tres seperti rencana awal Fase 3?
+#   Diukur langsung: map statik pygame (MapRenderer._render_static_map,
+#   _render.py:147) menghasilkan 533 tile UNIK dari 576 sel 40px di
+#   1280x720 (speckle terrain + kurva river/lane membuat hampir semua
+#   sel berbeda) — atlas TileSet akan sama besar dengan peta itu sendiri
+#   dan TileMapLayer 576 sel cuma menambah overhead tanpa keuntungan.
+#   Arsitektur pygame sendiri adalah SATU Surface statik di-cache lalu
+#   blit tiap frame (_render.py:141/196); padanan persisnya di Godot
+#   adalah satu Texture2D + Sprite2D (1 draw call, di-cache GPU).
+#   Bake memakai renderer pygame ASLI sebagai sumber kebenaran (pola
+#   yang sama dengan bake strip Fase 5), jadi paritas sempurna dengan
+#   konstruksi — tidak ada port prosedural yang bisa melenceng.
+#
+# Determinisme: pygame mengacak speckle terrain & dekor secara sah —
+# random.seed() tanpa argumen (re-seed dari entropi OS) dipanggil di
+# map_components/_bundle.py:4889 (akhir DecorationGenerator.generate_all)
+# dan :5074 (akhir draw_terrain_details), lalu randint dipakai TANPA seed
+# pasti (:5040-5041 speckle, :6251-6252 jitter dekor). Dua MapRenderer
+# berturut-turut karena itu TIDAK byte-identik (game aslinya memang
+# mengacak tiap match). Bake membekukan kedua re-seed itu ke seed tetap
+# (pola "jam virtual" yang sama dengan freeze get_ticks di Fase 5) supaya
+# output reproducible antar run converter — distribusinya identik dengan
+# game, hanya pilihan sampelnya yang dipakukan. Dekor deterministik
+# (generate_all men-seed 42 sendiri sebelum re-seed penutup).
+
+MAP_BAKE_SEED = 20260907
+
+
+def _save_map_png(surface, png_path):
+    """Simpan surface map opaque -> PNG palet 256 warna (pola Fase 5).
+
+    Pillow opsional: tanpa PIL fallback pygame.image.save (RGBA penuh,
+    file lebih besar tapi visual identik — bukan error).
+    """
+    import pygame
+    try:
+        from PIL import Image
+        pil = Image.frombytes("RGBA", surface.get_size(),
+                              pygame.image.tobytes(surface, "RGBA"))
+        q = pil.quantize(colors=256, method=Image.FASTOCTREE)
+        q.save(png_path, optimize=True)
+    except ImportError:
+        pygame.image.save(surface, png_path)
+
+
+def export_map_bakes(only=None):
+    """Bake map statik 54 tema -> godot/assets/maps/<tema>.png (1280x720).
+
+    Dipakai ArenaMap.apply_theme(): kalau tekstur ada, map memakai bake
+    (procedural_fallback mati); kalau tidak, fallback prosedural lama
+    menggambar sendiri — perilaku pra-bake tetap utuh sebagai jaring.
+
+    Sumber: _render.MapRenderer._render_static_map() — 6 layer pygame
+    (terrain + details, river, 3 lane, dekor seed(42), shop, border wall)
+    dalam urutan yang persis sama dengan game. Jalankan dengan
+    SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy (sama seperti export_themes).
+    """
+    try:
+        import random as _random
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+        import _core  # noqa: F401  (alias settings + konstanta layar)
+        import pygame
+        pygame.init()
+        if pygame.display.get_surface() is None:
+            pygame.display.set_mode((1, 1))
+        from _render import MapRenderer
+        from map_components.themes import THEMES
+
+        # Bekukan re-seed entropi pygame (bundle.py:4889 & :5074) ke seed
+        # tetap — lihat komentar header. Patch atribut modul: _bundle.py
+        # memanggil random.seed(...) lewat lookup atribut saat runtime.
+        _orig_seed_fn = _random.seed
+
+        def _frozen_seed(v=None):
+            _orig_seed_fn(MAP_BAKE_SEED if v is None else v)
+
+        _random.seed = _frozen_seed
+
+        out_dir = os.path.join(ROOT, "godot", "assets", "maps")
+        os.makedirs(out_dir, exist_ok=True)
+        surf = pygame.display.get_surface()
+
+        manifest = {
+            "_generated_by": "tools/convert_to_godot.py export_map_bakes()",
+            "_source": "_render.MapRenderer._render_static_map() "
+                       "(terrain+details, river, 3 lane, dekor, shop, wall)",
+            "_note": "Tekstur opaque 1280x720 per tema; re-seed entropi "
+                     "pygame (_bundle.py:4889/:5074) dibekukan ke seed "
+                     "tetap supaya reproducible — game aslinya mengacak "
+                     "speckle/jitter ini tiap match.",
+            "tile_analysis": {
+                "tile_size": 40, "cells": 576, "unique_tiles_forest": 533,
+                "kesimpulan": "tile hampir semua unik -> tekstur tunggal "
+                              "lebih jujur daripada TileSet (lihat komentar "
+                              "header export_map_bakes)",
+            },
+            "seed": MAP_BAKE_SEED,
+            "maps": {},
+        }
+        total_kb = 0
+        for name in sorted(THEMES):
+            if only is not None and name not in only:
+                continue
+            mr = MapRenderer(surf, theme_name=name)
+            png_path = os.path.join(out_dir, "%s.png" % name)
+            _save_map_png(mr.static_map, png_path)
+            w, h = mr.static_map.get_size()
+            kb = os.path.getsize(png_path) // 1024
+            total_kb += kb
+            manifest["maps"][name] = {
+                "file": "res://assets/maps/%s.png" % name, "w": w, "h": h,
+            }
+            print("[convert] maps: %-12s %dx%d  %d KB" % (name, w, h, kb))
+
+        # Bersihkan bake tema yang tidak ada lagi di themes.py.
+        for fname in os.listdir(out_dir):
+            if fname.endswith(".png") and fname[:-4] not in THEMES:
+                os.remove(os.path.join(out_dir, fname))
+                print("[convert] maps: hapus %s (tema tak dikenal)" % fname)
+
+        write_json("map_bakes.json", manifest)
+        print("[convert] maps: %d tema, total %d KB -> %s"
+              % (len(manifest["maps"]), total_kb, out_dir))
+    except Exception as e:
+        # Bake lama TIDAK dihapus: kalau gagal, ArenaMap tetap punya tekstur
+        # hasil bake sebelumnya (atau fallback prosedural kalau belum pernah).
+        print(f"[convert] maps failed: {e}", file=sys.stderr)
+        import traceback; traceback.print_exc()
+    finally:
+        try:
+            _random.seed = _orig_seed_fn
+        except NameError:
+            pass
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -1495,6 +1639,13 @@ if __name__ == "__main__":
             _val = _argv[_argv.index("--only") + 1]
             _only = [s.strip() for s in _val.split(",") if s.strip()]
         export_unit_sprites(only=_only)
+    elif "--maps-png" in _argv:
+        # Fase 3: bake map statik per tema saja (data JSON lain tidak disentuh).
+        _only = None
+        if "--only" in _argv:
+            _val = _argv[_argv.index("--only") + 1]
+            _only = [s.strip() for s in _val.split(",") if s.strip()]
+        export_map_bakes(only=_only)
     else:
         export_heroes()
         export_bosses()
@@ -1507,5 +1658,6 @@ if __name__ == "__main__":
         export_nexus()
         export_economy()
         export_themes()
+        export_map_bakes()
         export_sounds()
         print("[convert] Done. Copy godot/data/*.json ke Godot res://data/")

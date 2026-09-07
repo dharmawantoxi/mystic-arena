@@ -1,0 +1,284 @@
+{
+  "_generated_by": "tools/convert_to_godot.py export_map_bakes()",
+  "_source": "_render.MapRenderer._render_static_map() (terrain+details, river, 3 lane, dekor, shop, wall)",
+  "_note": "Tekstur opaque 1280x720 per tema; re-seed entropi pygame (_bundle.py:4889/:5074) dibekukan ke seed tetap supaya reproducible — game aslinya mengacak speckle/jitter ini tiap match.",
+  "tile_analysis": {
+    "tile_size": 40,
+    "cells": 576,
+    "unique_tiles_forest": 533,
+    "kesimpulan": "tile hampir semua unik -> tekstur tunggal lebih jujur daripada TileSet (lihat komentar header export_map_bakes)"
+  },
+  "seed": 20260907,
+  "maps": {
+    "abyss": {
+      "file": "res://assets/maps/abyss.png",
+      "w": 1280,
+      "h": 720
+    },
+    "abyssal": {
+      "file": "res://assets/maps/abyssal.png",
+      "w": 1280,
+      "h": 720
+    },
+    "abysstide": {
+      "file": "res://assets/maps/abysstide.png",
+      "w": 1280,
+      "h": 720
+    },
+    "astral": {
+      "file": "res://assets/maps/astral.png",
+      "w": 1280,
+      "h": 720
+    },
+    "celestialpeaks": {
+      "file": "res://assets/maps/celestialpeaks.png",
+      "w": 1280,
+      "h": 720
+    },
+    "cosmic": {
+      "file": "res://assets/maps/cosmic.png",
+      "w": 1280,
+      "h": 720
+    },
+    "crimson": {
+      "file": "res://assets/maps/crimson.png",
+      "w": 1280,
+      "h": 720
+    },
+    "crimsondevourer": {
+      "file": "res://assets/maps/crimsondevourer.png",
+      "w": 1280,
+      "h": 720
+    },
+    "crimsonmatriarch": {
+      "file": "res://assets/maps/crimsonmatriarch.png",
+      "w": 1280,
+      "h": 720
+    },
+    "croweye": {
+      "file": "res://assets/maps/croweye.png",
+      "w": 1280,
+      "h": 720
+    },
+    "crystalstorm": {
+      "file": "res://assets/maps/crystalstorm.png",
+      "w": 1280,
+      "h": 720
+    },
+    "desert": {
+      "file": "res://assets/maps/desert.png",
+      "w": 1280,
+      "h": 720
+    },
+    "earthborn": {
+      "file": "res://assets/maps/earthborn.png",
+      "w": 1280,
+      "h": 720
+    },
+    "eldritch": {
+      "file": "res://assets/maps/eldritch.png",
+      "w": 1280,
+      "h": 720
+    },
+    "elementweave": {
+      "file": "res://assets/maps/elementweave.png",
+      "w": 1280,
+      "h": 720
+    },
+    "emberlion": {
+      "file": "res://assets/maps/emberlion.png",
+      "w": 1280,
+      "h": 720
+    },
+    "emberweaver": {
+      "file": "res://assets/maps/emberweaver.png",
+      "w": 1280,
+      "h": 720
+    },
+    "empyrean": {
+      "file": "res://assets/maps/empyrean.png",
+      "w": 1280,
+      "h": 720
+    },
+    "eternalflame": {
+      "file": "res://assets/maps/eternalflame.png",
+      "w": 1280,
+      "h": 720
+    },
+    "eternalwarlord": {
+      "file": "res://assets/maps/eternalwarlord.png",
+      "w": 1280,
+      "h": 720
+    },
+    "explosiveart": {
+      "file": "res://assets/maps/explosiveart.png",
+      "w": 1280,
+      "h": 720
+    },
+    "forest": {
+      "file": "res://assets/maps/forest.png",
+      "w": 1280,
+      "h": 720
+    },
+    "frostveil": {
+      "file": "res://assets/maps/frostveil.png",
+      "w": 1280,
+      "h": 720
+    },
+    "haunted": {
+      "file": "res://assets/maps/haunted.png",
+      "w": 1280,
+      "h": 720
+    },
+    "heartbane": {
+      "file": "res://assets/maps/heartbane.png",
+      "w": 1280,
+      "h": 720
+    },
+    "hexbound": {
+      "file": "res://assets/maps/hexbound.png",
+      "w": 1280,
+      "h": 720
+    },
+    "hollowbane": {
+      "file": "res://assets/maps/hollowbane.png",
+      "w": 1280,
+      "h": 720
+    },
+    "ice": {
+      "file": "res://assets/maps/ice.png",
+      "w": 1280,
+      "h": 720
+    },
+    "lunarherald": {
+      "file": "res://assets/maps/lunarherald.png",
+      "w": 1280,
+      "h": 720
+    },
+    "moonborn": {
+      "file": "res://assets/maps/moonborn.png",
+      "w": 1280,
+      "h": 720
+    },
+    "moonfang": {
+      "file": "res://assets/maps/moonfang.png",
+      "w": 1280,
+      "h": 720
+    },
+    "moonreaper": {
+      "file": "res://assets/maps/moonreaper.png",
+      "w": 1280,
+      "h": 720
+    },
+    "nethervenom": {
+      "file": "res://assets/maps/nethervenom.png",
+      "w": 1280,
+      "h": 720
+    },
+    "ocean": {
+      "file": "res://assets/maps/ocean.png",
+      "w": 1280,
+      "h": 720
+    },
+    "outlaw": {
+      "file": "res://assets/maps/outlaw.png",
+      "w": 1280,
+      "h": 720
+    },
+    "primordial": {
+      "file": "res://assets/maps/primordial.png",
+      "w": 1280,
+      "h": 720
+    },
+    "radiant": {
+      "file": "res://assets/maps/radiant.png",
+      "w": 1280,
+      "h": 720
+    },
+    "royal": {
+      "file": "res://assets/maps/royal.png",
+      "w": 1280,
+      "h": 720
+    },
+    "sanctum": {
+      "file": "res://assets/maps/sanctum.png",
+      "w": 1280,
+      "h": 720
+    },
+    "sandshadow": {
+      "file": "res://assets/maps/sandshadow.png",
+      "w": 1280,
+      "h": 720
+    },
+    "sawmill": {
+      "file": "res://assets/maps/sawmill.png",
+      "w": 1280,
+      "h": 720
+    },
+    "shadowchain": {
+      "file": "res://assets/maps/shadowchain.png",
+      "w": 1280,
+      "h": 720
+    },
+    "skyfury": {
+      "file": "res://assets/maps/skyfury.png",
+      "w": 1280,
+      "h": 720
+    },
+    "solaris": {
+      "file": "res://assets/maps/solaris.png",
+      "w": 1280,
+      "h": 720
+    },
+    "soulforged": {
+      "file": "res://assets/maps/soulforged.png",
+      "w": 1280,
+      "h": 720
+    },
+    "spectral": {
+      "file": "res://assets/maps/spectral.png",
+      "w": 1280,
+      "h": 720
+    },
+    "sundered": {
+      "file": "res://assets/maps/sundered.png",
+      "w": 1280,
+      "h": 720
+    },
+    "sunfist": {
+      "file": "res://assets/maps/sunfist.png",
+      "w": 1280,
+      "h": 720
+    },
+    "tempest": {
+      "file": "res://assets/maps/tempest.png",
+      "w": 1280,
+      "h": 720
+    },
+    "violet": {
+      "file": "res://assets/maps/violet.png",
+      "w": 1280,
+      "h": 720
+    },
+    "voidbound": {
+      "file": "res://assets/maps/voidbound.png",
+      "w": 1280,
+      "h": 720
+    },
+    "voidwing": {
+      "file": "res://assets/maps/voidwing.png",
+      "w": 1280,
+      "h": 720
+    },
+    "volcanic": {
+      "file": "res://assets/maps/volcanic.png",
+      "w": 1280,
+      "h": 720
+    },
+    "warshade": {
+      "file": "res://assets/maps/warshade.png",
+      "w": 1280,
+      "h": 720
+    }
+  }
+}

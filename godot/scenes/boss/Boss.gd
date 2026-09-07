@@ -26,6 +26,10 @@ var role: String = ""
 var fill_color: Color = Color("#8c64dc")
 var fill_dark: Color = Color("#4a3278")
 var boss_class: String = "mini"
+## Fase 5d: warna entrance + gold reward dibaca BossDeathFX / BossIntroBanner
+## (paritas boss.entrance_color & boss.gold_reward bosses/base_boss.py:394)
+var entrance_color: Color = Color("#8c64dc")
+var gold_reward: int = 0
 
 const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
 const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
@@ -75,6 +79,8 @@ func _ready():
 	boss_class = str(s.get("boss_class", "mini"))
 	fill_color = _parse_color(s.get("color", "#8c64dc"), Color("#8c64dc"))
 	fill_dark = fill_color.darkened(0.4)
+	entrance_color = _parse_color(s.get("entrance_color", ""), fill_color)
+	gold_reward = int(s.get("gold_reward", 0))
 	radius = 26.0 if boss_class == "true" else 22.0
 	if shadow != null:
 		shadow.visible = false
@@ -343,6 +349,27 @@ func die():
 		AudioManager.play_sfx("victory", 0.7, true)
 	else:
 		AudioManager.play_sfx("explosion", 1.0, true)
+	# Cinematic kematian: ledakan + dissolve + pecahan + (true boss) perayaan
+	# "BOSS DEFEATED!" — port BossDeathAnimation (_render.py:1622, dipanggil
+	# _core.py:2124 saat boss terdeteksi mati). Fase kematian membekukan
+	# gameplay persis seperti pygame (_core.py:1995-1997).
+	var death_fx = preload("res://scenes/fx/BossDeathFX.gd").new()
+	death_fx.setup({
+		"boss_class": boss_class,
+		"name": display_name,
+		"title": role,
+		"color": fill_color,
+		"color_dark": fill_dark,
+		"entrance_color": entrance_color,
+		"gold_reward": gold_reward,
+		"radius": radius,
+	})
+	var host := get_tree().current_scene
+	if host != null and is_instance_valid(host):
+		host.add_child(death_fx)
+	else:
+		get_parent().add_child(death_fx)
+	death_fx.global_position = global_position
 	# Death: scale squash + fade (GPU, bukan ellipse manual)
 	var tw := create_tween()
 	tw.parallel().tween_property(visual, "scale", Vector2(1.9, 0.18), 0.45).set_trans(Tween.TRANS_BACK)

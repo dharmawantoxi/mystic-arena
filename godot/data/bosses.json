@@ -8,6 +8,7 @@
     "range": 50,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 350,
     "color": "#aa50d2",
     "entrance_color": "#aa50d2"
   },
@@ -20,6 +21,7 @@
     "range": 180,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 500,
     "color": "#8c64dc",
     "entrance_color": "#8c64dc"
   },
@@ -32,6 +34,7 @@
     "range": 55,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 700,
     "color": "#dc3c3c",
     "entrance_color": "#dc3c3c"
   },
@@ -44,6 +47,7 @@
     "range": 55,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 550,
     "color": "#f58434",
     "entrance_color": "#ff9134"
   },
@@ -56,6 +60,7 @@
     "range": 70,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 700,
     "color": "#be7a44",
     "entrance_color": "#e4a552"
   },
@@ -68,6 +73,7 @@
     "range": 58,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 850,
     "color": "#d22a2a",
     "entrance_color": "#eb3a34"
   },
@@ -80,6 +86,7 @@
     "range": 100,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 700,
     "color": "#80c6fc",
     "entrance_color": "#a8e8ff"
   },
@@ -92,6 +99,7 @@
     "range": 100,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 800,
     "color": "#94c3fa",
     "entrance_color": "#bce8ff"
   },
@@ -104,6 +112,7 @@
     "range": 95,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 950,
     "color": "#4494e8",
     "entrance_color": "#a8deff"
   },
@@ -116,6 +125,7 @@
     "range": 180,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 600,
     "color": "#c89650",
     "entrance_color": "#ffb450"
   },
@@ -128,6 +138,7 @@
     "range": 55,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 800,
     "color": "#dc3c1e",
     "entrance_color": "#ff9632"
   },
@@ -140,6 +151,7 @@
     "range": 55,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 1000,
     "color": "#b4281e",
     "entrance_color": "#ff6432"
   },
@@ -152,6 +164,7 @@
     "range": 130,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 650,
     "color": "#7dcd18",
     "entrance_color": "#c8f53e"
   },
@@ -164,6 +177,7 @@
     "range": 65,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 800,
     "color": "#91dc37",
     "entrance_color": "#96f541"
   },
@@ -176,6 +190,7 @@
     "range": 150,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 950,
     "color": "#23b95c",
     "entrance_color": "#78f57d"
   },
@@ -188,6 +203,7 @@
     "range": 65,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 950,
     "color": "#376952",
     "entrance_color": "#78e1e6"
   },
@@ -200,6 +216,7 @@
     "range": 120,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 1000,
     "color": "#c86919",
     "entrance_color": "#f0a537"
   },
@@ -212,6 +229,7 @@
     "range": 160,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 1100,
     "color": "#3791b9",
     "entrance_color": "#afebeb"
   },
@@ -224,6 +242,7 @@
     "range": 150,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 1050,
     "color": "#be1e4b",
     "entrance_color": "#fa4182"
   },
@@ -236,6 +255,7 @@
     "range": 140,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 1100,
     "color": "#d71e55",
     "entrance_color": "#ff5591"
   },
@@ -248,6 +268,7 @@
     "range": 150,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 1150,
     "color": "#c82819",
     "entrance_color": "#ff5a32"
   },
@@ -260,6 +281,7 @@
     "range": 60,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 1300,
     "color": "#8c191e",
     "entrance_color": "#ff5a55"
   },
@@ -272,6 +294,7 @@
     "range": 62,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 1250,
     "color": "#3cb4e6",
     "entrance_color": "#96f0ff"
   },
@@ -284,6 +307,7 @@
     "range": 150,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 1280,
     "color": "#8cbe23",
     "entrance_color": "#c8f550"
   },
@@ -296,6 +320,7 @@
     "range": 55,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 1400,
     "color": "#5a8cdc",
     "entrance_color": "#78aaf0"
   },
@@ -308,6 +333,7 @@
     "range": 60,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 1450,
     "color": "#c8783c",
     "entrance_color": "#e69650"
   },
@@ -320,6 +346,7 @@
     "range": 55,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 1400,
     "color": "#6edc96",
     "entrance_color": "#82eba5"
   },
@@ -332,6 +359,7 @@
     "range": 60,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 1550,
     "color": "#78dc6e",
     "entrance_color": "#8ceb82"
   },
@@ -344,6 +372,7 @@
     "range": 55,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 1500,
     "color": "#f07828",
     "entrance_color": "#ff963c"
   },
@@ -356,6 +385,7 @@
     "range": 58,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 1520,
     "color": "#965adc",
     "entrance_color": "#b478f5"
   },
@@ -368,6 +398,7 @@
     "range": 150,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 1580,
     "color": "#82dcfa",
     "entrance_color": "#96e6ff"
   },
@@ -380,6 +411,7 @@
     "range": 65,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 1620,
     "color": "#dcc878",
     "entrance_color": "#ebd78c"
   },
@@ -392,6 +424,7 @@
     "range": 60,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 1600,
     "color": "#aa5ae6",
     "entrance_color": "#c37dfa"
   },
@@ -404,6 +437,7 @@
     "range": 130,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 1680,
     "color": "#f0d25a",
     "entrance_color": "#fadc6e"
   },
@@ -416,6 +450,7 @@
     "range": 62,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 1650,
     "color": "#ffd764",
     "entrance_color": "#ffe68c"
   },
@@ -428,6 +463,7 @@
     "range": 65,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 1720,
     "color": "#dc463c",
     "entrance_color": "#f56450"
   },
@@ -440,6 +476,7 @@
     "range": 65,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 1780,
     "color": "#9678c8",
     "entrance_color": "#af91dc"
   },
@@ -452,6 +489,7 @@
     "range": 65,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 1820,
     "color": "#dc823c",
     "entrance_color": "#f0a05a"
   },
@@ -464,6 +502,7 @@
     "range": 60,
     "attack_cooldown": 34,
     "boss_class": "mini",
+    "gold_reward": 1750,
     "color": "#78c8be",
     "entrance_color": "#91e1d7"
   },
@@ -476,6 +515,7 @@
     "range": 260,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 1800,
     "color": "#4b78d2",
     "entrance_color": "#82b4fa"
   },
@@ -488,6 +528,7 @@
     "range": 270,
     "attack_cooldown": 47,
     "boss_class": "mini",
+    "gold_reward": 1850,
     "color": "#a0b9eb",
     "entrance_color": "#d7e6ff"
   },
@@ -500,6 +541,7 @@
     "range": 70,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 1900,
     "color": "#ebb950",
     "entrance_color": "#ffdc82"
   },
@@ -512,6 +554,7 @@
     "range": 70,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 1950,
     "color": "#e6b941",
     "entrance_color": "#ffdc78"
   },
@@ -524,6 +567,7 @@
     "range": 75,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 2000,
     "color": "#5f6e9b",
     "entrance_color": "#a0afdc"
   },
@@ -536,6 +580,7 @@
     "range": 80,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 2050,
     "color": "#82dc5a",
     "entrance_color": "#82dc5a"
   },
@@ -548,6 +593,7 @@
     "range": 280,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 2100,
     "color": "#d74b3c",
     "entrance_color": "#f5825a"
   },
@@ -560,6 +606,7 @@
     "range": 75,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 2150,
     "color": "#f0c350",
     "entrance_color": "#ffe182"
   },
@@ -572,6 +619,7 @@
     "range": 80,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 2200,
     "color": "#4b64a5",
     "entrance_color": "#87a5dc"
   },
@@ -584,6 +632,7 @@
     "range": 80,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 2250,
     "color": "#3782e6",
     "entrance_color": "#82c8ff"
   },
@@ -596,6 +645,7 @@
     "range": 85,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 2300,
     "color": "#f5d25a",
     "entrance_color": "#f5d76e"
   },
@@ -608,6 +658,7 @@
     "range": 75,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 2350,
     "color": "#5ac8e6",
     "entrance_color": "#8cdcf0"
   },
@@ -620,6 +671,7 @@
     "range": 270,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 2400,
     "color": "#7396d7",
     "entrance_color": "#96c8ff"
   },
@@ -632,6 +684,7 @@
     "range": 75,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 2450,
     "color": "#fad250",
     "entrance_color": "#ffeb82"
   },
@@ -644,6 +697,7 @@
     "range": 280,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 2500,
     "color": "#b41e32",
     "entrance_color": "#ff506e"
   },
@@ -656,6 +710,7 @@
     "range": 260,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 2550,
     "color": "#c8234b",
     "entrance_color": "#ffa0c3"
   },
@@ -668,6 +723,7 @@
     "range": 85,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 2600,
     "color": "#78559b",
     "entrance_color": "#aa82c8"
   },
@@ -680,6 +736,7 @@
     "range": 275,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 2650,
     "color": "#6eaf55",
     "entrance_color": "#aadc78"
   },
@@ -692,6 +749,7 @@
     "range": 80,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 2700,
     "color": "#96b4e6",
     "entrance_color": "#c8dcff"
   },
@@ -704,6 +762,7 @@
     "range": 285,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 2750,
     "color": "#d7dceb",
     "entrance_color": "#dce6fa"
   },
@@ -716,6 +775,7 @@
     "range": 90,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 2800,
     "color": "#6eaf46",
     "entrance_color": "#a0d264"
   },
@@ -728,6 +788,7 @@
     "range": 70,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 2900,
     "color": "#8c55af",
     "entrance_color": "#f03c82"
   },
@@ -740,6 +801,7 @@
     "range": 60,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 2950,
     "color": "#78828c",
     "entrance_color": "#f0c85a"
   },
@@ -752,6 +814,7 @@
     "range": 90,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 2850,
     "color": "#9673a5",
     "entrance_color": "#c8a050"
   },
@@ -764,6 +827,7 @@
     "range": 70,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 3000,
     "color": "#5ac846",
     "entrance_color": "#78e65a"
   },
@@ -776,6 +840,7 @@
     "range": 270,
     "attack_cooldown": 45,
     "boss_class": "mini",
+    "gold_reward": 3050,
     "color": "#8caaff",
     "entrance_color": "#bed2ff"
   },
@@ -788,6 +853,7 @@
     "range": 75,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 3100,
     "color": "#dc3c50",
     "entrance_color": "#ff6e82"
   },
@@ -800,6 +866,7 @@
     "range": 85,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 3150,
     "color": "#46a0c8",
     "entrance_color": "#8cdcff"
   },
@@ -812,6 +879,7 @@
     "range": 280,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 3200,
     "color": "#b478e6",
     "entrance_color": "#dcaaff"
   },
@@ -824,6 +892,7 @@
     "range": 90,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 3250,
     "color": "#d7af46",
     "entrance_color": "#ffdc78"
   },
@@ -836,6 +905,7 @@
     "range": 80,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 3300,
     "color": "#e1b46e",
     "entrance_color": "#ffdc96"
   },
@@ -848,6 +918,7 @@
     "range": 285,
     "attack_cooldown": 47,
     "boss_class": "mini",
+    "gold_reward": 3350,
     "color": "#9678ff",
     "entrance_color": "#c8b4ff"
   },
@@ -860,6 +931,7 @@
     "range": 85,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 3400,
     "color": "#5096ff",
     "entrance_color": "#96c8ff"
   },
@@ -872,6 +944,7 @@
     "range": 75,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 3450,
     "color": "#965ac8",
     "entrance_color": "#c896ff"
   },
@@ -884,6 +957,7 @@
     "range": 80,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 3500,
     "color": "#dc374b",
     "entrance_color": "#ff788c"
   },
@@ -896,6 +970,7 @@
     "range": 90,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 3550,
     "color": "#ff8228",
     "entrance_color": "#ffbe5a"
   },
@@ -908,6 +983,7 @@
     "range": 80,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 3600,
     "color": "#c8dcff",
     "entrance_color": "#dcebff"
   },
@@ -920,6 +996,7 @@
     "range": 85,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 3650,
     "color": "#96aaff",
     "entrance_color": "#c8d2ff"
   },
@@ -932,6 +1009,7 @@
     "range": 70,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 3700,
     "color": "#a050dc",
     "entrance_color": "#d296ff"
   },
@@ -944,6 +1022,7 @@
     "range": 270,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 3750,
     "color": "#ffaa5a",
     "entrance_color": "#ffd296"
   },
@@ -956,6 +1035,7 @@
     "range": 85,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 3800,
     "color": "#6ec8aa",
     "entrance_color": "#aaffdc"
   },
@@ -968,6 +1048,7 @@
     "range": 80,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 3850,
     "color": "#50c8e6",
     "entrance_color": "#a0ebff"
   },
@@ -980,6 +1061,7 @@
     "range": 85,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 3950,
     "color": "#8cbe78",
     "entrance_color": "#bef0a0"
   },
@@ -992,6 +1074,7 @@
     "range": 90,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 4000,
     "color": "#e13c4b",
     "entrance_color": "#ff828c"
   },
@@ -1004,6 +1087,7 @@
     "range": 280,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 4050,
     "color": "#ffc850",
     "entrance_color": "#ffeb96"
   },
@@ -1016,6 +1100,7 @@
     "range": 85,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 4150,
     "color": "#ff8232",
     "entrance_color": "#ffbe64"
   },
@@ -1028,6 +1113,7 @@
     "range": 80,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 4200,
     "color": "#ffd750",
     "entrance_color": "#fff096"
   },
@@ -1040,6 +1126,7 @@
     "range": 90,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 4250,
     "color": "#ffaf3c",
     "entrance_color": "#ffd782"
   },
@@ -1052,6 +1139,7 @@
     "range": 85,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 4350,
     "color": "#f0c85a",
     "entrance_color": "#ffe696"
   },
@@ -1064,6 +1152,7 @@
     "range": 90,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 4400,
     "color": "#788291",
     "entrance_color": "#becddc"
   },
@@ -1076,6 +1165,7 @@
     "range": 290,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 4450,
     "color": "#e1465a",
     "entrance_color": "#ff8ca0"
   },
@@ -1088,6 +1178,7 @@
     "range": 290,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 4550,
     "color": "#a0c8ff",
     "entrance_color": "#d2e6ff"
   },
@@ -1100,6 +1191,7 @@
     "range": 85,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 4600,
     "color": "#ff8c3c",
     "entrance_color": "#ffc882"
   },
@@ -1112,6 +1204,7 @@
     "range": 295,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 4650,
     "color": "#8c5adc",
     "entrance_color": "#c8a0ff"
   },
@@ -1124,6 +1217,7 @@
     "range": 90,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 4750,
     "color": "#967855",
     "entrance_color": "#d2b996"
   },
@@ -1136,6 +1230,7 @@
     "range": 300,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 4800,
     "color": "#c8d2ff",
     "entrance_color": "#e6ebff"
   },
@@ -1148,6 +1243,7 @@
     "range": 285,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 4850,
     "color": "#78be78",
     "entrance_color": "#b4f0b4"
   },
@@ -1160,6 +1256,7 @@
     "range": 80,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 4950,
     "color": "#ff963c",
     "entrance_color": "#ffcd82"
   },
@@ -1172,6 +1269,7 @@
     "range": 85,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 5000,
     "color": "#a082ff",
     "entrance_color": "#d7c3ff"
   },
@@ -1184,6 +1282,7 @@
     "range": 300,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 5050,
     "color": "#78e6f5",
     "entrance_color": "#befaff"
   },
@@ -1196,6 +1295,7 @@
     "range": 305,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 5150,
     "color": "#ff7832",
     "entrance_color": "#ffb978"
   },
@@ -1208,6 +1308,7 @@
     "range": 310,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 5200,
     "color": "#aa6ee6",
     "entrance_color": "#dcb4ff"
   },
@@ -1220,6 +1321,7 @@
     "range": 90,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 5250,
     "color": "#8cdcff",
     "entrance_color": "#d2f5ff"
   },
@@ -1232,6 +1334,7 @@
     "range": 80,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 5350,
     "color": "#e63c5a",
     "entrance_color": "#ff8ca0"
   },
@@ -1244,6 +1347,7 @@
     "range": 90,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 5400,
     "color": "#aac8ff",
     "entrance_color": "#d7e6ff"
   },
@@ -1256,6 +1360,7 @@
     "range": 315,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 5450,
     "color": "#a078ff",
     "entrance_color": "#d7c3ff"
   },
@@ -1268,6 +1373,7 @@
     "range": 320,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 5550,
     "color": "#9678ff",
     "entrance_color": "#cdbeff"
   },
@@ -1280,6 +1386,7 @@
     "range": 315,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 5600,
     "color": "#5a78c8",
     "entrance_color": "#a5c3ff"
   },
@@ -1292,6 +1399,7 @@
     "range": 310,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 5650,
     "color": "#7850dc",
     "entrance_color": "#c3a5ff"
   },
@@ -1304,6 +1412,7 @@
     "range": 85,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 5750,
     "color": "#d23250",
     "entrance_color": "#ff8ca0"
   },
@@ -1316,6 +1425,7 @@
     "range": 90,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 5800,
     "color": "#ff7832",
     "entrance_color": "#ffb978"
   },
@@ -1328,6 +1438,7 @@
     "range": 80,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 5850,
     "color": "#8250dc",
     "entrance_color": "#c8a5ff"
   },
@@ -1340,6 +1451,7 @@
     "range": 90,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 5950,
     "color": "#8c8782",
     "entrance_color": "#cdc8c3"
   },
@@ -1352,6 +1464,7 @@
     "range": 95,
     "attack_cooldown": 50,
     "boss_class": "mini",
+    "gold_reward": 6000,
     "color": "#6e8c5a",
     "entrance_color": "#afd296"
   },
@@ -1364,6 +1477,7 @@
     "range": 85,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 6050,
     "color": "#f0cd5a",
     "entrance_color": "#ffeb96"
   },
@@ -1376,6 +1490,7 @@
     "range": 90,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 6150,
     "color": "#966e46",
     "entrance_color": "#d7b996"
   },
@@ -1388,6 +1503,7 @@
     "range": 85,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 6200,
     "color": "#78828c",
     "entrance_color": "#bec8d2"
   },
@@ -1400,6 +1516,7 @@
     "range": 320,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 6250,
     "color": "#6e3cbe",
     "entrance_color": "#b991ff"
   },
@@ -1412,6 +1529,7 @@
     "range": 85,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 6350,
     "color": "#ff8c3c",
     "entrance_color": "#ffc882"
   },
@@ -1424,6 +1542,7 @@
     "range": 325,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 6400,
     "color": "#8ca0ff",
     "entrance_color": "#cdd7ff"
   },
@@ -1436,6 +1555,7 @@
     "range": 90,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 6450,
     "color": "#b43c50",
     "entrance_color": "#ff96a0"
   },
@@ -1448,6 +1568,7 @@
     "range": 315,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 6550,
     "color": "#ffa532",
     "entrance_color": "#ffdc78"
   },
@@ -1460,6 +1581,7 @@
     "range": 90,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 6600,
     "color": "#6e9b50",
     "entrance_color": "#aad282"
   },
@@ -1472,6 +1594,7 @@
     "range": 320,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 6650,
     "color": "#9664e6",
     "entrance_color": "#d2b4ff"
   },
@@ -1484,6 +1607,7 @@
     "range": 85,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 6750,
     "color": "#b4c8ff",
     "entrance_color": "#dce6ff"
   },
@@ -1496,6 +1620,7 @@
     "range": 90,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 6800,
     "color": "#e64650",
     "entrance_color": "#ff9696"
   },
@@ -1508,6 +1633,7 @@
     "range": 95,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 6850,
     "color": "#c8783c",
     "entrance_color": "#ffc882"
   },
@@ -1520,6 +1646,7 @@
     "range": 315,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 6950,
     "color": "#6ebe5a",
     "entrance_color": "#b4f0a0"
   },
@@ -1532,6 +1659,7 @@
     "range": 90,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 7000,
     "color": "#6e3cbe",
     "entrance_color": "#b991ff"
   },
@@ -1544,6 +1672,7 @@
     "range": 330,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 7050,
     "color": "#8c50e6",
     "entrance_color": "#d2afff"
   },
@@ -1556,6 +1685,7 @@
     "range": 320,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 7150,
     "color": "#6ebe6e",
     "entrance_color": "#b4f0b4"
   },
@@ -1568,6 +1698,7 @@
     "range": 325,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 7200,
     "color": "#96aaff",
     "entrance_color": "#d7e1ff"
   },
@@ -1580,6 +1711,7 @@
     "range": 330,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 7250,
     "color": "#be96ff",
     "entrance_color": "#ebd7ff"
   },
@@ -1592,6 +1724,7 @@
     "range": 85,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 7350,
     "color": "#ffd75a",
     "entrance_color": "#fff0a0"
   },
@@ -1604,6 +1737,7 @@
     "range": 90,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 7400,
     "color": "#96dcff",
     "entrance_color": "#d2f5ff"
   },
@@ -1616,6 +1750,7 @@
     "range": 335,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 7450,
     "color": "#8cc864",
     "entrance_color": "#c8f5aa"
   },
@@ -1628,6 +1763,7 @@
     "range": 85,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 7550,
     "color": "#e6462d",
     "entrance_color": "#ff9682"
   },
@@ -1640,6 +1776,7 @@
     "range": 330,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 7600,
     "color": "#7850dc",
     "entrance_color": "#c3a5ff"
   },
@@ -1652,6 +1789,7 @@
     "range": 320,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 7650,
     "color": "#5a468c",
     "entrance_color": "#af96e1"
   },
@@ -1664,6 +1802,7 @@
     "range": 85,
     "attack_cooldown": 38,
     "boss_class": "mini",
+    "gold_reward": 7750,
     "color": "#ffdc5a",
     "entrance_color": "#fff5b4"
   },
@@ -1676,6 +1815,7 @@
     "range": 90,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 7800,
     "color": "#bedcff",
     "entrance_color": "#e1f0ff"
   },
@@ -1688,6 +1828,7 @@
     "range": 340,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 7850,
     "color": "#78c85a",
     "entrance_color": "#bef5a0"
   },
@@ -1700,6 +1841,7 @@
     "range": 90,
     "attack_cooldown": 46,
     "boss_class": "mini",
+    "gold_reward": 7950,
     "color": "#aa6428",
     "entrance_color": "#ffd28c"
   },
@@ -1712,6 +1854,7 @@
     "range": 335,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 8000,
     "color": "#8cc86e",
     "entrance_color": "#cdf5b4"
   },
@@ -1724,6 +1867,7 @@
     "range": 85,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 8050,
     "color": "#6e5aa0",
     "entrance_color": "#b9a5eb"
   },
@@ -1736,6 +1880,7 @@
     "range": 85,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 8150,
     "color": "#9646dc",
     "entrance_color": "#e6beff"
   },
@@ -1748,6 +1893,7 @@
     "range": 90,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 8200,
     "color": "#b9b9c8",
     "entrance_color": "#f5f5fa"
   },
@@ -1760,6 +1906,7 @@
     "range": 345,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 8100,
     "color": "#d7a041",
     "entrance_color": "#fad782"
   },
@@ -1772,6 +1919,7 @@
     "range": 90,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 8300,
     "color": "#8cc8eb",
     "entrance_color": "#b4e1fa"
   },
@@ -1784,6 +1932,7 @@
     "range": 85,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 8350,
     "color": "#aabeff",
     "entrance_color": "#d7e1ff"
   },
@@ -1796,6 +1945,7 @@
     "range": 355,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 8250,
     "color": "#be785a",
     "entrance_color": "#ebb9a0"
   },
@@ -1808,6 +1958,7 @@
     "range": 95,
     "attack_cooldown": 42,
     "boss_class": "mini",
+    "gold_reward": 8450,
     "color": "#f5d25f",
     "entrance_color": "#ffeba0"
   },
@@ -1820,6 +1971,7 @@
     "range": 100,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 8500,
     "color": "#3c82a0",
     "entrance_color": "#8cd2eb"
   },
@@ -1832,6 +1984,7 @@
     "range": 85,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 8400,
     "color": "#ff9628",
     "entrance_color": "#ffd782"
   },
@@ -1844,6 +1997,7 @@
     "range": 90,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 8550,
     "color": "#96be78",
     "entrance_color": "#cdebb9"
   },
@@ -1856,6 +2010,7 @@
     "range": 100,
     "attack_cooldown": 48,
     "boss_class": "mini",
+    "gold_reward": 8600,
     "color": "#a58764",
     "entrance_color": "#e1cdaf"
   },
@@ -1868,6 +2023,7 @@
     "range": 365,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 8500,
     "color": "#aabedc",
     "entrance_color": "#d7e6fa"
   },
@@ -1880,6 +2036,7 @@
     "range": 370,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 8650,
     "color": "#c83c3c",
     "entrance_color": "#ff968c"
   },
@@ -1892,6 +2049,7 @@
     "range": 90,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 8700,
     "color": "#ffb43c",
     "entrance_color": "#ffe196"
   },
@@ -1904,6 +2062,7 @@
     "range": 85,
     "attack_cooldown": 36,
     "boss_class": "mini",
+    "gold_reward": 8600,
     "color": "#7850a0",
     "entrance_color": "#bea0e6"
   },
@@ -1916,6 +2075,7 @@
     "range": 90,
     "attack_cooldown": 40,
     "boss_class": "mini",
+    "gold_reward": 8750,
     "color": "#9682c8",
     "entrance_color": "#cdbef5"
   },
@@ -1928,6 +2088,7 @@
     "range": 375,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 8700,
     "color": "#c83c5a",
     "entrance_color": "#ff96aa"
   },
@@ -1940,6 +2101,7 @@
     "range": 95,
     "attack_cooldown": 44,
     "boss_class": "mini",
+    "gold_reward": 8800,
     "color": "#c85a3c",
     "entrance_color": "#ffb496"
   },
@@ -1952,6 +2114,7 @@
     "range": 50,
     "attack_cooldown": 43,
     "boss_class": "true",
+    "gold_reward": 1500,
     "color": "#64dcf0",
     "entrance_color": "#64dcf0"
   },
@@ -1964,6 +2127,7 @@
     "range": 50,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 2500,
     "color": "#d79b2d",
     "entrance_color": "#64dc28"
   },
@@ -1976,6 +2140,7 @@
     "range": 150,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 3000,
     "color": "#8cc8ff",
     "entrance_color": "#8cc8ff"
   },
@@ -1988,6 +2153,7 @@
     "range": 55,
     "attack_cooldown": 42,
     "boss_class": "true",
+    "gold_reward": 4000,
     "color": "#ff821e",
     "entrance_color": "#ff9632"
   },
@@ -2000,6 +2166,7 @@
     "range": 150,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 2100,
     "color": "#37b496",
     "entrance_color": "#64ffc8"
   },
@@ -2012,6 +2179,7 @@
     "range": 55,
     "attack_cooldown": 42,
     "boss_class": "true",
+    "gold_reward": 2500,
     "color": "#2882c8",
     "entrance_color": "#6ec8f5"
   },
@@ -2024,6 +2192,7 @@
     "range": 160,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 5000,
     "color": "#b42319",
     "entrance_color": "#ff9150"
   },
@@ -2036,6 +2205,7 @@
     "range": 165,
     "attack_cooldown": 48,
     "boss_class": "true",
+    "gold_reward": 5500,
     "color": "#8cbe23",
     "entrance_color": "#c8f550"
   },
@@ -2048,6 +2218,7 @@
     "range": 65,
     "attack_cooldown": 40,
     "boss_class": "true",
+    "gold_reward": 3200,
     "color": "#6edceb",
     "entrance_color": "#6edceb"
   },
@@ -2060,6 +2231,7 @@
     "range": 190,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 3400,
     "color": "#f0c350",
     "entrance_color": "#ffe18c"
   },
@@ -2072,6 +2244,7 @@
     "range": 70,
     "attack_cooldown": 40,
     "boss_class": "true",
+    "gold_reward": 3600,
     "color": "#3282be",
     "entrance_color": "#8cd2f0"
   },
@@ -2084,6 +2257,7 @@
     "range": 75,
     "attack_cooldown": 40,
     "boss_class": "true",
+    "gold_reward": 3800,
     "color": "#2d6e69",
     "entrance_color": "#78dcf0"
   },
@@ -2096,6 +2270,7 @@
     "range": 75,
     "attack_cooldown": 42,
     "boss_class": "true",
+    "gold_reward": 4000,
     "color": "#d7dce6",
     "entrance_color": "#fafcff"
   },
@@ -2108,6 +2283,7 @@
     "range": 300,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 4200,
     "color": "#ff8c1e",
     "entrance_color": "#ffc846"
   },
@@ -2120,6 +2296,7 @@
     "range": 85,
     "attack_cooldown": 42,
     "boss_class": "true",
+    "gold_reward": 4400,
     "color": "#558c5a",
     "entrance_color": "#8cbe8c"
   },
@@ -2132,6 +2309,7 @@
     "range": 90,
     "attack_cooldown": 42,
     "boss_class": "true",
+    "gold_reward": 4600,
     "color": "#f0c350",
     "entrance_color": "#ffe182"
   },
@@ -2144,6 +2322,7 @@
     "range": 290,
     "attack_cooldown": 45,
     "boss_class": "true",
+    "gold_reward": 4800,
     "color": "#8737dc",
     "entrance_color": "#c882ff"
   },
@@ -2156,6 +2335,7 @@
     "range": 90,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 5000,
     "color": "#f5d75f",
     "entrance_color": "#fff5b4"
   },
@@ -2168,6 +2348,7 @@
     "range": 300,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 5200,
     "color": "#9b64dc",
     "entrance_color": "#c8a0f5"
   },
@@ -2180,6 +2361,7 @@
     "range": 290,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 5400,
     "color": "#dc325a",
     "entrance_color": "#ff5a82"
   },
@@ -2192,6 +2374,7 @@
     "range": 300,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 5800,
     "color": "#00b4c8",
     "entrance_color": "#50f0c8"
   },
@@ -2204,6 +2387,7 @@
     "range": 120,
     "attack_cooldown": 50,
     "boss_class": "true",
+    "gold_reward": 6100,
     "color": "#e68c32",
     "entrance_color": "#ffbe50"
   },
@@ -2216,6 +2400,7 @@
     "range": 310,
     "attack_cooldown": 48,
     "boss_class": "true",
+    "gold_reward": 6400,
     "color": "#fad769",
     "entrance_color": "#fff0aa"
   },
@@ -2228,6 +2413,7 @@
     "range": 130,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 6700,
     "color": "#ffd25a",
     "entrance_color": "#fff0a0"
   },
@@ -2240,6 +2426,7 @@
     "range": 140,
     "attack_cooldown": 48,
     "boss_class": "true",
+    "gold_reward": 7000,
     "color": "#5ff5dc",
     "entrance_color": "#aafff0"
   },
@@ -2252,6 +2439,7 @@
     "range": 150,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 7300,
     "color": "#e13746",
     "entrance_color": "#ff6464"
   },
@@ -2264,6 +2452,7 @@
     "range": 320,
     "attack_cooldown": 48,
     "boss_class": "true",
+    "gold_reward": 7600,
     "color": "#82c8ff",
     "entrance_color": "#c8ebff"
   },
@@ -2276,6 +2465,7 @@
     "range": 330,
     "attack_cooldown": 48,
     "boss_class": "true",
+    "gold_reward": 7900,
     "color": "#d25aeb",
     "entrance_color": "#f08cff"
   },
@@ -2288,6 +2478,7 @@
     "range": 340,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 8200,
     "color": "#8cdcff",
     "entrance_color": "#c8f5ff"
   },
@@ -2300,6 +2491,7 @@
     "range": 160,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 9000,
     "color": "#5ae1f5",
     "entrance_color": "#aafaff"
   },
@@ -2312,6 +2504,7 @@
     "range": 340,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 9500,
     "color": "#d74b4b",
     "entrance_color": "#f58c8c"
   },
@@ -2324,6 +2517,7 @@
     "range": 350,
     "attack_cooldown": 48,
     "boss_class": "true",
+    "gold_reward": 10000,
     "color": "#8c3cc8",
     "entrance_color": "#f0d2ff"
   },
@@ -2336,6 +2530,7 @@
     "range": 360,
     "attack_cooldown": 48,
     "boss_class": "true",
+    "gold_reward": 10500,
     "color": "#af37eb",
     "entrance_color": "#f5c8ff"
   },
@@ -2348,6 +2543,7 @@
     "range": 170,
     "attack_cooldown": 50,
     "boss_class": "true",
+    "gold_reward": 11000,
     "color": "#8cbe46",
     "entrance_color": "#c8ffb4"
   },
@@ -2360,6 +2556,7 @@
     "range": 370,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 11500,
     "color": "#ff64be",
     "entrance_color": "#ffb4e6"
   },
@@ -2372,6 +2569,7 @@
     "range": 180,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 12000,
     "color": "#fadc6e",
     "entrance_color": "#fff5be"
   },
@@ -2384,6 +2582,7 @@
     "range": 380,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 12500,
     "color": "#e664f0",
     "entrance_color": "#ffa0ff"
   },
@@ -2396,6 +2595,7 @@
     "range": 390,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 13000,
     "color": "#e63741",
     "entrance_color": "#ff6e64"
   },
@@ -2408,6 +2608,7 @@
     "range": 400,
     "attack_cooldown": 46,
     "boss_class": "true",
+    "gold_reward": 13500,
     "color": "#aa3cdc",
     "entrance_color": "#f0c85a"
   },
@@ -2420,6 +2621,7 @@
     "range": 410,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 14000,
     "color": "#3c8cf0",
     "entrance_color": "#dcf5ff"
   },
@@ -2432,6 +2634,7 @@
     "range": 190,
     "attack_cooldown": 48,
     "boss_class": "true",
+    "gold_reward": 14500,
     "color": "#dc5a14",
     "entrance_color": "#ffdc78"
   },
@@ -2444,6 +2647,7 @@
     "range": 420,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 15000,
     "color": "#e64650",
     "entrance_color": "#ff8282"
   },
@@ -2456,6 +2660,7 @@
     "range": 430,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 15500,
     "color": "#d782fa",
     "entrance_color": "#f5c3ff"
   },
@@ -2468,6 +2673,7 @@
     "range": 200,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 16000,
     "color": "#c81e28",
     "entrance_color": "#ffb4a0"
   },
@@ -2480,6 +2686,7 @@
     "range": 440,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 16500,
     "color": "#fa463c",
     "entrance_color": "#ff9682"
   },
@@ -2492,6 +2699,7 @@
     "range": 450,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 17000,
     "color": "#e6462d",
     "entrance_color": "#fa9664"
   },
@@ -2504,6 +2712,7 @@
     "range": 460,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 17500,
     "color": "#ffa53c",
     "entrance_color": "#ffdc82"
   },
@@ -2516,6 +2725,7 @@
     "range": 470,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 18000,
     "color": "#e69b4b",
     "entrance_color": "#ffd28c"
   },
@@ -2528,6 +2738,7 @@
     "range": 480,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 18500,
     "color": "#c88cff",
     "entrance_color": "#ebc3ff"
   },
@@ -2540,6 +2751,7 @@
     "range": 490,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 19000,
     "color": "#d7d7e6",
     "entrance_color": "#ebeef5"
   },
@@ -2552,6 +2764,7 @@
     "range": 200,
     "attack_cooldown": 40,
     "boss_class": "true",
+    "gold_reward": 19500,
     "color": "#ff9628",
     "entrance_color": "#ffe682"
   },
@@ -2564,6 +2777,7 @@
     "range": 500,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 20000,
     "color": "#c8ebff",
     "entrance_color": "#f0faff"
   },
@@ -2576,6 +2790,7 @@
     "range": 510,
     "attack_cooldown": 44,
     "boss_class": "true",
+    "gold_reward": 20500,
     "color": "#f0eef8",
     "entrance_color": "#faf8ff"
   },
@@ -2588,6 +2803,7 @@
     "range": 200,
     "attack_cooldown": 40,
     "boss_class": "true",
+    "gold_reward": 21000,
     "color": "#ff9b37",
     "entrance_color": "#ffd264"
   }
