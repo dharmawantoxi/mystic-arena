@@ -114,6 +114,34 @@ godot --headless --path godot --quit-after 120
 Pastikan log tidak mengandung `SCRIPT ERROR`, `Parse Error`, atau `Compile Error`;
 exit code editor saja tidak cukup karena Godot bisa tetap keluar dengan kode 0.
 
+### Parse error: `Too many arguments for "get()"` di AIPlayer
+
+`Dictionary.get(key, default)` boleh menerima dua argumen, tetapi `Object.get(property)`
+(hanya satu argumen) yang dipakai untuk node dari `get_nodes_in_group()`. Dua lookup
+lane minion di `AIPlayer._assign_hero_lane()` sekarang memakai `m.get("lane")`.
+Minion juga menyimpan `lane`, diteruskan oleh `Main` lewat `GameManager.spawn_minion()`
+untuk kedua tim; jika tidak diberikan, lane tetap `"mid"` dan argumen keempat tetap
+pengali stat seperti sebelumnya.
+
+Error `Main.gd: Failed to compile depended scripts` dan `Nonexistent function 'new'
+in base 'GDScript'` adalah efek berantai karena script AI gagal dikompilasi — jangan
+mengganti `.new()` atau menghapus AI dari Main. Uji regresinya (setelah import):
+
+```bash
+godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120
+```
+
+Harus muncul `[AIPlayerTest] PASS` tanpa error script. Tes memuat Main, memeriksa lane
+wave kedua tim, dan memastikan AI memilih minion biru hidup terdekat di lane paling
+ramai (atau menara terdekat jika tidak ada minion). Tes tidak memulai match atau
+menulis save.
+
+`Unable to open Android 'build-tools' directory` adalah masalah konfigurasi SDK
+editor yang **terpisah**. Jika ingin export Android, instal Android SDK Build-Tools
+melalui SDK Manager dan arahkan **Editor Settings → Export → Android → Android SDK
+Path** ke root SDK (yang berisi folder `build-tools/`), bukan ke folder build-tools
+itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan F5.
+
 ## Gameplay yang sudah diport (2026-09-06)
 
 | Sistem pygame | Port Godot | Catatan |
