@@ -421,6 +421,9 @@ func return_to_menu() -> void:
 
 func next_wave() -> void:
 	wave_number += 1
+	# Terompet wave baru (paritas Game.update _core.py:1740, volume_mult 0.6 —
+	# dipelankan karena berbunyi tiap 25 detik dan tidak boleh menutupi SFX tempur).
+	AudioManager.play_sfx("wave_start", 0.6)
 	print("[GameManager] Wave %d" % wave_number)
 	wave_started.emit(wave_number)
 	# Castle shield gratis hanya sampai wave 10 (paritas Castle.set_wave)
@@ -949,6 +952,10 @@ func try_buy_hero(hero_type: String) -> bool:
 		return false
 	var index := count_alive("heroes", "blue")
 	var h = spawn_hero(hero_type, "blue", base_spawn_point("blue", index))
+	# Seruan hero baru masuk medan (paritas Game.try_buy_hero _core.py:2637-2638:
+	# ui_buy dibunyikan ShopPanel._run, hero_spawn di sini). Hanya hero yang
+	# DIBELI pemain — hero AI lahir tanpa suara, sama seperti pygame.
+	AudioManager.play_sfx("hero_spawn")
 	select_hero(h)
 	shop_changed.emit()
 	print("[Shop] %s dibeli (-%d gold)" % [HeroDB.get_hero(hero_type).get("name", hero_type), cost])

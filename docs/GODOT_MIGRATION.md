@@ -68,7 +68,7 @@ godot/
     shaders/bloom.gdshader    # Skill glow
     heroes/<hero>/SpriteFrames.tres # Aseprite export (belum ada, fallback warna)
     tilesets/<theme>.tres
-  data/                  # Hasil tools/convert_to_godot.py (10 file)
+  data/                  # Hasil tools/convert_to_godot.py (11 file)
     heroes.json          # 222 hero + field skill_*
     bosses.json          # 216 boss
     levels.json          # 54 level + mini_bosses/true_boss + map_theme
@@ -79,6 +79,7 @@ godot/
     towers.json          # 4 jalur menara Lv1-6 + biaya + Regen Shield + warna
     nexus.json           # NEXUS_LEVELS + Castle Shield
     economy.json         # gold awal, gold/s, bonus per level, pengali difficulty
+    themes.json          # 54 palet tema map (RGB pygame -> hex) + flag dekor
 ```
 
 ---
@@ -90,9 +91,13 @@ Download dari https://godotengine.org/download — versi `Forward+`. Tidak perlu
 
 ### Langkah 1 — Convert data pygame → Godot
 ```bash
-python tools/convert_to_godot.py
-# Output: godot/data/heroes.json (200+ hero), bosses.json, levels.json
-# File ini dibaca HeroDB/BossDB saat _ready()
+# Butuh pygame (export_themes membaca map_components/themes.py) + SDL dummy
+# supaya tidak butuh display/perangkat audio:
+python3 -m venv ~/.venv-mystic && ~/.venv-mystic/bin/pip install "pygame-ce==2.5.*"  # sekali saja
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ~/.venv-mystic/bin/python tools/convert_to_godot.py
+# Output: godot/data/heroes.json (222 hero), bosses.json, levels.json, themes.json (54 tema)
+#         + salin assets/sounds/*.wav -> godot/assets/sounds/ (di-gitignore)
+# File ini dibaca HeroDB/BossDB/ArenaMap saat _ready()
 ```
 
 ### Langkah 2 — Buka di Godot & Run
@@ -191,12 +196,12 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 | **Fase 1** | 6 hero starter jalan di Godot (fallback warna + shader) + Boss + DamageNumber + export AAB | ✅ DONE (dihidupkan 2026-09-06 — sebelumnya F5 hanya layar hitam, lihat `godot/README.md`) |
 | **Fase 2a** | **Kaizen flagship: Skeleton2D 25 bones + hamon shader + wind ribbon** (`scenes/hero/kaizen/`) | ✅ DONE (2026-09-06) — lihat `godot/scenes/demo/KaizenDemo.tscn` |
 | **Fase 2b** | Import 5 hero masterwork PNG → SpriteFrames + anim (template Kaizen) | 1 minggu |
-| **Fase 3** | Map TileSet + 1 tema forest + lane path | 🟡 parsial (2026-09-06): lane/river/base digambar prosedural dari palette `themes.py` + Catmull-Rom `PathGenerator` di `ArenaMap.gd._draw()`; TileSet `.tres` masih tugas lanjutan |
+| **Fase 3** | Map TileSet + 1 tema forest + lane path | 🟡 parsial (2026-09-06): lane/river/base digambar prosedural dari palette `themes.py` + Catmull-Rom `PathGenerator` di `ArenaMap.gd._draw()`. **54 tema sekarang tergambar semua** (bukan lagi 4): `export_themes()` → `data/themes.json` → `ArenaMap._load_themes()` merge ke palet runtime, dekor ikut tema (kristal/nisan). TileSet `.tres` masih tugas lanjutan |
 | **Fase 4** | CombatSystem + 54 level config + waves (sudah ada data JSON) | ✅ DONE (2026-09-06): tema per level dari `levels.json`, `MINION_TYPES` + `NEXUS_WAVE_COMPOSITION` di `GameManager`, pipeline damage penuh (armor/MR, block, evade, shield, reflect, lifesteal, cleave, aura) di `scripts/systems/CombatSystem.gd` + `StatusEffects.gd` |
 | **Fase 4b** | Menara 4 jalur + nexus/castle + menang-kalah | ✅ DONE (2026-09-06): `scenes/tower/Tower.gd` + `TowerBullet.gd` + `scenes/base/Nexus.gd`, 18 slot bangun dari lane path (`Main._generate_build_slots`), AI Dire membangun menara, banner VICTORY/DEFEAT + meta reward ke save |
 | **Fase 4c** | Skill QWER + toko item + level hero + ekonomi pygame | ✅ DONE (2026-09-06): `scripts/skills/SkillBook.gd` (6 hero starter + generik), `scripts/items/ItemDB.gd` + `ItemInventory.gd` (33 item, 6 slot), `data/hero_levels.json` (Lv1-15), ekonomi `(3 + 0.3×level) × difficulty` + milli-gold, UI `SkillBar.gd` + `ShopPanel.gd` |
 | **Fase 4d** | Menu utama + progresi level + meta reward | ✅ DONE (2026-09-06): `scenes/ui/MainMenu.gd` (state machine MAIN/LEVEL_SELECT/HERO_SHOP/SETTINGS/HOW_TO_PLAY/CREDITS/PAUSE paritas `MenuState` `_core.py:3097`), 54 kartu level + kunci `unlock_after_level`, HERO SHOP meta gold, volume SFX/BGM dari save. `GameManager.next_level()` + `is_replay` (ENTER setelah menang lanjut level, paritas `main.py:566-586`), meta reward paritas `_grant_meta_reward` (`_core.py:2365-2456`: 3000/1500/200/0 → kunci `meta_gold` + `replay_reward_counts`), castle awal `starting_castle_level`/`castle_start_level` (`_core.py:1504-1508`), enemy scaling hard (`enemy_hp_mult`×1.15 dsb., `_core.py:1476-1483` → minion merah 1792-1796 + boss 1822/2097), auto-unlock hero boss saat menang (`_core.py:2322`) |
-| **Fase 4e** | Audio (awal) | 🟡 parsial (2026-09-06): `scripts/autoload/AudioManager.gd` — hook `bgm_track` per level, SFX ui/victory/defeat, volume dari `SaveManager.data["settings"]`; 24 file .wav disalin converter ke `godot/assets/sounds/` (di-gitignore). SFX tempur unit + ambient belum |
+| **Fase 4e** | Audio: BGM + SFX tempur penuh | ✅ DONE (2026-09-06): `scripts/autoload/AudioManager.gd` — hook `bgm_track` per level, volume `MASTER_VOLUME 0.7` × slider sfx/bgm dari `SaveManager.data["settings"]` (paritas `SoundManager.play` `_system.py:589-598`); 24 file .wav disalin converter ke `godot/assets/sounds/` (di-gitignore). **SFX tempur paritas `mobile/combat_audio.py`**: `play_combat()` (7 jenis, jeda 90/110/140 ms + anggaran 4/frame + volume dasar 0.50-0.78) dipanggil dari `Tower._shoot` (4 jenis menara, biru 1.0/merah 0.8 — `_entity.py:876-884`), `Hero.try_attack` + `Boss.try_attack` (melee/ranged ambang 100 — `_entity.py:4412`/`base_boss.py:746`), `Minion.try_attack` (`_entity.py:5585`); plus `minion_death`/`goblin_spawn`/`hero_spawn`/`hero_skill` (volume per tombol `_core.py:8434`)/`wave_start`/`nexus_hit`/`tower_destroyed`/`explosion` (boss `force` + splash cannon)/`ui_sell`/`ui_upgrade`/`ui_buy`/`ui_error` via `ShopPanel._run()`. Yang belum: ambient loop + suara positional (`play_positional`) |
 | **Fase 5** | 200+ boss hero import batch (Opsi A) | 2 minggu |
 | **Fase 5b** | Item aktif (17), `on_attack`/`bash`/`multishot`, AIPlayer penuh (retreat/build item), proyektil skill | belum — lihat "Deviasi yang disengaja" di `godot/README.md` |
 | **Fase 6** | Android AAB final + Play Store (preset sudah ada) | 2 hari |

@@ -18,6 +18,16 @@ Output:
     godot/data/towers.json            (ARCHER/CANNON/ICE/MAGE_LEVELS + konstanta)
     godot/data/nexus.json             (NEXUS_LEVELS + castle shield)
     godot/data/economy.json           (gold/s, bonus level, multiplier difficulty, wave)
+    godot/data/themes.json            (54 palet tema map + dekor; dibaca ArenaMap.gd)
+
+Butuh pygame (THEMES/HERO_TYPES hidup di modul yang meng-import pygame).
+Jalankan tanpa display/audio:
+
+    SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+        /home/user/.venv-mystic/bin/python tools/convert_to_godot.py
+
+(venv dibuat sekali: python3 -m venv ~/.venv-mystic &&
+ ~/.venv-mystic/bin/pip install "pygame-ce==2.5.*")
 """
 import json, os, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -285,6 +295,191 @@ def export_economy():
         import traceback; traceback.print_exc()
 
 
+# ════════════════════════════════════════════════════════════════════
+#  TEMA MAP (map_components/themes.py -> godot/data/themes.json)
+# ════════════════════════════════════════════════════════════════════
+#
+# ArenaMap.gd dulu hanya punya 4 palet hardcoded (forest/desert/ice/abyss)
+# padahal levels.json memakai 54 nama tema, jadi level >= 3 semua jatuh ke
+# fallback forest dan terlihat identik. pygame sendiri punya 54 palet di
+# map_components/themes.py THEMES (get_theme -> THEMES.get(name, FOREST_THEME)),
+# jadi sumber kebenaran warna sudah ada — tinggal diekspor.
+#
+# PENTING: palet pygame adalah tuple (r, g, b) 0-255. Godot 4 TIDAK bisa
+# membaca tuple; Color("#rrggbb") yang bisa, jadi semua nilai di-hex-kan di
+# sini (bukan di GDScript) supaya themes.json tetap data murni.
+#
+# Nama kunci pygame -> nama kunci ArenaMap.gd dipetakan persis seperti 4
+# palet hardcoded yang sudah ada di ArenaMap (dicek ulang terhadap
+# FOREST_THEME: radiant_grass_1 == grass_dark #1c3720, dst.), jadi hasil
+# merge di Godot = palet yang sama, hanya lengkap 54 tema.
+#
+# Kunci yang TIDAK ada padanannya di pygame (tree/tree_light/stone = dekor
+# pohon & batu khas renderer prosedural Godot, dan modulate/light/energy =
+# konsep CanvasModulate + Light2D) diturunkan dari palet dengan aturan yang
+# ditulis di _derive_theme_extras() supaya tetap konsisten antar tema.
+
+## pygame key -> ArenaMap.gd key (23 warna palet, semua ada di 54 tema)
+THEME_KEY_MAP = {
+    "radiant_grass_1": "grass_dark",
+    "radiant_grass_2": "grass_mid",
+    "radiant_grass_3": "grass",
+    "radiant_grass_4": "grass_light",
+    "radiant_grass_high": "grass_high",
+    "radiant_moss": "moss",
+    "dire_earth_1": "earth_dark",
+    "dire_earth_2": "earth",
+    "dire_earth_3": "earth_light",
+    "dire_earth_4": "earth_high",
+    "dire_ash": "ash",
+    "dire_burnt": "burnt",
+    "path_stone_1": "path_border",
+    "path_stone_2": "path",
+    "path_stone_3": "path_light",
+    "path_stone_4": "path_bright",
+    "path_moss": "path_moss",
+    "path_crack": "path_crack",
+    "river_deep": "river_dark",
+    "river_mid": "river",
+    "river_light": "river_light",
+    "river_glow": "river_glow",
+    "river_foam": "river_foam",
+}
+
+## Flag dekorasi yang dipakai ArenaMap._build_decor/_draw_decor untuk memilih
+## jenis dekor per tema (pohon / batu / kristal / nisan). pygame memakainya
+## di DecorationRenderer; di Godot hanya 4 jenis yang digambar prosedural.
+THEME_DECOR_FLAGS = [
+    "has_dark_trees", "has_dead_trees", "has_gravestones", "has_bones",
+    "has_crystals_blue", "has_crystals_red", "has_ice_crystals",
+    "has_rocks_mossy", "has_torch_stones",
+]
+
+
+def _mix(c, amount):
+    """Campur warna (r,g,b) ke arah putih (amount>0) atau hitam (amount<0).
+
+    amount 0.10 = 10% lebih terang. Dipakai untuk menurunkan warna dekor dari
+    palet pygame (pygame tidak punya warna pohon/batu per tema).
+    """
+    out = []
+    for ch in c[:3]:
+        v = float(ch)
+        v = v + (255.0 - v) * amount if amount >= 0 else v * (1.0 + amount)
+        out.append(int(max(0.0, min(255.0, round(v)))))
+    return tuple(out)
+
+
+def _lum(c):
+    """Luminance perseptual 0..1 (ITU-R BT.601) — untuk energi DirectionalLight2D."""
+    return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255.0
+
+
+def _derive_theme_extras(t, out):
+    """Isi kunci khas Godot yang tidak ada di palet pygame.
+
+    ArenaMap.gd menggambar fallback prosedural (pohon/batu) + memakai
+    CanvasModulate & DirectionalLight2D, tiga hal yang di pygame dikerjakan
+    DecorationRenderer/fog/ambient_tint. Aturannya:
+
+      tree       = radiant_grass_1 digelapkan 10%  (kanopi selalu lebih gelap
+                   dari rumput sekitarnya — sama seperti 4 palet hardcoded)
+      tree_light = radiant_moss                    (highlight kanopi)
+      stone      = path_stone_2 diterangkan 8%     (batu dekor ~= batu jalur)
+      light      = rona rata-rata palet, dinormalisasi lalu 45% ke arah putih
+      energy     = 0.55 + 0.75 * luminance palet terang (map salju/neraka
+                   punya pencahayaan berbeda, bukan cuma warna berbeda)
+      modulate   = ambient_tint pygame (alpha kecil -> pergeseran halus)
+    """
+    grass1 = t["radiant_grass_1"]
+    out["tree"] = _hex(_mix(grass1, -0.10), "#19371e")
+    out["tree_light"] = _hex(t["radiant_moss"], "#2d5a32")
+    out["stone"] = _hex(_mix(t["path_stone_2"], 0.08), "#555046")
+
+    # ── DirectionalLight2D: rona + energi dari palet ──
+    samples = [t["radiant_grass_3"], t["radiant_grass_4"], t["dire_earth_3"],
+               t["path_stone_3"], t["river_glow"]]
+    avg = tuple(sum(s[i] for s in samples) / len(samples) for i in range(3))
+    peak = max(1.0, float(max(avg)))
+    norm = tuple(v / peak for v in avg)
+    light = tuple(1.0 - (1.0 - v) * 0.45 for v in norm)   # 45% ke arah putih
+    bright = max(_lum(t["radiant_grass_3"]), _lum(t["radiant_grass_4"]))
+    out["light"] = "#%02x%02x%02x" % tuple(
+        int(round(v * 255.0)) for v in light)
+    out["energy"] = round(max(0.55, min(1.25, 0.55 + 0.75 * bright)), 3)
+
+    # ── CanvasModulate: ambient_tint pygame (None = tanpa semburat) ──
+    tint = t.get("ambient_tint")
+    mod = [255, 255, 255]
+    if isinstance(tint, (tuple, list)) and len(tint) >= 4:
+        # alpha pygame 15-25/255 = semburat halus; diperkuat 3x supaya di
+        # Godot (yang tidak punya lapisan fog per tema) tetap terasa bedanya.
+        a = min(0.35, (float(tint[3]) / 255.0) * 3.0)
+        mod = [int(round(255.0 - (255.0 - float(tint[i])) * a)) for i in range(3)]
+    out["modulate"] = "#%02x%02x%02x" % (mod[0], mod[1], mod[2])
+
+
+def export_themes():
+    """54 palet tema map_components/themes.py -> godot/data/themes.json.
+
+    Dibaca ArenaMap._ready(): palet ini di-merge ke const THEMES, jadi 54
+    level punya warna sendiri-sendiri (sebelumnya cuma 4).
+
+    Butuh pygame karena THEMES hidup di modul yang meng-import pygame;
+    jalankan dengan SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy supaya tidak
+    butuh display/perangkat audio:
+        SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+            /home/user/.venv-mystic/bin/python tools/convert_to_godot.py
+    """
+    try:
+        os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+        os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+        # _core di-import LEBIH DULU: dialah yang memasang modul alias
+        # "settings" di sys.modules (_core.py:1283-1287); tanpa itu
+        # map_components/_bundle.py gagal `from settings import SCREEN_WIDTH`.
+        import _core  # noqa: F401  (efek samping: alias settings)
+        import pygame  # noqa: F401  (dipakai _bundle saat modul dimuat)
+        from map_components import _bundle as mc
+
+        themes_out = {}
+        missing = []
+        for name, t in mc.THEMES.items():
+            entry = {"name": str(t.get("name", name))}
+            for src, dst in THEME_KEY_MAP.items():
+                if src in t:
+                    entry[dst] = _hex(t[src], "#345c37")
+                else:
+                    missing.append("%s.%s" % (name, src))
+            for flag in THEME_DECOR_FLAGS:
+                entry[flag] = bool(t.get(flag, False))
+            entry["particle_type"] = str(t.get("particle_type", "ash"))
+            _derive_theme_extras(t, entry)
+            themes_out[name] = entry
+
+        out = {
+            "_generated_by": "tools/convert_to_godot.py export_themes()",
+            "_source": "map_components/themes.py THEMES (pygame, %d tema)"
+                       % len(mc.THEMES),
+            "_note": "Nilai warna '#rrggbb' (Color() Godot). Kunci tanpa "
+                     "padanan pygame (tree/tree_light/stone/light/energy/"
+                     "modulate) diturunkan — lihat _derive_theme_extras().",
+            "fallback": "forest",
+            "themes": themes_out,
+        }
+        write_json("themes.json", out)
+        print("[convert] themes: %d tema (%s ... %s)"
+              % (len(themes_out), next(iter(themes_out)),
+                 next(reversed(themes_out))))
+        if missing:
+            print("[convert] themes: %d kunci pygame hilang (pakai default): %s"
+                  % (len(missing), ", ".join(missing[:5])), file=sys.stderr)
+    except Exception as e:
+        # themes.json lama TIDAK dihapus: ArenaMap tetap jalan dengan 4 palet
+        # const THEMES, sama seperti sebelum fitur ini ada.
+        print(f"[convert] themes failed: {e}", file=sys.stderr)
+        import traceback; traceback.print_exc()
+
+
 def export_sounds():
     """Salin 24 file .wav assets/sounds/ -> godot/assets/sounds/.
 
@@ -321,5 +516,6 @@ if __name__ == "__main__":
     export_towers()
     export_nexus()
     export_economy()
+    export_themes()
     export_sounds()
     print("[convert] Done. Copy godot/data/*.json ke Godot res://data/")

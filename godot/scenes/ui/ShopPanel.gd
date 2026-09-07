@@ -338,7 +338,8 @@ func _tower_detail(t) -> void:
 			var cost: int = t.upgrade_cost(str(t.get("tower_type")))
 			_add_button("Upgrade ke Lv%d — %d gold" % [int(t.get("level")) + 1, cost],
 				"HP x%.2f, damage & jangkauan naik." % TowerDB.hp_multiplier(),
-				func(): _run(func(): GameManager.try_upgrade_tower("")),
+				# ui_upgrade 0.5 — paritas _core.py:2481 / 7243 / 7341
+				func(): _run(func(): GameManager.try_upgrade_tower(""), "ui_upgrade", 0.5),
 				GameManager.gold >= cost)
 	else:
 		_add_label("Level maksimum (%d) tercapai." % TowerDB.max_level(), COL_DIM)
@@ -349,7 +350,8 @@ func _tower_detail(t) -> void:
 	elif t.has_method("can_activate_regen_shield") and t.can_activate_regen_shield():
 		_add_button("Beli Regen Shield — %d gold" % t.regen_shield_cost(),
 			"Shield menara ikut regen (paritas Tower.activate_regen_shield).",
-			func(): _run(func(): GameManager.try_buy_tower_regen_shield()),
+			# ui_upgrade 0.5 — paritas _try_activate_regen_shield _core.py:8240
+			func(): _run(func(): GameManager.try_buy_tower_regen_shield(), "ui_upgrade", 0.5),
 			GameManager.gold >= int(t.regen_shield_cost()))
 	else:
 		_add_label("Regen Shield terbuka di Lv%d+ (harga %d gold)" % [
@@ -357,16 +359,18 @@ func _tower_detail(t) -> void:
 
 	_add_button("Jual menara (+%d gold)" % int(t.sell_value()),
 		"Refund 50% dari total biaya upgrade yang sudah dibayar.",
-		func(): _run(func(): GameManager.try_sell_tower()), true)
+		# ui_sell 1.0 — paritas _try_sell_tower _core.py:8219
+		func(): _run(func(): GameManager.try_sell_tower(), "ui_sell"), true)
 
 
 func _build_tower(tower_type: String) -> void:
-	_run(func(): GameManager.try_build_tower(tower_type))
+	# ui_buy 1.0 — paritas Game.try_build_tower _core.py:1652
+	_run(func(): GameManager.try_build_tower(tower_type), "ui_buy")
 
 
 func _pick_path(t, target_type: String) -> void:
 	GameManager.select_tower(t)
-	_run(func(): GameManager.try_upgrade_tower(target_type))
+	_run(func(): GameManager.try_upgrade_tower(target_type), "ui_upgrade", 0.5)
 
 
 # ── TAB ITEM ──────────────────────────────────────────────
@@ -421,7 +425,8 @@ func _build_item_tab() -> void:
 
 
 func _buy_item(item_id: String) -> void:
-	_run(func(): GameManager.try_buy_item(item_id))
+	# ui_buy 1.0 — paritas pembelian item di toko (_core.py:2637)
+	_run(func(): GameManager.try_buy_item(item_id), "ui_buy")
 
 
 # ── TAB HERO ──────────────────────────────────────────────
@@ -444,7 +449,8 @@ func _build_hero_tab() -> void:
 				"HP x%.2f · damage x%.2f · skill x%.2f" % [
 					float(next.get("hp_mult", 1.0)), float(next.get("dmg_mult", 1.0)),
 					float(next.get("skill_mult", 1.0))],
-				func(): _run(func(): GameManager.try_upgrade_hero()),
+				# ui_upgrade 0.6 — paritas upgrade hero _core.py:7243
+				func(): _run(func(): GameManager.try_upgrade_hero(), "ui_upgrade", 0.6),
 				GameManager.gold >= cost)
 		else:
 			_add_label("Level maksimum tercapai.", COL_DIM)
@@ -480,7 +486,9 @@ func _build_hero_tab() -> void:
 
 
 func _buy_hero(hero_type: String) -> void:
-	_run(func(): GameManager.try_buy_hero(hero_type))
+	# ui_buy 1.0 + hero_spawn (dibunyikan GameManager.try_buy_hero,
+	# paritas _core.py:2637-2638 yang memanggil keduanya berurutan)
+	_run(func(): GameManager.try_buy_hero(hero_type), "ui_buy")
 
 
 # ── TAB NEXUS ─────────────────────────────────────────────
@@ -502,7 +510,8 @@ func _build_nexus_tab() -> void:
 		_add_button("Upgrade Nexus ke Lv%d — %d gold" % [int(nx.get("level")) + 1, cost],
 			"HP %d · DMG %d · RNG %d · shield ratio HP naik" % [
 				int(nxt.get("hp", 0)), int(nxt.get("damage", 0)), int(nxt.get("range", 0))],
-			func(): _run(func(): GameManager.try_upgrade_nexus()),
+			# ui_upgrade 0.5 — paritas try_upgrade_nexus _core.py:2668
+			func(): _run(func(): GameManager.try_upgrade_nexus(), "ui_upgrade", 0.5),
 			GameManager.gold >= cost)
 	else:
 		_add_label("Nexus sudah level maksimum.", COL_DIM)
@@ -515,7 +524,8 @@ func _build_nexus_tab() -> void:
 		_add_button("Beli Castle Shield — %d gold" % cost,
 			"Shield permanen: menyerap damage 1:1, sisanya dimitigasi %.0f%%."
 			% (float(nx.get("shield_damage_reduction")) * 100.0),
-			func(): _run(func(): GameManager.try_buy_nexus_shield()),
+			# ui_upgrade 0.5 — paritas try_activate_castle_shield _core.py:2652
+			func(): _run(func(): GameManager.try_buy_nexus_shield(), "ui_upgrade", 0.5),
 			GameManager.gold >= cost)
 	elif bool(nx.get("castle_shield_purchased")):
 		_add_label("Castle Shield sudah dibeli.", Color(0.6, 0.95, 0.7))
@@ -544,11 +554,30 @@ func _player_hero():
 
 ## Jalankan aksi beli lalu segarkan panel (signal GameManager bisa tidak muncul
 ## kalau aksinya gagal — gold kurang, slot terisi, dsb)
-func _run(action: Callable) -> void:
+## Semua aksi toko lewat sini, jadi umpan balik suara cukup dipasang SATU kali.
+##
+## `action` = Callable GameManager.try_*() yang mengembalikan bool (true =
+## berhasil). Berhasil -> `sfx`; gagal (gold kurang / syarat tidak terpenuhi) ->
+## "ui_error" 0.4 — persis pola pygame yang memanggil
+## SoundManager().play('ui_error') di tiap cabang gagal lalu
+## play('ui_buy'/'ui_upgrade'/'ui_sell') di jalur sukses
+## (_core.py:2605-2670, 8207-8246).
+##
+## Tidak ada tulis file di sini: volume dibaca AudioManager dari
+## SaveManager.data["settings"] yang sudah di-memory, jadi slider SETTINGS
+## langsung berlaku tanpa I/O per klik.
+func _run(action: Callable, sfx: String = "ui_buy", volume_mult: float = 1.0) -> void:
 	if get_tree().paused:
 		return # SkillBar/ShopPanel PROCESS_MODE_ALWAYS -> kunci aksi saat pause
+	var ok := true
 	if action.is_valid():
-		action.call()
+		var result = action.call()
+		if result is bool:
+			ok = result
+	if ok:
+		AudioManager.play_sfx(sfx, volume_mult)
+	else:
+		AudioManager.play_sfx("ui_error", 0.4)
 	_update_gold_label()
 	_rebuild_body()
 

@@ -247,6 +247,12 @@ func _shoot(cs) -> void:
 	if target == null or cs == null:
 		return
 	shoot_flash = 0.12
+	# Suara tembak PER JENIS menara (paritas Tower._shoot _entity.py:876-884):
+	# archer/cannon/ice/mage punya berkas sendiri, dan tim biru (punya pemain)
+	# sedikit lebih keras daripada tim merah (volume_mult 1.0 vs 0.8).
+	# Jeda 110 ms per jenis + anggaran 4/frame ada di AudioManager.play_combat.
+	AudioManager.play_combat(AudioManager.tower_sfx(tower_type),
+		1.0 if team == "blue" else 0.8)
 	var speed := TowerDB.bullet_speed()
 	match tower_type:
 		"cannon":
@@ -331,6 +337,9 @@ func die(killer_team: String = "", _killer = null) -> void:
 	is_dead = true
 	hp = 0.0
 	target = null
+	# Satu suara global untuk SEMUA jenis menara (paritas Tower.take_damage
+	# _entity.py:1095-1101, volume_mult 0.8, throttle 300 ms).
+	AudioManager.play_sfx("tower_destroyed", 0.8)
 	# Gold reward: hanya tim pembunuh yang menabung (paritas GameManager.award_kill)
 	GameManager.award_kill(killer_team, gold_reward)
 	GameManager.tower_destroyed.emit(self, killer_team)

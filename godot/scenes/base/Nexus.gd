@@ -217,11 +217,18 @@ func take_damage(amount: float, from_team: String = "", dmg_type: String = "norm
 	if is_dead:
 		return
 	no_damage_timer = 0.0
+	# HP SEBELUM damage: pygame membandingkan blue_base.hp dengan nilai frame
+	# sebelumnya (_core.py:2275-2276), jadi castle shield yang menyerap semua
+	# damage tidak memicu suara. Hanya castle pemain (biru) yang berbunyi.
+	var hp_before := hp
 	var cs = _combat()
 	if cs != null:
 		cs.apply_damage(self, amount, from_team, dmg_type, source, school)
 	else:
 		hp -= amount
+	if team == "blue" and hp < hp_before:
+		# throttle 300 ms ada di AudioManager.THROTTLE_MS (paritas _system.py:512)
+		AudioManager.play_sfx("nexus_hit", 0.7)
 	queue_redraw()
 	if hp <= 0.0:
 		die(from_team)

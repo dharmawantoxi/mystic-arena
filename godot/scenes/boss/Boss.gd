@@ -187,6 +187,11 @@ func try_attack():
 	if attack_timer > 0.0 or target == null:
 		return
 	attack_timer = _eff_attack_cd()
+	# Boss memakai DUA suara global yang sama seperti hero (paritas
+	# BaseBoss._suara_serangan + update bosses/base_boss.py:552-566/746-752):
+	# melee vs ranged dipilih dari jangkauan, ambang 100 (AMBANG_RANGED).
+	# is_melee=null -> AudioManager memakai ambang jarak, bukan flag.
+	AudioManager.play_combat(AudioManager.basic_attack_sfx(null, attack_range))
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
 	if attack_range >= 110.0:
 		# Boss ranged (Morgath/Vex-like): proyektil sihir, tembus armor
@@ -255,6 +260,15 @@ func die():
 	# ini dimenangkan — lihat GameManager._auto_unlock_defeated_boss_heroes
 	# (_core.py:2322). Jadi kalah = tidak dapat hero.
 	GameManager.record_boss_defeated(boss_type)
+	# Ledakan kematian boss (paritas BossDeathExplosion.update _render.py:1761-1770):
+	# true boss = explosion 1.5 + victory 0.7, mini boss = explosion 1.0.
+	# force=true: nama 'explosion' dipakai juga oleh splash cannon (throttle
+	# 120 ms), dan kematian boss tidak boleh tertelan dentuman meriam.
+	if boss_class == "true":
+		AudioManager.play_sfx("explosion", 1.5, true)
+		AudioManager.play_sfx("victory", 0.7, true)
+	else:
+		AudioManager.play_sfx("explosion", 1.0, true)
 	# Death: scale squash + fade (GPU, bukan ellipse manual)
 	var tw := create_tween()
 	tw.parallel().tween_property(visual, "scale", Vector2(1.9, 0.18), 0.45).set_trans(Tween.TRANS_BACK)

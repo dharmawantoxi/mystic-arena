@@ -134,6 +134,12 @@ func _on_hit() -> void:
 			var splash_radius := float(special.get("splash", 40))
 			var burn_dps := float(special.get("burn_dps", 0))
 			var burn_duration := float(special.get("burn_duration", 0))
+			# Ledakan impact cannon. pygame memakai 'bullet_hit' di sini
+			# (_entity.py:331-332), tapi bullet_hit.wav memang TIDAK ADA di
+			# assets/sounds/ — jadi di pygame momen ini sunyi. Port memakai
+			# 'explosion' (volume kecil + throttle 120 ms di AudioManager)
+			# supaya dentuman meriam terdengar tanpa menutupi suara lain.
+			AudioManager.play_sfx("explosion", 0.3)
 			if burn_dps > 0.0 and st != null:
 				st.apply_debuff("burn", burn_dps, burn_duration, team)
 			if splash_radius > 0.0:

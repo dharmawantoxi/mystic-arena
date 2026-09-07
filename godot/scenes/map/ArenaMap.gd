@@ -6,11 +6,21 @@
 # punya TileSet (res://assets/tilesets/*.tres belum dibuat — Fase 3 roadmap), jadi
 # scene utama tidak menggambar apa-apa sama sekali. Sementara TileSet belum ada,
 # map digambar prosedural di _draw() memakai palette ASLI dari
-# map_components/themes.py (FOREST/DESERT/ICE/ABYSS) + lane path dari
-# PathGenerator.generate_lanes(). Begitu TileSet di-assign, fallback otomatis mati.
+# map_components/themes.py + lane path dari PathGenerator.generate_lanes().
+# Begitu TileSet di-assign, fallback otomatis mati.
+#
+# TEMA PER LEVEL: const THEMES di bawah hanya 4 palet kurasi manual
+# (forest/desert/ice/abyss) — itu yang bikin level >= 3 semua jatuh ke fallback
+# forest dan terlihat identik, padahal levels.json memakai 54 nama tema dan
+# pygame punya 54 palet (map_components/themes.py THEMES). Sekarang
+# res://data/themes.json (hasil tools/convert_to_godot.py export_themes())
+# di-merge ke palet runtime saat _ready, jadi 54 level punya warna sendiri.
+# const THEMES tetap ada sebagai jaring pengaman kalau themes.json belum
+# di-generate (converter belum dijalankan) — perilaku lama persis terjaga.
 extends Node2D
 
-## Tema level (forest/desert/ice/abyss) — diisi dari levels.json["map_theme"]
+## Tema level — diisi dari levels.json["map_theme"] (54 nama; lihat
+## map_components/themes.py THEMES). Nama tak dikenal -> fallback forest.
 @export var theme_name: String = "forest"
 ## Ukuran arena — paritas _core.SCREEN_WIDTH/SCREEN_HEIGHT
 @export var arena_size: Vector2 = Vector2(1280, 720)
@@ -98,7 +108,23 @@ const THEMES: Dictionary = {
 	},
 }
 
+## 54 palet tema hasil export_themes() — paritas map_components/themes.py THEMES.
+## Data ikut repo (bukan gitignore seperti godot/assets/sounds/), jadi port
+## tetap punya 54 tema tanpa harus menjalankan converter dulu.
+const THEMES_JSON := "res://data/themes.json"
+## Nama tema fallback untuk nama yang benar-benar tak dikenal
+## (paritas get_theme: THEMES.get(theme_name, FOREST_THEME)).
+const FALLBACK_THEME := "forest"
+
+## Palet RUNTIME = const THEMES + themes.json. const THEMES tidak bisa dipakai
+## langsung: Dictionary const di Godot 4 read-only rekursif, jadi merge() ke
+## sana akan error "Cannot assign a new value to a constant".
+var themes: Dictionary = {}
+
 var _decor_points: PackedFloat32Array = PackedFloat32Array() # [x, y, size, kind] x N
+## kind 2/3 hanya muncul kalau tema punya kristal / nisan (flag has_* pygame)
+var _decor_wants_crystal: bool = false
+var _decor_wants_grave: bool = false
 var _lane_cache: Dictionary = {}
 
 func _ready():
@@ -106,11 +132,75 @@ func _ready():
 	# Hero/Minion/Boss menanyakan posisi base + lane ke node ini lewat group,
 	# jadi tidak ada koordinat arena yang di-hardcode di AI.
 	add_to_group("arena_map")
+	_load_themes()
 	apply_theme(theme_name)
+
+## Gabungkan 54 palet themes.json ke palet runtime.
+##
+## Urutan menang:
+##   1. warna palet  -> themes.json (pygame = sumber kebenaran; 23 warna)
+##   2. modulate/light/energy -> const THEMES kalau tema itu sudah dikurasi
+##      manual (forest/desert/ice/abyss), selain itu nilai turunan dari
+##      converter (_derive_theme_extras di tools/convert_to_godot.py).
+##      Tiga kunci ini konsep Godot (CanvasModulate + DirectionalLight2D)
+##      yang tidak ada padanannya di palet pygame, jadi kurasi manual untuk
+##      4 level pertama dipertahankan agar tampilannya tidak berubah.
+## themes.json tidak ada -> palet runtime = const THEMES (perilaku lama).
+func _load_themes() -> void:
+	themes.clear()
+	for k in THEMES:
+		themes[k] = (THEMES[k] as Dictionary).duplicate(true)
+	if not FileAccess.file_exists(THEMES_JSON):
+		# Kurung eksplisit: di GDScript '%' mengikat lebih kuat daripada '+',
+		# jadi tanpa kurung niat "dua format lalu gabung" jadi samar.
+		push_warning(("[ArenaMap] %s belum ada — jalankan tools/convert_to_godot.py. " % THEMES_JSON)
+			+ ("Hanya %d tema (const THEMES) yang tersedia." % themes.size()))
+		return
+	var f := FileAccess.open(THEMES_JSON, FileAccess.READ)
+	if f == null:
+		push_warning("[ArenaMap] %s tidak bisa dibaca" % THEMES_JSON)
+		return
+	var parsed = JSON.parse_string(f.get_as_text())
+	if not (parsed is Dictionary) or not (parsed.get("themes") is Dictionary):
+		push_warning("[ArenaMap] %s rusak — pakai const THEMES" % THEMES_JSON)
+		return
+	var palettes: Dictionary = parsed["themes"]
+	for tname in palettes:
+		var pal = palettes[tname]
+		if not (pal is Dictionary):
+			continue
+		# Dasar = palet const kalau ada, kalau tidak forest — supaya tema baru
+		# tetap punya kunci yang tidak diekspor converter (mis. grass_high lama).
+		var base: Dictionary = (THEMES.get(tname, THEMES[FALLBACK_THEME]) as Dictionary).duplicate(true)
+		base.merge(_colors_from(pal), true)
+		if THEMES.has(tname):
+			for k in ["modulate", "light", "energy"]:
+				base[k] = (THEMES[tname] as Dictionary)[k]
+		themes[tname] = base
+	print("[ArenaMap] %d tema palet dimuat dari %s" % [themes.size(), THEMES_JSON])
+
+## '#rrggbb' JSON -> Color. Kunci non-warna (energy: float, has_*: bool,
+## name/particle_type: String) diteruskan apa adanya.
+static func _colors_from(pal: Dictionary) -> Dictionary:
+	var out := {}
+	for k in pal:
+		var v = pal[k]
+		if v is String and v.begins_with("#"):
+			out[k] = Color(v)
+		else:
+			out[k] = v
+	return out
+
+## Palet tema aktif (fallback forest — paritas get_theme pygame).
+func palette(t: String = "") -> Dictionary:
+	var key := t if t != "" else theme_name
+	if themes.has(key):
+		return themes[key]
+	return themes.get(FALLBACK_THEME, THEMES[FALLBACK_THEME])
 
 func apply_theme(t: String):
 	theme_name = t
-	var d = THEMES.get(t, THEMES["forest"])
+	var d := palette(t)
 	if canvas_modulate:
 		canvas_modulate.color = Color(d["modulate"].r, d["modulate"].g, d["modulate"].b, 1.0)
 	if light:
@@ -127,7 +217,7 @@ func apply_theme(t: String):
 
 ## Ganti ke tema berikutnya dalam palette (dipakai tombol debug T di Main.gd)
 func cycle_theme() -> String:
-	var names: Array = THEMES.keys()
+	var names: Array = themes.keys()
 	var idx := maxi(names.find(theme_name), 0)
 	var nxt: String = names[(idx + 1) % names.size()]
 	apply_theme(nxt)
@@ -220,6 +310,12 @@ func _build_decor():
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
 	_decor_points.clear()
+	# Flag dekor tema aktif (hasil export_themes; pygame memakainya di
+	# DecorationRenderer). Dibaca ulang tiap ganti tema.
+	var d := palette()
+	_decor_wants_crystal = bool(d.get("has_ice_crystals", false)) \
+		or bool(d.get("has_crystals_blue", false)) or bool(d.get("has_crystals_red", false))
+	_decor_wants_grave = bool(d.get("has_gravestones", false))
 	var lane_pts := PackedVector2Array()
 	for l in ["top", "mid", "bot"]:
 		lane_pts.append_array(get_lane_path(l))
@@ -232,7 +328,18 @@ func _build_decor():
 		if p.distance_to(BLUE_BASE) < 130.0 or p.distance_to(RED_BASE) < 130.0:
 			continue
 		var size := rng.randf_range(11.0, 21.0)
-		var kind := 0.0 if rng.randf() < 0.72 else 1.0 # 0 = pohon, 1 = batu
+		# Jenis dekor ikut tema (flag has_* pygame dipakai DecorationRenderer
+		# di sana; di Godot hanya 4 bentuk yang digambar prosedural). Tanpa
+		# ini level es dan level kuburan sama-sama "pohon + batu" walau
+		# warnanya sudah beda.
+		var roll := rng.randf()
+		var kind := 1.0 # 1 = batu
+		if roll < 0.60:
+			kind = 0.0 # 0 = pohon
+		elif _decor_wants_grave and roll < 0.76:
+			kind = 3.0 # 3 = nisan
+		elif _decor_wants_crystal and roll < 0.90:
+			kind = 2.0 # 2 = kristal
 		_decor_points.append(p.x)
 		_decor_points.append(p.y)
 		_decor_points.append(size)
@@ -250,7 +357,7 @@ static func _min_dist_to(points: PackedVector2Array, p: Vector2) -> float:
 func _draw():
 	if not procedural_fallback:
 		return # TileMapLayer asli yang menggambar
-	var d = THEMES.get(theme_name, THEMES["forest"])
+	var d := palette()
 	_draw_terrain(d)
 	_draw_river(d)
 	for lane in ["top", "mid", "bot"]:
@@ -272,9 +379,11 @@ func _draw_terrain(d: Dictionary):
 			var c: Color = d["grass_mid"] if int(x + y) % int(TILE * 2.0) < int(TILE) else d["grass"]
 			draw_rect(Rect2(Vector2(x, y), Vector2(TILE, TILE)), c, true)
 			x += TILE
-		# strip rumput terang tiap 3 baris (mirip grass_high)
+		# strip rumput terang tiap 3 baris — radiant_grass_high pygame
+		# (kunci paling terang palet; jatuh ke grass_light kalau belum ada)
 		if row % 3 == 0:
-			draw_rect(Rect2(Vector2(0, y), Vector2(arena_size.x, 2.0)), d["grass_light"], true)
+			var hi: Color = d.get("grass_high", d["grass_light"])
+			draw_rect(Rect2(Vector2(0, y), Vector2(arena_size.x, 2.0)), hi, true)
 		y += TILE
 		row += 1
 	# Belahan dire (kanan-atas) = tanah kering, dipotong garis river
@@ -361,6 +470,35 @@ func _draw_decor(d: Dictionary):
 			draw_rect(Rect2(p + Vector2(-2, 0), Vector2(4, size * 0.8)), d["earth_dark"], true) # trunk
 			draw_circle(p, size, d["tree"])
 			draw_circle(p + Vector2(-size * 0.3, -size * 0.35), size * 0.62, d["tree_light"])
+		elif kind == 2:
+			# Kristal (has_ice_crystals / has_crystals_*): belah ketupat memakai
+			# warna aksen tema (river_glow/river_foam) biar ikut palet.
+			var glow: Color = d.get("river_glow", d["stone"])
+			var foam: Color = d.get("river_foam", d["stone"])
+			draw_circle(p + Vector2(0, size * 0.3), size * 0.7, Color(0, 0, 0, 0.2))
+			draw_colored_polygon(PackedVector2Array([
+				p + Vector2(0, -size), p + Vector2(size * 0.55, 0),
+				p + Vector2(0, size * 0.7), p + Vector2(-size * 0.55, 0),
+			]), Color(glow.r, glow.g, glow.b, 0.85))
+			draw_colored_polygon(PackedVector2Array([
+				p + Vector2(0, -size), p + Vector2(size * 0.22, -size * 0.1),
+				p + Vector2(0, size * 0.35), p + Vector2(-size * 0.22, -size * 0.1),
+			]), Color(foam.r, foam.g, foam.b, 0.7))
+		elif kind == 3:
+			# Nisan (has_gravestones): lempeng batu + salib gelap
+			var stone_col: Color = d["stone"]
+			draw_circle(p + Vector2(2, size * 0.4), size * 0.7, Color(0, 0, 0, 0.2))
+			draw_rect(Rect2(p + Vector2(-size * 0.45, -size * 0.5),
+				Vector2(size * 0.9, size)), stone_col, true)
+			draw_colored_polygon(PackedVector2Array([
+				p + Vector2(-size * 0.45, -size * 0.5),
+				p + Vector2(0, -size * 0.95),
+				p + Vector2(size * 0.45, -size * 0.5),
+			]), stone_col)
+			draw_rect(Rect2(p + Vector2(-size * 0.08, -size * 0.3),
+				Vector2(size * 0.16, size * 0.55)), d["earth_dark"], true)
+			draw_rect(Rect2(p + Vector2(-size * 0.26, -size * 0.16),
+				Vector2(size * 0.52, size * 0.14)), d["earth_dark"], true)
 		else:
 			draw_circle(p + Vector2(2, 3), size * 0.8, Color(0, 0, 0, 0.2))
 			draw_circle(p, size * 0.75, d["stone"])

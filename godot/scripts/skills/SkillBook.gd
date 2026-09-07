@@ -23,6 +23,10 @@ const Q_CD_DEFAULT := 300.0 / FPS
 ## Toleransi jangkauan (paritas BaseSkill.TARGET_RANGE_SLACK)
 const TARGET_RANGE_SLACK := 1.15
 
+## Volume SFX 'hero_skill' per tombol — paritas _cast_hero_skill _core.py:8434-8436
+## (volume = {'q': 0.8, 'w': 0.6, 'e': 0.7, 'r': 1.0}, ultimate paling keras).
+const SKILL_SFX_VOLUME := {"q": 0.8, "w": 0.6, "e": 0.7, "r": 1.0}
+
 ## Nama skill untuk UI (skill bar / tooltip toko). Diambil dari docstring
 ## hero_skills/_bundle.py, jadi sama dengan nama yang muncul di pygame.
 const SKILL_NAMES := {
@@ -213,6 +217,14 @@ func _trigger_cooldown(key: String) -> void:
 	active_skill_timer = _visual_duration(key)
 	var shake: float = {"q": 8.0, "w": 5.0, "e": 6.0, "r": 15.0}[key]
 	_shake(shake)
+	# Suara skill (paritas BaseSkill._play_skill_sound hero_skills/_bundle.py:141-144
+	# yang hanya berbunyi untuk tim biru + _cast_hero_skill _core.py:8433-8436 yang
+	# mengatur volume per tombol: R paling keras). Ditaruh di sini — bukan di
+	# Hero._cast_skill — supaya cast MANUAL (QWER) dan cast OTOMATIS AI sama-sama
+	# berbunyi; pygame punya dua jalur itu juga, dan throttle 'hero_skill' 50 ms
+	# membuat yang kedua tidak bunyi dobel.
+	if str(hero.get("team")) == "blue":
+		AudioManager.play_sfx("hero_skill", SKILL_SFX_VOLUME.get(key, 0.7))
 	# Spell vamp (Octarine Core): heal instan sebesar % skill_damage
 	if inv != null:
 		var sv := float(inv.get_spell_vamp())
