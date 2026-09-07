@@ -588,6 +588,13 @@ UNIT_IDLE_FRAMES = 8       # = HERO_ANIM_PHASES (heroes/__init__.py:1483)
 UNIT_WALK_FRAMES = 8       # kuantisasi sama dengan idle (kunci :1777)
 UNIT_ATTACK_FRAMES = 8     # > HERO_ATK_QUANT 4 (:1496) -> lebih halus,
                            # tapi pose tetap dari kurva timeline yang sama
+UNIT_SKILL_FRAMES = 6      # sampel timeline per skill q/w/e/r (Fase 5c).
+                           # = HERO_SKILL_QUANT (:1497): game sendiri hanya
+                           # menunjukkan pose skill baru tiap 6 frame,
+                           # jadi 6 sampel menangkap ketukan visual yang
+                           # sama (awal/akhir + transisi) tanpa strip
+                           # raksasa (skill 240 frame -> 40 frame kalau
+                           # di-sweep per kuantum).
 # Padding antar sel di strip. Shader outline Godot (BakedSprite.tscn)
 # sampling 4 tetangga ±1 px untuk garis tepi; tanpa padding, sampling di
 # tepi sel bisa menyentuh frame SEBELAHNYA di strip (AtlasTexture satu
@@ -663,15 +670,22 @@ def _find_attack_attrs(probe):
     return prog, act
 
 
-def _bake_unit_frames(hero_type, renderer, stats):
+def _bake_unit_frames(hero_type, renderer, stats, setup=None):
     """Render daftar (rect, canvas) untuk idle/walk/attack.
 
     Return (frames, info). frames = list (rect, surface-crop). Setiap
     elemen SUDAH dicrop ke bbox masing-masing; perataan anchor (kaki)
     dilakukan saat menyusun strip.
+
+    setup(probe) opsional (Fase 5c): dipanggil sekali setelah probe
+    lahir untuk menyalakan flag varian (mis. rage_active=True untuk
+    strip rage). Default None = perilaku Fase 5, byte strip dasar
+    tidak berubah.
     """
     import pygame
     probe = _unit_probe(hero_type, stats)
+    if setup is not None:
+        setup(probe)
     frames = []
 
     # ── IDLE: pulse dirata-rata 8 fase (int(pulse*2)%8, :1777) ──
@@ -788,6 +802,55 @@ def _frame_diff(a, b):
     return total / float(max(1, n * 4))
 
 
+def _aligned_diff(rect_a, crop_a, rect_b, crop_b):
+    """Rata selisih piksel pada UNION bbox yang selaras jangkar.
+
+    Kenapa tidak memakai _frame_diff untuk gerbang skill/rage: _frame_diff
+    membandingkan persegi min(w,h) dari SUDUT KIRI-ATAS kedua crop —
+    dua crop beda ukuran = dua bagian badan yang BERBEDA (jangkar kaki
+    tidak segaris). Akibat fatalnya: skill yang badannya identik tapi
+    MENAMBAH FX di tepi bbox (lingkar tanah R, telegraf) justru terukur
+    ~0 (tumpang-tindihnya = badan yang sama; FX-nya di luar min-h/w dan
+    tidak ikut dibandingkan) lalu ter-DROP — Godot kehilangan visual
+    skill itu sepenuhnya. Diukur saat pengembangan: 44 skill ke-drop
+    oleh _frame_diff, mayoritas FX-tepi semacam ini.
+
+    Di sini kedua crop dipetakan kembali ke koordinat KANVAS via rect
+    (semua render bake memakai jangkar kaki yang sama di tengah kanvas
+    512) lalu union-nya disampel; di luar crop = transparan. Ambang
+    tetap 1.0 (satuan sama dengan _frame_diff: rata selisih kanal
+    0..255 per piksel).
+
+    Gerbang attack Fase 5 SENGAJA tetap memakai _frame_diff (semantik
+    historisnya tidak diubah; pose serang menggerakkan badan DI DALAM
+    bbox yang mirip sehingga tumpang-tindihnya valid).
+    """
+    ux0 = min(rect_a.x, rect_b.x)
+    uy0 = min(rect_a.y, rect_b.y)
+    ux1 = max(rect_a.x + rect_a.width, rect_b.x + rect_b.width)
+    uy1 = max(rect_a.y + rect_a.height, rect_b.y + rect_b.height)
+    if ux1 <= ux0 or uy1 <= uy0:
+        return 0.0
+    step = 3
+    total = n = 0
+    for y in range(uy0, uy1, step):
+        for x in range(ux0, ux1, step):
+            if rect_a.collidepoint(x, y):
+                ar, ag, ab, aa = crop_a.get_at(
+                    (x - rect_a.x, y - rect_a.y))
+            else:
+                ar = ag = ab = aa = 0
+            if rect_b.collidepoint(x, y):
+                br, bg, bb, ba = crop_b.get_at(
+                    (x - rect_b.x, y - rect_b.y))
+            else:
+                br = bg = bb = ba = 0
+            total += abs(ar - br) + abs(ag - bg) + abs(ab - bb)
+            total += abs(aa - ba)
+            n += 1
+    return total / float(max(1, n * 4))
+
+
 def _save_strip(strip, png_path):
     """Simpan strip PNG — 256 warna palet + alpha diperbaiki per entri.
 
@@ -817,6 +880,342 @@ def _save_strip(strip, png_path):
         q.save(png_path, optimize=True)
     except ImportError:
         pygame.image.save(strip, png_path)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# FASE 5c — POSE SKILL q/w/e/r + VARIAN RAGE (tutup 2 deviasi Fase 5)
+# ═══════════════════════════════════════════════════════════════════
+#
+# 1. POSE SKILL. pygame meng-drive-nya via active_skill + countdown
+#    active_skill_timer (di-tick Hero.update, kunci cache skill
+#    heroes/__init__.py:1750-1766). Bake = sweep timer dari DURASI
+#    CAST turun ke 1 (progress renderer 0->1 dihitung sendiri oleh
+#    renderer via 1-timer/dur, mis. _NS_kaizen._skill_progress
+#    heroes/_bundle.py:6807-6811).
+#
+#    Kenapa durasi CAST (sisi AI), bukan durasi RENDER (sisi namespace
+#    _NS_* SKILL_VISUAL_DURATION)? Karena countdown game memakai angka
+#    cast — renderer me-CLAMP progress ke 0..1 kalau angkanya beda.
+#    Contoh nyata: Kaizen Q di-cast 60 frame (KaizenSkills.
+#    SKILL_VISUAL_DURATION hero_skills/_bundle.py:3979) tapi renderer
+#    memakai dur 39 (_NS_kaizen.SKILL_VISUAL_DURATION
+#    heroes/_bundle.py:6140) — 21 frame pertama cast di pygame
+#    MENAMPILKAN pose awal beku. Sweep durasi cast mereproduksi bingkai
+#    game persis (termasuk beku awal itu); sweep durasi render malah
+#    menunjukkan gerakan di jendela yang di pygame beku = divergensi.
+#    Sumber durasi cast:
+#      * 6 hero starter: <X>Skills.SKILL_VISUAL_DURATION
+#        (hero_skills/_bundle.py:3751/3979/4171/4491/4730/4990),
+#      * boss hero: BossHeroSkills._SKILL_REGISTRY :483 (66 boss) ->
+#        nama method _cast_* -> AST `h.active_skill_timer = N`,
+#      * sisanya: _fallback_cast :968 (timer 40 semua kunci).
+#    Sweep per skill = UNIT_SKILL_FRAMES (6) sampel timer dur->1.
+#
+#    Flag buff yang DITETAPKAN oleh cast itu sendiri (mis. drakar Q
+#    menyalakan rage_active 300 frame, hero_skills/_bundle.py:1119-1122)
+#    ikut dipasang di probe saat bake skill itu — di game flag-nya
+#    memang menyala selama cast (renderer drakar menggambar glow rage
+#    bosses/level1.py:7714 hanya kalau flag menyala). Flag dibaca dari
+#    AST method cast yang sama (rage_active/defense_boost = True).
+#
+#    Unit berlapisan hidup (heroes/*_fx.py) TIDAK diperlakukan khusus:
+#    bake memanggil renderer lewat choke point cache yang sama
+#    (_call_renderer_on_canvas) sehingga yang terekam = mode fallback
+#    canvas-nya saja, persis seperti strip dasar Fase 5. Lapisan hidup
+#    60fps tetap urusan SkillProjectile/FX Godot (Fase 5b).
+#
+# 2. VARIAN RAGE ("bentuk elite"). Penyelidikan atribut pemicu (semua
+#    getattr non-underscore di bosses/level*.py + heroes/_bundle.py):
+#      * `_draw_*_elite` BUKAN varian level — itu nama rig masterwork
+#        yang SELALU dipakai (mis. _draw_grimjaw_body mendelegasikan
+#        ke _draw_grimjaw_elite, heroes/_bundle.py:1405-1411).
+#      * `level`/`boss_class` TIDAK DIBACA renderer mana pun (hanya
+#        jadi kunci cache defensif heroes/__init__.py:1752/:2629; dan
+#        MINI vs TRUE tidak bertindih — tiap tipe satu kelas).
+#      * `cataclysm_form`, `current_element`, `tough_shield_active`
+#        TIDAK PERNAH di-set di mana pun (hanya getattr default) =
+#        jalur mati; vulkareth cataclysm tetap kena bake lewat skill R
+#        (level25.py:3155-3157: is_cataclysm = skill r ATAU flag).
+#      * `is_enraged` hanya mengganti NAMA state RUN vs WALK di level5
+#        (:542/:2092/:3689); pose bake-nya tetap "walk" (diukur: diff
+#        maks 0.31 < gerbang 1.0 -> tidak dibake).
+#      * `ability_active` dipetakan ke pose skill 'q' (level5.py:506) =
+#        tercakup bake skill.
+#    Yang TERSISA dan lolos gerbang empiris (diff >= 1.0, ambang sama
+#    dengan WARNING atk Fase 5): drakar + rage_active (badan rage_mode
+#    + glow merah, bosses/level1.py:7638/7714; buff Q 300 frame
+#    _cast_q_battle_hunger bosses/base_boss.py:2905-2912 — JAUH lebih
+#    lama dari visual cast 90 frame, jadi varian terpisah memang
+#    dibutuhkan). Alchemist rage (mata + uap asam) & drakar
+#    defense_boost (4 dot orbit) diukur sub-ambang -> tidak dibake,
+#    dicatat di README sebagai residu.
+#    Strip rage = layout SAMA dengan strip dasar ([idle 8|walk 8|
+#    attack 8]) supaya BakedSprite.gd tinggal mengganti nama anim
+#    (rage_idle/...) tanpa logika indeks baru.
+#
+# Output (semua ADDITIF — 222 PNG Fase 5 tidak diubah):
+#   godot/assets/units/<type>.skill.png  strip skill (hanya skill yang
+#                                        lolos gerbang; 6 frame/skill)
+#   godot/assets/units/<type>.rage.png   strip rage (hanya unit yang
+#                                        lolos gerbang rage)
+#   godot/data/baked_units.json          skema 2 (kunci baru opsional,
+#                                        pembaca skema 1 mengabaikannya)
+#
+# Renderer pygame yang RUSAK di jalur skill (terbukti lewat bake):
+#   * sasori E: NameError `random` (bosses/level54.py:3278 — modul
+#     tidak mengimpor random). Di game jatuh ke _draw_generic_hero
+#     (heroes/__init__.py:2109-2156: _hero_render_sprite menangkap
+#     SEMUA exception renderer).
+#   * vex Q: IndexError pts[i+1] (heroes/_bundle.py:13231-13238: loop
+#     6 di atas list 6 elemen) — sama, jatuh ke hero generik.
+#   Keduanya TIDAK dibake (Godot memakai fallback pose attack, sesuai
+#   kontrak lama README) dan dilaporkan di ringkasan + README.
+
+
+def _parse_cast_method(src_tree, method_name):
+    """Intip method _cast_* hero_skills: (timer, flags, buff_dur).
+
+    timer = N dari `h.active_skill_timer = N` (int harfiah) atau
+    ("defer", kunci) dari `self._set_active_skill(kunci[, N])` yang
+    nanti diselesaikan via BOSS_HERO_VISUAL_DURATION/default.
+    flags = {"rage_active": True, ...} dari assignment True harfiah
+    (buff yang menyala selama cast — ikut dipasang di probe bake).
+    buff_dur = {"rage": N} dari `h.rage_timer = N` (durasi buff untuk
+    manifest -> Godot is_raging()).
+    Return None kalau method tidak ketemu (pemanggil memakai fallback).
+    """
+    import ast as _ast
+    target = None
+    for node in _ast.walk(src_tree):
+        if isinstance(node, _ast.FunctionDef) and node.name == method_name:
+            target = node
+            break
+    if target is None:
+        return None
+    timer = None
+    flags = {}
+    buff_dur = {}
+    for node in _ast.walk(target):
+        if isinstance(node, _ast.Assign):
+            for t in node.targets:
+                if not isinstance(t, _ast.Attribute):
+                    continue
+                if t.attr == "active_skill_timer" and timer is None \
+                        and isinstance(node.value, _ast.Constant) \
+                        and isinstance(node.value.value, int):
+                    timer = int(node.value.value)
+                elif t.attr in ("rage_active", "defense_boost") \
+                        and isinstance(node.value, _ast.Constant) \
+                        and node.value.value is True:
+                    flags[t.attr] = True
+                elif t.attr == "rage_timer" \
+                        and isinstance(node.value, _ast.Constant) \
+                        and isinstance(node.value.value, int):
+                    buff_dur["rage"] = int(node.value.value)
+                elif t.attr == "defense_timer" \
+                        and isinstance(node.value, _ast.Constant) \
+                        and isinstance(node.value.value, int):
+                    buff_dur["defense"] = int(node.value.value)
+        elif isinstance(node, _ast.Call) \
+                and isinstance(node.func, _ast.Attribute) \
+                and node.func.attr == "_set_active_skill" \
+                and timer is None:
+            args = node.args
+            if len(args) >= 2 and isinstance(args[1], _ast.Constant) \
+                    and isinstance(args[1].value, int):
+                timer = int(args[1].value)
+            elif len(args) >= 1 and isinstance(args[0], _ast.Constant):
+                timer = ("defer", str(args[0].value))
+    return timer, flags, buff_dur
+
+
+def _skill_cast_table():
+    """Tabel (durasi cast, flag buff) per (unit, kunci skill).
+
+    Return (durs, cast_flags, rage_info):
+      durs[unit][kunci]      = countdown frame di game (sumber sweep
+                               bake + Godot _visual_duration),
+      cast_flags[unit][kunci]= {"rage_active": True} dsb. (dipasang di
+                               probe selama bake skill itu),
+      rage_info[unit]        = {"skill": kunci, "duration": N} kalau
+                               salah satu cast menyalakan rage (sumber
+                               Godot is_raging; dipakai hanya kalau
+                               strip rage lolos gerbang).
+    """
+    import ast as _ast
+    from hero_skills import _bundle as _hsb
+    with open(os.path.join(ROOT, "hero_skills", "_bundle.py"),
+              encoding="utf-8") as f:
+        tree = _ast.parse(f.read())
+    boss_cls = _hsb._NS_boss_hero_skills.BossHeroSkills
+    registry = boss_cls._SKILL_REGISTRY
+    per_hero = boss_cls.BOSS_HERO_VISUAL_DURATION
+    default = dict(_hsb.BaseSkill._DEFAULT_VISUAL_DURATION)
+    starter = {
+        "grimjaw": _hsb._NS_grimjaw_skills.GrimjawSkills.SKILL_VISUAL_DURATION,
+        "kaizen": _hsb._NS_kaizen_skills.KaizenSkills.SKILL_VISUAL_DURATION,
+        "sylara": _hsb._NS_sylara_skills.SylaraSkills.SKILL_VISUAL_DURATION,
+        "thorne": _hsb._NS_thorne_skills.ThorneSkills.SKILL_VISUAL_DURATION,
+        "vex": _hsb._NS_vex_skills.VexSkills.SKILL_VISUAL_DURATION,
+        "zephyr": _hsb._NS_zephyr_skills.ZephyrSkills.SKILL_VISUAL_DURATION,
+    }
+    durs, cast_flags, rage_info = {}, {}, {}
+    for unit in set(registry) | set(starter):
+        durs[unit] = {}
+        cast_flags[unit] = {}
+        for key in "qwer":
+            if unit in starter and starter[unit].get(key):
+                # 6 hero starter: durasi kelas skill-nya sendiri.
+                durs[unit][key] = int(starter[unit][key])
+                continue
+            method = registry.get(unit, {}).get(key)
+            parsed = _parse_cast_method(tree, method) if method else None
+            if parsed is None:
+                # Boss tanpa recipe: _fallback_cast (timer 40 semua
+                # kunci, hero_skills/_bundle.py:968).
+                durs[unit][key] = 40
+                continue
+            timer, flags, buff = parsed
+            if isinstance(timer, tuple):
+                # _set_active_skill(kunci) tanpa N: presedensi =
+                # override per-hero -> default (BossHeroSkills.
+                # _get_visual_duration, hero_skills/_bundle.py:473-482).
+                timer = per_hero.get(unit, {}).get(key,
+                                                   default.get(key, 60))
+            durs[unit][key] = max(2, int(timer or 40))
+            if flags:
+                cast_flags[unit][key] = dict(flags)
+            if flags.get("rage_active") and buff.get("rage"):
+                rage_info[unit] = {"skill": key,
+                                   "duration": int(buff["rage"])}
+    # Unit di luar registry + starter (150 boss): fallback 40.
+    return durs, cast_flags, rage_info, dict(default)
+
+
+# Jam virtual bake (determinisme hash PNG).
+#
+# Beberapa renderer membaca JAM DINDING absolut:
+#   * mulut emberwick: mouth_open = f(get_ticks()) saat attack
+#     (bosses/level41.py:476) — tiap run dapat nilai 0..3 berbeda
+#     (cabang line-vs-polygon!), terukur 4 hash berbeda;
+#   * controller thalgryn: dt = get_ticks()-terakhir
+#     (bosses/thalgryn_v4.py:1019-1031; pola sama di level1.py:817
+#     untuk gornak dkk.) — render yang mengangkangi batas milidetik
+#     memakai dt terukur, yang tidak memakai 1/60.
+# Tanpa jam beku, byte PNG unit-unit ini BERBEDA setiap run.
+#
+# Perbaikannya DARI SISI BAKE (bosses/*.py tidak boleh diubah) dengan
+# meniru pola RESMI game: probe paritas sprite-nya sendiri membekukan
+# get_ticks() ke tick virtual selama render referensi
+# (heroes/__init__.py:3085-3103, _PROBE_TICK) supaya "renderer
+# ber-jam dinding dibandingkan secara adil". Bake memakai nilai yang
+# SAMA (_PROBE_TICK) selama SELURUH ekspor — bukan per unit — supaya
+# kebal terhadap SEMUA pembaca jam absolut, termasuk yang belum
+# ditemukan. Controller dt-delta (gornak dkk.) selalu memakai cabang
+# dt=1/60 — dt normal game — dan byte 220 unit lain terbukti tidak
+# berubah (mereka memang selalu jatuh di cabang itu).
+_VIRTUAL_CLOCK_SAVED = [None]
+
+
+def _freeze_clock():
+    """Bekukan pygame.time.get_ticks() -> _PROBE_TICK (lihat atas)."""
+    import pygame.time as _pt
+    if _VIRTUAL_CLOCK_SAVED[0] is None:
+        try:
+            from heroes import _PROBE_TICK as _vt
+        except ImportError:
+            _vt = 1000000
+        _VIRTUAL_CLOCK_SAVED[0] = _pt.get_ticks
+        _pt.get_ticks = lambda: _vt
+
+
+def _thaw_clock():
+    """Kembalikan get_ticks() asli."""
+    import pygame.time as _pt
+    if _VIRTUAL_CLOCK_SAVED[0] is not None:
+        _pt.get_ticks = _VIRTUAL_CLOCK_SAVED[0]
+        _VIRTUAL_CLOCK_SAVED[0] = None
+
+
+def _bake_unit_idle_ref(renderer, stats, hero_type):
+    """Satu frame idle (probe segar, pulse 1.0) sebagai acuan gerbang.
+
+    Probe SEGAR per kondisi itu wajib: state controller (_detect_moving
+    baseline, state FX) berdifusi antar render berurutan pada satu
+    probe — survei Fase 5c mengukur hollowbane 23.2 untuk SEMUA flag
+    sebelum diperbaiki (drift state, bukan efek flag). A/B yang valid
+    = kondisi berbeda pada JEJAK state yang identik.
+    """
+    probe = _unit_probe(hero_type, stats)
+    probe.pulse = 1.0
+    probe.timer = 0
+    probe.attack_timer = 0
+    probe.active_skill = None
+    probe.active_skill_timer = 0
+    _render_unit_frame(renderer, probe)   # warm-up: controller lahir
+    rect, canvas = _render_unit_frame(renderer, probe)
+    return rect, canvas.subsurface(rect).copy()
+
+
+def _bake_unit_skills(hero_type, renderer, stats, cast_table):
+    """Bake pose skill q/w/e/r (probe segar per skill).
+
+    Return (frames, kept, fail, diffs). frames = [(kunci, rect, crop)]
+    HANYA untuk skill yang lolos gerbang (maks diff 6 frame vs idle
+    >= 1.0 — ambang sama dengan WARNING atk Fase 5 — dan tanpa
+    exception renderer). kept = [kunci...] urutan qwer; fail =
+    [(kunci, pesan)] untuk laporan; diffs[kunci] = maks diff.
+    """
+    durs, cast_flags, _rage, _default = cast_table
+    unit_durs = durs.get(hero_type, {})
+    idle_rect, idle_crop = _bake_unit_idle_ref(renderer, stats, hero_type)
+    frames, kept, fail, diffs = [], [], [], {}
+    for key in "qwer":
+        dur = max(2, int(unit_durs.get(key, 40)))
+        flags = cast_flags.get(hero_type, {}).get(key, {})
+        try:
+            skill_frames = []
+            for k in range(UNIT_SKILL_FRAMES):
+                # Sweep countdown dur->1 (progress renderer 0->1);
+                # probe SEGAR per FRAME supaya jejak controller tiap
+                # sampel identik (difusi state = pose terkontaminasi
+                # urutan bake, lihat _bake_unit_idle_ref).
+                probe = _unit_probe(hero_type, stats)
+                for fname in flags:
+                    setattr(probe, fname, True)
+                probe.pulse = 1.0   # pose murni fungsi timer skill,
+                probe.timer = 0     # bukan pulse (preseden: bake
+                probe.attack_timer = 0  # attack Fase 5 memakai 1.0)
+                probe.active_skill = key
+                probe.active_skill_timer = max(
+                    1, int(round(dur - (dur - 1.0) * k
+                               / float(UNIT_SKILL_FRAMES - 1))))
+                _render_unit_frame(renderer, probe)   # warm-up
+                for fname in flags:
+                    setattr(probe, fname, True)
+                probe.active_skill = key
+                probe.active_skill_timer = max(
+                    1, int(round(dur - (dur - 1.0) * k
+                               / float(UNIT_SKILL_FRAMES - 1))))
+                rect, canvas = _render_unit_frame(renderer, probe)
+                crop = canvas.subsurface(rect).copy()
+                skill_frames.append((key, rect, crop))
+            best = max(_aligned_diff(rect, crop, idle_rect, idle_crop)
+                       for _, rect, crop in skill_frames)
+            diffs[key] = best
+            if best < 1.0:
+                # Pose statis (renderer tidak menggambar apa-apa untuk
+                # kunci ini, mis. skill FX-nya 100% lapisan hidup) —
+                # Godot memakai fallback pose attack (kontrak README).
+                continue
+            frames.extend(skill_frames)
+            kept.append(key)
+        except Exception as e:
+            # Renderer rusak di jalur skill (sasori E / vex Q —
+            # lihat catatan Fase 5c): di game jatuh ke hero generik,
+            # di sini skill-nya absen -> fallback attack di Godot.
+            fail.append((key, "%s: %s" % (type(e).__name__, e)))
+    return frames, kept, fail, diffs
 
 
 def export_unit_sprites(only=None):
@@ -850,11 +1249,36 @@ def export_unit_sprites(only=None):
     out_dir = os.path.join(ROOT, "godot", "assets", "units")
     os.makedirs(out_dir, exist_ok=True)
 
+    # Tabel durasi cast sisi-AI (Fase 5c): dibaca SEKALI per run —
+    # AST hero_skills/_bundle.py + dict SKILL_VISUAL_DURATION.
+    cast_table = _skill_cast_table()
+    _cast_durs, _cast_flags, _rage_info, _cast_default = cast_table
+
     manifest = {}
     report = {"fail": [], "static_attack": [], "bytes": [],
-              "opaque": [], "atk_diff": [], "manual": 0, "timer_sweep": 0}
+              "opaque": [], "atk_diff": [], "manual": 0, "timer_sweep": 0,
+              "skill_bytes": [], "skill_diff": [], "skill_kept": 0,
+              "skill_drop": [], "skill_fail": [], "rage": []}
     import time as _time
     t0 = _time.time()
+    # Jam virtual selama SELURUH ekspor (lihat catatan _freeze_clock):
+    # semua render referensi melihat get_ticks() yang sama.
+    _freeze_clock()
+    try:
+        _export_unit_sprites_frozen(types, stats_all, out_dir, cast_table,
+                                    manifest, report, only, _time.time())
+    finally:
+        _thaw_clock()
+
+
+def _export_unit_sprites_frozen(types, stats_all, out_dir, cast_table,
+                                manifest, report, only, t0):
+    """Badan loop bake per unit (dipanggil dengan jam virtual menyala)."""
+    import pygame
+    import random
+    import time as _time
+    from heroes import HERO_RENDERERS, BOSS_RENDERERS, _get_hero_scale
+    _cast_durs, _cast_flags, _rage_info, _cast_default = cast_table
     for idx, t in enumerate(types):
         renderer = HERO_RENDERERS.get(t) or BOSS_RENDERERS.get(t)
         try:
@@ -892,6 +1316,76 @@ def export_unit_sprites(only=None):
                     "boss_class", "mini")),
                 "renderer": "hero" if t in HERO_RENDERERS else "boss",
             }
+            # ── Fase 5c: durasi cast SEMUA kunci (Godot butuh ini
+            # untuk active_skill_timer walau pose-nya tidak kebake,
+            # mis. vex Q: pose attack selama 40 frame).
+            entry["skill_dur"] = {
+                k: max(2, int(_cast_durs.get(t, {}).get(
+                    k, _cast_default.get(k, 40)))) for k in "qwer"}
+
+            # ── Fase 5c: strip skill (file TERPISAH supaya 222 PNG
+            # Fase 5 tidak berubah hash-nya; geometri sendiri karena
+            # FX skill (lingkar tanah R dsb.) melampaui bbox badan).
+            sframes, kept, sfail, sdiffs = _bake_unit_skills(
+                t, renderer, stats_all.get(t), cast_table)
+            for key in "qwer":
+                if key in sdiffs:
+                    report["skill_diff"].append(sdiffs[key])
+            report["skill_kept"] += len(kept)
+            _failed_keys = [f[0] for f in sfail]
+            report["skill_drop"].extend(
+                "%s/%s" % (t, k) for k in "qwer"
+                if k not in kept and k not in _failed_keys)
+            report["skill_fail"].extend(
+                "%s/%s(%s)" % (t, k, msg) for k, msg in sfail)
+            if sframes:
+                sstrip, scw, sch, sax, say = _compose_strip(t, sframes)
+                spng = os.path.join(out_dir, t + ".skill.png")
+                _save_strip(sstrip, spng)
+                report["skill_bytes"].append(os.path.getsize(spng))
+                anims = {}
+                for i, key in enumerate(kept):
+                    anims[key] = [i * UNIT_SKILL_FRAMES,
+                                  UNIT_SKILL_FRAMES]
+                entry["skills_png"] = "res://assets/units/%s.skill.png" % t
+                entry["skill_frame_w"] = scw
+                entry["skill_frame_h"] = sch
+                entry["skill_frames_per_row"] = UNIT_FRAMES_PER_ROW
+                entry["skill_anchor"] = [sax, say]
+                entry["skill_anims"] = anims
+
+            # ── Fase 5c: strip rage ("bentuk elite"). Varian penuh
+            # 24 frame (layout = strip dasar) dengan rage_active=True;
+            # gerbang: idle rage vs idle dasar >= 1.0 (kalau renderer
+            # tidak membaca flag-nya, strip tidak ditulis).
+            if t in _rage_info:
+                _rprobe = _unit_probe(t, stats_all.get(t))
+                _rprobe.pulse = 1.0
+                _rprobe.rage_active = True
+                _render_unit_frame(renderer, _rprobe)   # warm-up
+                _rprobe.rage_active = True
+                _rrect, _rcanvas = _render_unit_frame(renderer, _rprobe)
+                _rcrop = _rcanvas.subsurface(_rrect).copy()
+                _brect, _bcrop = _bake_unit_idle_ref(
+                    renderer, stats_all.get(t), t)
+                _rdiff = _aligned_diff(_rrect, _rcrop, _brect, _bcrop)
+                if _rdiff >= 1.0:
+                    def _rage_setup(p):
+                        p.rage_active = True
+                    rframes, _rinfo = _bake_unit_frames(
+                        t, renderer, stats_all.get(t), setup=_rage_setup)
+                    rstrip, rcw, rch, rax, ray = _compose_strip(t, rframes)
+                    rpng = os.path.join(out_dir, t + ".rage.png")
+                    _save_strip(rstrip, rpng)
+                    entry["rage_png"] = \
+                        "res://assets/units/%s.rage.png" % t
+                    entry["rage_frame_w"] = rcw
+                    entry["rage_frame_h"] = rch
+                    entry["rage_frames_per_row"] = UNIT_FRAMES_PER_ROW
+                    entry["rage_anchor"] = [rax, ray]
+                    # Pemicu + durasi buff (Godot is_raging()).
+                    entry["rage"] = dict(_rage_info[t])
+                    report["rage"].append("%s(%.1f)" % (t, _rdiff))
             manifest[t] = entry
 
             # ── Gerbang kualitas (distribusi dicetak di ringkasan) ──
@@ -940,6 +1434,25 @@ def export_unit_sprites(only=None):
         print("[convert]   GAGAL: %s"
               % ", ".join("%s(%s)" % fv for fv in report["fail"][:12]),
               file=sys.stderr)
+    # ── Ringkasan Fase 5c (gerbang skill + rage) ──
+    svals = sorted(report["skill_diff"])
+    skb = sum(report["skill_bytes"]) / 1024.0
+    print("[convert] skills: %d pose kept, %d drop(statis), %d fail "
+          "(%.1f KB strip skill)"
+          % (report["skill_kept"], len(report["skill_drop"]),
+             len(report["skill_fail"]), skb))
+    if svals:
+        print("[convert]   skill_diff: min=%.1f p50=%.1f max=%.1f"
+              % (svals[0], svals[len(svals) // 2], svals[-1]))
+    if report["skill_drop"]:
+        print("[convert]   drop: %s"
+              % ", ".join(report["skill_drop"][:16]))
+    if report["skill_fail"]:
+        print("[convert]   skill GAGAL (renderer rusak, fallback attack): "
+              "%s" % ", ".join(report["skill_fail"][:16]))
+    print("[convert] rage: %d strip (%s)"
+          % (len(report["rage"]),
+             ", ".join(report["rage"][:8]) if report["rage"] else "-"))
 
     if only:
         # Mode --only = kalibrasi/debug satu unit: JANGAN menimpa
@@ -952,15 +1465,22 @@ def export_unit_sprites(only=None):
     out = {
         "_generated_by": "tools/convert_to_godot.py export_unit_sprites()",
         "_source": "renderer pygame via HERO_RENDERERS/BOSS_RENDERERS "
-                   "(heroes/__init__.py) — pose idle/walk/attack",
+                   "(heroes/__init__.py) — pose idle/walk/attack + "
+                   "skill q/w/e/r (Fase 5c) + varian rage",
         "_note": "Strip per unit: grid [idle 8 | walk 8 | attack 8] "
                  "frame seragam, 8 frame per baris (batas tekstur GPU "
                  "mobile), anchor = telapak kaki. Attack Godot di-drive "
-                 "dari attack_progress (bukan playback). Skill pose belum "
-                 "dibake (fase lanjutan); selama cast dipakai pose "
-                 "attack terakhir + FX proyektil Godot.",
+                 "dari attack_progress (bukan playback). Skill: strip "
+                 "terpisah <type>.skill.png (6 frame/pose, hanya pose "
+                 "yang lolos gerbang diff>=1.0); skill_dur = countdown "
+                 "cast sisi-AI (Godot active_skill_timer + fps playback). "
+                 "Rage: strip <type>.rage.png + pemicu (hanya unit yang "
+                 "lolos gerbang). Kunci Fase 5c opsional — pembaca "
+                 "skema 1 mengabaikannya (backward-compatible).",
+        "schema": 2,
         "frame_counts": {"idle": UNIT_IDLE_FRAMES, "walk": UNIT_WALK_FRAMES,
-                         "attack": UNIT_ATTACK_FRAMES},
+                         "attack": UNIT_ATTACK_FRAMES,
+                         "skill": UNIT_SKILL_FRAMES},
         "units": manifest,
     }
     write_json("baked_units.json", out)

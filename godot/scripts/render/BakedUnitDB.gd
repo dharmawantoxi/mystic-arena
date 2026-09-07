@@ -29,6 +29,7 @@ const MANIFEST_PATH := "res://data/baked_units.json"
 ## Cache manifest (dibaca sekali). Dictionary kosong = bake belum ada /
 ## gagal dibaca; caller mem-fallback ke UnitSilhouette.
 static var _manifest: Dictionary = {}
+static var _frame_counts: Dictionary = {}
 static var _loaded: bool = false
 
 ## type -> Texture2D (lazy load + FIFO cap).
@@ -51,6 +52,8 @@ static func _ensure_loaded() -> void:
 	var parsed = JSON.parse_string(raw)
 	if parsed is Dictionary and parsed.get("units") is Dictionary:
 		_manifest = parsed["units"]
+		if parsed.get("frame_counts") is Dictionary:
+			_frame_counts = parsed["frame_counts"]
 	else:
 		push_warning("[BakedUnitDB] manifest rusak/tidak valid: "
 				+ MANIFEST_PATH)
@@ -70,13 +73,33 @@ static func entry(unit_type: String) -> Dictionary:
 
 ## Tekstur strip unit (lazy). Null kalau bake tidak ada / gagal load.
 static func texture(unit_type: String) -> Texture2D:
+	return _texture_variant(unit_type, "png", "")
+
+
+## Tekstur strip skill (<type>.skill.png, lazy). Null kalau unit tidak
+## punya (skema 1 / bake lama) — caller fallback ke pose attack.
+static func texture_skill(unit_type: String) -> Texture2D:
+	return _texture_variant(unit_type, "skills_png", "#skill")
+
+
+## Tekstur strip varian rage (<type>.rage.png, lazy). Null kalau unit
+## tidak punya (hanya unit yang lolos gerbang rage, mis. drakar).
+static func texture_rage(unit_type: String) -> Texture2D:
+	return _texture_variant(unit_type, "rage_png", "#rage")
+
+
+static func _texture_variant(unit_type: String, png_key: String,
+		cache_suffix: String) -> Texture2D:
 	_ensure_loaded()
-	if _textures.has(unit_type):
-		return _textures[unit_type] as Texture2D
+	# Satu kamus cache untuk ketiga strip (kunci varian disufiks)
+	# supaya cap FIFO 64 tetap membatasi TOTAL tekstur, bukan per jenis.
+	var cache_key := unit_type + cache_suffix
+	if _textures.has(cache_key):
+		return _textures[cache_key] as Texture2D
 	var e: Dictionary = _manifest.get(unit_type, {})
-	if e.is_empty() or not e.has("png"):
+	if e.is_empty() or not e.has(png_key):
 		return null
-	var tex = load(str(e["png"]))
+	var tex = load(str(e[png_key]))
 	if tex is Texture2D:
 		if _textures.size() >= TEXTURE_CAP and not _textures.is_empty():
 			# FIFO: buang entri paling lama (Dictionary menjaga urutan
@@ -84,7 +107,47 @@ static func texture(unit_type: String) -> Texture2D:
 			for oldest in _textures:
 				_textures.erase(oldest)
 				break
-		_textures[unit_type] = tex
+		_textures[cache_key] = tex
 		return tex as Texture2D
-	push_warning("[BakedUnitDB] gagal memuat %s" % str(e["png"]))
+	push_warning("[BakedUnitDB] gagal memuat %s" % str(e[png_key]))
 	return null
+
+
+## Jumlah frame per aksi (idle/walk/attack/skill) dari akar manifest.
+## Dipakai menyusun strip rage (tata letak = strip dasar). Default =
+## angka Fase 5 kalau manifest skema 1 (tanpa frame_counts).
+static func frame_counts() -> Dictionary:
+	_ensure_loaded()
+	return {"idle": int(_frame_counts.get("idle", 8)),
+		"walk": int(_frame_counts.get("walk", 8)),
+		"attack": int(_frame_counts.get("attack", 8)),
+		"skill": int(_frame_counts.get("skill", 6))}
+
+
+## Spesifikasi pose skill [frame_pertama, jumlah] di strip skill.
+## Array kosong = pose itu TIDAK dibake (drop statis / renderer rusak —
+## Godot memakai pose attack sebagai fallback, bukan error).
+static func skill_anim(unit_type: String, key: String) -> Array:
+	_ensure_loaded()
+	var e: Dictionary = _manifest.get(unit_type, {})
+	var anims: Dictionary = e.get("skill_anims", {})
+	return anims.get(key, [])
+
+
+## Durasi cast sisi-AI dalam FRAME pygame (60 fps) — countdown yang
+## sama dipakai renderer pygame (progress = 1-timer/dur) dan SkillBook.
+## -1 kalau unit/kunci tidak ada (caller pakai fallback lamanya).
+static func skill_duration_frames(unit_type: String, key: String) -> float:
+	_ensure_loaded()
+	var e: Dictionary = _manifest.get(unit_type, {})
+	var durs: Dictionary = e.get("skill_dur", {})
+	return float(durs.get(key, -1.0))
+
+
+## Info varian rage {"skill": kunci_pemicu, "duration": frame} atau {}
+## kalau unit tidak punya (hanya drakar: q, 300 frame).
+static func rage_info(unit_type: String) -> Dictionary:
+	_ensure_loaded()
+	var e: Dictionary = _manifest.get(unit_type, {})
+	var r = e.get("rage", {})
+	return r if r is Dictionary else {}

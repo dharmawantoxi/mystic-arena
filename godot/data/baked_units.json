@@ -1,11 +1,13 @@
 {
   "_generated_by": "tools/convert_to_godot.py export_unit_sprites()",
-  "_source": "renderer pygame via HERO_RENDERERS/BOSS_RENDERERS (heroes/__init__.py) — pose idle/walk/attack",
-  "_note": "Strip per unit: grid [idle 8 | walk 8 | attack 8] frame seragam, 8 frame per baris (batas tekstur GPU mobile), anchor = telapak kaki. Attack Godot di-drive dari attack_progress (bukan playback). Skill pose belum dibake (fase lanjutan); selama cast dipakai pose attack terakhir + FX proyektil Godot.",
+  "_source": "renderer pygame via HERO_RENDERERS/BOSS_RENDERERS (heroes/__init__.py) — pose idle/walk/attack + skill q/w/e/r (Fase 5c) + varian rage",
+  "_note": "Strip per unit: grid [idle 8 | walk 8 | attack 8] frame seragam, 8 frame per baris (batas tekstur GPU mobile), anchor = telapak kaki. Attack Godot di-drive dari attack_progress (bukan playback). Skill: strip terpisah <type>.skill.png (6 frame/pose, hanya pose yang lolos gerbang diff>=1.0); skill_dur = countdown cast sisi-AI (Godot active_skill_timer + fps playback). Rage: strip <type>.rage.png + pemicu (hanya unit yang lolos gerbang). Kunci Fase 5c opsional — pembaca skema 1 mengabaikannya (backward-compatible).",
+  "schema": 2,
   "frame_counts": {
     "idle": 8,
     "walk": 8,
-    "attack": 8
+    "attack": 8,
+    "skill": 6
   },
   "units": {
     "abaddon": {
@@ -36,7 +38,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 30,
+        "w": 90,
+        "e": 40,
+        "r": 60
+      },
+      "skills_png": "res://assets/units/abaddon.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 164,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "aelyrion": {
       "png": "res://assets/units/aelyrion.png",
@@ -66,7 +100,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/aelyrion.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "aeralith": {
       "png": "res://assets/units/aeralith.png",
@@ -96,7 +162,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 45,
+        "e": 55,
+        "r": 80
+      },
+      "skills_png": "res://assets/units/aeralith.skill.png",
+      "skill_frame_w": 376,
+      "skill_frame_h": 220,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        118,
+        136
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "akahime": {
       "png": "res://assets/units/akahime.png",
@@ -126,7 +224,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 65,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/akahime.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 154,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        72
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "akaroth": {
       "png": "res://assets/units/akaroth.png",
@@ -156,7 +286,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/akaroth.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 158,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        80
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "akashari": {
       "png": "res://assets/units/akashari.png",
@@ -186,7 +348,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 50,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/akashari.skill.png",
+      "skill_frame_w": 315,
+      "skill_frame_h": 215,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        91,
+        89
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "akirakumo": {
       "png": "res://assets/units/akirakumo.png",
@@ -216,7 +410,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/akirakumo.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 170,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "akiraze": {
       "png": "res://assets/units/akiraze.png",
@@ -246,7 +472,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/akiraze.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "alchemist": {
       "png": "res://assets/units/alchemist.png",
@@ -276,7 +534,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 60,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/alchemist.skill.png",
+      "skill_frame_w": 468,
+      "skill_frame_h": 418,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        210,
+        160
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "ancient_apparition": {
       "png": "res://assets/units/ancient_apparition.png",
@@ -306,7 +596,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 45,
+        "e": 50,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/ancient_apparition.skill.png",
+      "skill_frame_w": 148,
+      "skill_frame_h": 148,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        74,
+        74
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "astraelion": {
       "png": "res://assets/units/astraelion.png",
@@ -336,7 +658,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/astraelion.skill.png",
+      "skill_frame_w": 311,
+      "skill_frame_h": 172,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "aurelian": {
       "png": "res://assets/units/aurelian.png",
@@ -366,7 +720,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/aurelian.skill.png",
+      "skill_frame_w": 318,
+      "skill_frame_h": 184,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        88
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "aurelion": {
       "png": "res://assets/units/aurelion.png",
@@ -396,7 +782,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 55,
+        "e": 65,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/aurelion.skill.png",
+      "skill_frame_w": 368,
+      "skill_frame_h": 221,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        110,
+        110
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "aurelix": {
       "png": "res://assets/units/aurelix.png",
@@ -426,7 +844,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 60,
+        "e": 55,
+        "r": 85
+      },
+      "skills_png": "res://assets/units/aurelix.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 286,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        194
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "aurelyssa": {
       "png": "res://assets/units/aurelyssa.png",
@@ -456,7 +906,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 45,
+        "e": 55,
+        "r": 80
+      },
+      "skills_png": "res://assets/units/aurelyssa.skill.png",
+      "skill_frame_w": 284,
+      "skill_frame_h": 147,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        67
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "aurethzar": {
       "png": "res://assets/units/aurethzar.png",
@@ -486,7 +968,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 45,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/aurethzar.skill.png",
+      "skill_frame_w": 365,
+      "skill_frame_h": 215,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        107,
+        107
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "aurex": {
       "png": "res://assets/units/aurex.png",
@@ -516,7 +1030,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 40,
+        "e": 65,
+        "r": 75
+      },
+      "skills_png": "res://assets/units/aurex.skill.png",
+      "skill_frame_w": 299,
+      "skill_frame_h": 136,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        86,
+        62
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "auroth": {
       "png": "res://assets/units/auroth.png",
@@ -546,7 +1092,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 60,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/auroth.skill.png",
+      "skill_frame_w": 255,
+      "skill_frame_h": 335,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        252
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "azkharion": {
       "png": "res://assets/units/azkharion.png",
@@ -576,7 +1154,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/azkharion.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 220,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        112
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "azureth": {
       "png": "res://assets/units/azureth.png",
@@ -606,7 +1216,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 85
+      },
+      "skills_png": "res://assets/units/azureth.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "bhorgathul": {
       "png": "res://assets/units/bhorgathul.png",
@@ -636,7 +1278,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/bhorgathul.skill.png",
+      "skill_frame_w": 307,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        153,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "broggmar": {
       "png": "res://assets/units/broggmar.png",
@@ -666,7 +1340,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/broggmar.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "brumhar": {
       "png": "res://assets/units/brumhar.png",
@@ -696,7 +1402,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/brumhar.skill.png",
+      "skill_frame_w": 291,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        99,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "celwynn": {
       "png": "res://assets/units/celwynn.png",
@@ -726,7 +1464,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/celwynn.skill.png",
+      "skill_frame_w": 333,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "cogsworth": {
       "png": "res://assets/units/cogsworth.png",
@@ -756,7 +1526,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/cogsworth.skill.png",
+      "skill_frame_w": 453,
+      "skill_frame_h": 437,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        195,
+        206
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "cryssalia": {
       "png": "res://assets/units/cryssalia.png",
@@ -786,7 +1588,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 65,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/cryssalia.skill.png",
+      "skill_frame_w": 380,
+      "skill_frame_h": 282,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        122,
+        184
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "deidara": {
       "png": "res://assets/units/deidara.png",
@@ -816,7 +1650,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/deidara.skill.png",
+      "skill_frame_w": 330,
+      "skill_frame_h": 313,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        155
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "dorakai": {
       "png": "res://assets/units/dorakai.png",
@@ -846,7 +1712,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/dorakai.skill.png",
+      "skill_frame_w": 343,
+      "skill_frame_h": 172,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        85,
+        85
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "drakar": {
       "png": "res://assets/units/drakar.png",
@@ -876,7 +1774,51 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 90,
+        "w": 45,
+        "e": 60,
+        "r": 60
+      },
+      "skills_png": "res://assets/units/drakar.skill.png",
+      "skill_frame_w": 429,
+      "skill_frame_h": 366,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        171,
+        243
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      },
+      "rage_png": "res://assets/units/drakar.rage.png",
+      "rage_frame_w": 190,
+      "rage_frame_h": 165,
+      "rage_frames_per_row": 8,
+      "rage_anchor": [
+        95,
+        80
+      ],
+      "rage": {
+        "skill": "q",
+        "duration": 300
+      }
     },
     "drav": {
       "png": "res://assets/units/drav.png",
@@ -906,7 +1848,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/drav.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "emberwick": {
       "png": "res://assets/units/emberwick.png",
@@ -936,7 +1910,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/emberwick.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 192,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        99
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "garumenshi": {
       "png": "res://assets/units/garumenshi.png",
@@ -966,7 +1972,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/garumenshi.skill.png",
+      "skill_frame_w": 330,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "ghrakmaal": {
       "png": "res://assets/units/ghrakmaal.png",
@@ -996,7 +2034,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/ghrakmaal.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "gorath": {
       "png": "res://assets/units/gorath.png",
@@ -1026,7 +2096,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/gorath.skill.png",
+      "skill_frame_w": 455,
+      "skill_frame_h": 416,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        208,
+        176
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "gornak": {
       "png": "res://assets/units/gornak.png",
@@ -1056,7 +2158,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 25,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/gornak.skill.png",
+      "skill_frame_w": 375,
+      "skill_frame_h": 372,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        187,
+        189
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "gravefang": {
       "png": "res://assets/units/gravefang.png",
@@ -1086,7 +2220,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/gravefang.skill.png",
+      "skill_frame_w": 364,
+      "skill_frame_h": 216,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        182,
+        102
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "gravewake": {
       "png": "res://assets/units/gravewake.png",
@@ -1116,7 +2282,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 80,
+        "e": 70,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/gravewake.skill.png",
+      "skill_frame_w": 293,
+      "skill_frame_h": 181,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        147,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "grimjack": {
       "png": "res://assets/units/grimjack.png",
@@ -1146,7 +2344,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/grimjack.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 151,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        106,
+        72
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "grimjaw": {
       "png": "res://assets/units/grimjaw.png",
@@ -1176,7 +2406,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "hero"
+      "renderer": "hero",
+      "skill_dur": {
+        "q": 180,
+        "w": 90,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/grimjaw.skill.png",
+      "skill_frame_w": 217,
+      "skill_frame_h": 209,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        95,
+        119
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "grimkor": {
       "png": "res://assets/units/grimkor.png",
@@ -1206,7 +2468,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/grimkor.skill.png",
+      "skill_frame_w": 325,
+      "skill_frame_h": 160,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        83,
+        72
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "grimstalker": {
       "png": "res://assets/units/grimstalker.png",
@@ -1236,7 +2530,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/grimstalker.skill.png",
+      "skill_frame_w": 338,
+      "skill_frame_h": 161,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        80,
+        80
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "grondarthul": {
       "png": "res://assets/units/grondarthul.png",
@@ -1266,7 +2592,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/grondarthul.skill.png",
+      "skill_frame_w": 324,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "grondmauris": {
       "png": "res://assets/units/grondmauris.png",
@@ -1296,7 +2654,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/grondmauris.skill.png",
+      "skill_frame_w": 377,
+      "skill_frame_h": 328,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        119,
+        208
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "hitokage": {
       "png": "res://assets/units/hitokage.png",
@@ -1326,7 +2716,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/hitokage.skill.png",
+      "skill_frame_w": 304,
+      "skill_frame_h": 162,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        84
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "hollowbane": {
       "png": "res://assets/units/hollowbane.png",
@@ -1356,7 +2778,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/hollowbane.skill.png",
+      "skill_frame_w": 332,
+      "skill_frame_h": 164,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        74,
+        83
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "ignakhor": {
       "png": "res://assets/units/ignakhor.png",
@@ -1386,7 +2840,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/ignakhor.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "ignirus": {
       "png": "res://assets/units/ignirus.png",
@@ -1416,7 +2902,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 65,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/ignirus.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "ignis_drachorn": {
       "png": "res://assets/units/ignis_drachorn.png",
@@ -1446,7 +2964,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 40,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/ignis_drachorn.skill.png",
+      "skill_frame_w": 173,
+      "skill_frame_h": 188,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        94,
+        119
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "infrakzaar": {
       "png": "res://assets/units/infrakzaar.png",
@@ -1476,7 +3026,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/infrakzaar.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 319,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        231
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaedrin": {
       "png": "res://assets/units/kaedrin.png",
@@ -1506,7 +3088,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaedrin.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaeldris": {
       "png": "res://assets/units/kaeldris.png",
@@ -1536,7 +3150,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 45,
+        "e": 55,
+        "r": 80
+      },
+      "skills_png": "res://assets/units/kaeldris.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 172,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaelthar": {
       "png": "res://assets/units/kaelthar.png",
@@ -1566,7 +3212,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/kaelthar.skill.png",
+      "skill_frame_w": 204,
+      "skill_frame_h": 208,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        120
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaelthorn": {
       "png": "res://assets/units/kaelthorn.png",
@@ -1596,7 +3274,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/kaelthorn.skill.png",
+      "skill_frame_w": 315,
+      "skill_frame_h": 189,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        116
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaelthys": {
       "png": "res://assets/units/kaelthys.png",
@@ -1626,7 +3336,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaelthys.skill.png",
+      "skill_frame_w": 330,
+      "skill_frame_h": 251,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        182
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaelvyrn": {
       "png": "res://assets/units/kaelvyrn.png",
@@ -1656,7 +3398,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaelvyrn.skill.png",
+      "skill_frame_w": 330,
+      "skill_frame_h": 167,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        88
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaerinya": {
       "png": "res://assets/units/kaerinya.png",
@@ -1686,7 +3460,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaerinya.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 187,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaerissa": {
       "png": "res://assets/units/kaerissa.png",
@@ -1716,7 +3522,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaerissa.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 207,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaervosth": {
       "png": "res://assets/units/kaervosth.png",
@@ -1746,7 +3584,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaervosth.skill.png",
+      "skill_frame_w": 352,
+      "skill_frame_h": 198,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        94,
+        105
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kagetsuka": {
       "png": "res://assets/units/kagetsuka.png",
@@ -1776,7 +3646,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kagetsuka.skill.png",
+      "skill_frame_w": 288,
+      "skill_frame_h": 221,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        128
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaineroth": {
       "png": "res://assets/units/kaineroth.png",
@@ -1806,7 +3708,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaineroth.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 192,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        104
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kairenji": {
       "png": "res://assets/units/kairenji.png",
@@ -1836,7 +3770,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kairenji.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 241,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        106
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaithros": {
       "png": "res://assets/units/kaithros.png",
@@ -1866,7 +3832,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaithros.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 213,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        130
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaizen": {
       "png": "res://assets/units/kaizen.png",
@@ -1896,7 +3894,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "hero"
+      "renderer": "hero",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaizen.skill.png",
+      "skill_frame_w": 379,
+      "skill_frame_h": 305,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        152,
+        122
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaizoku_raijin": {
       "png": "res://assets/units/kaizoku_raijin.png",
@@ -1926,7 +3956,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaizoku_raijin.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kaoruken": {
       "png": "res://assets/units/kaoruken.png",
@@ -1956,7 +4018,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kaoruken.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "karzhul": {
       "png": "res://assets/units/karzhul.png",
@@ -1986,7 +4080,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/karzhul.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 170,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kassadin": {
       "png": "res://assets/units/kassadin.png",
@@ -2016,7 +4142,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kassadin.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kazreth": {
       "png": "res://assets/units/kazreth.png",
@@ -2046,7 +4204,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kazreth.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 315,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        222
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kazuren": {
       "png": "res://assets/units/kazuren.png",
@@ -2076,7 +4266,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kazuren.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kazureth": {
       "png": "res://assets/units/kazureth.png",
@@ -2106,7 +4328,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kazureth.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 203,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        115
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kenshiro": {
       "png": "res://assets/units/kenshiro.png",
@@ -2136,7 +4390,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 45,
+        "e": 55,
+        "r": 70
+      },
+      "skills_png": "res://assets/units/kenshiro.skill.png",
+      "skill_frame_w": 359,
+      "skill_frame_h": 183,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        101,
+        91
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "khalros": {
       "png": "res://assets/units/khalros.png",
@@ -2166,7 +4452,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/khalros.skill.png",
+      "skill_frame_w": 473,
+      "skill_frame_h": 428,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        215,
+        170
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "khalzaredh": {
       "png": "res://assets/units/khalzaredh.png",
@@ -2196,7 +4514,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/khalzaredh.skill.png",
+      "skill_frame_w": 316,
+      "skill_frame_h": 168,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        84
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "khazan": {
       "png": "res://assets/units/khazan.png",
@@ -2226,7 +4576,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 50,
+        "e": 60,
+        "r": 75
+      },
+      "skills_png": "res://assets/units/khazan.skill.png",
+      "skill_frame_w": 328,
+      "skill_frame_h": 141,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        70,
+        70
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "korokai": {
       "png": "res://assets/units/korokai.png",
@@ -2256,7 +4638,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/korokai.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "krobellus": {
       "png": "res://assets/units/krobellus.png",
@@ -2286,7 +4700,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 50,
+        "w": 60,
+        "e": 50,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/krobellus.skill.png",
+      "skill_frame_w": 156,
+      "skill_frame_h": 140,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        78,
+        56
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "krognarr": {
       "png": "res://assets/units/krognarr.png",
@@ -2316,7 +4762,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 65,
+        "r": 85
+      },
+      "skills_png": "res://assets/units/krognarr.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kryvoxar": {
       "png": "res://assets/units/kryvoxar.png",
@@ -2346,7 +4824,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kryvoxar.skill.png",
+      "skill_frame_w": 338,
+      "skill_frame_h": 180,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kunkka": {
       "png": "res://assets/units/kunkka.png",
@@ -2376,7 +4886,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 80,
+        "e": 90,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kunkka.skill.png",
+      "skill_frame_w": 313,
+      "skill_frame_h": 149,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        62,
+        89
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kurogari": {
       "png": "res://assets/units/kurogari.png",
@@ -2406,7 +4948,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kurogari.skill.png",
+      "skill_frame_w": 304,
+      "skill_frame_h": 159,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        69
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kyrenzai": {
       "png": "res://assets/units/kyrenzai.png",
@@ -2436,7 +5010,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kyrenzai.skill.png",
+      "skill_frame_w": 344,
+      "skill_frame_h": 188,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "kyumirra": {
       "png": "res://assets/units/kyumirra.png",
@@ -2466,7 +5072,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/kyumirra.skill.png",
+      "skill_frame_w": 334,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "leoric": {
       "png": "res://assets/units/leoric.png",
@@ -2496,7 +5134,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/leoric.skill.png",
+      "skill_frame_w": 245,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "luminar": {
       "png": "res://assets/units/luminar.png",
@@ -2526,7 +5196,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/luminar.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "lyrenya": {
       "png": "res://assets/units/lyrenya.png",
@@ -2556,7 +5258,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/lyrenya.skill.png",
+      "skill_frame_w": 336,
+      "skill_frame_h": 180,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "lyrienne": {
       "png": "res://assets/units/lyrienne.png",
@@ -2586,7 +5320,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/lyrienne.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "lyssarethys": {
       "png": "res://assets/units/lyssarethys.png",
@@ -2616,7 +5382,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/lyssarethys.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "malzareth": {
       "png": "res://assets/units/malzareth.png",
@@ -2646,7 +5444,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 50,
+        "e": 45,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/malzareth.skill.png",
+      "skill_frame_w": 339,
+      "skill_frame_h": 203,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        101,
+        67
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "malzeroth": {
       "png": "res://assets/units/malzeroth.png",
@@ -2676,7 +5506,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/malzeroth.skill.png",
+      "skill_frame_w": 333,
+      "skill_frame_h": 136,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        67
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "molgravar": {
       "png": "res://assets/units/molgravar.png",
@@ -2706,7 +5568,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/molgravar.skill.png",
+      "skill_frame_w": 355,
+      "skill_frame_h": 195,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        97
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morgath": {
       "png": "res://assets/units/morgath.png",
@@ -2736,7 +5630,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 50,
+        "w": 40,
+        "e": 90,
+        "r": 60
+      },
+      "skills_png": "res://assets/units/morgath.skill.png",
+      "skill_frame_w": 392,
+      "skill_frame_h": 292,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        134,
+        118
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morkhaera": {
       "png": "res://assets/units/morkhaera.png",
@@ -2766,7 +5692,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 65,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/morkhaera.skill.png",
+      "skill_frame_w": 364,
+      "skill_frame_h": 213,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        106,
+        108
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morkhelvis": {
       "png": "res://assets/units/morkhelvis.png",
@@ -2796,7 +5754,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/morkhelvis.skill.png",
+      "skill_frame_w": 327,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morthraxis": {
       "png": "res://assets/units/morthraxis.png",
@@ -2826,7 +5816,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 55,
+        "e": 65,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/morthraxis.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 186,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morthyrax": {
       "png": "res://assets/units/morthyrax.png",
@@ -2856,7 +5878,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/morthyrax.skill.png",
+      "skill_frame_w": 339,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morvaenthir": {
       "png": "res://assets/units/morvaenthir.png",
@@ -2886,7 +5940,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 65,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/morvaenthir.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 172,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morvaeth": {
       "png": "res://assets/units/morvaeth.png",
@@ -2916,7 +6002,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/morvaeth.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 171,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        81
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morvaeth2": {
       "png": "res://assets/units/morvaeth2.png",
@@ -2946,7 +6064,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/morvaeth2.skill.png",
+      "skill_frame_w": 352,
+      "skill_frame_h": 197,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        94,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morvakhul": {
       "png": "res://assets/units/morvakhul.png",
@@ -2976,7 +6126,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/morvakhul.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 195,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        97
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morvath": {
       "png": "res://assets/units/morvath.png",
@@ -3006,7 +6188,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/morvath.skill.png",
+      "skill_frame_w": 274,
+      "skill_frame_h": 153,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        84
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morvein": {
       "png": "res://assets/units/morvein.png",
@@ -3036,7 +6250,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/morvein.skill.png",
+      "skill_frame_w": 310,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morvekhar": {
       "png": "res://assets/units/morvekhar.png",
@@ -3066,7 +6312,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/morvekhar.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "morvyssk": {
       "png": "res://assets/units/morvyssk.png",
@@ -3096,7 +6374,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/morvyssk.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "naraka": {
       "png": "res://assets/units/naraka.png",
@@ -3126,7 +6436,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 50,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/naraka.skill.png",
+      "skill_frame_w": 360,
+      "skill_frame_h": 225,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        102,
+        102
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nazulmor": {
       "png": "res://assets/units/nazulmor.png",
@@ -3156,7 +6498,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/nazulmor.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nexthyrius": {
       "png": "res://assets/units/nexthyrius.png",
@@ -3186,7 +6560,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nexthyrius.skill.png",
+      "skill_frame_w": 365,
+      "skill_frame_h": 215,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        107,
+        107
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nixweaver": {
       "png": "res://assets/units/nixweaver.png",
@@ -3216,7 +6622,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nixweaver.skill.png",
+      "skill_frame_w": 354,
+      "skill_frame_h": 121,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        96,
+        60
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyrellieth": {
       "png": "res://assets/units/nyrellieth.png",
@@ -3246,7 +6684,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyrellieth.skill.png",
+      "skill_frame_w": 355,
+      "skill_frame_h": 253,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        127
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyrethzalv": {
       "png": "res://assets/units/nyrethzalv.png",
@@ -3276,7 +6746,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyrethzalv.skill.png",
+      "skill_frame_w": 355,
+      "skill_frame_h": 195,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        97
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxallaria": {
       "png": "res://assets/units/nyxallaria.png",
@@ -3306,7 +6808,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyxallaria.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 179,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        91
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxara": {
       "png": "res://assets/units/nyxara.png",
@@ -3336,7 +6870,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyxara.skill.png",
+      "skill_frame_w": 304,
+      "skill_frame_h": 196,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        152,
+        96
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxarath": {
       "png": "res://assets/units/nyxarath.png",
@@ -3366,7 +6932,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 70,
+        "e": 80,
+        "r": 110
+      },
+      "skills_png": "res://assets/units/nyxarath.skill.png",
+      "skill_frame_w": 369,
+      "skill_frame_h": 223,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        111,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxareth": {
       "png": "res://assets/units/nyxareth.png",
@@ -3396,7 +6994,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 55,
+        "e": 65,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/nyxareth.skill.png",
+      "skill_frame_w": 221,
+      "skill_frame_h": 221,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        110,
+        110
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxareva": {
       "png": "res://assets/units/nyxareva.png",
@@ -3426,7 +7056,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 45,
+        "e": 55,
+        "r": 85
+      },
+      "skills_png": "res://assets/units/nyxareva.skill.png",
+      "skill_frame_w": 294,
+      "skill_frame_h": 365,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        258
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxariel": {
       "png": "res://assets/units/nyxariel.png",
@@ -3456,7 +7118,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyxariel.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxaris": {
       "png": "res://assets/units/nyxaris.png",
@@ -3486,7 +7180,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyxaris.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 322,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        253
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxaroth": {
       "png": "res://assets/units/nyxaroth.png",
@@ -3516,7 +7242,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyxaroth.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 187,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        93
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxharr": {
       "png": "res://assets/units/nyxharr.png",
@@ -3546,7 +7304,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyxharr.skill.png",
+      "skill_frame_w": 363,
+      "skill_frame_h": 211,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        105,
+        105
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxraal": {
       "png": "res://assets/units/nyxraal.png",
@@ -3576,7 +7366,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/nyxraal.skill.png",
+      "skill_frame_w": 342,
+      "skill_frame_h": 201,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        108,
+        94
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyxthrael": {
       "png": "res://assets/units/nyxthrael.png",
@@ -3606,7 +7428,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/nyxthrael.skill.png",
+      "skill_frame_w": 324,
+      "skill_frame_h": 320,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        242
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "nyzrak": {
       "png": "res://assets/units/nyzrak.png",
@@ -3636,7 +7490,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 50,
+        "w": 50,
+        "e": 70,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/nyzrak.skill.png",
+      "skill_frame_w": 368,
+      "skill_frame_h": 183,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        110,
+        112
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "obanai": {
       "png": "res://assets/units/obanai.png",
@@ -3666,7 +7552,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/obanai.skill.png",
+      "skill_frame_w": 253,
+      "skill_frame_h": 152,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        42,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "okeanora": {
       "png": "res://assets/units/okeanora.png",
@@ -3696,7 +7614,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/okeanora.skill.png",
+      "skill_frame_w": 355,
+      "skill_frame_h": 195,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        97
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "pyraena": {
       "png": "res://assets/units/pyraena.png",
@@ -3726,7 +7676,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/pyraena.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 329,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        246
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "pyraethis": {
       "png": "res://assets/units/pyraethis.png",
@@ -3756,7 +7738,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 55,
+        "e": 65,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/pyraethis.skill.png",
+      "skill_frame_w": 386,
+      "skill_frame_h": 259,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        128,
+        128
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "pyraklos": {
       "png": "res://assets/units/pyraklos.png",
@@ -3786,7 +7800,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 55,
+        "e": 65,
+        "r": 85
+      },
+      "skills_png": "res://assets/units/pyraklos.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 159,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        79
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "pyrenth": {
       "png": "res://assets/units/pyrenth.png",
@@ -3816,7 +7862,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/pyrenth.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 188,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        94,
+        94
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "pyrhaan": {
       "png": "res://assets/units/pyrhaan.png",
@@ -3846,7 +7924,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/pyrhaan.skill.png",
+      "skill_frame_w": 262,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        91,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "rakzhan": {
       "png": "res://assets/units/rakzhan.png",
@@ -3876,7 +7986,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/rakzhan.skill.png",
+      "skill_frame_w": 314,
+      "skill_frame_h": 157,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "ravokkar": {
       "png": "res://assets/units/ravokkar.png",
@@ -3906,7 +8048,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/ravokkar.skill.png",
+      "skill_frame_w": 363,
+      "skill_frame_h": 211,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        105,
+        105
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "raz": {
       "png": "res://assets/units/raz.png",
@@ -3936,7 +8110,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 45,
+        "e": 55,
+        "r": 80
+      },
+      "skills_png": "res://assets/units/raz.skill.png",
+      "skill_frame_w": 359,
+      "skill_frame_h": 340,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        101,
+        258
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "razak": {
       "png": "res://assets/units/razak.png",
@@ -3966,7 +8172,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/razak.skill.png",
+      "skill_frame_w": 454,
+      "skill_frame_h": 392,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        196,
+        144
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "rynvara": {
       "png": "res://assets/units/rynvara.png",
@@ -3996,7 +8234,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/rynvara.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "sanguire": {
       "png": "res://assets/units/sanguire.png",
@@ -4026,7 +8296,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/sanguire.skill.png",
+      "skill_frame_w": 330,
+      "skill_frame_h": 145,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        72
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "sanguiveth": {
       "png": "res://assets/units/sanguiveth.png",
@@ -4056,7 +8358,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/sanguiveth.skill.png",
+      "skill_frame_w": 329,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "sasori": {
       "png": "res://assets/units/sasori.png",
@@ -4086,7 +8420,35 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/sasori.skill.png",
+      "skill_frame_w": 354,
+      "skill_frame_h": 268,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        96,
+        180
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "r": [
+          12,
+          6
+        ]
+      }
     },
     "seiryukong": {
       "png": "res://assets/units/seiryukong.png",
@@ -4116,7 +8478,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 55,
+        "e": 65,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/seiryukong.skill.png",
+      "skill_frame_w": 290,
+      "skill_frame_h": 195,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        97
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "selunara": {
       "png": "res://assets/units/selunara.png",
@@ -4146,7 +8540,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/selunara.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "seraphienne": {
       "png": "res://assets/units/seraphienne.png",
@@ -4176,7 +8602,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/seraphienne.skill.png",
+      "skill_frame_w": 365,
+      "skill_frame_h": 220,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        107,
+        107
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "sethrakhar": {
       "png": "res://assets/units/sethrakhar.png",
@@ -4206,7 +8664,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/sethrakhar.skill.png",
+      "skill_frame_w": 328,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "shimorakh": {
       "png": "res://assets/units/shimorakh.png",
@@ -4236,7 +8726,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/shimorakh.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "shirotaka": {
       "png": "res://assets/units/shirotaka.png",
@@ -4266,7 +8788,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/shirotaka.skill.png",
+      "skill_frame_w": 299,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "sirakzan": {
       "png": "res://assets/units/sirakzan.png",
@@ -4296,7 +8850,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/sirakzan.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 155,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "solara": {
       "png": "res://assets/units/solara.png",
@@ -4326,7 +8912,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/solara.skill.png",
+      "skill_frame_w": 225,
+      "skill_frame_h": 325,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        252
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "solareth": {
       "png": "res://assets/units/solareth.png",
@@ -4356,7 +8974,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/solareth.skill.png",
+      "skill_frame_w": 372,
+      "skill_frame_h": 255,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        130,
+        132
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "solvanth": {
       "png": "res://assets/units/solvanth.png",
@@ -4386,7 +9036,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/solvanth.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 345,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        252
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "solvarin": {
       "png": "res://assets/units/solvarin.png",
@@ -4416,7 +9098,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/solvarin.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 192,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "sunakage": {
       "png": "res://assets/units/sunakage.png",
@@ -4446,7 +9160,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/sunakage.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "sylara": {
       "png": "res://assets/units/sylara.png",
@@ -4476,7 +9222,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "hero"
+      "renderer": "hero",
+      "skill_dur": {
+        "q": 180,
+        "w": 180,
+        "e": 150,
+        "r": 60
+      },
+      "skills_png": "res://assets/units/sylara.skill.png",
+      "skill_frame_w": 386,
+      "skill_frame_h": 254,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        128,
+        127
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "sylvantheros": {
       "png": "res://assets/units/sylvantheros.png",
@@ -4506,7 +9284,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 65,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/sylvantheros.skill.png",
+      "skill_frame_w": 330,
+      "skill_frame_h": 306,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        222
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "syrentha": {
       "png": "res://assets/units/syrentha.png",
@@ -4536,7 +9346,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 80,
+        "e": 70,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/syrentha.skill.png",
+      "skill_frame_w": 214,
+      "skill_frame_h": 158,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        105,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "syrindra": {
       "png": "res://assets/units/syrindra.png",
@@ -4566,7 +9408,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/syrindra.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thalakryon": {
       "png": "res://assets/units/thalakryon.png",
@@ -4596,7 +9470,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/thalakryon.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thalgryn": {
       "png": "res://assets/units/thalgryn.png",
@@ -4626,7 +9532,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 50,
+        "e": 60,
+        "r": 80
+      },
+      "skills_png": "res://assets/units/thalgryn.skill.png",
+      "skill_frame_w": 152,
+      "skill_frame_h": 157,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        46,
+        148
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thalryndel": {
       "png": "res://assets/units/thalryndel.png",
@@ -4656,7 +9594,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/thalryndel.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thargoroth": {
       "png": "res://assets/units/thargoroth.png",
@@ -4686,7 +9656,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/thargoroth.skill.png",
+      "skill_frame_w": 360,
+      "skill_frame_h": 205,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        102,
+        102
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thoraz": {
       "png": "res://assets/units/thoraz.png",
@@ -4716,7 +9718,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/thoraz.skill.png",
+      "skill_frame_w": 297,
+      "skill_frame_h": 204,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        86,
+        115
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thorgaruk": {
       "png": "res://assets/units/thorgaruk.png",
@@ -4746,7 +9780,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/thorgaruk.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 216,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thorne": {
       "png": "res://assets/units/thorne.png",
@@ -4776,7 +9842,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "hero"
+      "renderer": "hero",
+      "skill_dur": {
+        "q": 40,
+        "w": 100,
+        "e": 60,
+        "r": 120
+      },
+      "skills_png": "res://assets/units/thorne.skill.png",
+      "skill_frame_w": 287,
+      "skill_frame_h": 227,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        107,
+        120
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thornvaegrim": {
       "png": "res://assets/units/thornvaegrim.png",
@@ -4806,7 +9904,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/thornvaegrim.skill.png",
+      "skill_frame_w": 299,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thorvak": {
       "png": "res://assets/units/thorvak.png",
@@ -4836,7 +9966,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/thorvak.skill.png",
+      "skill_frame_w": 238,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "thorvin": {
       "png": "res://assets/units/thorvin.png",
@@ -4866,7 +10028,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/thorvin.skill.png",
+      "skill_frame_w": 321,
+      "skill_frame_h": 158,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "tsukiyora": {
       "png": "res://assets/units/tsukiyora.png",
@@ -4896,7 +10090,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/tsukiyora.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 202,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        109
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "urgharun": {
       "png": "res://assets/units/urgharun.png",
@@ -4926,7 +10152,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/urgharun.skill.png",
+      "skill_frame_w": 194,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "ursath": {
       "png": "res://assets/units/ursath.png",
@@ -4956,7 +10214,35 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/ursath.skill.png",
+      "skill_frame_w": 201,
+      "skill_frame_h": 184,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "e": [
+          6,
+          6
+        ],
+        "r": [
+          12,
+          6
+        ]
+      }
     },
     "vaelindra": {
       "png": "res://assets/units/vaelindra.png",
@@ -4986,7 +10272,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 55,
+        "e": 65,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/vaelindra.skill.png",
+      "skill_frame_w": 355,
+      "skill_frame_h": 211,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        102
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vaelkorr": {
       "png": "res://assets/units/vaelkorr.png",
@@ -5016,7 +10334,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vaelkorr.skill.png",
+      "skill_frame_w": 329,
+      "skill_frame_h": 144,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        67
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vaelmyrra": {
       "png": "res://assets/units/vaelmyrra.png",
@@ -5046,7 +10396,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vaelmyrra.skill.png",
+      "skill_frame_w": 200,
+      "skill_frame_h": 195,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        97
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vaerith": {
       "png": "res://assets/units/vaerith.png",
@@ -5076,7 +10458,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vaerith.skill.png",
+      "skill_frame_w": 309,
+      "skill_frame_h": 134,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        67,
+        67
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "valekris": {
       "png": "res://assets/units/valekris.png",
@@ -5106,7 +10520,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/valekris.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "valthar": {
       "png": "res://assets/units/valthar.png",
@@ -5136,7 +10582,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/valthar.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vardrok": {
       "png": "res://assets/units/vardrok.png",
@@ -5166,7 +10644,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vardrok.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vargrath": {
       "png": "res://assets/units/vargrath.png",
@@ -5196,7 +10706,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 45,
+        "e": 55,
+        "r": 85
+      },
+      "skills_png": "res://assets/units/vargrath.skill.png",
+      "skill_frame_w": 366,
+      "skill_frame_h": 275,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        108,
+        163
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vargroth": {
       "png": "res://assets/units/vargroth.png",
@@ -5226,7 +10768,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vargroth.skill.png",
+      "skill_frame_w": 341,
+      "skill_frame_h": 242,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        109,
+        132
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "varkul": {
       "png": "res://assets/units/varkul.png",
@@ -5256,7 +10830,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/varkul.skill.png",
+      "skill_frame_w": 128,
+      "skill_frame_h": 146,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        64,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "varkuthar": {
       "png": "res://assets/units/varkuthar.png",
@@ -5286,7 +10892,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/varkuthar.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "velmyrth": {
       "png": "res://assets/units/velmyrth.png",
@@ -5316,7 +10954,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 40,
+        "e": 55,
+        "r": 80
+      },
+      "skills_png": "res://assets/units/velmyrth.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        77,
+        75
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "verdanix": {
       "png": "res://assets/units/verdanix.png",
@@ -5346,7 +11016,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/verdanix.skill.png",
+      "skill_frame_w": 336,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "veshtrax": {
       "png": "res://assets/units/veshtrax.png",
@@ -5376,7 +11078,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/veshtrax.skill.png",
+      "skill_frame_w": 359,
+      "skill_frame_h": 184,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        101,
+        90
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vessyra": {
       "png": "res://assets/units/vessyra.png",
@@ -5406,7 +11140,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vessyra.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vex": {
       "png": "res://assets/units/vex.png",
@@ -5436,7 +11202,35 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "hero"
+      "renderer": "hero",
+      "skill_dur": {
+        "q": 40,
+        "w": 100,
+        "e": 60,
+        "r": 80
+      },
+      "skills_png": "res://assets/units/vex.skill.png",
+      "skill_frame_w": 386,
+      "skill_frame_h": 366,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        192,
+        183
+      ],
+      "skill_anims": {
+        "w": [
+          0,
+          6
+        ],
+        "e": [
+          6,
+          6
+        ],
+        "r": [
+          12,
+          6
+        ]
+      }
     },
     "vhaerinth": {
       "png": "res://assets/units/vhaerinth.png",
@@ -5466,7 +11260,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vhaerinth.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vhaerith": {
       "png": "res://assets/units/vhaerith.png",
@@ -5496,7 +11322,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vhaerith.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vhalzun": {
       "png": "res://assets/units/vhalzun.png",
@@ -5526,7 +11384,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 80,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vhalzun.skill.png",
+      "skill_frame_w": 304,
+      "skill_frame_h": 211,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        152,
+        111
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vhorethzir": {
       "png": "res://assets/units/vhorethzir.png",
@@ -5556,7 +11446,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vhorethzir.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 290,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        202
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vhyssarion": {
       "png": "res://assets/units/vhyssarion.png",
@@ -5586,7 +11508,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vhyssarion.skill.png",
+      "skill_frame_w": 382,
+      "skill_frame_h": 148,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        130,
+        64
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vokrahn": {
       "png": "res://assets/units/vokrahn.png",
@@ -5616,7 +11570,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vokrahn.skill.png",
+      "skill_frame_w": 491,
+      "skill_frame_h": 254,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        245,
+        84
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vorenmarr": {
       "png": "res://assets/units/vorenmarr.png",
@@ -5646,7 +11632,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 70,
+        "w": 70,
+        "e": 80,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vorenmarr.skill.png",
+      "skill_frame_w": 320,
+      "skill_frame_h": 145,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        62,
+        62
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vorgath": {
       "png": "res://assets/units/vorgath.png",
@@ -5676,7 +11694,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vorgath.skill.png",
+      "skill_frame_w": 335,
+      "skill_frame_h": 179,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vorthakul": {
       "png": "res://assets/units/vorthakul.png",
@@ -5706,7 +11756,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vorthakul.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vraskhan": {
       "png": "res://assets/units/vraskhan.png",
@@ -5736,7 +11818,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 35,
+        "w": 40,
+        "e": 55,
+        "r": 85
+      },
+      "skills_png": "res://assets/units/vraskhan.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vulkareth": {
       "png": "res://assets/units/vulkareth.png",
@@ -5766,7 +11880,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vulkareth.skill.png",
+      "skill_frame_w": 348,
+      "skill_frame_h": 199,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        99,
+        99
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "vyraeth": {
       "png": "res://assets/units/vyraeth.png",
@@ -5796,7 +11942,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/vyraeth.skill.png",
+      "skill_frame_w": 249,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "wiro": {
       "png": "res://assets/units/wiro.png",
@@ -5826,7 +12004,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 30,
+        "w": 45,
+        "e": 40,
+        "r": 80
+      },
+      "skills_png": "res://assets/units/wiro.skill.png",
+      "skill_frame_w": 359,
+      "skill_frame_h": 317,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        101,
+        236
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xaelmoran": {
       "png": "res://assets/units/xaelmoran.png",
@@ -5856,7 +12066,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xaelmoran.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        90
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xaerissa": {
       "png": "res://assets/units/xaerissa.png",
@@ -5886,7 +12128,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xaerissa.skill.png",
+      "skill_frame_w": 389,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        131,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xareth": {
       "png": "res://assets/units/xareth.png",
@@ -5916,7 +12190,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xareth.skill.png",
+      "skill_frame_w": 340,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xarnathul": {
       "png": "res://assets/units/xarnathul.png",
@@ -5946,7 +12252,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xarnathul.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 346,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        258
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xarnthuul": {
       "png": "res://assets/units/xarnthuul.png",
@@ -5976,7 +12314,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xarnthuul.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xelnarath": {
       "png": "res://assets/units/xelnarath.png",
@@ -6006,7 +12376,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xelnarath.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 194,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        101
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xerakhotep": {
       "png": "res://assets/units/xerakhotep.png",
@@ -6036,7 +12438,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xerakhotep.skill.png",
+      "skill_frame_w": 342,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xerakkuth": {
       "png": "res://assets/units/xerakkuth.png",
@@ -6066,7 +12500,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xerakkuth.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xerathis": {
       "png": "res://assets/units/xerathis.png",
@@ -6096,7 +12562,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xerathis.skill.png",
+      "skill_frame_w": 359,
+      "skill_frame_h": 164,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        101,
+        77
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xharokh": {
       "png": "res://assets/units/xharokh.png",
@@ -6126,7 +12624,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xharokh.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 227,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        114
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xirthalis": {
       "png": "res://assets/units/xirthalis.png",
@@ -6156,7 +12686,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/xirthalis.skill.png",
+      "skill_frame_w": 328,
+      "skill_frame_h": 173,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        81,
+        57
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "xyrael": {
       "png": "res://assets/units/xyrael.png",
@@ -6186,7 +12748,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 40,
+        "w": 55,
+        "e": 60,
+        "r": 90
+      },
+      "skills_png": "res://assets/units/xyrael.skill.png",
+      "skill_frame_w": 188,
+      "skill_frame_h": 186,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        88,
+        103
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "yamako": {
       "png": "res://assets/units/yamako.png",
@@ -6216,7 +12810,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 45,
+        "w": 55,
+        "e": 65,
+        "r": 95
+      },
+      "skills_png": "res://assets/units/yamako.skill.png",
+      "skill_frame_w": 294,
+      "skill_frame_h": 211,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        97,
+        113
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "yhoranth": {
       "png": "res://assets/units/yhoranth.png",
@@ -6246,7 +12872,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/yhoranth.skill.png",
+      "skill_frame_w": 247,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        88,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "yomigetsu": {
       "png": "res://assets/units/yomigetsu.png",
@@ -6276,7 +12934,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/yomigetsu.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zahkareth": {
       "png": "res://assets/units/zahkareth.png",
@@ -6306,7 +12996,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zahkareth.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zarethyr": {
       "png": "res://assets/units/zarethyr.png",
@@ -6336,7 +13058,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zarethyr.skill.png",
+      "skill_frame_w": 360,
+      "skill_frame_h": 272,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        102,
+        169
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zephyr": {
       "png": "res://assets/units/zephyr.png",
@@ -6366,7 +13120,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "hero"
+      "renderer": "hero",
+      "skill_dur": {
+        "q": 240,
+        "w": 180,
+        "e": 180,
+        "r": 240
+      },
+      "skills_png": "res://assets/units/zephyr.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 215,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        103
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zhaeris": {
       "png": "res://assets/units/zhaeris.png",
@@ -6396,7 +13182,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zhaeris.skill.png",
+      "skill_frame_w": 330,
+      "skill_frame_h": 376,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        72,
+        200
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zharakzuul": {
       "png": "res://assets/units/zharakzuul.png",
@@ -6426,7 +13244,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zharakzuul.skill.png",
+      "skill_frame_w": 360,
+      "skill_frame_h": 205,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        102,
+        102
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zharok": {
       "png": "res://assets/units/zharok.png",
@@ -6456,7 +13306,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zharok.skill.png",
+      "skill_frame_w": 514,
+      "skill_frame_h": 477,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        257,
+        219
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zhyrakaan": {
       "png": "res://assets/units/zhyrakaan.png",
@@ -6486,7 +13368,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zhyrakaan.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zhyvrek": {
       "png": "res://assets/units/zhyvrek.png",
@@ -6516,7 +13430,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zhyvrek.skill.png",
+      "skill_frame_w": 350,
+      "skill_frame_h": 191,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        92,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zorashi": {
       "png": "res://assets/units/zorashi.png",
@@ -6546,7 +13492,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zorashi.skill.png",
+      "skill_frame_w": 339,
+      "skill_frame_h": 180,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        92
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zorathiel": {
       "png": "res://assets/units/zorathiel.png",
@@ -6576,7 +13554,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zorathiel.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 185,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        97
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zorothrax": {
       "png": "res://assets/units/zorothrax.png",
@@ -6606,7 +13616,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zorothrax.skill.png",
+      "skill_frame_w": 345,
+      "skill_frame_h": 175,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        87,
+        87
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zulkhaven": {
       "png": "res://assets/units/zulkhaven.png",
@@ -6636,7 +13678,39 @@
         ]
       },
       "boss_class": "mini",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zulkhaven.skill.png",
+      "skill_frame_w": 194,
+      "skill_frame_h": 165,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        82,
+        82
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     },
     "zyvareth": {
       "png": "res://assets/units/zyvareth.png",
@@ -6666,7 +13740,39 @@
         ]
       },
       "boss_class": "true",
-      "renderer": "boss"
+      "renderer": "boss",
+      "skill_dur": {
+        "q": 60,
+        "w": 90,
+        "e": 60,
+        "r": 100
+      },
+      "skills_png": "res://assets/units/zyvareth.skill.png",
+      "skill_frame_w": 356,
+      "skill_frame_h": 199,
+      "skill_frames_per_row": 8,
+      "skill_anchor": [
+        98,
+        106
+      ],
+      "skill_anims": {
+        "q": [
+          0,
+          6
+        ],
+        "w": [
+          6,
+          6
+        ],
+        "e": [
+          12,
+          6
+        ],
+        "r": [
+          18,
+          6
+        ]
+      }
     }
   }
 }

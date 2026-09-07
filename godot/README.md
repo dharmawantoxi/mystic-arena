@@ -232,7 +232,8 @@ area pad. Deterministik: seed per-frame + dt controller ter-jepit 1/60
 (`bosses/level1.py:824-826`) → dua kali bake menghasilkan hash PNG
 identik (diverifikasi saat pengembangan).
 
-Deviasi yang disengaja:
+Deviasi yang disengaja (Fase 5; dua yang pertama DITUTUP di Fase 5c
+di bawah):
 
 - **Pose skill (q/w/e/r) belum dibake** — selama cast, badan memakai
   pose attack terakhir + FX proyektil Godot (`SkillProjectile.gd`,
@@ -243,6 +244,35 @@ Deviasi yang disengaja:
   elite (mis. `_draw_grimjaw_elite`) menyusul kalau diperlukan.
 - **Rim cahaya tim** disederhanakan jadi 2 nilai shader (biru/merah)
   dari 2 tabel RGB pygame (`_HD_RIM_ADD*`, `heroes/__init__.py:1880-1883`).
+
+## Pose skill + rage (Fase 5c — menutup 2 deviasi Fase 5)
+
+Perintah bake sama (`--units-png`); keluarannya bertambah 222 strip
+`<type>.skill.png` (±9,2 MB) + 1 strip `drakar.rage.png` dan manifest
+**skema 2** (kunci baru `skill_dur`/`skill_anims`/`skills_png` +
+geometri strip skill, `rage*` untuk drakar — pembaca skema 1
+mengabaikannya, backward-compatible).
+
+| Aspek | Sumber pygame | Implementasi |
+|---|---|---|
+| drive skill | `active_skill` + countdown `active_skill_timer` (kunci cache `heroes/__init__.py:1750-1766`) | sweep timer durasi cast → 1, 6 frame/pose |
+| durasi cast | sisi-AI (`<X>Skills.SKILL_VISUAL_DURATION` + `BossHeroSkills._SKILL_REGISTRY`, `hero_skills/_bundle.py`) — BUKAN durasi render namespace | `skill_dur` di manifest; dipakai sweep bake + `SkillBook._visual_duration` + countdown `BakedSprite` |
+| progress | renderer menghitung sendiri `1-timer/dur` (mis. `_skill_progress`, `heroes/_bundle.py:6807-6811`) | `BakedSprite` memaksa frame dari countdown, prioritas DI ATAS attack |
+| pose statis | gerbang bake: selisih vs idle < 1.0 | 1 drop (`ursath/w`, visual identik — benar) + 2 fail renderer rusak (`sasori/e`, `vex/q`) → fallback attack |
+| unit berlapis | `heroes/*_fx.py` digambar live di atas sprite (`_bundle.py`) | bake fallback kanvas saja (seperti Fase 5); FX hidup tetap tugas Godot |
+| varian rage | `rage_active` 300 frame sejak cast q drakar (`hero_skills/_bundle.py`) | strip `drakar.rage.png` (24 frame idle/walk/attack beraura); `BakedSprite` mengganti pose dasar selama countdown rage |
+| bentuk elite | "Elite" ternyata NAMA RIG UTAMA, bukan varian level: `_draw_grimjaw_elite`/`_draw_kaizen_elite` dipanggil tanpa syarat oleh wrapper `_draw_*_body` (`heroes/_bundle.py:1404-1411`, `:7431-7437`); `_draw_zharok_elite` (`bosses/level4.py:2125`) bahkan tak dipanggil. Level tidak dibaca di jalur draw; `boss_class` tetap per tipe | SUDAH tampil di strip dasar Fase 5 — deviasi ditutup sebagai salah-alamat (misnomer), tanpa bake tambahan |
+
+**Jam virtual bake.** Klaim "dua kali bake = hash identik" Fase 5 ternyata
+bocor untuk 2 unit: mulut emberwick membaca `get_ticks()` absolut saat
+attack (`bosses/level41.py:476`, 4 hash berbeda terukur) dan controller
+thalgryn memakai dt jam dinding (`bosses/thalgryn_v4.py:1019-1031).
+Perbaikannya dari sisi bake (file `bosses/*.py` tidak boleh diubah):
+`get_ticks()` dibekukan ke `_PROBE_TICK` selama SELURUH ekspor —
+meniru pola resmi probe paritas game itu sendiri
+(`heroes/__init__.py:3085-3103`). Hasil: 220/222 strip dasar
+byte-identik dengan Fase 5; emberwick + thalgryn berubah SATU KALI
+terdokumentasi, lalu stabil (446 file identik antar dua run penuh).
 
 File penting: `scripts/render/BakedUnitDB.gd` (manifest + tekstur lazy,
 FIFO cap 64), `scenes/render/BakedSprite.tscn` + `.gd` (SpriteFrames
