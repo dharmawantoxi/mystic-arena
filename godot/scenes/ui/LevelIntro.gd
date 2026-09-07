@@ -192,13 +192,14 @@ func _build_left_labels() -> void:
 		Vector2(cx, 130))
 	_label(_root, str(level_num), _font_title, 200, Color(1.0, 0.863, 0.392),
 		Vector2(cx, 230), true)
-	var name := str(level_config.get("name", ""))
-	if name != "":
-		_label(_root, name, _font_title, 46, Color(0.941, 0.941, 0.980),
+	# lv_name/level_desc: JANGAN pakai "name" — bayangi Node.name (warning)
+	var lv_name := str(level_config.get("name", ""))
+	if lv_name != "":
+		_label(_root, lv_name, _font_title, 46, Color(0.941, 0.941, 0.980),
 			Vector2(cx, 390), true)
-	var desc := str(level_config.get("description", ""))
-	if desc != "":
-		_label(_root, desc, _font_medium, 24, Color(0.706, 0.784, 0.863),
+	var level_desc := str(level_config.get("description", ""))
+	if level_desc != "":
+		_label(_root, level_desc, _font_medium, 24, Color(0.706, 0.784, 0.863),
 			Vector2(cx, 440))
 	# ── Difficulty (label saja; 5 bar digambar _draw_shapes) ──
 	var diff := GameManager.difficulty

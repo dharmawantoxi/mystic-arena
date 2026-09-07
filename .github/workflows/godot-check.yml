@@ -43,6 +43,9 @@ concurrency:
 
 permissions:
   contents: read
+  # Sementara: langkah debug menaruh baris error pertama di commit status
+  # (baca lewat API) karena log artifact tidak selalu bisa diunduh.
+  statuses: write
 
 env:
   # Harus sama dengan config/features di godot/project.godot
@@ -103,6 +106,8 @@ jobs:
       # needs to restart"; karena itu dijalankan dua kali, dan log yang dinilai
       # adalah yang KEDUA.
       - name: Import project
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -o pipefail
           godot --headless --path godot --import 2>&1 | tee /tmp/import1.log || true
@@ -113,7 +118,16 @@ jobs:
           else
             godot --headless --path godot --import 2>&1 | tee /tmp/import.log
           fi
-          python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import"
+          if ! python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import"; then
+            # DEBUG (sementara): taruh baris error pertama di commit status
+            # supaya bisa dibaca lewat API tanpa mengunduh log.
+            LINE="$(grep -m1 -E 'SCRIPT ERROR|Parse Error|Compile Error|Invalid|Cannot open|not found' /tmp/import.log | cut -c1-130)"
+            if [ -n "$LINE" ]; then
+              gh api "repos/${{ github.repository }}/statuses/${{ github.sha }}" \
+                -f state=error -f context=import-error-detail -f description="$LINE" || true
+            fi
+            exit 1
+          fi
 
       # ── 4. Smoke test yang sudah ada di repo (keduanya self-quit + PASS line) ──
       - name: AIPlayerTest (menu, tanpa combat)
