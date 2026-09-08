@@ -28,6 +28,8 @@ on:
       - '_core.py'
       - '_entity.py'
       - 'hero_items.py'
+      - 'hero_balance.py'
+      - '_system.py'
       - 'tools/test_damage_school.py'
       - 'levels/**'
       - 'map_components/**'
@@ -47,6 +49,8 @@ on:
       - '_core.py'
       - '_entity.py'
       - 'hero_items.py'
+      - 'hero_balance.py'
+      - '_system.py'
       - 'tools/test_damage_school.py'
       - 'levels/**'
       - 'map_components/**'
@@ -333,6 +337,30 @@ jobs:
             cat /tmp/rngguard.gate
             echo "::error::RNGGUARD-FAIL-TAIL: $(tail -40 /tmp/rngguard.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::RNGGUARD-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/rngguard.log | tr '\n' ' | ' | cut -c1-2500)"
+            exit 1
+          fi
+
+      # ── 4g. HeroCatchupUnlockParityTest: paritas SUMBER unlock catch-up
+      # hero (FASE 11 progresi). Rumusnya sudah ada, tapi masukannya —
+      # jumlah hero non-starter yang dimiliki pemain — dulu selalu 0 di
+      # Godot, jadi tiap save berperilaku seperti save BARU pygame. Yang
+      # dibandingkan: kunci save + auto-grant starter (AST Game.reset),
+      # save lama tidak kehilangan unlock, boss_unlocks_for_purchases per
+      # isi save, multiplier catch-up per hero × unlocks × level, dan stat
+      # Hero SUNGGUHAN (base_hp/base_damage/max_hp/damage, termasuk setelah
+      # upgrade()) vs Hero pygame yang dibuat dengan game_instance terisi.
+      # Fixture = seksi hero_catchup_unlocks.
+      - name: HeroCatchupUnlockParityTest (sumber unlock catch-up vs oracle Pygame)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/HeroCatchupUnlockParityTest.tscn --quit-after 120 2>&1 | tee /tmp/catchup.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/catchup.log --label "HeroCatchupUnlockParityTest" \
+              --require "[HeroCatchupUnlockParityTest] PASS" > /tmp/catchup.gate 2>&1; then
+            cat /tmp/catchup.gate
+          else
+            cat /tmp/catchup.gate
+            echo "::error::CATCHUP-FAIL-TAIL: $(tail -40 /tmp/catchup.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::CATCHUP-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/catchup.log | tr '\n' ' | ' | cut -c1-2500)"
             exit 1
           fi
 

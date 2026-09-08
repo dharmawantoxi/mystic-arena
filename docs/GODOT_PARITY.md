@@ -36,6 +36,7 @@ sertifikasi paritas seluruh game.
 | Facing boss | Arah hadap di-update tiap frame walau boss diam di luar jangkauan | `_face()` dipanggil hanya di cabang dalam-jangkauan `update` pygame (kiter yang hold tidak berbalik); facing awal -1 (`Boss.__init__`); kunci arah hadap selama ayunan serangan dasar 6–15 frame (`_attack_lock_timer`). |
 | Skill hero (222) | `SkillBook.gd` tabel efek generik per-detik; 6 starter hand-written belum diaudit koefisien/target/timing; SEMUA boss-hero memakai substitusi generik | `HeroSkillKit.gd` di-transpile 1:1 dari `hero_skills/_bundle.py` oleh `tools/gen_hero_skill_kit.py`: dispatch registry 66 resep `_cast_*` + `_generic_cast`/`_fallback_cast` untuk sisanya — koefisien, guard jangkauan (slack 1.15 hanya di acquire), prioritas auto-cast R→E(2+)→W(hp<0.4%)→Q, CDR+spell-vamp, dan urutan timer frame persis `Hero.update`. `SkillBook.gd` jadi facade UI tipis (tanpa state sendiri). Fixture oracle `hero_skills` = 222 hero × 4 skenario (118.293 event) diputar ulang `HeroSkillParityTest`; `gen_hero_skill_kit.py --check` + scope-check dijaga CI. |
 | Catch-up stat hero | Buff melee normalisasi hp/damage di `get_balanced_stats` + koreksi starter saja | `HeroDB.catchup_base` mirror `hero_balance.starter_catchup_stats`: MENIMPA stat dasar SEMUA hero dari katalog MENTAH, `k = 1 + 0.32 × (1 − min(1, unlocks/12)) × sisa-hp`; hpK=1+(k−1)·1,25, dmgK=1+(k−1)·0,85; level-1/no-save → ×1,40/×1,272. `get_balanced_stats` tidak lagi mem-buff hp/damage melee (speed/cd tetap dinormalisasi ke px/s dan detik). |
+| Sumber unlock catch-up (progresi) | `_catchup_unlocks()` Godot hard-code **0**: GameManager tidak menyimpan daftar hero yang dibeli/di-unlock lintas-save, jadi tiap save memakai bonus starter PENUH (×1,40 HP / ×1,272 dmg) — identik save BARU pygame walau roster pemain sudah penuh | Rantai sumber pygame diport utuh: save `purchased_heroes` (`_system.SaveManager.load`/`get_empty_save`) → `Game.reset` (_core.py:1596-1604, termasuk AUTO-GRANT `kaizen` untuk save kosong) → `__main__.game_instance` → `Hero.__init__` (`hero_balance.boss_unlocks_for_purchases` = `len()` hero BUKAN starter). Di Godot: `SaveManager.data["unlocked_heroes"]` (kunci lama Godot = padanan `purchased_heroes`) → `GameManager.purchased_heroes` (REFERENSI ke array save; diikat `bind_purchased_heroes()` di `start_level`, **dilepas dengan mengganti binding — bukan `clear()`** di `return_to_menu`, paritas `game_instance = None` main.py:587) → `GameManager.catchup_unlocks()` → `Hero._catchup_unlocks()`. Berlaku untuk hero KEDUA tim (pygame membaca daftar yang sama untuk hero AI). Unlock yang masuk di tengah match (boss dikalahkan) langsung terhitung karena array-nya dibagi referensi; hero yang SUDAH berdiri tidak dihitung ulang (sama seperti pygame). Save pemain tidak dimigrasi/dihapus: unlock lama dipakai apa adanya, penulisan hanya saat starter benar-benar baru di-grant. Dikunci fixture `hero_catchup_unlocks` + `HeroCatchupUnlockParityTest`. |
 | Kaizen | Rig buatan ulang selalu mengalahkan sprite Pygame | Arena normal memakai bake renderer Pygame. Rig alternatif tetap ada di `KaizenDemo.tscn`, atau opt-in `mystic/rendering/experimental_hero_rigs`. |
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
 | Jalur damage basic hero | Pipeline school-aware satu-untuk-semua: physical→armor node, magic→MR, netral→tanpa mitigasi; armor hero = snapshot node; amp setelah mitigasi; block sebelum armor floor 1; blind dibaca dari status TARGET; crit buff tidak pernah aktif; lifesteal/cleave memakai damage post-mitigasi; reflect thornmail bertipe 'normal' | `CombatSystem.apply_damage` kini dispatch per jenis target, mirror `take_damage` pygame masing-masing: HERO = amp `int(round)` → armor ITEM (live dari inventory + aura, dikikis shred, negatif = bonus) utk SEMUA damage non-`fire`, TANPA magic_resist → block SETELAH armor (amount milik defender, aura guard menimpa tanpa roll, floor 0) → Bristleback; MINION = amp → shred bonus (double-dip) → armor−shred/MR; BOSS = amp → shred bonus → reduction−shred×0.06 (cap 0.60)/MR → resilience+cap, blind hanya `normal` bersource; TOWER = armor/MR sekolah; NEXUS = shield `int(x×(1−0.88))` truncation. Kalkulasi penyerang `calc_damage` = `_do_attack` pygame (bonus item → crit buff kit `int(×2)` → crit item `int(×mult)`; pembulatan `py_round` banker ala Python). Lifesteal float pra-mitigasi (ranged `int()` saat spawn), cleave netral tanpa source, Morgath serang instan 'normal', peluru menara/minion netral, boss ranged 'normal'. Dikunci `HeroBasicAttackParityTest` (29 skenario + probe get_block). |
@@ -63,9 +64,9 @@ sertifikasi paritas seluruh game.
   Game.update) — sama isinya saat run normal.
   `Hero.auto_cast_enabled` default True seperti pygame v27 (auto-cast juga
   untuk hero terpilih; gate False hanya dipakai harness replay).
-  `_catchup_unlocks()` Godot = 0 selama GameManager tidak menyimpan daftar
-  hero yang dibeli lintas-save — identik save BARU pygame; paritas penuh
-  menunggu fitur progresi itu diport (jangan sentuh save user untuk ini).
+  `_catchup_unlocks()` kini membaca daftar unlock lintas-save
+  (`SaveManager.unlocked_heroes` -> `GameManager.purchased_heroes`) dan
+  dikunci `HeroCatchupUnlockParityTest` — lihat tabel di atas.
 - **Visual skill smart-AI boss:** blok `heroes/<boss>_fx` pygame
   (notify_skill_cast/impact: flash, shockwave, serpihan, beam per boss)
   diganti aproksimasi Godot — callout nama skill + cincin ekspansi
@@ -103,6 +104,26 @@ sertifikasi paritas seluruh game.
 - **Progresi/settings:** kunci difficulty sepanjang run, reset progresi karena
   ganti mode, statistik/achievement, semua pilihan settings dan migrasi/cloud
   save belum setara. Tidak menghapus save pengguna untuk menyamarkan selisih.
+  Yang SUDAH setara + teruji dari blok ini hanyalah **sumber jumlah unlock
+  catch-up** (`hero_catchup_unlocks`/`HeroCatchupUnlockParityTest`: kunci
+  save, auto-grant starter, hitungan `boss_unlocks_for_purchases`, stat hero
+  hasilnya, dan jaminan unlock save lama tidak hilang). Yang TETAP TERBUKA
+  di jalur progresi ini, eksplisit:
+  (1) **penempatan auto-grant starter beda**: Godot memberi `kaizen` saat
+  save di-backfill (load), pygame saat `Game.reset`. Jumlah unlock
+  catch-up sama-sama 0, tetapi status OWNED `kaizen` di Hero Shop untuk
+  save yang benar-benar baru muncul lebih awal di Godot — belum
+  disamakan karena mengubahnya menyentuh alur save;
+  (2) **multi-slot save + migrasi legacy + cloud save** (`_system.py`
+  NUM_SLOTS/`migrate_legacy_save`, `mobile/cloud_save.py`) belum ada di
+  Godot: satu berkas `user://mystic_save.json`, jadi `get_slot_info`,
+  playtime, dan `level_stats` belum diport;
+  (3) **alur pembelian hero di Hero Shop meta** (`_unlock_hero_in_meta_shop`:
+  syarat `unlock_require_boss`, potong `meta_gold`, harga 4500) ada di
+  `MainMenu.gd` tetapi belum punya oracle sendiri — yang diuji harness ini
+  hanya AKIBAT daftar unlock terhadap catch-up, bukan validasi transaksinya;
+  (4) `heroes_unlocked_this_match` + overlay achievement "NEW HERO
+  UNLOCKED!" pygame belum diport (Godot hanya `print`).
 - **Android/performa:** lolos tes headless bukan pengujian visual, sentuh,
   performa perangkat, ataupun verifikasi APK/AAB.
 
@@ -131,6 +152,7 @@ godot --headless --path godot res://tests/BossSmartAIParityTest.tscn --quit-afte
 godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 900
 godot --headless --path godot res://tests/HeroBasicAttackParityTest.tscn --quit-after 120
 godot --headless --path godot res://tests/HeroRngGuardParityTest.tscn --quit-after 120
+godot --headless --path godot res://tests/HeroCatchupUnlockParityTest.tscn --quit-after 120
 ```
 
 `GameplayParityTest` membaca `godot/tests/fixtures/match_parity.json`: ekonomi
@@ -210,6 +232,28 @@ spawn lalu roll block saat mendarat), evasion Monarch Wings 28%, blind
 dan windrun pada reflect Bristleback (nested take_damage). Regenerasi
 fixture HANYA bila `_entity.py`/`hero_items.py` berubah.
 
+`HeroCatchupUnlockParityTest` memutar ulang seksi fixture
+`hero_catchup_unlocks` (objek biasa, bukan string kompak) pada
+`SaveManager`/`GameManager`/node `Hero.gd` yang sebenarnya. Oracle
+membaca kode pygame ASLI: kunci save + starter yang di-grant diambil dari
+**AST `Game.reset`** (rename diam-diam langsung ketahuan),
+`SaveManager.load()` pygame dijalankan atas berkas slot lama di direktori
+save SEMENTARA, `boss_unlocks_for_purchases`/`starter_catchup` dipanggil
+apa adanya, dan 24 baris stat berasal dari `Hero` pygame SUNGGUHAN yang
+dibuat dengan `__main__.game_instance.purchased_heroes` terisi (termasuk
+sesudah `upgrade()` — catch-up TIDAK dihitung ulang saat naik level).
+Dibandingkan di Godot: konstanta kurva + daftar starter, unlock save lama
+tidak hilang sesudah backfill, `GameManager.catchup_unlocks()` untuk 10
+isi save (kosong, hanya starter, 6 starter, 1/3/6/12/15 hero non-starter,
+entri kembar, dan "di luar match" = 0), 315 multiplier
+`HeroDB.starter_catchup_mults`, lalu `base_hp`/`base_damage`/`max_hp`/
+`damage` node Hero. Harness TIDAK PERNAH menulis berkas save
+(`bind_purchased_heroes(false)`, state `SaveManager.data` di-snapshot dan
+dipulihkan). Regresi yang dijaga khusus: `return_to_menu()` melepas
+binding daftar unlock **tanpa** menghapus isi save. Regenerasi fixture
+HANYA bila `_core.py`/`_entity.py`/`_system.py`/`hero_balance.py`
+berubah.
+
 Jika aturan Pygame memang berubah, sesuaikan Godot, **kemudian** regenerasi:
 
 ```bash
@@ -267,6 +311,17 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   `HeroBasicAttackParityTest` (dan regresi lama lain) diverifikasi lewat CI
   `godot-check.yml` pada PR; gate lulus = penanda `PASS` dan tanpa
   `SCRIPT ERROR`/`Parse Error`/`Compile Error`.
+- Fase catch-up unlocks (progresi, FASE 11): oracle `hero_catchup_unlocks`
+  lulus lokal (10 isi save, 4 kasus save lama, 315 multiplier, 24 stat hero
+  pygame; seksi lama fixture byte-identik — sisi pygame TIDAK disentuh),
+  `gdparse`/`tscn_lint`/`check_refs`/`particles_lint` + `gen_* --check` +
+  scope-check lulus lokal. Tidak ada Godot headless lokal di lingkungan
+  kerja — replay `HeroCatchupUnlockParityTest` diverifikasi lewat CI
+  `godot-check.yml` pada PR (langkah baru setelah `HeroRngGuardParityTest`);
+  gate lulus = penanda `PASS` dan tanpa `SCRIPT ERROR`/`Parse Error`/
+  `Compile Error`. Efek nyata: save dengan 6 hero non-starter membuat
+  Kaizen mulai di 660 HP / 40 damage (bukan 770/45 seperti save baru),
+  persis angka `Hero` pygame.
 - Fase guard RNG (windrun/shadow realm): oracle `hero_rng_guards` lulus
   lokal (14 skenario × double-run seed beda, 58 event HP, 47 roll
   ter-script; seksi lama fixture byte-identik, sisi pygame tidak

@@ -1904,6 +1904,295 @@ def make_hero_rng_guard_fixture(entity):
                 "— lihat docs/GODOT_PARITY.md",
     }
 
+
+# ══════════════════════════════════════════════════════════════
+# HERO CATCH-UP UNLOCKS ORACLE (FASE 11 — progresi lintas-save)
+# ══════════════════════════════════════════════════════════════
+#
+# Fixture `hero_catchup_unlocks` mengunci SUMBER angka `boss_unlocks`
+# yang dipakai catch-up starter — bagian yang selama ini membuat Godot
+# selalu memakai bonus PENUH (unlocks = 0):
+#
+#   _entity.Hero.__init__ (3355-3363)
+#       _g = getattr(__main__, "game_instance", None)
+#       _unlocks = hero_balance.boss_unlocks_for_purchases(
+#           getattr(_g, "purchased_heroes", None) if _g else None)
+#       self.base_hp, self.base_damage = hero_balance.starter_catchup_stats(
+#           hero_type, stats, _unlocks, self.level)
+#
+#   _core.Game.reset (1593-1604, dipanggil __init__ + tiap restart)
+#       self.save_data = SaveManager.load()
+#       self.purchased_heroes = self.save_data.get('purchased_heroes', [])
+#       if not self.purchased_heroes:            # AUTO-GRANT STARTER
+#           self.purchased_heroes.append('kaizen')
+#
+#   hero_balance.boss_unlocks_for_purchases (257-260)
+#       len([h for h in purchased if h not in STARTER_HEROES])
+#
+# Jadi sumbernya adalah DAFTAR HERO YANG DIMILIKI PEMAIN di save
+# (`purchased_heroes`), yang bertambah lewat Hero Shop meta
+# (_core.py:5305-5324) dan unlock gratis boss yang dikalahkan
+# (_auto_unlock_defeated_boss_heroes _core.py:2329-2345) — BUKAN roster
+# in-match. Di luar match (`game_instance is None`, mis. menu utama)
+# nilainya 0. Yang direkam di sini:
+#
+#   rules        : kunci save + starter grant (dibaca dari AST Game.__init__,
+#                  jadi rename diam-diam ketahuan), daftar STARTER_HEROES,
+#                  konstanta kurva catch-up.
+#   save_backfill: SaveManager.load() pygame ASLI atas berkas slot lama —
+#                  unlock yang sudah ada TIDAK BOLEH hilang/diganti.
+#   unlock_counts: boss_unlocks_for_purchases() untuk berbagai isi save.
+#   mults        : starter_catchup() (hp, dmg) per hero × unlocks × level.
+#   hero_stats   : Hero pygame SUNGGUHAN dibuat dengan game_instance palsu
+#                  (purchased_heroes terisi) — base_hp/base_damage/max_hp/
+#                  damage, termasuk sesudah upgrade() (catch-up TIDAK
+#                  dihitung ulang saat naik level).
+
+CU_HERO_TYPES = ("kaizen", "grimjaw", "sylara", "thorne", "vex", "zephyr",
+                 "abaddon", "gornak", "morgath")
+
+## Isi save `purchased_heroes` yang diuji. `None` = tidak ada match/
+## game_instance (menu utama) — pygame memakai 0 unlock di situ.
+CU_PURCHASE_CASES = [
+    {"name": "no_game_instance", "purchased": None},
+    {"name": "empty_save", "purchased": []},
+    {"name": "starter_only", "purchased": ["kaizen"]},
+    {"name": "all_starters", "purchased": ["kaizen", "grimjaw", "sylara",
+                                           "thorne", "vex", "zephyr"]},
+    {"name": "one_boss_hero", "purchased": ["kaizen", "abaddon"]},
+    {"name": "three_boss_heroes", "purchased": ["kaizen", "abaddon",
+                                                "gornak", "morgath"]},
+    {"name": "six_boss_heroes", "purchased": [
+        "kaizen", "sylara", "abaddon", "gornak", "morgath", "drakar",
+        "razak", "khalros"]},
+    {"name": "ref_twelve", "purchased": [
+        "kaizen", "grimjaw", "sylara", "thorne", "vex", "zephyr",
+        "abaddon", "gornak", "morgath", "drakar", "razak", "khalros",
+        "gorath", "pyraena", "cogsworth", "yomigetsu", "akirakumo",
+        "nyxaris"]},
+    {"name": "beyond_ref", "purchased": [
+        "abaddon", "gornak", "morgath", "drakar", "razak", "khalros",
+        "gorath", "pyraena", "cogsworth", "yomigetsu", "akirakumo",
+        "nyxaris", "tsukiyora", "hollowbane", "kaithros", "kaizen"]},
+    # len() polos: entri kembar TETAP dihitung (Godot memakai rumus yang
+    # sama; SaveManager Godot sendiri menolak duplikat saat menulis).
+    {"name": "duplicate_entry", "purchased": ["kaizen", "abaddon",
+                                              "abaddon"]},
+]
+
+CU_MULT_LEVELS = (1, 2, 4, 8, 12)
+CU_MULT_UNLOCKS = (0, 1, 3, 6, 11, 12, 18)
+
+## (hero, nama case purchase, jumlah upgrade() setelah dibuat)
+CU_STAT_CASES = [
+    ("kaizen", "no_game_instance", 0),
+    ("kaizen", "empty_save", 0),
+    ("kaizen", "starter_only", 0),
+    ("kaizen", "one_boss_hero", 0),
+    ("kaizen", "three_boss_heroes", 0),
+    ("kaizen", "six_boss_heroes", 0),
+    ("kaizen", "ref_twelve", 0),
+    ("kaizen", "beyond_ref", 0),
+    ("kaizen", "duplicate_entry", 0),
+    ("sylara", "starter_only", 0),
+    ("sylara", "three_boss_heroes", 0),
+    ("sylara", "ref_twelve", 0),
+    ("grimjaw", "one_boss_hero", 0),
+    ("thorne", "six_boss_heroes", 0),
+    ("vex", "three_boss_heroes", 0),
+    ("zephyr", "beyond_ref", 0),
+    ("zephyr", "all_starters", 0),
+    # Hero non-starter: catch-up TIDAK berlaku (x1.0) berapa pun unlock-nya.
+    ("abaddon", "starter_only", 0),
+    ("abaddon", "ref_twelve", 0),
+    ("gornak", "three_boss_heroes", 0),
+    ("morgath", "beyond_ref", 0),
+    # Naik level TIDAK menghitung ulang catch-up (base_hp/base_damage tetap;
+    # yang berubah hanya multiplier level) — upgrade() pygame asli.
+    ("sylara", "three_boss_heroes", 2),
+    ("kaizen", "one_boss_hero", 5),
+    ("abaddon", "three_boss_heroes", 2),
+]
+
+
+def _cu_is_self_attr(node, name):
+    return (isinstance(node, ast.Attribute) and node.attr == name
+            and isinstance(node.value, ast.Name) and node.value.id == "self")
+
+
+def _cu_progression_rules(core, system, balance):
+    """Kunci save + starter grant dibaca dari AST `Game.reset`.
+
+    (Sumbernya `Game.reset`, yang dipanggil `Game.__init__` DAN tiap
+    match dimulai ulang — Godot mengikat ulang daftarnya di
+    `GameManager.start_level`.) Kalau pygame mengganti nama kunci save
+    atau starter yang di-grant, fixture berubah dan Godot wajib
+    menyesuaikan — bukan sebaliknya.
+    """
+    save_key = None
+    starter_grant = []
+    for func in (core.Game.__init__, core.Game.reset):
+        tree = ast.parse(textwrap.dedent(inspect.getsource(func)))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Assign) and len(node.targets) == 1 \
+                    and _cu_is_self_attr(node.targets[0], "purchased_heroes") \
+                    and isinstance(node.value, ast.Call) \
+                    and isinstance(node.value.func, ast.Attribute) \
+                    and node.value.func.attr == "get" \
+                    and _cu_is_self_attr(node.value.func.value, "save_data"):
+                save_key = ast.literal_eval(node.value.args[0])
+            if isinstance(node, ast.Call) \
+                    and isinstance(node.func, ast.Attribute) \
+                    and node.func.attr == "append" \
+                    and _cu_is_self_attr(node.func.value, "purchased_heroes"):
+                starter_grant.append(ast.literal_eval(node.args[0]))
+    assert save_key, "Game.reset tidak lagi membaca save_data.get(<kunci>)"
+    assert starter_grant, "auto-grant starter hilang dari Game.reset"
+    empty = system.SaveManager.get_empty_save()
+    assert save_key in empty, f"get_empty_save() tanpa kunci {save_key}"
+    return {
+        "save_key": save_key,
+        "starter_grant": starter_grant,
+        "starter_heroes": list(balance.STARTER_HEROES),
+        "empty_save_purchased": list(empty[save_key]),
+        "enabled": bool(balance.ENABLE_STARTER_CATCHUP),
+        "catchup_max": balance.STARTER_CATCHUP_MAX,
+        "catchup_ref": balance.STARTER_CATCHUP_REF,
+        "level_lv0": balance.STARTER_CATCHUP_LV0,
+        "level_lv1": balance.STARTER_CATCHUP_LV1,
+        "level_decay": balance.STARTER_CATCHUP_DECAY,
+        "hp_share": 1.25,
+        "dmg_share": 0.85,
+    }
+
+
+def _cu_save_backfill(system, save_key):
+    """SaveManager.load() pygame ASLI atas berkas slot yang sudah ada.
+
+    Tujuan: membuktikan bahwa save LAMA tidak kehilangan unlock (dan
+    tidak diam-diam diberi starter) hanya karena kunci meta lain
+    di-backfill. Semua tulis-baca terjadi di MYSTIC_SAVE_DIR sementara
+    yang dipasang main() — save pemain tidak pernah disentuh.
+    """
+    cases = []
+    specs = [
+        ("legacy_tanpa_kunci", {"meta_gold": 120, "completed_levels": [1]}),
+        ("legacy_unlock_lama", {"purchased_heroes": ["kaizen", "abaddon",
+                                                     "gornak"],
+                                "meta_gold": 900}),
+        ("daftar_kosong", {"purchased_heroes": []}),
+        ("tanpa_starter", {"purchased_heroes": ["abaddon"]}),
+    ]
+    slot = 1
+    slot_file = system.SaveManager.get_slot_file(slot)
+    for name, stored in specs:
+        os.makedirs(os.path.dirname(slot_file), exist_ok=True)
+        with open(slot_file, "w") as handle:
+            json.dump(stored, handle)
+        loaded = system.SaveManager.load(slot)
+        cases.append({
+            "name": name,
+            "stored": stored,
+            "loaded_purchased": list(loaded.get(save_key, [])),
+            "unlocks": _CU_BALANCE.boss_unlocks_for_purchases(
+                loaded.get(save_key)),
+        })
+    if os.path.exists(slot_file):
+        os.remove(slot_file)
+    return cases
+
+
+def _cu_install_game(purchased):
+    """Pasang `__main__.game_instance` palsu ala Game yang sedang jalan."""
+    import __main__ as main_mod
+    if purchased is None:
+        main_mod.game_instance = None
+        return
+    shared = list(purchased)
+    # Referensi list DIBAGI dengan save_data — persis Game.__init__
+    # (`self.purchased_heroes = self.save_data.get('purchased_heroes', [])`).
+    main_mod.game_instance = SimpleNamespace(
+        purchased_heroes=shared,
+        save_data={"purchased_heroes": shared})
+
+
+def _cu_clear_game():
+    import __main__ as main_mod
+    if hasattr(main_mod, "game_instance"):
+        del main_mod.game_instance
+
+
+_CU_BALANCE = None
+
+
+def make_hero_catchup_unlocks_fixture(core, entity, system):
+    """Oracle sumber unlock catch-up dari kode pygame ASLI."""
+    global _CU_BALANCE
+    import hero_balance
+    _CU_BALANCE = hero_balance
+
+    rules = _cu_progression_rules(core, system, hero_balance)
+    save_key = rules["save_key"]
+
+    unlock_counts = []
+    by_name = {}
+    for case in CU_PURCHASE_CASES:
+        unlocks = hero_balance.boss_unlocks_for_purchases(case["purchased"])
+        by_name[case["name"]] = case
+        unlock_counts.append({
+            "name": case["name"],
+            "purchased": case["purchased"],
+            "unlocks": unlocks,
+        })
+
+    mults = []
+    for hero_type in CU_HERO_TYPES:
+        for unlocks in CU_MULT_UNLOCKS:
+            for level in CU_MULT_LEVELS:
+                hp_mult, dmg_mult = hero_balance.starter_catchup(
+                    hero_type, unlocks, level)
+                mults.append({
+                    "hero": hero_type, "unlocks": unlocks, "level": level,
+                    "hp": hp_mult, "dmg": dmg_mult,
+                })
+
+    hero_stats = []
+    for hero_type, case_name, level_ups in CU_STAT_CASES:
+        purchased = by_name[case_name]["purchased"]
+        entity.set_damage_school(None)
+        _cu_install_game(purchased)
+        try:
+            hero = entity.Hero(hero_type, "blue", x=300.0, y=200.0)
+            for _ in range(level_ups):
+                assert hero.upgrade(), "upgrade() ditolak MAX_HERO_LEVEL"
+        finally:
+            _cu_clear_game()
+        hero_stats.append({
+            "hero": hero_type,
+            "case": case_name,
+            "level_ups": level_ups,
+            "unlocks": hero_balance.boss_unlocks_for_purchases(purchased),
+            "level": int(hero.level),
+            "base_hp": int(hero.base_hp),
+            "base_damage": int(hero.base_damage),
+            "max_hp": float(hero.max_hp),
+            "damage": float(hero.damage),
+        })
+
+    return {
+        "rules": rules,
+        "save_backfill": _cu_save_backfill(system, save_key),
+        "unlock_counts": unlock_counts,
+        "mults": mults,
+        "hero_stats": hero_stats,
+        "note": "sumber jumlah unlock catch-up = save purchased_heroes "
+                "(Game.__init__ 1596-1604) yang dibaca Hero.__init__ lewat "
+                "__main__.game_instance; di luar match = 0. Godot: "
+                "SaveManager.unlocked_heroes -> GameManager.purchased_heroes "
+                "-> Hero._catchup_unlocks (HeroCatchupUnlockParityTest).",
+    }
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -1945,6 +2234,12 @@ def make_fixture(core, entity, levels, paths):
         "hero_rng_guards": json.dumps(
             make_hero_rng_guard_fixture(entity),
             separators=(",", ":")),
+        # FASE 11 — sumber jumlah unlock catch-up (progresi lintas-save):
+        # save purchased_heroes -> game_instance -> Hero.__init__. Direplay
+        # HeroCatchupUnlockParityTest. Seksi ini kecil dan enak dibaca saat
+        # review, jadi disimpan sebagai OBJEK (bukan string kompak).
+        "hero_catchup_unlocks": make_hero_catchup_unlocks_fixture(
+            core, entity, sys.modules["_system"]),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -2009,6 +2304,7 @@ def main():
         try:
             import _core as core
             import _entity as entity
+            import _system  # noqa: F401 — dipakai lewat sys.modules
             import levels
             from map_components.generators import PathGenerator
             expected = make_fixture(core, entity, levels, PathGenerator)
@@ -2055,6 +2351,12 @@ def main():
               f"{len(rg['scenarios'])} skenario, "
               f"{sum(len(s['events']) for s in rg['scenarios'])} event HP, "
               f"{rg_rolls} roll ter-script")
+        cu = actual["hero_catchup_unlocks"]
+        print("             catchup-unlocks oracle: "
+              f"{len(cu['unlock_counts'])} isi save, "
+              f"{len(cu['save_backfill'])} kasus backfill save lama, "
+              f"{len(cu['mults'])} multiplier, "
+              f"{len(cu['hero_stats'])} stat hero pygame")
 
 
 if __name__ == "__main__":

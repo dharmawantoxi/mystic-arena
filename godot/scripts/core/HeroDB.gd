@@ -129,6 +129,14 @@ static func _py_round(v: float) -> int:
 	return int(f) if int(f) % 2 == 0 else int(f) + 1
 
 
+## Enam starter pygame (hero_balance.py:102 STARTER_HEROES). HANYA mereka
+## yang mendapat catch-up, dan mereka TIDAK dihitung sebagai "unlock" di
+## boss_unlocks_for_purchases (hero_balance.py:257-260) — dipakai juga oleh
+## GameManager.boss_unlocks_for_purchases.
+const STARTER_HEROES: Array = ["kaizen", "grimjaw", "sylara", "thorne",
+	"vex", "zephyr"]
+
+
 ## Mirror hero_balance.starter_catchup (hero_balance.py 226-246):
 ## pengali (hp, damage) — SATU-SATUNYA jalur base_hp/base_damage hero.
 ## PENTING (temuan audit 2026-09): di _entity.py Hero.__init__, blok melee
@@ -139,8 +147,7 @@ static func _py_round(v: float) -> int:
 ## hp/damage; nilai final datang dari catchup_base().
 static func starter_catchup_mults(hero_type: String, boss_unlocks: int,
 		level: int) -> Vector2:
-	const STARTERS := ["kaizen", "grimjaw", "sylara", "thorne", "vex", "zephyr"]
-	if not (hero_type in STARTERS):
+	if not (hero_type in STARTER_HEROES):
 		return Vector2.ONE
 	var t := clampf(float(maxi(0, boss_unlocks)) / 12.0, 0.0, 1.0)
 	var lv := maxi(1, level)
