@@ -139,9 +139,23 @@ func calc_skill_damage(attacker: Node, multiplier: float) -> float:
 	return maxf(0.0, out)
 
 
+## Mitigasi — per jenis target, mirror take_damage pygame masing-masing
+# ══════════════════════════════════════════════════════════
+
 # ══════════════════════════════════════════════════════════
 #  MITIGASI — per jenis target, mirror take_damage pygame masing-masing
 # ══════════════════════════════════════════════════════════
+
+## Konversi aman ke float: float(null) di Godot 4.3 error
+## "Invalid call. Nonexistent 'float' constructor". Object.get()
+## mengembalikan null untuk properti yang absen (mis. stub status
+## ProbeStatus di test parity lama), jadi SEMUA baca timer/amount
+## status duck-typed harus lewat sini (null -> 0.0 -> efek nonaktif).
+func _num(v) -> float:
+	if v == null:
+		return 0.0
+	return float(v)
+
 
 ## Deteksi jenis unit (duck-typing field khas masing-masing class).
 func _is_hero(unit) -> bool:
@@ -161,9 +175,9 @@ func _is_minion(unit) -> bool:
 func _hero_mitigate(target, dmg: float, dmg_type: String, st, eff_school: String) -> float:
 	# Baca timer lewat .get() (duck-typed, konvensi CombatSystem): stub status
 	# test parity lama tidak punya var ini — null -> 0.0 -> efek nonaktif.
-	if st != null and float(st.get("dmg_amp_timer")) > 0.0:
+	if st != null and _num(st.get("dmg_amp_timer")) > 0.0:
 		dmg = float(int(DamageSchool.py_round(
-			dmg * (1.0 + float(st.get("dmg_amp_amount"))))))
+			dmg * (1.0 + _num(st.get("dmg_amp_amount"))))))
 	var inv = target.get("items")
 	if dmg_type != "fire" and dmg > 0.0:
 		var armor := float(inv.get_armor()) if inv != null else 0.0
@@ -202,9 +216,9 @@ func _hero_mitigate(target, dmg: float, dmg_type: String, st, eff_school: String
 func _minion_mitigate(target, dmg: float, dmg_type: String, st,
 		eff_school: String, shred: float) -> float:
 	if dmg > 0.0:
-		if st != null and float(st.get("dmg_amp_timer")) > 0.0:
+		if st != null and _num(st.get("dmg_amp_timer")) > 0.0:
 			dmg = float(int(DamageSchool.py_round(
-				dmg * (1.0 + float(st.get("dmg_amp_amount"))))))
+				dmg * (1.0 + _num(st.get("dmg_amp_amount"))))))
 		if dmg_type != "fire" and shred > 0.0:
 			dmg = float(int(DamageSchool.py_round(
 				dmg * (1.0 + minf(1.0, shred * 0.06)))))
@@ -230,9 +244,9 @@ func _minion_mitigate(target, dmg: float, dmg_type: String, st,
 func _boss_mitigate(target, dmg: float, dmg_type: String, st,
 		eff_school: String, shred: float) -> float:
 	if dmg > 0.0:
-		if st != null and float(st.get("dmg_amp_timer")) > 0.0:
+		if st != null and _num(st.get("dmg_amp_timer")) > 0.0:
 			dmg = float(int(DamageSchool.py_round(
-				dmg * (1.0 + float(st.get("dmg_amp_amount"))))))
+				dmg * (1.0 + _num(st.get("dmg_amp_amount"))))))
 		if dmg_type != "fire" and shred > 0.0:
 			dmg = float(int(DamageSchool.py_round(
 				dmg * (1.0 + minf(1.0, shred * 0.06)))))
@@ -359,8 +373,8 @@ func apply_damage(target, amount: float, from_team: String = "",
 	# amp→shred-bonus→school utk minion/boss, school saja utk tower;
 	# nexus tanpa mitigasi sekolah). ──
 	var shred := 0.0
-	if st != null and float(st.get("armor_shred_timer")) > 0.0:
-		shred = float(st.get("armor_shred_amount"))
+	if st != null and _num(st.get("armor_shred_timer")) > 0.0:
+		shred = _num(st.get("armor_shred_amount"))
 	var dmg := amount
 	if _is_hero(target):
 		dmg = _hero_mitigate(target, dmg, dmg_type, st, eff_school)
@@ -447,8 +461,8 @@ func _source_blind(source) -> float:
 	if source == null or not is_instance_valid(source):
 		return 0.0
 	var sst = source.get("status")
-	if sst != null and float(sst.get("blind_timer")) > 0.0:
-		return float(sst.get("blind_amount"))
+	if sst != null and _num(sst.get("blind_timer")) > 0.0:
+		return _num(sst.get("blind_amount"))
 	return 0.0
 
 
@@ -491,10 +505,10 @@ func heal_gain_py(unit, gain: float) -> void:
 	var value := minf(max_hp, before + gain)
 	var st = unit.get("status")
 	if st != null and value > before:
-		if float(st.get("anti_heal_timer")) > 0.0:
-			value = before + (value - before) * (1.0 - float(st.get("anti_heal_amount")))
-		if float(st.get("heal_amp_timer")) > 0.0 and value > before:
-			value = before + (value - before) * (1.0 + float(st.get("heal_amp_amount")))
+		if _num(st.get("anti_heal_timer")) > 0.0:
+			value = before + (value - before) * (1.0 - _num(st.get("anti_heal_amount")))
+		if _num(st.get("heal_amp_timer")) > 0.0 and value > before:
+			value = before + (value - before) * (1.0 + _num(st.get("heal_amp_amount")))
 	unit.hp = value
 
 
