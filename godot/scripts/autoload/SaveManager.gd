@@ -16,7 +16,9 @@ const SAVE_PATH := "user://mystic_save.json"
 
 ## Default = paritas _system.py get_empty_save() + settings Godot.
 ## "unlocked_heroes" adalah padanan purchased_heroes pygame (kaizen granted
-## sebagai starter, _core.py:1603-1608).
+## sebagai starter, _core.py:1603-1608). Daftar inilah yang dibaca
+## GameManager.purchased_heroes -> Hero._catchup_unlocks (catch-up starter),
+## jadi isinya tidak boleh dipangkas/dimigrasi diam-diam.
 var data: Dictionary = {
 	"unlocked_heroes": ["kaizen"],
 	"completed_levels": [],

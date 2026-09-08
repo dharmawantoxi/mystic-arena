@@ -755,12 +755,20 @@ func _kit_ring(center: Vector2, r: float, col: Color) -> void:
 	host.add_child(ring)
 
 
-## Input catch-up: jumlah hero NON-starter yang sudah dibeli pemain (mirror
-## game_instance.purchased_heroes). GameManager belum punya daftar lintas-
-## pembelian -> 0 (bonus penuh), sama seperti save baru pygame. Dibuka sebagai
-## item paritas di docs/GODOT_PARITY.md kalau roster persisten ditambah.
+## Input catch-up: jumlah hero NON-starter yang sudah dibuka pemain lintas
+## save — paritas `Hero.__init__` pygame (_entity.py:3355-3360):
+##
+##     _g = getattr(__main__, "game_instance", None)
+##     _unlocks = hero_balance.boss_unlocks_for_purchases(
+##         getattr(_g, "purchased_heroes", None) if _g else None)
+##
+## Sumbernya SAVE (`purchased_heroes` pygame = `unlocked_heroes` Godot),
+## bukan roster in-match, dan berlaku untuk hero KEDUA tim. Di luar match
+## GameManager tidak mengikat daftarnya -> 0 (bonus catch-up penuh, sama
+## seperti save baru). Dikunci fixture `hero_catchup_unlocks` +
+## HeroCatchupUnlockParityTest.
 func _catchup_unlocks() -> int:
-	return 0
+	return GameManager.catchup_unlocks()
 
 
 ## ══ HARNESS PARITAS (HeroSkillParityTest) ══

@@ -28,6 +28,15 @@
 #     _core.py:2322): boss yang dikalahkan + match menang -> hero gratis masuk
 #     SaveManager.unlocked_heroes (muncul di HERO SHOP + tab HERO toko).
 #   • Hook BGM per level: levels.json["bgm_track"] -> AudioManager.play_bgm.
+#
+# Update FASE 11 (progresi — sumber unlock catch-up):
+#   • purchased_heroes: daftar hero yang dimiliki pemain LINTAS-SAVE
+#     (paritas Game.purchased_heroes _core.py:1596-1604) — referensi ke
+#     array save "unlocked_heroes", diikat bind_purchased_heroes() saat
+#     start_level dan dilepas (bukan dihapus!) di return_to_menu.
+#   • catchup_unlocks() = boss_unlocks_for_purchases() — input catch-up
+#     starter yang dibaca Hero._catchup_unlocks (dulu selalu 0, sehingga
+#     tiap save berperilaku seperti save BARU pygame).
 extends Node
 
 signal level_started(level_num: int)
@@ -123,6 +132,24 @@ var _meta_reward_granted: bool = false
 ## Boss (mini/true) yang dikalahkan di match INI — baru di-unlock gratis
 ## kalau match dimenangkan (paritas bosses_defeated_this_match _core.py:1594).
 var bosses_defeated_this_match: Array = []
+
+# ── PROGRESI LINTAS-SAVE: daftar hero yang dimiliki pemain ──
+## Paritas `Game.purchased_heroes` (_core.py:1596-1604): daftar hero yang
+## sudah dibuka PERMANEN oleh pemain — bertambah lewat Hero Shop meta
+## (_unlock_hero_in_meta_shop) dan unlock gratis boss yang dikalahkan
+## (_auto_unlock_defeated_boss_heroes). BUKAN roster in-match.
+##
+## Isinya adalah REFERENSI ke array save `unlocked_heroes` (padanan kunci
+## pygame `purchased_heroes`), persis seperti pygame yang memegang list
+## milik `save_data` — unlock yang terjadi di tengah match langsung
+## terbaca tanpa sinkronisasi tambahan.
+##
+## KOSONG = tidak ada match berjalan, paritas `__main__.game_instance is
+## None` di menu utama: `Hero.__init__` pygame memakai 0 unlock di situ.
+## JANGAN `clear()` array ini saat kembali ke menu — itu akan menghapus
+## unlock pemain di save; `return_to_menu()` melepas ikatannya dengan
+## MENGGANTI binding ke array kosong baru.
+var purchased_heroes: Array = []
 
 # ── ENEMY SCALING (Hard mode; paritas _core.py:1460 + 1476-1483) ──
 ## enemy_scaling_enabled = (difficulty == "hard"); multiplier HP/dmg/speed
@@ -327,6 +354,9 @@ func start_level(lv: int, replay: bool = false):
 	state = "playing"
 	in_menu = false
 	is_replay = replay
+	# Daftar unlock permanen diikat ulang tiap match dimulai — paritas
+	# Game.reset (_core.py:1593-1604) yang membaca save lalu memberi starter.
+	bind_purchased_heroes()
 	var lv_data = BossDB.get_level(lv)
 	# paritas Game.reset: gold awal & laju pasif dihitung dari level + difficulty
 	starting_gold = compute_starting_gold(lv_data, lv)
@@ -427,11 +457,68 @@ func return_to_menu() -> void:
 	_reset_wave_state()
 	_hero_respawn_timers.clear()
 	shop_open = false
+	# Lepas ikatan daftar unlock (paritas main.py:587 `game_instance = None`,
+	# yang membuat Hero.__init__ memakai 0 unlock di luar match). MENGGANTI
+	# binding, BUKAN clear(): array yang lama milik save pemain.
+	purchased_heroes = []
 	AudioManager.stop_bgm()
 	# Ambient ikut mati di menu — pygame memulainya sekali di main() dan
 	# hanya hidup selama sesi match; di sini pasangan stop-nya eksplisit.
 	AudioManager.stop_ambient()
 	print("[GameManager] kembali ke menu utama")
+
+
+# ══════════════════════════════════════════════════════════
+#  PROGRESI LINTAS-SAVE — daftar hero yang dimiliki pemain
+#  (port Game.purchased_heroes _core.py:1596-1604 +
+#   hero_balance.boss_unlocks_for_purchases hero_balance.py:257-260)
+# ══════════════════════════════════════════════════════════
+
+## Ikat `purchased_heroes` ke array save `unlocked_heroes` (kunci Godot,
+## padanan `purchased_heroes` pygame) lalu terapkan AUTO-GRANT STARTER:
+##
+##     self.purchased_heroes = self.save_data.get('purchased_heroes', [])
+##     if not self.purchased_heroes:
+##         self.purchased_heroes.append('kaizen')
+##         self.save_data['purchased_heroes'] = self.purchased_heroes
+##         SaveManager.save(self.save_data)
+##
+## Save pemain TIDAK pernah dimigrasi/dihapus di sini: unlock lama dipakai
+## apa adanya, dan penulisan hanya terjadi kalau starter benar-benar baru
+## di-grant. `persist=false` dipakai harness paritas supaya tes tidak
+## menulis berkas save sama sekali.
+func bind_purchased_heroes(persist: bool = true) -> void:
+	var arr = SaveManager.data.get("unlocked_heroes")
+	if not (arr is Array):
+		arr = []
+		SaveManager.data["unlocked_heroes"] = arr
+	purchased_heroes = arr
+	if purchased_heroes.is_empty():
+		purchased_heroes.append(HeroDB.STARTER_HEROES[0])
+		print("[STARTER] %s granted as starter hero!" % HeroDB.STARTER_HEROES[0])
+		if persist:
+			SaveManager.save()
+
+
+## Jumlah hero NON-starter yang dimiliki pemain — input catch-up hero.
+## Paritas hero_balance.boss_unlocks_for_purchases: `len()` polos atas
+## daftar save (entri kembar ikut terhitung; SaveManager sendiri menolak
+## duplikat saat menulis), starter tidak pernah dihitung.
+func boss_unlocks_for_purchases(purchased) -> int:
+	if not (purchased is Array):
+		return 0
+	var n := 0
+	for hero_type in purchased:
+		if not (str(hero_type) in HeroDB.STARTER_HEROES):
+			n += 1
+	return maxi(0, n)
+
+
+## Dibaca `Hero._catchup_unlocks()` saat unit dibuat. Di luar match daftar
+## ini kosong (tidak diikat), jadi hasilnya 0 — paritas `game_instance is
+## None` pygame yang membuat catch-up starter memakai bonus PENUH.
+func catchup_unlocks() -> int:
+	return boss_unlocks_for_purchases(purchased_heroes)
 
 
 func _reset_wave_state(delay: float = 0.0) -> void:
