@@ -59,9 +59,17 @@ signal tower_built(tower: Node)
 ## menggambar; HUD yang subscribe (AchievementPopup). Payload =
 ## (title, description, icon) persis argumen pygame.
 signal achievement_unlocked(title: String, description: String, icon: String)
+## Koordinat kejadian sebelum offset FloatingText (boss.x, boss.y).
+signal gold_popup_added(x: float, y: float, amount: int)
+signal boss_defeated(boss: Node)
+## Game.update menyelesaikan EffectManager.update di frame kematian,
+## BARU frame berikutnya dibekukan cinematic. HUD men-tick popup sekali.
+signal boss_reward_effects_tick
+
 
 const FPS := 60.0
 const ComboCounterScript = preload("res://scripts/utils/ComboCounter.gd")
+const FloatingTextQueueScript = preload("res://scripts/utils/FloatingTextQueue.gd")
 
 # ═══ FALLBACK MINION_TYPES — port persis dari _core.py (dipakai kalau
 # data/economy.json belum di-generate; warna = GRASS/GOBLIN_COLOR dkk) ═══
@@ -138,6 +146,16 @@ var _meta_reward_granted: bool = false
 ## Boss (mini/true) yang dikalahkan di match INI — baru di-unlock gratis
 ## kalau match dimenangkan (paritas bosses_defeated_this_match _core.py:1594).
 var bosses_defeated_this_match: Array = []
+## FASE 14: setiap kematian dihitung, tetapi daftar tipe di atas unik.
+var bosses_defeated_this_run: int = 0
+## REFERENSI ke save, bukan array yang boleh di-clear saat restart/menu.
+## Boss dicatat langsung saat mati, TIDAK perlu menunggu kemenangan.
+var unlocked_bosses: Array = []
+var miniboss_kill_count: int = 0
+var trueboss_kill_count: int = 0
+## Set ID achievement in-match (Dictionary sebagai set GDScript).
+var achievements_unlocked: Dictionary = {}
+var world_popups = FloatingTextQueueScript.new()
 ## Tipe hero yang BARU di-unlock gratis dari match ini (paritas
 ## heroes_unlocked_this_match _core.py:2347 — ditulis _auto_unlock..., DIBACA
 ## HUD untuk baris "NEW HERO" panel game-over).
@@ -378,6 +396,7 @@ func _process(delta):
 		_update_waves(delta)
 	_update_hero_respawns(delta)
 	_tick_combo(delta)
+	world_popups.advance(delta)
 	# Aura item (Steel Aegis / Everfrost / Solar Brand / Searbrand)
 	_aura_timer += delta
 	if _aura_timer >= 0.25:
@@ -394,6 +413,7 @@ func start_level(lv: int, replay: bool = false):
 	# Daftar unlock permanen diikat ulang tiap match dimulai — paritas
 	# Game.reset (_core.py:1593-1604) yang membaca save lalu memberi starter.
 	bind_purchased_heroes()
+	bind_unlocked_bosses()
 	var lv_data = BossDB.get_level(lv)
 	# paritas Game.reset: gold awal & laju pasif dihitung dari level + difficulty
 	starting_gold = compute_starting_gold(lv_data, lv)
@@ -409,6 +429,15 @@ func start_level(lv: int, replay: bool = false):
 	meta_reward_earned = 0
 	_meta_reward_granted = false
 	bosses_defeated_this_match.clear()
+	bosses_defeated_this_run = 0
+	miniboss_kill_count = 0
+	trueboss_kill_count = 0
+	achievements_unlocked.clear()
+	world_popups.reset()
+	var popup_settings: Dictionary = SaveManager.data.get("settings", {})
+	world_popups.damage_numbers_enabled = bool(popup_settings.get("damage_numbers_enabled", true))
+	var quality := str(popup_settings.get("quality", "medium"))
+	world_popups.max_damage_numbers = 8 if quality == "low" else (16 if quality == "medium" else 32)
 	# ── Skor/kill/timer/unlock match (paritas Game.reset/score) ──
 	score = 0
 	total_kills = 0
@@ -511,6 +540,8 @@ func return_to_menu() -> void:
 	# yang membuat Hero.__init__ memakai 0 unlock di luar match). MENGGANTI
 	# binding, BUKAN clear(): array yang lama milik save pemain.
 	purchased_heroes = []
+	unlocked_bosses = []
+	world_popups.reset()
 	AudioManager.stop_bgm()
 	# Ambient ikut mati di menu — pygame memulainya sekali di main() dan
 	# hanya hidup selama sesi match; di sini pasangan stop-nya eksplisit.
@@ -548,6 +579,15 @@ func bind_purchased_heroes(persist: bool = true) -> void:
 		print("[STARTER] %s granted as starter hero!" % HeroDB.STARTER_HEROES[0])
 		if persist:
 			SaveManager.save()
+
+
+## Game.reset: unlocked_bosses milik save, terpisah dari purchased_heroes.
+func bind_unlocked_bosses() -> void:
+	var arr = SaveManager.data.get("unlocked_bosses", [])
+	if not (arr is Array):
+		arr = []
+	SaveManager.data["unlocked_bosses"] = arr
+	unlocked_bosses = arr
 
 
 ## Jumlah hero NON-starter yang dimiliki pemain — input catch-up hero.
@@ -989,7 +1029,8 @@ func _grant_meta_reward(victory: bool) -> void:
 		# ═══ AUTO-UNLOCK HERO BOSS YANG DIKALAHKAN (GRATIS) ═══
 		# Paritas _auto_unlock_defeated_boss_heroes (_core.py:2322-2355, dipanggil
 		# dari _grant_meta_reward 2406): boss yang mati di match ini masuk
-		# unlocked_bosses + unlocked_heroes HANYA kalau castle musuh juga jatuh.
+		# unlocked_heroes HANYA kalau castle musuh juga jatuh; unlocked_bosses
+		# sudah dicatat saat kematian (register_boss_death).
 		_auto_unlock_defeated_boss_heroes()
 		# Tandai level tamat (paritas 2408-2414) -> level berikutnya (yang
 		# memasang unlock_after_level = level ini) terbuka di LEVEL_SELECT.
@@ -1038,11 +1079,93 @@ func _auto_unlock_defeated_boss_heroes() -> void:
 			"%s now FREE in Hero Shop!" % ", ".join(names), "skull")
 
 
-## Dicatat Main._boss_tick saat boss mati; baru dicairkan jadi hero kalau
-## match dimenangkan (paritas bosses_defeated_this_match _core.py:1594-1597).
-func record_boss_defeated(boss_type: String) -> void:
-	if not bosses_defeated_this_match.has(boss_type):
-		bosses_defeated_this_match.append(boss_type)
+## Blok Game.update _core.py:2113-2163. Hanya boss mati+defeated;
+## flag per instans menggantikan konsumsi active_boss pygame (node Godot
+## masih hidup selama tween kematian). Tipe yang sama boleh muncul lagi,
+## tetapi callback/tick ganda untuk instans yang sama tidak boleh membayar.
+func register_boss_death(boss) -> void:
+	if not is_instance_valid(boss) or not boss.is_dead or not boss.defeated \
+			or boss.reward_processed:
+		return
+	boss.reward_processed = true
+	_process_boss_kill(boss)
+	# Pembayar SELALU pemain, bukan tim pembunuh atau tim boss. Tidak ada
+	# combo/total_kills/meta_gold di sini — hanya gold + score in-match.
+	gold += boss.gold_reward
+	score += boss.gold_reward
+	add_gold_popup(boss.global_position.x, boss.global_position.y, boss.gold_reward)
+	bosses_defeated_this_run += 1
+	if not bosses_defeated_this_match.has(boss.boss_type):
+		bosses_defeated_this_match.append(boss.boss_type)
+	if not unlocked_bosses.has(boss.boss_type):
+		unlocked_bosses.append(boss.boss_type)
+		var prefix := "TRUE BOSS" if boss.boss_class == "true" else "BOSS"
+		var description := "%s already owned!" % boss.display_name \
+			if purchased_heroes.has(boss.boss_type) else \
+			"Destroy the enemy castle to unlock %s for FREE!" % boss.display_name
+		unlock_achievement("%s: %s Defeated!" % [prefix, boss.display_name],
+			description, "skull")
+		SaveManager.data["unlocked_bosses"] = unlocked_bosses
+		SaveManager.save()
+	# EffectManager.register_kill pygame = NO-OP (kill feed dihapus).
+	# Main melepas active_boss dan mencoba antrean mini berikutnya.
+	boss_defeated.emit(boss)
+	# BossDeathFX langsung pause setelah transaksi ini. Tetap selesaikan
+	# satu tick efek frame kematian, seperti ekor Game.update pygame.
+	_tick_combo(1.0 / FPS)
+	world_popups.tick()
+	boss_reward_effects_tick.emit()
+
+
+## _killer_is_hero: tidak ada syarat masih hidup! Proyektil/DoT dari hero
+## yang sudah mati tetap berhak mendapat atribusi. team SUMBER, bukan
+## from_team argumen damage, adalah acuan pemeriksaan lawan.
+func _killer_is_hero(killer, victim) -> bool:
+	return is_instance_valid(killer) and killer != victim \
+		and "hero_type" in killer and "skills" in killer \
+		and str(killer.get("team")) != str(victim.get("team"))
+
+
+## _process_boss_kill pygame: hero lawan dari SEMUA tim dapat kills;
+## hanya hero BLUE menghidupkan counter+popup SLAYER, per kelas boss.
+func _process_boss_kill(boss) -> void:
+	var killer = boss.killed_by
+	if not _killer_is_hero(killer, boss):
+		return
+	killer.kills = int(killer.get("kills")) + 1
+	if str(killer.get("team")) != "blue":
+		return
+	if boss.boss_class == "true":
+		trueboss_kill_count += 1
+		_unlock_achievement("trueboss_kill_%d" % trueboss_kill_count,
+			"TRUE BOSS SLAYER!", "%s slew TRUE BOSS %s" % [
+				killer.display_name, boss.display_name], "skull",
+			boss.global_position + Vector2(0, -40))
+	else:
+		miniboss_kill_count += 1
+		_unlock_achievement("miniboss_kill_%d" % miniboss_kill_count,
+			"MINI BOSS SLAYER!", "%s slew %s" % [
+				killer.display_name, boss.display_name], "skull",
+			boss.global_position + Vector2(0, -40))
+
+
+## _unlock_achievement: dedup ID hanya selama match, popup arena + teks
+## floating di lokasi kejadian, sound ui_upgrade 0.5. TIDAK dipanggil dari
+## kematian hero biasa: popup HERO SLAYER sudah dihapus oleh pemilik game.
+func _unlock_achievement(id: String, title: String, description: String,
+		icon: String = "star", map_position = null) -> void:
+	if achievements_unlocked.has(id):
+		return
+	achievements_unlocked[id] = true
+	unlock_achievement(title, description, icon)
+	if map_position != null:
+		world_popups.add_slayer_text(map_position.x, map_position.y, title)
+	AudioManager.play_sfx("ui_upgrade", 0.5)
+
+
+func add_gold_popup(x: float, y: float, amount: int) -> void:
+	world_popups.add_gold_popup(x, y, amount)
+	gold_popup_added.emit(x, y, amount)
 
 
 func nexus_hp(team: String) -> Array:

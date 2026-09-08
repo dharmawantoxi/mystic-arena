@@ -16,6 +16,10 @@
 # Godot yang sudah ada tidak rusak; end_match() sekarang menulis ke "meta_gold".
 extends Node
 
+## Dipancarkan SETELAH file ditutup. Harness mengamati write asli pada
+## user:// terisolasi, bukan mengganti save() dengan mock yang selalu PASS.
+signal saved
+
 const SAVE_PATH := "user://mystic_save.json"
 
 ## Default = paritas _system.py get_empty_save() + settings Godot.
@@ -77,7 +81,12 @@ func _backfill() -> void:
 func save():
 	_backfill()
 	var f = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if f == null:
+		push_error("[SaveManager] Cannot open file: " + SAVE_PATH)
+		return
 	f.store_string(JSON.stringify(data, "\t"))
+	f.close()
+	saved.emit()
 	print("[SaveManager] Saved")
 	# TODO: integrate godot Google Play Games plugin for cloud save
 	# if OS.has_feature("android"):

@@ -27,6 +27,7 @@ on:
       - 'godot/**'
       - '_core.py'
       - '_entity.py'
+      - '_render.py'
       - 'hero_items.py'
       - 'hero_balance.py'
       - '_system.py'
@@ -48,6 +49,7 @@ on:
       - 'godot/**'
       - '_core.py'
       - '_entity.py'
+      - '_render.py'
       - 'hero_items.py'
       - 'hero_balance.py'
       - '_system.py'
@@ -100,6 +102,7 @@ jobs:
           python3 godot/tools/tscn_lint.py $(find godot -name '*.tscn' -o -name '*.tres')
           python3 godot/tools/check_refs.py godot
           python3 godot/tools/particles_lint.py godot
+          python3 godot/tools/test_godot_log_gate.py
           # BossKit.gd adalah HASIL GENERATE dari bosses/base_boss.py —
           # gagal di sini berarti ada perubahan smart-AI pygame yang belum
           # ditranspile (regenerasi: python3 tools/gen_boss_smart_ai.py).
@@ -413,6 +416,29 @@ jobs:
             cat /tmp/score.gate
             echo "::error::SCORE-FAIL-TAIL: $(tail -40 /tmp/score.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::SCORE-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/score.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4j. BossDeathRewardParityTest (FASE 14): seluruh 216 boss +
+      # skenario Game.update asli (last-hit hero/nonhero/self/tim lain,
+      # counter/dedup, unlock segera vs hero gratis sesudah menang, callback
+      # ganda, pending boss) + FIFO/cap/lifetime popup + RNG situs floating
+      # + reset/menu. Snapshot rekursif CLOSED-WORLD; HERO SLAYER tetap
+      # dihapus. user:// terisolasi bahkan kalau harness berhenti di tengah.
+      - name: BossDeathRewardParityTest (reward kematian boss vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/BossDeathRewardParityTest.tscn --quit-after 600 2>&1 | tee /tmp/bossreward.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/bossreward.log --label "BossDeathRewardParityTest" \
+              --require "[BossDeathRewardParityTest] PASS" > /tmp/bossreward.gate 2>&1; then
+            cat /tmp/bossreward.gate
+          else
+            cat /tmp/bossreward.gate
+            echo "::error::BOSSREWARD-FAIL-TAIL: $(tail -40 /tmp/bossreward.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::BOSSREWARD-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/bossreward.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 

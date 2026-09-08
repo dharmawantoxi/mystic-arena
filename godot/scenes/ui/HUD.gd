@@ -65,6 +65,7 @@ func _ready():
 	add_child(_achievement_popup)
 	GameManager.achievement_unlocked.connect(
 		_achievement_popup.unlock)
+	GameManager.boss_reward_effects_tick.connect(_achievement_popup.tick)
 	refresh()
 	_refresh_field()
 	_refresh_bars()
@@ -91,6 +92,8 @@ func _on_gold_changed(new_gold: int):
 	income_label.text = "+%s/s" % _format_gold_rate(GameManager.gold_per_second)
 
 func _on_level_started(_level_num: int):
+	if _achievement_popup != null:
+		_achievement_popup.reset()
 	# Level baru (PLAY/ENTER-next/R) -> sembunyikan panel menang/kalah lama.
 	if _over_panel != null:
 		_over_panel.visible = false

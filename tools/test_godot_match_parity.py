@@ -4102,6 +4102,489 @@ def make_match_scoring_fixture(core, entity):
     }
 
 
+def make_boss_death_rewards_fixture(core, entity):
+    """FASE 14 — reward kematian boss, oracle pygame ASLI, tanpa save user.
+
+    Game.update menjalankan blok defeated (termasuk _process_boss_kill,
+    SaveManager.save dan EffectManager.update); take_damage asli menentukan
+    last-hit. Sumber damage tidak ikut simulasi arena, income/wave dibekukan.
+    RNG HANYA pada FloatingText.__init__ / offset add_damage_number di-pin;
+    semua kode gameplay/antrean/save tetap berjalan. Double-run seed berbeda
+    wajib identik. Piksel font/glow/cinematic tidak diklaim oleh fixture ini.
+    """
+    import copy
+    import io
+    from contextlib import redirect_stdout
+    import __main__
+    import pygame
+    import _render as rend
+    import _system
+    from bosses.base_boss import Boss
+    from bosses.boss_data import get_all_boss_types
+    from mobile.perf import Quality
+
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    saved_random = random.getstate()
+    saved_game = getattr(__main__, "game_instance", None)
+    settings = core.GameSettings()
+    saved_numbers = settings.damage_numbers_enabled
+    saved_cap = Quality.max_damage_numbers
+    saved_uniform, saved_randint = random.uniform, random.randint
+    saved_save = _system.SaveManager.save
+    saved_gold_popup = rend.EffectManager.add_gold_popup
+    saved_gps = core.GOLD_PER_SECOND
+    rolls, writes, gold_events, popup_events = [], [], [], []
+    roll_index = {"uniform": 0, "randint": 0}
+
+    def uniform(a, b):
+        frame = sys._getframe(1)
+        if (frame.f_code.co_name == "__init__"
+                and isinstance(frame.f_locals.get("self"), rend.FloatingText)):
+            choices = (-0.3, 0.0, 0.3, 0.125)
+            value = choices[roll_index["uniform"] % len(choices)]
+            roll_index["uniform"] += 1
+            rolls.append(["uniform", a, b, value])
+            return value
+        return saved_uniform(a, b)
+
+    def randint(a, b):
+        frame = sys._getframe(1)
+        if (frame.f_code.co_name == "add_damage_number"
+                and isinstance(frame.f_locals.get("self"), rend.EffectManager)):
+            value = a if roll_index["randint"] % 4 < 2 else b
+            roll_index["randint"] += 1
+            rolls.append(["randint", a, b, value])
+            return value
+        return saved_randint(a, b)
+
+    def save_projection(data):
+        # Metadata wall-clock/multislot/cloud bukan bagian klaster ini.
+        return {"unlocked_bosses": list(data.get("unlocked_bosses", [])),
+                "purchased_heroes": list(data.get("purchased_heroes", [])),
+                "meta_gold": data.get("meta_gold", 0),
+                "sentinel": data.get("sentinel")}
+
+    def save(data, slot_num=None):
+        saved_save(data, slot_num)  # TETAP menulis, hanya ke temp save main().
+        disk = json.loads(Path(_system.SaveManager.get_slot_file(
+            _system.SaveManager._current_slot if slot_num is None
+            else slot_num)).read_text())
+        assert save_projection(disk) == save_projection(data)
+        writes.append(save_projection(disk))
+
+    def gold_popup(effects, x, y, amount):
+        gold_events.append([x, y, amount])
+        return saved_gold_popup(effects, x, y, amount)
+
+    initial = {
+        "gold": 137, "score": 29, "ai_gold": 17,
+        "bosses_defeated_this_run": 0, "bosses_defeated_this_match": [],
+        "unlocked_bosses": [], "purchased_heroes": ["kaizen"],
+        "miniboss_kill_count": 0, "trueboss_kill_count": 0,
+        "achievements_unlocked": [], "total_kills": 11, "max_combo": 7,
+        "meta_gold": 1234, "sentinel": {"user_data": ["do not change", 42]},
+        "damage_numbers_enabled": True, "max_damage_numbers": 16,
+    }
+    sources = [
+        {"id": "blue", "kind": "hero", "type": "kaizen", "team": "blue"},
+        {"id": "red", "kind": "hero", "type": "thorne", "team": "red"},
+        {"id": "dead", "kind": "hero", "type": "sylara", "team": "blue",
+         "dead": True},
+        {"id": "neutral", "kind": "hero", "type": "grimjaw", "team": ""},
+        {"id": "minion", "kind": "minion", "type": "goblin", "team": "blue"},
+        {"id": "tower", "kind": "tower", "team": "blue"},
+        {"id": "nexus", "kind": "nexus", "team": "blue"},
+        {"id": "boss", "kind": "boss", "type": "morgath", "team": "blue"},
+    ]
+
+    def float_state(t):
+        # Semua state non-piksel FloatingText; surface raster tidak disertakan.
+        state = {key: copy.deepcopy(getattr(t, key)) for key in (
+            "x", "y", "text", "color", "velocity_x", "velocity_y",
+            "lifetime", "max_lifetime", "alive", "critical", "font_size",
+            "x_drift", "scale", "target_scale")}
+        state["color"] = list(state["color"])
+        return state
+
+    def achievement_state(ap):
+        def entry(e):
+            if e is None:
+                return None
+            return {"title": e["title"], "description": e["description"],
+                    "icon": e["icon_type"]}
+        return {"current": entry(ap.current), "timer": ap.timer,
+                "queue": [entry(e) for e in ap.queue]}
+
+    try:
+        random.uniform, random.randint = uniform, randint
+        _system.SaveManager.save = staticmethod(save)
+        rend.EffectManager.add_gold_popup = gold_popup
+        core.GOLD_PER_SECOND = 0
+        with redirect_stdout(io.StringIO()):
+            game = core.Game(pygame.Surface((1280, 720)), level_number=1)
+        __main__.game_instance = game
+
+        def reset(overrides=None):
+            init = copy.deepcopy(initial)
+            init.update(copy.deepcopy(overrides or {}))
+            for key in ("gold", "score", "total_kills", "max_combo",
+                        "bosses_defeated_this_run", "bosses_defeated_this_match",
+                        "miniboss_kill_count", "trueboss_kill_count"):
+                setattr(game, key, copy.deepcopy(init[key]))
+            game.save_data = {key: copy.deepcopy(init[key]) for key in (
+                "unlocked_bosses", "purchased_heroes", "meta_gold", "sentinel")}
+            game.unlocked_bosses = game.save_data["unlocked_bosses"]
+            game.purchased_heroes = game.save_data["purchased_heroes"]
+            game.achievements_unlocked = set(init["achievements_unlocked"])
+            game.heroes_unlocked_this_match = []
+            game.ai.gold = init["ai_gold"]
+            game.gold_per_second = 0.0
+            game._gold_income_milli = 0
+            game.gold_timer = 0
+            game._meta_reward_granted = False
+            game.wave_timer = 10 ** 6
+            game.wave_number = 0
+            game.hero_respawn_timers = {}
+            game.towers, game.minions, game.heroes, game.ai.heroes = [], [], [], []
+            game.active_boss = None
+            game.pending_mini_bosses = []
+            game.red_towers_destroyed = 0
+            game.true_boss_spawned = True
+            game.state = "playing"
+            game.level_intro = game.boss_intro = game.boss_death = None
+            game.effects = rend.EffectManager()
+            game.effects.combo_counter.count = 3
+            game.effects.combo_counter.timer = 120
+            game.effects.combo_counter.last_combo = 2
+            settings.damage_numbers_enabled = init["damage_numbers_enabled"]
+            Quality.max_damage_numbers = init["max_damage_numbers"]
+            # Rekam unlock() sambil tetap menjalankan mesin AchievementPopup asli.
+            original_unlock = game.effects.achievement.unlock
+
+            def unlock(title, description, icon_type="star"):
+                popup_events.append([title, description, icon_type])
+                original_unlock(title, description, icon_type)
+
+            game.effects.achievement.unlock = unlock
+            rolls.clear()
+            writes.clear()
+            gold_events.clear()
+            popup_events.clear()
+            roll_index.update(uniform=0, randint=0)
+            return init
+
+        def units():
+            out = {}
+            for s in sources:
+                kind, team = s["kind"], s["team"]
+                if kind == "hero":
+                    u = entity.Hero(s["type"], team, 200, 300)
+                    u.kills = 4  # tambahkan, bukan timpa jadi 1
+                    u.alive = not s.get("dead", False)
+                elif kind == "minion":
+                    u = entity.Minion(s["type"], team, "mid")
+                elif kind == "tower":
+                    u = entity.Tower(200, 300, team)
+                elif kind == "nexus":
+                    u = entity.Castle(200, 300, team)
+                else:
+                    u = Boss(s["type"])
+                    u.team = team
+                out[s["id"]] = u
+            return out
+
+        def snapshot(us):
+            cc = game.effects.combo_counter
+            return {
+                "gold": game.gold, "score": game.score, "ai_gold": game.ai.gold,
+                "bosses_defeated_this_run": game.bosses_defeated_this_run,
+                "bosses_defeated_this_match": list(game.bosses_defeated_this_match),
+                "unlocked_bosses": list(game.unlocked_bosses),
+                "purchased_heroes": list(game.purchased_heroes),
+                "miniboss_kill_count": game.miniboss_kill_count,
+                "trueboss_kill_count": game.trueboss_kill_count,
+                "achievements_unlocked": sorted(game.achievements_unlocked),
+                "heroes_unlocked_this_match": list(game.heroes_unlocked_this_match),
+                "total_kills": game.total_kills, "max_combo": game.max_combo,
+                "combo": {"count": cc.count, "timer": cc.timer,
+                          "last_combo": cc.last_combo},
+                "kills": {k: u.kills for k, u in us.items()
+                          if hasattr(u, "hero_type")},
+                "achievement": achievement_state(game.effects.achievement),
+                "floating": [float_state(t) for t in game.effects.floating_texts],
+                "save": save_projection(game.save_data),
+                "writes": copy.deepcopy(writes),
+                "gold_events": copy.deepcopy(gold_events),
+                "popup_events": copy.deepcopy(popup_events),
+                "active_boss": game.active_boss.boss_type if game.active_boss else None,
+                "pending": [b for _wave, b in game.pending_mini_bosses],
+                "death_active": bool(game.boss_death and game.boss_death.is_death_active()),
+            }
+
+        def run(spec, seed):
+            random.seed(seed)
+            reset(spec.get("initial"))
+            us = units()
+            boss = None
+            steps = []
+            for action in spec["steps"]:
+                op = action["op"]
+                rolls.clear()
+                if op in ("spawn", "kill"):
+                    game.boss_death = None  # cinematic diuji CinematicTest
+                    boss = Boss(action["boss_type"])
+                    boss.x, boss.y = action.get("position", (640.25, 360.75))
+                    boss.team = action.get("boss_team", "red")
+                    boss.entrance_timer = 10 ** 6  # tiada combat liar
+                    if action.get("scaling"):
+                        boss.apply_scaling(*action["scaling"])
+                    if "reward" in action:
+                        boss.gold_reward = action["reward"]
+                    if "alive" in action:
+                        boss.alive = action["alive"]
+                    if "defeated" in action:
+                        boss.defeated = action["defeated"]
+                    game.active_boss = boss
+                    if "pending" in action:
+                        game.pending_mini_bosses = list(enumerate(action["pending"]))
+                if op in ("kill", "hit", "repeat_hit"):
+                    if op != "repeat_hit":
+                        boss.hp = action.get("hp", 1)
+                    by = boss if action.get("by") == "self" else us.get(action.get("by"))
+                    # Hapus HANYA FX kontak take_damage dari jejak klaster:
+                    # kode damage/last-hit tetap asli, tidak di-mock. Efek
+                    # reward Game.update tetap berjalan + direkam utuh.
+                    __main__.game_instance = None
+                    boss.take_damage(action.get("damage", 10 ** 9),
+                                     action.get("from_team", "blue"), source=by)
+                    __main__.game_instance = game
+                elif op == "hero_kill":
+                    victim = entity.Hero("vex", "red", 900, 600)
+                    victim.hp = 1
+                    game.ai.heroes = [victim]
+                    __main__.game_instance = None
+                    victim.take_damage(10 ** 9, "blue", source=us["blue"])
+                    __main__.game_instance = game
+                elif op == "clear_cinematic":
+                    game.boss_death = None
+                elif op not in ("spawn", "wait"):
+                    raise AssertionError(op)
+                for _ in range(action.get("frames", 1)):
+                    game.update()
+                steps.append({"action": copy.deepcopy(action),
+                              "rolls": copy.deepcopy(rolls),
+                              "snapshot": snapshot(us)})
+            return steps
+
+        def kill(bt="gornak", by="blue", **kw):
+            return {"op": "kill", "boss_type": bt, "by": by, **kw}
+
+        specs = []
+        for bt in ("gornak", "abaddon"):
+            for by in ("blue", "red", "dead", "neutral", "minion", "tower",
+                       "nexus", "boss", "self", None):
+                specs.append({"name": f"{bt}_last_hit_{by}",
+                              "steps": [kill(bt, by), {"op": "wait", "frames": 2},
+                                        {"op": "repeat_hit", "by": "red"}]})
+            specs.extend([
+                {"name": f"{bt}_red_hero_enemy", "steps": [kill(bt, "red", boss_team="blue")]},
+                {"name": f"{bt}_owned", "initial": {"purchased_heroes": ["kaizen", bt]},
+                 "steps": [kill(bt)]},
+                {"name": f"{bt}_already_unlocked", "initial": {"unlocked_bosses": [bt]},
+                 "steps": [kill(bt)]},
+            ])
+        specs.extend([
+            {"name": "alive_then_last_hit_changes", "steps": [
+                {"op": "spawn", "boss_type": "gornak"},
+                {"op": "hit", "hp": 100, "damage": 5, "by": "blue"},
+                {"op": "hit", "by": "minion"}]},
+            {"name": "dead_not_defeated", "steps": [{"op": "spawn", "boss_type": "gornak", "alive": False, "defeated": False}]},
+            {"name": "alive_defeated", "steps": [{"op": "spawn", "boss_type": "gornak", "alive": True, "defeated": True}]},
+            {"name": "no_active_boss", "steps": [{"op": "wait"}]},
+            {"name": "repeat_type_and_independent_counters", "initial": {
+                "bosses_defeated_this_run": 5, "bosses_defeated_this_match": ["morgath"],
+                "unlocked_bosses": ["varkul"], "miniboss_kill_count": 3,
+                "trueboss_kill_count": 7}, "steps": [
+                    kill(), kill(), kill("abaddon"), kill("morgath")]},
+            {"name": "slayer_id_dedup", "initial": {
+                "achievements_unlocked": ["miniboss_kill_1", "trueboss_kill_1"]},
+             "steps": [kill(), kill("abaddon"), kill()]},
+            {"name": "runtime_reward_not_catalog", "steps": [
+                kill(reward=17), kill("abaddon", reward=0), kill(reward=123456)]},
+            {"name": "hard_scaling_does_not_scale_reward", "steps": [
+                kill(scaling=[1.265, 1.21, 1.07]),
+                kill("abaddon", scaling=[1.265, 1.21, 1.07])]},
+            {"name": "numbers_off_gold_still_queued", "initial": {
+                "damage_numbers_enabled": False, "max_damage_numbers": 1},
+             "steps": [kill(), {"op": "clear_cinematic"},
+                       kill("abaddon")]},
+            {"name": "hero_slayer_stays_removed", "steps": [{"op": "hero_kill"}]},
+            {"name": "pending_mini_consumed_same_frame", "steps": [
+                kill(pending=["morgath", "drakar"]), {"op": "wait", "frames": 2}]},
+        ])
+        scenarios = []
+        with redirect_stdout(io.StringIO()):
+            for spec in specs:
+                a, b = run(spec, 1401), run(spec, 1402)
+                assert a == b, f"boss reward RNG bocor: {spec['name']}"
+                scenarios.append({"name": spec["name"],
+                                  "initial": spec.get("initial", {}), "steps": a})
+
+            # Seluruh katalog tertutup: reward runtime dan pasca apply_scaling
+            # dibaca dari Boss ASLI; payout dievaluasi oleh Game.update asli.
+            catalog = []
+            for bt in sorted(get_all_boss_types()):
+                reset({"unlocked_bosses": [bt]})
+                b = Boss(bt)
+                reward = b.gold_reward
+                b.apply_scaling(1.265, 1.21, 1.07)
+                b.hp = 1
+                __main__.game_instance = None
+                b.take_damage(10 ** 9, "blue")
+                __main__.game_instance = game
+                game.active_boss = b
+                game.update()
+                catalog.append({"boss_type": bt, "name": b.name,
+                                "boss_class": b.boss_class, "gold_reward": reward,
+                                "scaled_gold_reward": b.gold_reward,
+                                "payout": {"gold": game.gold, "score": game.score,
+                                           "ai_gold": game.ai.gold,
+                                           "run": game.bosses_defeated_this_run}})
+
+        # Antrean add_gold_popup + FloatingText.update ASLI. Data awal,
+        # urutan FIFO, MAX_FLOATING, expiry dan akumulasi delta direplay.
+        popup_specs = [
+            {"name": "lifetime_and_drift", "steps": [
+                {"op": "gold", "x": 640.25, "y": 360.75, "amount": 1500},
+                *({"op": "tick", "frames": n} for n in (1, 24, 24, 1, 2))]},
+            {"name": "format_and_fifo", "steps": [
+                *({"op": "gold", "x": -12.5, "y": 8.125, "amount": n}
+                  for n in (0, 17, -9, 123456)), {"op": "tick", "frames": 50}]},
+            {"name": "hard_cap_drop_oldest", "steps": [
+                {"op": "gold_many", "count": rend.EffectManager.MAX_FLOATING + 2},
+                {"op": "tick", "frames": 49},
+                {"op": "gold", "x": 1, "y": 2, "amount": 99999},
+                {"op": "tick", "frames": 1}]},
+            {"name": "gold_ignores_damage_budget", "enabled": False, "cap": 1,
+             "steps": [{"op": "gold_many", "count": 3}]},
+            {"name": "mixed_slayer_gold_budget", "cap": 2, "steps": [
+                {"op": "gold_many", "count": 3},
+                {"op": "slayer", "x": 32, "y": 48, "text": "MINI BOSS SLAYER!"},
+                {"op": "gold", "x": 32, "y": 88, "amount": 250},
+                *({"op": "tick", "frames": n} for n in (44, 1, 5))]},
+        ]
+        popup_cases = []
+        for spec in popup_specs:
+            reset({"damage_numbers_enabled": spec.get("enabled", True),
+                   "max_damage_numbers": spec.get("cap", 16)})
+            steps = []
+            for action in spec["steps"]:
+                rolls.clear()
+                op = action["op"]
+                if op == "gold":
+                    game.effects.add_gold_popup(action["x"], action["y"], action["amount"])
+                elif op == "gold_many":
+                    for i in range(action["count"]):
+                        game.effects.add_gold_popup(i, 200, i)
+                elif op == "slayer":
+                    game.effects.add_damage_number(action["x"], action["y"],
+                                                   action["text"], is_critical=True)
+                else:
+                    for _ in range(action["frames"]):
+                        game.effects.update()
+                steps.append({"action": action, "rolls": copy.deepcopy(rolls),
+                              "floating": [float_state(t) for t in game.effects.floating_texts]})
+            popup_cases.append({"name": spec["name"], "enabled": spec.get("enabled", True),
+                                "cap": spec.get("cap", 16), "steps": steps})
+
+        # FIFO yang SAMA juga dipakai DamageNumber legacy di Godot.
+        # Pakai add_damage_number asli sebagai pesaing gold, bukan 300
+        # slot terpisah yang hanya kebetulan lulus tes queue kosong.
+        budget_specs = [
+            {"name": "damage_then_gold", "enabled": True, "cap": 300,
+             "ops": [["damage", 300], ["gold", 2], ["clear_damage", 0]]},
+            {"name": "gold_then_damage_single_eviction", "enabled": True, "cap": 2,
+             "ops": [["gold", 300], ["damage", 2], ["gold", 1], ["clear_damage", 0]]},
+            {"name": "disabled_damage_not_gold", "enabled": False, "cap": 1,
+             "ops": [["damage", 3], ["gold", 3]]},
+        ]
+        shared_budget = []
+        for spec in budget_specs:
+            reset({"damage_numbers_enabled": spec["enabled"],
+                   "max_damage_numbers": spec["cap"]})
+            steps = []
+            for op, n in spec["ops"]:
+                if op == "damage":
+                    for i in range(n):
+                        game.effects.add_damage_number(0, 0, f"D{i}")
+                elif op == "gold":
+                    for i in range(n):
+                        game.effects.add_gold_popup(0, 0, i)
+                else:
+                    for t in game.effects.floating_texts:
+                        if t.text.startswith("D"):
+                            t.alive = False
+                    game.effects.update()
+                steps.append({"op": op, "n": n,
+                              "texts": [t.text for t in game.effects.floating_texts]})
+            shared_budget.append({"name": spec["name"], "enabled": spec["enabled"],
+                                  "cap": spec["cap"], "steps": steps})
+
+        # Boss mati vs akhir match: unlock boss bertahan MESKI KALAH;
+        # hero gratis baru masuk purchased_heroes setelah menang. Kode
+        # _grant_meta_reward asli menulis disk; jangan mock dengan formula.
+        def outcome_state():
+            return {"gold": game.gold, "score": game.score,
+                    "run": game.bosses_defeated_this_run,
+                    "match": list(game.bosses_defeated_this_match),
+                    "save": save_projection(game.save_data),
+                    "heroes_unlocked": list(game.heroes_unlocked_this_match),
+                    "popup_events": copy.deepcopy(popup_events)}
+
+        outcomes = []
+        with redirect_stdout(io.StringIO()):
+            for victory in (False, True):
+                run({"steps": [kill(), kill("abaddon")]}, 1403)
+                before = outcome_state()
+                game._grant_meta_reward(victory=victory)
+                after = outcome_state()
+                # Reload dari disk terisolasi, bukan sekadar data memory.
+                assert save_projection(_system.SaveManager.load()) == after["save"]
+                outcomes.append({"victory": victory, "bosses": ["gornak", "abaddon"],
+                                 "before": before, "after": after})
+
+        # Reset runtime (SAVE yang sudah punya unlock tetap dipakai).
+        with redirect_stdout(io.StringIO()):
+            reset({"unlocked_bosses": ["gornak", "abaddon"],
+                   "purchased_heroes": ["kaizen", "gornak"]})
+            saved_save(game.save_data)
+            game.bosses_defeated_this_run = 8
+            game.miniboss_kill_count = game.trueboss_kill_count = 4
+            game.achievements_unlocked = {"miniboss_kill_4", "trueboss_kill_4"}
+            game.bosses_defeated_this_match = ["gornak", "abaddon"]
+            game.reset()
+        reset_state = {key: sorted(getattr(game, key)) if key == "achievements_unlocked"
+                       else copy.deepcopy(getattr(game, key)) for key in (
+                           "bosses_defeated_this_run", "bosses_defeated_this_match",
+                           "miniboss_kill_count", "trueboss_kill_count",
+                           "achievements_unlocked", "unlocked_bosses", "purchased_heroes")}
+        return {"fps": 60, "initial": initial, "sources": sources,
+                "catalog": catalog, "scenarios": scenarios,
+                "max_floating": rend.EffectManager.MAX_FLOATING,
+                "popups": popup_cases, "shared_budget": shared_budget,
+                "outcomes": outcomes, "reset": reset_state}
+    finally:
+        __main__.game_instance = saved_game
+        core.GOLD_PER_SECOND = saved_gps
+        settings.damage_numbers_enabled = saved_numbers
+        Quality.max_damage_numbers = saved_cap
+        random.uniform, random.randint = saved_uniform, saved_randint
+        random.setstate(saved_random)
+        _system.SaveManager.save = staticmethod(saved_save)
+        rend.EffectManager.add_gold_popup = saved_gold_popup
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -4160,6 +4643,8 @@ def make_fixture(core, entity, levels, paths):
         # Game.update pygame SUNGGUHAN dijalankan headless. Direplay
         # MatchScoringParityTest. Objek agar diff-able saat review.
         "match_scoring": make_match_scoring_fixture(core, entity),
+        # FASE 14 — reward boss + SLAYER (bukan HERO SLAYER) + antrean gold.
+        "boss_death_rewards": make_boss_death_rewards_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -4291,6 +4776,12 @@ def main():
               f"{len(ms['achievement']['cases'])} kasus popup + "
               f"{len(ms['achievement']['slide_x'])} titik slide + "
               f"{len(ms['achievement']['new_hero'])} trigger NEW HERO")
+
+        br = actual["boss_death_rewards"]
+        print("             boss-death-rewards oracle: "
+              f"{len(br['catalog'])} boss, {len(br['scenarios'])} skenario Game.update, "
+              f"{len(br['popups'])} kasus antrean + {len(br['shared_budget'])} FIFO bersama + "
+              f"{len(br['outcomes'])} akhir match + reset")
 
 
 if __name__ == "__main__":

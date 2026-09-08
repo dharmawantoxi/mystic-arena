@@ -40,6 +40,9 @@ const RETREAT_UNTIL := 0.80
 
 @export var hero_type: String = "kaizen"
 @export var team: String = "blue"
+## Nama gameplay (pygame Hero.name), tidak terkena suffix unik Node.name
+## ketika dua tim memiliki tipe hero yang sama. Dipakai popup SLAYER.
+var display_name: String = "Hero"
 
 # ── Stat dasar (dari HeroDB, sebelum level & item) ──
 var base_hp: float = 850.0
@@ -204,7 +207,8 @@ func apply_hero_data():
 	skill_name = str(s.get("skill_name", ""))
 	dmg_school = str(s.get("dmg_school", "physical"))
 	role = str(s.get("role", ""))
-	name = s.get("name", hero_type)
+	display_name = str(s.get("name", hero_type))
+	name = display_name
 	fill_color = _parse_color(s.get("color", "#c8c8c8"), Color("#c8c8c8"))
 	fill_dark = _parse_color(s.get("color_dark", ""), fill_color.darkened(0.35))
 	radius = 16.0
@@ -1028,9 +1032,7 @@ func die(killer = null):
 	# _process_hero_kill): hanya hero yang mencatat kills (dipakai AIPlayer
 	# untuk prioritas upgrade & beli item). Kill oleh tower/minion tidak
 	# dihitung — sama seperti pygame.
-	if killer != null and is_instance_valid(killer) and killer != self \
-			and "hero_type" in killer and "skills" in killer \
-			and str(killer.get("team")) != team:
+	if GameManager._killer_is_hero(killer, self):
 		# Object.get() hanya menerima nama properti (bukan default ala Dictionary).
 		# Hero selalu punya `kills`; tambah langsung supaya kill AI terhitung.
 		killer.kills = int(killer.get("kills")) + 1

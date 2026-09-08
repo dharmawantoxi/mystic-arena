@@ -24,6 +24,9 @@ import sys
 
 ## Pola yang SELALU berarti gagal (case sensitive seperti keluaran Godot).
 FATAL_PATTERNS = [
+    # Assertion harness tidak selalu SCRIPT ERROR. Bahkan jika ada PASS
+    # (mis. log gabungan / callback terlambat), satu FAIL tetap fatal.
+    r"\[[A-Za-z0-9_]+Test\] FAIL\b",
     r"SCRIPT ERROR",
     r"Parse Error",
     r"Compile Error",
@@ -75,7 +78,8 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     try:
-        text = open(args.log, encoding="utf-8", errors="replace").read()
+        with open(args.log, encoding="utf-8", errors="replace") as log:
+            text = log.read()
     except OSError as exc:
         print("FAIL tidak bisa membaca %s: %s" % (args.log, exc))
         return 1
