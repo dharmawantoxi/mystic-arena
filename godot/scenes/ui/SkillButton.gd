@@ -104,7 +104,7 @@ func update_state(hero) -> void:
 	var ratio: float = skills.cooldown_ratio(skill_key)
 	_overlay.anchor_top = clampf(ratio, 0.0, 1.0)
 	var ready: bool = skills.is_ready(skill_key)
-	var charging := str(skills.get("charge_action")) == skill_key
+	var charging: bool = skills.is_charging(skill_key)
 	if ready and not charging:
 		_cd_label.text = ""
 		modulate = Color(1, 1, 1, 1)

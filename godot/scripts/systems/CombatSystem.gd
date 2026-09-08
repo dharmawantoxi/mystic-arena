@@ -165,10 +165,39 @@ func apply_damage(target, amount: float, from_team: String = "",
 	var eff_school := DamageSchool.resolve(school, dmg_type, source)
 	var is_physical := DamageSchool.is_physical_hit(dmg_type, eff_school)
 
-	# ── 0. Tempest Veil: KEBAL total selama aktif ──
-	# Item aktif auto-trigger saat HP < 40% (hero_items.py:2188-2194). pygame
-	# memotong damage paling awal dan menampilkan "IMMUNE" alih-alih angka
-	# (_entity.py:4589-4600), jadi dicek sebelum mitigasi apa pun.
+	# ── 0a. GUARD SKILL HERO (mirror _entity.py:4537-4585) ──
+	# State handler hidup di h.kit (key = nama field pygame persis) dan
+	# dicek SEBELUM semua mitigasi, dengan urutan persis pygame: shadow
+	# realm → windrun → wind wall → veil. Cek sekolah memakai sekolah
+	# PENAHAN PUKULAN (self._school di pygame = dmg_school unit), bukan
+	# sekolah penyerang — sengaja, sama seperti sumbernya.
+	var kt = target.get("kit")
+	if kt != null and kt is Dictionary:
+		# Shadow Realm (Zephyr W): kebal total selama di dalam realm —
+		# dipotong PALING AWAL, sebelum Tempest Veil sekalipun.
+		if bool((kt as Dictionary).get("_shadow_realm_active", false)):
+			_float_text(target, "SHADOW", false)
+			return 0.0
+		# Windrun (Sylara W): 75% serangan fisik meleset; sihir tetap
+		# menembus supaya status ini bukan invulnerability penuh.
+		if bool((kt as Dictionary).get("_windrun_active", false)) \
+				and is_physical and randf() < 0.75:
+			_float_text(target, "WIND", false)
+			return 0.0
+		# Wind Wall (Kaizen W): memantulkan PROJECTILE mentah-mentah —
+		# kecuali sekolah TERKirim = magic. Pygame memakai self._school yang
+		# DI-SET DI AWAL take_damage dari serangan yang masuk
+		# (resolve_damage_school), jadi ekuivalen dengan eff_school di sini —
+		# BUKAN dmg_school statis milik penahan.
+		if int((kt as Dictionary).get("_wind_wall_timer", 0)) > 0 \
+				and dmg_type == "projectile" and eff_school != "magic":
+			_float_text(target, "WALL", false)
+			return 0.0
+
+	# ── 0b. Tempest Veil: KEBAL total selama aktif ──
+	# Item aktif auto-trigger saat HP < 40% (hero_items.py:2188-2194). Di
+	# pygame guard ini berada SETELAH tiga guard kit hero di atas
+	# (_entity.py:4589-4600) — urutan dipertahankan.
 	var tv = target.get("items")
 	if tv != null and tv.has_method("is_veiled") and tv.is_veiled():
 		_float_text(target, "IMMUNE", false)
@@ -176,14 +205,6 @@ func apply_damage(target, amount: float, from_team: String = "",
 
 	# ── 1. buff penghindar ──
 	if st != null:
-		# Wind Wall (Kaizen W): projectile fisik dipantulkan mentah-mentah
-		if st.has_buff("wind_wall") and dmg_type == "projectile" and eff_school != "magic":
-			_float_text(target, "WALL", false)
-			return 0.0
-		# Windrun (Sylara W): 75% serangan fisik meleset
-		if st.has_buff("windrun") and is_physical and randf() < 0.75:
-			_float_text(target, "WIND", false)
-			return 0.0
 		# evasion item + blind aura
 		var miss: float = st.miss_chance(is_physical)
 		if miss > 0.0 and randf() < miss:
@@ -206,7 +227,11 @@ func apply_damage(target, amount: float, from_team: String = "",
 		dmg *= st.incoming_mult()
 
 	# ── 5. Bristleback (Thorne W): duri menahan 30% fisik / 15% sihir ──
-	if st != null and st.has_buff("bristleback"):
+	# State h.kit["_bristleback_active"] (mirror _entity.py:4687-4693). Sama
+	# seperti guard di atas, `self._school` pygame = sekolah serangan yang
+	# MASUK (di-set di awal take_damage) -> eff_school, bukan dmg_school statis.
+	if kt != null and kt is Dictionary \
+			and bool((kt as Dictionary).get("_bristleback_active", false)):
 		var keep := 0.70 if eff_school != "magic" else 0.85
 		dmg = maxf(1.0, round(dmg * keep))
 
@@ -236,8 +261,13 @@ func apply_damage(target, amount: float, from_team: String = "",
 		target.combat_timer = float(target.get("combat_reset"))
 
 	# ── 8. reflect Bristleback 25% (source diputus: tidak bisa loop) ──
-	if st != null and st.has_buff("bristleback") and dealt > 0.0 \
+	# Mirror _entity.py:4699-4710: max(1, int(damage*0.25)) SETELAH damage
+	# mendarat, target hidup, tim beda, dan sumber bukan diri sendiri.
+	if kt != null and kt is Dictionary \
+			and bool((kt as Dictionary).get("_bristleback_active", false)) \
+			and dealt > 0.0 \
 			and source != null and is_instance_valid(source) and source != target \
+			and not bool(source.get("is_dead")) \
 			and str(source.get("team")) != str(target.get("team")):
 		apply_damage(source, maxf(1.0, floor(dealt * 0.25)), str(target.get("team")),
 			"normal", null, "")

@@ -48,6 +48,7 @@ BUILTINS = {
     "deg_to_rad", "rad_to_deg", "range_lerp", "smoothstep", "remap",
     "str", "len", "print", "push_error", "push_warning", "typeof",
     "type_string", "range", "hash", "instance_from_id", "weakref",
+    "is_instance_valid", "get_instance_id",
 }
 
 
@@ -140,9 +141,19 @@ def check_func(fn, globals_allowed, errors, path):
             nt = name_tokens(n)
             if nt:
                 declared.add(nt[0].value)
-        elif d == "func_def":  # lambda: parameternya visible
+        elif d == "func_def":  # nested func: parameternya visible
             _, lp = function_header(n)
             declared |= lp
+        elif d == "lambda_header":  # gdtoolkit 4.5: param lambda bersarang
+            # di func_args/func_arg_regular — ambil NAME rekursif; body
+            # lambda adalah SIBLING lambda_header, jadi tak ikut tersapu.
+            def lam_names(x):
+                for c in getattr(x, "children", []) or []:
+                    if is_tree(c):
+                        yield from lam_names(c)
+                    elif c.type == "NAME":
+                        yield c.value
+            declared |= set(lam_names(n))
 
     allowed = declared | globals_allowed | BUILTINS
 

@@ -19,6 +19,7 @@ const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
 const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
 const ItemInventoryScript = preload("res://scripts/items/ItemInventory.gd")
 const SkillBookScript = preload("res://scripts/skills/SkillBook.gd")
+const HeroSkillKit = preload("res://scenes/hero/HeroSkillKit.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
 const SkillProjectileScript = preload("res://scenes/fx/SkillProjectile.gd")
 const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
@@ -57,8 +58,35 @@ var attack_range: float = 70.0
 var attack_cooldown: float = 0.52
 var skill_damage: float = 80.0
 var skill_range: float = 100.0
-var skill_cooldown_frames: float = 300.0
 var skill_name: String = ""
+
+# ══════════════════════════════════════════════════════════
+#  STATE HERO-SKILL KIT (paritas field Hero pygame, frame-based)
+#
+#  skill_timer/w/e/r cooldown, active_skill(+timer), dan dict `kit` adalah
+#  milik HERO di pygame juga (hero_skills/_bundle.py menulis h.<field>);
+#  HeroSkillKit.gd (generated) mengaksesnya lewat nama yang sama. Satuan
+#  SELALU frame, diturunkan dalam urutan Hero.update — lihat
+#  _step_skill_frames().
+# ══════════════════════════════════════════════════════════
+var skill_data: Dictionary = {}      # salinan katalog mentah (h.skill_data)
+var kit: Dictionary = {}             # state handler kustom (h.<nama>)
+var skill_timer: int = 0             # Q cooldown
+var skill_cooldown_max: int = 300
+var w_cooldown: int = 0
+var w_cooldown_max: int = 240        # _entity.py:3445-3449 (universal)
+var e_cooldown: int = 0
+var e_cooldown_max: int = 420
+var r_cooldown: int = 0
+var r_cooldown_max: int = 900
+var active_skill = null              # "q".."r" / null — renderer & HUD
+var active_skill_timer: int = 0      # frame
+var auto_cast_enabled: bool = true   # _entity.py:3440 — pygame SELALU True;
+                                     # field dipertahankan untuk parity, hanya
+                                     # test harness yang boleh mematikannya
+var auto_cast_frame: int = 0         # _entity.py:3803 (check tiap 20f)
+var kit_no_projectiles: bool = false # harness replay: visual projectile off
+
 var dmg_school: String = "physical"
 var armor: float = 0.0
 var magic_resist: float = 0.0
@@ -90,6 +118,10 @@ var destination_auto: bool = false
 ## Kill hero-vs-hero (paritas _core.py:2506-2515 _process_hero_kill) — dipakai
 ## AIPlayer sebagai prioritas upgrade & beli item (sort by kills pygame).
 var kills: int = 0
+## _entity.py:3425 — akumulasi damage milik hero (dipakai command taktis
+#  AI "ATTACK DAMAGE DEALER" di pygame). Jalur skill dikredit lewat
+#  kit_hit(); basic attack belum (Godot: pemakai masih kosong).
+var damage_dealt: float = 0.0
 
 # ── Sistem ──
 var status = null      # StatusEffects
@@ -132,6 +164,9 @@ func _ready():
 	status = StatusEffectsScript.new(self)
 	skills = SkillBookScript.new()
 	skills.setup(self)
+	# State handler (kaizen._q_stack dst) — persis Hero.skills.init_state()
+	# pygame yang dipanggil SETELAH handler dibuat (_entity.py:3455).
+	HeroSkillKit.init_state(self)
 	_recalc_derived(true)
 	setup_visual()
 	# Setelah setup_visual supaya silhouette/custom_visual/hit_flash_mat
@@ -155,7 +190,17 @@ func apply_hero_data():
 	base_range = float(s["range"])
 	skill_damage_base = float(s.get("skill_damage", 80))
 	skill_range = float(s.get("skill_range", 100))
-	skill_cooldown_frames = float(s.get("skill_cooldown", 300))
+	skill_cooldown_max = int(s.get("skill_cooldown", 300))
+	# _entity.py:3373: skill_cooldown_max = stats["skill_cooldown"] MENTAH
+	# (frame). Katalog heroes.json sudah menyimpan frame.
+	skill_data = HeroDB.get_hero(hero_type)
+	# ═══ CATCH-UP STAT DASAR (hero_balance.starter_catchup_stats) ═══
+	# Di pygame panggilan ini MENIMPA hasil normalisasi melee untuk
+	# SEMUA hero (non-starter => x1.0 dari katalog mentah). Lihat
+	# HeroDB.starter_catchup_mults untuk audit lengkapnya.
+	var base := HeroDB.catchup_base(hero_type, _catchup_unlocks(), level)
+	base_hp = float(base.x)
+	base_damage = float(base.y)
 	skill_name = str(s.get("skill_name", ""))
 	dmg_school = str(s.get("dmg_school", "physical"))
 	role = str(s.get("role", ""))
@@ -238,14 +283,17 @@ func _physics_process(delta):
 		status.tick(delta)
 	if is_dead:
 		return
-	if skills != null:
-		skills.tick(delta)
 	# Item aktif auto-trigger (paritas inv.update(1, enemies) _entity.py:3801).
 	# 17 item "aktif" pygame tidak punya tombol — semuanya terpicu sendiri
 	# dari HP/jumlah musuh/target, jadi cukup dipanggil di sini.
 	if items != null:
 		items.tick(delta)
-	attack_timer = maxf(0.0, attack_timer - delta)
+	# AUTO-CAST dulu, BARU cooldown diturunkan — urutan persis
+	# Hero.update pygame (_entity.py:3803-3810): cast di frame F membakar
+	# cooldown yang pada frame yang sama masih di-decrement sekali.
+	_auto_cast_frames()
+	# ══ FRAME SKILL (Q--, attack_timer--, active--, WER--, kit timers) ══
+	_step_skill_frames()
 	combat_timer = maxf(0.0, combat_timer - delta)
 	_hit_fx_cd = maxf(0.0, _hit_fx_cd - delta)
 	if hurt_flash != null:
@@ -253,7 +301,6 @@ func _physics_process(delta):
 	anim_phase += delta * 6.0  # phase untuk Skeleton2D (breath + stride)
 
 	_regen(delta)
-	_auto_cast(delta)
 
 	# AI sederhana: cari target terdekat (port dari Hero._find_hunt_target)
 	if not target or not is_instance_valid(target) or bool(target.get("is_dead")):
@@ -387,55 +434,377 @@ func _regen(delta: float) -> void:
 	CombatSystem.heal_unit(self, rate * delta)
 
 
-## AI memakai skill sendiri; hero yang dipilih pemain menunggu input Q/W/E/R.
-## Paritas _try_auto_cast _entity.py:4149-4240 — kombo prioritas:
-##   R (kapan pun siap) → E (2+ musuh di skill_range) → W (HP < 40%) → Q.
+## Hero AI maupun pemain: auto-cast SDLAM NYA AKTIF seperti pygame v27
+## (_entity.py:3432-3440 — "Semua skill sekarang dicor otomatis").
 ## Godot lama salah urut (R butuh 3+ musuh, Q didahulukan) sehingga
 ## ultimate & skill defensive nyaris tidak pernah dipakai AI.
-func _auto_cast(delta: float) -> void:
-	if player_controlled or skills == null:
+## Auto-cast dalam FRAME seperti pygame (_entity.py:3803-3810 + 4149-4212).
+## Timer per-frame, cek tiap 20 step simulasi; gate stun/veil; TIDAK melewatkan
+## hero yang dikendalikan pemain (pygame tidak membedakan player_controlled).
+func _auto_cast_frames() -> void:
+	if auto_cast_enabled == false:
 		return
-	# pygame _disabled = stun atau Tempest Veil (_entity.py:3801-3802):
-	# keduanya menonaktifkan pencarian auto-cast sepenuhnya.
+	var inv = items
+	var disabled := false
 	if status != null and status.has_method("is_stunned") and status.is_stunned():
-		return
-	if items != null and items.is_veiled():
-		return
-	auto_cast_timer -= delta
-	if auto_cast_timer > 0.0:
-		return
-	auto_cast_timer = 0.4
-	# Musuh hidup dalam skill_range; kalau tidak ada, JANGAN cast apa pun
-	# (aturan ketat anti buang skill ke area kosong, _entity.py:4161-4164).
-	var enemies := CombatSystem.enemies_in_radius(team, global_position, skill_range)
+		disabled = true
+	if inv != null and inv.is_veiled():
+		disabled = true
+	if not disabled:
+		auto_cast_frame -= 1
+		if auto_cast_frame <= 0:
+			auto_cast_frame = 20
+			_try_auto_cast()
+	# CATATAN: decrement Q TIDAK di sini — ia terjadi SETELAH auto-cast di
+	# _step_skill_frames() (satu-satunya Q-- per frame), sama seperti urutan
+	# Hero.update pygame (_entity.py:3806-3810).
+
+
+## Mirror Hero._try_auto_cast: prioritas R -> E(2+ musuh) -> W(hp<40%) -> Q;
+## wajib ada musuh hidup dalam skill_range (guard anti-buang); target dipaksa
+## ke musuh TERDEKAT dalam range.
+func _try_auto_cast() -> void:
+	var lists := _kit_lists()
+	var enemies: Array = []
+	for e in lists[0] + lists[1] + lists[2]:
+		if str(e.get("team")) == team or bool(e.get("is_dead")):
+			continue
+		var d := global_position.distance_to((e as Node2D).global_position)
+		if d <= skill_range:
+			enemies.append([d, e, enemies.size()])
 	if enemies.is_empty():
 		return
-	# Target = musuh TERDEKAT dalam skill_range (bukan target serangan yang
-	# bisa berada di luar jangkauan skill) — paritas _entity.py:4173-4177.
-	var nearest: Node2D = null
-	var nd := 1e18
-	for e in enemies:
-		var d: float = global_position.distance_to((e as Node2D).global_position)
-		if d < nd:
-			nd = d
-			nearest = e as Node2D
-	target = nearest
-	# 1. R: ultimate dipakai kapan pun cooldown siap — kondisi 3+ musuh yang
-	# hampir tidak pernah terpenuhi membuat R terdengar mati (_entity.py:4179).
-	if skills.is_ready("r"):
-		if skills.cast("r"):
+	enemies.sort_custom(Callable(HeroSkillKit, "__by_pair0"))
+	target = enemies[0][1]
+	var nearby_count := enemies.size()
+	var hp_ratio := hp / maxf(1.0, max_hp)
+	if is_skill_ready("r"):
+		if try_cast_skill("r"):
 			return
-	# 2. E: hanya kalau 2+ musuh dekat (AI_SKILL_USE_MIN_ENEMIES _core.py:1097).
-	if skills.is_ready("e") and enemies.size() >= 2:
-		skills.cast("e")
+	if is_skill_ready("e") and nearby_count >= 2:
+		try_cast_skill("e")
 		return
-	# 3. W: defensive, hanya saat HP < 40%.
-	if skills.is_ready("w") and hp < max_hp * 0.4:
-		skills.cast("w")
+	if is_skill_ready("w") and hp_ratio < 0.4:
+		try_cast_skill("w")
 		return
-	# 4. Q: basic, paling sering.
-	if skills.is_ready("q"):
-		skills.cast("q")
+	if is_skill_ready("q"):
+		try_cast_skill("q")
+
+
+func is_skill_ready(key: String) -> bool:
+	match key:
+		"q":
+			return skill_timer <= 0
+		"w":
+			return w_cooldown <= 0
+		"e":
+			return e_cooldown <= 0
+		"r":
+			return r_cooldown <= 0
+	return false
+
+
+## Hero.cast_skill pygame (_entity.py:3578-3643): delegasi ke handler, lalu
+## CDR (Octarine) + spell vamp. INI satu-satunya jalur cast (tombol HUD,
+## auto-cast AI, harness replay) supaya efek item ikut persis.
+func try_cast_skill(key: String, all_units: Array = [], all_towers: Array = [],
+		all_bases: Array = []) -> bool:
+	if is_dead:
+		return false
+	var cd_attr := "skill_timer"
+	match key:
+		"w":
+			cd_attr = "w_cooldown"
+		"e":
+			cd_attr = "e_cooldown"
+		"r":
+			cd_attr = "r_cooldown"
+	var inv = items
+	var cdr := 0.0
+	if inv != null:
+		cdr = float(inv.get_cooldown_reduction())
+	var before := int(get(cd_attr))
+	var ok: bool = false
+	match key:
+		"q":
+			ok = HeroSkillKit.cast_q(self, all_units, all_towers, all_bases)
+		"w":
+			ok = HeroSkillKit.cast_w(self, all_units, all_towers, all_bases)
+		"e":
+			ok = HeroSkillKit.cast_e(self, all_units, all_towers, all_bases)
+		"r":
+			ok = HeroSkillKit.cast_r(self, all_units, all_towers, all_bases)
+		_:
+			return false
+	if ok:
+		if cdr > 0.0:
+			var after := int(get(cd_attr))
+			var added := after - before
+			if added > 0:
+				set(cd_attr, maxi(0, HeroDB._py_round(float(after) - float(added) * cdr)))
+		if inv != null:
+			var sv := float(inv.get_spell_vamp())
+			if sv > 0.0:
+				var heal := int(float(kit_skill_damage()) * sv)
+				if heal > 0:
+					hp = minf(max_hp, hp + float(heal))
+	return ok
+
+
+## Langkah timer skill per-frame — URUTAN PERSIS Hero.update pygame:
+## (4) skill_timer, (7) attack_timer, (7b) active_skill_timer, (8) w/e/r,
+## (9) skills.update_timers. attack_timer di-tick di sini supaya posisi
+## relatifnya sama (proyektil visual tidak memengaruhi kit: damage skill
+## instan; lihat docs/GODOT_PARITY.md).
+func _step_skill_frames() -> void:
+	if skill_timer > 0:
+		skill_timer -= 1
+	if attack_timer > 0.0:
+		attack_timer = maxf(0.0, attack_timer - (1.0 / FPS))
+	if active_skill_timer > 0:
+		active_skill_timer -= 1
+		if active_skill_timer <= 0:
+			active_skill = null
+	if w_cooldown > 0:
+		w_cooldown -= 1
+	if e_cooldown > 0:
+		e_cooldown -= 1
+	if r_cooldown > 0:
+		r_cooldown -= 1
+	var lists := _kit_lists()
+	HeroSkillKit.update_timers(self, lists[0], lists[1], lists[2])
+
+
+## Semua unit/tower/base lawan untuk handler skill (mirror argumen
+## Game.update -> Hero.update di pygame). Grup sama dengan Boss.kit_enemies,
+## TANPA potong jarak — penyaringan tim+hidup di kit_enemies().
+func _kit_lists() -> Array:
+	var units: Array = []
+	units.append_array(get_tree().get_nodes_in_group("minions"))
+	units.append_array(get_tree().get_nodes_in_group("heroes"))
+	units.append_array(get_tree().get_nodes_in_group("bosses"))
+	var towers: Array = get_tree().get_nodes_in_group("towers")
+	var bases: Array = get_tree().get_nodes_in_group("nexus")
+	return [units, towers, bases]
+
+
+# ══════════════════════════════════════════════════════════
+#  JEMBATAN HeroSkillKit (dipanggil HeroSkillKit.gd — konversi frame<->detik
+#  HANYA di sini; semua timer kit sendiri tetap FRAME seperti pygame)
+# ══════════════════════════════════════════════════════════
+
+## BaseSkill._get_enemies -> hero._get_all_enemies(all_units, towers, bases).
+func kit_enemies(all_units, all_towers, all_bases) -> Array:
+	var out: Array = []
+	for lst in [all_units, all_towers, all_bases]:
+		for n in lst:
+			if not is_instance_valid(n) or not (n is Node2D):
+				continue
+			if str(n.get("team")) == team:
+				continue
+			if bool(n.get("is_dead")):
+				continue
+			out.append(n)
+	return out
+
+
+## Mirror property skill_damage _entity.py (int(round) BERANTAI: base lalu
+## amp item, lalu skill_down tower) — dibaca 280x oleh kit; JANGAN pakai
+## CombatSystem.calc_skill_damage (float, tanpa rantai bulat pygame).
+func kit_skill_damage() -> int:
+	var base := int(skill_damage)
+	var inv = items
+	if inv != null:
+		var amp := float(inv.get_skill_amp())
+		if amp > 0.0:
+			base = HeroDB._py_round(float(base) * (1.0 + amp))
+	if status != null and status.skill_down_timer > 0.0:
+		var f := maxf(0.0, 1.0 - float(status.skill_down_amount))
+		return HeroDB._py_round(float(base) * f)
+	return base
+
+
+## settings.get_all_hero_types()[hero_type] — katalog mentah heroes.json.
+func kit_catalog_all() -> Dictionary:
+	return HeroDB.catalog_all()
+
+
+## settings.HERO_LEVELS (int-keyed) untuk reset buff damage Thorne R dkk.
+func kit_hero_levels() -> Dictionary:
+	return HeroDB.hero_levels_int()
+
+
+## e.take_damage(dmg, team[, source=, school=]) — kwargs DIPERTAHANKAN per
+## call-site (attribution damage_dealt hanya bila source ada; sekolah
+## menentukan armor-vs-MR). Lifesteal/cleave item TIDAK ikut: di pygame
+## damage skill tidak memicu jalur _on_attacker_hit penyerang.
+func kit_hit(e, dmg, from_team, src = null, school = "") -> void:
+	if e == null or not is_instance_valid(e):
+		return
+	var dealt := CombatSystem.apply_damage(e, float(dmg), str(from_team),
+		"normal", null, str(school) if school != null else "")
+	if src != null and is_instance_valid(src) and dealt > 0.0 \
+			and "damage_dealt" in src:
+		src.damage_dealt = float(src.get("damage_dealt")) + dealt
+
+
+## e.apply_slow(amount, durasi_FRAME pygame).
+func kit_slow(e, amount: float, dur_frames) -> void:
+	if e == null or not is_instance_valid(e):
+		return
+	if not kit_has_slow(e):
+		return
+	e.status.apply_slow(float(amount), float(dur_frames) / 60.0)
+
+
+## _apply_stun / e.attack_timer = max(t, F_frame) pygame.
+func kit_lock(e, frames) -> void:
+	if e == null or not is_instance_valid(e):
+		return
+	if not ("attack_timer" in e):
+		return
+	e.attack_timer = maxf(float(e.get("attack_timer")), float(frames) / 60.0)
+
+
+func kit_atk_timer(e) -> float:
+	if e == null or not is_instance_valid(e) or not ("attack_timer" in e):
+		return 0.0
+	return float(e.get("attack_timer")) * 60.0
+
+
+func kit_unit_alive(e) -> bool:
+	if e == null or not is_instance_valid(e):
+		return false
+	return not bool(e.get("is_dead"))
+
+
+## hasattr(e, "apply_slow") — unit dengan status effects (bukan tower/nexus).
+func kit_has_slow(e) -> bool:
+	if e == null or not is_instance_valid(e):
+		return false
+	var st = e.get("status")
+	return st != null
+
+
+func kit_has_atk_timer(e) -> bool:
+	if e == null or not is_instance_valid(e):
+		return false
+	return "attack_timer" in e
+
+
+func kit_has_hp(e) -> bool:
+	if e == null or not is_instance_valid(e):
+		return false
+	return "hp" in e
+
+
+## _shake_screen / _play_skill_sound / _add_popup — lapisan feedback; di
+## harness replay tetap aman (call_group tanpa receiver = no-op).
+func kit_shake(amount: float) -> void:
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		(tree as SceneTree).call_group("camera", "add_trauma", amount / 60.0)
+
+
+func kit_sound(volume: float) -> void:
+	AudioManager.play_sfx("hero_skill", volume)
+
+
+func kit_popup(text: String, critical: bool = false) -> void:
+	var num = preload("res://scenes/fx/DamageNumber.tscn").instantiate()
+	num.setup(text, critical)
+	num.global_position = global_position + Vector2(0.0, -26.0)
+	var host := get_tree().current_scene
+	if host != null and is_instance_valid(host):
+		host.add_child(num)
+
+
+## Hero._spawn_skill_projectile: visual homing TANPA damage (damage skill
+## instan). Harness replay melewatkan spawn (tidak ada sistem proyektil).
+## `speed` adalah parameter warisan pygame — SkillProjectile Godot memakai
+## konstanta internal 13 px/frame (paritas), jadi nilai ini sengaja diabaikan.
+func kit_skill_proj(target, _speed := 13.0) -> void:
+	if kit_no_projectiles or target == null or not is_instance_valid(target):
+		return
+	var p := SkillProjectileScript.new()
+	p.setup(target, hero_type, self)
+	var host := get_tree().current_scene
+	if host != null:
+		host.add_child(p)
+
+
+## Pengganti blok `try: from heroes/<alias>_fx import ... notify_skill_cast/
+## impact` (lapisan visual per-boss). Sama seperti jembatan Boss.gd.
+func kit_fx_cast(skill: String) -> void:
+	kit_popup(str(skill).to_upper(), false)
+	_kit_ring(global_position, radius + 16.0, fill_color.lightened(0.25))
+
+
+func kit_fx_impact(x: float, y: float, r: float, skill: String) -> void:
+	_kit_ring(Vector2(x, y), maxf(10.0, r), fill_color.lightened(0.4))
+	if skill == "r":
+		_kit_ring(Vector2(x, y), maxf(10.0, r) * 0.6, Color(1.0, 0.85, 0.4))
+
+
+func _kit_ring(center: Vector2, r: float, col: Color) -> void:
+	var host := get_tree().current_scene
+	if host == null or not is_instance_valid(host):
+		return
+	var ring = preload("res://scenes/fx/KitShockRing.gd").new()
+	ring.setup(center, r, col)
+	host.add_child(ring)
+
+
+## Input catch-up: jumlah hero NON-starter yang sudah dibeli pemain (mirror
+## game_instance.purchased_heroes). GameManager belum punya daftar lintas-
+## pembelian -> 0 (bonus penuh), sama seperti save baru pygame. Dibuka sebagai
+## item paritas di docs/GODOT_PARITY.md kalau roster persisten ditambah.
+func _catchup_unlocks() -> int:
+	return 0
+
+
+## ══ HARNESS PARITAS (HeroSkillParityTest) ══
+## Satu langkah frame dengan urutan yang sama persis oracle
+## tools/test_godot_match_parity.py::_run_hero_skill_scenario:
+##   cast (opsional) -> Q-- -> active-- -> WER-- -> kit.update_timers
+##   -> hit harness 'fire' (tiap 37f mulai f30, bila ada musuh) -> floor hp.
+## Mengembalikan hasil cast (true/false) untuk dicatat test.
+func skill_test_step(frame: int, cast_key: String, force: bool, enemies: Array) -> bool:
+	var ok := false
+	if cast_key != "":
+		if force:
+			match cast_key:
+				"q":
+					skill_timer = 0
+				"w":
+					w_cooldown = 0
+				"e":
+					e_cooldown = 0
+				"r":
+					r_cooldown = 0
+		ok = try_cast_skill(cast_key, enemies, [], [])
+	if skill_timer > 0:
+		skill_timer -= 1
+	if active_skill_timer > 0:
+		active_skill_timer -= 1
+		if active_skill_timer <= 0:
+			active_skill = null
+	if w_cooldown > 0:
+		w_cooldown -= 1
+	if e_cooldown > 0:
+		e_cooldown -= 1
+	if r_cooldown > 0:
+		r_cooldown -= 1
+	HeroSkillKit.update_timers(self, enemies, [], [])
+	if enemies.size() > 0 and frame >= 30 and frame % 37 == 0:
+		# Sama seperti oracle: panggil guard+HP situs (CombatSystem.apply_damage
+		# = padanan Hero.take_damage pygame) LANGSUNG — tanpa jalur die() milik
+		# Godot. Di pygame harness, alive=False tidak pernah dibaca kode yang
+		# diuji (cast/timer tidak ceknya), jadi floor 1.0 cukup.
+		CombatSystem.apply_damage(self, 40.0, "red", "fire", enemies[0], "")
+	if hp < 1.0:
+		hp = 1.0
+	return ok
 
 
 func _drive_visual(is_moving: bool, delta: float) -> void:
@@ -449,8 +818,8 @@ func _drive_visual(is_moving: bool, delta: float) -> void:
 	elif is_moving:
 		act = "walk"
 	var skill_key := ""
-	if skills != null:
-		skill_key = str(skills.active_skill)
+	if active_skill != null:
+		skill_key = str(active_skill)
 	if silhouette != null and is_instance_valid(silhouette) and silhouette.has_method("drive"):
 		silhouette.drive(anim_phase, act, ap, facing)
 	elif custom_visual != null and is_instance_valid(custom_visual) and custom_visual.has_method("drive"):
@@ -598,7 +967,8 @@ func take_damage(amount: float, from_team: String, dmg_type: String = "normal",
 ## komentar _entity.py:4376-4384) = SERANGAN DASAR tidak boleh punya impact FX
 ## sama sekali, karena tumpukan flash+spark tiap pukulan bikin combat ramai
 ## kedap-kedip. Impact FX eksklusif milik SKILL (paritas notify_skill_impact
-## hero_skills/_bundle.py), jadi pemanggilnya SkillBook._damage().
+## hero_skills/_bundle.py), jadi pemanggilnya jembatan kit_hit()/kit_popup()
+## di file ini — bukan serangan dasar.
 func play_hit_fx(col: Color = Color(1.0, 0.72, 0.55)) -> void:
 	if is_dead:
 		return
@@ -663,8 +1033,10 @@ func die(killer = null):
 
 
 func _cancel_active_skills() -> void:
-	if skills != null:
-		skills.cancel_active()
+	# VISUAL ONLY: state kit (charge powershot, tickers) TIDAK dibersihkan di
+	# sini — paritas _entity.py: Hero yang mati berhenti di-update sehingga
+	# timer membeku dan berjalan lagi saat respawn; respawn() hanya menyiapkan
+	# ulang Q (skill_timer=0), tidak menyentuh W/E/R maupun charge.
 	_ring_alpha = 0.0
 	if hit_particles != null:
 		hit_particles.emitting = false
@@ -679,6 +1051,10 @@ func respawn() -> void:
 	if status != null:
 		status.clear()
 	_cancel_active_skills()
+	# _entity.py:4765-4767 (respawn): HANYA Q yang direset siap —
+	# W/E/R tetap carrying cooldown (membeku selama mati) dan charge kit
+	# dibiarkan lanjut. active_skill(+timer) juga TIDAK disentuh pygame.
+	skill_timer = 0
 	_recalc_derived(true)
 	is_dead = false
 	remove_from_group("dead")
@@ -716,16 +1092,17 @@ func cast_r(): return _cast_skill("r")
 
 
 func _cast_skill(key: String) -> bool:
-	if is_dead or skills == null:
+	if is_dead:
 		return false
-	var ok: bool = skills.cast(key)
+	var lists := _kit_lists()
+	var ok := try_cast_skill(key, lists[0], lists[1], lists[2])
 	if ok:
 		play_skill_fx(key)
 	else:
-		# Cast gagal (cooldown belum siap / tidak ada target / kena stun):
-		# umpan balik "tidak bisa" paritas _cast_hero_skill _core.py:8441
-		# (ui_error volume_mult 0.3). Suara skill yang berhasil dibunyikan
-		# SkillBook._trigger_cooldown.
+		# Cast gagal (cooldown belum siap / tidak ada target): umpan balik
+		# "tidak bisa" paritas _cast_hero_skill _core.py:8441 (ui_error
+		# volume_mult 0.3). Suara/shake yang berhasil dibunyikan handler kit
+		# (BaseSkill._trigger_* -> h.kit_sound).
 		AudioManager.play_sfx("ui_error", 0.3)
 	return ok
 
@@ -838,6 +1215,26 @@ func _draw() -> void:
 		i += 1
 		if i > 4:
 			break
+	# State skill kit (field h.kit — nama persis seperti _bundle.py). Sejak
+	# hero memakai HeroSkillKit, buff ini hidup di kit, bukan status.buffs.
+	if i <= 4 and not kit.is_empty():
+		var kit_dots: Array = [
+			[int(kit.get("_wind_wall_timer", 0)) > 0,
+				Color(0.6, 0.9, 1.0, 0.9)],
+			[bool(kit.get("_windrun_active", false)),
+				Color(0.55, 1.0, 0.65, 0.9)],
+			[bool(kit.get("_bristleback_active", false)),
+				Color(0.8, 1.0, 0.5, 0.9)],
+			[bool(kit.get("_shadow_realm_active", false)),
+				Color(0.7, 0.6, 1.0, 0.9)],
+		]
+		for pair in kit_dots:
+			if not bool(pair[0]):
+				continue
+			draw_circle(Vector2(-14 + float(i) * 7, -46), 2.6, pair[1])
+			i += 1
+			if i > 4:
+				break
 	var j := 0
 	for icon in status.active_icon_list():
 		draw_circle(Vector2(-14 + float(j) * 7, -52), 2.2, Color(1.0, 0.35, 0.35, 0.9))

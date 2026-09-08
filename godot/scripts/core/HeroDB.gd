@@ -92,23 +92,99 @@ func load_archetypes():
 func get_hero(hero_type: String) -> Dictionary:
 	return heroes.get(hero_type, {})
 
+
+## Katalog MENTAH heroes.json untuk HeroSkillKit (paritas
+## settings.get_all_hero_types() — dipanggil handler lewat h.kit_catalog_all()).
+func catalog_all() -> Dictionary:
+	return heroes
+
+
+## HERO_LEVELS pygame sebagai Dictionary INT-keyed (pygame index level-nya
+## int; `hero_levels` hasil JSON loader string-keyed). Lewat h.kit_hero_levels().
+func hero_levels_int() -> Dictionary:
+	if not _levels_int_cache.is_empty():
+		return _levels_int_cache
+	for k in hero_levels.keys():
+		_levels_int_cache[int(k)] = hero_levels[k]
+	if _levels_int_cache.is_empty():
+		for k in FALLBACK_HERO_LEVELS:
+			_levels_int_cache[int(k)] = FALLBACK_HERO_LEVELS[k]
+	return _levels_int_cache
+
+var _levels_int_cache: Dictionary = {}
+
 func get_all_types() -> Array:
 	return heroes.keys()
+
+## round() Python: half-to-even pada selisih > eps, dan untuk 0.5 eksak
+## mengikuti perilaku data (floor di .5 — terverifikasi nol selisih pada
+## seluruh katalog lewat tools/parity audit, 2026-09).
+static func _py_round(v: float) -> int:
+	var f := floorf(v)
+	var diff := v - f
+	if diff > 0.5:
+		return int(f) + 1
+	if diff < 0.5:
+		return int(f)
+	return int(f) if int(f) % 2 == 0 else int(f) + 1
+
+
+## Mirror hero_balance.starter_catchup (hero_balance.py 226-246):
+## pengali (hp, damage) — SATU-SATUNYA jalur base_hp/base_damage hero.
+## PENTING (temuan audit 2026-09): di _entity.py Hero.__init__, blok melee
+## (x1.15 HP / x1.20 dmg) DITIMPA ulang oleh panggilan catchup yang membaca
+## katalog MENTAH — jadi untuk semua hero non-starter hasilnya = angka mentah
+## (x1.0), dan untuk starter = bonus catch-up. Speed/range/cd melee TETAP
+## ter-buff. Karena itu get_balanced_stats di bawah tidak lagi mengubah
+## hp/damage; nilai final datang dari catchup_base().
+static func starter_catchup_mults(hero_type: String, boss_unlocks: int,
+		level: int) -> Vector2:
+	const STARTERS := ["kaizen", "grimjaw", "sylara", "thorne", "vex", "zephyr"]
+	if not (hero_type in STARTERS):
+		return Vector2.ONE
+	var t := clampf(float(maxi(0, boss_unlocks)) / 12.0, 0.0, 1.0)
+	var lv := maxi(1, level)
+	var tt := clampf(float(lv - 1) / float(maxi(1, 8 - 1)), 0.0, 1.0)
+	var lf := 1.0 - (1.0 - 0.20) * tt
+	var k := 1.0 + (1.32 - 1.0) * (1.0 - t) * lf
+	if k <= 1.001:
+		return Vector2.ONE
+	return Vector2(1.0 + (k - 1.0) * 1.25, 1.0 + (k - 1.0) * 0.85)
+
+
+## (base_hp, base_damage) final ala starter_catchup_stats pygame — inputnya
+## katalog MENTAH heroes.json (bukan hasil buff melee). Instance method
+## karena membaca `heroes` autoload.
+func catchup_base(hero_type: String, boss_unlocks: int, level: int) -> Vector2i:
+	var raw: Dictionary = heroes.get(hero_type, {})
+	if raw.is_empty():
+		return Vector2i(1, 1)
+	var m := starter_catchup_mults(hero_type, boss_unlocks, level)
+	var hp := maxi(1, _py_round(float(int(raw.get("hp", 1))) * m.x))
+	var dmg := maxi(1, _py_round(float(int(raw.get("damage", 1))) * m.y))
+	return Vector2i(hp, dmg)
+
 
 # Balance pasif: melee buff (mirip _entity.py Hero.__init__)
 func get_balanced_stats(hero_type: String) -> Dictionary:
 	var s = get_hero(hero_type).duplicate()
 	if s.is_empty():
 		return {}
-	# Melee = range < 110 -> buff +15% HP, +20% damage, +18% speed
+	# Melee = range < 110 -> buff speed/range/cd SAJA (hp/damage ditimpa
+	# catchup_base — lihat komentar starter_catchup_mults di atas).
 	if s.get("range", 70) < 110:
 		s["range"] = 70
-		s["hp"] = int(s["hp"] * 1.15)
-		s["damage"] = int(s["damage"] * 1.20)
-		s["speed"] = s["speed"] * 1.18
-		s["attack_cooldown"] = max(18, int(s["attack_cooldown"] * 0.88))
+		# Mirror PERSIS `round(speed * 1.18, 2)` di _entity.py:3308 —
+		# Python membulat pembulatan desimal dari nilai biner produk
+		# (1.25*1.18 = 1.4749999999999999777 -> 1.47). Pendekatan lama
+		# `_py_round(speed*118)/100` membulatkan 147.5 -> 148 -> 1.48
+		# (bug khalros final.speed di HeroSkillParityTest, 2026-09-08).
+		# String.num(prec=2) memakai dtoa yang sama dgn CPython
+		# (round-half-even atas nilai desimal eksak double tsb).
+		s["speed"] = String.num(float(s["speed"]) * 1.18, 2).to_float()
+		s["attack_cooldown"] = maxi(18, _py_round(float(s["attack_cooldown"]) * 0.88))
 	else:
-		s["range"] = clamp(s["range"], 120, 220)
+		s["range"] = clampf(float(s["range"]), 120.0, 220.0)
 	# Archetype dmg_type -> dmg_school (dipakai CombatSystem/DamageSchool dan
 	# ItemInventory.is_magic untuk item magic_only). heroes.json sendiri selalu
 	# "PHYSICAL"; sekolah sihir yang benar ada di hero_archetypes.json (120 MAGIC).
