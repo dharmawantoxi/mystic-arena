@@ -698,6 +698,686 @@ def make_hero_skill_fixture(entity, settings):
                     "harness — lihat blok komentar HERO SKILL ORACLE"}
 
 
+# ══════════════════════════════════════════════════════════════
+# HERO BASIC ATTACK ORACLE — jalur damage dasar hero (audit armor)
+# ══════════════════════════════════════════════════════════════
+#
+# Fixture `hero_basic_attack` mengunci jalur damage serangan dasar hero:
+# kalkulasi penyerang (Hero._do_attack: bonus item + crit buff + crit item,
+# pembulatan int) dan blok mitigasi TIAP JENIS target (Hero.take_damage,
+# Minion.take_damage, Boss.take_damage, Tower.take_damage, Castle.take_damage
+# pygame ASLI). Sekenario sengaja bebas RNG: tidak ada item crit/evasion,
+# tidak ada roll block item (hanya aura_guard_block yang pasti), tidak ada
+# windrun/shadow realm (milestone tersendiri). Setiap skenario dijalankan
+# DUA KALI dengan seed berbeda pada saat generate — hasil harus identik,
+# kalau tidak fixture ditolak (replay Godot memakai randf() dengan urutan
+# berbeda).
+
+BA_ATK_MELEE_XY = (240.0, 100.0)
+BA_ATK_RANGED_XY = (200.0, 100.0)
+BA_DEF_XY = (300.0, 100.0)
+BA_EXTRA_XY = (340.0, 100.0)   # 40 px dari defender (radius cleave 110)
+
+BA_SCENARIOS = [
+    # ── H. Mitigasi HERO (blok armor Hero.take_damage 4636-4686) ──
+    {
+        "name": "hero_armor_all_schools",
+        "note": "armor ITEM (steel_aegis 6) meredam SEMUA damage non-fire: "
+                "physical, magic, netral normal (serangan minion), netral "
+                "projectile (peluru menara), 'magic' tanpa source (reflect "
+                "thornmail). Hanya 'fire' yang lolos + floor max(1,...).",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"]},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "normal", "school": "magic"},
+            {"damage": 100, "dmg_type": "normal", "school": None,
+             "source": "none"},
+            {"damage": 100, "dmg_type": "projectile", "school": None,
+             "source": "none"},
+            {"damage": 100, "dmg_type": "fire", "school": None,
+             "source": "none"},
+            {"damage": 100, "dmg_type": "magic", "school": None,
+             "source": "none"},
+            {"damage": 3, "dmg_type": "normal", "school": "physical",
+             "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "hero_amp_order",
+        "note": "dmg_amp (Soul Rend) dikalikan SEBELUM armor dengan "
+                "int(round()) — bukan sesudah mitigasi; amp juga berlaku "
+                "ke damage 'fire' (blok amp di luar gate non-fire).",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"],
+                     "debuff": {"dmg_amp": 0.5}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "fire", "school": None,
+             "source": "none"},
+        ],
+    },
+    {
+        "name": "hero_shred_partial",
+        "note": "armor_shred mengikis armor item: 6-3=3.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"],
+                     "debuff": {"armor_shred": 3.0}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+        ],
+    },
+    {
+        "name": "hero_shred_negative",
+        "note": "shred melewati armor -> armor negatif menambah damage 6% "
+                "per poin (6-10=-4 -> +24%).",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"],
+                     "debuff": {"armor_shred": 10.0}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+        ],
+    },
+    {
+        "name": "hero_aura_armor_live",
+        "note": "armor dibaca LIVE dari inventory (stat + aura_armor - "
+                "aura_armor_reduction), bukan snapshot node: aura Steel "
+                "Aegis sekutu +4 lalu aura Solar Brand musuh -10 (total "
+                "negatif -> bonus).",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "aura": {"aura_armor": 4.0}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "set": {"aura": {"aura_armor": 0.0,
+                              "aura_armor_reduction": 10.0}}},
+        ],
+    },
+    {
+        "name": "hero_block_aura",
+        "note": "aura_guard_block (Bulwark Guard) memotong damage SETELAH "
+                "armor, tanpa roll, floor 0; berlaku juga untuk damage "
+                "'magic' tapi TIDAK untuk 'fire' (block di dalam gate "
+                "non-fire).",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"],
+                     "aura": {"aura_guard_block": 50.0}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "normal", "school": "magic"},
+            {"damage": 30, "dmg_type": "fire", "school": None,
+             "source": "none"},
+        ],
+    },
+    {
+        "name": "hero_blind_miss",
+        "note": "blind ada di PENYERANG (aura Solar Brand): serangan fisik "
+                "meleset pasti (blind 1.0), serangan magic tetap kena. "
+                "Evasion/blind hanya untuk hit fisik.",
+        "attacker": {"hero_type": "kaizen", "blind": 1.0},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"]},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "normal", "school": "magic"},
+        ],
+    },
+    # ── K. Guard kit hero (urutan shadow/windrun/windwall/veil) ──
+    {
+        "name": "hero_windwall_guards",
+        "note": "Wind Wall memantulkan 'projectile' non-magic; melee "
+                "'normal' menembus; projectile magic menembus TAPI tetap "
+                "kena armor item (school-aware hanya untuk guard).",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "kaizen",
+                     "items": ["steel_aegis"],
+                     "kit": {"_wind_wall_timer": 60}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "projectile", "school": "physical"},
+            {"damage": 100, "dmg_type": "projectile", "school": "magic"},
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+        ],
+    },
+    {
+        "name": "hero_bristleback",
+        "note": "Bristleback menahan 30% (non-magic school) / 15% (magic); "
+                "reflect 25% damage mendarat bertipe 'normal' netral JADI "
+                "KENA ARMOR ITEM penyerang (round banker Python: 17*0.7353 "
+                "-> 12, bukan 13).",
+        "attacker": {"hero_type": "kaizen", "items": ["steel_aegis"]},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "kit": {"_bristleback_active": True}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "normal", "school": "magic"},
+        ],
+    },
+    {
+        "name": "hero_thornmail_reflect",
+        "note": "Thornmail memantulkan int(damage_mendarat * 0.85) dengan "
+                "damage_type 'magic' (bukan 'normal', tanpa max(1,..)); "
+                "pantulan kena armor item penyerang.",
+        "attacker": {"hero_type": "kaizen", "items": ["steel_aegis"]},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["razor_carapace"], "thorn": 300},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+        ],
+    },
+    # ── A. Kalkulasi penyerang (Hero._do_attack 4240-4290) ──
+    {
+        "name": "atk_melee_physical",
+        "note": "baseline: melee fisik tanpa item = self.damage.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee", "attacks": 1,
+    },
+    {
+        "name": "atk_melee_magic_vs_armor",
+        "note": "basic attack melee hero MAGIC (gornak) meneruskan school "
+                "'magic' — di pygame TETAP kena armor item target.",
+        "attacker": {"hero_type": "gornak"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"]},
+        "mode": "melee", "attacks": 1,
+    },
+    {
+        "name": "atk_crit_buff",
+        "note": "crit buff (Grimjaw E _crit_buff_active): basic attack "
+                "int(damage*2) — termasuk bonus item.",
+        "attacker": {"hero_type": "grimjaw",
+                     "kit": {"_crit_buff_active": True}},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee", "attacks": 1,
+    },
+    {
+        "name": "atk_crit_buff_plus_bonus",
+        "note": "urutan pygame: damage + bonus item DULU, baru dikali crit "
+                "buff: int((damage+20)*2).",
+        "attacker": {"hero_type": "grimjaw", "items": ["demon_maw"],
+                     "kit": {"_crit_buff_active": True}},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee", "attacks": 1,
+    },
+    {
+        "name": "atk_bonus_damage",
+        "note": "bonus damage item dijumlah sebelum mitigasi (demon_maw "
+                "+20 damage, +4 armor).",
+        "attacker": {"hero_type": "grimjaw", "items": ["demon_maw"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee", "attacks": 1,
+    },
+    {
+        "name": "atk_ranged_physical",
+        "note": "ranged fisik (sylara): damage dibawa proyektil, mendarat "
+                "sebagai damage_type 'projectile' + school penyerang.",
+        "attacker": {"hero_type": "sylara"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"]},
+        "mode": "ranged", "attacks": 1,
+    },
+    {
+        "name": "atk_ranged_magic_vs_armor",
+        "note": "ranged magic (vex): projectile school 'magic' — pygame "
+                "TETAP kena armor item (gate damage_type != 'fire').",
+        "attacker": {"hero_type": "vex"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["steel_aegis"]},
+        "mode": "ranged", "attacks": 1,
+    },
+    {
+        "name": "atk_lifesteal_melee",
+        "note": "lifesteal melee: hp += damage_pra_mitigasi * ls (float, "
+                "lewat property hp) — defender kena damage penuh.",
+        "attacker": {"hero_type": "grimjaw", "items": ["demon_maw"],
+                     "hp_frac": 0.5},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee", "attacks": 1,
+    },
+    {
+        "name": "atk_lifesteal_ranged",
+        "note": "lifesteal ranged dibayar SAAT PROYEKTIL DILEPAS dengan "
+                "int(damage*ls) — damage mendarat belakangan di frame hit.",
+        "attacker": {"hero_type": "vex", "items": ["demon_maw"],
+                     "hp_frac": 0.5},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "ranged", "attacks": 1,
+    },
+    {
+        "name": "atk_cleave_melee",
+        "note": "Cleave Axe: splash int(damage_pra_mitigasi * 0.5) ke musuh "
+                "lain radius 110 dari TARGET, take_damage netral 'normal' "
+                "tanpa source -> kena armor item korban splash.",
+        "attacker": {"hero_type": "grimjaw", "items": ["cleave_axe"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "extras": [{"tag": "u0", "kind": "hero", "hero_type": "razak",
+                    "items": ["steel_aegis"]}],
+        "mode": "melee", "attacks": 1,
+    },
+    # ── M. Mitigasi MINION (Minion.take_damage 5795-5821) ──
+    {
+        "name": "minion_troll_schools",
+        "note": "minion troll ber-armor: physical kena armor, magic kena MR "
+                "(0), netral & fire tanpa mitigasi sekolah.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "minion", "minion_type": "troll"},
+        "mode": "direct",
+        "hits": [
+            {"damage": 40, "dmg_type": "normal", "school": "physical"},
+            {"damage": 40, "dmg_type": "normal", "school": "magic",
+             "set": {"hp_frac": 1.0}},
+            {"damage": 40, "dmg_type": "normal", "school": None,
+             "source": "none", "set": {"hp_frac": 1.0}},
+            {"damage": 40, "dmg_type": "fire", "school": None,
+             "source": "none", "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "minion_undead_mr",
+        "note": "minion undead: armor 0 + magic_resist > 0 -> damage magic "
+                "diredam MR, physical & netral penuh.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "minion", "minion_type": "undead"},
+        "mode": "direct",
+        "hits": [
+            {"damage": 40, "dmg_type": "normal", "school": "magic"},
+            {"damage": 40, "dmg_type": "normal", "school": "physical",
+             "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "minion_shred_double_dip",
+        "note": "shred minion dihitung DUA kali oleh pygame: damage "
+                "x(1+min(1,shred*0.06)) duluan, lalu armor efektif "
+                "armor-shred (double-dip Corroder).",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "minion", "minion_type": "troll",
+                     "debuff": {"armor_shred": 2.0}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 40, "dmg_type": "normal", "school": "physical"},
+            {"damage": 40, "dmg_type": "normal", "school": None,
+             "source": "none", "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "minion_amp_order",
+        "note": "dmg_amp minion: int(round()) SEBELUM mitigasi sekolah.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "minion", "minion_type": "troll",
+                     "debuff": {"dmg_amp": 0.3}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 40, "dmg_type": "normal", "school": "physical"},
+        ],
+    },
+    # ── B. Mitigasi BOSS (base_boss.take_damage 5978-6037) ──
+    {
+        "name": "boss_schools_gornak",
+        "note": "boss gornak: physical kena armor (red min 0.60), magic "
+                "kena MR, netral & fire hanya resilience+cap.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "boss", "boss_type": "gornak"},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": None,
+             "source": "none", "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "fire", "school": None,
+             "source": "none", "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "boss_shred_formula",
+        "note": "shred boss TIDAK mengikis armor: mengurangi REDUCTION "
+                "(red - shred*0.06, clamp [0, 0.60]) — beda rumus dengan "
+                "minion; magic tidak tersentuh shred.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "boss", "boss_type": "gornak",
+                     "debuff": {"armor_shred": 4.0}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "boss_blind_gate",
+        "note": "blind boss hanya untuk damage_type 'normal' DENGAN source: "
+                "'projectile' (ranged hero) tidak ikut blind.",
+        "attacker": {"hero_type": "kaizen", "blind": 1.0},
+        "defender": {"kind": "boss", "boss_type": "gornak"},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical"},
+            {"damage": 100, "dmg_type": "projectile", "school": "physical"},
+        ],
+    },
+    # ── T/N. Mitigasi TOWER & CASTLE ──
+    {
+        "name": "tower_schools",
+        "note": "menara (shield dinolkan): physical kena armor menara, magic "
+                "kena MR, netral tanpa mitigasi (Tower.take_damage "
+                "1063-1071).",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "tower"},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "projectile", "school": "physical"},
+            {"damage": 100, "dmg_type": "projectile", "school": "magic",
+             "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "projectile", "school": None,
+             "source": "none", "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "castle_shield_int_truncation",
+        "note": "sisa damage setelah shield dipotong int(x*(1-0.88)) — "
+                "truncation Python (30*0.12=3.5999.. -> 3), bukan float.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "castle", "shield": 70},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "source": "none"},
+        ],
+    },
+]
+
+## Probe semantik get_block (Scarlet Bulwark): amount mengikuti melee/ranged
+## PEMILIK (range<=80), bukan jenis serangan masuk; None -> [0,0].
+BA_GET_BLOCK_PROBE = [
+    {"hero_type": "thorne", "items": ["scarlet_bulwark"]},
+    {"hero_type": "sylara", "items": ["scarlet_bulwark"]},
+    {"hero_type": "thorne", "items": []},
+]
+
+
+
+
+def _ba_inject_hero_state(hero, cfg):
+    """Injeksi state harness ke hero pygame (item/aura/debuff/kit/blind)."""
+    for item_id in cfg.get("items", ()):
+        assert hero.items.add(item_id), f"add item gagal: {item_id}"
+    for key, val in (cfg.get("kit") or {}).items():
+        setattr(hero, key, val)
+    for key, val in (cfg.get("aura") or {}).items():
+        setattr(hero.items, key, float(val))
+    deb = cfg.get("debuff") or {}
+    if "armor_shred" in deb:
+        hero.armor_shred_amount = float(deb["armor_shred"])
+        hero.armor_shred_timer = 10 ** 6
+    if "dmg_amp" in deb:
+        hero.dmg_amp_amount = float(deb["dmg_amp"])
+        hero.dmg_amp_timer = 10 ** 6
+    if cfg.get("blind"):
+        hero.blind_amount = float(cfg["blind"])
+        hero.blind_timer = 10 ** 6
+    if cfg.get("thorn"):
+        hero.items.thorn_timer = int(cfg["thorn"])
+    if cfg.get("hp_frac") is not None:
+        hero.hp = hero.max_hp * float(cfg["hp_frac"])
+
+
+def _ba_make_unit(cfg, entity, x, y, team):
+    """Unit pygame ASLI untuk skenario basic attack."""
+    entity.set_damage_school(None)
+    kind = cfg.get("kind", "hero")
+    if kind == "hero":
+        unit = entity.Hero(cfg["hero_type"], team, x=x, y=y)
+        _ba_inject_hero_state(unit, cfg)
+        return unit
+    if kind == "minion":
+        return entity.Minion(cfg["minion_type"], team, "mid")
+    if kind == "boss":
+        from bosses.base_boss import Boss
+        unit = Boss(cfg["boss_type"])
+        unit.team = team
+        unit.x, unit.y = float(x), float(y)
+        deb = cfg.get("debuff") or {}
+        if "armor_shred" in deb:
+            unit.armor_shred_amount = float(deb["armor_shred"])
+            unit.armor_shred_timer = 10 ** 6
+        if "dmg_amp" in deb:
+            unit.dmg_amp_amount = float(deb["dmg_amp"])
+            unit.dmg_amp_timer = 10 ** 6
+        return unit
+    if kind == "tower":
+        # Tower(x, y, team, ...) — tower_type pygame selalu "archer".
+        # Shield dinolkan supaya blok mitigasi sekolah terlihat (shield
+        # absorb sendiri identik di kedua engine: pengurangan polos).
+        unit = entity.Tower(x, y, team)
+        unit.shield = 0
+        return unit
+    if kind == "castle":
+        unit = entity.Castle(x, y, team)
+        if cfg.get("shield") is not None:
+            unit.shield = float(cfg["shield"])
+            unit.shield_active = True
+            unit.shield_no_damage_timer = 0
+        return unit
+    raise AssertionError(f"kind skenario tak dikenal: {kind}")
+
+
+def _ba_patch(unit, patch):
+    """Patch state defender per-hit (aura/debuff/kit/thorn/hp_frac)."""
+    if hasattr(unit, "items"):
+        for key, val in (patch.get("aura") or {}).items():
+            setattr(unit.items, key, float(val))
+    deb = patch.get("debuff") or {}
+    if "armor_shred" in deb:
+        unit.armor_shred_amount = float(deb["armor_shred"])
+        unit.armor_shred_timer = 10 ** 6
+    if "dmg_amp" in deb:
+        unit.dmg_amp_amount = float(deb["dmg_amp"])
+        unit.dmg_amp_timer = 10 ** 6
+    for key, val in (patch.get("kit") or {}).items():
+        setattr(unit, key, val)
+    if patch.get("thorn") is not None and hasattr(unit, "items"):
+        unit.items.thorn_timer = int(patch["thorn"])
+    if patch.get("hp_frac") is not None:
+        unit.hp = unit.max_hp * float(patch["hp_frac"])
+
+
+def _ba_unit_type_name(unit):
+    if hasattr(unit, "hero_type"):
+        return str(unit.hero_type)
+    if hasattr(unit, "minion_type"):
+        return str(unit.minion_type)
+    if hasattr(unit, "boss_type"):
+        return str(unit.boss_type)
+    if hasattr(unit, "tower_type"):
+        return str(unit.tower_type)
+    return "castle"
+
+
+def _ba_unit_meta(tag, cfg, unit, team):
+    return {
+        "tag": tag,
+        "kind": cfg.get("kind", "hero"),
+        "type": _ba_unit_type_name(unit),
+        "team": team,
+        "max_hp": float(getattr(unit, "max_hp", 0) or 0),
+        "hp0": float(unit.hp),
+        "cfg": cfg,
+    }
+
+
+def _ba_run_scenario(spec, entity):
+    """Jalankan satu skenario pada unit pygame ASLI; kembalikan rekaman."""
+    mode = spec["mode"]
+    ranged = mode == "ranged"
+
+    atk_xy = BA_ATK_RANGED_XY if ranged else BA_ATK_MELEE_XY
+    atk = _ba_make_unit(spec["attacker"], entity,
+                        atk_xy[0], atk_xy[1], "blue")
+    dfn = _ba_make_unit(spec["defender"], entity,
+                        BA_DEF_XY[0], BA_DEF_XY[1], "red")
+    units = {"atk": atk, "def": dfn}
+    cfgs = {"atk": spec["attacker"], "def": spec["defender"]}
+    for i, extra_cfg in enumerate(spec.get("extras", ())):
+        tag = str(extra_cfg.get("tag", f"u{i}"))
+        units[tag] = _ba_make_unit(
+            extra_cfg, entity, BA_EXTRA_XY[0], BA_EXTRA_XY[1] + 20.0 * i,
+            "red")
+        cfgs[tag] = extra_cfg
+
+    # Cleave (on-hit melee) mengumpulkan korban dari game_instance —
+    # pasang dunia fake berisi unit skenario, lepas setelah selesai.
+    if "cleave_axe" in list(spec["attacker"].get("items", ())):
+        _ba_install_fake_game(units)
+
+    record = {
+        "name": spec["name"],
+        "mode": mode,
+        "note": spec.get("note", ""),
+        "units": [_ba_unit_meta(t, cfgs[t], units[t],
+                                "blue" if t == "atk" else "red")
+                  for t in units],
+        "events": [],
+    }
+
+    def snap():
+        return {t: float(u.hp) for t, u in units.items()}
+
+    try:
+        if mode == "direct":
+            for i, hit in enumerate(spec["hits"]):
+                if hit.get("set"):
+                    _ba_patch(dfn, hit["set"])
+                src = atk if hit.get("source", "attacker") == "attacker" \
+                    else None
+                dfn.take_damage(
+                    int(hit["damage"]), "blue",
+                    damage_type=hit["dmg_type"], source=src,
+                    school=hit.get("school"))
+                record["events"].append({"i": i, "phase": "hit", "hp": snap()})
+        elif mode in ("melee", "ranged"):
+            atk.target = dfn
+            for i in range(int(spec.get("attacks", 1))):
+                atk.attack_timer = 0
+                atk.no_attack_timer = 0
+                atk.skill_timer = 0
+                atk._do_attack()
+                if ranged:
+                    live = [p for p in atk.projectiles if p.get("alive")]
+                    assert live, "proyektil tidak ter-spawn"
+                    proj = live[-1]
+                    record["events"].append({
+                        "i": i, "phase": "spawn", "hp": snap(),
+                        "proj_damage": int(proj["damage"]),
+                        "proj_school": proj.get("school")})
+                    # Hit persis jalur projectile hero (_entity.py:3913-3915).
+                    dfn.take_damage(
+                        proj["damage"], proj["team"],
+                        damage_type="projectile",
+                        source=proj.get("source"),
+                        school=proj.get("school"))
+                    for p in atk.projectiles:
+                        p["alive"] = False
+                    atk.projectiles = []
+                    record["events"].append(
+                        {"i": i, "phase": "hit", "hp": snap()})
+                else:
+                    record["events"].append(
+                        {"i": i, "phase": "hit", "hp": snap()})
+        else:
+            raise AssertionError(f"mode tak dikenal: {mode}")
+    finally:
+        _ba_clear_fake_game()
+    return record
+
+
+def _ba_install_fake_game(units):
+    """Fake __main__.game_instance untuk _collect_onhit_units (cleave).
+
+    pygame mengumpulkan unit on-hit (minion + semua hero + boss) dari
+    game_instance; tanpa ini on_basic_attack_hit menerima all_units=None
+    dan cleave diam. Isi fake = persis dunia skenario ini.
+    """
+    import __main__ as main_mod
+    heroes = [u for u in units.values() if hasattr(u, "hero_type")]
+    main_mod.game_instance = SimpleNamespace(
+        minions=[],
+        get_all_heroes=lambda: list(heroes),
+        active_boss=None)
+    global _BA_FAKE_GAME_ON
+    _BA_FAKE_GAME_ON = True
+
+
+def _ba_clear_fake_game():
+    global _BA_FAKE_GAME_ON
+    if _BA_FAKE_GAME_ON:
+        import __main__ as main_mod
+        if hasattr(main_mod, "game_instance"):
+            del main_mod.game_instance
+        _BA_FAKE_GAME_ON = False
+
+
+_BA_FAKE_GAME_ON = False
+
+
+def make_hero_basic_attack_fixture(entity):
+    """Oracle jalur damage basic hero dari fungsi pygame ASLI.
+
+    Semua angka dihasilkan dengan benar-benar memanggil Hero._do_attack /
+    take_damage pygame. Tiap skenario dijalankan DUA KALI dengan seed RNG
+    berbeda; hasil berbeda = ada roll game yang memengaruhi hasil -> tolak
+    fixture (replay Godot memakai randf() dengan urutan berbeda).
+    """
+    import random
+
+    scenarios = []
+    for spec in BA_SCENARIOS:
+        runs = []
+        for seed in (1013, 977):
+            random.seed(seed)
+            runs.append(_ba_run_scenario(spec, entity))
+        assert runs[0] == runs[1], (
+            f"skenario {spec['name']} tidak deterministik (RNG memengaruhi "
+            "hasil) — hapus roll dari skenario fixture basic attack")
+        scenarios.append(runs[0])
+
+    get_block_probe = []
+    for cfg in BA_GET_BLOCK_PROBE:
+        entity.set_damage_school(None)
+        hero = entity.Hero(cfg["hero_type"], "red", x=300.0, y=100.0)
+        for item_id in cfg.get("items", ()):
+            assert hero.items.add(item_id)
+        blk = hero.items.get_block()
+        get_block_probe.append({
+            "defender": cfg,
+            "expect": [float(blk[0]), float(blk[1])] if blk else [0.0, 0.0],
+        })
+
+    return {
+        "scenarios": scenarios,
+        "get_block_probe": get_block_probe,
+        "note": "jalur damage basic hero: kalkulasi _do_attack + blok "
+                "mitigasi take_damage tiap jenis target; skenario bebas "
+                "RNG (tanpa crit item/evasion/roll block item/windrun/"
+                "shadow realm — lihat docs/GODOT_PARITY.md)",
+    }
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -725,6 +1405,12 @@ def make_fixture(core, entity, levels, paths):
         # Godot membaca seksi ini lewat JSON.parse_string.
         "hero_skills": json.dumps(
             make_hero_skill_fixture(entity, sys.modules["settings"]),
+            separators=(",", ":")),
+        # Jalur damage basic hero (audit armor): kalkulasi _do_attack +
+        # mitigasi take_damage tiap jenis target — dievaluasi dari kode
+        # pygame asli, direplay HeroBasicAttackParityTest di Godot.
+        "hero_basic_attack": json.dumps(
+            make_hero_basic_attack_fixture(entity),
             separators=(",", ":")),
     }
     for number in range(1, levels.get_level_count() + 1):
@@ -824,6 +1510,11 @@ def main():
               f"skenario, "
               f"{sum(len(e) for h in hs['heroes'] for s in h['scenarios'].values() for e in s['events'])} "
               "event jejak")
+        ba = json.loads(actual["hero_basic_attack"])
+        print("             basic-attack oracle: "
+              f"{len(ba['scenarios'])} skenario, "
+              f"{sum(len(s['events']) for s in ba['scenarios'])} event HP, "
+              f"{len(ba['get_block_probe'])} probe get_block")
 
 
 if __name__ == "__main__":
