@@ -8,6 +8,10 @@
 #                           (_core.py:2383-2389, key = str(level_number))
 #   unlocked_bosses       : boss yang sudah dikalahkan (syarat beli hero boss)
 #   last_played_level     : level terakhir dimainkan (tombol CONTINUE)
+#   level_stats           : best score/waktu + kills/combo kumulatif per
+#                           level (pygame: save_data['level_stats'] —
+#                           ditulis update_level_stats tiap akhir match,
+#                           dibaca badge NEW BEST! panel menang/kalah)
 # Kunci lama ("gold", "unlocked_heroes") tetap dipertahankan supaya save
 # Godot yang sudah ada tidak rusak; end_match() sekarang menulis ke "meta_gold".
 extends Node
@@ -29,6 +33,7 @@ var data: Dictionary = {
 	"replay_reward_counts": {},
 	"unlocked_bosses": [],
 	"last_played_level": 1,
+	"level_stats": {},
 }
 
 func _ready():
@@ -59,6 +64,7 @@ func _backfill() -> void:
 		"completed_levels": [],
 		"unlocked_heroes": ["kaizen"],
 		"settings": {"sfx": 0.6, "bgm": 0.35, "quality": "medium"},
+		"level_stats": {},
 	}
 	for key in defaults:
 		if not data.has(key) or data[key] == null:
@@ -66,6 +72,7 @@ func _backfill() -> void:
 	# Starter hanya Kaizen. Unlock lama tidak pernah dicabut saat upgrade port.
 	if not (data["unlocked_heroes"] is Array) or data["unlocked_heroes"].is_empty():
 		data["unlocked_heroes"] = ["kaizen"]
+
 
 func save():
 	_backfill()
@@ -129,6 +136,89 @@ func complete_level(lv: int):
 func is_level_completed(lv: int) -> bool:
 	var completed = data.get("completed_levels", [])
 	return completed is Array and lv in completed
+
+# ══════════════════════════════════════════════════════════
+#  LEVEL STATS (best per level — paritas _system.py:1022-1116)
+# ══════════════════════════════════════════════════════════
+
+## Default stat level (paritas SaveManager.get_level_stats: level tanpa
+## catatan mengembalikan dict nol; 0 di best_time_seconds = belum pernah).
+func default_level_stats() -> Dictionary:
+	return {
+		"best_score": 0,
+		"best_time_seconds": 0,
+		"total_attempts": 0,
+		"wins": 0,
+		"total_kills": 0,
+		"max_combo": 0,
+		"total_playtime_seconds": 0,
+	}
+
+
+## Paritas SaveManager.get_level_stats: baca stat level (dict HIDUP bila
+## sudah ada — mutasi update_level_stats langsung menulis ke save).
+func get_level_stats(level_data: Dictionary, level_num: int) -> Dictionary:
+	var stats_dict = level_data.get("level_stats", {})
+	if not (stats_dict is Dictionary) or not stats_dict.has(str(level_num)):
+		return default_level_stats()
+	return stats_dict[str(level_num)]
+
+
+## Paritas SaveManager.update_level_stats (_system.py:1050): update stat
+## level dengan hasil match. attempts/playtime/kills/combo kumulatif SELALU
+## naik (menang ATAU kalah); best_score/best_time/wins HANYA saat menang;
+## flag is_new_best_* dipakai badge NEW BEST! di panel menang/kalah.
+## Return {"is_new_best_score", "is_new_best_time", "new_stats"}.
+func update_level_stats(level_data: Dictionary, level_num: int,
+		match_stats: Dictionary) -> Dictionary:
+	if not (level_data.get("level_stats") is Dictionary):
+		level_data["level_stats"] = {}
+	var current: Dictionary = get_level_stats(level_data, level_num)
+
+	var is_new_best_score := false
+	var is_new_best_time := false
+
+	# Update total attempts
+	current["total_attempts"] = int(current.get("total_attempts", 0)) + 1
+
+	# Update total playtime (kumulatif)
+	current["total_playtime_seconds"] = int(
+		current.get("total_playtime_seconds", 0)) \
+		+ int(match_stats.get("playtime_seconds", 0))
+
+	# Update total kills (kumulatif)
+	current["total_kills"] = int(current.get("total_kills", 0)) \
+		+ int(match_stats.get("kills", 0))
+
+	# Update max combo (all-time — JUGA saat kalah)
+	if int(match_stats.get("combo", 0)) > int(current.get("max_combo", 0)):
+		current["max_combo"] = int(match_stats.get("combo", 0))
+
+	# HANYA update best score/time kalau WIN
+	if bool(match_stats.get("won", false)):
+		current["wins"] = int(current.get("wins", 0)) + 1
+
+		# Best score (lebih tinggi lebih baik)
+		if int(match_stats.get("score", 0)) > int(current.get("best_score", 0)):
+			current["best_score"] = int(match_stats.get("score", 0))
+			is_new_best_score = true
+
+		# Best time (lebih rendah lebih baik; 0 = belum pernah)
+		var match_time := int(match_stats.get("time_seconds", 0))
+		if match_time > 0:
+			var best_time := int(current.get("best_time_seconds", 0))
+			if best_time == 0 or match_time < best_time:
+				current["best_time_seconds"] = match_time
+				is_new_best_time = true
+
+	# Save back
+	level_data["level_stats"][str(level_num)] = current
+
+	return {
+		"is_new_best_score": is_new_best_score,
+		"is_new_best_time": is_new_best_time,
+		"new_stats": current,
+	}
 
 # ══════════════════════════════════════════════════════════
 #  SETTINGS (volume sfx/bgm — dipakai AudioManager + menu SETTINGS)

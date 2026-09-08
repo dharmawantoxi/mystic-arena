@@ -389,6 +389,33 @@ jobs:
             exit 1
           fi
 
+      # ── 4i. MatchScoringParityTest: paritas KLASTER SKOR MATCH (FASE 13)
+      # vs oracle pygame. Oracle menjalankan kode pygame ASLI headless:
+      # ComboCounter murni per frame + data draw (label/warna/bar 80x4),
+      # loop reward Game.update SUNGGUHAN (unit betulan mati lewat
+      # take_damage) utk +150 kill hero (tim korban) + atribusi killer.kills
+      # + combo/max_combo/total_kills/gold/ai_gold per frame, SaveManager.
+      # update_level_stats (best per level + flag NEW BEST), state machine
+      # AchievementPopup + kurva slide 181 titik + trigger popup NEW HERO
+      # UNLOCKED! dari _auto_unlock_defeated_boss_heroes. Godot: node
+      # Minion/Hero/Tower asli + GameManager/_grant_meta_reward/end_match
+      # penuh (save di-snapshot lalu dipulihkan). Fixture = seksi
+      # match_scoring. --quit-after 300: baterai mayoritas sinkron; beberapa
+      # await frame untuk Main/HUD + tween kematian minion.
+      - name: MatchScoringParityTest (klaster skor vs oracle Pygame)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/MatchScoringParityTest.tscn --quit-after 300 2>&1 | tee /tmp/score.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/score.log --label "MatchScoringParityTest" \
+              --require "[MatchScoringParityTest] PASS" > /tmp/score.gate 2>&1; then
+            cat /tmp/score.gate
+          else
+            cat /tmp/score.gate
+            echo "::error::SCORE-FAIL-TAIL: $(tail -40 /tmp/score.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::SCORE-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/score.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

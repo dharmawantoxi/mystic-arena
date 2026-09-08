@@ -56,6 +56,41 @@ const CASTLE_NAME_DEFAULT := "CITADEL"
 const TOUCH_MINIMUM := 48.0
 const TOUCH_PADDING := 6.0
 
+## ── COMBO (ComboCounter.draw pygame; data dikunci match_scoring) ──
+## Pusat counter: cx = screen_w - 100, cy = 100 (kanan atas).
+const COMBO_CENTER_FROM_RIGHT := 100.0
+const COMBO_CENTER_Y := 100.0
+## Bar jam pasir 80x4 di (cx - 40, cy + 40) — hanya digambar count >= 2.
+const COMBO_BAR_SIZE := Vector2(80, 4)
+const COMBO_BAR_OFFSET := Vector2(0, 40)
+## Label ambang dipusatkan di (cx, cy - 30) — hanya count >= 5.
+const COMBO_LABEL_OFFSET := Vector2(0, -30)
+
+## ── POPUP ACHIEVEMENT (AchievementPopup.draw pygame) ──
+## Panel 280x60 di (screen_w - 280 - 20 + slide, 180) — di bawah combo.
+const ACHIEVEMENT_PANEL_SIZE := Vector2(280, 60)
+const ACHIEVEMENT_PANEL_MARGIN := 20.0
+const ACHIEVEMENT_PANEL_Y := 180.0
+## Durasi tampil satu popup: 180 frame @60fps = 3 detik.
+const ACHIEVEMENT_FRAMES := 180
+## Slide 300px dari kanan: masuk < 0.15 (ease-out-back), tahan, keluar
+## >= 0.85 (linear). Pembanding fase HARUS literal 0.15 seperti pygame
+## ((progress - 0.85) / 0.15) — lihat catatan WAVE_PHASE_OUT soal selisih
+## ulp pembagian.
+const ACHIEVEMENT_SLIDE_PX := 300.0
+const ACHIEVEMENT_PHASE_IN := 0.15
+const ACHIEVEMENT_PHASE_OUT := 0.85
+## Offset teks di dalam panel (blit langsung pygame): header (55, 7),
+## judul (55, 24), deskripsi (55, 45); ikon lingkaran di (15, 30).
+const ACHIEVEMENT_TEXT_HEADER := Vector2(55, 7)
+const ACHIEVEMENT_TEXT_TITLE := Vector2(55, 24)
+const ACHIEVEMENT_TEXT_DESC := Vector2(55, 45)
+const ACHIEVEMENT_ICON_POS := Vector2(15, 30)
+## Warna teks panel (font render pygame — data, bukan piksel).
+const ACHIEVEMENT_HEADER_COLOR := Color(1.0, 220.0 / 255.0, 50.0 / 255.0)
+const ACHIEVEMENT_TITLE_COLOR := Color.WHITE
+const ACHIEVEMENT_DESC_COLOR := Color(205.0 / 255.0, 210.0 / 255.0, 225.0 / 255.0)
+
 ## Tombol MobileTouchHUD: id -> [x, y, w, h] + label (fixture touchhud).
 const TOUCH_BUTTONS := {
 	"pause": {"rect": [22, 76, 52, 52], "label": "II"},
@@ -259,6 +294,50 @@ static func wave_slide_x(timer: int) -> int:
 static func wave_banner_rect(timer: int) -> Rect2:
 	return Rect2(WAVE_BANNER_POS + Vector2(wave_slide_x(timer), 0),
 		WAVE_BANNER_SIZE)
+
+
+## Pusat combo di layar (ComboCounter.draw: cx = screen_w - 100, cy = 100).
+static func combo_center(screen_w: float = 1280.0) -> Vector2:
+	return Vector2(screen_w - COMBO_CENTER_FROM_RIGHT, COMBO_CENTER_Y)
+
+
+## Rect bar jam pasir combo (timer_w = 80, timer_x = cx - 40, y = cy + 40).
+static func combo_bar_rect(screen_w: float = 1280.0) -> Rect2:
+	var c := combo_center(screen_w)
+	return Rect2(c + COMBO_BAR_OFFSET - Vector2(COMBO_BAR_SIZE.x * 0.5, 0),
+		COMBO_BAR_SIZE)
+
+
+## Offset x popup achievement pada sisa timer (AchievementPopup.draw:
+## masuk = int((1-ease_out_back(p/0.15))*300), tahan 0, keluar linear).
+static func achievement_slide_x(timer: int) -> int:
+	var progress := 1.0 - float(timer) / float(ACHIEVEMENT_FRAMES)
+	if progress < ACHIEVEMENT_PHASE_IN:
+		var eased := _ease_out_back(progress / ACHIEVEMENT_PHASE_IN)
+		return int((1.0 - eased) * ACHIEVEMENT_SLIDE_PX)
+	if progress < ACHIEVEMENT_PHASE_OUT:
+		return 0
+	return int((progress - ACHIEVEMENT_PHASE_OUT) / ACHIEVEMENT_PHASE_IN
+		* ACHIEVEMENT_SLIDE_PX)
+
+
+## Rect panel popup pada sisa timer (screen_w - 280 - 20 + slide, 180).
+static func achievement_panel_rect(timer: int, screen_w: float = 1280.0) -> Rect2:
+	return Rect2(
+		Vector2(screen_w - ACHIEVEMENT_PANEL_SIZE.x - ACHIEVEMENT_PANEL_MARGIN
+			+ achievement_slide_x(timer), ACHIEVEMENT_PANEL_Y),
+		ACHIEVEMENT_PANEL_SIZE)
+
+
+## Alpha popup per fase (slide-in ramp, tahan 255, slide-out ramp) —
+## visual; dikembalikan 0..1 (pygame int 0..255).
+static func achievement_alpha(timer: int) -> float:
+	var progress := 1.0 - float(timer) / float(ACHIEVEMENT_FRAMES)
+	if progress < ACHIEVEMENT_PHASE_IN:
+		return progress / ACHIEVEMENT_PHASE_IN
+	if progress < ACHIEVEMENT_PHASE_OUT:
+		return 1.0
+	return 1.0 - (progress - ACHIEVEMENT_PHASE_OUT) / ACHIEVEMENT_PHASE_IN
 
 
 static func _ease_out_back(t: float) -> float:
