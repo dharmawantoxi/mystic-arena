@@ -725,8 +725,6 @@ class Emitter:
             return f"__boss_generic(h, {args[0]}, {args[1]}, {args[2]}, {args[3]})"
         if attr == "_fallback_cast":
             return f"__fallback_cast({', '.join(args)})"
-        if attr == "_cast_steel_wind":
-            return f"{self.fname(self.cur_class, attr)}(h)"
         # method milik kelas yang sama. Emiten men-PREPEND param `h` bila
         # def Python tidak punya param h pertama (badannya `h = self.hero`).
         # Call site: argumen 1:1, ditambah "h" di depan bila callee butuh.
@@ -1369,7 +1367,6 @@ def key_entry(em, classes):
         out.append(f"\t\t\t{em.fname(cls, 'init_state')}(h)")
     out.append('\t\t"boss":')
     out.append(f"\t\t\t{em.fname('BossHeroSkills', 'init_state')}(h)")
-    out.append("\treturn h.kit")
     return "\n".join(out)
 
 

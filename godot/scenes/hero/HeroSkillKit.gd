@@ -1414,7 +1414,6 @@ static func init_state(h) -> void:
 			zephyr_init_state(h)
 		"boss":
 			bosshero_init_state(h)
-	return h.kit
 
 
 ## hero_skills/_bundle.py:345-381 [BossHeroSkills.init_state]
@@ -5078,7 +5077,7 @@ static func kaizen_cast_q(h, all_units, all_towers, all_bases):
 		return false
 	h.kit["_q_reset_timer"] = 180
 	if (h.kit.get("_q_stack", null)) == (0):
-		kaizen_cast_steel_wind(h)
+		kaizen_cast_steel_wind(h, all_units, all_towers, all_bases)
 		h.kit["_q_stack"] = 1
 	else:
 		kaizen_cast_dash_strike(h, all_units, all_towers, all_bases)
