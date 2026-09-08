@@ -180,8 +180,17 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   disentuh), `gen_hero_skill_kit.py --check` dan `check_bosskit_scope.py`
   lulus, seluruh berkas ter-gate `gdparse` + `tscn_lint`/`check_refs`/
   `particles_lint` bersih. Replay `HeroSkillParityTest` (888 skenario penuh,
-  driver `Hero.skill_test_step`) diverifikasi lewat CI `godot-check.yml`
-  pada PR ini — tidak ada Godot headless lokal di lingkungan kerja.
+  driver `Hero.skill_test_step`) lulus di CI `godot-check.yml` run
+  34178217267 — tidak ada Godot headless lokal di lingkungan kerja. Tiga
+  beda semantik yang ditemukan CI dan dikunci regression test di harness yang
+  sama: (1) compound-op field berunit (`h.speed *= 2.0` kit windrun sylara)
+  kini diekspansi generator jadi WRITE(READ op val) sehingga px/frame ↔
+  px/second round-trip tanpa faktor 60 ikut ter-skala; (2) buff speed melee
+  mengikuti `round(x*1.18, 2)` PERSIS (pembulatan desimal dari nilai biner —
+  khalros 1.25 → 1.47, bukan 1.48 ala round(147.5)); (3) key kit
+  `_base_attack_cd` (backing attr properti `attack_cooldown` di `_entity.py`,
+  satuan frame) dipetakan ke `hero.attack_cooldown×60` — Godot menyimpannya
+  sebagai field detik di node, bukan entri kit.
 - Engine lokal dibangun dari source untuk **headless saja**, tanpa backend
   Vulkan/OpenGL. Pesan engine `No renderers available` pada lingkungan ini
   adalah batasan build pengujian; hasil di atas **bukan** validasi gambar GPU,
