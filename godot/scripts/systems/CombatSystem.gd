@@ -159,8 +159,11 @@ func _is_minion(unit) -> bool:
 ## aura_guard_block menimpa tanpa roll, floor 0) → Bristleback keep
 ## 0.70/0.85 per sekolah. TIDAK ada magic_resist untuk hero di pygame.
 func _hero_mitigate(target, dmg: float, dmg_type: String, st, eff_school: String) -> float:
-	if st != null and st.dmg_amp_timer > 0.0:
-		dmg = float(int(DamageSchool.py_round(dmg * (1.0 + st.dmg_amp_amount))))
+	# Baca timer lewat .get() (duck-typed, konvensi CombatSystem): stub status
+	# test parity lama tidak punya var ini — null -> 0.0 -> efek nonaktif.
+	if st != null and float(st.get("dmg_amp_timer")) > 0.0:
+		dmg = float(int(DamageSchool.py_round(
+			dmg * (1.0 + float(st.get("dmg_amp_amount"))))))
 	var inv = target.get("items")
 	if dmg_type != "fire" and dmg > 0.0:
 		var armor := float(inv.get_armor()) if inv != null else 0.0
@@ -199,8 +202,9 @@ func _hero_mitigate(target, dmg: float, dmg_type: String, st, eff_school: String
 func _minion_mitigate(target, dmg: float, dmg_type: String, st,
 		eff_school: String, shred: float) -> float:
 	if dmg > 0.0:
-		if st != null and st.dmg_amp_timer > 0.0:
-			dmg = float(int(DamageSchool.py_round(dmg * (1.0 + st.dmg_amp_amount))))
+		if st != null and float(st.get("dmg_amp_timer")) > 0.0:
+			dmg = float(int(DamageSchool.py_round(
+				dmg * (1.0 + float(st.get("dmg_amp_amount"))))))
 		if dmg_type != "fire" and shred > 0.0:
 			dmg = float(int(DamageSchool.py_round(
 				dmg * (1.0 + minf(1.0, shred * 0.06)))))
@@ -226,8 +230,9 @@ func _minion_mitigate(target, dmg: float, dmg_type: String, st,
 func _boss_mitigate(target, dmg: float, dmg_type: String, st,
 		eff_school: String, shred: float) -> float:
 	if dmg > 0.0:
-		if st != null and st.dmg_amp_timer > 0.0:
-			dmg = float(int(DamageSchool.py_round(dmg * (1.0 + st.dmg_amp_amount))))
+		if st != null and float(st.get("dmg_amp_timer")) > 0.0:
+			dmg = float(int(DamageSchool.py_round(
+				dmg * (1.0 + float(st.get("dmg_amp_amount"))))))
 		if dmg_type != "fire" and shred > 0.0:
 			dmg = float(int(DamageSchool.py_round(
 				dmg * (1.0 + minf(1.0, shred * 0.06)))))
@@ -354,8 +359,8 @@ func apply_damage(target, amount: float, from_team: String = "",
 	# amp→shred-bonus→school utk minion/boss, school saja utk tower;
 	# nexus tanpa mitigasi sekolah). ──
 	var shred := 0.0
-	if st != null and st.armor_shred_timer > 0.0:
-		shred = st.armor_shred_amount
+	if st != null and float(st.get("armor_shred_timer")) > 0.0:
+		shred = float(st.get("armor_shred_amount"))
 	var dmg := amount
 	if _is_hero(target):
 		dmg = _hero_mitigate(target, dmg, dmg_type, st, eff_school)
@@ -442,8 +447,8 @@ func _source_blind(source) -> float:
 	if source == null or not is_instance_valid(source):
 		return 0.0
 	var sst = source.get("status")
-	if sst != null and sst.blind_timer > 0.0:
-		return float(sst.blind_amount)
+	if sst != null and float(sst.get("blind_timer")) > 0.0:
+		return float(sst.get("blind_amount"))
 	return 0.0
 
 
@@ -486,10 +491,10 @@ func heal_gain_py(unit, gain: float) -> void:
 	var value := minf(max_hp, before + gain)
 	var st = unit.get("status")
 	if st != null and value > before:
-		if st.anti_heal_timer > 0.0:
-			value = before + (value - before) * (1.0 - st.anti_heal_amount)
-		if st.heal_amp_timer > 0.0 and value > before:
-			value = before + (value - before) * (1.0 + st.heal_amp_amount)
+		if float(st.get("anti_heal_timer")) > 0.0:
+			value = before + (value - before) * (1.0 - float(st.get("anti_heal_amount")))
+		if float(st.get("heal_amp_timer")) > 0.0 and value > before:
+			value = before + (value - before) * (1.0 + float(st.get("heal_amp_amount")))
 	unit.hp = value
 
 
