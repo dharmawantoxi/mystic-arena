@@ -711,6 +711,11 @@ func _on_tower_destroyed(tower: Node, _killer_team: String) -> void:
 	if GameManager.selected_tower == tower:
 		GameManager.clear_selection()
 	if str(tower.get("team")) == "red":
+		# FASE 15: counter syarat true boss (>= 6) naik TEPAT SEKALI per
+		# menara merah mati — signal ini hanya dipancarkan Tower.die() yang
+		# ter-guard is_dead, satu-nya jalur kematian menara; reward gold/
+		# skornya dibayar GameManager.register_tower_death (cabang TIM
+		# KORBAN _core.py:2218-2227) di transaksi yang sama frame-nya.
 		red_towers_destroyed += 1
 		print("[Main] menara Dire hancur: %d/%d menuju true boss" % [
 			red_towers_destroyed, TRUE_BOSS_TOWER_KILLS])

@@ -772,13 +772,25 @@ func ai_spend(amount: int) -> bool:
 ## Loop reward Game.update pygame — kematian MINION dinilai dari TIM KORBAN,
 ## bukan tim pembunuh (_core.py:2196-2216): minion RED yang mati oleh damage
 ## apa pun (termasuk netral tanpa sumber) tetap membayar gold+skor ke pemain,
-## menambah total_kills, dan menyalakan combo; minion biru membayar AI.
-## Dipanggil Minion.die().
+## memunculkan popup gold +nG (EffectManager.add_gold_popup → FloatingTextQueue
+## FASE 14), menambah total_kills, dan menyalakan combo; minion biru membayar
+## AI TANPA popup. Urutan operasi persis pygame: gold → score → popup →
+## total_kills → max_combo (dibaca SEBELUM add_kill) → add_kill.
+## Dipanggil Minion.die(); flag per instans = `_rewarded` pygame
+## (kunci anti pembayaran ganda — kematian yang sama tak boleh membayar dua
+## kali walau die()/callback dipanggil ulang).
 func register_minion_death(minion) -> void:
+	if not is_instance_valid(minion) or bool(minion.get("reward_processed")):
+		return
+	minion.reward_processed = true
 	var reward := int(minion.get("gold_reward"))
 	if str(minion.get("team")) == "red":
 		gold += reward
 		score += reward
+		# add_gold_popup(m.x, m.y, gold_reward) — offset -10/warna/velocity/
+		# lifetime 50 hidup di FloatingTextQueue; piksel font di WorldPopups.
+		add_gold_popup(minion.global_position.x, minion.global_position.y,
+			reward)
 		total_kills += 1
 		# Combo terbesar disimpan untuk layar statistik — DIBACA SEBELUM
 		# add_kill (paritas _core.py:2209-2214; quirk: rantai N kill
@@ -793,11 +805,15 @@ func register_minion_death(minion) -> void:
 ## Loop reward hero (_core.py:2227-2235): +150 FLAT ke tim lawan korban —
 ## hero RED mati (dibunuh apa pun) -> gold+skor pemain; hero biru mati ->
 ## saldo AI. TIDAK menyalakan combo (combo hanya kill minion red) dan
-## tidak bergantung siapa pembunuhnya. Dipanggil Hero.die().
+## tidak bergantung siapa pembunuhnya. Dipanggil Hero.die(); flag per
+## instans = `_rewarded` pygame (dibuka ulang saat respawn, Hero.gd).
 const HERO_KILL_REWARD := 150
 
 
 func register_hero_death(hero) -> void:
+	if not is_instance_valid(hero) or bool(hero.get("reward_processed")):
+		return
+	hero.reward_processed = true
 	if str(hero.get("team")) == "red":
 		gold += HERO_KILL_REWARD
 		score += HERO_KILL_REWARD
@@ -824,20 +840,26 @@ func unlock_achievement(title: String, description: String,
 	achievement_unlocked.emit(title, description, icon)
 
 
-## Reward menara — cabang TIM PEMBUNUH menara di Godot (tower_destroyed
-## signal). pygame memakai cabang TIM KORBAN tower (_core.py:2218-2230);
-## setara untuk semua kasus kecuali sumber netral (belum ada jalur damage
-## netral yang menghancurkan menara). Skor = gold_reward; total_kills TIDAK
-## naik (pygame hanya menghitung minion). Dipakai Tower.die + harness.
-func award_kill(killer_team: String, amount: int, victim_kind: String = "") -> void:
-	# Tim pemain (blue/radiant) menabung gold; AI (red) punya saldo sendiri
-	if killer_team == "blue":
-		gold += amount
-		score += amount
-		if victim_kind == "minion":
-			total_kills += 1
-	elif killer_team == "red":
-		ai_gold += amount
+## Loop reward Game.update pygame — kematian MENARA juga dinilai dari TIM
+## KORBAN, bukan tim pembunuh (_core.py:2218-2227): menara RED hancur oleh
+## damage apa pun (hero biru, sumber netral/tanpa killer, bahkan tim sendiri)
+## membayar gold+skor pemain; menara biru membayar AI. TIDAK ada popup gold
+## untuk menara (pygame tidak memanggil add_gold_popup di blok ini) dan
+## total_kills TIDAK naik (pygame hanya menghitung minion). Dipanggil
+## Tower.die(); flag per instans = `_rewarded` pygame (anti pembayaran ganda).
+## `red_towers_destroyed` (syarat true boss, >= 6) dinaikkan Main lewat
+## signal tower_destroyed — sekali per die(), sama satu-nya dengan transaksi
+## reward ini.
+func register_tower_death(tower) -> void:
+	if not is_instance_valid(tower) or bool(tower.get("reward_processed")):
+		return
+	tower.reward_processed = true
+	var reward := int(tower.get("gold_reward"))
+	if str(tower.get("team")) == "red":
+		gold += reward
+		score += reward
+	else:
+		ai_gold += reward
 
 
 ## Detik sejak match mulai (wall-clock; paritas time.time()-match_start_time).

@@ -442,6 +442,36 @@ jobs:
             exit 1
           fi
 
+      # ── 4k. MinionTowerRewardParityTest (FASE 15): seluruh skenario
+      # reward kematian MINION + MENARA dari oracle Game.update pygame
+      # ASLI (_core.py:2196-2227): penerima TIM KORBAN (menara merah →
+      # pemain, biru → AI, termasuk netral/tanpa killer/tim sendiri),
+      # popup gold +nG kematian minion merah (posisi/nominal/FIFO/
+      # lifetime/gerak + RNG per situs) vs TANPA popup menara/minion
+      # biru, total_kills/combo/max_combo (quirk dibaca SEBELUM
+      # add_kill), red_towers_destroyed tepat sekali per menara merah,
+      # kunci anti pembayaran ganda 3 lapis (pukul mayat / die() ulang /
+      # callback register_* langsung), kematian beda tim + jenis campur
+      # satu frame, dan urutan antrean popup mengikuti urutan daftar
+      # pygame. Snapshot rekursif CLOSED-WORLD; HERO SLAYER tetap
+      # dihapus. user:// terisolasi bahkan kalau harness berhenti di tengah.
+      - name: MinionTowerRewardParityTest (reward minion+menara vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/MinionTowerRewardParityTest.tscn --quit-after 600 2>&1 | tee /tmp/mtreward.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/mtreward.log --label "MinionTowerRewardParityTest" \
+              --require "[MinionTowerRewardParityTest] PASS" > /tmp/mtreward.gate 2>&1; then
+            cat /tmp/mtreward.gate
+          else
+            cat /tmp/mtreward.gate
+            echo "::error::MTREWARD-FAIL-TAIL: $(tail -40 /tmp/mtreward.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::MTREWARD-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/mtreward.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

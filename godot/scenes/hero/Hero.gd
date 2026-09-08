@@ -104,6 +104,10 @@ var fill_dark: Color = Color("#646464")
 var target: Node2D = null
 var attack_timer: float = 0.0
 var is_dead: bool = false
+## Kunci anti pembayaran ganda (padanan `_rewarded` pygame _core.py:2230):
+## hero hanya membayar +150 sekali per kematian; flag DIBUKA LAGI saat
+## respawn (paritas _core.py:2263-2265) supaya kematian berikutnya bayar.
+var reward_processed: bool = false
 var facing: int = 1
 var selected: bool = false
 var is_retreating: bool = false
@@ -1085,6 +1089,11 @@ func respawn() -> void:
 	skill_timer = 0
 	_recalc_derived(true)
 	is_dead = false
+	# Flag reward dibuka ulang saat hidup kembali (paritas reset
+	# `h._rewarded = False` Game.update _core.py:2263-2265): hero yang
+	# respawn lalu mati lagi membayar +150 sekali lagi — dikunci FASE 13
+	# (hero_respawn_reward_twice) + FASE 15 (rewarded snapshot).
+	reward_processed = false
 	remove_from_group("dead")
 	is_retreating = false
 	target = null
