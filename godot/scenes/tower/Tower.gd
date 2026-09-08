@@ -57,6 +57,10 @@ var no_damage_timer: float = 0.0
 var kills: int = 0
 var gold_reward: int = 100
 var is_player_built: bool = true
+## Kunci anti pembayaran ganda (padanan `_rewarded` pygame
+## _core.py:2219-2220): menara yang sama hanya membayar reward + skor
+## + counter true boss SEKALI, walau die()/callback dipanggil ulang.
+var reward_processed: bool = false
 var regen_shield_active: bool = false
 var selected: bool = false
 var upgrade_flash: float = 0.0
@@ -345,8 +349,13 @@ func die(killer_team: String = "", _killer = null) -> void:
 	# Satu suara global untuk SEMUA jenis menara (paritas Tower.take_damage
 	# _entity.py:1095-1101, volume_mult 0.8, throttle 300 ms).
 	AudioManager.play_sfx("tower_destroyed", 0.8)
-	# Gold reward: hanya tim pembunuh yang menabung (paritas GameManager.award_kill)
-	GameManager.award_kill(killer_team, gold_reward, "tower")
+	# Loop reward Game.update pygame (_core.py:2218-2227, cabang TIM KORBAN,
+	# BUKAN tim pembunuh): menara merah → gold+skor pemain, menara biru →
+	# saldo AI, termasuk sumber netral/tanpa killer. TANPA popup gold
+	# (pygame tidak membuatnya) dan tanpa total_kills (hanya minion).
+	# red_towers_destroyed (Main, via signal di bawah) naik sekali per
+	# menara merah mati — digerakkan die() yang ter-guard ini.
+	GameManager.register_tower_death(self)
 	GameManager.tower_destroyed.emit(self, killer_team)
 	var tw := create_tween()
 	tw.set_parallel(true)

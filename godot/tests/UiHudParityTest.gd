@@ -5,6 +5,8 @@ extends Node
 
 const MainScene = preload("res://scenes/main.tscn")
 const LevelIntroScript = preload("res://scenes/ui/LevelIntro.gd")
+const MinionScene = preload("res://scenes/minion/Minion.tscn")
+const TowerScene = preload("res://scenes/tower/Tower.tscn")
 const FIXTURE := "res://tests/fixtures/match_parity.json"
 
 var _main = null
@@ -777,19 +779,47 @@ func _test_hotkeys_playing() -> void:
 	_expect(GameManager.state == "playing", "N saat playing diam")
 	_main._on_key(_key(KEY_R))
 	_expect(GameManager.state == "playing", "R saat playing = skill (tak replay)")
-	# Skor/kill: minion ya, tower tak dihitung kill (tapi skor ya).
+	# Skor/kill (FASE 15: register_minion_death/register_tower_death —
+	# cabang TIM KORBAN _core.py:2196-2227, bukan lagi award_kill killer):
+	# minion merah menambah skor+total_kills, menara merah menambah skor
+	# TANPA kill, minion biru membayar AI saja (skor pemain diam).
 	GameManager.gold = 1000
 	GameManager.score = 0
 	GameManager.total_kills = 0
-	GameManager.award_kill("blue", 100, "minion")
-	_expect(GameManager.score == 100 and GameManager.total_kills == 1
-		and GameManager.gold == 1100, "award minion")
-	GameManager.award_kill("blue", 250, "tower")
-	_expect(GameManager.score == 350 and GameManager.total_kills == 1,
-		"tower tak menambah kill")
-	GameManager.award_kill("red", 100, "minion")
-	_expect(GameManager.score == 350 and GameManager.total_kills == 1,
-		"kill merah tak dihitung")
+	var red_minion = MinionScene.instantiate()
+	red_minion.minion_type = "goblin"
+	red_minion.team = "red"
+	red_minion.position = Vector2(1500, 700)
+	add_child(red_minion)
+	red_minion.set_physics_process(false)
+	var minion_gold := int(red_minion.gold_reward)
+	GameManager.register_minion_death(red_minion)
+	_expect(GameManager.score == minion_gold and GameManager.total_kills == 1
+		and GameManager.gold == 1000 + minion_gold, "reward minion merah")
+	var red_tower = TowerScene.instantiate()
+	red_tower.team = "red"
+	red_tower.position = Vector2(1560, 700)
+	add_child(red_tower)
+	red_tower.set_physics_process(false)
+	var tower_gold := int(red_tower.gold_reward)
+	GameManager.register_tower_death(red_tower)
+	_expect(GameManager.score == minion_gold + tower_gold
+		and GameManager.total_kills == 1, "tower menambah skor tanpa kill")
+	var blue_minion = MinionScene.instantiate()
+	blue_minion.minion_type = "goblin"
+	blue_minion.team = "blue"
+	blue_minion.position = Vector2(1620, 700)
+	add_child(blue_minion)
+	blue_minion.set_physics_process(false)
+	var ai_gold_before := GameManager.ai_gold
+	GameManager.register_minion_death(blue_minion)
+	_expect(GameManager.score == minion_gold + tower_gold
+		and GameManager.total_kills == 1
+		and GameManager.ai_gold == ai_gold_before
+		+ int(blue_minion.gold_reward), "minion biru membayar AI saja")
+	red_minion.free()
+	red_tower.free()
+	blue_minion.free()
 
 
 # ══════════════════════════════════════════════════════════

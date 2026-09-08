@@ -95647,5 +95647,6543 @@
         "gornak"
       ]
     }
+  },
+  "minion_tower_rewards": {
+    "fps": 60,
+    "initial": {
+      "gold": 137,
+      "score": 29,
+      "ai_gold": 17,
+      "total_kills": 0,
+      "max_combo": 0,
+      "red_towers_destroyed": 0,
+      "damage_numbers_enabled": true,
+      "max_damage_numbers": 16
+    },
+    "sources": [
+      {
+        "id": "blue",
+        "kind": "hero",
+        "type": "kaizen",
+        "team": "blue",
+        "x": 900.5,
+        "y": 100.25
+      },
+      {
+        "id": "red",
+        "kind": "hero",
+        "type": "thorne",
+        "team": "red",
+        "x": 960.75,
+        "y": 160.5
+      },
+      {
+        "id": "dead",
+        "kind": "hero",
+        "type": "sylara",
+        "team": "blue",
+        "dead": true,
+        "x": 1020.25,
+        "y": 220.75
+      },
+      {
+        "id": "neutral",
+        "kind": "hero",
+        "type": "grimjaw",
+        "team": "",
+        "x": 1080.5,
+        "y": 280.25
+      },
+      {
+        "id": "minion",
+        "kind": "minion",
+        "type": "goblin",
+        "team": "blue",
+        "x": 1140.25,
+        "y": 340.5
+      },
+      {
+        "id": "tower",
+        "kind": "tower",
+        "team": "blue",
+        "x": 1200.5,
+        "y": 400.25
+      },
+      {
+        "id": "nexus",
+        "kind": "nexus",
+        "team": "blue",
+        "x": 60.25,
+        "y": 420.5
+      },
+      {
+        "id": "boss",
+        "kind": "boss",
+        "type": "morgath",
+        "team": "blue",
+        "x": 120.5,
+        "y": 480.25
+      }
+    ],
+    "max_floating": 300,
+    "scenarios": [
+      {
+        "name": "minion_red_lone_by_hero",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 24,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 95,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true
+              },
+              "floating": [
+                {
+                  "x": 212.99999999999972,
+                  "y": 268.571687193655,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.4160843596827505,
+                  "lifetime": 25,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9999061251966236,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 24,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 71,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true
+              },
+              "floating": [
+                {
+                  "x": 205.79999999999944,
+                  "y": 262.67984132452773,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.12149206622638915,
+                  "lifetime": 1,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9999999820153496,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 1,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 70,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true
+              },
+              "floating": [],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 2,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 68,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true
+              },
+              "floating": [],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_red_killer_variants",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m3",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m4",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m5",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m6",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m7",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m8",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m9",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": false,
+                "m2": false,
+                "m3": false,
+                "m4": false,
+                "m5": false,
+                "m6": false,
+                "m7": false,
+                "m8": false,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "by": "red",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 153,
+              "score": 45,
+              "ai_gold": 17,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": false,
+                "m3": false,
+                "m4": false,
+                "m5": false,
+                "m6": false,
+                "m7": false,
+                "m8": false,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 219.89999999999998,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m2",
+                "by": "dead",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 161,
+              "score": 53,
+              "ai_gold": 17,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 3,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": false,
+                "m4": false,
+                "m5": false,
+                "m6": false,
+                "m7": false,
+                "m8": false,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 219.59999999999997,
+                  "y": 285.97125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 527.825,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.3,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m3",
+                "by": "neutral"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 169,
+              "score": 61,
+              "ai_gold": 17,
+              "total_kills": 4,
+              "max_combo": 3,
+              "combo": {
+                "count": 4,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": false,
+                "m5": false,
+                "m6": false,
+                "m7": false,
+                "m8": false,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 219.29999999999995,
+                  "y": 284.6851875,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 526.47125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.5999999999999,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.375,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.125
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m4",
+                "by": "minion",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 177,
+              "score": 69,
+              "ai_gold": 17,
+              "total_kills": 5,
+              "max_combo": 4,
+              "combo": {
+                "count": 5,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": false,
+                "m6": false,
+                "m7": false,
+                "m8": false,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 218.99999999999994,
+                  "y": 283.463428125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1606714062499994,
+                  "lifetime": 45,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.882351,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 525.1851875000001,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.8999999999999,
+                  "y": 285.97125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.5,
+                  "y": 527.825,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1181.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m5",
+                "by": "tower",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 185,
+              "score": 77,
+              "ai_gold": 17,
+              "total_kills": 6,
+              "max_combo": 5,
+              "combo": {
+                "count": 6,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": true,
+                "m6": false,
+                "m7": false,
+                "m8": false,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 218.69999999999993,
+                  "y": 282.30275671875,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1026378359374993,
+                  "lifetime": 44,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9176457,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 523.9634281250001,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1606714062499994,
+                  "lifetime": 45,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.882351,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 702.1999999999998,
+                  "y": 284.6851875,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.625,
+                  "y": 526.47125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1180.9,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1421.75,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ],
+                [
+                  1421.75,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m6",
+                "by": "nexus",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 193,
+              "score": 85,
+              "ai_gold": 17,
+              "total_kills": 7,
+              "max_combo": 6,
+              "combo": {
+                "count": 7,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": true,
+                "m6": true,
+                "m7": false,
+                "m8": false,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 218.39999999999992,
+                  "y": 281.2001188828125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.0475059441406243,
+                  "lifetime": 43,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.94235199,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 522.8027567187501,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1026378359374993,
+                  "lifetime": 44,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.9176457,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 702.4999999999998,
+                  "y": 283.463428125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1606714062499994,
+                  "lifetime": 45,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.882351,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.75,
+                  "y": 525.1851875000001,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1180.6000000000001,
+                  "y": 285.97125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1421.75,
+                  "y": 527.825,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1662.3,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ],
+                [
+                  1421.75,
+                  540.75,
+                  8
+                ],
+                [
+                  1662.0,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m7",
+                "by": "boss",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 201,
+              "score": 93,
+              "ai_gold": 17,
+              "total_kills": 8,
+              "max_combo": 7,
+              "combo": {
+                "count": 8,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": true,
+                "m6": true,
+                "m7": true,
+                "m8": false,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 218.0999999999999,
+                  "y": 280.1526129386719,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.995130646933593,
+                  "lifetime": 42,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.959646393,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 521.7001188828126,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.0475059441406243,
+                  "lifetime": 43,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.94235199,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 702.7999999999997,
+                  "y": 282.30275671875,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1026378359374993,
+                  "lifetime": 44,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.9176457,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.875,
+                  "y": 523.9634281250001,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1606714062499994,
+                  "lifetime": 45,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.882351,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1180.3000000000002,
+                  "y": 284.6851875,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1421.75,
+                  "y": 526.47125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1662.6,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1902.375,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ],
+                [
+                  1421.75,
+                  540.75,
+                  8
+                ],
+                [
+                  1662.0,
+                  300.25,
+                  8
+                ],
+                [
+                  1902.25,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.125
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m8",
+                "by": "blue",
+                "team": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 209,
+              "score": 101,
+              "ai_gold": 17,
+              "total_kills": 9,
+              "max_combo": 8,
+              "combo": {
+                "count": 9,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": true,
+                "m6": true,
+                "m7": true,
+                "m8": true,
+                "m9": false
+              },
+              "floating": [
+                {
+                  "x": 217.7999999999999,
+                  "y": 279.1574822917383,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.9453741145869133,
+                  "lifetime": 41,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9717524751,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 520.652612938672,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.995130646933593,
+                  "lifetime": 42,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.959646393,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 703.0999999999997,
+                  "y": 281.2001188828125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.0475059441406243,
+                  "lifetime": 43,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.94235199,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 942.0,
+                  "y": 522.8027567187501,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1026378359374993,
+                  "lifetime": 44,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.9176457,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1180.0000000000002,
+                  "y": 283.463428125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1606714062499994,
+                  "lifetime": 45,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.882351,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1421.75,
+                  "y": 525.1851875000001,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1662.8999999999999,
+                  "y": 285.97125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1902.5,
+                  "y": 527.825,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 2142.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ],
+                [
+                  1421.75,
+                  540.75,
+                  8
+                ],
+                [
+                  1662.0,
+                  300.25,
+                  8
+                ],
+                [
+                  1902.25,
+                  540.75,
+                  8
+                ],
+                [
+                  2142.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m9",
+                "by": null,
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 217,
+              "score": 109,
+              "ai_gold": 17,
+              "total_kills": 10,
+              "max_combo": 9,
+              "combo": {
+                "count": 10,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": true,
+                "m6": true,
+                "m7": true,
+                "m8": true,
+                "m9": true
+              },
+              "floating": [
+                {
+                  "x": 217.4999999999999,
+                  "y": 278.2121081771514,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.8981054088575676,
+                  "lifetime": 40,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9802267325699999,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 519.6574822917383,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.9453741145869133,
+                  "lifetime": 41,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.9717524751,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 703.3999999999996,
+                  "y": 280.1526129386719,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.995130646933593,
+                  "lifetime": 42,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.959646393,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 942.125,
+                  "y": 521.7001188828126,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.0475059441406243,
+                  "lifetime": 43,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.94235199,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1179.7000000000003,
+                  "y": 282.30275671875,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1026378359374993,
+                  "lifetime": 44,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9176457,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1421.75,
+                  "y": 523.9634281250001,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1606714062499994,
+                  "lifetime": 45,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.882351,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1663.1999999999998,
+                  "y": 284.6851875,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1902.625,
+                  "y": 526.47125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 2141.8999999999996,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 2382.75,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ],
+                [
+                  1421.75,
+                  540.75,
+                  8
+                ],
+                [
+                  1662.0,
+                  300.25,
+                  8
+                ],
+                [
+                  1902.25,
+                  540.75,
+                  8
+                ],
+                [
+                  2142.5,
+                  300.25,
+                  8
+                ],
+                [
+                  2382.75,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_red_own_team_and_neutral_from_team",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "orc",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "orc",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "dead": true,
+                "team": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 155,
+              "score": 47,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": false
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  18
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "dead": true,
+                "team": "neutral"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 173,
+              "score": 65,
+              "ai_gold": 17,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true
+              },
+              "floating": [
+                {
+                  "x": 219.89999999999998,
+                  "y": 287.325,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 529.25,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  18
+                ],
+                [
+                  460.75,
+                  540.75,
+                  18
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_blue_pays_ai_no_popup",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "blue"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "undead",
+            "team": "blue"
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "dark_rider",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 137,
+              "score": 29,
+              "ai_gold": 25,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": false,
+                "m2": false
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "by": "blue",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 137,
+              "score": 29,
+              "ai_gold": 41,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": false
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m2",
+                "by": null,
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 137,
+              "score": 29,
+              "ai_gold": 106,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 5,
+            "snapshot": {
+              "gold": 137,
+              "score": 29,
+              "ai_gold": 106,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_chain_same_frame",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "orc",
+            "team": "red"
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "troll",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              },
+              {
+                "unit": "m1",
+                "by": null,
+                "team": ""
+              },
+              {
+                "unit": "m2",
+                "by": "minion",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 208,
+              "score": 100,
+              "ai_gold": 17,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 3,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 529.25,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.3,
+                  "y": 288.75,
+                  "text": "+45G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  18
+                ],
+                [
+                  701.0,
+                  300.25,
+                  45
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 30,
+            "snapshot": {
+              "gold": 208,
+              "score": 100,
+              "ai_gold": 17,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 3,
+                "timer": 89,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true
+              },
+              "floating": [
+                {
+                  "x": 211.19999999999965,
+                  "y": 266.3672047723737,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.3058602386186855,
+                  "lifetime": 19,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9999889557232575,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 506.86720477237384,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.3058602386186855,
+                  "lifetime": 19,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.9999889557232575,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 710.2999999999986,
+                  "y": 266.3672047723737,
+                  "text": "+45G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.3058602386186855,
+                  "lifetime": 19,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.9999889557232575,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  18
+                ],
+                [
+                  701.0,
+                  300.25,
+                  45
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_chain_spread_expire",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m3",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": false,
+                "m2": false,
+                "m3": false
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 29,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 90,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": false,
+                "m2": false,
+                "m3": false
+              },
+              "floating": [
+                {
+                  "x": 211.49999999999966,
+                  "y": 266.6891629182881,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.3219581459144058,
+                  "lifetime": 20,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9999842224617965,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "by": null,
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 153,
+              "score": 45,
+              "ai_gold": 17,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": false,
+                "m3": false
+              },
+              "floating": [
+                {
+                  "x": 211.19999999999965,
+                  "y": 266.3672047723737,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.3058602386186855,
+                  "lifetime": 19,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9999889557232575,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 29,
+            "snapshot": {
+              "gold": 153,
+              "score": 45,
+              "ai_gold": 17,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 2,
+                "timer": 90,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": false,
+                "m3": false
+              },
+              "floating": [
+                {
+                  "x": 460.75,
+                  "y": 507.1891629182882,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.3219581459144058,
+                  "lifetime": 20,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.9999842224617965,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m2",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 161,
+              "score": 53,
+              "ai_gold": 17,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 3,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": false
+              },
+              "floating": [
+                {
+                  "x": 460.75,
+                  "y": 506.86720477237384,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.3058602386186855,
+                  "lifetime": 19,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.9999889557232575,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.3,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 119,
+            "snapshot": {
+              "gold": 161,
+              "score": 53,
+              "ai_gold": 17,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 3
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": false
+              },
+              "floating": [],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m3",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 169,
+              "score": 61,
+              "ai_gold": 17,
+              "total_kills": 4,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 3
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true
+              },
+              "floating": [
+                {
+                  "x": 941.375,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.125
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 5,
+            "snapshot": {
+              "gold": 169,
+              "score": 61,
+              "ai_gold": 17,
+              "total_kills": 4,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 114,
+                "last_combo": 3
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true
+              },
+              "floating": [
+                {
+                  "x": 942.0,
+                  "y": 522.8027567187501,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1026378359374993,
+                  "lifetime": 44,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.9176457,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_double_pay_guard",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": false
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue",
+                "repeat": true
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 118,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": false
+              },
+              "floating": [
+                {
+                  "x": 219.89999999999998,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "by": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 25,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 117,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true
+              },
+              "floating": [
+                {
+                  "x": 219.59999999999997,
+                  "y": 285.97125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "by": "red",
+                "repeat": true
+              }
+            ],
+            "frames": 10,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 25,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 107,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true
+              },
+              "floating": [
+                {
+                  "x": 216.59999999999985,
+                  "y": 275.65026249838513,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -0.770013124919257,
+                  "lifetime": 37,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.99321776927151,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_reward_runtime_values",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red",
+            "nexus_level": 2
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red",
+            "reward": 17
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "troll",
+            "team": "red"
+          },
+          {
+            "id": "m3",
+            "kind": "minion",
+            "type": "dark_rider",
+            "team": "red",
+            "nexus_level": 3
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              },
+              {
+                "unit": "m1",
+                "by": "blue"
+              },
+              {
+                "unit": "m2",
+                "by": "blue"
+              },
+              {
+                "unit": "m3",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 299,
+              "score": 191,
+              "ai_gold": 17,
+              "total_kills": 4,
+              "max_combo": 3,
+              "combo": {
+                "count": 4,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+9G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 529.25,
+                  "text": "+17G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.3,
+                  "y": 288.75,
+                  "text": "+45G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.375,
+                  "y": 529.25,
+                  "text": "+91G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  9
+                ],
+                [
+                  460.75,
+                  540.75,
+                  17
+                ],
+                [
+                  701.0,
+                  300.25,
+                  45
+                ],
+                [
+                  941.25,
+                  540.75,
+                  91
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.3
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.125
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 3,
+            "snapshot": {
+              "gold": 299,
+              "score": 191,
+              "ai_gold": 17,
+              "total_kills": 4,
+              "max_combo": 3,
+              "combo": {
+                "count": 4,
+                "timer": 116,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true
+              },
+              "floating": [
+                {
+                  "x": 219.29999999999995,
+                  "y": 284.6851875,
+                  "text": "+9G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 525.1851875000001,
+                  "text": "+17G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 702.1999999999998,
+                  "y": 284.6851875,
+                  "text": "+45G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.75,
+                  "y": 525.1851875000001,
+                  "text": "+91G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  9
+                ],
+                [
+                  460.75,
+                  540.75,
+                  17
+                ],
+                [
+                  701.0,
+                  300.25,
+                  45
+                ],
+                [
+                  941.25,
+                  540.75,
+                  91
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_numbers_off_popup_still_queued",
+        "initial": {
+          "damage_numbers_enabled": false,
+          "max_damage_numbers": 1
+        },
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 2,
+            "snapshot": {
+              "gold": 145,
+              "score": 37,
+              "ai_gold": 17,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 117,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true
+              },
+              "floating": [
+                {
+                  "x": 219.59999999999997,
+                  "y": 285.97125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_dead_on_spawn",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "orc",
+            "team": "red",
+            "dead": true
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "undead",
+            "team": "blue",
+            "dead": true
+          }
+        ],
+        "steps": [
+          {
+            "kills": [],
+            "frames": 1,
+            "snapshot": {
+              "gold": 155,
+              "score": 47,
+              "ai_gold": 33,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  18
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 2,
+            "snapshot": {
+              "gold": 155,
+              "score": 47,
+              "ai_gold": 33,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 117,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true
+              },
+              "floating": [
+                {
+                  "x": 219.59999999999997,
+                  "y": 285.97125,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2860624999999997,
+                  "lifetime": 47,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.7599,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  18
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_red_lone_by_hero",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "t0",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 17,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 10,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 17,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_red_neutral_and_own_team",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "red"
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "red"
+          },
+          {
+            "id": "t2",
+            "kind": "tower",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "t0",
+                "by": null,
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 17,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": false,
+                "t2": false
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "t1",
+                "by": "red",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 337,
+              "score": 229,
+              "ai_gold": 17,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": false
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "t2",
+                "dead": true,
+                "team": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 437,
+              "score": 329,
+              "ai_gold": 17,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 3,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_blue_pays_ai",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue"
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "blue"
+          },
+          {
+            "id": "t2",
+            "kind": "tower",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "t0",
+                "by": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 137,
+              "score": 29,
+              "ai_gold": 117,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": false,
+                "t2": false
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "t1",
+                "by": "blue",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 137,
+              "score": 29,
+              "ai_gold": 217,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": false
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "t2",
+                "by": null,
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 137,
+              "score": 29,
+              "ai_gold": 317,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 5,
+            "snapshot": {
+              "gold": 137,
+              "score": 29,
+              "ai_gold": 317,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_inner_outer_mixed_teams",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "red",
+            "tower_kind": "inner"
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "red"
+          },
+          {
+            "id": "t2",
+            "kind": "tower",
+            "team": "blue",
+            "tower_kind": "inner"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "t0",
+                "by": "blue"
+              },
+              {
+                "unit": "t1",
+                "by": null,
+                "team": ""
+              },
+              {
+                "unit": "t2",
+                "by": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 387,
+              "score": 279,
+              "ai_gold": 167,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 3,
+            "snapshot": {
+              "gold": 387,
+              "score": 279,
+              "ai_gold": 167,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_many_same_frame",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "red"
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "red"
+          },
+          {
+            "id": "t2",
+            "kind": "tower",
+            "team": "red"
+          },
+          {
+            "id": "t3",
+            "kind": "tower",
+            "team": "blue"
+          },
+          {
+            "id": "t4",
+            "kind": "tower",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "t0",
+                "by": "blue"
+              },
+              {
+                "unit": "t1",
+                "by": "blue"
+              },
+              {
+                "unit": "t2",
+                "by": null,
+                "team": ""
+              },
+              {
+                "unit": "t3",
+                "by": "blue",
+                "team": ""
+              },
+              {
+                "unit": "t4",
+                "by": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 437,
+              "score": 329,
+              "ai_gold": 217,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 3,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": true,
+                "t3": true,
+                "t4": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 2,
+            "snapshot": {
+              "gold": 437,
+              "score": 329,
+              "ai_gold": 217,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 3,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true,
+                "t2": true,
+                "t3": true,
+                "t4": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_double_pay_guard",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "red"
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "t0",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 17,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": false
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "t0",
+                "by": "blue",
+                "repeat": true
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 17,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": false
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "t1",
+                "by": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 117,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "t1",
+                "by": "red",
+                "repeat": true
+              }
+            ],
+            "frames": 5,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 117,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_dead_on_spawn",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "red",
+            "dead": true
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "blue",
+            "dead": true
+          }
+        ],
+        "steps": [
+          {
+            "kills": [],
+            "frames": 1,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 117,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          },
+          {
+            "kills": [],
+            "frames": 2,
+            "snapshot": {
+              "gold": 237,
+              "score": 129,
+              "ai_gold": 117,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "t0": true,
+                "t1": true
+              },
+              "floating": [],
+              "gold_events": [],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "mixed_all_kinds_same_frame",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "blue"
+          },
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "red"
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "blue"
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "grimjaw",
+            "team": "red"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "type": "sylara",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              },
+              {
+                "unit": "m1",
+                "by": "red"
+              },
+              {
+                "unit": "t0",
+                "by": null,
+                "team": ""
+              },
+              {
+                "unit": "t1",
+                "by": "blue",
+                "team": ""
+              },
+              {
+                "unit": "h0",
+                "by": "blue"
+              },
+              {
+                "unit": "h1",
+                "by": "red"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 395,
+              "score": 287,
+              "ai_gold": 275,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "h0": 0,
+                "h1": 0,
+                "blue": 5,
+                "red": 5,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "t0": true,
+                "t1": true,
+                "h0": true,
+                "h1": true
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 5,
+            "snapshot": {
+              "gold": 395,
+              "score": 287,
+              "ai_gold": 275,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 114,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "kills": {
+                "h0": 0,
+                "h1": 0,
+                "blue": 5,
+                "red": 5,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "t0": true,
+                "t1": true,
+                "h0": true,
+                "h1": true
+              },
+              "floating": [
+                {
+                  "x": 218.69999999999993,
+                  "y": 282.30275671875,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1026378359374993,
+                  "lifetime": 44,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.9176457,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "popup_fifo_order",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "orc",
+            "team": "red"
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "troll",
+            "team": "red"
+          },
+          {
+            "id": "m3",
+            "kind": "minion",
+            "type": "undead",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "by": "blue"
+              },
+              {
+                "unit": "m0",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 163,
+              "score": 55,
+              "ai_gold": 17,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": false,
+                "m3": false
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 529.25,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  18
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m3",
+                "by": null,
+                "team": ""
+              },
+              {
+                "unit": "m2",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 224,
+              "score": 116,
+              "ai_gold": 17,
+              "total_kills": 4,
+              "max_combo": 3,
+              "combo": {
+                "count": 4,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true
+              },
+              "floating": [
+                {
+                  "x": 219.89999999999998,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 527.825,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.3,
+                  "y": 288.75,
+                  "text": "+45G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.375,
+                  "y": 529.25,
+                  "text": "+16G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  18
+                ],
+                [
+                  701.0,
+                  300.25,
+                  45
+                ],
+                [
+                  941.25,
+                  540.75,
+                  16
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.3
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.125
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 3,
+            "snapshot": {
+              "gold": 224,
+              "score": 116,
+              "ai_gold": 17,
+              "total_kills": 4,
+              "max_combo": 3,
+              "combo": {
+                "count": 4,
+                "timer": 116,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true
+              },
+              "floating": [
+                {
+                  "x": 218.99999999999994,
+                  "y": 283.463428125,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1606714062499994,
+                  "lifetime": 45,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.882351,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 523.9634281250001,
+                  "text": "+18G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.1606714062499994,
+                  "lifetime": 45,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.882351,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 702.1999999999998,
+                  "y": 284.6851875,
+                  "text": "+45G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.75,
+                  "y": 525.1851875000001,
+                  "text": "+16G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.2217593749999995,
+                  "lifetime": 46,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.8319300000000001,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  18
+                ],
+                [
+                  701.0,
+                  300.25,
+                  45
+                ],
+                [
+                  941.25,
+                  540.75,
+                  16
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      },
+      {
+        "name": "combo_quirk_max_read_before_add",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m3",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m4",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m5",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "blue"
+              },
+              {
+                "unit": "m1",
+                "by": "blue"
+              },
+              {
+                "unit": "m2",
+                "by": "blue"
+              },
+              {
+                "unit": "m3",
+                "by": "blue"
+              },
+              {
+                "unit": "m4",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 177,
+              "score": 69,
+              "ai_gold": 17,
+              "total_kills": 5,
+              "max_combo": 4,
+              "combo": {
+                "count": 5,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": false
+              },
+              "floating": [
+                {
+                  "x": 220.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.3,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.375,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1181.2,
+                  "y": 288.75,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.3
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.125
+                ],
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  -0.3
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m5",
+                "by": "blue"
+              }
+            ],
+            "frames": 1,
+            "snapshot": {
+              "gold": 185,
+              "score": 77,
+              "ai_gold": 17,
+              "total_kills": 6,
+              "max_combo": 5,
+              "combo": {
+                "count": 6,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": true
+              },
+              "floating": [
+                {
+                  "x": 219.89999999999998,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 460.75,
+                  "y": 527.825,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 701.5999999999999,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 941.5,
+                  "y": 527.825,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.125,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1180.9,
+                  "y": 287.325,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.3537499999999998,
+                  "lifetime": 48,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": -0.3,
+                  "scale": 0.657,
+                  "target_scale": 1.0
+                },
+                {
+                  "x": 1421.75,
+                  "y": 529.25,
+                  "text": "+8G",
+                  "color": [
+                    255,
+                    220,
+                    50
+                  ],
+                  "velocity_x": 0,
+                  "velocity_y": -1.4249999999999998,
+                  "lifetime": 49,
+                  "max_lifetime": 50,
+                  "alive": true,
+                  "critical": false,
+                  "font_size": 18,
+                  "x_drift": 0.0,
+                  "scale": 0.51,
+                  "target_scale": 1.0
+                }
+              ],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ],
+                [
+                  1421.75,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": [
+                [
+                  "uniform",
+                  -0.3,
+                  0.3,
+                  0.0
+                ]
+              ]
+            }
+          },
+          {
+            "kills": [],
+            "frames": 130,
+            "snapshot": {
+              "gold": 185,
+              "score": 77,
+              "ai_gold": 17,
+              "total_kills": 6,
+              "max_combo": 5,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 6
+              },
+              "red_towers_destroyed": 0,
+              "kills": {
+                "blue": 4,
+                "red": 4,
+                "dead": 4,
+                "neutral": 4
+              },
+              "rewarded": {
+                "m0": true,
+                "m1": true,
+                "m2": true,
+                "m3": true,
+                "m4": true,
+                "m5": true
+              },
+              "floating": [],
+              "gold_events": [
+                [
+                  220.5,
+                  300.25,
+                  8
+                ],
+                [
+                  460.75,
+                  540.75,
+                  8
+                ],
+                [
+                  701.0,
+                  300.25,
+                  8
+                ],
+                [
+                  941.25,
+                  540.75,
+                  8
+                ],
+                [
+                  1181.5,
+                  300.25,
+                  8
+                ],
+                [
+                  1421.75,
+                  540.75,
+                  8
+                ]
+              ],
+              "popup_events": [],
+              "rolls": []
+            }
+          }
+        ]
+      }
+    ]
   }
 }

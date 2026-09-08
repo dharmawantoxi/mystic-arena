@@ -4585,6 +4585,547 @@ def make_boss_death_rewards_fixture(core, entity):
         rend.EffectManager.add_gold_popup = saved_gold_popup
 
 
+def make_minion_tower_rewards_fixture(core, entity):
+    """FASE 15 — reward kematian MINION + MENARA, oracle pygame ASLI.
+
+    Loop reward Game.update pygame (_core.py:2196-2227) dijalankan headless
+    dengan unit betulan (Minion/Hero/Tower betulan, mati lewat take_damage
+    asli; FX kontak hit diisolasi dengan me-null-kan game_instance supaya
+    jejak klaster murni reward — pola FASE 14). Yang dikunci:
+
+      minion : penerima = TIM KORBAN; popup gold +nG lewat
+               EffectManager.add_gold_popup ASLI (posisi, nominal, antrean
+               FIFO, lifetime 50 frame); total_kills; combo + quirk
+               max_combo yang dibaca SEBELUM add_kill.
+      tower  : penerima = TIM KORBAN (menara merah → gold+skor pemain,
+               menara biru → gold AI) TERMASUK sumber netral/tanpa killer;
+               red_towers_destroyed naik tepat sekali per menara merah;
+               TANPA popup gold; total_kills/combo tidak bergerak.
+      guard  : flag `_rewarded` per instans = kunci anti pembayaran ganda
+               (mayat minion tetap di daftar pygame selama death_anim;
+               pukulan ulang + kematian paksa tidak boleh membayar lagi).
+
+    RNG hanya situs FloatingText.__init__ (x_drift) yang di-pin; dua seed
+    berbeda wajib identik. Piksel font/shadow tidak diklaim fixture ini.
+    """
+    import copy
+    import io
+    from contextlib import redirect_stdout
+    import __main__
+    import pygame
+    import _render as rend
+    from mobile.perf import Quality
+    from bosses.base_boss import Boss
+
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    W, H = 1280, 720
+    saved_random = random.getstate()
+    saved_game = getattr(__main__, "game_instance", None)
+    settings = core.GameSettings()
+    saved_numbers = settings.damage_numbers_enabled
+    saved_cap = Quality.max_damage_numbers
+    saved_uniform = random.uniform
+    saved_gold_popup = rend.EffectManager.add_gold_popup
+    saved_gps = core.GOLD_PER_SECOND
+    rolls, gold_events, popup_events = [], [], []
+    roll_index = {"uniform": 0}
+
+    def uniform(a, b):
+        frame = sys._getframe(1)
+        if (frame.f_code.co_name == "__init__"
+                and isinstance(frame.f_locals.get("self"), rend.FloatingText)):
+            choices = (-0.3, 0.0, 0.3, 0.125)
+            value = choices[roll_index["uniform"] % len(choices)]
+            roll_index["uniform"] += 1
+            rolls.append(["uniform", a, b, value])
+            return value
+        return saved_uniform(a, b)
+
+    def gold_popup(effects, x, y, amount):
+        gold_events.append([x, y, amount])
+        return saved_gold_popup(effects, x, y, amount)
+
+    initial = {
+        "gold": 137, "score": 29, "ai_gold": 17,
+        "total_kills": 0, "max_combo": 0, "red_towers_destroyed": 0,
+        "damage_numbers_enabled": True, "max_damage_numbers": 16,
+    }
+    # Sumber damage STANDALONE (tidak masuk daftar arena — tidak pernah
+    # di-update/di-target, paritas battery last-hit FASE 14). Posisi
+    # sengaja BERBEDA dari grid korban: popup yang salah ambil posisi
+    # sumber (bukan korban) langsung ketahuan di gold_events.
+    sources = [
+        {"id": "blue", "kind": "hero", "type": "kaizen", "team": "blue",
+         "x": 900.5, "y": 100.25},
+        {"id": "red", "kind": "hero", "type": "thorne", "team": "red",
+         "x": 960.75, "y": 160.5},
+        {"id": "dead", "kind": "hero", "type": "sylara", "team": "blue",
+         "dead": True, "x": 1020.25, "y": 220.75},
+        {"id": "neutral", "kind": "hero", "type": "grimjaw", "team": "",
+         "x": 1080.5, "y": 280.25},
+        {"id": "minion", "kind": "minion", "type": "goblin", "team": "blue",
+         "x": 1140.25, "y": 340.5},
+        {"id": "tower", "kind": "tower", "team": "blue",
+         "x": 1200.5, "y": 400.25},
+        {"id": "nexus", "kind": "nexus", "team": "blue",
+         "x": 60.25, "y": 420.5},
+        {"id": "boss", "kind": "boss", "type": "morgath", "team": "blue",
+         "x": 120.5, "y": 480.25},
+    ]
+
+    def float_state(t):
+        state = {key: copy.deepcopy(getattr(t, key)) for key in (
+            "x", "y", "text", "color", "velocity_x", "velocity_y",
+            "lifetime", "max_lifetime", "alive", "critical", "font_size",
+            "x_drift", "scale", "target_scale")}
+        state["color"] = list(state["color"])
+        return state
+
+    try:
+        random.uniform = uniform
+        rend.EffectManager.add_gold_popup = gold_popup
+        core.GOLD_PER_SECOND = 0
+        with redirect_stdout(io.StringIO()):
+            game = core.Game(pygame.Surface((W, H)), level_number=1)
+        __main__.game_instance = game
+
+        def reset(overrides=None):
+            init = copy.deepcopy(initial)
+            init.update(copy.deepcopy(overrides or {}))
+            game.gold = init["gold"]
+            game.score = init["score"]
+            game.ai.gold = init["ai_gold"]
+            game.total_kills = init["total_kills"]
+            game.max_combo = init["max_combo"]
+            game.gold_per_second = 0.0
+            game._gold_income_milli = 0
+            game.gold_timer = 0
+            game.wave_timer = 10 ** 6
+            game.wave_number = 0
+            game.hero_respawn_timers = {}
+            game.towers, game.minions, game.heroes, game.ai.heroes = [], [], [], []
+            game.active_boss = None
+            game.pending_mini_bosses = []
+            game.red_towers_destroyed = init["red_towers_destroyed"]
+            game.true_boss_spawned = True
+            game.state = "playing"
+            game.level_intro = game.boss_intro = game.boss_death = None
+            game.effects = rend.EffectManager()
+            settings.damage_numbers_enabled = init["damage_numbers_enabled"]
+            Quality.max_damage_numbers = init["max_damage_numbers"]
+            # Rekam popup achievement supaya ABSENSI-nya pun terkunci:
+            # kematian minion/menara/hero TIDAK boleh membuat popup apa pun
+            # (HERO SLAYER sudah dihapus; menara tanpa popup gold).
+            original_unlock = game.effects.achievement.unlock
+
+            def unlock(title, description, icon_type="star"):
+                popup_events.append([title, description, icon_type])
+                original_unlock(title, description, icon_type)
+
+            game.effects.achievement.unlock = unlock
+            rolls.clear()
+            gold_events.clear()
+            popup_events.clear()
+            roll_index["uniform"] = 0
+            return init
+
+        def make_sources():
+            out = {}
+            for s in sources:
+                kind, team = s["kind"], s["team"]
+                if kind == "hero":
+                    u = entity.Hero(s["type"], team, s["x"], s["y"])
+                    u.kills = 4  # atribusi +1 terlihat; basis bukan 0
+                    u.alive = not s.get("dead", False)
+                elif kind == "minion":
+                    u = entity.Minion(s["type"], team, "mid")
+                elif kind == "tower":
+                    u = entity.Tower(s["x"], s["y"], team)
+                elif kind == "nexus":
+                    u = entity.Castle(s["x"], s["y"], team)
+                else:
+                    u = Boss(s["type"])
+                    u.team = team
+                out[s["id"]] = u
+            return out
+
+        def make_unit(spec, idx):
+            x = 220.5 + idx * 240.25
+            y = 300.25 + (idx % 2) * 240.5
+            if spec["kind"] == "minion":
+                u = entity.Minion(spec["type"], spec["team"], "mid",
+                                  spec.get("nexus_level", 1))
+                u.base_speed = 0.0  # beku: tidak ada combat liar
+                u.speed = 0.0
+                u.x, u.y = x, y
+            elif spec["kind"] == "hero":
+                u = entity.Hero(spec["type"], spec["team"], x, y)
+                u.speed = 0.0
+            elif spec["kind"] == "tower":
+                u = entity.Tower(x, y, spec["team"],
+                                 spec.get("tower_kind", "outer"))
+            else:
+                raise AssertionError(spec["kind"])
+            if "reward" in spec:
+                u.gold_reward = spec["reward"]  # nilai RUNTIME, bukan katalog
+            if spec.get("dead"):
+                # Mati SEBELUM frame pertama — loop pygame membayar unit
+                # apa pun di daftarnya yang mati, siapa pun/tanpa pembunuh.
+                u.alive = False
+                u.hp = 0
+            return u
+
+        def snapshot(units, srcs):
+            cc = game.effects.combo_counter
+            kills = {}
+            rewarded = {}
+            for uid, u in units.items():
+                if getattr(u, "hero_type", None):
+                    kills[uid] = int(u.kills)
+                rewarded[uid] = bool(getattr(u, "_rewarded", False))
+            for sid, u in srcs.items():
+                if getattr(u, "hero_type", None):
+                    kills[sid] = int(u.kills)
+            return {
+                "gold": game.gold, "score": game.score,
+                "ai_gold": game.ai.gold,
+                "total_kills": game.total_kills,
+                "max_combo": game.max_combo,
+                "combo": {"count": cc.count, "timer": cc.timer,
+                          "last_combo": cc.last_combo},
+                "red_towers_destroyed": game.red_towers_destroyed,
+                "kills": kills,
+                "rewarded": rewarded,
+                "floating": [float_state(t)
+                             for t in game.effects.floating_texts],
+                "gold_events": copy.deepcopy(gold_events),
+                "popup_events": copy.deepcopy(popup_events),
+                "rolls": copy.deepcopy(rolls),
+            }
+
+        def run(spec, seed):
+            random.seed(seed)
+            reset(spec.get("initial"))
+            srcs = make_sources()
+            units = {}
+            for i, uspec in enumerate(spec["units"]):
+                u = make_unit(uspec, i)
+                units[uspec["id"]] = u
+                if uspec["kind"] == "minion":
+                    game.minions.append(u)
+                elif uspec["kind"] == "tower":
+                    game.towers.append(u)
+                elif uspec["kind"] == "hero":
+                    if uspec["team"] == "blue":
+                        game.heroes.append(u)
+                    else:
+                        game.ai.heroes.append(u)
+            steps = []
+            for step in spec["steps"]:
+                rolls.clear()
+                for kill in step.get("kills", ()):
+                    victim = units[kill["unit"]]
+                    by = srcs.get(kill.get("by"))
+                    if "team" in kill:
+                        from_team = kill["team"]
+                    else:
+                        from_team = getattr(by, "team", "") if by else ""
+                    if kill.get("dead"):
+                        # Kematian tanpa take_damage (unit sudah mati saat
+                        # masuk daftar / dipaksa mati oleh kejadian luar):
+                        # dari sudut loop reward pygame ini tidak beda —
+                        # yang dibaca hanya `alive`, tim korban, dan
+                        # gold_reward runtime. Godot mereplay lewat die().
+                        victim.alive = False
+                        victim.hp = 0
+                        if by is not None:
+                            victim._killed_by = by
+                    else:
+                        # game_instance di-null SEKILAS: kode damage/last-hit
+                        # tetap asli, hanya FX kontak (damage number, partikel,
+                        # ledakan) yang tidak masuk jejak klaster — pola FASE 14.
+                        __main__.game_instance = None
+                        with redirect_stdout(io.StringIO()):
+                            victim.take_damage(10 ** 9, from_team, "normal",
+                                               source=by)
+                        __main__.game_instance = game
+                    if kill.get("repeat"):
+                        # Baterai anti pembayaran ganda: pukul mayat lagi +
+                        # kematian paksa ulang. Flag _rewarded tidak boleh
+                        # membayar dua kali (mayat minion TETAP di daftar
+                        # pygame selama death_anim > 0).
+                        __main__.game_instance = None
+                        with redirect_stdout(io.StringIO()):
+                            victim.take_damage(10 ** 9, from_team, "normal",
+                                               source=by)
+                        __main__.game_instance = game
+                        victim.alive = False
+                        victim.hp = 0
+                for _ in range(step["frames"]):
+                    with redirect_stdout(io.StringIO()):
+                        game.update()
+                steps.append({"kills": step.get("kills", ()),
+                              "frames": step["frames"],
+                              "snapshot": snapshot(units, srcs)})
+            return steps
+
+        def m(uid, by=None, **kw):
+            return {"unit": uid, "by": by, **kw}
+
+        specs = [
+            # ── MINION: pembayaran + popup + combo (urutan loop pygame) ──
+            {"name": "minion_red_lone_by_hero",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"}],
+             "steps": [{"kills": [m("m0", "blue")], "frames": 1},
+                       {"kills": [], "frames": 24},
+                       {"kills": [], "frames": 24},
+                       {"kills": [], "frames": 1},
+                       {"kills": [], "frames": 2}]},
+            {"name": "minion_red_killer_variants",
+             "units": [{"id": "m%d" % i, "kind": "minion", "type": "goblin",
+                        "team": "red"} for i in range(10)],
+             "steps": [
+                 {"kills": [m("m0", "blue")], "frames": 1},
+                 {"kills": [m("m1", "red", team="")], "frames": 1},
+                 {"kills": [m("m2", "dead", team="")], "frames": 1},
+                 {"kills": [m("m3", "neutral")], "frames": 1},
+                 {"kills": [m("m4", "minion", team="")], "frames": 1},
+                 {"kills": [m("m5", "tower", team="")], "frames": 1},
+                 {"kills": [m("m6", "nexus", team="")], "frames": 1},
+                 {"kills": [m("m7", "boss", team="")], "frames": 1},
+                 {"kills": [m("m8", "blue", team="blue")], "frames": 1},
+                 {"kills": [m("m9", None, team="")], "frames": 1}]},
+            {"name": "minion_red_own_team_and_neutral_from_team",
+             "units": [{"id": "m0", "kind": "minion", "type": "orc",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "orc",
+                        "team": "red"}],
+             "steps": [
+                 {"kills": [{"unit": "m0", "dead": True, "team": "red"}],
+                  "frames": 1},
+                 {"kills": [{"unit": "m1", "dead": True, "team": "neutral"}],
+                  "frames": 1}]},
+            {"name": "minion_blue_pays_ai_no_popup",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "blue"},
+                       {"id": "m1", "kind": "minion", "type": "undead",
+                        "team": "blue"},
+                       {"id": "m2", "kind": "minion", "type": "dark_rider",
+                        "team": "blue"}],
+             "steps": [
+                 {"kills": [m("m0", "red")], "frames": 1},
+                 {"kills": [m("m1", "blue", team="")], "frames": 1},
+                 {"kills": [m("m2", None, team="")], "frames": 1},
+                 {"kills": [], "frames": 5}]},
+            {"name": "minion_chain_same_frame",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "orc",
+                        "team": "red"},
+                       {"id": "m2", "kind": "minion", "type": "troll",
+                        "team": "red"}],
+             "steps": [{"kills": [m("m0", "blue"), m("m1", None, team=""),
+                                  m("m2", "minion", team="")], "frames": 1},
+                       {"kills": [], "frames": 30}]},
+            {"name": "minion_chain_spread_expire",
+             "units": [{"id": "m%d" % i, "kind": "minion", "type": "goblin",
+                        "team": "red"} for i in range(4)],
+             "steps": [{"kills": [m("m0", "blue")], "frames": 1},
+                       {"kills": [], "frames": 29},
+                       {"kills": [m("m1", None, team="")], "frames": 1},
+                       {"kills": [], "frames": 29},
+                       {"kills": [m("m2", "blue")], "frames": 1},
+                       {"kills": [], "frames": 119},
+                       {"kills": [m("m3", "blue")], "frames": 1},
+                       {"kills": [], "frames": 5}]},
+            {"name": "minion_double_pay_guard",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "goblin",
+                        "team": "blue"}],
+             "steps": [{"kills": [m("m0", "blue")], "frames": 1},
+                       {"kills": [{"unit": "m0", "by": "blue", "repeat": True}],
+                        "frames": 1},
+                       {"kills": [m("m1", "red")], "frames": 1},
+                       {"kills": [{"unit": "m1", "by": "red", "repeat": True}],
+                        "frames": 10}]},
+            {"name": "minion_reward_runtime_values",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red", "nexus_level": 2},
+                       {"id": "m1", "kind": "minion", "type": "goblin",
+                        "team": "red", "reward": 17},
+                       {"id": "m2", "kind": "minion", "type": "troll",
+                        "team": "red"},
+                       {"id": "m3", "kind": "minion", "type": "dark_rider",
+                        "team": "red", "nexus_level": 3}],
+             "steps": [{"kills": [m("m0", "blue"), m("m1", "blue"),
+                                  m("m2", "blue"), m("m3", "blue")],
+                        "frames": 1},
+                       {"kills": [], "frames": 3}]},
+            {"name": "minion_numbers_off_popup_still_queued",
+             "initial": {"damage_numbers_enabled": False,
+                         "max_damage_numbers": 1},
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"}],
+             "steps": [{"kills": [m("m0", "blue")], "frames": 1},
+                       {"kills": [], "frames": 2}]},
+            {"name": "minion_dead_on_spawn",
+             "units": [{"id": "m0", "kind": "minion", "type": "orc",
+                        "team": "red", "dead": True},
+                       {"id": "m1", "kind": "minion", "type": "undead",
+                        "team": "blue", "dead": True}],
+             "steps": [{"kills": [], "frames": 1},
+                       {"kills": [], "frames": 2}]},
+            # ── TOWER: TIM KORBAN, tanpa popup, counter tepat sekali ──
+            {"name": "tower_red_lone_by_hero",
+             "units": [{"id": "t0", "kind": "tower", "team": "red"}],
+             "steps": [{"kills": [m("t0", "blue")], "frames": 1},
+                       {"kills": [], "frames": 10}]},
+            {"name": "tower_red_neutral_and_own_team",
+             "units": [{"id": "t0", "kind": "tower", "team": "red"},
+                       {"id": "t1", "kind": "tower", "team": "red"},
+                       {"id": "t2", "kind": "tower", "team": "red"}],
+             "steps": [
+                 {"kills": [m("t0", None, team="")], "frames": 1},
+                 {"kills": [m("t1", "red", team="")], "frames": 1},
+                 {"kills": [{"unit": "t2", "dead": True, "team": "red"}],
+                  "frames": 1}]},
+            {"name": "tower_blue_pays_ai",
+             "units": [{"id": "t0", "kind": "tower", "team": "blue"},
+                       {"id": "t1", "kind": "tower", "team": "blue"},
+                       {"id": "t2", "kind": "tower", "team": "blue"}],
+             "steps": [
+                 {"kills": [m("t0", "red")], "frames": 1},
+                 {"kills": [m("t1", "blue", team="")], "frames": 1},
+                 {"kills": [m("t2", None, team="")], "frames": 1},
+                 {"kills": [], "frames": 5}]},
+            {"name": "tower_inner_outer_mixed_teams",
+             "units": [{"id": "t0", "kind": "tower", "team": "red",
+                        "tower_kind": "inner"},
+                       {"id": "t1", "kind": "tower", "team": "red"},
+                       {"id": "t2", "kind": "tower", "team": "blue",
+                        "tower_kind": "inner"}],
+             "steps": [{"kills": [m("t0", "blue"), m("t1", None, team=""),
+                                  m("t2", "red")], "frames": 1},
+                       {"kills": [], "frames": 3}]},
+            {"name": "tower_many_same_frame",
+             "units": [{"id": "t%d" % i, "kind": "tower",
+                        "team": "red" if i < 3 else "blue"}
+                       for i in range(5)],
+             "steps": [{"kills": [m("t0", "blue"), m("t1", "blue"),
+                                  m("t2", None, team=""), m("t3", "blue",
+                                                            team=""),
+                                  m("t4", "red")], "frames": 1},
+                       {"kills": [], "frames": 2}]},
+            {"name": "tower_double_pay_guard",
+             "units": [{"id": "t0", "kind": "tower", "team": "red"},
+                       {"id": "t1", "kind": "tower", "team": "blue"}],
+             "steps": [{"kills": [m("t0", "blue")], "frames": 1},
+                       {"kills": [{"unit": "t0", "by": "blue",
+                                   "repeat": True}], "frames": 1},
+                       {"kills": [m("t1", "red")], "frames": 1},
+                       {"kills": [{"unit": "t1", "by": "red",
+                                   "repeat": True}], "frames": 5}]},
+            {"name": "tower_dead_on_spawn",
+             "units": [{"id": "t0", "kind": "tower", "team": "red",
+                        "dead": True},
+                       {"id": "t1", "kind": "tower", "team": "blue",
+                        "dead": True}],
+             "steps": [{"kills": [], "frames": 1},
+                       {"kills": [], "frames": 2}]},
+            # ── CAMPURAN + antrean popup + quirk combo dalam klaster ──
+            {"name": "mixed_all_kinds_same_frame",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "goblin",
+                        "team": "blue"},
+                       {"id": "t0", "kind": "tower", "team": "red"},
+                       {"id": "t1", "kind": "tower", "team": "blue"},
+                       {"id": "h0", "kind": "hero", "type": "grimjaw",
+                        "team": "red"},
+                       {"id": "h1", "kind": "hero", "type": "sylara",
+                        "team": "blue"}],
+             "steps": [{"kills": [m("m0", "blue"), m("m1", "red"),
+                                  m("t0", None, team=""),
+                                  m("t1", "blue", team=""),
+                                  m("h0", "blue"), m("h1", "red")],
+                        "frames": 1},
+                       {"kills": [], "frames": 5}]},
+            {"name": "popup_fifo_order",
+             # Kill EKSEKUSI sengaja diacak (m1 sebelum m0, m3 sebelum m2):
+             # loop pygame membayar sesuai URUTAN DAFTAR, bukan urutan
+             # pukulan — antrean popup harus [m0, m1, m2, m3]. Replay Godot
+             # mengeksekusi die() dalam urutan deklarasi unit (paritas
+             # iterasi daftar _core.py:2196).
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "orc",
+                        "team": "red"},
+                       {"id": "m2", "kind": "minion", "type": "troll",
+                        "team": "red"},
+                       {"id": "m3", "kind": "minion", "type": "undead",
+                        "team": "red"}],
+             "steps": [{"kills": [m("m1", "blue"), m("m0", "blue")],
+                        "frames": 1},
+                       {"kills": [m("m3", None, team=""), m("m2", "blue")],
+                        "frames": 1},
+                       {"kills": [], "frames": 3}]},
+            {"name": "combo_quirk_max_read_before_add",
+             "units": [{"id": "m%d" % i, "kind": "minion", "type": "goblin",
+                        "team": "red"} for i in range(6)],
+             "steps": [{"kills": [m("m0", "blue"), m("m1", "blue"),
+                                  m("m2", "blue"), m("m3", "blue"),
+                                  m("m4", "blue")], "frames": 1},
+                       {"kills": [m("m5", "blue")], "frames": 1},
+                       {"kills": [], "frames": 130}]},
+        ]
+        scenarios = []
+        with redirect_stdout(io.StringIO()):
+            for spec in specs:
+                a, b = run(spec, 1501), run(spec, 1502)
+                assert a == b, \
+                    "reward minion/menara RNG bocor: %s" % spec["name"]
+                scenarios.append({"name": spec["name"],
+                                  "initial": spec.get("initial", {}),
+                                  "units": spec["units"], "steps": a})
+
+        # Guard internal: langkah tanpa kill ter-script hanya boleh
+        # menggerakkan timer/expiry combo + umur popup — reward lainnya
+        # (gold/score/ai_gold/total_kills/max_combo/red_towers_destroyed/
+        # kills) harus diam total. Bukti tidak ada combat liar antar unit
+        # yang diparker berjauhan (dan mayat tidak dibayar ulang).
+        for spec in specs:
+            steps = next(s for s in scenarios
+                         if s["name"] == spec["name"])["steps"]
+            for prev, step in zip(steps, steps[1:]):
+                if not step["kills"]:
+                    a, b = prev["snapshot"], step["snapshot"]
+                    for key in ("gold", "score", "ai_gold", "total_kills",
+                                "max_combo", "red_towers_destroyed",
+                                "kills", "rewarded"):
+                        assert a[key] == b[key], \
+                            "state berubah tanpa kill (%s/%s): %s" % (
+                                spec["name"], key, (a[key], b[key]))
+                    assert len(a["gold_events"]) == len(b["gold_events"]), \
+                        "gold event baru tanpa kill: %s" % spec["name"]
+                    assert not b["popup_events"], \
+                        "popup achievement liar: %s" % spec["name"]
+
+        return {"fps": 60, "initial": initial, "sources": sources,
+                "max_floating": rend.EffectManager.MAX_FLOATING,
+                "scenarios": scenarios}
+    finally:
+        __main__.game_instance = saved_game
+        core.GOLD_PER_SECOND = saved_gps
+        settings.damage_numbers_enabled = saved_numbers
+        Quality.max_damage_numbers = saved_cap
+        random.uniform = saved_uniform
+        random.setstate(saved_random)
+        rend.EffectManager.add_gold_popup = saved_gold_popup
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -4645,6 +5186,13 @@ def make_fixture(core, entity, levels, paths):
         "match_scoring": make_match_scoring_fixture(core, entity),
         # FASE 14 — reward boss + SLAYER (bukan HERO SLAYER) + antrean gold.
         "boss_death_rewards": make_boss_death_rewards_fixture(core, entity),
+        # FASE 15 — reward kematian MINION (popup gold +nG + combo) dan
+        # MENARA (TIM KORBAN + red_towers_destroyed tepat sekali, tanpa
+        # popup): loop reward Game.update pygame SUNGGUHAN + guard
+        # _rewarded anti pembayaran ganda. Direplay MinionTowerReward-
+        # ParityTest. Objek agar diff-able saat review.
+        "minion_tower_rewards": make_minion_tower_rewards_fixture(
+            core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -4782,6 +5330,14 @@ def main():
               f"{len(br['catalog'])} boss, {len(br['scenarios'])} skenario Game.update, "
               f"{len(br['popups'])} kasus antrean + {len(br['shared_budget'])} FIFO bersama + "
               f"{len(br['outcomes'])} akhir match + reset")
+        mt = actual["minion_tower_rewards"]
+        mt_kills = sum(len(s["kills"]) for sc in mt["scenarios"]
+                       for s in sc["steps"])
+        print("             minion-tower-rewards oracle: "
+              f"{len(mt['scenarios'])} skenario Game.update, "
+              f"{mt_kills} kematian ter-script, "
+              f"{sum(len(s['snapshot']['gold_events']) for sc in mt['scenarios'] for s in sc['steps'])} "
+              "event gold popup")
 
 
 if __name__ == "__main__":

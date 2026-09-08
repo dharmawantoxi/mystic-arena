@@ -41,6 +41,11 @@ var dmg_school: String = "physical"
 var target: Node2D = null
 var attack_timer: float = 0.0
 var is_dead: bool = false
+## Kunci anti pembayaran ganda (padanan `_rewarded` pygame _core.py:2198):
+## minion yang sama hanya membayar gold/skor/popup/sekali, walau die() atau
+## callback reward dipanggil ulang (mayat tetap di daftar pygame selama
+## death_anim; guard `_rewarded` mencegah bayar ulang tiap Game.update).
+var reward_processed: bool = false
 var facing: int = 1
 var anim_phase: float = 0.0
 var status = null
@@ -358,10 +363,12 @@ func die(killer_team: String = ""):
 	if status != null:
 		status.clear()
 	# Loop reward Game.update pygame (_core.py:2196-2216, cabang TIM KORBAN):
-	# gold+skor+total_kills+combo untuk minion RED, gold AI untuk minion biru
-	# — SEKARANG lewat register_minion_death (dulu award_kill(killer_team),
-	# beda untuk sumber damage netral: pygame tetap membayar tim lawan
-	# korban). Combo: max_combo dibaca SEBELUM add_kill (quirk pygame).
+	# gold+skor+popup +nG+total_kills+combo untuk minion RED, gold AI untuk
+	# minion biru — SEKARANG lewat register_minion_death (dulu award_kill(
+	# killer_team), beda untuk sumber damage netral: pygame tetap membayar tim
+	# lawan korban). Popup gold +nG + kunci anti dobel ada di GameManager
+	# (paritas EffectManager.add_gold_popup). Combo: max_combo dibaca SEBELUM
+	# add_kill (quirk pygame).
 	GameManager.register_minion_death(self)
 	GameManager.minion_died.emit(self, killer_team)
 	var tw := create_tween()
