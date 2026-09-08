@@ -5,6 +5,12 @@ var velocity := Vector2(0, -90)
 var lifetime := 0.75
 var is_crit := false
 
+func _ready() -> void:
+	add_to_group("floating_text")
+	# Berbagi FIFO/cap dengan popup gold boss; visual lama tidak diubah.
+	GameManager.world_popups.register_damage_number(self)
+
+
 func setup(text: String, crit: bool):
 	self.text = text
 	is_crit = crit

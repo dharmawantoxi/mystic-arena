@@ -41,11 +41,21 @@ sertifikasi paritas seluruh game.
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
 | Jalur damage basic hero | Pipeline school-aware satu-untuk-semua: physical→armor node, magic→MR, netral→tanpa mitigasi; armor hero = snapshot node; amp setelah mitigasi; block sebelum armor floor 1; blind dibaca dari status TARGET; crit buff tidak pernah aktif; lifesteal/cleave memakai damage post-mitigasi; reflect thornmail bertipe 'normal' | `CombatSystem.apply_damage` kini dispatch per jenis target, mirror `take_damage` pygame masing-masing: HERO = amp `int(round)` → armor ITEM (live dari inventory + aura, dikikis shred, negatif = bonus) utk SEMUA damage non-`fire`, TANPA magic_resist → block SETELAH armor (amount milik defender, aura guard menimpa tanpa roll, floor 0) → Bristleback; MINION = amp → shred bonus (double-dip) → armor−shred/MR; BOSS = amp → shred bonus → reduction−shred×0.06 (cap 0.60)/MR → resilience+cap, blind hanya `normal` bersource; TOWER = armor/MR sekolah; NEXUS = shield `int(x×(1−0.88))` truncation. Kalkulasi penyerang `calc_damage` = `_do_attack` pygame (bonus item → crit buff kit `int(×2)` → crit item `int(×mult)`; pembulatan `py_round` banker ala Python). Lifesteal float pra-mitigasi (ranged `int()` saat spawn), cleave netral tanpa source, Morgath serang instan 'normal', peluru menara/minion netral, boss ranged 'normal'. Dikunci `HeroBasicAttackParityTest` (29 skenario + probe get_block). |
 | Roll RNG guard & item | Roll combat tidak pernah teruji: damage uji bertipe `fire` (netral deterministik) sehingga windrun tidak pernah me-roll dan shadow realm hanya tampak sebagai bhp flat di harness skill | Dikunci fixture `hero_rng_guards` (14 skenario, 47 roll ter-script) + replay `HeroRngGuardParityTest`. Oracle menjalankan `take_damage`/`_do_attack` pygame ASLI dengan `random.random` DI-MONKEYPATCH per situs roll (`_entity.py::take_damage`, `hero_items.py::roll_crit` — pemanggil lain jatuh ke RNG asli, double-run seed beda tetap dijalankan); Godot memutar ulang lewat hook `ParityRng` di `CombatSystem.apply_damage` + `ItemInventory.roll_crit` (tanpa begin() = `randf()` global — perilaku produksi tak berubah) dan membandingkan HP + JUMLAH/nilai/URUTAN roll yang terkonsumsi. Windrun (Sylara W): fisik = `normal`/`projectile` dengan sekolah bukan magic — termasuk netral TANPA source; `0.75` persis TIDAK meleset (strict); sihir/fire tidak me-roll; flag mati tanpa roll. Shadow realm (Zephyr W): kebal total SEMUA damage tanpa roll, dipotong sebelum windrun/wall/veil. Urutan guard shadow → windrun (roll) → wind wall → veil → evasion terkunci lewat jumlah roll per tahap. Crit Dead Edge me-roll di `calc_damage` SEBELUM mitigasi target (crit buff men-diskip roll; ranged: roll crit saat spawn lalu roll block saat mendarat), block Scarlet Bulwark me-roll setelah armor utk semua non-fire (floor 0), miss = SATU roll `max(evasion, blind)`, True Strike tanpa roll, windrun penyerang ikut me-roll pada reflect Bristleback (nested take_damage). |
-
-| Skor match (klaster skor: combo, NEW BEST, kill hero, popup achievement) | Tidak ada sistem combo (`Max Combo` tidak dihitung), save tanpa best per level (badge `NEW BEST!` mustahil), kill hero tidak membayar +150 dan tanpa atribusi killer, popup achievement `NEW HERO UNLOCKED!` tidak ada (hanya baris teks Fase 12) | Klaster skor diport 1:1 + dikunci oracle `match_scoring`/`MatchScoringParityTest` (oracle menjalankan `Game.update` pygame SUNGGUHAN headless — unit betulan mati via `take_damage`, dua run seed beda harus identik): (1) **combo** — mesin state `ComboCounter.gd` frame @60fps (max_timer 120 = 2 dtk, target scale 1.3, color flash 20, expiry `last_combo`) diputar `GameManager._tick_combo` (akumulator 60Hz; membeku saat pause/menu/intro paritas `EffectManager.update`); `max_combo` dibaca **sebelum** `add_kill` (quirk pygame: rantai N kill berurutan → max_combo N−1) dan hanya menyala untuk kill minion RED oleh damage apa pun termasuk netral tanpa sumber; (2) **NEW BEST!** — `SaveManager.get/update_level_stats` (kunci save `level_stats` per level: attempts/playtime/total_kills/max_combo all-time bahkan saat kalah; best_score/best_time/wins hanya saat menang, time 0 diabaikan, sama-rata tidak beri flag) dipanggil `_grant_meta_reward` lalu flag `GameManager.new_best_score/new_best_time` membuntuti baris Final Score/Match Time panel game-over; (3) **kill hero +150** — `GameManager.register_hero_death` membayar FLAT 150 ke tim lawan KORBAN (hero merah mati → gold+skor pemain, hero biru → saldo AI, siapa pun pembunuhnya) + atribusi `killer.kills` hanya untuk hero pembunuh tim lawan (tower/minion/self/netral tidak); kematian minion kini dinilai dari tim korban (`register_minion_death`) sehingga kill netral pun membayar seperti pygame; `_rewarded` direset saat hero hidup lagi — respawn (600 frame) tidak membayar dua kali; (4) **popup achievement** — `AchievementPopup.gd` (antrean, tampil 180 frame, pengganti muncul di frame yang sama, slide 300px ease-out-back, panel 280×60 @(W−300,180), header `A C H I E V E M E N T`) dipicu `GameManager.unlock_achievement` (signal → FX HUD, pola `EffectManager.unlock_achievement`); trigger `NEW HERO UNLOCKED!` + deskripsi `… now FREE in Hero Shop!` dari `_auto_unlock_defeated_boss_heroes` (sudah-own → tanpa popup). Belum teruji/sengaja terbuka: komposit piksel badge combo + popup (font/shadow/ikon/truncation ellipsis judul), notifikasi tier sidepanel pygame (tidak ada sidepanel Godot), popup gold `+nG` kematian minion, tampilan BEST SCORE/best time di level-select (data `level_stats` sudah tertulis — ranah menu), reward gold/skor kematian BOSS (`boss.gold_reward`, pygame `_core.py:2128-2131 — Godot belum membayar) beserta atribusi/popup SLAYER mini/true boss. |
+| Skor match (klaster skor: combo, NEW BEST, kill hero, popup achievement) | Tidak ada sistem combo (`Max Combo` tidak dihitung), save tanpa best per level (badge `NEW BEST!` mustahil), kill hero tidak membayar +150 dan tanpa atribusi killer, popup achievement `NEW HERO UNLOCKED!` tidak ada (hanya baris teks Fase 12) | Klaster skor diport 1:1 + dikunci oracle `match_scoring`/`MatchScoringParityTest` (oracle menjalankan `Game.update` pygame SUNGGUHAN headless — unit betulan mati via `take_damage`, dua run seed beda harus identik): (1) **combo** — mesin state `ComboCounter.gd` frame @60fps (max_timer 120 = 2 dtk, target scale 1.3, color flash 20, expiry `last_combo`) diputar `GameManager._tick_combo` (akumulator 60Hz; membeku saat pause/menu/intro paritas `EffectManager.update`); `max_combo` dibaca **sebelum** `add_kill` (quirk pygame: rantai N kill berurutan → max_combo N−1) dan hanya menyala untuk kill minion RED oleh damage apa pun termasuk netral tanpa sumber; (2) **NEW BEST!** — `SaveManager.get/update_level_stats` (kunci save `level_stats` per level: attempts/playtime/total_kills/max_combo all-time bahkan saat kalah; best_score/best_time/wins hanya saat menang, time 0 diabaikan, sama-rata tidak beri flag) dipanggil `_grant_meta_reward` lalu flag `GameManager.new_best_score/new_best_time` membuntuti baris Final Score/Match Time panel game-over; (3) **kill hero +150** — `GameManager.register_hero_death` membayar FLAT 150 ke tim lawan KORBAN (hero merah mati → gold+skor pemain, hero biru → saldo AI, siapa pun pembunuhnya) + atribusi `killer.kills` hanya untuk hero pembunuh tim lawan (tower/minion/self/netral tidak); kematian minion kini dinilai dari tim korban (`register_minion_death`) sehingga kill netral pun membayar seperti pygame; `_rewarded` direset saat hero hidup lagi — respawn (600 frame) tidak membayar dua kali; (4) **popup achievement** — `AchievementPopup.gd` (antrean, tampil 180 frame, pengganti muncul di frame yang sama, slide 300px ease-out-back, panel 280×60 @(W−300,180), header `A C H I E V E M E N T`) dipicu `GameManager.unlock_achievement` (signal → FX HUD, pola `EffectManager.unlock_achievement`); trigger `NEW HERO UNLOCKED!` + deskripsi `… now FREE in Hero Shop!` dari `_auto_unlock_defeated_boss_heroes` (sudah-own → tanpa popup). Belum teruji/sengaja terbuka: komposit piksel badge combo + popup (font/shadow/ikon/truncation ellipsis judul), notifikasi tier sidepanel pygame (tidak ada sidepanel Godot), popup gold `+nG` kematian minion, tampilan BEST SCORE/best time di level-select (data `level_stats` sudah tertulis — ranah menu). Reward gold/skor kematian boss + atribusi/popup SLAYER mini/true kini terkunci FASE 14 (baris berikutnya). |
+| Reward kematian boss (FASE 14) | Boss mati hanya dicatat tipenya dan memainkan cinematic; tidak membayar gold/skor, unlock boss baru tersimpan saat menang, tidak ada SLAYER maupun popup `+nG` | `Boss.take_damage → die(source) → GameManager.register_boss_death` mengikuti blok `Game.update` pygame `_core.py:2113–2163`: bayar **nilai runtime `boss.gold_reward`** ke gold+skor PEMAIN, tanpa memandang killer/tim boss, tanpa meta gold/combo/total_kills; `bosses_defeated_this_run` menghitung setiap instans, `bosses_defeated_this_match` dan `unlocked_bosses` unik berurutan. Boss unlock langsung dipersist dan bertahan saat kalah; hero gratis tetap menunggu menang. Guard per instans mencegah callback/tween/tick ganda. `_process_boss_kill` menambah `killer.kills` hanya hero lawan (hero yang sudah mati tetap valid); hanya hero **blue** menambah counter mini/true dan ID dedup in-match + popup `MINI BOSS SLAYER!` / `TRUE BOSS SLAYER!`, deskripsi dan ikon skull persis pygame. **HERO SLAYER tetap DIHAPUS**. Popup pertama-kali `BOSS/TRUE BOSS: … Defeated!` (owned vs tuntutan menghancurkan castle) tetap sesudah SLAYER. `FloatingTextQueue` + `WorldPopups`: gold `+{amount}G` di `(boss.x,boss.y−10)`, RGB `(255,220,50)`, font 18, velocity `(0,−1.5)`, 50 frame; map SLAYER di `(boss.x,boss.y−40)` via cabang critical (pygame menambah `!` lagi), jitter/drift, FIFO/cap 300 (berbagi dengan `DamageNumber` legacy lewat WeakRef), scale dan expiry frame diport. Ekor frame efek selesai sebelum pause cinematic; Main melepas active boss dan mengonsumsi satu pending mini pada frame kematian. Dikunci `boss_death_rewards` / `BossDeathRewardParityTest`; **piksel** font/shadow/glow/komposit cinematic dan audio SFX belum diuji. |
 | UI/HUD in-match (toko/panel/banner/klik/hotkey) | Panel/label/tombol dibangun manual tanpa oracle: income memakai `"%.1f"` engine yang tak terverifikasi, angka cooldown `ceil(detiks)` (60f tampil "1"), gate equip melee `< 110` + magic via `dmg_school` (46 hero role-magic salah), klik tanah kosong = deselect (bukan perintah gerak), tanpa klik kanan, tanpa tombol N, tanpa catatan skor/kill/timer/unlock match, pause tanpa panel, game-over tanpa stat | Seksi fixture `ui_hud` menjalankan draw pygame ASLI headless (82 skenario draw, 31 kasus klik, 28 hotkey, 222 hero predikat, kurva banner 121 titik, baterai touch-rect) dan diputar ulang `UiHudParityTest`. Kanon tunggal `HudLayout.gd`: `format_gold_rate` bit-eksak IEEE-754 (terbukti identik Python: baterai oracle + fuzz 200.000 nilai, 0 beda — `GameManager`/`HUD` delegasi), ribuan/match-time/mode/cooldown (`frames//60+1`), easing banner (slide-in 0.4 BACK OUT → tahan 1.0 → slide-out 0.6 BACK IN + subtitle letterspaced), nama castle (Lv6+ CITADEL), touch-rect 48px (center integer pygame), dan semesta TERTUTUP `ui_key` tombol toko yang diaudit tiap layar. Perilaku yang disamakan: panel hero (`Lv.n`, `hp/max`, `UPGRADE HERO (300G)`/`M A X   L E V E L`, `AUTO-CAST ON` no-op, `ITEM FORGE  (n/6)` → tab item, chip slot → forge, X = deselect), toko (suffix `MAX`/`DIMILIKI`, alasan disabled `MELEE ONLY`/`MAGIC ONLY`/`POOR`/`FULL`/`OWNED` di `ui_data`+tooltip, tanpa tombol jual di Lv1 + fallback +50G via handler, tutup seusai beli hero/bangun menara), gate equip (`range > 80` tolak melee_only; magic via `ItemDB.is_magic_hero` berbasis ROLE), prioritas klik (slot → nexus → hero biru → perintah → menara biru → deselect; tanah kosong + hero hidup = MOVE tetap dipilih; klik kanan = tutup + MOVE), hotkey H (toggle toko, paritas) + B (ekstensi Godot) + N (victory → next; defeat/last diam) + R/ESC, pause (panel 400×400 @(440,160), 4 tombol 300×48 seurutan, mode line), game-over (`VICTORY! LV.n`/`DEFEAT LV.n`, 5 baris stat termasuk `Max Combo` + penanda `NEW BEST!` — dikunci `match_scoring`/`MatchScoringParityTest`, `NEW LEVEL UNLOCKED!`, `NEW HERO: …`, tombol next hanya victory+ada-lanjut). Beda disengaja yang dikunci eksplisit: UI Godot berbahasa Indonesia, toko satu-scroll tanpa halaman (himpunan 33 id direplay), klik musuh = move-to + aggro otomatis (tanpa `follow_target`), baris NEW HERO ditampilkan (pygame menghitung tapi tidak me-render), klik-kanan di atas panel tertelan. Belum teruji/sengaja terbuka: piksel (lebar chip metrik-font, gradien/shadow/dekorasi banner, ikon, kartu item, komposit badge combo + popup achievement), popup unlock geser (350×230), notifikasi tier combo sidepanel pygame, popup gold `+nG` kill minion, bangunan toko di map, sistem taktis (hold G/F/T/C/B/D), kontrol sentuh di layar, dan teks intro level (perilaku/skip-nya milik `CinematicTest`) — combo/`Max Combo`, badge `NEW BEST!`, skor kill-hero +150 + atribusi killer, dan popup achievement `NEW HERO UNLOCKED!` kini TERKUNCI di baris klaster skor + `match_scoring`/`MatchScoringParityTest`. |
 
 ## Belum setara — jangan ditandai selesai
+
+- ~~**Reward kematian boss belum membayar gold/skor, tracking unlock langsung,
+  popup SLAYER mini/true, dan data/antrean `+nG` belum diport.**~~
+  **Ditutup FASE 14** oleh oracle `boss_death_rewards` + replay seluruh
+  daftar headless `BossDeathRewardParityTest` (lihat tabel dan seksi tes).
+  Yang **murni piksel tetap BELUM teruji**: raster/font, anti-alias,
+  shadow/glow, ikon skull/ellipsis judul, penumpukan popup terhadap
+  flash/dissolve/perayaan boss dan camera shake. SFX dipanggil tetapi
+  bunyi/mix tidak diverifikasi headless. Ini bukan sertifikasi visual
+  atau audio seluruh efek kematian boss.
 
 - **UI/HUD/toko/menu:** perilaku in-match kini diuji oracle (`ui_hud` +
   `UiHudParityTest` — lihat tabel di atas: format, banner, biaya, gate,
@@ -132,10 +142,11 @@ untuk hero terpilih; gate False hanya dipakai harness replay).
 - **Progresi/settings:** kunci difficulty sepanjang run, reset progresi karena
   ganti mode, statistik/achievement, semua pilihan settings dan migrasi/cloud
   save belum setara. Tidak menghapus save pengguna untuk menyamarkan selisih.
-  Yang SUDAH setara + teruji dari blok ini hanyalah **sumber jumlah unlock
+  Yang SUDAH setara + teruji dari blok ini termasuk **sumber jumlah unlock
   catch-up** (`hero_catchup_unlocks`/`HeroCatchupUnlockParityTest`: kunci
   save, auto-grant starter, hitungan `boss_unlocks_for_purchases`, stat hero
-  hasilnya, dan jaminan unlock save lama tidak hilang). Yang TETAP TERBUKA
+  hasilnya, dan jaminan unlock save lama tidak hilang). Reward/atribusi/unlock kematian boss juga
+  sudah teruji di FASE 14 (`boss_death_rewards`); rincian di bawah. Yang TETAP TERBUKA
   di jalur progresi ini, eksplisit:
   (1) **penempatan auto-grant starter beda**: Godot memberi `kaizen` saat
   save di-backfill (load), pygame saat `Game.reset`. Jumlah unlock
@@ -180,6 +191,10 @@ python3 tools/gen_boss_smart_ai.py --check
 # HeroSkillKit.gd adalah hasil generate — tidak boleh drift dari hero_skills/:
 python3 tools/gen_hero_skill_kit.py --check
 
+# Seluruh runtime di bawah memakai user:// sementara, BUKAN save pengguna:
+export XDG_DATA_HOME="$(mktemp -d)"
+trap 'rm -rf "$XDG_DATA_HOME"' EXIT
+
 # Import resource lalu jalankan scene regresi:
 godot --headless --path godot --editor --import
 godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300
@@ -194,6 +209,8 @@ godot --headless --path godot res://tests/HeroRngGuardParityTest.tscn --quit-aft
 godot --headless --path godot res://tests/HeroCatchupUnlockParityTest.tscn --quit-after 120
 godot --headless --path godot res://tests/UiHudParityTest.tscn --quit-after 400
 godot --headless --path godot res://tests/MatchScoringParityTest.tscn --quit-after 300
+godot --headless --path godot res://tests/BossDeathRewardParityTest.tscn --quit-after 600
+python3 godot/tools/test_godot_log_gate.py
 ```
 
 `GameplayParityTest` membaca `godot/tests/fixtures/match_parity.json`: ekonomi
@@ -295,6 +312,62 @@ binding daftar unlock **tanpa** menghapus isi save. Regenerasi fixture
 HANYA bila `_core.py`/`_entity.py`/`_system.py`/`hero_balance.py`
 berubah.
 
+`BossDeathRewardParityTest` memutar ulang **seluruh** seksi
+`boss_death_rewards` (objek JSON, bukan pembacaan string kode). Oracle
+menjalankan `Boss.take_damage`, `Game.update`, `_process_boss_kill`,
+`_unlock_achievement`, `EffectManager.add_gold_popup`/`FloatingText.update`
+dan write+reload `SaveManager` pygame ASLI; sumber damage tidak ikut
+simulasi arena, income/wave dibekukan, FX kontak hit diisolasi dari
+klaster reward. Dua seed berbeda wajib menghasilkan jejak identik.
+Daftar headless tertutup yang **semuanya direplay**, bukan hanya dicatat:
+
+1. **216 boss**: nama/kelas/nilai reward dari instans asli, reward tidak
+   berubah oleh hard scaling, payout runtime gold/skor/AI/counter.
+   Set tipe harus sama persis dengan `BossDB` (hilang/asing/ganda gagal).
+2. **37 skenario `Game.update`** pada Main/HUD/Boss/Hero/Minion/Tower/Nexus
+   Godot nyata: last-hit hero blue/red/netral/hero mati, tower/minion/
+   castle/boss/self/tanpa sumber, tim sama vs lawan, source berbeda dari
+   `from_team`, nonlethal → last-hit berubah, guard alive/defeated, null
+   active boss, callback ganda, boss tipe sama berulang, counter mini/true
+   independen, ID achievement dedup, reward runtime 0/17/123456, hard
+   scaling, owned vs belum-owned, unlock lama, flag damage numbers off,
+   jeda cinematic dan pending mini pada frame yang sama. Snapshot
+   gold/skor/ai_gold/total_kills/combo/max_combo/killer.kills, daftar
+   tracking, event popup, current/queue/timer achievement, **semua field
+   non-piksel** floating text, posisi+nominal event gold, data save +
+   jumlah/urutan write sungguhan dibandingkan rekursif (key asing juga
+   gagal). Kill hero biasa diuji eksplisit **tanpa HERO SLAYER**.
+3. **5 baterai antrean**: formatting (0, negatif, angka besar), posisi
+   pecahan/negatif, RGB/font/critical, lifetime 50 frame + gerak/scale,
+   drift, FIFO 302 entri → cap 300, buang tertua, expiry tidak menghapus
+   popup baru, gold tetap muncul meski damage numbers off/cap kualitas 1,
+   campuran teks SLAYER + gold dengan anggaran damage 2. RNG hanya situs
+   `FloatingText.__init__`/`add_damage_number` yang di-pin: jenis/range/
+   nilai/jumlah/urutan panggilan ikut direplay lewat Callable lokal queue.
+   Akumulator diuji dua half-frame per frame, bukan hanya fungsi tick.
+   **3 baterai FIFO bersama** juga mempertemukan node `DamageNumber`
+   legacy nyata dengan popup gold (damage→gold, gold→damage, flag off),
+   termasuk disposal node lama; batas 300 bukan antrean gold terpisah.
+   Soft-cap pygame membuang SATU entri tertua, bukan menguras sampai
+   cap kualitas. Renderer lama tetap menggambar dirinya sendiri; adapter
+   WeakRef hanya menyatukan FIFO/budget, bukan mengklaim pikselnya setara.
+4. **Menang dan kalah**: `end_match` sungguhan + reload disk; boss unlock
+   sudah persisten sebelum hasil, kalah tidak memberikan hero gratis,
+   menang menambah hero + popup `NEW HERO UNLOCKED!` tanpa membayar ulang
+   gold/skor boss. Sentinel data lain dan meta gold tetap benar.
+5. **Lifecycle**: counter/list/ID dari `Game.reset` pygame vs `start_level`
+   Godot; popup match lama dibuang, menu melepas binding `unlocked_bosses`
+   tanpa `clear()` milik save; match berikutnya bisa rebind unlock lama.
+
+CI menjalankan scene ini dengan `XDG_DATA_HOME` baru agar save pengguna
+bahkan tidak dibaca/ditulis bila harness berhenti di tengah. Harness juga
+mem-snapshot/memulihkan data+file seperti `MatchScoringParityTest`.
+`SaveManager.saved` diamati setelah file ditutup, bukan mock save yang
+selalu sukses. Gate mewajibkan `[BossDeathRewardParityTest] PASS` dan
+menolak error runtime **serta baris `[...Test] FAIL` meskipun ada PASS**;
+5 regresi Python untuk gate turut dijalankan. Fixture lama tetap identik;
+kode pygame tidak diubah untuk menyesuaikan port.
+
 `MatchScoringParityTest` memutar ulang seksi fixture `match_scoring`
 (objek biasa, bukan string kompak) atas kode Godot yang sebenarnya.
 Oracle pygame menjalankan `Game.update` SUNGGUHAN headless (Game +
@@ -359,6 +432,28 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
 `Compile Error`; exit code Godot saja tidak cukup.
 
 ### Hasil validasi perubahan ini
+
+- **FASE 14 — reward kematian boss:** oracle freshness lulus lokal:
+  216 boss, 37 skenario `Game.update` (dua seed berbeda), 5 baterai
+  antrean floating + 3 baterai FIFO bersama `DamageNumber`, 2 hasil
+  akhir match (menang/kalah) dan reset. **Semua seksi fixture lama
+  byte-identik**; tidak ada perubahan kode runtime pygame atau save
+  pengguna. `BossDeathRewardParityTest` lulus **39.729 pemeriksaan**
+  dengan Godot **4.3.stable.custom_build** headless lokal, melalui gate
+  log (PASS + tanpa script/parse/compile error atau assertion FAIL).
+  Ke-12 scene regresi lama juga PASS: Gameplay (1.455 checks), Battle,
+  AIPlayer, Cinematic, BossCore (3.717), BossSmartAI, HeroSkill,
+  HeroBasicAttack, HeroRngGuard, HeroCatchupUnlock (836), UiHud (1.159),
+  MatchScoring (901). `gdparse`, scene/ref/particle lint, dua generator
+  `--check`, scope-check, 5 regresi log-gate, serta regresi pygame
+  achievement-command, aura boss (46), basic-attack-no-impact,
+  damage-school (36), dan easy-mode AI lulus. Engine lokal dibangun
+  tanpa backend renderer karena unduhan binary diblokir sandbox;
+  pesan `No renderers available` bukan hasil audit piksel. CI PR
+  menjalankan **binary Godot 4.3 standar**, termasuk langkah baru
+  `BossDeathRewardParityTest --quit-after 600` di user-data terisolasi;
+  checks CI wajib hijau sebelum squash-merge. Detail run ada pada
+  checks PR FASE 14. Tidak mengklaim pixel/audio parity atau uji Android.
 
 - Fixture Pygame dan pemeriksaan GDScript, scene/referensi, serta properti
   partikel lulus. Regresi aura boss, serangan dasar tanpa impact FX, dan AI

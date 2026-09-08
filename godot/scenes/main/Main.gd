@@ -71,6 +71,7 @@ func _enter_tree():
 	# signal level_started walau Connector memanggil start_level() di _ready()-nya.
 	_connect_once(GameManager.level_started, _on_level_started)
 	_connect_once(GameManager.wave_started, _on_wave_started)
+	_connect_once(GameManager.boss_defeated, _on_boss_defeated)
 	_connect_once(GameManager.game_over, _on_game_over)
 	_connect_once(GameManager.tower_destroyed, _on_tower_destroyed)
 	_connect_once(GameManager.selection_changed, _on_selection_changed)
@@ -81,6 +82,7 @@ func _exit_tree():
 	# reload scene tidak meninggalkan connection ganda / dangling reference.
 	for pair in [[GameManager.level_started, _on_level_started],
 			[GameManager.wave_started, _on_wave_started],
+			[GameManager.boss_defeated, _on_boss_defeated],
 			[GameManager.game_over, _on_game_over],
 			[GameManager.tower_destroyed, _on_tower_destroyed],
 			[GameManager.selection_changed, _on_selection_changed]]:
@@ -97,6 +99,9 @@ func _ready():
 	_camera = get_node_or_null(^"Camera2D")
 	_frame_camera()
 	_build_slot_layer()
+	var popups = preload("res://scenes/fx/WorldPopups.gd").new()
+	popups.name = "WorldPopups"
+	add_child(popups)
 	# Sambungkan sinyal menu utama (node UI/MainMenu siap lebih dulu karena
 	# anak diproses sebelum parent; koneksi di sini juga aman diulang).
 	var menu = _main_menu()
@@ -286,6 +291,17 @@ func _queue_mini_boss(wave_num: int) -> void:
 		return
 	pending_mini_bosses.append(boss_type)
 	print("[Main] mini boss %s masuk antrean (wave %d)" % [boss_type, wave_num])
+
+## Konsumsi event boss mati tepat sekali, sebelum cinematic menahan
+## gameplay. Pending mini berikutnya turun di frame yang sama seperti
+## Game._try_spawn_pending_mini_boss di ekor blok defeated pygame.
+func _on_boss_defeated(boss: Node) -> void:
+	if active_boss != boss:
+		return
+	active_boss = null
+	if not pending_mini_bosses.is_empty():
+		_boss_tick(0.0)
+
 
 func _boss_tick(_delta: float) -> void:
 	if GameManager.state != "playing":

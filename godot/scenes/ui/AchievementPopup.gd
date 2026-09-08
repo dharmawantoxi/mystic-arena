@@ -31,6 +31,9 @@ var _accum: float = 0.0
 
 
 func _ready() -> void:
+	# Main mewarisi ALWAYS untuk input; efek gameplay harus tetap beku
+	# selama pause/intro/kematian boss (EffectManager.update pygame).
+	process_mode = Node.PROCESS_MODE_PAUSABLE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
@@ -40,6 +43,14 @@ func _process(delta: float) -> void:
 	while _accum >= FPS_STEP:
 		_accum -= FPS_STEP
 		tick()
+
+
+func reset() -> void:
+	queue.clear()
+	current = null
+	timer = 0
+	_accum = 0.0
+	queue_redraw()
 
 
 ## Paritas AchievementPopup.unlock — antri popup baru.

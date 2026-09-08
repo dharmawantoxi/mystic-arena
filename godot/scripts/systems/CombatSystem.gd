@@ -292,9 +292,12 @@ func apply_damage(target, amount: float, from_team: String = "",
 	if amount <= 0.0:
 		return 0.0
 
-	# Tidak ada friendly fire di pygame: damage selalu datang dari tim lawan.
-	# Guard ini juga membuat `from_team` benar-benar dipakai (bukan hiasan).
-	if from_team != "" and str(target.get("team")) == from_team:
+	# Boss.take_damage pygame tidak memfilter from_team. Atribusi boss
+	# memakai team SOURCE, bukan label from_team (dikunci FASE 14).
+	# Guard target lain tetap seperti sebelumnya; pemilihan target normal
+	# sudah menyaring kawan di enemies_of().
+	if not ("boss_type" in target) and from_team != "" \
+			and str(target.get("team")) == from_team:
 		return 0.0
 
 	var st = target.get("status")

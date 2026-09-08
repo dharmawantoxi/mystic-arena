@@ -52,6 +52,7 @@ docs/_boss_cache_*.png
 # ═══ Godot 4 ═══
 # Cache editor / import (shader cache, .import, uid_cache) — dibuat ulang otomatis
 godot/.godot/
+godot/**/*.import
 
 # ═══ Hasil export Godot (APK/AAB keluaran build-android-godot.yml / editor) ═══
 godot/build/

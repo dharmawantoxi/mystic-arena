@@ -19,6 +19,10 @@ var dmg_school: String = "physical"
 var target: Node2D = null
 var attack_timer: float = 0.0
 var is_dead: bool = false
+## Padanan alive/defeated/_killed_by pygame untuk klaster reward.
+var defeated: bool = false
+var killed_by = null
+var reward_processed: bool = false
 var anim_phase: float = 0.0
 var facing: int = -1  # paritas Boss.__init__ pygame (base_boss.py:419)
 # Kunci arah hadap selama ayunan serangan dasar (base_boss.py:594-598,
@@ -870,7 +874,7 @@ func take_damage(amount: float, from_team: String = "", dmg_type: String = "norm
 	if hp < before:
 		_flash()
 	if hp <= 0:
-		die()
+		die(source)
 	update_ui()
 
 
@@ -896,19 +900,22 @@ func _spawn_damage_number(amount: float) -> void:
 	else:
 		add_child(num)
 
-func die():
+func die(killer = null):
+	if is_dead:
+		return
 	is_dead = true
+	defeated = true
+	hp = 0.0
+	killed_by = killer
 	set_physics_process(false)
 	collision_layer = 0
 	collision_mask = 0
 	target = null
 	if aura != null:
 		aura.emitting = false
-	# Catat kekalahan buat reward akhir match (paritas _core.py:1594-1597
-	# bosses_defeated_this_match). Hero-nya baru dibuka GRATIS kalau match
-	# ini dimenangkan — lihat GameManager._auto_unlock_defeated_boss_heroes
-	# (_core.py:2322). Jadi kalah = tidak dapat hero.
-	GameManager.record_boss_defeated(boss_type)
+	# Seluruh reward/atribusi/tracking di satu pintu, tepat sekali. Hero
+	# gratis tetap menunggu kemenangan; unlock_boss tersimpan SEKARANG.
+	GameManager.register_boss_death(self)
 	# Ledakan kematian boss (paritas BossDeathExplosion.update _render.py:1761-1770):
 	# true boss = explosion 1.5 + victory 0.7, mini boss = explosion 1.0.
 	# force=true: nama 'explosion' dipakai juga oleh splash cannon (throttle
