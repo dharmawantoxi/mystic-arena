@@ -8,7 +8,7 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
-## Koreksi alur pertandingan — 7 September 2026
+## Koreksi alur pertandingan — 8 September 2026
 
 | Bagian | Godot sebelumnya | Perilaku sekarang / acuan Pygame |
 |---|---|---|
@@ -39,6 +39,7 @@ sertifikasi paritas seluruh game.
 | Kaizen | Rig buatan ulang selalu mengalahkan sprite Pygame | Arena normal memakai bake renderer Pygame. Rig alternatif tetap ada di `KaizenDemo.tscn`, atau opt-in `mystic/rendering/experimental_hero_rigs`. |
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
 | Jalur damage basic hero | Pipeline school-aware satu-untuk-semua: physical→armor node, magic→MR, netral→tanpa mitigasi; armor hero = snapshot node; amp setelah mitigasi; block sebelum armor floor 1; blind dibaca dari status TARGET; crit buff tidak pernah aktif; lifesteal/cleave memakai damage post-mitigasi; reflect thornmail bertipe 'normal' | `CombatSystem.apply_damage` kini dispatch per jenis target, mirror `take_damage` pygame masing-masing: HERO = amp `int(round)` → armor ITEM (live dari inventory + aura, dikikis shred, negatif = bonus) utk SEMUA damage non-`fire`, TANPA magic_resist → block SETELAH armor (amount milik defender, aura guard menimpa tanpa roll, floor 0) → Bristleback; MINION = amp → shred bonus (double-dip) → armor−shred/MR; BOSS = amp → shred bonus → reduction−shred×0.06 (cap 0.60)/MR → resilience+cap, blind hanya `normal` bersource; TOWER = armor/MR sekolah; NEXUS = shield `int(x×(1−0.88))` truncation. Kalkulasi penyerang `calc_damage` = `_do_attack` pygame (bonus item → crit buff kit `int(×2)` → crit item `int(×mult)`; pembulatan `py_round` banker ala Python). Lifesteal float pra-mitigasi (ranged `int()` saat spawn), cleave netral tanpa source, Morgath serang instan 'normal', peluru menara/minion netral, boss ranged 'normal'. Dikunci `HeroBasicAttackParityTest` (29 skenario + probe get_block). |
+| Roll RNG guard & item | Roll combat tidak pernah teruji: damage uji bertipe `fire` (netral deterministik) sehingga windrun tidak pernah me-roll dan shadow realm hanya tampak sebagai bhp flat di harness skill | Dikunci fixture `hero_rng_guards` (14 skenario, 47 roll ter-script) + replay `HeroRngGuardParityTest`. Oracle menjalankan `take_damage`/`_do_attack` pygame ASLI dengan `random.random` DI-MONKEYPATCH per situs roll (`_entity.py::take_damage`, `hero_items.py::roll_crit` — pemanggil lain jatuh ke RNG asli, double-run seed beda tetap dijalankan); Godot memutar ulang lewat hook `ParityRng` di `CombatSystem.apply_damage` + `ItemInventory.roll_crit` (tanpa begin() = `randf()` global — perilaku produksi tak berubah) dan membandingkan HP + JUMLAH/nilai/URUTAN roll yang terkonsumsi. Windrun (Sylara W): fisik = `normal`/`projectile` dengan sekolah bukan magic — termasuk netral TANPA source; `0.75` persis TIDAK meleset (strict); sihir/fire tidak me-roll; flag mati tanpa roll. Shadow realm (Zephyr W): kebal total SEMUA damage tanpa roll, dipotong sebelum windrun/wall/veil. Urutan guard shadow → windrun (roll) → wind wall → veil → evasion terkunci lewat jumlah roll per tahap. Crit Dead Edge me-roll di `calc_damage` SEBELUM mitigasi target (crit buff men-diskip roll; ranged: roll crit saat spawn lalu roll block saat mendarat), block Scarlet Bulwark me-roll setelah armor utk semua non-fire (floor 0), miss = SATU roll `max(evasion, blind)`, True Strike tanpa roll, windrun penyerang ikut me-roll pada reflect Bristleback (nested take_damage). |
 
 ## Belum setara — jangan ditandai selesai
 
@@ -49,15 +50,17 @@ sertifikasi paritas seluruh game.
   Kuantisasi pose, lighting, cuaca dan efek skill juga belum lolos perbandingan
   screenshot menyeluruh.
 - **Skill hero:** koefisien/target/timing kini 1:1 dengan `hero_skills/_bundle.py`
-  dan dikunci `HeroSkillParityTest` (222 hero × 4 skenario). Yang masih terbuka:
-  guard **windrun** (roll RNG 75% evade) dan **shadow realm** (kebal total)
-  tidak teruji penuh di harness — damage uji sengaja bertipe `fire` (netral
-  deterministik), jadi windrun tidak pernah me-roll dan shadow realm hanya
-  tampak sebagai bhp flat; keduanya mirror manual `_entity.py:4537-4585`.
-  Proyektil skill (`_spawn_skill_projectile`) tetap VISUAL-only di kedua sisi
-  (damage instan), jadi 520 px/s travel-time tidak memengaruhi state — dan
-  tidak diuji. `_try_auto_cast` Godot memakai ulang list `_kit_lists()` (bukan
-  list argumen yang dilempar Game.update) — sama isinya saat run normal.
+  dan dikunci `HeroSkillParityTest` (222 hero × 4 skenario). Guard
+  **windrun** (roll RNG 75% evade fisik) dan **shadow realm** (kebal total)
+  kini TERUJI PENUH di harness terpisah `hero_rng_guards`/`HeroRngGuardParityTest`
+  (oracle dengan roll ter-script, urutan guard + jumlah konsumsi roll
+  dibandingkan — dulu keduanya mirror manual `_entity.py:4537-4585` yang
+  hanya tampak sebagai bhp flat karena damage uji bertipe `fire`).
+  Yang masih terbuka: proyektil skill (`_spawn_skill_projectile`) tetap
+  VISUAL-only di kedua sisi (damage instan), jadi 520 px/s travel-time
+  tidak memengaruhi state — dan tidak diuji. `_try_auto_cast` Godot
+  memakai ulang list `_kit_lists()` (bukan list argumen yang dilempar
+  Game.update) — sama isinya saat run normal.
   `Hero.auto_cast_enabled` default True seperti pygame v27 (auto-cast juga
   untuk hero terpilih; gate False hanya dipakai harness replay).
   `_catchup_unlocks()` Godot = 0 selama GameManager tidak menyimpan daftar
@@ -78,20 +81,22 @@ sertifikasi paritas seluruh game.
   Yang masih TERBUKA di jalur ini (eksplisit, tidak disembunyikan):
   (1) **rend crit Sanguine Thorn belum ada sama sekali** di item Godot
   (item aktif Soul Rend — silence/amp/target — belum diport; pygame
-  `_do_attack` crit pasti 150% ke target bertanda); (2) **roll RNG belum
-  teruji**: roll block Scarlet Bulwark 55%, roll crit Dead Edge, evasion
-  item, dan blind < 1.0 — oracle sengaja bebas RNG (double-run seed beda);
-  semantik nilainya terkunci (get_block/probe), roll-nya identik struktural
-  tapi tidak direplay; (3) **windrun & shadow realm** tetap milestone
-  tersendiri (lihat butir skill hero); (4) **context hero aktif**
+  `_do_attack` crit pasti 150% ke target bertanda); (2) **roll block
+  Scarlet Bulwark 55%, roll crit Dead Edge, evasion item, dan blind < 1.0
+  kini DIREPLAY** penuh lewat `hero_rng_guards`/`HeroRngGuardParityTest`
+  (roll ter-script, urutan+jumlah konsumsi dibandingkan) — yang masih
+  tanpa oracle: roll blind BOSS (pygame-nya di `bosses/base_boss.py`,
+  Godot tetap `randf()` langsung) dan proc item on-attack/on-damage
+  (bash/chain/frostbite/miasma/empower/entangle/static charge);
+  (3) **context hero aktif**
   (`resolve_damage_school` cabang `target_is_hero=True` utk damage tanpa
   source dari skill hero) belum diport — hanya memengaruhi guard
   windrun/bristleback-magic utk skill tanpa source, belum teruji;
-  (5) **serangan minion ranged Godot masih proyektil** (`projectile`,
+  (4) **serangan minion ranged Godot masih proyektil** (`projectile`,
   bisa ditangkis Wind Wall) sementara pygame menyerang instan `normal`
   tanpa source — school-nya kini netral (angka mitigasi sama), tapi tipe
   damage & timing travel masih beda — ranah audit jalur minion tersendiri;
-  (6) travel time proyektil hero/boss ranged (visual, damage instan di
+  (5) travel time proyektil hero/boss ranged (visual, damage instan di
   pygame boss) tidak diuji.
 - **Perintah taktis dan kontrol pemain:** `tactical_commands.py` belum diport;
   kontrol gerak/target dan overlay sentuh Android belum lengkap.
@@ -125,6 +130,7 @@ godot --headless --path godot res://tests/BossCoreParityTest.tscn --quit-after 4
 godot --headless --path godot res://tests/BossSmartAIParityTest.tscn --quit-after 2400
 godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 900
 godot --headless --path godot res://tests/HeroBasicAttackParityTest.tscn --quit-after 120
+godot --headless --path godot res://tests/HeroRngGuardParityTest.tscn --quit-after 120
 ```
 
 `GameplayParityTest` membaca `godot/tests/fixtures/match_parity.json`: ekonomi
@@ -178,6 +184,31 @@ generate — hasil harus identik. Dibandingkan: `max_hp`/`hp0` tiap unit,
 HP semua unit tiap event (fase spawn & hit utk ranged), damage + school
 proyektil, dan nilai `get_block()` (amount mengikuti melee/ranged PEMILIK).
 Regenerasi fixture HANYA bila `_entity.py`/`hero_items.py`/`bosses/` berubah.
+
+`HeroRngGuardParityTest` memutar ulang seksi fixture `hero_rng_guards`
+(STRING JSON kompak; 14 skenario, 58 event HP, 47 roll ter-script) pada
+node Hero ASLI + `CombatSystem.apply_damage`/`ItemInventory.roll_crit`
+yang sebenarnya. Oracle pygame menjalankan `take_damage`/`_do_attack`
+asli dengan `random.random` DI-MONKEYPATCH: hanya panggilan dari
+`_entity.py::take_damage` dan `hero_items.py::roll_crit` yang mengonsumsi
+urutan nilai skenario — pemanggil lain (audio/FX) jatuh ke RNG asli, dan
+tiap skenario tetap dijalankan dua kali dengan seed beda supaya roll
+liar yang memengaruhi hasil ditolak saat generate. Sisi Godot memakai
+hook `ParityRng` (script kosong = `randf()` global, jadi perilaku
+produksi tidak berubah): harness memasang script lewat `begin()`,
+melepasnya lewat `end()`, lalu membandingkan HP semua unit tiap event
+DAN daftar nilai roll yang benar-benar dikonsumsi — jumlah, nilai, dan
+urutan. Roll yang hilang/bertambah/tertukar di salah satu engine gagal
+tes. Cakupan: windrun (Sylara W — fisik = normal/projectile non-magic
+termasuk netral tanpa source, 0.75 persis tidak meleset, sihir/fire tanpa
+roll), shadow realm (Zephyr W — kebal total tanpa roll), urutan prioritas
+guard shadow → windrun → wind wall → veil → evasion, roll block Scarlet
+Bulwark 55% (setelah armor, non-fire, floor 0), roll crit Dead Edge 25%
+(sebelum mitigasi target; crit buff men-diskip; ranged: roll crit saat
+spawn lalu roll block saat mendarat), evasion Monarch Wings 28%, blind
+< 1.0 penyerang (satu roll `max(ev, blind)`, True Strike tanpa roll),
+dan windrun pada reflect Bristleback (nested take_damage). Regenerasi
+fixture HANYA bila `_entity.py`/`hero_items.py` berubah.
 
 Jika aturan Pygame memang berubah, sesuaikan Godot, **kemudian** regenerasi:
 
@@ -236,3 +267,15 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   `HeroBasicAttackParityTest` (dan regresi lama lain) diverifikasi lewat CI
   `godot-check.yml` pada PR; gate lulus = penanda `PASS` dan tanpa
   `SCRIPT ERROR`/`Parse Error`/`Compile Error`.
+- Fase guard RNG (windrun/shadow realm): oracle `hero_rng_guards` lulus
+  lokal (14 skenario × double-run seed beda, 58 event HP, 47 roll
+  ter-script; seksi lama fixture byte-identik, sisi pygame tidak
+  disentuh), `gdparse`/`tscn_lint`/`check_refs`/`particles_lint` +
+  `gen_* --check` + scope-check lulus lokal. Hook `ParityRng` dipasang
+  di 4 titik roll (windrun/evasion-blind/block di `CombatSystem`,
+  crit di `ItemInventory.roll_crit`) — tanpa begin() tetap `randf()`
+  global. Tidak ada Godot headless lokal di lingkungan kerja — replay
+  `HeroRngGuardParityTest` diverifikasi lewat CI `godot-check.yml`
+  pada PR (langkah baru setelah `HeroBasicAttackParityTest`); gate
+  lulus = penanda `PASS` dan tanpa `SCRIPT ERROR`/`Parse Error`/
+  `Compile Error`.

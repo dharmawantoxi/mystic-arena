@@ -15,6 +15,7 @@ import inspect
 import json
 import os
 from pathlib import Path
+import random
 import sys
 import tempfile
 import textwrap
@@ -1134,6 +1135,8 @@ def _ba_inject_hero_state(hero, cfg):
         hero.blind_timer = 10 ** 6
     if cfg.get("thorn"):
         hero.items.thorn_timer = int(cfg["thorn"])
+    if cfg.get("veil"):
+        hero.items.veil_timer = int(cfg["veil"])
     if cfg.get("hp_frac") is not None:
         hero.hp = hero.max_hp * float(cfg["hp_frac"])
 
@@ -1202,6 +1205,8 @@ def _ba_patch(unit, patch):
         setattr(unit, key, val)
     if patch.get("thorn") is not None and hasattr(unit, "items"):
         unit.items.thorn_timer = int(patch["thorn"])
+    if patch.get("veil") is not None and hasattr(unit, "items"):
+        unit.items.veil_timer = int(patch["veil"])
     if patch.get("hp_frac") is not None:
         unit.hp = unit.max_hp * float(patch["hp_frac"])
 
@@ -1393,6 +1398,512 @@ def make_hero_basic_attack_fixture(entity):
                 "shadow realm — lihat docs/GODOT_PARITY.md)",
     }
 
+
+# ══════════════════════════════════════════════════════════════
+# HERO RNG GUARD ORACLE — windrun / shadow realm + roll RNG combat
+# ══════════════════════════════════════════════════════════════
+#
+# Fixture `hero_rng_guards` mengunci ROLL RNG jalur damage hero yang
+# sengaja dijauhi seksi hero_basic_attack (dan hanya tampak sebagai bhp
+# flat bertipe 'fire' di seksi hero_skills):
+#   • guard kit  : WINDRUN (Sylara W — 75% serangan fisik meleset, sihir
+#                  menembus) dan SHADOW REALM (Zephyr W — kebal total,
+#                  tanpa roll), termasuk urutan prioritas guard
+#                  shadow → windrun → wind wall → veil → evasion;
+#   • roll item  : block Scarlet Bulwark 55%, crit Dead Edge 25%,
+#                  evasion Monarch Wings 28%, blind < 1.0 di PENYERANG
+#                  (max(ev, blind), True Strike menembus), serta roll
+#                  windrun pada reflect Bristleback (nested take_damage).
+#
+# Determinisme: `random.random` DI-MONKEYPATCH selama tiap panggilan
+# take_damage/_do_attack dengan urutan nilai dari skenario (`rolls`).
+# Hanya panggilan dari situs roll combat — (_entity.py, take_damage) dan
+# (hero_items.py, roll_crit) — yang mengonsumsi script; panggilan lain
+# (audio, FX, pitch sfx) diarahkan ke RNG asli supaya fixture tidak
+# tercemar dan cek double-run tetap menangkap roll liar yang memengaruhi
+# hasil. Nilai yang BENAR-BENAR dikonsumsi direkam per event; replay
+# Godot (HeroRngGuardParityTest) memasang script yang sama lewat hook
+# ParityRng (CombatSystem.apply_damage + ItemInventory.roll_crit), lalu
+# membandingkan HP semua unit + daftar roll terkonsumsi. Roll yang
+# hilang / bertambah / tertukar urutan di salah satu engine = gagal.
+
+RG_SCENARIOS = [
+    # ── SYLARA W — WINDRUN: roll 75% evade fisik ──
+    {
+        "name": "windrun_roll_outcomes",
+        "note": "windrun aktif: roll < 0.75 meleset (WIND), >= 0.75 kena; "
+                "0.75 persis TIDAK meleset (perbandingan strict). Fisik = "
+                "normal/projectile dengan sekolah BUKAN magic — termasuk "
+                "netral tanpa source (school None ikut evade); sihir dan "
+                "fire tidak me-roll. Flag mati = tanpa roll.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "sylara",
+                     "kit": {"_windrun_active": True}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.10], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.74]},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.75], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.99], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "rolls": [], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "projectile", "school": "physical",
+             "rolls": [0.30]},
+            {"damage": 100, "dmg_type": "projectile", "school": "magic",
+             "rolls": [], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "fire", "school": None,
+             "source": "none", "rolls": [], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": None,
+             "rolls": [0.20]},
+            {"damage": 100, "dmg_type": "normal", "school": None,
+             "source": "none", "rolls": [0.90], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [], "set": {"hp_frac": 1.0,
+                                  "kit": {"_windrun_active": False}}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.60], "set": {"hp_frac": 1.0,
+                                      "kit": {"_windrun_active": True}}},
+        ],
+    },
+    {
+        "name": "windrun_evasion_order",
+        "note": "windrun me-roll SEBELUM evasion item: [0.50] -> windrun "
+                "meleset (evasion tidak me-roll); [0.90, 0.10] -> windrun "
+                "lolos lalu evasion meleset; [0.90, 0.90] -> keduanya "
+                "lolos -> damage penuh. Urutan terbalik menghasilkan "
+                "jumlah roll/hp beda -> gagal.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "sylara",
+                     "items": ["monarch_wings"],
+                     "kit": {"_windrun_active": True}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.50, 0.90], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.90, 0.10]},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.90, 0.90], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.74, 0.74], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "rolls": [], "set": {"hp_frac": 1.0}},
+        ],
+    },
+    # ── ZEPHYR W — SHADOW REALM: kebal total, TANPA roll ──
+    {
+        "name": "shadow_realm_total",
+        "note": "shadow realm aktif: SEMUA damage > 0 diblokir (fisik, "
+                "sihir, fire, projectile) tanpa me-roll apa pun — kebal "
+                "total, dipotong paling awal. Flag mati = damage masuk.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "zephyr",
+                     "kit": {"_shadow_realm_active": True}},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "rolls": []},
+            {"damage": 100, "dmg_type": "fire", "school": None,
+             "source": "none", "rolls": []},
+            {"damage": 100, "dmg_type": "projectile", "school": "physical",
+             "rolls": []},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [], "set": {"hp_frac": 1.0,
+                                  "kit": {"_shadow_realm_active": False}}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [], "set": {"hp_frac": 1.0,
+                                  "kit": {"_shadow_realm_active": True}}},
+        ],
+    },
+    {
+        "name": "guard_priority_chain",
+        "note": "urutan guard _entity.py:4537-4600 — shadow realm -> "
+                "windrun (roll) -> wind wall (projectile non-magic) -> "
+                "Tempest Veil -> evasion item. Tiap guard dimatikan "
+                "bertahap lewat patch per-hit; jumlah roll yang "
+                "terkonsumsi mengunci urutannya.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "kaizen",
+                     "items": ["monarch_wings"],
+                     "kit": {"_shadow_realm_active": True,
+                             "_windrun_active": True,
+                             "_wind_wall_timer": 600},
+                     "veil": 600},
+        "mode": "direct",
+        "hits": [
+            # SHADOW memotong paling awal: windrun tidak me-roll.
+            {"damage": 100, "dmg_type": "projectile", "school": "physical",
+             "rolls": [], "set": {"hp_frac": 1.0}},
+            # Shadow off -> windrun me-roll (0.90 lolos) -> WALL memantul.
+            {"damage": 100, "dmg_type": "projectile", "school": "physical",
+             "rolls": [0.90], "set": {"hp_frac": 1.0,
+                                      "kit": {"_shadow_realm_active": False}}},
+            # Wall off -> windrun me-roll (0.90 lolos) -> VEIL kebal.
+            {"damage": 100, "dmg_type": "projectile", "school": "physical",
+             "rolls": [0.90], "set": {"hp_frac": 1.0,
+                                      "kit": {"_wind_wall_timer": 0}}},
+            # Veil off -> windrun lolos -> evasion meleset (0.10 < 0.28).
+            {"damage": 100, "dmg_type": "projectile", "school": "physical",
+             "rolls": [0.90, 0.10], "set": {"hp_frac": 1.0, "veil": 0}},
+            # Semua guard lolos -> damage penuh (monarch tanpa armor).
+            {"damage": 100, "dmg_type": "projectile", "school": "physical",
+             "rolls": [0.90, 0.90], "set": {"hp_frac": 1.0}},
+            # 'normal' (bukan projectile): windrun me-roll, lalu evasion.
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.90, 0.90], "set": {"hp_frac": 1.0}},
+        ],
+    },
+    # ── EVASION item + BLIND penyerang (roll < 1.0) ──
+    {
+        "name": "evasion_item_roll",
+        "note": "Monarch Wings 28%: roll < 0.28 meleset; 0.28 persis TIDAK "
+                "meleset (strict). Sihir tidak me-roll.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["monarch_wings"]},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.10], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.28]},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.90], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "rolls": [], "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "blind_partial_roll",
+        "note": "blind 0.4 di PENYERANG (aura Solar Brand): serangan fisik "
+                "roll < 0.40 meleset; 0.40 persis kena. Sihir tidak "
+                "terpengaruh blind.",
+        "attacker": {"hero_type": "kaizen", "blind": 0.4},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.30], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.40]},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "rolls": [], "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "evasion_blind_max",
+        "note": "miss_chance = max(evasion defender, blind penyerang) = "
+                "max(0.28, 0.40) = 0.40 — SATU roll: 0.35 meleset (hanya "
+                "kalau max dipakai; ev saja = kena), 0.45 kena.",
+        "attacker": {"hero_type": "kaizen", "blind": 0.4},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["monarch_wings"]},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.35], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.45], "set": {"hp_frac": 1.0}},
+        ],
+    },
+    {
+        "name": "true_strike_no_roll",
+        "note": "Sundering Cudgel di penyerang: True Strike menembus "
+                "evasion + blind — tidak ada roll sama sekali walau "
+                "blind 1.0 dan evasion 28%.",
+        "attacker": {"hero_type": "kaizen", "items": ["sundering_cudgel"],
+                     "blind": 1.0},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["monarch_wings"]},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": []},
+        ],
+    },
+    # ── BLOCK Scarlet Bulwark (roll 55%, amount milik defender) ──
+    {
+        "name": "block_roll",
+        "note": "Scarlet Bulwark (armor 6, block 55% / 25 melee): roll "
+                "dikonsumsi SETELAH armor utk SEMUA damage non-fire; 0.55 "
+                "persis TIDAK block. Block menembus sampai floor 0. Fire "
+                "tidak me-roll block.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["scarlet_bulwark"]},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.50], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.55], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.90], "set": {"hp_frac": 1.0}},
+            {"damage": 30, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.10]},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "rolls": [0.50], "set": {"hp_frac": 1.0}},
+            {"damage": 100, "dmg_type": "fire", "school": None,
+             "source": "none", "rolls": [], "set": {"hp_frac": 1.0}},
+        ],
+    },
+    # ── CRIT Dead Edge (roll di _do_attack, SEBELUM mitigasi target) ──
+    {
+        "name": "crit_melee_roll",
+        "note": "Dead Edge (+52 dmg, crit 25% x2.0): roll < 0.25 crit "
+                "int(damage*2); 0.25 persis TIDAK crit. Satu roll per "
+                "serangan, sebelum take_damage.",
+        "attacker": {"hero_type": "kaizen", "items": ["dead_edge"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": [0.20]},
+            {"rolls": [0.25]},
+            {"rolls": [0.90]},
+        ],
+    },
+    {
+        "name": "crit_melee_then_block_order",
+        "note": "urutan lintas situs: roll crit (di _do_attack) DULU, "
+                "lalu roll block (di take_damage) — [0.20, 0.50] = crit "
+                "lalu block setelah armor; [0.90, 0.90] = keduanya gagal.",
+        "attacker": {"hero_type": "kaizen", "items": ["dead_edge"]},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["scarlet_bulwark"]},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": [0.20, 0.50]},
+            {"rolls": [0.90, 0.90]},
+        ],
+    },
+    {
+        "name": "crit_buff_skips_roll",
+        "note": "crit buff kit (Grimjaw E) men-diskip roll crit item "
+                "sepenuhnya (short-circuit pygame 'not is_crit'): damage "
+                "int((base+bonus)*2) tanpa konsumsi roll.",
+        "attacker": {"hero_type": "grimjaw", "items": ["dead_edge"],
+                     "kit": {"_crit_buff_active": True}},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": []},
+        ],
+    },
+    {
+        "name": "crit_ranged_spawn_order",
+        "note": "ranged (sylara + Dead Edge): roll crit terjadi saat "
+                "proyektil dilepas (proj_damage int(dmg*2)), roll block "
+                "saat mendarat — urutan roll spawn -> hit terkunci.",
+        "attacker": {"hero_type": "sylara", "items": ["dead_edge"]},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["scarlet_bulwark"]},
+        "mode": "ranged",
+        "attacks": [
+            {"rolls": [0.20, 0.50]},
+            {"rolls": [0.90, 0.90]},
+        ],
+    },
+    # ── WINDRUN pada reflect Bristleback (nested take_damage) ──
+    {
+        "name": "windrun_reflect_nested",
+        "note": "reflect Bristleback adalah take_damage 'normal' netral "
+                "TANPA source ke penyerang — school None = fisik utk "
+                "evade, jadi windrun penyerang ikut me-roll: 0.10 reflect "
+                "meleset (hp penyerang flat), 0.90 reflect mendarat.",
+        "attacker": {"hero_type": "kaizen",
+                     "kit": {"_windrun_active": True}},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "kit": {"_bristleback_active": True}},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": [0.10]},
+            {"rolls": [0.90]},
+        ],
+    },
+]
+
+
+## Satu-satunya situs yang boleh mengonsumsi script RNG: roll combat di
+## _entity.take_damage (windrun / evasion+blind / block) dan
+## hero_items.roll_crit (crit Dead Edge). Pemanggil lain jatuh ke RNG asli.
+_RG_ROLL_SITES = {("_entity.py", "take_damage"),
+                  ("hero_items.py", "roll_crit")}
+
+
+class _RgScriptedRandom:
+    """random.random ter-script untuk situs roll combat pygame.
+
+    Hanya panggilan dari _RG_ROLL_SITES (basename file + nama fungsi)
+    yang mengonsumsi urutan nilai; panggilan lain (audio, pitch sfx, FX)
+    diarahkan ke RNG asli supaya fixture tidak tercemar dan cek
+    double-run tetap menangkap roll liar yang memengaruhi hasil.
+    """
+
+    def __init__(self, values):
+        self._values = list(values)
+        self._real = random.random
+        self.consumed = []
+
+    def __call__(self):
+        code = sys._getframe(1).f_code
+        if (os.path.basename(code.co_filename), code.co_name) \
+                not in _RG_ROLL_SITES:
+            return self._real()
+        if not self._values:
+            raise AssertionError(
+                "script RNG habis: roll combat tak terduga dari "
+                f"{code.co_filename}:{code.co_firstlineno} — urutan roll "
+                "pygame != perkiraan skenario, atau ada roll baru")
+        value = self._values.pop(0)
+        self.consumed.append(value)
+        return value
+
+
+def _rg_run_scenario(spec, entity):
+    """Jalankan satu skenario RNG-guard pada unit pygame ASLI.
+
+    Sama dengan _ba_run_scenario, tapi tiap hit/attack dibungkus window
+    RNG ter-script: nilai roll yang dikonsumsi situs combat direkam ke
+    event supaya replay Godot bisa membandingkan jumlah + urutan.
+    """
+    mode = spec["mode"]
+    ranged = mode == "ranged"
+
+    atk_xy = BA_ATK_RANGED_XY if ranged else BA_ATK_MELEE_XY
+    atk = _ba_make_unit(spec["attacker"], entity,
+                        atk_xy[0], atk_xy[1], "blue")
+    dfn = _ba_make_unit(spec["defender"], entity,
+                        BA_DEF_XY[0], BA_DEF_XY[1], "red")
+    units = {"atk": atk, "def": dfn}
+    cfgs = {"atk": spec["attacker"], "def": spec["defender"]}
+
+    record = {
+        "name": spec["name"],
+        "mode": mode,
+        "note": spec.get("note", ""),
+        "units": [_ba_unit_meta(t, cfgs[t], units[t],
+                                "blue" if t == "atk" else "red")
+                  for t in units],
+        "events": [],
+    }
+    # Input replay: direct = daftar hit (termasuk 'rolls' yang harus
+    # dikonsumsi); melee/ranged = daftar attack dengan 'rolls' yang
+    # membentang sampai proyektil mendarat.
+    if mode == "direct":
+        record["hits"] = spec["hits"]
+    else:
+        record["attacks"] = spec["attacks"]
+
+    def snap():
+        return {t: float(u.hp) for t, u in units.items()}
+
+    if mode == "direct":
+        for i, hit in enumerate(spec["hits"]):
+            if hit.get("set"):
+                _ba_patch(dfn, hit["set"])
+            src = atk if hit.get("source", "attacker") == "attacker" \
+                else None
+            scripted = _RgScriptedRandom(hit.get("rolls", ()))
+            random.random = scripted
+            try:
+                dfn.take_damage(
+                    int(hit["damage"]), "blue",
+                    damage_type=hit["dmg_type"], source=src,
+                    school=hit.get("school"))
+            finally:
+                random.random = scripted._real
+            record["events"].append({"i": i, "phase": "hit", "hp": snap(),
+                                     "rolls": scripted.consumed})
+    elif mode == "melee":
+        atk.target = dfn
+        for i, attack in enumerate(spec["attacks"]):
+            scripted = _RgScriptedRandom(attack.get("rolls", ()))
+            random.random = scripted
+            try:
+                atk.attack_timer = 0
+                atk.no_attack_timer = 0
+                atk.skill_timer = 0
+                atk._do_attack()
+            finally:
+                random.random = scripted._real
+            record["events"].append({"i": i, "phase": "hit", "hp": snap(),
+                                     "rolls": scripted.consumed})
+    elif mode == "ranged":
+        atk.target = dfn
+        for i, attack in enumerate(spec["attacks"]):
+            scripted = _RgScriptedRandom(attack.get("rolls", ()))
+            random.random = scripted
+            try:
+                atk.attack_timer = 0
+                atk.no_attack_timer = 0
+                atk.skill_timer = 0
+                atk._do_attack()
+                live = [p for p in atk.projectiles if p.get("alive")]
+                assert live, "proyektil tidak ter-spawn"
+                proj = live[-1]
+                record["events"].append({
+                    "i": i, "phase": "spawn", "hp": snap(),
+                    "proj_damage": int(proj["damage"]),
+                    "proj_school": proj.get("school")})
+                # Hit persis jalur projectile hero (_entity.py:3913-3915),
+                # masih dalam window RNG yang sama (roll crit sudah
+                # dikonsumsi saat spawn; roll mitigasi saat mendarat).
+                dfn.take_damage(
+                    proj["damage"], proj["team"],
+                    damage_type="projectile",
+                    source=proj.get("source"),
+                    school=proj.get("school"))
+                for p in atk.projectiles:
+                    p["alive"] = False
+                atk.projectiles = []
+            finally:
+                random.random = scripted._real
+            record["events"].append({"i": i, "phase": "hit", "hp": snap(),
+                                     "rolls": scripted.consumed})
+    else:
+        raise AssertionError(f"mode tak dikenal: {mode}")
+    return record
+
+
+def make_hero_rng_guard_fixture(entity):
+    """Oracle guard RNG hero dari fungsi pygame ASLI (roll ter-script).
+
+    Tiap skenario tetap dijalankan DUA KALI dengan seed RNG berbeda:
+    hasil harus identik — roll DI LUAR situs gate yang memengaruhi hasil
+    akan membuat dua run berbeda -> tolak fixture.
+    """
+    scenarios = []
+    for spec in RG_SCENARIOS:
+        runs = []
+        for seed in (1013, 977):
+            random.seed(seed)
+            runs.append(_rg_run_scenario(spec, entity))
+        assert runs[0] == runs[1], (
+            f"skenario {spec['name']} tidak deterministik — ada roll di "
+            "luar situs gate yang memengaruhi hasil")
+        scenarios.append(runs[0])
+
+    return {
+        "scenarios": scenarios,
+        "note": "roll RNG jalur damage hero: guard kit windrun (75% evade "
+                "fisik) + shadow realm (kebal total) + urutan prioritas "
+                "guard, block Scarlet Bulwark, crit Dead Edge, evasion "
+                "Monarch Wings, blind penyerang (max+true strike), "
+                "windrun pada reflect Bristleback. Oracle menjalankan "
+                "take_damage/_do_attack pygame ASLI dengan random.random "
+                "ter-script per situs roll; nilai+jumlah+urutan konsumsi "
+                "direplay Godot lewat ParityRng (HeroRngGuardParityTest) "
+                "— lihat docs/GODOT_PARITY.md",
+    }
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -1426,6 +1937,13 @@ def make_fixture(core, entity, levels, paths):
         # pygame asli, direplay HeroBasicAttackParityTest di Godot.
         "hero_basic_attack": json.dumps(
             make_hero_basic_attack_fixture(entity),
+            separators=(",", ":")),
+        # Guard RNG hero: windrun (roll 75% evade fisik) + shadow realm
+        # (kebal total) + roll block/crit/evasion/blind — oracle pygame
+        # dengan random.random ter-script per situs roll, direplay
+        # HeroRngGuardParityTest lewat hook ParityRng.
+        "hero_rng_guards": json.dumps(
+            make_hero_rng_guard_fixture(entity),
             separators=(",", ":")),
     }
     for number in range(1, levels.get_level_count() + 1):
@@ -1530,6 +2048,13 @@ def main():
               f"{len(ba['scenarios'])} skenario, "
               f"{sum(len(s['events']) for s in ba['scenarios'])} event HP, "
               f"{len(ba['get_block_probe'])} probe get_block")
+        rg = json.loads(actual["hero_rng_guards"])
+        rg_rolls = sum(len(e.get("rolls", ()))
+                       for s in rg["scenarios"] for e in s["events"])
+        print("             rng-guard oracle: "
+              f"{len(rg['scenarios'])} skenario, "
+              f"{sum(len(s['events']) for s in rg['scenarios'])} event HP, "
+              f"{rg_rolls} roll ter-script")
 
 
 if __name__ == "__main__":

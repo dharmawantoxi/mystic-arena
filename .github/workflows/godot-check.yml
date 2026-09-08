@@ -309,6 +309,33 @@ jobs:
             exit 1
           fi
 
+      # ── 4f. HeroRngGuardParityTest: paritas ROLL RNG guard hero —
+      # windrun (Sylara W, roll 75% evade fisik — netral tanpa source ikut
+      # fisik, sihir/fire tidak me-roll) & shadow realm (Zephyr W, kebal
+      # total tanpa roll), urutan prioritas guard (shadow → windrun →
+      # wind wall → veil → evasion), roll block Scarlet Bulwark 55%,
+      # crit Dead Edge 25% (calc DULU mitigasi target; crit buff men-diskip
+      # roll; ranged: roll crit saat spawn lalu block saat mendarat),
+      # evasion Monarch Wings 28%, blind < 1.0 penyerang (max+true strike),
+      # dan windrun pada reflect Bristleback (nested take_damage). Oracle
+      # pygame menjalankan take_damage/_do_attack ASLI dengan random.random
+      # ter-script per situs roll; replay Godot lewat hook ParityRng
+      # (CombatSystem/ItemInventory) membandingkan HP + jumlah/nilai/
+      # urutan roll yang terkonsumsi. Fixture = seksi hero_rng_guards.
+      - name: HeroRngGuardParityTest (roll RNG guard hero vs oracle Pygame)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/HeroRngGuardParityTest.tscn --quit-after 120 2>&1 | tee /tmp/rngguard.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/rngguard.log --label "HeroRngGuardParityTest" \
+              --require "[HeroRngGuardParityTest] PASS" > /tmp/rngguard.gate 2>&1; then
+            cat /tmp/rngguard.gate
+          else
+            cat /tmp/rngguard.gate
+            echo "::error::RNGGUARD-FAIL-TAIL: $(tail -40 /tmp/rngguard.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::RNGGUARD-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/rngguard.log | tr '\n' ' | ' | cut -c1-2500)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
