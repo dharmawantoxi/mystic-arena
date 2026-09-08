@@ -18,8 +18,12 @@ var damage: float = 0.0
 var team: String = "blue"
 var bullet_type: String = "normal"   # normal | cannon | ice | mage
 var special: Dictionary = {}
-var source = null                    # Tower/Nexus pemilik (untuk kredit kill)
-var school: String = "physical"      # sekolah damage penembak (magic = tembus armor)
+var source = null                    # Tower/Nexus/hero pemilik (kredit kill)
+var school: String = ""              # netral (pygame Bullet TANPA sekolah);
+                                     # proyektil hero ranged mengisi school-nya
+var hit_dmg_type: String = "projectile"  # hero/hero minion = "projectile";
+                                         # boss ranged = "normal" (pygame
+                                         # base_boss:707 basic instan)
 var speed: float = 480.0             # 8 px/frame × 60
 var radius: float = 4.0
 var color: Color = Color("#ffe9a8")
@@ -37,7 +41,7 @@ func _ready() -> void:
 
 func setup(p_target: Node2D, p_damage: float, p_team: String, p_type: String,
 		p_special: Dictionary, p_speed: float, p_color: Color, p_source = null,
-		p_school: String = "physical") -> void:
+		p_school: String = "", p_hit_dmg_type: String = "projectile") -> void:
 	target = p_target
 	damage = p_damage
 	team = p_team
@@ -45,6 +49,7 @@ func setup(p_target: Node2D, p_damage: float, p_team: String, p_type: String,
 	special = p_special.duplicate() if not p_special.is_empty() else {}
 	source = p_source
 	school = p_school
+	hit_dmg_type = p_hit_dmg_type
 	speed = p_speed
 	color = p_color
 	z_index = 400
@@ -126,19 +131,12 @@ func _on_hit() -> void:
 	if bool(target.get("is_dead")):
 		return
 
-	var dealt: float = cs.apply_damage(target, damage, team, "projectile", source, school)
+	var dealt: float = cs.apply_damage(target, damage, team, hit_dmg_type, source, school)
 
-	# Proyektil hero ranged juga memicu efek on-attack item, paritas
-	# on_ranged_attack_hit (hero_items.py:2506-2517). Di pygame fungsi itu
-	# HANYA memanggil _on_hit_common — lifesteal & cleave sudah dibayar saat
-	# proyektil dilepas, jadi jangan panggil _on_attacker_hit di sini.
-	# Penyaring "ini peluru hero": bullet_type "normal" juga dipakai minion,
-	# boss, dan nexus, jadi yang dicek adalah adanya inventory item.
-	if dealt > 0.0 and source != null and is_instance_valid(source):
-		var sinv = source.get("items")
-		if sinv != null and sinv.has_method("on_attack_hit"):
-			sinv.on_attack_hit(target, dealt)
-
+	# NOTE: proyektil hero TIDAK memicu on-attack item di sini. pygame
+	# memanggil on_ranged_attack_hit SAAT PROYEKTIL DILEPAS (Hero._do_attack
+	# 4354-4365), bukan saat mendarat — lifesteal int(damage*ls) + procs
+	# tier II sudah dibayar di Hero.try_attack jalur ranged.
 	var st = target.get("status")
 	match bullet_type:
 		"cannon":
@@ -158,8 +156,11 @@ func _on_hit() -> void:
 				for u in cs.enemies_in_radius(team, center, splash_radius):
 					if u == target:
 						continue
-					cs.apply_damage(u, floor(damage * SPLASH_RATIO), team,
-						"normal", source, school)
+					# pygame Bullet._on_hit splash: u.take_damage(
+					# int(self.damage*0.6), self.team) — NETRAL tanpa
+					# source/school, tanpa proc penembak.
+					cs.apply_damage(u, float(int(damage * SPLASH_RATIO)), team,
+						"normal", null, "")
 					if burn_dps > 0.0:
 						var ust = u.get("status")
 						if ust != null:

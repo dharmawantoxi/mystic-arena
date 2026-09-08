@@ -300,24 +300,12 @@ func attack_cd(base_cd: float) -> float:
 	return maxf(0.05, cd)
 
 
-func damage_mult() -> float:
-	var m := 1.0
-	if has_buff("damage"):
-		m *= buff_val("damage", "mult", 1.0)
-	return m
-
-
 ## Potongan damage skill dari Mage Tower
 func skill_damage_mult() -> float:
 	var m := 1.0 - (skill_down_amount if skill_down_timer > 0.0 else 0.0)
 	if has_buff("skill_amp"):
 		m *= 1.0 + buff_val("skill_amp", "amount", 0.0)
 	return maxf(0.0, m)
-
-
-## Damage yang diterima naik (dmg_amp)
-func incoming_mult() -> float:
-	return 1.0 + (dmg_amp_amount if dmg_amp_timer > 0.0 else 0.0)
 
 
 ## Heal yang diterima: dipotong anti-heal, ditambah heal_amp (+ item heal_amp)
@@ -333,17 +321,7 @@ func heal_amount(amount: float) -> float:
 	return out * amp
 
 
-## Peluang serangan fisik meleset (blind aura + evasion item)
-func miss_chance(is_physical: bool) -> float:
-	var chance := blind_amount if blind_timer > 0.0 else 0.0
-	if is_physical and owner != null and owner.get("items") != null:
-		chance = maxf(chance, float(owner.items.get_evasion()))
-	# Shadow Realm (Zephyr W): tidak bisa ditarget sama sekali
-	if has_buff("invis"):
-		return 1.0
-	return clampf(chance, 0.0, 1.0)
-
-
+## Selisih armor dari debuff (Corroder) — dipakai _hero_mitigate.
 func armor_delta() -> float:
 	return -(armor_shred_amount if armor_shred_timer > 0.0 else 0.0)
 

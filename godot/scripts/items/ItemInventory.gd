@@ -360,25 +360,36 @@ func get_range_bonus() -> float:
 	return _sum_stat("range_bonus")
 
 
-## Scarlet Bulwark: block [chance, amount]
-func get_block(is_melee_attack: bool) -> Array:
+## Scarlet Bulwark: block [chance, amount] — amount mengikuti melee/ranged
+## PEMILIK item (hero.range <= 80 pygame; setelah normalisasi melee = 70 =
+## is_melee_hero), BUKAN jenis serangan yang masuk. Kalau ada beberapa
+## sumber block, ambil peluang & angka tertinggi. aura_guard_block BUKAN
+## bagian get_block pygame — penimpaannya (max, tanpa roll) ada di
+## CombatSystem._hero_mitigate. Paritas get_block hero_items.py:2051-2070.
+func get_block() -> Array:
 	var db = _db()
 	if db == null:
 		return [0.0, 0.0]
+	var best := [0.0, 0.0]
 	for s in slots:
 		if str(s) == "":
 			continue
 		var b = db.get_item(str(s)).get("block")
-		if b is Dictionary:
-			var amount := float(b.get("melee_block", 0)) if is_melee_attack \
-				else float(b.get("ranged_block", 0))
-			var chance := float(b.get("chance", 0))
-			if aura_guard_block > 0.0:
-				amount += aura_guard_block
-			return [chance, amount]
-	if aura_guard_block > 0.0:
-		return [1.0, aura_guard_block]
-	return [0.0, 0.0]
+		if not (b is Dictionary):
+			continue
+		var amount := float(b.get("melee_block", 0)) if is_melee() \
+			else float(b.get("ranged_block", 0))
+		var chance := float(b.get("chance", 0))
+		if chance > best[0] or amount > best[1]:
+			best = [chance, amount]
+	return best
+
+
+## True Strike (Sundering Cudgel): serangan basic pemilik tidak pernah
+## meleset — menembus evasion + blind. Paritas has_true_strike
+## hero_items.py:2025-2031.
+func has_true_strike() -> bool:
+	return has("sundering_cudgel")
 
 
 ## Aura yang DIPANCARKAN hero ini (diproses CombatSystem.update_auras)

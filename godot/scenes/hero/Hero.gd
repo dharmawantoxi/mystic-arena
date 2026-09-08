@@ -880,18 +880,32 @@ func try_attack():
 	# flag is_melee_hero lebih dulu, kalau tidak ada pakai ambang jarak 100.
 	# Berlaku untuk hero tim biru MAUPUN merah (pygame tidak membedakan tim).
 	AudioManager.play_combat(AudioManager.basic_attack_sfx(is_melee_hero, attack_range))
-	if is_melee_hero:
+	# pygame _do_attack 4347: melee ATAU morgath (beam petirnya digambar
+	# renderer boss, bukan projectile) → damage INSTAN dengan damage_type
+	# 'normal' + school; ranged lain → proyektil ('projectile').
+	if is_melee_hero or hero_type == "morgath":
 		var t = target
-		var dealt := CombatSystem.apply_damage(t, dmg, team, "normal", self, dmg_school)
+		CombatSystem.apply_damage(t, dmg, team, "normal", self, dmg_school)
 		# Efek on-attack item (bash/chain/frostbite/miasma/empower/entangle).
 		# Sengaja dipanggil DI SINI, bukan di CombatSystem.apply_damage: pygame
-		# hanya memicunya dari on_basic_attack_hit / on_ranged_attack_hit
-		# (hero_items.py:2484-2517), jadi damage skill & DoT tidak boleh ikut
-		# nge-proc bash/chain. Pasangan ranged-nya ada di TowerBullet._hit.
-		if dealt > 0.0 and items != null and items.has_method("on_attack_hit"):
-			items.on_attack_hit(t, dealt)
+		# hanya memicunya dari on_basic_attack_hit (hero_items.py:2484-2517)
+		# dengan damage PRA-mitigasi — jadi damage skill & DoT tidak boleh
+		# ikut nge-proc, dan angkanya bukan damage yang mendarat.
+		# Lifesteal/cleave/corroder dibayar di CombatSystem._on_attacker_hit
+		# (basis dmg, bukan damage mendarat).
+		if items != null and items.has_method("on_attack_hit"):
+			items.on_attack_hit(t, dmg)
 	else:
+		# RANGED — urutan pygame _do_attack 4336-4365: proyektil dilepas
+		# DULU, lifesteal dibayar SAAT ITU dengan int(damage*ls) (bukan saat
+		# mendarat), lalu on_ranged_attack_hit (bash/chain/shred tier II).
 		_shoot_projectile(target, dmg)
+		if items != null:
+			var ls := float(items.get_lifesteal_pct())
+			if ls > 0.0:
+				CombatSystem.heal_gain_py(self, float(int(dmg * ls)))
+			if items.has_method("on_attack_hit"):
+				items.on_attack_hit(target, dmg)
 
 
 ## Hero ranged menembak proyektil (paritas Bullet pygame): bisa ditangkis
