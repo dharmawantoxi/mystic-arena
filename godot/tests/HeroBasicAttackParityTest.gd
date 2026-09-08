@@ -105,6 +105,7 @@ func _make_unit(cfg: Dictionary, pos: Vector2, team: String):
 		m.position = pos
 		add_child(m)
 		m.set_physics_process(false)
+		_apply_debuff(m, cfg)
 		return m
 	if kind == "boss":
 		var b = BossScene.instantiate()
@@ -113,6 +114,7 @@ func _make_unit(cfg: Dictionary, pos: Vector2, team: String):
 		b.position = pos
 		add_child(b)
 		b.set_physics_process(false)
+		_apply_debuff(b, cfg)
 		return b
 	if kind == "tower":
 		var t = TowerScene.instantiate()
@@ -134,6 +136,16 @@ func _make_unit(cfg: Dictionary, pos: Vector2, team: String):
 		return n
 	_fail("unit kind tak dikenal: %s" % kind)
 	return null
+
+
+## Debuff defender non-hero (minion/boss) — mirror _ba_apply_debuff
+## oracle: lewat API StatusEffects (apply_*), bukan set atribut mentah.
+func _apply_debuff(unit, cfg: Dictionary) -> void:
+	var deb: Dictionary = cfg.get("debuff", {})
+	if deb.has("armor_shred"):
+		unit.status.apply_armor_shred(float(deb["armor_shred"]), BIG_T)
+	if deb.has("dmg_amp"):
+		unit.status.apply_damage_amp(float(deb["dmg_amp"]), BIG_T)
 
 
 ## Injeksi state harness hero — urutan sama dengan oracle pygame:

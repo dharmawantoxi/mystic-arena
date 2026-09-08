@@ -1138,6 +1138,18 @@ def _ba_inject_hero_state(hero, cfg):
         hero.hp = hero.max_hp * float(cfg["hp_frac"])
 
 
+def _ba_apply_debuff(unit, cfg):
+    """Terapkan debuff spec lewat API Entity pygame (apply_* — stack
+    'terkuat menimpa', timer frame). Minion.take_damage membaca
+    self.armor_shred_amount/dmg_amp_timer langsung, jadi tanpa ini
+    spec debuff minion diam-diam tidak aktif."""
+    deb = cfg.get("debuff") or {}
+    if "armor_shred" in deb:
+        unit.apply_armor_shred(float(deb["armor_shred"]), 10 ** 6)
+    if "dmg_amp" in deb:
+        unit.apply_damage_amp(float(deb["dmg_amp"]), 10 ** 6)
+
+
 def _ba_make_unit(cfg, entity, x, y, team):
     """Unit pygame ASLI untuk skenario basic attack."""
     entity.set_damage_school(None)
@@ -1147,19 +1159,15 @@ def _ba_make_unit(cfg, entity, x, y, team):
         _ba_inject_hero_state(unit, cfg)
         return unit
     if kind == "minion":
-        return entity.Minion(cfg["minion_type"], team, "mid")
+        unit = entity.Minion(cfg["minion_type"], team, "mid")
+        _ba_apply_debuff(unit, cfg)
+        return unit
     if kind == "boss":
         from bosses.base_boss import Boss
         unit = Boss(cfg["boss_type"])
         unit.team = team
         unit.x, unit.y = float(x), float(y)
-        deb = cfg.get("debuff") or {}
-        if "armor_shred" in deb:
-            unit.armor_shred_amount = float(deb["armor_shred"])
-            unit.armor_shred_timer = 10 ** 6
-        if "dmg_amp" in deb:
-            unit.dmg_amp_amount = float(deb["dmg_amp"])
-            unit.dmg_amp_timer = 10 ** 6
+        _ba_apply_debuff(unit, cfg)
         return unit
     if kind == "tower":
         # Tower(x, y, team, ...) — tower_type pygame selalu "archer".
