@@ -280,11 +280,13 @@ func get_crit_mult() -> float:
 
 
 ## roll_crit() pygame -> [is_crit, multiplier]
+## Roll lewat ParityRng supaya harness parity bisa meng-script-nya
+## (oracle pygame: random.random di hero_items.roll_crit 2475-2483).
 func roll_crit() -> Array:
 	var chance := get_crit_chance()
 	if chance <= 0.0:
 		return [false, 1.0]
-	if randf() < chance:
+	if ParityRng.next() < chance:
 		return [true, get_crit_mult()]
 	return [false, 1.0]
 

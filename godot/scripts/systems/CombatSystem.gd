@@ -189,11 +189,13 @@ func _hero_mitigate(target, dmg: float, dmg_type: String, st, eff_school: String
 		elif armor < 0.0:
 			var bonus := minf(1.0, -armor * 0.06)
 			dmg = float(int(DamageSchool.py_round(dmg * (1.0 + bonus))))
-		# Damage block: roll pasif + aura guard menimpa (pygame 4660-4686)
+		# Damage block: roll pasif + aura guard menimpa (pygame 4660-4686).
+		# Roll lewat ParityRng supaya harness parity bisa meng-script-nya
+		# (oracle pygame: random.random di _entity.take_damage).
 		var block_amt := 0.0
 		if inv != null:
 			var blk: Array = inv.get_block()
-			if float(blk[0]) > 0.0 and randf() < float(blk[0]):
+			if float(blk[0]) > 0.0 and ParityRng.next() < float(blk[0]):
 				block_amt = float(blk[1])
 			if float(inv.aura_guard_block) > block_amt:
 				block_amt = float(inv.aura_guard_block)
@@ -318,9 +320,11 @@ func apply_damage(target, amount: float, from_team: String = "",
 			_float_text(target, "SHADOW", false)
 			return 0.0
 		# Windrun (Sylara W): 75% serangan fisik meleset; sihir tetap
-		# menembus supaya status ini bukan invulnerability penuh.
+		# menembus supaya status ini bukan invulnerability penuh. Roll
+		# lewat ParityRng (harness parity meng-script nilainya; oracle
+		# pygame: random.random di _entity.take_damage 4553-4557).
 		if bool((kt as Dictionary).get("_windrun_active", false)) \
-				and is_physical and randf() < 0.75:
+				and is_physical and ParityRng.next() < 0.75:
 			_float_text(target, "WIND", false)
 			return 0.0
 		# Wind Wall (Kaizen W): memantulkan PROJECTILE mentah-mentah —
@@ -352,7 +356,9 @@ func apply_damage(target, amount: float, from_team: String = "",
 			var ev := float(inv.get_evasion()) if inv != null else 0.0
 			var blind := _source_blind(source)
 			var miss := maxf(ev, blind)
-			if miss > 0.0 and randf() < miss:
+			# Roll lewat ParityRng (harness parity; oracle pygame:
+			# random.random di _entity.take_damage 4620-4626).
+			if miss > 0.0 and ParityRng.next() < miss:
 				_float_text(target, "MISS", false)
 				return 0.0
 
