@@ -29,7 +29,9 @@ static func is_physical_hit(dmg_type: String, school: String) -> bool:
 ## pipeline damage, jadi hasil .5 persis harus mengikuti Python
 ## (contoh terkunci: reflect Bristleback 17*0.7353.. = 12.5 -> 12, bukan 13).
 static func py_round(x: float) -> float:
-	var f := floor(x)
+	# floorf() (bukan floor()): floor() global mengembalikan Variant di
+	# Godot 4.3 → inferensi := gagal ("Cannot infer the type of 'diff'").
+	var f := floorf(x)
 	var diff := x - f
 	if diff > 0.5:
 		return f + 1.0
