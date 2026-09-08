@@ -394,6 +394,13 @@ func _compare_final(hero_type: String, sc_name: String, expected: Dictionary,
 	for k in expected["kit"]:
 		var want = expected["kit"][k]
 		var got = hero.kit.get(k)
+		# Refleksi properti Hero pygame: `attack_cooldown` adalah property
+		# dengan backing attr _base_attack_cd (satuan FRAME; setter dipanggil
+		# tiap kit menulis cooldown — sylara Focus Fire / thorne Warpath).
+		# Oracle melihatnya di vars(hero); Godot menyimpan field detik di
+		# node, bukan di kit — jadi petakan ke member + skala 60.
+		if got == null and k == "_base_attack_cd":
+			got = roundf(float(hero.attack_cooldown) * 60.0)
 		# referensi probe oracle ("P<idx>") menunjuk node probe replay
 		if want is String and str(want).begins_with("P") and str(want).length() > 1:
 			var idx := int(str(want).substr(1))

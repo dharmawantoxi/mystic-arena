@@ -5247,7 +5247,7 @@ static func sylara_cast_w(h, all_units, all_towers, all_bases):
 	h.kit["_windrun_active"] = true
 	h.kit["_windrun_timer"] = 180
 	h.kit["_original_speed"] = (float((h).move_speed) / 60.0)
-	(h).move_speed *= float(2.0) * 60.0
+	(h).move_speed = float(((float((h).move_speed) / 60.0)) * (2.0)) * 60.0
 	if h.kit_has_hp(h):
 		(h).hp = minf((h).max_hp, ((h).hp) + (30))
 	__trigger_w(h, "sylara", 5, null)

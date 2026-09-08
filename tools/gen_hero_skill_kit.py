@@ -114,7 +114,12 @@ HERO_AUG = {
     "hp": "({r}).hp {op}= {v}",
     "max_hp": "({r}).max_hp {op}= {v}",
     "damage": "({r}).damage {op}= float({v})",
-    "speed": "({r}).move_speed {op}= float({v}) * 60.0",
+    # PENTING: "speed" SENGAJA tidak ada di sini. Compound op (+=/-=/*=//)
+    # atas field berunit diekspansi jalur generik jadi WRITE(v = READ op val)
+    # sehingga unit-oracle (px/frame) <-> unit-node (px/second) round-trip
+    # mulus. Template lama "move_speed {op}= v*60" SALAH untuk *= (faktor
+    # konversi ikut ter-skala 60x — bug HeroSkillParityTest sylara
+    # 180->10800->..., 2026-09-08) dan tak pernah lebih benar utk +=.
     "active_skill_timer": "({r}).active_skill_timer {op}= {v}",
 }
 
@@ -798,11 +803,13 @@ class Emitter:
                     out.append(pad + HERO_AUG[t.attr].format(r="h", op=op, v=val))
                     return
                 if t.attr in HERO_WRITE:
-                    cur = self.expr(t, method)
-                    if op == "/":
-                        out.append(pad + f"{cur if False else self.hero_read(t.attr, method)} = float({self.hero_read(t.attr, method)}) / float({val})")
-                    else:
-                        out.append(pad + HERO_WRITE[t.attr].format(r="h", v=f"({self.hero_read(t.attr, method)}) {op} ({val})"))
+                    # Ekspansi a op= v -> WRITE(v = READ op val): round-trip
+                    # unit oracle<->node benar utk SEMUA op (termasuk */ dan /
+                    # yang konversinya non-additif). Branch "/" lama menulis
+                    # assign ke ekspresi read (bukan lvalue) -> Parse Error.
+                    cur = self.hero_read(t.attr, method)
+                    rhs = f"({cur}) / float({val})" if op == "/" else f"({cur}) {op} ({val})"
+                    out.append(pad + HERO_WRITE[t.attr].format(r="h", v=rhs))
                     return
                 out.append(pad + f'h.kit["{t.attr}"] = ({self.hero_read(t.attr, method)}) {op} ({val})')
                 return

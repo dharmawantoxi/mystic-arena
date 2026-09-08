@@ -174,7 +174,14 @@ func get_balanced_stats(hero_type: String) -> Dictionary:
 	# catchup_base — lihat komentar starter_catchup_mults di atas).
 	if s.get("range", 70) < 110:
 		s["range"] = 70
-		s["speed"] = float(_py_round(float(s["speed"]) * 118.0)) / 100.0
+		# Mirror PERSIS `round(speed * 1.18, 2)` di _entity.py:3308 —
+		# Python membulat pembulatan desimal dari nilai biner produk
+		# (1.25*1.18 = 1.4749999999999999777 -> 1.47). Pendekatan lama
+		# `_py_round(speed*118)/100` membulatkan 147.5 -> 148 -> 1.48
+		# (bug khalros final.speed di HeroSkillParityTest, 2026-09-08).
+		# String.num(prec=2) memakai dtoa yang sama dgn CPython
+		# (round-half-even atas nilai desimal eksak double tsb).
+		s["speed"] = String.num(float(s["speed"]) * 1.18, 2).to_float()
 		s["attack_cooldown"] = maxi(18, _py_round(float(s["attack_cooldown"]) * 0.88))
 	else:
 		s["range"] = clampf(float(s["range"]), 120.0, 220.0)
