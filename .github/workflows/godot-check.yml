@@ -33,6 +33,8 @@ on:
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_match_parity.py'
       - 'tools/gen_boss_smart_ai.py'
+      - 'tools/gen_hero_skill_kit.py'
+      - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
       - '.github/workflows/godot-check.yml'
@@ -48,6 +50,8 @@ on:
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_match_parity.py'
       - 'tools/gen_boss_smart_ai.py'
+      - 'tools/gen_hero_skill_kit.py'
+      - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
       - '.github/workflows/godot-check.yml'
@@ -92,6 +96,14 @@ jobs:
           # gagal di sini berarti ada perubahan smart-AI pygame yang belum
           # ditranspile (regenerasi: python3 tools/gen_boss_smart_ai.py).
           python3 tools/gen_boss_smart_ai.py --check
+          # HeroSkillKit.gd di-transpile dari hero_skills/_bundle.py — gagal di
+          # sini berarti ada perubahan skill hero pygame yang belum
+          # ditranspile (regenerasi: python3 tools/gen_hero_skill_kit.py).
+          python3 tools/gen_hero_skill_kit.py --check
+          # Scope-check hasil generate (identifier harus terdeklarasi di
+          # param/var lokal/bridge Hero.gd) — tangkap 'Identifier not
+          # declared' sebelum engine.
+          python3 tools/check_bosskit_scope.py godot/scenes/hero/HeroSkillKit.gd
 
       # ── 2. Godot binary (di-cache) ──
       - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
@@ -250,6 +262,25 @@ jobs:
             cat /tmp/smartai.gate
             echo "::error::SMARTAI-FAIL-TAIL: $(tail -40 /tmp/smartai.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::SMARTAI-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/smartai.log | tr '\n' ' | ' | cut -c1-2500)"
+            exit 1
+          fi
+
+      # ── 4d. HeroSkillParityTest: paritas QWER SELURUH kit hero (222 hero:
+      # 6 starter + 216 boss-hero, registry 66 resep + _fallback_cast) vs
+      # oracle Hero.update pygame — 4 skenario × 222 hero, jejak event per
+      # frame (attempt/cast/damage/slow/knock/alock/bspd/batk) + state kit
+      # final. Fixture = seksi hero_skills (string JSON) di match_parity.json.
+      - name: HeroSkillParityTest (kit 222 hero vs oracle Pygame)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 900 2>&1 | tee /tmp/heroskill.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/heroskill.log --label "HeroSkillParityTest" \
+              --require "[HeroSkillParityTest] PASS" > /tmp/heroskill.gate 2>&1; then
+            cat /tmp/heroskill.gate
+          else
+            cat /tmp/heroskill.gate
+            echo "::error::HEROSKILL-FAIL-TAIL: $(tail -40 /tmp/heroskill.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::HEROSKILL-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/heroskill.log | tr '\n' ' | ' | cut -c1-2500)"
             exit 1
           fi
 

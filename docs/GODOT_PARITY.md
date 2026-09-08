@@ -15,7 +15,7 @@ sertifikasi paritas seluruh game.
 | Roster awal | 6 hero gratis per tim | Kedua tim mulai kosong. Pemain dan AI membeli hero dengan gold (`Game.reset`, `AIPlayer.__init__`). |
 | Unlock awal | Keenam starter langsung terbuka | Save baru mendapat Kaizen. Unlock pada save lama **tidak dicabut**. Unlock permanen hanya izin membeli, bukan summon gratis. |
 | Pembelian hero | API menerima hero terkunci, duplikat, dan roster tanpa batas | Catalog valid, unlocked, gold cukup, satu hero per tipe, maksimal 5 hero **termasuk yang mati**. Spawn pemain di depan toko Radiant (`Game.try_buy_hero`). |
-| Kematian hero | Node dihapus; satu tim habis memulai ulang seluruh arena setelah 3 detik | Hero yang sama respawn setelah 10 detik di base sendiri. Level, item biasa, dan statistik tetap. Holy Rapier rontok. Debuff dan cast tertunda dibersihkan. Nexus, tower, wave, dan progres boss tidak direset (`Game.update`, `Hero.respawn`). |
+| Kematian hero | Node dihapus; satu tim habis memulai ulang seluruh arena setelah 3 detik | Hero yang sama respawn setelah 10 detik di base sendiri. Level, item biasa, dan statistik tetap. Holy Rapier rontok. Debuff dibersihkan; cooldown W/E/R dan state kit (mis. charge Sylara) **membeku** lalu berjalan lagi setelah respawn, dan respawn menyetel HANYA Q siap — persis `Hero.respawn` (`Game.update`, `Hero.respawn`). |
 | Waktu respawn | Callback timer bisa bertahan melewati restart/pause | Timer milik match, membeku ketika pause/intro, dibuang saat restart/menu. |
 | Wave pertama | Langsung, termasuk selama intro | Persiapan 5 detik **setelah** intro dilewati; mulai pada wave 0 (`Game.reset`). |
 | Wave berikutnya | Otomatis setiap 25 detik walau wave sebelumnya hidup | Interval 25 detik adalah minimum. Antrean kedua tim dan semua minion hidup harus sudah habis (`Game.update_waves`). |
@@ -34,6 +34,8 @@ sertifikasi paritas seluruh game.
 | Cleave & ability generik | Serangan dasar hanya kena target | Cleave 40% radius 80 ke musuh lain (netral sekolah); boss tanpa smart-AI memakai `_use_ability` (damage/range/cooldown dari data, lock serangan 60 frame, shake) persis `base_boss.py`. |
 | Smart-AI boss musuh (79 tipe) | Rantai `elif boss_type` di `Boss.update` pygame tidak diport; semua boss memakai ability generik | `BossKit.gd` dihasilkan `tools/gen_boss_smart_ai.py` dari AST `bosses/base_boss.py`: dispatch 79 boss + 116 helper Q/W/E/R — koefisien, target, timing, dan urutan kondisi persis sumber (summon, dash, transform, dot/debuff area, buff, heal, knockback, combo angka). State kit per instans; jembatan frame↔detik satu tempat di `Boss.gd` (`kit_enemies`/`kit_get_stats`/`kit_skill_hit`/`kit_apply_slow`/`kit_lock_attack`/…). `gen_boss_smart_ai.py --check` di CI menjaga hasil generate tidak drift diam-diam. Boss tanpa smart-AI tetap ability generik. |
 | Facing boss | Arah hadap di-update tiap frame walau boss diam di luar jangkauan | `_face()` dipanggil hanya di cabang dalam-jangkauan `update` pygame (kiter yang hold tidak berbalik); facing awal -1 (`Boss.__init__`); kunci arah hadap selama ayunan serangan dasar 6–15 frame (`_attack_lock_timer`). |
+| Skill hero (222) | `SkillBook.gd` tabel efek generik per-detik; 6 starter hand-written belum diaudit koefisien/target/timing; SEMUA boss-hero memakai substitusi generik | `HeroSkillKit.gd` di-transpile 1:1 dari `hero_skills/_bundle.py` oleh `tools/gen_hero_skill_kit.py`: dispatch registry 66 resep `_cast_*` + `_generic_cast`/`_fallback_cast` untuk sisanya — koefisien, guard jangkauan (slack 1.15 hanya di acquire), prioritas auto-cast R→E(2+)→W(hp<0.4%)→Q, CDR+spell-vamp, dan urutan timer frame persis `Hero.update`. `SkillBook.gd` jadi facade UI tipis (tanpa state sendiri). Fixture oracle `hero_skills` = 222 hero × 4 skenario (118.293 event) diputar ulang `HeroSkillParityTest`; `gen_hero_skill_kit.py --check` + scope-check dijaga CI. |
+| Catch-up stat hero | Buff melee normalisasi hp/damage di `get_balanced_stats` + koreksi starter saja | `HeroDB.catchup_base` mirror `hero_balance.starter_catchup_stats`: MENIMPA stat dasar SEMUA hero dari katalog MENTAH, `k = 1 + 0.32 × (1 − min(1, unlocks/12)) × sisa-hp`; hpK=1+(k−1)·1,25, dmgK=1+(k−1)·0,85; level-1/no-save → ×1,40/×1,272. `get_balanced_stats` tidak lagi mem-buff hp/damage melee (speed/cd tetap dinormalisasi ke px/s dan detik). |
 | Kaizen | Rig buatan ulang selalu mengalahkan sprite Pygame | Arena normal memakai bake renderer Pygame. Rig alternatif tetap ada di `KaizenDemo.tscn`, atau opt-in `mystic/rendering/experimental_hero_rigs`. |
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
 
@@ -45,8 +47,21 @@ sertifikasi paritas seluruh game.
   live FX. Minion, tower dan nexus masih memakai gambar prosedural pengganti.
   Kuantisasi pose, lighting, cuaca dan efek skill juga belum lolos perbandingan
   screenshot menyeluruh.
-- **Skill:** enam starter punya implementasi khusus, tetapi masih perlu audit
-  koefisien, target dan timing. Banyak boss-hero memakai skill generik.
+- **Skill hero:** koefisien/target/timing kini 1:1 dengan `hero_skills/_bundle.py`
+  dan dikunci `HeroSkillParityTest` (222 hero × 4 skenario). Yang masih terbuka:
+  guard **windrun** (roll RNG 75% evade) dan **shadow realm** (kebal total)
+  tidak teruji penuh di harness — damage uji sengaja bertipe `fire` (netral
+  deterministik), jadi windrun tidak pernah me-roll dan shadow realm hanya
+  tampak sebagai bhp flat; keduanya mirror manual `_entity.py:4537-4585`.
+  Proyektil skill (`_spawn_skill_projectile`) tetap VISUAL-only di kedua sisi
+  (damage instan), jadi 520 px/s travel-time tidak memengaruhi state — dan
+  tidak diuji. `_try_auto_cast` Godot memakai ulang list `_kit_lists()` (bukan
+  list argumen yang dilempar Game.update) — sama isinya saat run normal.
+  `Hero.auto_cast_enabled` default True seperti pygame v27 (auto-cast juga
+  untuk hero terpilih; gate False hanya dipakai harness replay).
+  `_catchup_unlocks()` Godot = 0 selama GameManager tidak menyimpan daftar
+  hero yang dibeli lintas-save — identik save BARU pygame; paritas penuh
+  menunggu fitur progresi itu diport (jangan sentuh save user untuk ini).
 - **Visual skill smart-AI boss:** blok `heroes/<boss>_fx` pygame
   (notify_skill_cast/impact: flash, shockwave, serpihan, beam per boss)
   diganti aproksimasi Godot — callout nama skill + cincin ekspansi
@@ -55,6 +70,12 @@ sertifikasi paritas seluruh game.
   tampilan visualnya belum diaudit piksel-per-piksel dan dibiarkan terbuka.
   Aura ability/enrage juga belum (test `test_boss_true_aura_parity` baru
   mencakup aura true boss).
+- **Mitigasi damage hero (bias terdeteksi, TIDAK diam-diam disetel):** blok
+  armor `Hero.take_damage` pygame berlaku untuk SEMUA damage non-`fire` dan
+  hanya membaca armor dari ITEM; pipeline Godot school-aware (physical→armor,
+  magic→MR lewat `DamageSchool.mitigate`) dan membaca atribut armor node.
+  Fixture skill memakai `fire` di kedua sisi sehingga netral; selisihnya
+  menjadi ranah audit jalur damage dasar/`basic attack` tersendiri.
 - **Perintah taktis dan kontrol pemain:** `tactical_commands.py` belum diport;
   kontrol gerak/target dan overlay sentuh Android belum lengkap.
 - **Progresi/settings:** kunci difficulty sepanjang run, reset progresi karena
@@ -74,6 +95,9 @@ python tools/test_godot_match_parity.py
 # BossKit.gd adalah hasil generate — tidak boleh drift dari base_boss.py:
 python3 tools/gen_boss_smart_ai.py --check
 
+# HeroSkillKit.gd adalah hasil generate — tidak boleh drift dari hero_skills/:
+python3 tools/gen_hero_skill_kit.py --check
+
 # Import resource lalu jalankan scene regresi:
 godot --headless --path godot --editor --import
 godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300
@@ -82,6 +106,7 @@ godot --headless --path godot res://tests/AIPlayerTest.tscn --quit-after 120
 godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 960
 godot --headless --path godot res://tests/BossCoreParityTest.tscn --quit-after 420
 godot --headless --path godot res://tests/BossSmartAIParityTest.tscn --quit-after 2400
+godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 900
 ```
 
 `GameplayParityTest` membaca `godot/tests/fixtures/match_parity.json`: ekonomi
@@ -107,6 +132,19 @@ speed/damage — plus state kit final (timer Q/W/E/R, buff, posisi clone,
 target). Serangan dasar dimatikan di KEDUA sisi supaya jejak murni Q/W/E/R;
 oracle dihasilkan dari `Boss.update` Pygame sungguhan lewat
 `python tools/test_godot_match_parity.py --write-fixture`.
+
+`HeroSkillParityTest` memutar ulang seksi fixture `hero_skills` (STRING JSON
+kompak; 222 hero × skenario cluster/edge/combo/empty) pada node `Hero.gd` +
+`HeroSkillKit.gd` yang sebenarnya: cast skrip (force-ready = cooldown dinolkan
+di KEDUA sisi), urutan timer persis `Hero.update` (Q-- → active-- → WER-- →
+`update_timers`), hit harness `fire` tiap 37 frame dari f30 (menggerakkan
+guard konsumsi kit: shadow realm & Bristleback DR+reflect), floor hp 1.0.
+Dibandingkan: jejak event per frame (attempt/cast/ask/bhp/bmove/bspd/batk/
+bface/dmg/alock/emove/slow) + state final (4 cooldown, active_skill, diff kit
+vs instance segar, kondisi probe). Serangan dasar dan gerak TIDAK di-simulasikan
+(di luar slice harness; dikunci tes lain). Regenerasi fixture HANYA bila
+`hero_skills/_bundle.py` atau `_entity.py` berubah — pygame tidak pernah
+disetel mengikuti Godot.
 
 Jika aturan Pygame memang berubah, sesuaikan Godot, **kemudian** regenerasi:
 
@@ -137,6 +175,13 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   (`BossSmartAIParityTest`) diverifikasi lewat CI `godot-check.yml` pada PR —
   gate lulus = penanda `PASS` dan tanpa `SCRIPT ERROR`/`Parse Error`/
   `Compile Error`.
+- Fase hero-skill kit: oracle `--check` lulus lokal (222 hero × 4 skenario,
+  118.293 event — fixture = perilaku pygame hari ini, sisi pygame tidak
+  disentuh), `gen_hero_skill_kit.py --check` dan `check_bosskit_scope.py`
+  lulus, seluruh berkas ter-gate `gdparse` + `tscn_lint`/`check_refs`/
+  `particles_lint` bersih. Replay `HeroSkillParityTest` (888 skenario penuh,
+  driver `Hero.skill_test_step`) diverifikasi lewat CI `godot-check.yml`
+  pada PR ini — tidak ada Godot headless lokal di lingkungan kerja.
 - Engine lokal dibangun dari source untuk **headless saja**, tanpa backend
   Vulkan/OpenGL. Pesan engine `No renderers available` pada lingkungan ini
   adalah batasan build pengujian; hasil di atas **bukan** validasi gambar GPU,
