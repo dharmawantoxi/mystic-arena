@@ -174,7 +174,7 @@ func _replay_and_compare(hero_type: String, sc_name: String, sc: Dictionary) -> 
 					% [sc_name, cs.size(), frame])
 			key = str(cs[0][0])
 			force = bool(cs[0][1])
-		var ok := hero.skill_test_step(frame, key, force, probes)
+		var ok: bool = hero.skill_test_step(frame, key, force, probes)
 		if key != "":
 			events.append(["attempt", frame, key, 1 if ok else 0])
 		# probe mati (tak pernah terjadi pada hp 1e9/2.8e8 — mirror

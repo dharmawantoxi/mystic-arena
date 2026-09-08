@@ -444,7 +444,7 @@ func _regen(delta: float) -> void:
 func _auto_cast_frames() -> void:
 	if auto_cast_enabled == false:
 		return
-	var inv := items
+	var inv = items
 	var disabled := false
 	if status != null and status.has_method("is_stunned") and status.is_stunned():
 		disabled = true
@@ -474,7 +474,7 @@ func _try_auto_cast() -> void:
 			enemies.append([d, e, enemies.size()])
 	if enemies.is_empty():
 		return
-	enemies.sort_custom(HeroSkillKit.__by_pair0)
+	enemies.sort_custom(Callable(HeroSkillKit, "__by_pair0"))
 	target = enemies[0][1]
 	var nearby_count := enemies.size()
 	var hp_ratio := hp / maxf(1.0, max_hp)
@@ -519,7 +519,7 @@ func try_cast_skill(key: String, all_units: Array = [], all_towers: Array = [],
 			cd_attr = "e_cooldown"
 		"r":
 			cd_attr = "r_cooldown"
-	var inv := items
+	var inv = items
 	var cdr := 0.0
 	if inv != null:
 		cdr = float(inv.get_cooldown_reduction())
@@ -613,7 +613,7 @@ func kit_enemies(all_units, all_towers, all_bases) -> Array:
 ## CombatSystem.calc_skill_damage (float, tanpa rantai bulat pygame).
 func kit_skill_damage() -> int:
 	var base := int(skill_damage)
-	var inv := items
+	var inv = items
 	if inv != null:
 		var amp := float(inv.get_skill_amp())
 		if amp > 0.0:
