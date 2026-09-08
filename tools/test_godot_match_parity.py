@@ -375,6 +375,329 @@ def make_boss_smart_ai_fixture():
                     "murni perilaku Q/W/E/R (lihat blok ini di atas)"}
 
 
+# ══════════════════════════════════════════════════════════
+#  ORACLE SKILL HERO — jejak eksekusi handler skill pygame ASLI
+# ══════════════════════════════════════════════════════════
+#
+# Sumber kebenaran: hero_skills/_bundle.py (BaseSkill + 6 kelas starter +
+# BossHeroSkills termasuk _SKILL_REGISTRY dan _fallback_cast) yang dijalankan
+# lewat _entity.Hero yang sungguhan. Untuk tiap hero di katalog (222 = 6
+# starter + 216 boss-hero), satu frame loop deterministik memotong subset
+# skill dari Hero.update:
+#
+#   (3) cast attempt skrip  →  (4) skill_timer -=1  →  (7) active_skill_timer
+#   -=1 + clear  →  (8) w/e/r cooldown -=1  →  (9) skills.update_timers(...)
+#
+# Gerak/aggro/regen/serangan dasar SENGAJA di luar harness: paritas flow itu
+# diuji GameplayParityTest/BattleSmokeTest; jejak ini mengukur koefisien,
+# target, dan timing QWER murni (ticker DoT, knockback, buff stat, heal,
+# dash posisi, cooldown, guard jangkauan 1.15×, state kit final).
+#
+# Hero tidak punya RNG di jalur skill (inventaris: 0 pemanggilan random di
+# hero_skills/_bundle.py) — jadi trace sepenuhnya deterministik.
+
+# Cast script bersama: empat slot sekali di awal (tanpa force — menguji guard
+# "buang ke kosong"), lalu siklus kedua dengan force_ready (cooldown dinolkan
+# harness di kedua sisi — emulasi CDR) supaya re-cast MENYENTUH ticker DoT
+# yang masih hidup (blade fury, shackle, curse, bedlam, prison, eclipse).
+_HERO_CASTS_MAIN = [
+    [1, "q", 0], [2, "w", 0], [3, "e", 0], [4, "r", 0],
+    [210, "q", 1], [211, "e", 1], [212, "w", 1], [213, "r", 1],
+    [400, "q", 1], [401, "r", 1],
+]
+_HERO_CASTS_COMBO = [
+    [1, "q", 0], [20, "q", 1], [21, "q", 1],
+    [40, "r", 1], [41, "e", 1], [60, "q", 1], [80, "w", 1],
+    [120, "e", 1], [160, "q", 1], [200, "w", 1],
+    [300, "r", 1], [320, "e", 1], [340, "w", 1], [360, "q", 1],
+]
+_HERO_CASTS_ALL_FAIL = [[1, "q", 0], [2, "w", 0], [3, "e", 0], [4, "r", 0]]
+
+HERO_SKILL_SCENARIOS = (
+    # (nama, probe: (x_offset×rng_eff, dy), skrip HP, cast script, frame)
+    # A "cluster": 4 musuh bertingkat jarak + HP rendah dua sisi — cabang
+    #   %HP (execute/heal), prioritas target, AOE multi-hit, DoT re-cast.
+    ("cluster", ((0.30, 0.0), (0.95, 40.0), (1.90, -70.0), (5.00, 280.0)),
+     "low", _HERO_CASTS_MAIN, 420),
+    # B "edge": satu musuh DALAM slack guard (1.145×rng) dan satu DI LUAR
+    #   (1.30×rng, segaris di belakang) — audit TARGET_RANGE_SLACK,
+    #   seleksi target nearest, dan ujung garis (line-skill `proj < dist`).
+    #   Cast tanpa force di 182/301 menguji PANJANG cooldown W/Q persis
+    #   frame natural (W: set di f2 -> siap lagi f182; Q: f1 -> f301).
+    ("edge", ((1.145, 0.0), (1.30, 0.0)), "full",
+     _HERO_CASTS_MAIN[:4] + [[182, "w", 0], [301, "q", 0]], 310),
+    # C "combo": re-cast rapat ke musuh dekat — menguji reset timer DoT,
+    #   Kaizen Q2 Dash Strike (stack combo), charge Sylara, stack slow/stun.
+    ("combo", ((0.30, 0.0), (0.80, 30.0)), "full", _HERO_CASTS_COMBO, 380),
+    # D "empty": tanpa musuh — SEMUA cast harus DITOLAK dan cooldown tidak
+    #   boleh terbakar (guard anti-buang-skill, pygame `_has_target`/
+    #   `_generic_cast` nearby guard).
+    ("empty", (), "full", _HERO_CASTS_ALL_FAIL, 120),
+)
+
+_HERO_HP_FLOOR = 1.0  # harness floor: hero tidak boleh mati di jejak skill
+
+
+class _HeroProbe:
+    """Musuh dummy deterministik untuk oracle skill hero.
+
+    Akumulasi damage PER FRAME lewat recorder (bukan diff HP) supaya
+    penguncian HP awal-skenario (mode execute rendah) tidak menyembunyikan
+    event damage.
+    """
+
+    def __init__(self, idx, x, y, recorder):
+        self.idx = idx
+        self.x = float(x)
+        self.y = float(y)
+        self.recorder = recorder
+        self.team = "red"
+        self.alive = True
+        self.hp = 1_000_000_000.0
+        self.max_hp = 1_000_000_000.0
+        self.attack_timer = 0.0
+        self.slow_amount = 0.0
+        self.slow_timer = 0.0
+        self.speed = 2.0
+
+    def take_damage(self, amount, from_team, **_kw):
+        # Tulis MENTAH tanpa mitigasi — persis seperti e.take_damage pada
+        # oracle; di sisi Godot jembatan kit_hit() memanggil metode yang sama.
+        self.hp -= float(amount)
+        if self.hp <= 0:
+            self.alive = False
+
+    def apply_slow(self, amount, duration):
+        self.recorder("slow", self.idx, float(amount), float(duration))
+        if amount > self.slow_amount or self.slow_timer < duration:
+            self.slow_amount = amount
+            self.slow_timer = duration
+
+
+def _hero_skill_snapshot(hero, probes):
+    return {
+        "hp": float(hero.hp), "x": float(hero.x), "y": float(hero.y),
+        "ast": int(getattr(hero, "active_skill_timer", 0) or 0),
+        "ask": getattr(hero, "active_skill", None),
+        "spd": float(hero.speed), "dmg": int(hero.damage),
+        "face": int(hero.facing),
+        "atk": float(hero.attack_cooldown),
+        "probe_atk": [float(p.attack_timer) for p in probes],
+        "probe_xy": [(p.x, p.y) for p in probes],
+        "probe_hp": [float(p.hp) for p in probes],
+    }
+
+
+def _hero_kit_final_state(hero):
+    """Diff vars(hero) vs Hero() segar — menangkap SEMUA state handler."""
+    from _entity import Hero as _H
+    fresh = vars(_H(hero.hero_type, "blue"))
+    skip = {"x", "y", "hp", "damage", "speed", "facing", "target", "max_hp",
+            "attack_cooldown", "attack_timer", "alive", "team", "hero_type",
+            "_hp_value", "_speed_value",
+            "skills", "skill_data", "skill_timer", "w_cooldown", "e_cooldown",
+            "r_cooldown", "skill_cooldown_max", "w_cooldown_max",
+            "e_cooldown_max", "r_cooldown_max", "active_skill",
+            "active_skill_timer", "skill_damage", "_skill_damage_value",
+            "auto_cast_enabled", "auto_cast_check_timer", "selected", "pulse",
+            "level", "items", "projectiles", "destination", "follow_target",
+            "is_retreating", "kills", "deaths", "damage_dealt", "_killed_by",
+            "hunt_range", "aggro_range", "retreat_hp_ratio",
+            "heal_target_ratio", "base_heal_rate", "passive_heal_rate",
+            "destination_auto", "skill_active", "skill_active_timer",
+            "_prev_max_hp", "color", "color_dark", "name", "title", "role",
+            "description", "radius", "base_hp", "base_damage", "range",
+            "is_melee_hero", "dmg_type", "playstyle", "dmg_school",
+            "skill_name", "skill_desc", "skill_range", "skill_damage_base",
+            "_balance", "_school", "_last_damage_school", "_prev_x",
+            "_prev_y", "stun_timer", "slow_amount", "slow_timer",
+            "atk_slow_timer", "atk_slow_amount", "skill_down_timer",
+            "skill_down_amount", "burn_timer", "burn_dps", "burn_source",
+            "no_heal_timer", "no_heal_amount", "_last_sfx", "_aa_hero_basic_shard",
+            "respawn_timer", "no_heal", "armor", "magic_resist",
+            "anti_heal_timer", "anti_heal_amount"}
+    out = {}
+    for k, v in vars(hero).items():
+        if k in skip:
+            continue
+        if k in fresh and v == fresh[k]:
+            continue
+        if isinstance(v, _HeroProbe):
+            out[k] = "P%d" % v.idx
+        elif isinstance(v, (int, float, str, bool)) or v is None:
+            out[k] = v if not isinstance(v, float) else round(v, 4)
+        elif isinstance(v, (list, tuple)):
+            out[k] = [_serialize_kit_value(i) for i in v]
+        elif isinstance(v, set):
+            # hit-set lokal tidak pernah disimpan ke hero; kalau sempat ada,
+            # urutkan repr agar deterministik
+            out[k] = sorted(str(i) for i in v)
+    return out
+
+
+def _run_hero_skill_scenario(hero_type, probes_cfg, hp_mode, casts, frames):
+    """Jalankan subset skill Hero.update pygame ASLI dan kumpulkan jejak."""
+    from _entity import Hero
+    hero = Hero(hero_type, "blue", 600.0, 400.0)
+    hero.auto_cast_enabled = False        # cast lewat skrip, bukan AI
+    hero.attack_timer = 10 ** 9           # basic attack tidak pernah ready
+    # Hit harness memakai damage_type "fire" (lihat blok komentar): DI PYGAME
+    # api melompati blok mitigasi armor hero (yang hanya membaca armor ITEM —
+    # nol di harness), DI GODOT api Mitigasi via magic_resist -> dinolkan di
+    # kedua sisi supaya pipeline netral & deterministik (tanpa roll evasion/
+    # block/windrun sama sekali di tipe 'fire'/'magic').
+    hero.armor = 0.0
+    hero.magic_resist = 0.0
+    # rng efektif guard jangkauan = BaseSkill._skill_range(): max(range,
+    # skill_range) — dibaca dari hero sungguhan, bukan tabel kedua.
+    rng_eff = max(float(hero.range or 0), float(hero.skill_range or 0))
+
+    events = []
+    cur_frame = [0]
+
+    def rec(kind, *a):
+        events.append((kind, cur_frame[0]) + a)
+
+    if hp_mode == "low":
+        hero.hp = max(_HERO_HP_FLOOR, int(hero.max_hp * 0.28))
+    probes = []
+    spawn_offsets = []
+    for i, (mul, oy) in enumerate(probes_cfg):
+        off = rng_eff * mul
+        spawn_offsets.append((off, oy))
+        p = _HeroProbe(i, 600.0 + off, 400.0 + oy, rec)
+        if hp_mode == "low":
+            p.hp = int(p.max_hp * 0.28)
+        probes.append(p)
+
+    cast_by_frame = {}
+    for (f, key, force) in casts:
+        cast_by_frame.setdefault(f, []).append((key, force))
+
+    cd_attr = {"q": "skill_timer", "w": "w_cooldown",
+               "e": "e_cooldown", "r": "r_cooldown"}
+
+    prev = _hero_skill_snapshot(hero, probes)
+    for frame in range(frames):
+        cur_frame[0] = frame
+        # ── (3) cast attempt ──
+        for key, force in cast_by_frame.get(frame, ()):
+            if force:
+                setattr(hero, cd_attr[key], 0)
+            ok = hero.cast_skill(probes, [], [], key)
+            rec("attempt", key, 1 if ok else 0)
+        # ── (4) Q cooldown ──
+        if hero.skill_timer > 0:
+            hero.skill_timer -= 1
+        # ── (7) visual skill timer ──
+        if hero.active_skill_timer > 0:
+            hero.active_skill_timer -= 1
+            if hero.active_skill_timer <= 0:
+                hero.active_skill = None
+        # ── (8) W/E/R cooldown ──
+        for c in ("w_cooldown", "e_cooldown", "r_cooldown"):
+            if getattr(hero, c) > 0:
+                setattr(hero, c, getattr(hero, c) - 1)
+        # ── (9) hero-specific timers / DoT ──
+        hero.skills.update_timers(probes, [], [])
+        # ── hit harness: musuh "memukul balik" hero tiap 37 frame mulai f30
+        #    (hanya kalau ada probe). damage_type "fire" = deterministik penuh
+        #    (lihat komentar di kepala fungsi). Ini menggerakkan guard konsumsi
+        #    kit: shadow realm (kebal), bristleback (DR+reflect ke P0), dan
+        #    jalur hp hero. Side effect reflect tercatat lewat diff HP probe. ──
+        if probes and frame >= 30 and frame % 37 == 0:
+            hero.take_damage(40.0, "red", damage_type="fire", source=probes[0])
+        # ── floor hidup (aturan harness dua sisi) ──
+        if hero.hp < _HERO_HP_FLOOR:
+            hero.hp = _HERO_HP_FLOOR
+        # ── diff state ──
+        if hero.hp != prev["hp"]:
+            rec("bhp", round(float(hero.hp), 3))
+        if abs(hero.x - prev["x"]) > 0.001 or abs(hero.y - prev["y"]) > 0.001:
+            rec("bmove", round(hero.x, 3), round(hero.y, 3))
+        ast = int(getattr(hero, "active_skill_timer", 0) or 0)
+        if ast > prev["ast"]:
+            rec("cast", getattr(hero, "active_skill", None))
+        ask = getattr(hero, "active_skill", None)
+        if ask != prev["ask"] and (ast > 0 or ask is None):
+            rec("ask", "none" if ask is None else ask, ast)
+        if hero.speed != prev["spd"]:
+            rec("bspd", round(float(hero.speed), 5))
+        if int(hero.damage) != prev["dmg"]:
+            rec("bdmg", int(hero.damage))
+        if int(hero.attack_cooldown) != prev["atk"]:
+            rec("batk", round(float(hero.attack_cooldown), 4))
+        if int(hero.facing) != prev["face"]:
+            rec("bface", int(hero.facing))
+        for p in probes:
+            # damage dicatat sebagai DELTA HP (bukan hook take_damage): jalan
+            # untuk jalur kit_hit MAUPUN reflect CombatSystem yang menulis hp
+            # langsung di sisi Godot.
+            d = prev["probe_hp"][p.idx] - p.hp
+            if d > 0:
+                rec("dmg", p.idx, round(d, 3))
+            if p.attack_timer != prev["probe_atk"][p.idx]:
+                rec("alock", p.idx, round(float(p.attack_timer), 3))
+            if (p.x, p.y) != prev["probe_xy"][p.idx]:
+                rec("emove", p.idx, round(p.x, 3), round(p.y, 3))
+        prev = _hero_skill_snapshot(hero, probes)
+
+    final = {
+        "hp": round(float(hero.hp), 3),
+        "x": round(float(hero.x), 4), "y": round(float(hero.y), 4),
+        "damage": int(hero.damage),
+        "speed": round(float(hero.speed), 5),
+        "attack_cooldown": round(float(hero.attack_cooldown), 4),
+        "facing": int(hero.facing),
+        "skill_timer": int(hero.skill_timer),
+        "w_cooldown": int(hero.w_cooldown),
+        "e_cooldown": int(hero.e_cooldown),
+        "r_cooldown": int(hero.r_cooldown),
+        "active_skill": hero.active_skill,
+        "active_skill_timer": int(hero.active_skill_timer),
+        "hp_floor": _HERO_HP_FLOOR,
+        "kit": _hero_kit_final_state(hero),
+        "probe_final": [[round(p.hp, 3), round(float(p.attack_timer), 3),
+                         round(p.x, 3), round(p.y, 3)] for p in probes],
+    }
+    return {"frames": frames,
+            "rng_eff": round(rng_eff, 4),
+            "probes": [[round(off, 2), round(oy, 2)]
+                       for off, oy in spawn_offsets],
+            "probe_hp0": 280000000.0 if hp_mode == "low" else 1000000000.0,
+            "hp_mode": hp_mode,
+            "casts": [list(c) for c in casts],
+            "events": [list(e) for e in events],
+            "final": final}
+
+
+def make_hero_skill_fixture(entity, settings):
+    """Semua hero di katalog pygame: trace QWER dari handler ASLI.
+
+    Handler yang dipakai adalah objek sungguhan yang dipasang Hero.__init__
+    (6 starter kelas khusus + BossHeroSkills untuk semua boss-hero) — bukan
+    salinan rumus. Godot memutar ulang skenario yang sama lewat fixture ini.
+    """
+    rows = []
+    handler_kinds = {}
+    for hero_type in sorted(settings.get_all_hero_types()):
+        hero = entity.Hero(hero_type, "blue")
+        kind = type(hero.skills).__name__ if hero.skills else "none"
+        handler_kinds[hero_type] = kind
+        del hero
+        row = {"hero_type": hero_type, "handler": kind, "scenarios": {}}
+        for name, cfg, hp_mode, casts, frames in HERO_SKILL_SCENARIOS:
+            row["scenarios"][name] = _run_hero_skill_scenario(
+                hero_type, cfg, hp_mode, casts, frames)
+        rows.append(row)
+    return {"heroes": rows,
+            "scenario_names": [s[0] for s in HERO_SKILL_SCENARIOS],
+            "handler_kinds": handler_kinds,
+            "note": "subset skill Hero.update (cast -> cd Q -> active timer -> "
+                    "cd WER -> update_timers); gerak/serangan dasar di luar "
+                    "harness — lihat blok komentar HERO SKILL ORACLE"}
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -396,6 +719,13 @@ def make_fixture(core, entity, levels, paths):
         "lane_endpoints": {},
         "boss_core": make_boss_fixture(),
         "boss_smart_ai": make_boss_smart_ai_fixture(),
+        # Hero-skill trace disimpan SEBAGAI STRING JSON kompak (bukan objek
+        # pretty): 222 hero × 4 skenario menghasilkan puluhan ribu event dan
+        # indent per-event akan menggandakan ukuran file diff-able. Test
+        # Godot membaca seksi ini lewat JSON.parse_string.
+        "hero_skills": json.dumps(
+            make_hero_skill_fixture(entity, sys.modules["settings"]),
+            separators=(",", ":")),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -484,10 +814,16 @@ def main():
             "tools/test_godot_match_parity.py --write-fixture")
         print("[PygameMatchParity] PASS: fixture matches Pygame rules, all 54 levels, "
               "50 wave compositions, 25 minion/nexus combinations, "
-              f"{len(actual['boss_core']['bosses'])} boss-core records and "
+              f"{len(actual['boss_core']['bosses'])} boss-core records, "
               f"{len(actual['boss_smart_ai']['bosses'])} boss smart-AI records "
               f"({sum(len(b['scenarios']) for b in actual['boss_smart_ai']['bosses'])} "
-              "skenario)")
+              "skenario) dan "
+              + "[PygameMatchParity] hero-skill traces (compact string)")
+        hs = json.loads(actual["hero_skills"])
+        print(f"             {len(hs['heroes'])} hero × {len(hs['scenario_names'])} "
+              f"skenario, "
+              f"{sum(len(e) for h in hs['heroes'] for s in h['scenarios'].values() for e in s['events'])} "
+              "event jejak")
 
 
 if __name__ == "__main__":
