@@ -355,11 +355,11 @@ func _finish() -> void:
 	GameManager.in_menu = true
 	GameManager.state = "idle"
 	if _failures == 0:
-		print("[HeroBasicAttackParityTest] PASS: %d skenario jalur damage basic "
-			+ "hero (melee/ranged/direct × hero/minion/boss/tower/nexus)"
+		print(("[HeroBasicAttackParityTest] PASS: %d skenario jalur damage "
+			+ "basic hero (melee/ranged/direct × hero/minion/boss/tower/nexus)")
 			% _scenario_count)
-		print("[HeroBasicAttackParityTest] PASS: %d event HP + %d stat/probe "
-			+ "dibandingkan" % [_event_checks, _checks])
+		print(("[HeroBasicAttackParityTest] PASS: %d event HP + %d stat/probe "
+			+ "dibandingkan") % [_event_checks, _checks])
 		print("[HeroBasicAttackParityTest] PASS")
 	else:
 		for msg in _error_messages:

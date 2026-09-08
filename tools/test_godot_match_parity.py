@@ -1255,6 +1255,13 @@ def _ba_run_scenario(spec, entity):
                   for t in units],
         "events": [],
     }
+    # Input replay: tes Godot perlu INPUT skenario (bukan cuma hasil) supaya
+    # bisa mengemudikan unit lewat jalur yang sama. direct = daftar hit
+    # (damage/dmg_type/school/source/set); melee/ranged = jumlah serangan.
+    if mode == "direct":
+        record["hits"] = spec["hits"]
+    else:
+        record["attacks"] = int(spec.get("attacks", 1))
 
     def snap():
         return {t: float(u.hp) for t, u in units.items()}
