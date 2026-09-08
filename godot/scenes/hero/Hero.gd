@@ -1034,6 +1034,10 @@ func die(killer = null):
 		# Object.get() hanya menerima nama properti (bukan default ala Dictionary).
 		# Hero selalu punya `kills`; tambah langsung supaya kill AI terhitung.
 		killer.kills = int(killer.get("kills")) + 1
+	# Reward kematian hero (paritas loop reward _core.py:2227-2235): +150
+	# FLAT ke tim lawan KORBAN (hero merah mati -> pemain, hero biru -> AI),
+	# tanpa memedulikan siapa pembunuhnya dan TANPA menyalakan combo.
+	GameManager.register_hero_death(self)
 	is_dead = true
 	hp = 0.0
 	add_to_group("dead")

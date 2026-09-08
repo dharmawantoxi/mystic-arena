@@ -8,6 +8,8 @@ extends Control
 
 const SkillBarScript = preload("res://scenes/ui/SkillBar.gd")
 const ShopPanelScript = preload("res://scenes/ui/ShopPanel.gd")
+const ComboBadgeScript = preload("res://scenes/ui/ComboBadge.gd")
+const AchievementPopupScript = preload("res://scenes/ui/AchievementPopup.gd")
 ## Seberapa sering bar nexus/disability disegarkan (5 Hz cukup, hemat draw call)
 const BAR_REFRESH := 0.2
 
@@ -22,6 +24,8 @@ var _over_title: Label = null
 var _over_stats: Label = null
 var _over_body: Label = null
 var _next_button: Button = null
+var _combo_badge: Control = null
+var _achievement_popup: Control = null
 
 @onready var gold_label: Label = $TopLeft/GoldChip/GoldRow/GoldValue
 @onready var income_label: Label = $TopLeft/GoldChip/GoldRow/IncomeValue
@@ -50,6 +54,17 @@ func _ready():
 	# SkillBar + ShopPanel dibangun dari kode (lihat file masing-masing)
 	add_child(SkillBarScript.new())
 	add_child(ShopPanelScript.new())
+	# FASE 13 — klaster skor: badge combo kanan-atas (port ComboCounter.draw)
+	# + popup achievement di layar arena (port AchievementPopup; trigger
+	# GameManager.unlock_achievement, mis. NEW HERO UNLOCKED! saat menang).
+	_combo_badge = ComboBadgeScript.new()
+	_combo_badge.name = "ComboBadge"
+	add_child(_combo_badge)
+	_achievement_popup = AchievementPopupScript.new()
+	_achievement_popup.name = "AchievementPopup"
+	add_child(_achievement_popup)
+	GameManager.achievement_unlocked.connect(
+		_achievement_popup.unlock)
 	refresh()
 	_refresh_field()
 	_refresh_bars()
@@ -434,13 +449,28 @@ func _on_game_over(victory: bool) -> void:
 		"VICTORY!" if victory else "DEFEAT", GameManager.level_number]
 	_over_title.add_theme_color_override("font_color",
 		Color(1, 0.9, 0.45) if victory else Color(1, 0.45, 0.45))
-	# Stat paritas _draw_stats: score ribuan, time m:ss, wave & kill polos.
-	# (Max Combo GAP — Godot tak punya sistem combo; NEW BEST! GAP — SaveManager
-	# tak menyimpan best per level.)
-	_over_stats.text = "Final Score: %s\nMatch Time: %s\nWaves Survived: %d\nTotal Kills: %d" % [
-		HudLayout.format_thousands(GameManager.score),
-		HudLayout.format_match_time(GameManager.match_time_seconds()),
-		GameManager.wave_number, GameManager.total_kills]
+	# Stat paritas _draw_stats (ui_components/_bundle.py:2976-3060): lima
+	# baris — Final Score (ribuan), Match Time (m:ss), Waves Survived,
+	# Total Kills, Max Combo (x{n}); baris skor/waktu mendapat penanda
+	# NEW BEST! saat flag _grant_meta_reward menyala (badge gradasi+ikon
+	# bintang pygame = piksel, tidak diaudit; data baris direplay dari
+	# fixture ui_hud overlay + match_scoring).
+	var rows: Array = [
+		["Final Score", HudLayout.format_thousands(GameManager.score),
+			GameManager.new_best_score],
+		["Match Time", HudLayout.format_match_time(
+			GameManager.match_time_seconds()), GameManager.new_best_time],
+		["Waves Survived", str(GameManager.wave_number), false],
+		["Total Kills", str(GameManager.total_kills), false],
+		["Max Combo", "x%d" % GameManager.max_combo, false],
+	]
+	var stat_lines: PackedStringArray = PackedStringArray()
+	for row in rows:
+		var line := "%s: %s" % [row[0], row[1]]
+		if row[2]:
+			line += "  NEW BEST!"
+		stat_lines.append(line)
+	_over_stats.text = "\n".join(stat_lines)
 	# Reward yang BENAR-BENAR diberikan (paritas _grant_meta_reward: menang
 	# pertama 3000 / replay 1500 sekali / 200 berikutnya / kalah 0), bukan
 	# lagi rumusan 3000 + level*100.

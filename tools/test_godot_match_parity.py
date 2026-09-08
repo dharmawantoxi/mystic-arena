@@ -3528,7 +3528,578 @@ def make_ui_hud_fixture(core, entity):
         core.GameSettings().language = saved["lang"]
         random.setstate(saved["random"])
     return fx
-    return fx
+
+
+def make_match_scoring_fixture(core, entity):
+    """FASE 13 — klaster skor match vs kode pygame asli.
+
+    Empat bagian, semuanya dievaluasi dari pygame (bukan rumus Godot):
+      combo          : state machine ComboCounter (_render.py) murni +
+                       data draw (label/warna/geometri bar) tiap ambang,
+      kills          : loop reward Game.update SUNGGUHAN (Game + Minion/
+                       Hero/Tower betulan, mati lewat take_damage asli) —
+                       gold/score/ai_gold/total_kills/max_combo/combo dan
+                       atribusi killer.kills dipetahankan per frame,
+      level_stats    : SaveManager.get_level_stats/update_level_stats asli
+                       (best per level + flag NEW BEST untuk panel menang),
+      achievement    : state machine + kurva slide AchievementPopup asli
+                       dan data trigger popup NEW HERO UNLOCKED! dari
+                       Game._auto_unlock_defeated_boss_heroes asli.
+    """
+    import io
+    from contextlib import redirect_stdout
+
+    import pygame
+    import __main__
+    import _render as rend
+    import _system
+
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+
+    W, H = 1280, 720
+    from _render import AchievementPopup, ComboCounter, clear_cache
+
+    saved_random = random.getstate()
+
+    # ── proxy font: rekam (teks, warna) — dipakai seksi combo & popup ──
+    FONTS = []
+
+    class _SpyFont:
+        def __init__(self, real):
+            object.__setattr__(self, "_real", real)
+
+        def render(self, text, antialias, color, background=None):
+            FONTS.append({"text": text,
+                          "color": [int(color[0]), int(color[1]),
+                                    int(color[2])]})
+            real = object.__getattribute__(self, "_real")
+            if background is None:
+                return real.render(text, antialias, color)
+            return real.render(text, antialias, color, background)
+
+        def __getattr__(self, name):
+            return getattr(object.__getattribute__(self, "_real"), name)
+
+    _orig_make_font = rend._make_font
+    rend._make_font = lambda size, style="body", bold=False: _SpyFont(
+        _orig_make_font(size, style, bold))
+    clear_cache()
+    # RenderCache.clear() sengaja TIDAK menghapus font ("Jangan clear
+    # fonts") — tanpa purgasi ini, proxy font seksi fixture sebelumnya
+    # (ui_hud) masih duduk di cache dan render mereka tak terekam sink
+    # seksi ini (bug nyata: panel_texts popup kehilangan header+judul).
+    rend._cache._fonts.clear()
+    saved_draw_rect = pygame.draw.rect
+    RECTS = []
+
+    def _rec_draw_rect(surface, color, rect, *args, **kwargs):
+        try:
+            r = pygame.Rect(rect)
+            RECTS.append({"rect": [int(r.x), int(r.y), int(r.w), int(r.h)],
+                          "width": args[0] if args else 0})
+        except Exception:
+            pass
+        return saved_draw_rect(surface, color, rect, *args, **kwargs)
+
+    pygame.draw.rect = _rec_draw_rect
+
+    # ── A. COMBO: state machine murni ──
+    def cc_state(cc):
+        return {"count": cc.count, "timer": cc.timer,
+                "last_combo": cc.last_combo,
+                "display_scale": round(cc.display_scale, 6),
+                "target_scale": round(cc.target_scale, 6),
+                "color_flash": cc.color_flash}
+
+    def combo_case(name, ops):
+        runs = []
+        for seed in (20260908, 31337):
+            random.seed(seed)
+            cc = ComboCounter()
+            states = []
+            for op, n in ops:
+                for _ in range(n):
+                    if op == "kill":
+                        cc.add_kill()
+                    else:
+                        cc.update()
+                states.append(cc_state(cc))
+            runs.append(states)
+        assert runs[0] == runs[1], "ComboCounter nondeterministik: %s" % name
+        combo_cases.append({
+            "name": name,
+            "steps": [{"op": op, "n": n, "state": state}
+                      for (op, n), state in zip(ops, runs[0])]})
+
+    combo_cases = []
+    combo_case("lone_kill_decay",
+               [("kill", 1), ("tick", 1), ("tick", 5), ("tick", 15),
+                ("tick", 40), ("tick", 59), ("tick", 2)])
+    combo_case("chain_same_frame",
+               [("kill", 3), ("tick", 1), ("tick", 30), ("tick", 90)])
+    combo_case("rekill_before_expiry",
+               [("kill", 1), ("tick", 118), ("kill", 1), ("tick", 1),
+                ("tick", 120), ("tick", 1), ("kill", 2), ("tick", 1)])
+    combo_case("idle", [("tick", 50)])
+    combo_case("chain_tiers",
+               [("kill", 5), ("tick", 1), ("kill", 5), ("tick", 1),
+                ("kill", 5), ("tick", 1), ("kill", 6), ("tick", 1)])
+
+    # ── A2. COMBO: data draw (label/warna/bar/anchor) dari draw asli ──
+    # cheap_alpha dipin ke False supaya jumlah blit bayangan deterministik
+    # (1 arah): blits[1] = teks utama, blits[3] = label ambang. Quality.
+    # cheap_alpha adalah ATRIBUT bool di pygame (bukan method).
+    try:
+        from mobile.perf import Quality as _Q
+        _orig_cheap = _Q.cheap_alpha
+        _Q.cheap_alpha = False
+    except Exception:
+        _Q = None
+        _orig_cheap = None
+
+    def draw_combo(cc):
+        del FONTS[:]
+        del RECTS[:]
+        del _UiSpySurface.BLITS[:]
+        cc.draw(screen, W, H)
+
+    screen = _UiSpySurface((W, H))
+    combo_draw = {"counts": {}, "bar": {}, "hidden": None}
+    for cnt in (1, 2, 5, 10, 15, 20, 25):
+        cc = ComboCounter()
+        cc.count = cnt
+        cc.timer = 60
+        cc.display_scale = 1.0
+        cc.target_scale = 1.0
+        cc.color_flash = 0
+        draw_combo(cc)
+        blits = list(_UiSpySurface.BLITS)
+        entry = {
+            "texts": list(FONTS),
+            "bar_rects": [e["rect"] for e in RECTS
+                          if e["rect"][1] == 140 and e["rect"][3] == 4],
+        }
+        # blit utama (bayangan 1 arah saat cheap_alpha False): index 1 =
+        # teks x{n}, index 3 = label ambang (hanya count >= 5).
+        if len(blits) >= 2:
+            b = blits[1]
+            entry["count_center"] = [b[0] + b[2] // 2, b[1] + b[3] // 2]
+        if cnt >= 5 and len(blits) >= 4:
+            b = blits[3]
+            entry["label_center"] = [b[0] + b[2] // 2, b[1] + b[3] // 2]
+        combo_draw["counts"][str(cnt)] = entry
+    for timer in (120, 90, 45, 1):
+        cc = ComboCounter()
+        cc.count = 2
+        cc.timer = timer
+        cc.display_scale = 1.0
+        cc.target_scale = 1.0
+        draw_combo(cc)
+        combo_draw["bar"][str(timer)] = [e["rect"] for e in RECTS
+                                         if e["rect"][1] == 140
+                                         and e["rect"][3] == 4]
+    cc = ComboCounter()  # count 0 + scale 0 -> draw early-return
+    draw_combo(cc)
+    combo_draw["hidden"] = {"texts": list(FONTS),
+                            "bar_rects": [e["rect"] for e in RECTS
+                                          if e["rect"][1] == 140
+                                          and e["rect"][3] == 4]}
+    cc = ComboCounter()  # flash: warna tercampur putih selama 20 frame
+    cc.count = 5
+    cc.timer = 60
+    cc.display_scale = 1.0
+    cc.target_scale = 1.0
+    cc.color_flash = 10
+    draw_combo(cc)
+    combo_draw["flash"] = {"color_flash": 10, "texts": list(FONTS)}
+
+    if _Q is not None:
+        _Q.cheap_alpha = _orig_cheap
+
+    # ── B. KILLS: loop reward Game.update sungguhan ──
+    saved_gps = core.GOLD_PER_SECOND
+    core.GOLD_PER_SECOND = 0  # income AI dinolkan: gold bergerak HANYA
+    # lewat reward (pembanding Godot men-tick combo/respawn per frame,
+    # bukan seluruh _process).
+    try:
+        with redirect_stdout(io.StringIO()):
+            screen = _UiSpySurface((W, H))
+            game = core.Game(screen, level_number=1)
+        game.state = "playing"
+        game.level_intro = None
+        game.boss_intro = None
+        game.boss_death = None
+        __main__.game_instance = game
+
+        def make_unit(spec, idx):
+            x = 220 + idx * 240
+            y = 300 + (idx % 2) * 240
+            if spec["kind"] == "minion":
+                u = entity.Minion(spec["type"], spec["team"], "mid")
+                u.base_speed = 0.0  # beku: tidak ada combat liar
+                u.speed = 0.0
+            elif spec["kind"] == "hero":
+                u = entity.Hero(spec["type"], spec["team"], x=x, y=y)
+                u.speed = 0.0
+            elif spec["kind"] == "tower":
+                u = entity.Tower(x, y, spec["team"])
+            else:
+                raise AssertionError(spec["kind"])
+            return u
+
+        def reset_game():
+            game.wave_timer = 10 ** 6
+            game.wave_number = 0
+            game.gold = 1000
+            game.gold_per_second = 0.0
+            game._gold_income_milli = 0
+            game.gold_timer = 0
+            game.ai.gold = 0
+            game.score = 0
+            game.total_kills = 0
+            game.max_combo = 0
+            game.effects.combo_counter = ComboCounter()
+            game.hero_respawn_timers = {}
+            game.towers = []
+            game.minions = []
+            game.heroes = []
+            game.ai.heroes = []
+            game.red_towers_destroyed = 0
+            game.state = "playing"
+            game.level_intro = None
+            game.boss_intro = None
+            game.boss_death = None
+
+        def snap_kills(units):
+            cc = game.effects.combo_counter
+            return {
+                "gold": game.gold, "score": game.score,
+                "ai_gold": game.ai.gold, "total_kills": game.total_kills,
+                "max_combo": game.max_combo,
+                "combo": {"count": cc.count, "timer": cc.timer,
+                          "last_combo": cc.last_combo},
+                "kills": {uid: int(getattr(u, "kills", 0))
+                          for uid, u in units.items()
+                          if spec_of(units, uid)["kind"] == "hero"},
+            }
+
+        def spec_of(units, uid):
+            return units[uid]._spec
+
+        def run_kills(spec, seed):
+            random.seed(seed)
+            reset_game()
+            units = {}
+            for i, uspec in enumerate(spec["units"]):
+                u = make_unit(uspec, i)
+                u._spec = uspec
+                units[uspec["id"]] = u
+                if uspec["kind"] == "minion":
+                    game.minions.append(u)
+                elif uspec["kind"] == "hero":
+                    if uspec["team"] == "blue":
+                        game.heroes.append(u)
+                    else:
+                        game.ai.heroes.append(u)
+                # tower HANYA sebagai sumber damage, bukan unit arena.
+            steps = []
+            for step in spec["steps"]:
+                for kill in step.get("kills", ()):
+                    victim = units[kill["unit"]]
+                    by = units.get(kill.get("by"))
+                    if "team" in kill:
+                        from_team = kill["team"]
+                    else:
+                        from_team = getattr(by, "team", "") if by else ""
+                    with redirect_stdout(io.StringIO()):
+                        victim.take_damage(10 ** 9, from_team, "normal",
+                                           source=by)
+                for _ in range(step["frames"]):
+                    with redirect_stdout(io.StringIO()):
+                        game.update()
+                steps.append({"kills": step.get("kills", ()),
+                              "frames": step["frames"],
+                              "snap": snap_kills(units)})
+            return steps
+
+        kills_specs = [
+            {"name": "minion_red_lone",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"}],
+             "steps": [{"kills": [{"unit": "m0", "by": "h0"}], "frames": 1},
+                       {"kills": [], "frames": 118},
+                       {"kills": [], "frames": 1},
+                       {"kills": [], "frames": 2}]},
+            {"name": "minion_chain_same_frame",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "orc",
+                        "team": "red"},
+                       {"id": "m2", "kind": "minion", "type": "undead",
+                        "team": "red"},
+                       {"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"}],
+             "steps": [{"kills": [{"unit": "m0", "by": "h0"},
+                                  {"unit": "m1", "by": "h0"},
+                                  {"unit": "m2", "by": None}], "frames": 1},
+                       {"kills": [], "frames": 30}]},
+            {"name": "minion_chain_spread_expire",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m2", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"}],
+             "steps": [{"kills": [{"unit": "m0", "by": "h0"}], "frames": 1},
+                       {"kills": [], "frames": 29},
+                       {"kills": [{"unit": "m1", "by": None}], "frames": 1},
+                       {"kills": [], "frames": 29},
+                       {"kills": [{"unit": "m2", "by": "h0"}], "frames": 1},
+                       {"kills": [], "frames": 119},
+                       {"kills": [{"unit": "m0", "by": None}], "frames": 1}]},
+            {"name": "minion_mixed_teams",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "goblin",
+                        "team": "blue"},
+                       {"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"},
+                       {"id": "h1", "kind": "hero", "type": "thorne",
+                        "team": "red"}],
+             "steps": [{"kills": [{"unit": "m0", "by": "h0"},
+                                  {"unit": "m1", "by": "h1"}], "frames": 1},
+                       {"kills": [], "frames": 5}]},
+            {"name": "hero_reward_and_attribution",
+             "units": [{"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"},
+                       {"id": "h1", "kind": "hero", "type": "grimjaw",
+                        "team": "red"},
+                       {"id": "h2", "kind": "hero", "type": "sylara",
+                        "team": "blue"},
+                       {"id": "h3", "kind": "hero", "type": "thorne",
+                        "team": "red"}],
+             "steps": [{"kills": [{"unit": "h1", "by": "h0"}], "frames": 1},
+                       {"kills": [{"unit": "h2", "by": "h3"}], "frames": 1},
+                       {"kills": [{"unit": "h3", "by": "h0"}], "frames": 1},
+                       {"kills": [], "frames": 10}]},
+            {"name": "hero_neutral_and_self_source",
+             "units": [{"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"},
+                       {"id": "h1", "kind": "hero", "type": "grimjaw",
+                        "team": "red"},
+                       {"id": "h2", "kind": "hero", "type": "sylara",
+                        "team": "blue"}],
+             "steps": [{"kills": [{"unit": "h1", "by": None}], "frames": 1},
+                       {"kills": [{"unit": "h2", "by": "h2", "team": ""}], "frames": 1},
+                       {"kills": [], "frames": 10}]},
+            {"name": "hero_killed_by_minion_tower",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "blue"},
+                       {"id": "t0", "kind": "tower", "type": "archer",
+                        "team": "blue"},
+                       {"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"},
+                       {"id": "h1", "kind": "hero", "type": "grimjaw",
+                        "team": "red"},
+                       {"id": "h4", "kind": "hero", "type": "vex",
+                        "team": "red"}],
+             "steps": [{"kills": [{"unit": "h1", "by": "t0"}], "frames": 1},
+                       {"kills": [{"unit": "h4", "by": "m0"}], "frames": 1},
+                       {"kills": [], "frames": 10}]},
+            {"name": "hero_respawn_reward_twice",
+             "units": [{"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"},
+                       {"id": "h1", "kind": "hero", "type": "grimjaw",
+                        "team": "red"}],
+             "steps": [{"kills": [{"unit": "h1", "by": "h0"}], "frames": 1},
+                       {"kills": [], "frames": 599},
+                       {"kills": [], "frames": 1},
+                       {"kills": [{"unit": "h1", "by": "h0"}], "frames": 1},
+                       {"kills": [], "frames": 5}]},
+            {"name": "combo_and_hero_mix",
+             "units": [{"id": "m0", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "m1", "kind": "minion", "type": "goblin",
+                        "team": "red"},
+                       {"id": "h0", "kind": "hero", "type": "kaizen",
+                        "team": "blue"},
+                       {"id": "h1", "kind": "hero", "type": "grimjaw",
+                        "team": "red"}],
+             "steps": [{"kills": [{"unit": "m0", "by": "h0"},
+                                  {"unit": "h1", "by": "h0"}], "frames": 1},
+                       {"kills": [{"unit": "m1", "by": None}], "frames": 1},
+                       {"kills": [], "frames": 121}]},
+        ]
+        kills_cases = []
+        for spec in kills_specs:
+            runs = [run_kills(spec, 20260908), run_kills(spec, 31337)]
+            assert runs[0] == runs[1], \
+                "skenario kills nondeterministik: %s" % spec["name"]
+            # Guard internal: langkah tanpa kill ter-script hanya boleh
+            # menggerakkan timer/expiry combo — reward lainnya (gold/score/
+            # kills/max_combo) harus diam total (bukti tidak ada combat liar
+            # antar unit yang diparker berjauhan).
+            for prev, step in zip(runs[0], runs[0][1:]):
+                if not step["kills"]:
+                    a, b = prev["snap"], step["snap"]
+                    for key in ("gold", "score", "ai_gold", "total_kills",
+                                "max_combo"):
+                        assert a[key] == b[key], \
+                            "state berubah tanpa kill (%s/%s): %s" % (
+                                spec["name"], key, (a[key], b[key]))
+                    assert a["kills"] == b["kills"], \
+                        "kills berubah tanpa kematian: %s" % spec["name"]
+            kills_cases.append({"name": spec["name"], "units": spec["units"],
+                                "steps": runs[0]})
+
+        # ── D1. ACHIEVEMENT popup: state machine + kurva slide + teks ──
+        def ach_case(name, unlocks, ticks):
+            ap = AchievementPopup()
+            for title, desc, icon in unlocks:
+                ap.unlock(title, desc, icon)
+            steps = []
+            for n in ticks:
+                for _ in range(n):
+                    ap.update()
+                cur = ap.current
+                steps.append({
+                    "frames": n,
+                    "current": None if cur is None else {
+                        "title": cur["title"],
+                        "description": cur["description"],
+                        "icon_type": cur["icon_type"]},
+                    "timer": ap.timer, "queue": len(ap.queue)})
+            return {"name": name, "unlocks": [list(u) for u in unlocks],
+                    "steps": steps}
+
+        achievement_cases = [
+            ach_case("queue_two",
+                     [("TITLE A", "desc a", "star"),
+                      ("TITLE B", "desc b", "skull")],
+                     [1, 90, 89, 1, 90, 89, 1]),
+            ach_case("empty", [], [1, 200]),
+            ach_case("queue_three",
+                     [("T1", "d1", "star"), ("T2", "d2", "sword"),
+                      ("T3", "d3", "skull")],
+                     [1, 181, 181, 181, 1]),
+        ]
+
+        # kurva slide: posisi x blit panel 280x60 per sisa timer.
+        # Judul draw pakai string PENDEK: judul asli "NEW HERO UNLOCKED!"
+        # terpotong ellipsis oleh fit_ellipsis (metrik font = ranah piksel,
+        # tidak direplay); data judul asli dikunci seksi new_hero di bawah.
+        slide_x = {}
+        ap = AchievementPopup()
+        ap.unlock("NEW HERO!", "Kaizen now FREE!", "skull")
+        ap.update()
+        for timer in range(0, 181):
+            ap.timer = timer
+            del _UiSpySurface.BLITS[:]
+            del FONTS[:]
+            ap.draw(screen, W, H)
+            blits = [b for b in _UiSpySurface.BLITS
+                     if b[2] == 280 and b[3] == 60]
+            assert len(blits) == 1, "panel popup hilang (timer %d)" % timer
+            slide_x[str(timer)] = blits[0][:2]
+        popup_texts = list(FONTS)  # timer terakhir (0) — teks tetap sama
+
+        # ── D2. trigger NEW HERO UNLOCKED! dari kode asli ──
+        def nh_case(name, bosses, purchased, save_bosses):
+            game.bosses_defeated_this_match = list(bosses)
+            game.purchased_heroes = list(purchased)
+            game.save_data = {"unlocked_bosses": list(save_bosses)}
+            game.heroes_unlocked_this_match = []
+            game.effects.achievement = AchievementPopup()
+            with redirect_stdout(io.StringIO()):
+                newly = game._auto_unlock_defeated_boss_heroes()
+            queue = [{"title": e["title"], "description": e["description"],
+                      "icon": e["icon_type"]}
+                     for e in game.effects.achievement.queue]
+            return {"name": name, "bosses": list(bosses),
+                    "purchased": list(purchased),
+                    "save_bosses": list(save_bosses),
+                    "newly": newly, "queue": queue,
+                    "purchased_after": list(game.purchased_heroes),
+                    "save_bosses_after": list(
+                        game.save_data["unlocked_bosses"])}
+
+        new_hero_cases = [
+            nh_case("one_boss", ["abaddon"], ["kaizen"], []),
+            nh_case("two_bosses", ["abaddon", "gornak"], ["kaizen"], []),
+            nh_case("already_owned", ["abaddon"], ["kaizen", "abaddon"], []),
+            nh_case("none", [], ["kaizen"], []),
+            nh_case("boss_recorded_in_save", ["abaddon"], ["kaizen"],
+                    ["abaddon", "varkul"]),
+        ]
+    finally:
+        core.GOLD_PER_SECOND = saved_gps
+
+    # ── C. LEVEL STATS (best per level + NEW BEST) ──
+    level_cases = []
+
+    def ls_case(name, prior, match):
+        data = {} if prior is None else {"level_stats": {"3": dict(prior)}}
+        result = _system.SaveManager.update_level_stats(data, 3, dict(match))
+        level_cases.append({
+            "name": name, "prior": prior, "match": match,
+            "flags": {"is_new_best_score": result["is_new_best_score"],
+                      "is_new_best_time": result["is_new_best_time"]},
+            "new_stats": result["new_stats"]})
+
+    full_prior = {"best_score": 500, "best_time_seconds": 90,
+                  "total_attempts": 3, "wins": 2, "total_kills": 100,
+                  "max_combo": 17, "total_playtime_seconds": 1000}
+    ls_case("first_win", None,
+            {"won": True, "score": 7777, "time_seconds": 3723,
+             "kills": 4242, "combo": 17, "playtime_seconds": 3723})
+    ls_case("first_defeat", None,
+            {"won": False, "score": 100, "time_seconds": 50,
+             "kills": 10, "combo": 3, "playtime_seconds": 50})
+    ls_case("equal_no_flag", full_prior,
+            {"won": True, "score": 500, "time_seconds": 90,
+             "kills": 5, "combo": 5, "playtime_seconds": 90})
+    ls_case("faster_time_only", full_prior,
+            {"won": True, "score": 400, "time_seconds": 60,
+             "kills": 5, "combo": 5, "playtime_seconds": 60})
+    ls_case("higher_score_only", full_prior,
+            {"won": True, "score": 501, "time_seconds": 120,
+             "kills": 5, "combo": 5, "playtime_seconds": 120})
+    ls_case("defeat_no_best_update", full_prior,
+            {"won": False, "score": 9999, "time_seconds": 10,
+             "kills": 7, "combo": 40, "playtime_seconds": 10})
+    ls_case("win_time_zero_ignored", full_prior,
+            {"won": True, "score": 600, "time_seconds": 0,
+             "kills": 1, "combo": 1, "playtime_seconds": 0})
+    ls_case("first_defeat_big", None,
+            {"won": False, "score": 7777, "time_seconds": 3723,
+             "kills": 4242, "combo": 17, "playtime_seconds": 3723})
+    ls_case("zero_score_not_best", None,
+            {"won": True, "score": 0, "time_seconds": 5,
+             "kills": 0, "combo": 0, "playtime_seconds": 5})
+    level_defaults = _system.SaveManager.get_level_stats({}, 3)
+
+    rend._make_font = _orig_make_font
+    clear_cache()
+    rend._cache._fonts.clear()  # jangan bocorkan proxy seksi ini ke bawah
+    pygame.draw.rect = saved_draw_rect
+    random.setstate(saved_random)
+
+    return {
+        "meta": {"fps": 60, "screen": [W, H]},
+        "combo": {"cases": combo_cases, "draw": combo_draw},
+        "kills": kills_cases,
+        "level_stats": {"cases": level_cases,
+                        "defaults": level_defaults},
+        "achievement": {"cases": achievement_cases,
+                        "slide_x": slide_x,
+                        "panel_texts": popup_texts,
+                        "new_hero": new_hero_cases},
+    }
 
 
 def make_fixture(core, entity, levels, paths):
@@ -3583,6 +4154,12 @@ def make_fixture(core, entity, levels, paths):
         # TouchHUD). Direplay UiHudParityTest. Objek (bukan string
         # kompak) agar diff-able saat review.
         "ui_hud": make_ui_hud_fixture(core, entity),
+        # FASE 13 — klaster skor match: combo (Max Combo), best per
+        # level + badge NEW BEST!, reward kill hero +150 + atribusi
+        # killer, popup achievement NEW HERO UNLOCKED!. Loop reward
+        # Game.update pygame SUNGGUHAN dijalankan headless. Direplay
+        # MatchScoringParityTest. Objek agar diff-able saat review.
+        "match_scoring": make_match_scoring_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -3706,6 +4283,14 @@ def main():
               f"{len(cu['save_backfill'])} kasus backfill save lama, "
               f"{len(cu['mults'])} multiplier, "
               f"{len(cu['hero_stats'])} stat hero pygame")
+        ms = actual["match_scoring"]
+        print("             match-scoring oracle: "
+              f"{len(ms['combo']['cases'])} kasus combo, "
+              f"{len(ms['kills'])} skenario reward Game.update, "
+              f"{len(ms['level_stats']['cases'])} kasus level-stats, "
+              f"{len(ms['achievement']['cases'])} kasus popup + "
+              f"{len(ms['achievement']['slide_x'])} titik slide + "
+              f"{len(ms['achievement']['new_hero'])} trigger NEW HERO")
 
 
 if __name__ == "__main__":

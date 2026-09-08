@@ -54,8 +54,14 @@ signal difficulty_changed(difficulty: String)
 signal selection_changed
 signal shop_changed
 signal tower_built(tower: Node)
+## Paritas EffectManager.unlock_achievement (_render.py:813): minta popup
+## achievement di layar arena. Signal, bukan node — GameManager tidak
+## menggambar; HUD yang subscribe (AchievementPopup). Payload =
+## (title, description, icon) persis argumen pygame.
+signal achievement_unlocked(title: String, description: String, icon: String)
 
 const FPS := 60.0
+const ComboCounterScript = preload("res://scripts/utils/ComboCounter.gd")
 
 # ═══ FALLBACK MINION_TYPES — port persis dari _core.py (dipakai kalau
 # data/economy.json belum di-generate; warna = GRASS/GOBLIN_COLOR dkk) ═══
@@ -136,11 +142,28 @@ var bosses_defeated_this_match: Array = []
 ## heroes_unlocked_this_match _core.py:2347 — ditulis _auto_unlock..., DIBACA
 ## HUD untuk baris "NEW HERO" panel game-over).
 var heroes_unlocked_this_match: Array = []
-## Skor match (paritas Game.score _core.py:2195: jumlah gold_reward kill
-## tim blue; kill hero +150 pygame BELUM diport — tanpa atribusi killer).
+## Skor match (paritas Game.score _core.py:2195 + 2227-2235: gold_reward
+## minion/menara/boss yang hancur + 150 per hero merah mati; hero biru
+## mati membayar AI — lihat register_hero_death).
 var score: int = 0
 ## Kill minion tim blue match ini (paritas Game.total_kills: minion SAJA).
 var total_kills: int = 0
+## Counter combo kill minion red (paritas Game.effects.combo_counter —
+## ComboCounter pygame _render.py:841, mesin frame @60fps). Dijalankan
+## _tick_combo dari _process; harness replay men-step manual.
+var combo = ComboCounterScript.new()
+## Combo terbesar match ini (paritas Game.max_combo _core.py:1378/1547 —
+## dibaca SEBELUM add_kill di loop reward, jadi rantai N kill menghasilkan
+## max_combo N-1; dikunci fixture match_scoring).
+var max_combo: int = 0
+## Flag NEW BEST! panel menang/kalah (paritas Game.new_best_score/
+## new_best_time _core.py:1552-1553 — diisi _grant_meta_reward dari
+## SaveManager.update_level_stats lalu dibaca HUD game-over).
+var new_best_score: bool = false
+var new_best_time: bool = false
+## Akumulator kadens 60Hz mesin combo (ComboCounter pygame update per
+## frame 60fps — bukan per delta bebas).
+var _combo_accum: float = 0.0
 ## Jam dinding mulai match, msec (paritas match_start_time; match_time
 ## pygame memakai wall-clock TERMASUK pause, jadi tanpa penyesuaian pause).
 var match_start_msec: int = 0
@@ -354,6 +377,7 @@ func _process(delta):
 	if waves_enabled and get_tree().current_scene != null:
 		_update_waves(delta)
 	_update_hero_respawns(delta)
+	_tick_combo(delta)
 	# Aura item (Steel Aegis / Everfrost / Solar Brand / Searbrand)
 	_aura_timer += delta
 	if _aura_timer >= 0.25:
@@ -388,6 +412,13 @@ func start_level(lv: int, replay: bool = false):
 	# ── Skor/kill/timer/unlock match (paritas Game.reset/score) ──
 	score = 0
 	total_kills = 0
+	# Combo + flag NEW BEST direset tiap match (paritas Game.reset
+	# _core.py:1547 + 1552-1553).
+	combo.reset()
+	max_combo = 0
+	new_best_score = false
+	new_best_time = false
+	_combo_accum = 0.0
 	match_start_msec = Time.get_ticks_msec()
 	heroes_unlocked_this_match.clear()
 	requested_shop_tab = ""
@@ -698,8 +729,66 @@ func ai_spend(amount: int) -> bool:
 	return false
 
 
-## victim_kind: "minion" | "tower" ( dipakai total_kills: pygame hanya
-## menghitung MINION, _core.py:2219-2240; skor = jumlah gold_reward kill blue).
+## Loop reward Game.update pygame — kematian MINION dinilai dari TIM KORBAN,
+## bukan tim pembunuh (_core.py:2196-2216): minion RED yang mati oleh damage
+## apa pun (termasuk netral tanpa sumber) tetap membayar gold+skor ke pemain,
+## menambah total_kills, dan menyalakan combo; minion biru membayar AI.
+## Dipanggil Minion.die().
+func register_minion_death(minion) -> void:
+	var reward := int(minion.get("gold_reward"))
+	if str(minion.get("team")) == "red":
+		gold += reward
+		score += reward
+		total_kills += 1
+		# Combo terbesar disimpan untuk layar statistik — DIBACA SEBELUM
+		# add_kill (paritas _core.py:2209-2214; quirk: rantai N kill
+		# menghasilkan max_combo N-1).
+		if combo.count > max_combo:
+			max_combo = combo.count
+		combo.add_kill()
+	else:
+		ai_gold += reward
+
+
+## Loop reward hero (_core.py:2227-2235): +150 FLAT ke tim lawan korban —
+## hero RED mati (dibunuh apa pun) -> gold+skor pemain; hero biru mati ->
+## saldo AI. TIDAK menyalakan combo (combo hanya kill minion red) dan
+## tidak bergantung siapa pembunuhnya. Dipanggil Hero.die().
+const HERO_KILL_REWARD := 150
+
+
+func register_hero_death(hero) -> void:
+	if str(hero.get("team")) == "red":
+		gold += HERO_KILL_REWARD
+		score += HERO_KILL_REWARD
+	else:
+		ai_gold += HERO_KILL_REWARD
+
+
+## Satu frame pygame untuk mesin combo (ComboCounter.update dipanggil
+## EffectManager.update sekali per Game.update @60fps). _process memanggil
+## ini dengan akumulator supaya kadens tetap 60Hz di refresh rate berapa
+## pun; harness replay memanggilnya langsung dengan 1/60 per frame script.
+func _tick_combo(delta: float) -> void:
+	_combo_accum += delta
+	while _combo_accum >= 1.0 / FPS:
+		_combo_accum -= 1.0 / FPS
+		combo.update()
+
+
+## Paritas EffectManager.unlock_achievement (_render.py:813): antri popup
+## achievement di layar arena (FX peta). Dipancarkan sebagai signal —
+## node FX HUD yang subscribe dan menggambar.
+func unlock_achievement(title: String, description: String,
+		icon: String = "star") -> void:
+	achievement_unlocked.emit(title, description, icon)
+
+
+## Reward menara — cabang TIM PEMBUNUH menara di Godot (tower_destroyed
+## signal). pygame memakai cabang TIM KORBAN tower (_core.py:2218-2230);
+## setara untuk semua kasus kecuali sumber netral (belum ada jalur damage
+## netral yang menghancurkan menara). Skor = gold_reward; total_kills TIDAK
+## naik (pygame hanya menghitung minion). Dipakai Tower.die + harness.
 func award_kill(killer_team: String, amount: int, victim_kind: String = "") -> void:
 	# Tim pemain (blue/radiant) menabung gold; AI (red) punya saldo sendiri
 	if killer_team == "blue":
@@ -905,6 +994,21 @@ func _grant_meta_reward(victory: bool) -> void:
 		# Tandai level tamat (paritas 2408-2414) -> level berikutnya (yang
 		# memasang unlock_after_level = level ini) terbuka di LEVEL_SELECT.
 		SaveManager.complete_level(level_number)
+	# ═══ SAVE LEVEL STATS (paritas _core.py:2436-2453) ═══
+	# best per level + flag NEW BEST! — ditulis MENANG ATAU KALAH (attempts/
+	# playtime/kills/combo kumulatif selalu naik; best hanya saat menang).
+	var match_time := match_time_seconds()
+	var result: Dictionary = SaveManager.update_level_stats(
+		SaveManager.data, level_number, {
+			"won": victory,
+			"score": score,
+			"time_seconds": match_time,
+			"kills": total_kills,
+			"combo": max_combo,
+			"playtime_seconds": match_time,
+		})
+	new_best_score = bool(result["is_new_best_score"])
+	new_best_time = bool(result["is_new_best_time"])
 	SaveManager.save()
 	_meta_reward_granted = true
 
@@ -927,6 +1031,11 @@ func _auto_unlock_defeated_boss_heroes() -> void:
 		for bt in newly:
 			names.append(str(HeroDB.get_hero(bt).get("name", bt)))
 		print("[HERO UNLOCK] gratis karena castle musuh jatuh: %s" % ", ".join(names))
+		# Popup achievement di layar arena (paritas _core.py:2356-2361):
+		# judul tetap, deskripsi = daftar nama + " now FREE in Hero Shop!",
+		# ikon skull. Baris teks panel game-over tetap dari Fase 12.
+		unlock_achievement("NEW HERO UNLOCKED!",
+			"%s now FREE in Hero Shop!" % ", ".join(names), "skull")
 
 
 ## Dicatat Main._boss_tick saat boss mati; baru dicairkan jadi hero kalau

@@ -53408,5 +53408,3184 @@
         }
       }
     }
+  },
+  "match_scoring": {
+    "meta": {
+      "fps": 60,
+      "screen": [
+        1280,
+        720
+      ]
+    },
+    "combo": {
+      "cases": [
+        {
+          "name": "lone_kill_decay",
+          "steps": [
+            {
+              "op": "kill",
+              "n": 1,
+              "state": {
+                "count": 1,
+                "timer": 120,
+                "last_combo": 0,
+                "display_scale": 0.0,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0,
+                "display_scale": 0.39,
+                "target_scale": 1.3,
+                "color_flash": 19
+              }
+            },
+            {
+              "op": "tick",
+              "n": 5,
+              "state": {
+                "count": 1,
+                "timer": 114,
+                "last_combo": 0,
+                "display_scale": 1.147056,
+                "target_scale": 1.3,
+                "color_flash": 14
+              }
+            },
+            {
+              "op": "tick",
+              "n": 15,
+              "state": {
+                "count": 1,
+                "timer": 99,
+                "last_combo": 0,
+                "display_scale": 1.299274,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            },
+            {
+              "op": "tick",
+              "n": 40,
+              "state": {
+                "count": 1,
+                "timer": 59,
+                "last_combo": 0,
+                "display_scale": 1.3,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            },
+            {
+              "op": "tick",
+              "n": 59,
+              "state": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 1,
+                "display_scale": 1.105,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            },
+            {
+              "op": "tick",
+              "n": 2,
+              "state": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 1,
+                "display_scale": 0.798362,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "chain_same_frame",
+          "steps": [
+            {
+              "op": "kill",
+              "n": 3,
+              "state": {
+                "count": 3,
+                "timer": 120,
+                "last_combo": 0,
+                "display_scale": 0.0,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 3,
+                "timer": 119,
+                "last_combo": 0,
+                "display_scale": 0.39,
+                "target_scale": 1.3,
+                "color_flash": 19
+              }
+            },
+            {
+              "op": "tick",
+              "n": 30,
+              "state": {
+                "count": 3,
+                "timer": 89,
+                "last_combo": 0,
+                "display_scale": 1.299979,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            },
+            {
+              "op": "tick",
+              "n": 90,
+              "state": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 3,
+                "display_scale": 0.93925,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "rekill_before_expiry",
+          "steps": [
+            {
+              "op": "kill",
+              "n": 1,
+              "state": {
+                "count": 1,
+                "timer": 120,
+                "last_combo": 0,
+                "display_scale": 0.0,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 118,
+              "state": {
+                "count": 1,
+                "timer": 2,
+                "last_combo": 0,
+                "display_scale": 1.3,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            },
+            {
+              "op": "kill",
+              "n": 1,
+              "state": {
+                "count": 2,
+                "timer": 120,
+                "last_combo": 0,
+                "display_scale": 1.3,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 0,
+                "display_scale": 1.3,
+                "target_scale": 1.3,
+                "color_flash": 19
+              }
+            },
+            {
+              "op": "tick",
+              "n": 120,
+              "state": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 2,
+                "display_scale": 0.93925,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 2,
+                "display_scale": 0.798362,
+                "target_scale": 1.3,
+                "color_flash": 0
+              }
+            },
+            {
+              "op": "kill",
+              "n": 2,
+              "state": {
+                "count": 2,
+                "timer": 120,
+                "last_combo": 2,
+                "display_scale": 0.798362,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 2,
+                "display_scale": 0.948854,
+                "target_scale": 1.3,
+                "color_flash": 19
+              }
+            }
+          ]
+        },
+        {
+          "name": "idle",
+          "steps": [
+            {
+              "op": "tick",
+              "n": 50,
+              "state": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0,
+                "display_scale": 0.0,
+                "target_scale": 1.0,
+                "color_flash": 0
+              }
+            }
+          ]
+        },
+        {
+          "name": "chain_tiers",
+          "steps": [
+            {
+              "op": "kill",
+              "n": 5,
+              "state": {
+                "count": 5,
+                "timer": 120,
+                "last_combo": 0,
+                "display_scale": 0.0,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 5,
+                "timer": 119,
+                "last_combo": 0,
+                "display_scale": 0.39,
+                "target_scale": 1.3,
+                "color_flash": 19
+              }
+            },
+            {
+              "op": "kill",
+              "n": 5,
+              "state": {
+                "count": 10,
+                "timer": 120,
+                "last_combo": 0,
+                "display_scale": 0.39,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 10,
+                "timer": 119,
+                "last_combo": 0,
+                "display_scale": 0.663,
+                "target_scale": 1.3,
+                "color_flash": 19
+              }
+            },
+            {
+              "op": "kill",
+              "n": 5,
+              "state": {
+                "count": 15,
+                "timer": 120,
+                "last_combo": 0,
+                "display_scale": 0.663,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 15,
+                "timer": 119,
+                "last_combo": 0,
+                "display_scale": 0.8541,
+                "target_scale": 1.3,
+                "color_flash": 19
+              }
+            },
+            {
+              "op": "kill",
+              "n": 6,
+              "state": {
+                "count": 21,
+                "timer": 120,
+                "last_combo": 0,
+                "display_scale": 0.8541,
+                "target_scale": 1.3,
+                "color_flash": 20
+              }
+            },
+            {
+              "op": "tick",
+              "n": 1,
+              "state": {
+                "count": 21,
+                "timer": 119,
+                "last_combo": 0,
+                "display_scale": 0.98787,
+                "target_scale": 1.3,
+                "color_flash": 19
+              }
+            }
+          ]
+        }
+      ],
+      "draw": {
+        "counts": {
+          "1": {
+            "texts": [
+              {
+                "text": "x1",
+                "color": [
+                  255,
+                  255,
+                  255
+                ]
+              },
+              {
+                "text": "x1",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "bar_rects": [],
+            "count_center": [
+              1180,
+              100
+            ]
+          },
+          "2": {
+            "texts": [
+              {
+                "text": "x2",
+                "color": [
+                  255,
+                  255,
+                  255
+                ]
+              },
+              {
+                "text": "x2",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "bar_rects": [
+              [
+                1140,
+                140,
+                80,
+                4
+              ],
+              [
+                1140,
+                140,
+                40,
+                4
+              ]
+            ],
+            "count_center": [
+              1180,
+              100
+            ]
+          },
+          "5": {
+            "texts": [
+              {
+                "text": "x5",
+                "color": [
+                  100,
+                  255,
+                  100
+                ]
+              },
+              {
+                "text": "x5",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "text": "KILLING SPREE!",
+                "color": [
+                  100,
+                  255,
+                  100
+                ]
+              },
+              {
+                "text": "KILLING SPREE!",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "bar_rects": [
+              [
+                1140,
+                140,
+                80,
+                4
+              ],
+              [
+                1140,
+                140,
+                40,
+                4
+              ]
+            ],
+            "count_center": [
+              1180,
+              100
+            ],
+            "label_center": [
+              1180,
+              70
+            ]
+          },
+          "10": {
+            "texts": [
+              {
+                "text": "x10",
+                "color": [
+                  255,
+                  200,
+                  50
+                ]
+              },
+              {
+                "text": "x10",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "text": "RAMPAGE!",
+                "color": [
+                  255,
+                  200,
+                  50
+                ]
+              },
+              {
+                "text": "RAMPAGE!",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "bar_rects": [
+              [
+                1140,
+                140,
+                80,
+                4
+              ],
+              [
+                1140,
+                140,
+                40,
+                4
+              ]
+            ],
+            "count_center": [
+              1180,
+              100
+            ],
+            "label_center": [
+              1180,
+              70
+            ]
+          },
+          "15": {
+            "texts": [
+              {
+                "text": "x15",
+                "color": [
+                  255,
+                  100,
+                  50
+                ]
+              },
+              {
+                "text": "x15",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "text": "UNSTOPPABLE!",
+                "color": [
+                  255,
+                  100,
+                  50
+                ]
+              },
+              {
+                "text": "UNSTOPPABLE!",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "bar_rects": [
+              [
+                1140,
+                140,
+                80,
+                4
+              ],
+              [
+                1140,
+                140,
+                40,
+                4
+              ]
+            ],
+            "count_center": [
+              1180,
+              100
+            ],
+            "label_center": [
+              1180,
+              70
+            ]
+          },
+          "20": {
+            "texts": [
+              {
+                "text": "x20",
+                "color": [
+                  255,
+                  50,
+                  50
+                ]
+              },
+              {
+                "text": "x20",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "text": "GODLIKE!",
+                "color": [
+                  255,
+                  50,
+                  50
+                ]
+              },
+              {
+                "text": "GODLIKE!",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "bar_rects": [
+              [
+                1140,
+                140,
+                80,
+                4
+              ],
+              [
+                1140,
+                140,
+                40,
+                4
+              ]
+            ],
+            "count_center": [
+              1180,
+              100
+            ],
+            "label_center": [
+              1180,
+              70
+            ]
+          },
+          "25": {
+            "texts": [
+              {
+                "text": "x25",
+                "color": [
+                  255,
+                  50,
+                  50
+                ]
+              },
+              {
+                "text": "x25",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              },
+              {
+                "text": "GODLIKE!",
+                "color": [
+                  255,
+                  50,
+                  50
+                ]
+              },
+              {
+                "text": "GODLIKE!",
+                "color": [
+                  0,
+                  0,
+                  0
+                ]
+              }
+            ],
+            "bar_rects": [
+              [
+                1140,
+                140,
+                80,
+                4
+              ],
+              [
+                1140,
+                140,
+                40,
+                4
+              ]
+            ],
+            "count_center": [
+              1180,
+              100
+            ],
+            "label_center": [
+              1180,
+              70
+            ]
+          }
+        },
+        "bar": {
+          "120": [
+            [
+              1140,
+              140,
+              80,
+              4
+            ],
+            [
+              1140,
+              140,
+              80,
+              4
+            ]
+          ],
+          "90": [
+            [
+              1140,
+              140,
+              80,
+              4
+            ],
+            [
+              1140,
+              140,
+              60,
+              4
+            ]
+          ],
+          "45": [
+            [
+              1140,
+              140,
+              80,
+              4
+            ],
+            [
+              1140,
+              140,
+              30,
+              4
+            ]
+          ],
+          "1": [
+            [
+              1140,
+              140,
+              80,
+              4
+            ],
+            [
+              1140,
+              140,
+              0,
+              4
+            ]
+          ]
+        },
+        "hidden": {
+          "texts": [],
+          "bar_rects": []
+        },
+        "flash": {
+          "color_flash": 10,
+          "texts": [
+            {
+              "text": "x5",
+              "color": [
+                177,
+                255,
+                177
+              ]
+            },
+            {
+              "text": "x5",
+              "color": [
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "text": "KILLING SPREE!",
+              "color": [
+                177,
+                255,
+                177
+              ]
+            },
+            {
+              "text": "KILLING SPREE!",
+              "color": [
+                0,
+                0,
+                0
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "kills": [
+      {
+        "name": "minion_red_lone",
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "h0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1008,
+              "score": 8,
+              "ai_gold": 0,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 118,
+            "snap": {
+              "gold": 1008,
+              "score": 8,
+              "ai_gold": 0,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 1,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 1,
+            "snap": {
+              "gold": 1008,
+              "score": 8,
+              "ai_gold": 0,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 1
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 2,
+            "snap": {
+              "gold": 1008,
+              "score": 8,
+              "ai_gold": 0,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 1
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_chain_same_frame",
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "orc",
+            "team": "red"
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "undead",
+            "team": "red"
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "h0"
+              },
+              {
+                "unit": "m1",
+                "by": "h0"
+              },
+              {
+                "unit": "m2",
+                "by": null
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1042,
+              "score": 42,
+              "ai_gold": 0,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 3,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 30,
+            "snap": {
+              "gold": 1042,
+              "score": 42,
+              "ai_gold": 0,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 3,
+                "timer": 89,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_chain_spread_expire",
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m2",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "h0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1008,
+              "score": 8,
+              "ai_gold": 0,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 29,
+            "snap": {
+              "gold": 1008,
+              "score": 8,
+              "ai_gold": 0,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 90,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "by": null
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1016,
+              "score": 16,
+              "ai_gold": 0,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 29,
+            "snap": {
+              "gold": 1016,
+              "score": 16,
+              "ai_gold": 0,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 2,
+                "timer": 90,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m2",
+                "by": "h0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1024,
+              "score": 24,
+              "ai_gold": 0,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 3,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 119,
+            "snap": {
+              "gold": 1024,
+              "score": 24,
+              "ai_gold": 0,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 3
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": null
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1024,
+              "score": 24,
+              "ai_gold": 0,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 3
+              },
+              "kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_mixed_teams",
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "blue"
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "type": "thorne",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "h0"
+              },
+              {
+                "unit": "m1",
+                "by": "h1"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1008,
+              "score": 8,
+              "ai_gold": 8,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 5,
+            "snap": {
+              "gold": 1008,
+              "score": 8,
+              "ai_gold": 8,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 114,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_reward_and_attribution",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "type": "grimjaw",
+            "team": "red"
+          },
+          {
+            "id": "h2",
+            "kind": "hero",
+            "type": "sylara",
+            "team": "blue"
+          },
+          {
+            "id": "h3",
+            "kind": "hero",
+            "type": "thorne",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "h1",
+                "by": "h0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 1,
+                "h1": 0,
+                "h2": 0,
+                "h3": 0
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "h2",
+                "by": "h3"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 150,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 1,
+                "h1": 0,
+                "h2": 0,
+                "h3": 1
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "h3",
+                "by": "h0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1300,
+              "score": 300,
+              "ai_gold": 150,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 2,
+                "h1": 0,
+                "h2": 0,
+                "h3": 1
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 10,
+            "snap": {
+              "gold": 1300,
+              "score": 300,
+              "ai_gold": 150,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 2,
+                "h1": 0,
+                "h2": 0,
+                "h3": 1
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_neutral_and_self_source",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "type": "grimjaw",
+            "team": "red"
+          },
+          {
+            "id": "h2",
+            "kind": "hero",
+            "type": "sylara",
+            "team": "blue"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "h1",
+                "by": null
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0,
+                "h1": 0,
+                "h2": 0
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "h2",
+                "by": "h2",
+                "team": ""
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 150,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0,
+                "h1": 0,
+                "h2": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 10,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 150,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0,
+                "h1": 0,
+                "h2": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_killed_by_minion_tower",
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "blue"
+          },
+          {
+            "id": "t0",
+            "kind": "tower",
+            "type": "archer",
+            "team": "blue"
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "type": "grimjaw",
+            "team": "red"
+          },
+          {
+            "id": "h4",
+            "kind": "hero",
+            "type": "vex",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "h1",
+                "by": "t0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0,
+                "h1": 0,
+                "h4": 0
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "h4",
+                "by": "m0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1300,
+              "score": 300,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0,
+                "h1": 0,
+                "h4": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 10,
+            "snap": {
+              "gold": 1300,
+              "score": 300,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 0,
+                "h1": 0,
+                "h4": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_respawn_reward_twice",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "type": "grimjaw",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "h1",
+                "by": "h0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 599,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 1,
+            "snap": {
+              "gold": 1150,
+              "score": 150,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "h1",
+                "by": "h0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1300,
+              "score": 300,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 2,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 5,
+            "snap": {
+              "gold": 1300,
+              "score": 300,
+              "ai_gold": 0,
+              "total_kills": 0,
+              "max_combo": 0,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 2,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "combo_and_hero_mix",
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "type": "goblin",
+            "team": "red"
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "type": "kaizen",
+            "team": "blue"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "type": "grimjaw",
+            "team": "red"
+          }
+        ],
+        "steps": [
+          {
+            "kills": [
+              {
+                "unit": "m0",
+                "by": "h0"
+              },
+              {
+                "unit": "h1",
+                "by": "h0"
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1158,
+              "score": 158,
+              "ai_gold": 0,
+              "total_kills": 1,
+              "max_combo": 0,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "kills": [
+              {
+                "unit": "m1",
+                "by": null
+              }
+            ],
+            "frames": 1,
+            "snap": {
+              "gold": 1166,
+              "score": 166,
+              "ai_gold": 0,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "kills": [],
+            "frames": 121,
+            "snap": {
+              "gold": 1166,
+              "score": 166,
+              "ai_gold": 0,
+              "total_kills": 2,
+              "max_combo": 1,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 2
+              },
+              "kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "level_stats": {
+      "cases": [
+        {
+          "name": "first_win",
+          "prior": null,
+          "match": {
+            "won": true,
+            "score": 7777,
+            "time_seconds": 3723,
+            "kills": 4242,
+            "combo": 17,
+            "playtime_seconds": 3723
+          },
+          "flags": {
+            "is_new_best_score": true,
+            "is_new_best_time": true
+          },
+          "new_stats": {
+            "best_score": 7777,
+            "best_time_seconds": 3723,
+            "total_attempts": 1,
+            "wins": 1,
+            "total_kills": 4242,
+            "max_combo": 17,
+            "total_playtime_seconds": 3723
+          }
+        },
+        {
+          "name": "first_defeat",
+          "prior": null,
+          "match": {
+            "won": false,
+            "score": 100,
+            "time_seconds": 50,
+            "kills": 10,
+            "combo": 3,
+            "playtime_seconds": 50
+          },
+          "flags": {
+            "is_new_best_score": false,
+            "is_new_best_time": false
+          },
+          "new_stats": {
+            "best_score": 0,
+            "best_time_seconds": 0,
+            "total_attempts": 1,
+            "wins": 0,
+            "total_kills": 10,
+            "max_combo": 3,
+            "total_playtime_seconds": 50
+          }
+        },
+        {
+          "name": "equal_no_flag",
+          "prior": {
+            "best_score": 500,
+            "best_time_seconds": 90,
+            "total_attempts": 3,
+            "wins": 2,
+            "total_kills": 100,
+            "max_combo": 17,
+            "total_playtime_seconds": 1000
+          },
+          "match": {
+            "won": true,
+            "score": 500,
+            "time_seconds": 90,
+            "kills": 5,
+            "combo": 5,
+            "playtime_seconds": 90
+          },
+          "flags": {
+            "is_new_best_score": false,
+            "is_new_best_time": false
+          },
+          "new_stats": {
+            "best_score": 500,
+            "best_time_seconds": 90,
+            "total_attempts": 4,
+            "wins": 3,
+            "total_kills": 105,
+            "max_combo": 17,
+            "total_playtime_seconds": 1090
+          }
+        },
+        {
+          "name": "faster_time_only",
+          "prior": {
+            "best_score": 500,
+            "best_time_seconds": 90,
+            "total_attempts": 3,
+            "wins": 2,
+            "total_kills": 100,
+            "max_combo": 17,
+            "total_playtime_seconds": 1000
+          },
+          "match": {
+            "won": true,
+            "score": 400,
+            "time_seconds": 60,
+            "kills": 5,
+            "combo": 5,
+            "playtime_seconds": 60
+          },
+          "flags": {
+            "is_new_best_score": false,
+            "is_new_best_time": true
+          },
+          "new_stats": {
+            "best_score": 500,
+            "best_time_seconds": 60,
+            "total_attempts": 4,
+            "wins": 3,
+            "total_kills": 105,
+            "max_combo": 17,
+            "total_playtime_seconds": 1060
+          }
+        },
+        {
+          "name": "higher_score_only",
+          "prior": {
+            "best_score": 500,
+            "best_time_seconds": 90,
+            "total_attempts": 3,
+            "wins": 2,
+            "total_kills": 100,
+            "max_combo": 17,
+            "total_playtime_seconds": 1000
+          },
+          "match": {
+            "won": true,
+            "score": 501,
+            "time_seconds": 120,
+            "kills": 5,
+            "combo": 5,
+            "playtime_seconds": 120
+          },
+          "flags": {
+            "is_new_best_score": true,
+            "is_new_best_time": false
+          },
+          "new_stats": {
+            "best_score": 501,
+            "best_time_seconds": 90,
+            "total_attempts": 4,
+            "wins": 3,
+            "total_kills": 105,
+            "max_combo": 17,
+            "total_playtime_seconds": 1120
+          }
+        },
+        {
+          "name": "defeat_no_best_update",
+          "prior": {
+            "best_score": 500,
+            "best_time_seconds": 90,
+            "total_attempts": 3,
+            "wins": 2,
+            "total_kills": 100,
+            "max_combo": 17,
+            "total_playtime_seconds": 1000
+          },
+          "match": {
+            "won": false,
+            "score": 9999,
+            "time_seconds": 10,
+            "kills": 7,
+            "combo": 40,
+            "playtime_seconds": 10
+          },
+          "flags": {
+            "is_new_best_score": false,
+            "is_new_best_time": false
+          },
+          "new_stats": {
+            "best_score": 500,
+            "best_time_seconds": 90,
+            "total_attempts": 4,
+            "wins": 2,
+            "total_kills": 107,
+            "max_combo": 40,
+            "total_playtime_seconds": 1010
+          }
+        },
+        {
+          "name": "win_time_zero_ignored",
+          "prior": {
+            "best_score": 500,
+            "best_time_seconds": 90,
+            "total_attempts": 3,
+            "wins": 2,
+            "total_kills": 100,
+            "max_combo": 17,
+            "total_playtime_seconds": 1000
+          },
+          "match": {
+            "won": true,
+            "score": 600,
+            "time_seconds": 0,
+            "kills": 1,
+            "combo": 1,
+            "playtime_seconds": 0
+          },
+          "flags": {
+            "is_new_best_score": true,
+            "is_new_best_time": false
+          },
+          "new_stats": {
+            "best_score": 600,
+            "best_time_seconds": 90,
+            "total_attempts": 4,
+            "wins": 3,
+            "total_kills": 101,
+            "max_combo": 17,
+            "total_playtime_seconds": 1000
+          }
+        },
+        {
+          "name": "first_defeat_big",
+          "prior": null,
+          "match": {
+            "won": false,
+            "score": 7777,
+            "time_seconds": 3723,
+            "kills": 4242,
+            "combo": 17,
+            "playtime_seconds": 3723
+          },
+          "flags": {
+            "is_new_best_score": false,
+            "is_new_best_time": false
+          },
+          "new_stats": {
+            "best_score": 0,
+            "best_time_seconds": 0,
+            "total_attempts": 1,
+            "wins": 0,
+            "total_kills": 4242,
+            "max_combo": 17,
+            "total_playtime_seconds": 3723
+          }
+        },
+        {
+          "name": "zero_score_not_best",
+          "prior": null,
+          "match": {
+            "won": true,
+            "score": 0,
+            "time_seconds": 5,
+            "kills": 0,
+            "combo": 0,
+            "playtime_seconds": 5
+          },
+          "flags": {
+            "is_new_best_score": false,
+            "is_new_best_time": true
+          },
+          "new_stats": {
+            "best_score": 0,
+            "best_time_seconds": 5,
+            "total_attempts": 1,
+            "wins": 1,
+            "total_kills": 0,
+            "max_combo": 0,
+            "total_playtime_seconds": 5
+          }
+        }
+      ],
+      "defaults": {
+        "best_score": 0,
+        "best_time_seconds": 0,
+        "total_attempts": 0,
+        "wins": 0,
+        "total_kills": 0,
+        "max_combo": 0,
+        "total_playtime_seconds": 0
+      }
+    },
+    "achievement": {
+      "cases": [
+        {
+          "name": "queue_two",
+          "unlocks": [
+            [
+              "TITLE A",
+              "desc a",
+              "star"
+            ],
+            [
+              "TITLE B",
+              "desc b",
+              "skull"
+            ]
+          ],
+          "steps": [
+            {
+              "frames": 1,
+              "current": {
+                "title": "TITLE A",
+                "description": "desc a",
+                "icon_type": "star"
+              },
+              "timer": 180,
+              "queue": 1
+            },
+            {
+              "frames": 90,
+              "current": {
+                "title": "TITLE A",
+                "description": "desc a",
+                "icon_type": "star"
+              },
+              "timer": 90,
+              "queue": 1
+            },
+            {
+              "frames": 89,
+              "current": {
+                "title": "TITLE A",
+                "description": "desc a",
+                "icon_type": "star"
+              },
+              "timer": 1,
+              "queue": 1
+            },
+            {
+              "frames": 1,
+              "current": {
+                "title": "TITLE B",
+                "description": "desc b",
+                "icon_type": "skull"
+              },
+              "timer": 180,
+              "queue": 0
+            },
+            {
+              "frames": 90,
+              "current": {
+                "title": "TITLE B",
+                "description": "desc b",
+                "icon_type": "skull"
+              },
+              "timer": 90,
+              "queue": 0
+            },
+            {
+              "frames": 89,
+              "current": {
+                "title": "TITLE B",
+                "description": "desc b",
+                "icon_type": "skull"
+              },
+              "timer": 1,
+              "queue": 0
+            },
+            {
+              "frames": 1,
+              "current": null,
+              "timer": 0,
+              "queue": 0
+            }
+          ]
+        },
+        {
+          "name": "empty",
+          "unlocks": [],
+          "steps": [
+            {
+              "frames": 1,
+              "current": null,
+              "timer": 0,
+              "queue": 0
+            },
+            {
+              "frames": 200,
+              "current": null,
+              "timer": 0,
+              "queue": 0
+            }
+          ]
+        },
+        {
+          "name": "queue_three",
+          "unlocks": [
+            [
+              "T1",
+              "d1",
+              "star"
+            ],
+            [
+              "T2",
+              "d2",
+              "sword"
+            ],
+            [
+              "T3",
+              "d3",
+              "skull"
+            ]
+          ],
+          "steps": [
+            {
+              "frames": 1,
+              "current": {
+                "title": "T1",
+                "description": "d1",
+                "icon_type": "star"
+              },
+              "timer": 180,
+              "queue": 2
+            },
+            {
+              "frames": 181,
+              "current": {
+                "title": "T2",
+                "description": "d2",
+                "icon_type": "sword"
+              },
+              "timer": 179,
+              "queue": 1
+            },
+            {
+              "frames": 181,
+              "current": {
+                "title": "T3",
+                "description": "d3",
+                "icon_type": "skull"
+              },
+              "timer": 178,
+              "queue": 0
+            },
+            {
+              "frames": 181,
+              "current": null,
+              "timer": 0,
+              "queue": 0
+            },
+            {
+              "frames": 1,
+              "current": null,
+              "timer": 0,
+              "queue": 0
+            }
+          ]
+        }
+      ],
+      "slide_x": {
+        "0": [
+          1280,
+          180
+        ],
+        "1": [
+          1268,
+          180
+        ],
+        "2": [
+          1257,
+          180
+        ],
+        "3": [
+          1246,
+          180
+        ],
+        "4": [
+          1235,
+          180
+        ],
+        "5": [
+          1224,
+          180
+        ],
+        "6": [
+          1213,
+          180
+        ],
+        "7": [
+          1202,
+          180
+        ],
+        "8": [
+          1191,
+          180
+        ],
+        "9": [
+          1179,
+          180
+        ],
+        "10": [
+          1168,
+          180
+        ],
+        "11": [
+          1157,
+          180
+        ],
+        "12": [
+          1146,
+          180
+        ],
+        "13": [
+          1135,
+          180
+        ],
+        "14": [
+          1124,
+          180
+        ],
+        "15": [
+          1113,
+          180
+        ],
+        "16": [
+          1102,
+          180
+        ],
+        "17": [
+          1091,
+          180
+        ],
+        "18": [
+          1080,
+          180
+        ],
+        "19": [
+          1068,
+          180
+        ],
+        "20": [
+          1057,
+          180
+        ],
+        "21": [
+          1046,
+          180
+        ],
+        "22": [
+          1035,
+          180
+        ],
+        "23": [
+          1024,
+          180
+        ],
+        "24": [
+          1013,
+          180
+        ],
+        "25": [
+          1002,
+          180
+        ],
+        "26": [
+          991,
+          180
+        ],
+        "27": [
+          980,
+          180
+        ],
+        "28": [
+          980,
+          180
+        ],
+        "29": [
+          980,
+          180
+        ],
+        "30": [
+          980,
+          180
+        ],
+        "31": [
+          980,
+          180
+        ],
+        "32": [
+          980,
+          180
+        ],
+        "33": [
+          980,
+          180
+        ],
+        "34": [
+          980,
+          180
+        ],
+        "35": [
+          980,
+          180
+        ],
+        "36": [
+          980,
+          180
+        ],
+        "37": [
+          980,
+          180
+        ],
+        "38": [
+          980,
+          180
+        ],
+        "39": [
+          980,
+          180
+        ],
+        "40": [
+          980,
+          180
+        ],
+        "41": [
+          980,
+          180
+        ],
+        "42": [
+          980,
+          180
+        ],
+        "43": [
+          980,
+          180
+        ],
+        "44": [
+          980,
+          180
+        ],
+        "45": [
+          980,
+          180
+        ],
+        "46": [
+          980,
+          180
+        ],
+        "47": [
+          980,
+          180
+        ],
+        "48": [
+          980,
+          180
+        ],
+        "49": [
+          980,
+          180
+        ],
+        "50": [
+          980,
+          180
+        ],
+        "51": [
+          980,
+          180
+        ],
+        "52": [
+          980,
+          180
+        ],
+        "53": [
+          980,
+          180
+        ],
+        "54": [
+          980,
+          180
+        ],
+        "55": [
+          980,
+          180
+        ],
+        "56": [
+          980,
+          180
+        ],
+        "57": [
+          980,
+          180
+        ],
+        "58": [
+          980,
+          180
+        ],
+        "59": [
+          980,
+          180
+        ],
+        "60": [
+          980,
+          180
+        ],
+        "61": [
+          980,
+          180
+        ],
+        "62": [
+          980,
+          180
+        ],
+        "63": [
+          980,
+          180
+        ],
+        "64": [
+          980,
+          180
+        ],
+        "65": [
+          980,
+          180
+        ],
+        "66": [
+          980,
+          180
+        ],
+        "67": [
+          980,
+          180
+        ],
+        "68": [
+          980,
+          180
+        ],
+        "69": [
+          980,
+          180
+        ],
+        "70": [
+          980,
+          180
+        ],
+        "71": [
+          980,
+          180
+        ],
+        "72": [
+          980,
+          180
+        ],
+        "73": [
+          980,
+          180
+        ],
+        "74": [
+          980,
+          180
+        ],
+        "75": [
+          980,
+          180
+        ],
+        "76": [
+          980,
+          180
+        ],
+        "77": [
+          980,
+          180
+        ],
+        "78": [
+          980,
+          180
+        ],
+        "79": [
+          980,
+          180
+        ],
+        "80": [
+          980,
+          180
+        ],
+        "81": [
+          980,
+          180
+        ],
+        "82": [
+          980,
+          180
+        ],
+        "83": [
+          980,
+          180
+        ],
+        "84": [
+          980,
+          180
+        ],
+        "85": [
+          980,
+          180
+        ],
+        "86": [
+          980,
+          180
+        ],
+        "87": [
+          980,
+          180
+        ],
+        "88": [
+          980,
+          180
+        ],
+        "89": [
+          980,
+          180
+        ],
+        "90": [
+          980,
+          180
+        ],
+        "91": [
+          980,
+          180
+        ],
+        "92": [
+          980,
+          180
+        ],
+        "93": [
+          980,
+          180
+        ],
+        "94": [
+          980,
+          180
+        ],
+        "95": [
+          980,
+          180
+        ],
+        "96": [
+          980,
+          180
+        ],
+        "97": [
+          980,
+          180
+        ],
+        "98": [
+          980,
+          180
+        ],
+        "99": [
+          980,
+          180
+        ],
+        "100": [
+          980,
+          180
+        ],
+        "101": [
+          980,
+          180
+        ],
+        "102": [
+          980,
+          180
+        ],
+        "103": [
+          980,
+          180
+        ],
+        "104": [
+          980,
+          180
+        ],
+        "105": [
+          980,
+          180
+        ],
+        "106": [
+          980,
+          180
+        ],
+        "107": [
+          980,
+          180
+        ],
+        "108": [
+          980,
+          180
+        ],
+        "109": [
+          980,
+          180
+        ],
+        "110": [
+          980,
+          180
+        ],
+        "111": [
+          980,
+          180
+        ],
+        "112": [
+          980,
+          180
+        ],
+        "113": [
+          980,
+          180
+        ],
+        "114": [
+          980,
+          180
+        ],
+        "115": [
+          980,
+          180
+        ],
+        "116": [
+          980,
+          180
+        ],
+        "117": [
+          980,
+          180
+        ],
+        "118": [
+          980,
+          180
+        ],
+        "119": [
+          980,
+          180
+        ],
+        "120": [
+          980,
+          180
+        ],
+        "121": [
+          980,
+          180
+        ],
+        "122": [
+          980,
+          180
+        ],
+        "123": [
+          980,
+          180
+        ],
+        "124": [
+          980,
+          180
+        ],
+        "125": [
+          980,
+          180
+        ],
+        "126": [
+          980,
+          180
+        ],
+        "127": [
+          980,
+          180
+        ],
+        "128": [
+          980,
+          180
+        ],
+        "129": [
+          980,
+          180
+        ],
+        "130": [
+          980,
+          180
+        ],
+        "131": [
+          980,
+          180
+        ],
+        "132": [
+          980,
+          180
+        ],
+        "133": [
+          980,
+          180
+        ],
+        "134": [
+          980,
+          180
+        ],
+        "135": [
+          980,
+          180
+        ],
+        "136": [
+          980,
+          180
+        ],
+        "137": [
+          980,
+          180
+        ],
+        "138": [
+          980,
+          180
+        ],
+        "139": [
+          980,
+          180
+        ],
+        "140": [
+          980,
+          180
+        ],
+        "141": [
+          980,
+          180
+        ],
+        "142": [
+          980,
+          180
+        ],
+        "143": [
+          980,
+          180
+        ],
+        "144": [
+          980,
+          180
+        ],
+        "145": [
+          980,
+          180
+        ],
+        "146": [
+          980,
+          180
+        ],
+        "147": [
+          980,
+          180
+        ],
+        "148": [
+          980,
+          180
+        ],
+        "149": [
+          980,
+          180
+        ],
+        "150": [
+          980,
+          180
+        ],
+        "151": [
+          980,
+          180
+        ],
+        "152": [
+          980,
+          180
+        ],
+        "153": [
+          980,
+          180
+        ],
+        "154": [
+          980,
+          180
+        ],
+        "155": [
+          978,
+          180
+        ],
+        "156": [
+          975,
+          180
+        ],
+        "157": [
+          972,
+          180
+        ],
+        "158": [
+          968,
+          180
+        ],
+        "159": [
+          964,
+          180
+        ],
+        "160": [
+          960,
+          180
+        ],
+        "161": [
+          957,
+          180
+        ],
+        "162": [
+          954,
+          180
+        ],
+        "163": [
+          952,
+          180
+        ],
+        "164": [
+          951,
+          180
+        ],
+        "165": [
+          951,
+          180
+        ],
+        "166": [
+          953,
+          180
+        ],
+        "167": [
+          956,
+          180
+        ],
+        "168": [
+          962,
+          180
+        ],
+        "169": [
+          970,
+          180
+        ],
+        "170": [
+          980,
+          180
+        ],
+        "171": [
+          993,
+          180
+        ],
+        "172": [
+          1009,
+          180
+        ],
+        "173": [
+          1029,
+          180
+        ],
+        "174": [
+          1052,
+          180
+        ],
+        "175": [
+          1079,
+          180
+        ],
+        "176": [
+          1110,
+          180
+        ],
+        "177": [
+          1145,
+          180
+        ],
+        "178": [
+          1185,
+          180
+        ],
+        "179": [
+          1230,
+          180
+        ],
+        "180": [
+          1279,
+          180
+        ]
+      },
+      "panel_texts": [
+        {
+          "text": "A C H I E V E M E N T",
+          "color": [
+            255,
+            220,
+            50
+          ]
+        },
+        {
+          "text": "NEW HERO!",
+          "color": [
+            255,
+            255,
+            255
+          ]
+        },
+        {
+          "text": "Kaizen now FREE!",
+          "color": [
+            205,
+            210,
+            225
+          ]
+        }
+      ],
+      "new_hero": [
+        {
+          "name": "one_boss",
+          "bosses": [
+            "abaddon"
+          ],
+          "purchased": [
+            "kaizen"
+          ],
+          "save_bosses": [],
+          "newly": [
+            "abaddon"
+          ],
+          "queue": [
+            {
+              "title": "NEW HERO UNLOCKED!",
+              "description": "Abaddon now FREE in Hero Shop!",
+              "icon": "skull"
+            }
+          ],
+          "purchased_after": [
+            "kaizen",
+            "abaddon"
+          ],
+          "save_bosses_after": [
+            "abaddon"
+          ]
+        },
+        {
+          "name": "two_bosses",
+          "bosses": [
+            "abaddon",
+            "gornak"
+          ],
+          "purchased": [
+            "kaizen"
+          ],
+          "save_bosses": [],
+          "newly": [
+            "abaddon",
+            "gornak"
+          ],
+          "queue": [
+            {
+              "title": "NEW HERO UNLOCKED!",
+              "description": "Abaddon, Gornak now FREE in Hero Shop!",
+              "icon": "skull"
+            }
+          ],
+          "purchased_after": [
+            "kaizen",
+            "abaddon",
+            "gornak"
+          ],
+          "save_bosses_after": [
+            "abaddon",
+            "gornak"
+          ]
+        },
+        {
+          "name": "already_owned",
+          "bosses": [
+            "abaddon"
+          ],
+          "purchased": [
+            "kaizen",
+            "abaddon"
+          ],
+          "save_bosses": [],
+          "newly": [],
+          "queue": [],
+          "purchased_after": [
+            "kaizen",
+            "abaddon"
+          ],
+          "save_bosses_after": [
+            "abaddon"
+          ]
+        },
+        {
+          "name": "none",
+          "bosses": [],
+          "purchased": [
+            "kaizen"
+          ],
+          "save_bosses": [],
+          "newly": [],
+          "queue": [],
+          "purchased_after": [
+            "kaizen"
+          ],
+          "save_bosses_after": []
+        },
+        {
+          "name": "boss_recorded_in_save",
+          "bosses": [
+            "abaddon"
+          ],
+          "purchased": [
+            "kaizen"
+          ],
+          "save_bosses": [
+            "abaddon",
+            "varkul"
+          ],
+          "newly": [
+            "abaddon"
+          ],
+          "queue": [
+            {
+              "title": "NEW HERO UNLOCKED!",
+              "description": "Abaddon now FREE in Hero Shop!",
+              "icon": "skull"
+            }
+          ],
+          "purchased_after": [
+            "kaizen",
+            "abaddon"
+          ],
+          "save_bosses_after": [
+            "abaddon",
+            "varkul"
+          ]
+        }
+      ]
+    }
   }
 }

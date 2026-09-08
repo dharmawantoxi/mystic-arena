@@ -357,7 +357,12 @@ func die(killer_team: String = ""):
 	AudioManager.play_sfx("minion_death", 0.7)
 	if status != null:
 		status.clear()
-	GameManager.award_kill(killer_team, gold_reward, "minion")
+	# Loop reward Game.update pygame (_core.py:2196-2216, cabang TIM KORBAN):
+	# gold+skor+total_kills+combo untuk minion RED, gold AI untuk minion biru
+	# — SEKARANG lewat register_minion_death (dulu award_kill(killer_team),
+	# beda untuk sumber damage netral: pygame tetap membayar tim lawan
+	# korban). Combo: max_combo dibaca SEBELUM add_kill (quirk pygame).
+	GameManager.register_minion_death(self)
 	GameManager.minion_died.emit(self, killer_team)
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.3)
