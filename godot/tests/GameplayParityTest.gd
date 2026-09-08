@@ -148,10 +148,13 @@ func _test_purchases_and_respawn() -> void:
 	var inventory = hero.items
 	var hero_level := int(hero.level)
 	hero.kills = 7
-	hero.skills.cds["r"] = 9.0
-	hero.skills.active_skill = "r"
-	hero.skills.charge_action = "powershot"
-	hero.skills.charge_timer = 1.0
+	# State skill kini FIELD HERO berbasis frame (paritas _entity.py); mesin
+	# lama (SkillBook.cds dalam detik) sudah jadi facade UI tanpa state.
+	hero.r_cooldown = 540           # 9 s x 60 fps — cooldown R "sedang jalan"
+	hero.active_skill = "r"
+	hero.active_skill_timer = 60
+	hero.kit["_powershot_charging"] = true   # nama field persis _bundle.py:4403
+	hero.kit["_powershot_timer"] = 60
 	hero.status.apply_stun(5.0)
 	var tower = GameManager.spawn_tower("blue", Vector2(220, 500))
 	var minion = GameManager.spawn_minion("goblin", "red", Vector2(900, 100))
@@ -168,7 +171,8 @@ func _test_purchases_and_respawn() -> void:
 	_expect(not GameManager.try_buy_hero("zephyr"), "Dead heroes still consume roster capacity")
 	_expect(not hero.visible and hero.collision_layer == 0, "Dead hero is hidden and nonblocking")
 	_expect(not inventory.has("holy_rapier") and inventory.has("dead_edge"), "Only Holy Rapier drops")
-	_expect(hero.skills.charge_action == "", "Death cancels delayed casts")
+	_expect(bool(hero.kit.get("_powershot_charging")),
+		"Death freezes delayed casts (paritas: charge jalan lagi post-respawn)")
 
 	GameManager.set_paused(true)
 	GameManager._process(60.0)
@@ -182,7 +186,10 @@ func _test_purchases_and_respawn() -> void:
 		"Same hero instance keeps level, items and kill statistics")
 	_near(hero.hp, hero.max_hp, "Respawn restores full HP")
 	_expect(hero.status.stun_timer == 0.0, "Respawn clears debuffs")
-	_near(hero.skills.cds["r"], 9.0, "Death does not reset QWER cooldowns")
+	_near(float(hero.r_cooldown), 540.0, "Death does not reset QWER cooldowns")
+	_expect(hero.skill_timer <= 0, "Respawn resets Q ready (paritas respawn)")
+	_expect(str(hero.active_skill) == "r",
+		"Respawn keeps active_skill (pygame respawn tidak menyentuhnya)")
 	_expect(hero.global_position == hero.own_base() + Vector2(60, -30), "Respawn at own base")
 	_expect(hero.collision_layer == 2 and hero.is_physics_processing(), "Respawn restores physics")
 	_expect(is_instance_valid(tower) and is_instance_valid(minion), "Team wipe does not erase the battlefield")
