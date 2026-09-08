@@ -2193,6 +2193,1344 @@ def make_hero_catchup_unlocks_fixture(core, entity, system):
     }
 
 
+# ====================================================================
+# FASE 12 — UI/HUD in-match: oracle draw pygame headless.
+# ====================================================================
+# Semua nilai di bawah dievaluasi dari kode draw pygame ASLI (UIRenderer,
+# PopupRenderer, HeroPanel, ItemShopUI, Overlay, Menu, WaveAnnouncer,
+# InputHandler) yang dijalankan headless dengan font/mouse/timer/waktu
+# ter-pin. Replay: UiHudParityTest. Geometri direkam lewat hook
+# pygame.draw.rect + Surface.blit (subclass spy); teks direkam lewat proxy
+# font di satu-satunya jalur pembuatan font (_render._make_font via
+# AssetCache, cache dikosongkan sebelum/sesudah). Semua patch dipulihkan
+# di finally sehingga builder lain tidak terpengaruh.
+
+
+class _UiSpySurface(__import__("pygame").Surface):
+    """pygame.Surface yang mencatat posisi tiap blit.
+
+    Dipakai untuk geometri banner/panel yang dirender offscreen lalu
+    di-blit (posisi layarnya tak terlihat oleh hook draw.rect).
+    """
+    BLITS = []
+
+    def blit(self, source, dest=(0, 0), *args, **kwargs):
+        import pygame
+        try:
+            r = dest if isinstance(dest, pygame.Rect) else pygame.Rect(
+                dest, (0, 0))
+            sw, sh = source.get_size()
+            _UiSpySurface.BLITS.append(
+                [int(r.x), int(r.y), int(sw), int(sh)])
+        except Exception:
+            pass
+        return super().blit(source, dest, *args, **kwargs)
+
+
+class _UiFontProxy:
+    """Proxy font: rekam tiap string render, delegasikan sisanya."""
+
+    def __init__(self, real, sink):
+        object.__setattr__(self, "_real", real)
+        object.__setattr__(self, "_sink", sink)
+
+    def render(self, text, antialias, color, background=None):
+        object.__getattribute__(self, "_sink").append(text)
+        real = object.__getattribute__(self, "_real")
+        if background is None:
+            return real.render(text, antialias, color)
+        return real.render(text, antialias, color, background)
+
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "_real"), name)
+
+
+def make_ui_hud_fixture(core, entity):
+    """Bangun seksi fixture `ui_hud` dari draw pygame asli."""
+    import io
+    import time as _time_mod
+    import types
+    from contextlib import contextmanager, redirect_stdout
+
+    import pygame
+    import __main__
+    import _render as rend
+    import hero_items
+    import ui_theme
+    from _render import WaveAnnouncer, clear_cache
+    from localization import set_language
+
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+
+    W, H = 1280, 720
+    TICKS_PIN = 100000
+    TIME_PIN = 1000000.0
+
+
+    TEXTS, RECTS, PILLS = [], [], []
+    SINKS = {"texts": TEXTS, "rects": RECTS, "pills": PILLS}
+    saved = {}
+    saved["random"] = random.getstate()
+    random.seed(20260908)
+    saved["lang"] = core.GameSettings().language
+    saved["diff"] = core.GameSettings().difficulty
+    set_language("id")
+    core.GameSettings().difficulty = "normal"
+    core.GameSettings().language = "id"
+
+    _orig_make_font = rend._make_font
+    rend._make_font = lambda size, style="body", bold=False: _UiFontProxy(
+        _orig_make_font(size, style, bold), TEXTS)
+    clear_cache()
+    _probe = _orig_make_font(20, "body")
+    assert ui_theme._has_glyph(_probe, "…") is True
+    _orig_has_glyph = ui_theme._has_glyph
+    ui_theme._has_glyph = lambda f, ch: True if ch == "…" else _orig_has_glyph(f, ch)
+    saved["get_pos"] = pygame.mouse.get_pos
+    pygame.mouse.get_pos = lambda: (-100, -100)
+    saved["ticks"] = pygame.time.get_ticks
+    pygame.time.get_ticks = lambda: TICKS_PIN
+    saved["draw_rect"] = pygame.draw.rect
+
+    def _rec_draw_rect(surface, color, rect, *args, **kwargs):
+        try:
+            r = pygame.Rect(rect)
+            RECTS.append({"rect": [int(r.x), int(r.y), int(r.w), int(r.h)],
+                          "width": args[0] if args else 0})
+        except Exception:
+            pass
+        return saved["draw_rect"](surface, color, rect, *args, **kwargs)
+
+    pygame.draw.rect = _rec_draw_rect
+    saved["pill"] = ui_theme.pill
+
+    def _rec_pill(screen, btns, bid, label, rect, kind, font, hover=False,
+                  enabled=True, icon=None, letter_gap=True):
+        PILLS.append({"bid": bid, "kind": kind, "enabled": bool(enabled)})
+        return saved["pill"](screen, btns, bid, label, rect, kind, font,
+                             hover=hover, enabled=enabled, icon=icon,
+                             letter_gap=letter_gap)
+
+    ui_theme.pill = _rec_pill
+    saved["game_instance"] = getattr(__main__, "game_instance", None)
+
+    @contextmanager
+    def pinned_time():
+        real = _time_mod.time
+        _time_mod.time = lambda: TIME_PIN
+        try:
+            yield
+        finally:
+            _time_mod.time = real
+
+    def _run(game, screen, SINKS, pinned_time):
+        TEXTS, RECTS, PILLS = SINKS["texts"], SINKS["rects"], SINKS["pills"]
+        scenarios = {}
+
+        def reset_sinks():
+            del TEXTS[:]
+            del RECTS[:]
+            del PILLS[:]
+            del _UiSpySurface.BLITS[:]
+            game.ui_buttons = {}
+
+        def panel_rect(min_area=90000):
+            cands = [e["rect"] for e in RECTS
+                     if e["width"] and not (e["rect"][0] == 0 and e["rect"][1] == 0)
+                     and e["rect"][2] * e["rect"][3] >= min_area]
+            assert cands, "panel hilang"
+            return max(cands, key=lambda r: r[2] * r[3])
+
+        def blits_of(w, h):
+            return [b for b in _UiSpySurface.BLITS if b[2] == w and b[3] == h]
+
+        def capture(name, fn, min_area=90000):
+            reset_sinks()
+            fn()
+            by_bid = {}
+            for p in PILLS:
+                by_bid[p["bid"]] = p
+            buttons = []
+            for bid, rect in game.ui_buttons.items():
+                r = pygame.Rect(rect)
+                pill = by_bid.get(bid)
+                enabled = (pill["enabled"] and pill["kind"] != "locked"
+                           if pill else True)
+                buttons.append({"id": bid, "rect": [r.x, r.y, r.w, r.h],
+                                "enabled": enabled})
+            scenarios[name] = {"buttons": buttons, "texts": list(TEXTS)}
+            return scenarios[name]
+
+        # ---------- A. gold/income/mode ----------
+        formats = {"gold": {}, "chip": {}, "income": {}, "mode": {}}
+        for gval in (0, 999, 1000, 1234567):
+            game.gold = gval
+            game.gold_per_second = 3.0
+            game.difficulty = "normal"
+            c = capture("gold_%d" % gval,
+                        lambda: core.Game._draw_gold_hud(game, screen))
+            formats["gold"][str(gval)] = c["texts"][0]
+            chips = [e["rect"] for e in RECTS
+                     if e["rect"][0] == 18 and e["rect"][1] == 22 and e["width"]]
+            assert chips, "chip hilang g=%d" % gval
+            formats["chip"][str(gval)] = max(chips, key=lambda r: r[2])
+        badges = [e["rect"] for e in RECTS
+                  if e["rect"][0] == 18 and e["rect"][3] == 24 and e["width"]]
+        assert badges, "badge hilang"
+        scenarios["gold_geo"] = {"buttons": [], "texts": [],
+                                 "geometry": {"badge": max(badges)}}
+        for rate in (3.0, 3.75, 5.7, 7.125, 0.0, 2.675, 4.5, 2.475, 3.25, 6.75):
+            game.gold = 1000
+            game.gold_per_second = rate
+            c = capture("rate_%s" % rate,
+                        lambda: core.Game._draw_gold_hud(game, screen))
+            formats["income"][str(rate)] = c["texts"][1]
+        for diff in ("easy", "normal", "hard", "nightmare"):
+            game.difficulty = diff
+            c = capture("mode_%s" % diff,
+                        lambda: core.Game._draw_gold_hud(game, screen))
+            formats["mode"][diff] = c["texts"][2]
+        game.difficulty = "normal"
+
+        # ---------- B. wave ----------
+        wave = {"duration": WaveAnnouncer().duration, "cases": {},
+                "slide_x": {}}
+        for wn in (1, 13):
+            wa = WaveAnnouncer()
+            wa.announce(wn)
+            assert wa.active and wa.timer == wa.duration
+            wa.update()
+            assert wa.timer == wa.duration - 1
+            wa.timer = wa.duration
+            wa.update()
+            reset_sinks()
+            wa.draw(screen, W, H)
+            c = {"buttons": [], "texts": list(TEXTS)}
+            bb = blits_of(400, 80)
+            assert bb, "banner blit hilang"
+            c["geometry"] = {"banner_hold": [b for b in bb]}
+            wave["cases"][str(wn)] = {
+                "title": "WAVE %d" % wn,
+                "title_shown": c["texts"].count("WAVE %d" % wn),
+                "sub": "E N E M I E S   I N C O M I N G",
+                "sub_shown": c["texts"].count(
+                    "E N E M I E S   I N C O M I N G"),
+                "banner": {"w": 400, "h": 80, "y": 200}}
+            scenarios["wave_%d" % wn] = c
+        wa = WaveAnnouncer()
+        wa.announce(1)
+        for timer in range(0, 121):
+            wa.timer = timer
+            del _UiSpySurface.BLITS[:]
+            wa.draw(screen, W, H)
+            bb = blits_of(400, 80)
+            wave["slide_x"][str(timer)] = [b[0] for b in bb]
+        assert wave["slide_x"]["84"] == [440]
+
+        # ---------- C. hero shop ----------
+        catalog = core.get_all_hero_types()
+        boss_types = [ht for ht, st in catalog.items()
+                      if st.get("is_boss_hero")][:10]
+
+        def reset_shop(tab="starter"):
+            game._shop_tab = tab
+            game._shop_scroll = 0
+
+        game.gold = 100000
+        game.purchased_heroes = ["kaizen"]
+        game.heroes = []
+        reset_shop("starter")
+        game.shop_open = True
+        capture("shop_starter_empty", lambda: game.ui.draw_hero_shop(screen))
+        scenarios["shop_starter_empty"]["geometry"] = {
+            "panel": panel_rect(), "shop_pos": [340, 540]}
+        game.purchased_heroes = ["kaizen", "grimjaw", "sylara"]
+        with redirect_stdout(io.StringIO()):
+            game.try_buy_hero("kaizen")
+        game.gold = 50
+        game.shop_open = True
+        reset_shop("starter")
+        capture("shop_poor", lambda: game.ui.draw_hero_shop(screen))
+        game.gold = 100000
+        game.shop_open = True
+        reset_shop("starter")
+        c = capture("shop_owned", lambda: game.ui.draw_hero_shop(screen))
+        ka = core.get_all_hero_types()["kaizen"]
+        assert c["texts"].count("ACTIVE") == 1
+        game.purchased_heroes = ["kaizen", "grimjaw", "sylara", "thorne", "vex",
+                                 "zephyr"]
+        game.heroes = []
+        with redirect_stdout(io.StringIO()):
+            for ht in ("kaizen", "grimjaw", "sylara", "thorne", "vex"):
+                game.try_buy_hero(ht)
+        assert len(game.heroes) == core.MAX_HEROES_OWNED
+        game.gold = 100000
+        game.shop_open = True
+        reset_shop("starter")
+        c = capture("shop_max_case", lambda: game.ui.draw_hero_shop(screen))
+        assert "MAX" in c["texts"] and "Zephyr" in c["texts"]
+        game.heroes = []
+        game.purchased_heroes = ["kaizen"]
+        reset_shop("boss")
+        game.shop_open = True
+        capture("shop_boss_empty", lambda: game.ui.draw_hero_shop(screen))
+        game.purchased_heroes = ["kaizen"] + boss_types
+        reset_shop("boss")
+        game.shop_open = True
+        capture("shop_boss_scroll", lambda: game.ui.draw_hero_shop(screen))
+        game._shop_scroll = 200
+        game.shop_open = True
+        capture("shop_boss_scrolled", lambda: game.ui.draw_hero_shop(screen))
+        shop_max_scroll = game._shop_scroll
+        assert shop_max_scroll == 100
+        game.shop_open = False
+
+        # ---------- D. hero panel ----------
+        game.heroes = []
+        game.purchased_heroes = ["kaizen"]
+        game.gold = 100000
+        with redirect_stdout(io.StringIO()):
+            game.try_buy_hero("kaizen")
+        h = game.heroes[0]
+        game.selected_hero = h
+        h.skill_timer = 37
+        h.w_cooldown = 120
+        h.e_cooldown = 0
+        h.r_cooldown = 0
+        c = capture("panel_lv1", lambda: game.ui.draw_hero_info(screen))
+        c["geometry"] = {"panel": list(game.ui_rects.get("hero_panel"))}
+        assert c["geometry"]["panel"] == [20, 424, 280, 276]
+        cd_map = {}
+        for cd in (0, 1, 37, 59, 60, 61, 119, 120, 121, 300, 599, 600):
+            h.skill_timer = cd
+            h.w_cooldown = 0
+            h.e_cooldown = 0
+            h.r_cooldown = 0
+            c = capture("cd_%d" % cd, lambda: game.ui.draw_hero_info(screen))
+            bare = sorted({t for t in c["texts"]
+                           if t.isdigit() and c["texts"].count(t) >= 2})
+            assert len(bare) <= 1, (cd, bare)
+            cd_map[str(cd)] = int(bare[0]) if bare else None
+        formats["cooldown"] = cd_map
+        h.skill_timer = 0
+        with redirect_stdout(io.StringIO()):
+            while h.level < core.MAX_HERO_LEVEL:
+                assert h.upgrade()
+        for sid in ("dead_edge", "holy_rapier", "demon_maw"):
+            assert h.items.add(sid), sid
+        capture("panel_max", lambda: game.ui.draw_hero_info(screen))
+        h.alive = False
+        c = capture("panel_dead", lambda: game.ui.draw_hero_info(screen))
+        assert c["buttons"] == [] and c["texts"] == []
+        h.alive = True
+        # biaya upgrade hero per level (metode asli)
+        hcost = {}
+        h2 = entity.Hero("kaizen", "blue", 100, 100)
+        for _ in range(1, core.MAX_HERO_LEVEL):
+            hcost[str(h2.level)] = h2.upgrade_cost()
+            assert h2.upgrade()
+        hcost[str(h2.level)] = h2.upgrade_cost()
+        game.selected_hero = None
+
+        # ---------- E. build popup ----------
+        game.gold = 100000
+        for gx in (0, 99, 100, 500):
+            game.gold = gx
+            game.build_popup_slot = dict(game.build_slots_blue[0])
+            capture("build_g%d" % gx, lambda: game.ui.draw_build_popup(screen))
+        assert "Gold: 99  (Cost: 100)" in scenarios["build_g99"]["texts"]
+        build_pos = {}
+        for name, sx, sy in (("center", 640, 400), ("left", 30, 400),
+                             ("top", 640, 60), ("right", 1250, 400)):
+            game.gold = 500
+            game.build_popup_slot = {"x": sx, "y": sy, "lane": "mid",
+                                     "taken": False}
+            c = capture("build_pos_%s" % name,
+                        lambda: game.ui.draw_build_popup(screen))
+            c["geometry"] = {"panel": panel_rect()}
+            arch = [b for b in c["buttons"] if b["id"] == "build_archer"][0]
+            build_pos[name] = {"slot": [sx, sy], "panel": c["geometry"]["panel"],
+                               "archer": arch["rect"]}
+        game.build_popup_slot = None
+        game.gold = 100000
+
+        # ---------- F. tower popup ----------
+        def tower_scenario(name, tower, gold=100000):
+            game.gold = gold
+            game.open_popup(tower, "tower")
+            try:
+                c = capture(name, lambda: game.ui.draw_popup(screen))
+                c["geometry"] = {"panel": panel_rect()}
+            finally:
+                game.close_popup()
+
+        t1 = entity.Tower(600, 400, "blue")
+        tower_scenario("tower_L1", t1)
+        path_costs = {p: t1.upgrade_cost(p)
+                      for p in ("archer", "cannon", "ice", "mage")}
+        t3 = entity.Tower(600, 400, "blue")
+        assert t3.upgrade("mage") and t3.upgrade()
+        tower_scenario("tower_L3_mage", t3)
+        tmax = entity.Tower(600, 400, "blue")
+        assert tmax.upgrade("cannon")
+        while tmax.can_upgrade():
+            assert tmax.upgrade()
+        assert tmax.level == 6
+        tower_scenario("tower_max", tmax)
+        tower_scenario("tower_enemy", entity.Tower(600, 400, "red"))
+        t4 = entity.Tower(600, 400, "blue")
+        assert t4.upgrade("ice")
+        t4.upgrade()
+        t4.upgrade()
+        assert t4.level == 4 and t4.can_activate_regen_shield()
+        tower_scenario("tower_L4_regen_poor", t4, gold=100)
+        tower_scenario("tower_L4_regen_rich", t4, gold=100000)
+        assert t4.activate_regen_shield()
+        tower_scenario("tower_L4_regen_on", t4)
+        # biaya per level jalur cannon (metode asli)
+        tcost, tsell, tregen = {}, {}, {}
+        tc = entity.Tower(600, 400, "blue")
+        for _ in range(5):
+            tcost[str(tc.level)] = tc.upgrade_cost()
+            tsell[str(tc.level)] = tc.sell_value()
+            tregen[str(tc.level)] = (tc.regen_shield_cost()
+                                     if tc.can_activate_regen_shield() else None)
+            assert tc.upgrade("cannon") if tc.level == 1 else tc.upgrade()
+        tcost[str(tc.level)] = tc.upgrade_cost()
+        tsell[str(tc.level)] = tc.sell_value()
+        tregen[str(tc.level)] = (tc.regen_shield_cost()
+                                 if tc.can_activate_regen_shield() else None)
+
+        # ---------- G. nexus popup ----------
+        bb = game.blue_base
+        saved_bb = (bb.level, bb.free_shield_active, bb.castle_shield_purchased,
+                    bb.shield_active, bb.shield, bb.shield_max)
+
+        def nexus_scenario(name, level, free, purchased, gold=100000,
+                           enemy=False):
+            game.gold = gold
+            if enemy:
+                game.open_popup(game.red_base, "nexus_red")
+            else:
+                bb.level = level
+                bb._apply_level_stats()
+                bb.free_shield_active = free
+                bb.castle_shield_purchased = purchased
+                bb.shield_active = free or purchased
+                if purchased and not free:
+                    bb.shield_max = int(bb.max_hp * core.CASTLE_SHIELD_HP_RATIO)
+                    bb.shield = bb.shield_max // 2
+                game.open_popup(bb, "nexus_blue")
+            try:
+                c = capture(name, lambda: game.ui.draw_popup(screen))
+                c["geometry"] = {"panel": panel_rect()}
+            finally:
+                game.close_popup()
+
+        nexus_scenario("nexus_L1_free", 1, True, False)
+        nexus_scenario("nexus_L1_buyable_poor", 1, False, False, gold=100)
+        nexus_scenario("nexus_L1_buyable_rich", 1, False, False, gold=100000)
+        nexus_scenario("nexus_L1_bought", 1, False, True)
+        nexus_scenario("nexus_L5_max", 5, False, True)
+        nexus_scenario("nexus_enemy", 1, False, False, enemy=True)
+        (bb.level, bb.free_shield_active, bb.castle_shield_purchased,
+         bb.shield_active, bb.shield, bb.shield_max) = saved_bb
+        bb._apply_level_stats()
+        ncost, nshield, nnames = {}, {}, {}
+        nc = entity.Castle(100, 620, "blue")
+        for _ in range(4):
+            ncost[str(nc.level)] = nc.upgrade_cost()
+            nshield[str(nc.level)] = nc.castle_shield_cost()
+            nnames[str(nc.level)] = core.CASTLE_NAMES[nc.level]
+            assert nc.upgrade()
+        ncost[str(nc.level)] = nc.upgrade_cost()
+        nshield[str(nc.level)] = nc.castle_shield_cost()
+        nnames[str(nc.level)] = core.CASTLE_NAMES[nc.level]
+
+        # ---------- H. itemshop ----------
+        game.heroes = []
+        game.purchased_heroes = ["kaizen", "sylara"]
+        game.gold = 100000
+        with redirect_stdout(io.StringIO()):
+            game.try_buy_hero("kaizen")
+            game.try_buy_hero("sylara")
+        hk = [x for x in game.heroes if x.hero_type == "kaizen"][0]
+        hs = [x for x in game.heroes if x.hero_type == "sylara"][0]
+        game.selected_hero = hk
+        game.item_shop_open = True
+        game.itemshop_target_hero = None
+        game.itemshop_inspect_item = None
+        game.itemshop_page = 0
+        c = capture("itemshop_default",
+                    lambda: hero_items.ItemShopUI.draw(screen, game))
+        c["geometry"] = {"panel": panel_rect()}
+        assert c["geometry"]["panel"] == [90, 0, 1100, 720]
+        page_cards = {}
+        for page in range(6):
+            game.itemshop_page = page
+            game.gold = 100000
+            game.itemshop_inspect_item = None
+            game.item_shop_open = True
+            c = capture("itemshop_page%d" % page,
+                        lambda: hero_items.ItemShopUI.draw(screen, game))
+            page_cards[str(page)] = [
+                b["id"].replace("itemshop_card_", "") for b in c["buttons"]
+                if b["id"].startswith("itemshop_card_")]
+        assert sum(len(v) for v in page_cards.values()) == len(
+            hero_items.ITEM_CATALOG)
+        game.itemshop_page = 0
+        game.itemshop_target_hero = hs
+        game.itemshop_inspect_item = "dead_edge"
+        game.gold = 100000
+        game.item_shop_open = True
+        c = capture("itemshop_melee_denied",
+                    lambda: hero_items.ItemShopUI.draw(screen, game))
+        grid0 = page_cards["0"]
+        c["gates"] = {sid: any(b["id"] == "itemshop_buy_" + sid
+                               for b in c["buttons"]) for sid in grid0}
+        assert c["gates"]["cleave_axe"] is False
+        assert c["gates"]["dead_edge"] is True
+        game.itemshop_target_hero = hk
+        game.itemshop_inspect_item = "holy_rapier"
+        hk.items.add("holy_rapier")
+        hk.items.add("holy_rapier")
+        game.item_shop_open = True
+        capture("itemshop_owned2",
+                lambda: hero_items.ItemShopUI.draw(screen, game))
+        assert "Owned: 2" in scenarios["itemshop_owned2"]["texts"]
+        hk.items = type(hk.items)(hk)
+        hs.alive = False
+        game.itemshop_target_hero = hs
+        game.itemshop_inspect_item = "demon_maw"
+        game.gold = 100000
+        with redirect_stdout(io.StringIO()):
+            hero_items._try_buy(game, "demon_maw")
+        assert game.gold == 100000 - 4500
+        assert hero_items.pending_forge_items(hs) == ["demon_maw"]
+        game.item_shop_open = True
+        c = capture("itemshop_dead_pending",
+                    lambda: hero_items.ItemShopUI.draw(screen, game))
+        assert any("Queued" in t or "Antre" in t or "mati" in t
+                   for t in c["texts"]), c["texts"][-8:]
+        hs.alive = True
+        game.item_shop_open = False
+        game.itemshop_inspect_item = None
+        item_flags = {sid: {"cost": d["cost"],
+                            "melee_only": bool(d.get("melee_only")),
+                            "magic_only": bool(d.get("magic_only"))}
+                      for sid, d in hero_items.ITEM_CATALOG.items()}
+
+        # ---------- I. overlay (via Game.draw penuh) ----------
+        def overlay_scenario(name, state, level, completed, new_heroes=(),
+                             new_best=False, wave_no=13, kills=4242, combo=17):
+            game.state = state
+            game.level_number = level
+            game.score = 7777
+            game.meta_reward_earned = 250
+            game.heroes_unlocked_this_match = list(new_heroes)
+            game.save_data = {"completed_levels": list(completed)}
+            game.newly_unlocked_heroes = list(new_heroes)
+            game.new_best_score = new_best
+            game.new_best_time = new_best
+            game.wave_number = wave_no
+            game.total_kills = kills
+            game.max_combo = combo
+            game.shop_open = False
+            game.selected_hero = None
+            game.popup_target = None
+            game.build_popup_slot = None
+            game.item_shop_open = False
+            game.level_intro = None
+            game.match_start_time = TIME_PIN - 3723.0
+            with pinned_time():
+                reset_sinks()
+                game.ui.overlay_component.unlock_popup_timer = 95
+                game.draw()
+                # Game.draw TIDAK me-reset ui_buttons sendiri? catat apa adanya
+                buttons = []
+                for bid, rect in game.ui_buttons.items():
+                    r = pygame.Rect(rect)
+                    buttons.append({"id": bid, "rect": [r.x, r.y, r.w, r.h],
+                                    "enabled": True})
+                scenarios[name] = {"buttons": buttons, "texts": list(TEXTS)}
+                stats = [e["rect"] for e in RECTS
+                         if e["width"] == 2 and e["rect"][2] == 500
+                         and e["rect"][3] == 214]
+                assert stats, "stats panel hilang di %s" % name
+                scenarios[name]["geometry"] = {"stats": stats[0]}
+                if new_heroes and state == "victory":
+                    sh = blits_of(350, 230)
+                    assert sh, "unlock shadow blit hilang di %s" % name
+                    scenarios[name]["geometry"]["unlock_shadow"] = sh[0]
+            return scenarios[name]
+
+        c = overlay_scenario("overlay_victory_unlock", "victory", 1, [1],
+                             new_heroes=("abaddon",))
+        assert "VICTORY! LV.1" in c["texts"]
+        assert "NEW LEVEL UNLOCKED!" in c["texts"]
+        assert "LEVEL 2" in c["texts"]
+        assert "1:02:03" not in c["texts"]  # format m:ss tanpa jam
+        assert "62:03" in c["texts"], [t for t in c["texts"] if ":" in t]
+        c = overlay_scenario("overlay_victory_best", "victory", 1, [1, 2],
+                             new_best=True)
+        assert c["texts"].count("NEW BEST!") == 2, c["texts"]
+        assert "geometry" in c and "unlock_shadow" not in c["geometry"]
+        c = overlay_scenario("overlay_victory_no_new", "victory", 5, [5, 6])
+        assert "NEW LEVEL UNLOCKED!" not in c["texts"]
+        c = overlay_scenario("overlay_victory_last", "victory", 54, [54])
+        assert "(You cleared all levels!)" in " ".join(c["texts"])
+        assert [b["id"] for b in c["buttons"]] == []
+        c = overlay_scenario("overlay_defeat", "defeat", 3, [])
+        assert "DEFEAT LV.3" in c["texts"]
+        assert [b["id"] for b in c["buttons"]] == []
+        game.state = "playing"
+        game.heroes_unlocked_this_match = []
+        game.newly_unlocked_heroes = []
+        game.new_best_score = False
+        game.new_best_time = False
+        # kurva slide unlock popup (timer -> x blit shadow)
+        unlock_slide = {}
+        game.state = "victory"
+        game.level_number = 1
+        game.score = 1
+        game.meta_reward_earned = 1
+        game.heroes_unlocked_this_match = ["abaddon"]
+        game.save_data = {"completed_levels": [1]}
+        game.newly_unlocked_heroes = ["abaddon"]
+        game.selected_hero = None
+        with pinned_time():
+            for timer in (90, 91, 95, 100, 105, 119, 120, 150):
+                game.ui.overlay_component.unlock_popup_timer = timer
+                del _UiSpySurface.BLITS[:]
+                game.ui.overlay_component.draw(
+                    screen, "VICTORY! LV.1", (255, 215, 0), "S", "A")
+                sh = blits_of(350, 230)
+                unlock_slide[str(timer)] = sh[0][:2] if sh else None
+        assert unlock_slide["120"] == [855, 255], unlock_slide
+        game.state = "playing"
+        # Baterai format match time m:ss ( draw stats langsung; unlock popup
+        # ditekan via timer 0 < delay 90).
+        game.score = 7777
+        game.wave_number = 13
+        game.total_kills = 4242
+        game.max_combo = 17
+        game.new_best_score = False
+        game.new_best_time = False
+        game.save_data = {"completed_levels": [1, 2]}
+        game.level_number = 1
+        game.heroes_unlocked_this_match = []
+        game.newly_unlocked_heroes = []
+        mt = {}
+        for secs in (0, 5, 59, 60, 61, 3599, 3600, 3723, 6000):
+            game.match_start_time = TIME_PIN - float(secs)
+            with pinned_time():
+                reset_sinks()
+                game.ui.overlay_component.unlock_popup_timer = 0
+                game.ui.overlay_component.draw(
+                    screen, "VICTORY! LV.1", (255, 215, 0),
+                    "Score: 7777 | +250 Hero Gold",
+                    "[N] Next Level  [R] Replay  [M] Menu")
+            texts = list(TEXTS)
+            mt[str(secs)] = texts[texts.index("Match Time") + 1]
+        assert mt["3723"] == "62:03" and mt["3600"] == "60:00", mt
+        formats["match_time"] = mt
+        # Pulihkan kondisi unlock popup untuk seksi L (L8 butuh tombol
+        # PLAY NEXT LEVEL yang hanya muncul bersama popup).
+        game.save_data = {"completed_levels": [1]}
+        game.heroes_unlocked_this_match = ["abaddon"]
+        game.newly_unlocked_heroes = ["abaddon"]
+        game.ui.overlay_component.unlock_popup_timer = 150
+
+        # ---------- J. pause ----------
+        _get_font = core.get_font
+        for done in ([1, 2], list(range(1, 55))):
+            fake = types.SimpleNamespace(
+                screen=screen, buttons={},
+                font_button=_get_font(44, "body_bold"), hover_button=None,
+                save_data={"completed_levels": list(done)})
+            fake._is_difficulty_locked = types.MethodType(
+                core.Menu._is_difficulty_locked, fake)
+            reset_sinks()
+            core.Menu._draw_pause_menu(fake)
+            buttons = [{"id": b, "rect": list(pygame.Rect(r)), "enabled": True}
+                       for b, r in fake.buttons.items()]
+            name = ("pause" if len(done) == 2 else "pause_all_clear")
+            scenarios[name] = {"buttons": buttons, "texts": list(TEXTS)}
+            panels = [e["rect"] for e in RECTS
+                      if e["width"] and e["rect"][2] == 400
+                      and e["rect"][3] == 400 and e["rect"][0] != 0]
+            assert panels == [[440, 160, 400, 400]], panels
+            scenarios[name]["geometry"] = {"panel": panels[0]}
+        assert [b["id"] for b in scenarios["pause"]["buttons"]] == [
+            "resume", "settings_pause", "main_menu", "quit"]
+
+        # ---------- intro ----------
+        from levels import get_level_config
+        intro = rend.LevelIntroScreen(get_level_config(1), W, H)
+        intro.timer = 60
+        reset_sinks()
+        game.ui_buttons = {}
+        intro.draw(screen)
+        scenarios["intro"] = {"buttons": [], "texts": list(TEXTS)}
+        assert "P R E P A R E   F O R   B A T T L E" in scenarios["intro"]["texts"]
+        skips = {}
+        for key_name, key in (("space", pygame.K_SPACE),
+                              ("return", pygame.K_RETURN),
+                              ("escape", pygame.K_ESCAPE)):
+            intro.active = True
+            skips[key_name] = intro.handle_skip(key=key)
+        intro.active = True
+        skips["click"] = intro.handle_skip(click=True)
+        assert skips == {"space": True, "return": True, "escape": False,
+                         "click": True}, skips
+
+        # ---------- K. predikat ----------
+        SN = SimpleNamespace
+        hero_range, hero_magic = {}, {}
+        for ht, st in catalog.items():
+            probe = SN(role=st.get("role", ""), range=st.get("range", 0))
+            hero_range[ht] = st.get("range", 0)
+            hero_magic[ht] = bool(hero_items.is_magic_hero(probe))
+        
+        # ---------- K2. baterai touch-rect 48px ----------
+        touch_rects = []
+        for rect in ((10, 10, 20, 20), (0, 0, 21, 21), (500, 500, 200, 200),
+                     (1131, -5, 44, 44), (18, 22, 150, 40), (0, 0, 48, 48),
+                     (100, 100, 1, 1), (640, 360, 47, 47)):
+            pr = pygame.Rect(rect)
+            exp = core.InputHandler._touch_rect(pr)
+            touch_rects.append({"rect": list(rect),
+                                "expanded": [exp.x, exp.y, exp.w, exp.h]})
+        assert touch_rects[0]["expanded"] == [-4, -4, 48, 48], touch_rects[0]
+        assert touch_rects[1]["expanded"] == [-14, -14, 48, 48], touch_rects[1]
+        touch_hits = []
+        base = pygame.Rect(10, 10, 20, 20)
+        for pt in ((20, 20), (-4, -4), (43, 43), (44, 44),
+                   (-5, 20), (20, 44), (0, 0), (100, 100)):
+            popup = bool(core.InputHandler._touch_rect(base).collidepoint(pt))
+            forge = bool(hero_items._touch_hit(base, pt[0], pt[1]))
+            assert popup == forge, (pt, popup, forge)
+            touch_hits.append({"point": list(pt), "hit": popup})
+        assert [h["hit"] for h in touch_hits] == [
+            True, True, True, False, False, False, True, False], touch_hits
+        # ---------- L. click priority (behavioral) ----------
+        clicks = []
+        handler = game.input
+
+        def click_result(name, setup, pos, button):
+            setup()
+            game.ui_buttons = {}
+            game.draw() if False else None
+            ret = handler.handle_click(pos, button)
+            return ret
+
+        # L1: itemshop card/kosong/close
+        game.heroes = []
+        game.purchased_heroes = ["kaizen"]
+        game.gold = 100000
+        with redirect_stdout(io.StringIO()):
+            game.try_buy_hero("kaizen")
+        hk = game.heroes[0]
+        game.selected_hero = hk
+        game.itemshop_page = 0
+        game.itemshop_inspect_item = None
+        game.item_shop_open = True
+        reset_sinks()
+        hero_items.ItemShopUI.draw(screen, game)
+        card_rect = pygame.Rect(dict(
+            (b["id"], b["rect"]) for b in
+            [{"id": k, "rect": list(pygame.Rect(v))}
+             for k, v in game.ui_buttons.items()]
+        )["itemshop_card_dead_edge"])
+        before = game.itemshop_inspect_item
+        r = handler.handle_click(card_rect.center, 1)
+        clicks.append({"case": "itemshop_card", "button": 1, "returned": r,
+                       "inspect_before": before,
+                       "inspect_after": game.itemshop_inspect_item,
+                       "still_open": game.item_shop_open})
+        r = handler.handle_click((639, 359), 1)
+        clicks.append({"case": "itemshop_empty_swallow", "button": 1,
+                       "returned": r, "still_open": game.item_shop_open})
+        close_rect = pygame.Rect(game.ui_buttons["itemshop_close"])
+        r = handler.handle_click(close_rect.center, 1)
+        assert game.item_shop_open is False, "itemshop_close gagal"
+        clicks.append({"case": "itemshop_close", "button": 1, "returned": r,
+                       "still_open": game.item_shop_open})
+        # L2: panel hero (autocast/upgrade/slot/close)
+        game.item_shop_open = False
+        game.selected_hero = hk
+        hk.skill_timer = 0
+        game.gold = 100000
+        reset_sinks()
+        game.ui.draw_hero_info(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        auto_before = hk.auto_cast_enabled
+        r = handler.handle_click(ub["toggle_autocast"].center, 1)
+        clicks.append({"case": "panel_autocast", "returned": r,
+                       "auto_before": auto_before, "auto_after": hk.auto_cast_enabled})
+        lv_before, gold_before = hk.level, game.gold
+        r = handler.handle_click(ub["popup_upgrade_hero"].center, 1)
+        clicks.append({"case": "panel_upgrade", "returned": r,
+                       "level": [lv_before, hk.level],
+                       "gold": [gold_before, game.gold]})
+        r = handler.handle_click(ub["hero_item_slot_0"].center, 1)
+        assert game.item_shop_open is True, "slot kosong harus buka forge"
+        clicks.append({"case": "panel_slot0_empty", "returned": r,
+                       "itemshop_open": game.item_shop_open})
+        reset_sinks()
+        hero_items.ItemShopUI.draw(screen, game)
+        ub2 = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        handler.handle_click(ub2["itemshop_close"].center, 1)
+        assert game.item_shop_open is False
+        reset_sinks()
+        game.ui.draw_hero_info(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["hero_close"].center, 1)
+        clicks.append({"case": "panel_close", "returned": r,
+                       "selected_after": game.selected_hero is None})
+        # L3: shop tab/buy/scroll/close
+        game.selected_hero = None
+        game.purchased_heroes = ["kaizen", "grimjaw"]
+        game.heroes = []
+        with redirect_stdout(io.StringIO()):
+            game.try_buy_hero("kaizen")
+        game.gold = 100000
+        game.shop_open = True
+        game._shop_tab = "starter"
+        game._shop_scroll = 0
+        reset_sinks()
+        game.ui.draw_hero_shop(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["shop_tab_boss"].center, 1)
+        assert game._shop_tab == "boss", "tab gagal: %s" % game._shop_tab
+        clicks.append({"case": "shop_tab", "returned": r,
+                       "tab_after": game._shop_tab})
+        game._shop_tab = "starter"
+        reset_sinks()
+        game.ui.draw_hero_shop(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        n_before, gold_before = len(game.heroes), game.gold
+        r = handler.handle_click(ub["shop_buy_grimjaw"].center, 1)
+        assert len(game.heroes) == n_before + 1, "buy gagal"
+        clicks.append({"case": "shop_buy", "returned": r,
+                       "roster": [n_before, len(game.heroes)],
+                       "gold": [gold_before, game.gold],
+                       "still_open": game.shop_open})
+        game.purchased_heroes = ["kaizen"] + boss_types
+        game._shop_tab = "boss"
+        game._shop_scroll = 0
+        game.shop_open = True
+        reset_sinks()
+        game.ui.draw_hero_shop(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        s_before = game._shop_scroll
+        n_before, gold_before = len(game.heroes), game.gold
+        r = handler.handle_click((640, 400), 4)
+        s_mid = game._shop_scroll
+        r2 = handler.handle_click((640, 400), 5)
+        assert (len(game.heroes), game.gold) == (n_before, gold_before)
+        clicks.append({"case": "shop_wheel", "button4": r, "button5": r2,
+                       "scroll": [s_before, s_mid, game._shop_scroll]})
+        r = handler.handle_click(ub["shop_scroll_down"].center, 1)
+        clicks.append({"case": "shop_scroll_btn", "returned": r,
+                       "scroll_after": game._shop_scroll})
+        game.shop_open = True
+        r = handler.handle_click(ub["shop_close"].center, 1)
+        assert game.shop_open is False, "shop_close gagal"
+        hk = [x for x in game.heroes if x.hero_type == "kaizen"][0]
+        clicks.append({"case": "shop_close", "returned": r,
+                       "open_after": game.shop_open})
+        # L4: build popup
+        game.shop_open = False
+        game.gold = 500
+        slot = dict(game.build_slots_blue[0])
+        game.build_popup_slot = dict(slot)
+        reset_sinks()
+        game.ui.draw_build_popup(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        n_before, gold_before = len(game.towers), game.gold
+        r = handler.handle_click(ub["build_archer"].center, 1)
+        clicks.append({"case": "build_archer", "returned": r,
+                       "towers": [n_before, len(game.towers)],
+                       "gold": [gold_before, game.gold],
+                       "popup_after": game.build_popup_slot})
+        game.build_popup_slot = dict(slot)
+        reset_sinks()
+        game.ui.draw_build_popup(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["build_close"].center, 1)
+        clicks.append({"case": "build_close", "returned": r,
+                       "popup_after": game.build_popup_slot})
+        game.build_popup_slot = None
+        # L5: tower popup upgrade/sell/close
+        tw = entity.Tower(600, 400, "blue")
+        game.towers.append(tw)
+        game.gold = 100000
+        game.open_popup(tw, "tower")
+        reset_sinks()
+        game.ui.draw_popup(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        lv_before, gold_before = tw.level, game.gold
+        r = handler.handle_click(ub["popup_upgrade_path_archer"].center, 1)
+        clicks.append({"case": "tower_path", "returned": r,
+                       "type_after": tw.tower_type,
+                       "level": [lv_before, tw.level],
+                       "gold": [gold_before, game.gold]})
+        reset_sinks()
+        game.ui.draw_popup(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        n_before, gold_before = len(game.towers), game.gold
+        r = handler.handle_click(ub["popup_sell_tower"].center, 1)
+        clicks.append({"case": "tower_sell", "returned": r,
+                       "towers": [n_before, len(game.towers)],
+                       "gold": [gold_before, game.gold]})
+        # L5b: fallback handler jual (sell_value 0 -> +50G).
+        # Popup L1 pygame TIDAK menggambar tombol jual, jadi fallback
+        # ini hanya terjangkau di level handler, bukan via klik penuh.
+        tw1 = entity.Tower(700, 300, "blue")
+        assert tw1.sell_value() == 0
+        game.towers.append(tw1)
+        game.selected_tower = tw1
+        gold_before = game.gold
+        n_before = len(game.towers)
+        handler._try_sell_tower()
+        assert game.gold - gold_before == 50, game.gold - gold_before
+        clicks.append({"case": "tower_sell_L1_fallback", "via": "handler",
+                       "towers": [n_before, len(game.towers)],
+                       "gold_delta": game.gold - gold_before})
+        # L5c: beli regen shield via klik
+        t4b = entity.Tower(700, 300, "blue")
+        assert t4b.upgrade("ice")
+        t4b.upgrade()
+        t4b.upgrade()
+        assert t4b.level == 4
+        game.towers.append(t4b)
+        game.gold = 100000
+        game.open_popup(t4b, "tower")
+        reset_sinks()
+        game.ui.draw_popup(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["popup_regen_shield"].center, 1)
+        assert t4b.regen_shield_active is True and game.gold == 100000 - 850
+        clicks.append({"case": "tower_regen_buy", "returned": r,
+                       "gold_after": game.gold,
+                       "active": t4b.regen_shield_active})
+        game.close_popup()
+        # L5d: nexus upgrade + shield via klik
+        bb.level = 1
+        bb._apply_level_stats()
+        bb.free_shield_active = False
+        bb.castle_shield_purchased = False
+        bb.shield_active = False
+        game.gold = 100000
+        game.open_popup(bb, "nexus_blue")
+        reset_sinks()
+        game.ui.draw_popup(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["popup_castle_shield"].center, 1)
+        assert bb.castle_shield_purchased is True and game.gold == 100000 - 850
+        clicks.append({"case": "nexus_shield_buy", "returned": r,
+                       "gold_after": game.gold,
+                       "purchased": bb.castle_shield_purchased})
+        reset_sinks()
+        game.ui.draw_popup(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["popup_upgrade_nexus"].center, 1)
+        assert bb.level == 2 and game.gold == 100000 - 850 - 500
+        clicks.append({"case": "nexus_upgrade", "returned": r,
+                       "level_after": bb.level, "gold_after": game.gold})
+        game.close_popup()
+        bb.level, bb.free_shield_active, bb.castle_shield_purchased, \
+            bb.shield_active, bb.shield, bb.shield_max = saved_bb
+        bb._apply_level_stats()
+        # L5e: itemshop BUY via klik (hero hidup)
+        game.gold = 100000
+        hk.items = type(hk.items)(hk)
+        game.itemshop_page = 0
+        game.itemshop_inspect_item = None
+        game.item_shop_open = True
+        game.itemshop_target_hero = hk
+        reset_sinks()
+        hero_items.ItemShopUI.draw(screen, game)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["itemshop_buy_dead_edge"].center, 1)
+        assert game.gold == 100000 - 4500, game.gold
+        assert hk.items.count("dead_edge") == 1
+        assert game.item_shop_open is True
+        clicks.append({"case": "itemshop_buy_click", "returned": r,
+                       "gold_after": game.gold,
+                       "owned": hk.items.count("dead_edge"),
+                       "still_open": game.item_shop_open})
+        handler.handle_click(pygame.Rect(
+            game.ui_buttons["itemshop_close"]).center, 1)
+        assert game.item_shop_open is False
+        # L5f: hero_open_items membuka forge
+        game.selected_hero = hk
+        reset_sinks()
+        game.ui.draw_hero_info(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["hero_open_items"].center, 1)
+        assert game.item_shop_open is True
+        clicks.append({"case": "panel_open_items", "returned": r,
+                       "itemshop_open": game.item_shop_open})
+        game.item_shop_open = False
+        game.selected_hero = None
+        tw2 = entity.Tower(600, 400, "blue")
+        game.towers.append(tw2)
+        game.open_popup(tw2, "tower")
+        reset_sinks()
+        game.ui.draw_popup(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["popup_close"].center, 1)
+        clicks.append({"case": "popup_close", "returned": r,
+                       "target_after": game.popup_target})
+        game.close_popup()
+        # L6: world clicks
+        game.selected_hero = None
+        game.popup_target = None
+        game.build_popup_slot = None
+        game.shop_open = False
+        slot0 = game.build_slots_blue[0]
+        r = handler.handle_click((slot0["x"], slot0["y"]), 1)
+        clicks.append({"case": "world_build_slot", "returned": r,
+                       "popup_opened": game.build_popup_slot is not None})
+        game.build_popup_slot = None
+        hk.x, hk.y = 500, 500
+        hk.alive = True
+        r = handler.handle_click((500, 500), 1)
+        assert game.selected_hero is hk, "world_hero gagal"
+        clicks.append({"case": "world_hero", "returned": r,
+                       "selected": game.selected_hero is hk})
+        game.selected_hero = None
+        tw2.x, tw2.y = 750, 250
+        r = handler.handle_click((750, 250), 1)
+        assert game.popup_target is tw2, "world_tower gagal"
+        clicks.append({"case": "world_tower", "returned": r,
+                       "popup_opened": game.popup_target is tw2})
+        game.close_popup()
+        game.selected_hero = hk
+        hk.destination = None
+        hk.follow_target = None
+        r = handler.handle_click((100, 100), 1)
+        clicks.append({"case": "world_empty_command", "returned": r,
+                       "destination": list(hk.destination or []),
+                       "still_selected": game.selected_hero is hk})
+        assert list(hk.destination or []) == [100, 100]
+        hk.alive = False
+        game.selected_hero = hk
+        r = handler.handle_click((100, 100), 1)
+        clicks.append({"case": "world_empty_dead_deselect", "returned": r,
+                       "selected_after": game.selected_hero is None})
+        hk.alive = True
+        game.selected_hero = hk
+        hk.destination = None
+        r = handler.handle_click((700, 500), 3)
+        clicks.append({"case": "world_rightclick", "returned": r,
+                       "destination": list(hk.destination or [])})
+        assert list(hk.destination or []) == [700, 500]
+        # L7: shop buy saat gold kurang -> tolak tanpa efek
+        game.heroes = []
+        game.purchased_heroes = ["kaizen", "grimjaw"]
+        with redirect_stdout(io.StringIO()):
+            game.try_buy_hero("kaizen")
+        game.gold = 50
+        game.shop_open = True
+        game._shop_tab = "starter"
+        game._shop_scroll = 0
+        reset_sinks()
+        game.ui.draw_hero_shop(screen)
+        ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        r = handler.handle_click(ub["shop_buy_grimjaw"].center, 1)
+        clicks.append({"case": "shop_buy_poor", "returned": r,
+                       "roster_after": len(game.heroes),
+                       "gold_after": game.gold,
+                       "still_open": game.shop_open})
+        assert (len(game.heroes), game.gold) == (1, 50)
+        game.shop_open = False
+        game.gold = 100000
+        # L8: klik PLAY NEXT LEVEL di overlay victory
+        game.state = "victory"
+        game.level_number = 1
+        game.selected_hero = None
+        game.next_level_requested = False
+        with pinned_time():
+            reset_sinks()
+            game.draw()
+            ub = {k: pygame.Rect(v) for k, v in game.ui_buttons.items()}
+        assert "play_next_level" in ub, sorted(ub)
+        r = handler.handle_click(ub["play_next_level"].center, 1)
+        clicks.append({"case": "overlay_next_level", "returned": r,
+                       "requested": game.next_level_requested,
+                       "rect": list(ub["play_next_level"])})
+        assert game.next_level_requested is True
+        game.state = "playing"
+        game.next_level_requested = False
+
+        # ---------- M. hotkeys (behavioral) ----------
+        SoundManager = sys.modules["_system"].SoundManager
+        sounds = []
+        _orig_play = SoundManager.play
+
+        def _rec_play(self, name, *args, **kwargs):
+            sounds.append({"name": name, "kwargs": dict(kwargs)})
+            return _orig_play(self, name, *args, **kwargs)
+
+        SoundManager.play = _rec_play
+        hotkeys = {}
+        try:
+            game.state = "playing"
+            game.level_intro = None
+            game.boss_intro = None
+            game.boss_death = None
+            tactical_calls = []
+            real_tactical = game.tactical
+
+            class _TacRec:
+                def hold_start(self, *a, **k):
+                    tactical_calls.append(["hold_start", list(a),
+                                           {kk: vv for kk, vv in k.items()
+                                            if kk != "follow_mouse"}])
+                    tactical_calls[-1][2]["follow_mouse"] = k.get(
+                        "follow_mouse")
+
+                def hold_end(self, *a, **k):
+                    tactical_calls.append(["hold_end", list(a), dict(k)])
+
+            game.tactical = _TacRec()
+            game.mouse_x, game.mouse_y = 640, 360
+            game.shop_open = False
+            game.replay_requested = False
+            game.next_level_requested = False
+            game.return_to_menu_requested = False
+            game.selected_hero = hk
+            hk.alive = True
+            hk.skill_timer = 0
+            hk.w_cooldown = 0
+            hk.e_cooldown = 0
+            hk.r_cooldown = 0
+            game.minions = []
+            game.active_boss = None
+            for key_name, key in (("h", pygame.K_h), ("g", pygame.K_g),
+                                  ("t", pygame.K_t), ("c", pygame.K_c),
+                                  ("b", pygame.K_b), ("d", pygame.K_d),
+                                  ("f", pygame.K_f), ("q", pygame.K_q),
+                                  ("w", pygame.K_w), ("e", pygame.K_e),
+                                  ("r", pygame.K_r), ("n", pygame.K_n),
+                                  ("escape", pygame.K_ESCAPE),
+                                  ("space", pygame.K_SPACE)):
+                del tactical_calls[:]
+                del sounds[:]
+                shop_before = game.shop_open
+                dev_swallow = game.dev.handle_hotkey(key)
+                if not dev_swallow:
+                    game.input.handle_key(key)
+                hotkeys[key_name] = {
+                    "dev_swallowed": bool(dev_swallow),
+                    "shop": [shop_before, game.shop_open],
+                    "tactical": [list(c) for c in tactical_calls],
+                    "sounds": [s["name"] for s in sounds],
+                }
+                game.shop_open = False
+            up = {}
+            for key_name, key in (("g", pygame.K_g), ("f", pygame.K_f),
+                                  ("t", pygame.K_t), ("c", pygame.K_c),
+                                  ("b", pygame.K_b), ("d", pygame.K_d),
+                                  ("q", pygame.K_q)):
+                del tactical_calls[:]
+                game.input.handle_key_up(key)
+                up[key_name] = [list(c) for c in tactical_calls]
+            hotkeys["keyup"] = up
+            # skill dengan musuh di dekatnya
+            foe = entity.Minion("goblin", "red", "mid", 1)
+            foe.x, foe.y = hk.x + 30, hk.y
+            game.minions = [foe]
+            hk.skill_timer = 0
+            del sounds[:]
+            game.input.handle_key(pygame.K_q)
+            hotkeys["q_with_enemy"] = {"sounds": [s["name"] for s in sounds],
+                                       "timer_after": hk.skill_timer}
+            game.minions = []
+            # state victory/defeat
+            game.tactical = real_tactical
+            for state, lvl in (("victory", 1), ("victory", 54),
+                               ("defeat", 3)):
+                game.state = state
+                game.level_number = lvl
+                for key_name, key in (("r", pygame.K_r), ("n", pygame.K_n),
+                                      ("escape", pygame.K_ESCAPE),
+                                      ("h", pygame.K_h)):
+                    game.replay_requested = False
+                    game.next_level_requested = False
+                    game.return_to_menu_requested = False
+                    del sounds[:]
+                    dev_swallow = game.dev.handle_hotkey(key)
+                    if not dev_swallow:
+                        game.input.handle_key(key)
+                    hotkeys["%s_L%d_%s" % (state, lvl, key_name)] = {
+                        "dev_swallowed": bool(dev_swallow),
+                        "replay": game.replay_requested,
+                        "next": game.next_level_requested,
+                        "menu": game.return_to_menu_requested,
+                    }
+            game.state = "playing"
+            game.level_number = 1
+        finally:
+            SoundManager.play = _orig_play
+            game.tactical = real_tactical
+
+        # ---------- N. draw order (behavioral) ----------
+        order = {}
+        ui = game.ui
+        method_names = ["draw_build_slots", "draw_gold_hud", "draw_hero_shop",
+                        "draw_build_popup", "draw_popup", "draw_hero_info",
+                        "draw_item_shop", "draw_tactical_commands",
+                        "draw_shop_hints", "draw_overlay"]
+        wrapped = {}
+
+        def _wrap(obj, name, tag):
+            orig = getattr(obj, name)
+            if getattr(orig, "_ui_spy", False):
+                return
+            def _spied(*a, **k):
+                order_calls.append(tag)
+                return orig(*a, **k)
+            _spied._ui_spy = True
+            wrapped[(obj, name)] = orig
+            setattr(obj, name, _spied)
+
+        for name in method_names:
+            if hasattr(ui, name):
+                _wrap(ui, name, "ui." + name)
+        _wrap(game.effects, "draw_ui", "effects.draw_ui")
+        _wrap(game.dev, "draw", "dev.draw")
+        _wrap(game.map_renderer, "draw", "map.draw")
+        _wrap(game.tactical, "draw_ui", "tactical.draw_ui")
+        _wrap(game.tactical, "draw_world", "tactical.draw_world")
+        try:
+            for state_name, setup in (
+                    ("playing_plain", lambda: None),
+                    ("playing_full", lambda: (
+                        setattr(game, "shop_open", True),
+                        setattr(game, "selected_hero", hk),
+                        setattr(game, "build_popup_slot",
+                                dict(game.build_slots_blue[1])),
+                        setattr(game, "item_shop_open", True))),
+                    ("victory", lambda: setattr(game, "state", "victory"))):
+                game.state = "playing"
+                game.shop_open = False
+                game.selected_hero = None
+                game.popup_target = None
+                game.build_popup_slot = None
+                game.item_shop_open = False
+                setup()
+                order_calls = []
+                reset_sinks()
+                with pinned_time():
+                    game.draw()
+                order[state_name] = list(order_calls)
+        finally:
+            for (obj, name), orig in wrapped.items():
+                setattr(obj, name, orig)
+        game.state = "playing"
+
+        # ---------- TouchHUD ----------
+        try:
+            from mobile import hud as _hud_mod
+            from mobile import platform_utils as _plat
+            th = _hud_mod.TouchHUD(rend.get_font)
+            touch = {"available": True,
+                     "safe_area": list(_plat.get_safe_area()),
+                     "buttons": {}}
+            for bname, btn in th.buttons.items():
+                touch["buttons"][bname] = {
+                    "rect": [btn.rect.x, btn.rect.y, btn.rect.w, btn.rect.h],
+                    "label": btn.label}
+            vis = {}
+            for sname, gstate, lvl, cine in (
+                    ("game_playing", "playing", 1, False),
+                    ("game_playing_cine", "playing", 1, True),
+                    ("game_victory_L1", "victory", 1, False),
+                    ("game_victory_L54", "victory", 54, False),
+                    ("game_defeat", "defeat", 3, False),
+                    ("menu", "playing", 1, False),
+                    ("pause", "playing", 1, False)):
+                in_game = sname.startswith("game")
+                game.state = gstate
+                game.level_number = lvl
+                th.sync(game if in_game else None,
+                        "game" if in_game else sname, cine)
+                vis[sname] = {b: th.buttons[b].visible
+                              for b in th.buttons}
+            touch["visibility"] = vis
+            game.state = "playing"
+            game.level_number = 1
+        except Exception as exc:  # noqa: BLE001
+            touch = {"available": False, "reason": str(exc)}
+
+        return {
+            "meta": {"screen": [W, H], "lang": "id", "difficulty": "normal",
+                     "ticks_pin": TICKS_PIN, "time_pin": TIME_PIN,
+                     "cheap_alpha": bool(ui_theme.cheap_alpha())},
+            "formats": formats,
+            "wave": wave,
+            "unlock_slide": unlock_slide,
+            "scenarios": scenarios,
+            "build_pos": build_pos,
+            "rules": {
+                "melee_max_range": 80,
+                "shop_max_scroll_10boss": shop_max_scroll,
+                "hero_upgrade_costs": hcost,
+                "hero_max_level": core.MAX_HERO_LEVEL,
+                "tower_path_costs_L1": path_costs,
+                "tower_upgrade_costs": tcost,
+                "tower_sell_values": tsell,
+                "tower_regen_costs": tregen,
+                "nexus_upgrade_costs": ncost,
+                "nexus_shield_costs": nshield,
+                "nexus_names": nnames,
+                "shop_pages": page_cards,
+                "items": item_flags,
+                "hero_range": hero_range,
+                "hero_magic": hero_magic,
+                "touch_rects": touch_rects,
+                "touch_hits": touch_hits,
+            },
+            "clicks": clicks,
+            "hotkeys": hotkeys,
+            "intro_skip": skips,
+            "draw_order": order,
+            "touchhud": touch,
+        }
+
+
+    try:
+        with redirect_stdout(io.StringIO()):
+            screen = _UiSpySurface((W, H))
+            game = core.Game(screen, level_number=1)
+        game.difficulty = "normal"
+        game.animation_time = 120
+        game.level_intro = None
+        game.boss_intro = None
+        __main__.game_instance = game
+        fx = _run(game, screen, SINKS, pinned_time)
+    finally:
+        rend._make_font = _orig_make_font
+        clear_cache()
+        ui_theme._has_glyph = _orig_has_glyph
+        pygame.mouse.get_pos = saved["get_pos"]
+        pygame.time.get_ticks = saved["ticks"]
+        pygame.draw.rect = saved["draw_rect"]
+        ui_theme.pill = saved["pill"]
+        __main__.game_instance = saved["game_instance"]
+        set_language(saved["lang"])
+        core.GameSettings().difficulty = saved["diff"]
+        core.GameSettings().language = saved["lang"]
+        random.setstate(saved["random"])
+    return fx
+    return fx
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -2240,6 +3578,11 @@ def make_fixture(core, entity, levels, paths):
         # review, jadi disimpan sebagai OBJEK (bukan string kompak).
         "hero_catchup_unlocks": make_hero_catchup_unlocks_fixture(
             core, entity, sys.modules["_system"]),
+        # FASE 12 — UI/HUD in-match: oracle draw pygame headless (82
+        # skenario draw + 31 kasus klik + 28 hotkey + urutan draw +
+        # TouchHUD). Direplay UiHudParityTest. Objek (bukan string
+        # kompak) agar diff-able saat review.
+        "ui_hud": make_ui_hud_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -2351,6 +3694,12 @@ def main():
               f"{len(rg['scenarios'])} skenario, "
               f"{sum(len(s['events']) for s in rg['scenarios'])} event HP, "
               f"{rg_rolls} roll ter-script")
+        uh = actual["ui_hud"]
+        print("             ui-hud oracle: "
+              f"{len(uh['scenarios'])} skenario draw, "
+              f"{len(uh['clicks'])} kasus klik, "
+              f"{len(uh['hotkeys'])} hotkey, "
+              f"{len(uh['rules']['hero_range'])} hero predikat")
         cu = actual["hero_catchup_unlocks"]
         print("             catchup-unlocks oracle: "
               f"{len(cu['unlock_counts'])} isi save, "

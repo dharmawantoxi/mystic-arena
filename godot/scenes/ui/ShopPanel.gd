@@ -103,8 +103,9 @@ func _build() -> void:
 	header.add_child(_gold_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "TUTUP  (B)"
-	close_btn.custom_minimum_size = Vector2(96, 28)
+	close_btn.text = "TUTUP  (B/H)"
+	close_btn.custom_minimum_size = Vector2(104, 28)
+	close_btn.set_meta("ui_key", "shop_close")
 	close_btn.pressed.connect(func(): GameManager.close_shop())
 	header.add_child(close_btn)
 
@@ -119,6 +120,7 @@ func _build() -> void:
 		b.toggle_mode = true
 		b.button_group = group
 		b.custom_minimum_size = Vector2(110, 30)
+		b.set_meta("ui_key", "to_" + str(pair[0]))
 		b.pressed.connect(_on_tab_pressed.bind(str(pair[0])))
 		_tab_box.add_child(b)
 		_tab_buttons[str(pair[0])] = b
@@ -161,12 +163,41 @@ func _process(delta: float) -> void:
 		_rebuild_body()
 
 
+func open_tab(tab_id: String) -> void:
+	if TABS.any(func(pair): return str(pair[0]) == tab_id):
+		_tab = tab_id
+	GameManager.open_shop()
+	# open_shop() no-op kalau toko SUDAH buka (tanpa emit) — badan harus
+	# dibangun ulang sinkron, kalau tidak tab menampilkan isi basi (bug yang
+	# dikunci UiHudParityTest: kunci koleksi seusai open_tab).
+	_sync_tab_buttons()
+	_update_gold_label()
+	_rebuild_body()
+
+
 func _on_shop_changed() -> void:
+	# Tab yang diminta eksplisit (ITEM FORGE) menang atas tab terakhir.
+	if GameManager.requested_shop_tab != "":
+		_tab = GameManager.requested_shop_tab
+		GameManager.requested_shop_tab = ""
 	visible = GameManager.shop_open and GameManager.state == "playing"
 	if visible:
 		_update_gold_label()
 		_sync_tab_buttons()
 		_rebuild_body()
+
+
+func collect_ui_keys() -> Array:
+	var keys: Array = []
+	_collect_keys_in(self, keys)
+	return keys
+
+
+func _collect_keys_in(node: Node, keys: Array) -> void:
+	for c in node.get_children():
+		if c is Button and c.has_meta("ui_key"):
+			keys.append(str(c.get_meta("ui_key")))
+		_collect_keys_in(c, keys)
 
 
 func _on_selection_changed() -> void:
@@ -218,8 +249,9 @@ func _sync_tab_buttons() -> void:
 
 
 func _update_gold_label() -> void:
-	_gold_label.text = "%d gold  (+%s/s)" % [
-		GameManager.gold, GameManager.format_gold_rate(GameManager.gold_per_second)]
+	_gold_label.text = "%s gold  (+%s/s)" % [
+		HudLayout.format_thousands(GameManager.gold),
+		GameManager.format_gold_rate(GameManager.gold_per_second)]
 
 
 # ══════════════════════════════════════════════════════════
@@ -246,7 +278,7 @@ func _update_context() -> void:
 	var parts: Array = []
 	var h = GameManager.selected_hero
 	if h != null and is_instance_valid(h):
-		parts.append("hero: %s Lv%d" % [str(h.get("hero_type")), int(h.get("level"))])
+		parts.append("hero: %s Lv.%d" % [str(h.get("hero_type")), int(h.get("level"))])
 	var t = GameManager.selected_tower
 	if t != null and is_instance_valid(t):
 		parts.append("menara: %s" % str(t.get("display_name")))
@@ -256,7 +288,7 @@ func _update_context() -> void:
 			"Radiant" if str(s["team"]) == "blue" else "Dire"])
 	var nx = GameManager.blue_nexus
 	if nx != null and is_instance_valid(nx):
-		parts.append("nexus: Lv%d" % int(nx.get("level")))
+		parts.append("nexus: Lv.%d" % int(nx.get("level")))
 	_context.text = "[%s]  %s · gold %d · AI %d · difficulty %s · D ganti difficulty" % [
 		_tab.to_upper(), " | ".join(parts) if not parts.is_empty() else "tidak ada yang dipilih",
 		GameManager.gold, GameManager.ai_gold, GameManager.difficulty.to_upper()]
@@ -287,12 +319,14 @@ func _build_tower_tab() -> void:
 		_body.add_child(grid)
 		for tt in TowerDB.tower_types():
 			var ti: Dictionary = TowerDB.type_info(str(tt))
+			var afford := GameManager.gold >= cost
 			var b := _make_button("%s %s — %d g" % [
 					str(ti.get("icon", "")), str(ti.get("name", tt)), cost],
 				"%s\n%s\nCatatan: stat Lv1 semua jalur sama (Archer Lv1); "
 				% [str(ti.get("desc", "")), str(ti.get("special", ""))]
 				+ "kekuatannya baru muncul setelah upgrade ke Lv2.",
-				_build_tower.bind(str(tt)), GameManager.gold >= cost)
+				_build_tower.bind(str(tt)), afford, "build_" + str(tt),
+				{"cost": cost, "blocked": "" if afford else "POOR"})
 			b.custom_minimum_size = Vector2(320, 34)
 			grid.add_child(b)
 		_add_label("Upgrade Lv1 -> Lv2 memilih jalur dan menaikkan HP x%.2f."
@@ -329,18 +363,22 @@ func _tower_detail(t) -> void:
 			for tt in TowerDB.tower_types():
 				var ti: Dictionary = TowerDB.type_info(str(tt))
 				var cost: int = t.upgrade_cost(str(tt))
+				var afford := GameManager.gold >= cost
 				var b := _make_button("%s — %d g" % [str(ti.get("name", tt)), cost],
 					"%s\n%s" % [str(ti.get("desc", "")), str(ti.get("special", ""))],
-					_pick_path.bind(t, str(tt)), GameManager.gold >= cost)
+					_pick_path.bind(t, str(tt)), afford, "repath_" + str(tt),
+					{"cost": cost, "blocked": "" if afford else "POOR"})
 				b.custom_minimum_size = Vector2(320, 34)
 				grid.add_child(b)
 		else:
 			var cost: int = t.upgrade_cost(str(t.get("tower_type")))
-			_add_button("Upgrade ke Lv%d — %d gold" % [int(t.get("level")) + 1, cost],
+			var afford := GameManager.gold >= cost
+			_add_button("Upgrade ke Lv.%d — %d gold" % [int(t.get("level")) + 1, cost],
 				"HP x%.2f, damage & jangkauan naik." % TowerDB.hp_multiplier(),
 				# ui_upgrade 0.5 — paritas _core.py:2481 / 7243 / 7341
 				func(): _run(func(): GameManager.try_upgrade_tower(""), "ui_upgrade", 0.5),
-				GameManager.gold >= cost)
+				afford, "upgrade_tower",
+				{"cost": cost, "blocked": "" if afford else "POOR"})
 	else:
 		_add_label("Level maksimum (%d) tercapai." % TowerDB.max_level(), COL_DIM)
 
@@ -348,19 +386,26 @@ func _tower_detail(t) -> void:
 		_add_label("Regen Shield: AKTIF (shield pulih setelah 3 detik tidak kena damage)",
 			Color(0.55, 0.95, 0.65))
 	elif t.has_method("can_activate_regen_shield") and t.can_activate_regen_shield():
-		_add_button("Beli Regen Shield — %d gold" % t.regen_shield_cost(),
+		var rcost := int(t.regen_shield_cost())
+		var afford := GameManager.gold >= rcost
+		_add_button("Beli Regen Shield — %d gold" % rcost,
 			"Shield menara ikut regen (paritas Tower.activate_regen_shield).",
 			# ui_upgrade 0.5 — paritas _try_activate_regen_shield _core.py:8240
 			func(): _run(func(): GameManager.try_buy_tower_regen_shield(), "ui_upgrade", 0.5),
-			GameManager.gold >= int(t.regen_shield_cost()))
+			afford, "tower_regen",
+			{"cost": rcost, "blocked": "" if afford else "POOR"})
 	else:
-		_add_label("Regen Shield terbuka di Lv%d+ (harga %d gold)" % [
+		_add_label("Regen Shield terbuka di Lv.%d+ (harga %d gold)" % [
 			TowerDB.regen_shield_min_level(), TowerDB.regen_shield_cost()], COL_DIM, 11)
 
-	_add_button("Jual menara (+%d gold)" % int(t.sell_value()),
-		"Refund 50% dari total biaya upgrade yang sudah dibayar.",
-		# ui_sell 1.0 — paritas _try_sell_tower _core.py:8219
-		func(): _run(func(): GameManager.try_sell_tower(), "ui_sell"), true)
+	# Popup tower Lv1 pygame TAK punya tombol jual (refund +50 fallback cuma
+	# terjangkau via handler) — tombol disembunyikan di Lv1.
+	if int(t.get("level")) > 1:
+		_add_button("Jual menara (+%d gold)" % int(t.sell_value()),
+			"Refund 50% dari total biaya upgrade yang sudah dibayar.",
+			# ui_sell 1.0 — paritas _try_sell_tower _core.py:8219
+			func(): _run(func(): GameManager.try_sell_tower(), "ui_sell"), true,
+			"sell_tower", {"refund": int(t.sell_value())})
 
 
 func _build_tower(tower_type: String) -> void:
@@ -379,7 +424,7 @@ func _build_item_tab() -> void:
 	var h = _player_hero()
 	if h == null:
 		_add_label("Pilih hero Radiant dulu (klik hero biru di arena).", COL_TEXT, 14)
-		_add_label("Item dibeli per hero: 6 slot, harga flat %d gold." % ItemDB.flat_cost(), COL_DIM)
+		_add_label("Item dibeli per hero: 6 slot, harga 4500-6000 gold per tier.", COL_DIM)
 		return
 	var items = h.get("items")
 	var hdata: Dictionary = HeroDB.get_hero(str(h.get("hero_type")))
@@ -411,17 +456,39 @@ func _build_item_tab() -> void:
 			var cost := ItemDB.item_cost(iid)
 			var can: bool = items != null and items.can_equip(iid)
 			var have: bool = items != null and items.has(iid)
+			var afford := GameManager.gold >= cost
+			var reason := ""
+			if items != null:
+				reason = items.equip_block_reason(iid)
+			if reason == "" and not afford:
+				reason = "POOR"
 			var label := "%s — %d g" % [ItemDB.item_name(iid), cost]
 			if have:
 				label = "%s — dimiliki" % ItemDB.item_name(iid)
-			var tip := "%s\n%s" % [ItemDB.item_desc(iid),
-				"" if can else ("Sudah dimiliki" if have else "Tidak cocok untuk hero ini")]
+			var tip := "%s\n%s" % [ItemDB.item_desc(iid), _item_reason_tip(reason)]
 			var b := _make_button(label, tip, _buy_item.bind(iid),
-				can and not have and GameManager.gold >= cost)
+				can and not have and afford, "item_buy_" + iid,
+				{"cost": cost, "blocked": reason})
 			b.custom_minimum_size = Vector2(214, 30)
 			b.add_theme_color_override("font_color",
 				ItemDB.item_color(iid) if (can and not have) else COL_DIM)
 			grid.add_child(b)
+
+
+## Teks alasan disabled item (MELEE ONLY/MAGIC ONLY = label kartu pygame).
+static func _item_reason_tip(reason: String) -> String:
+	match reason:
+		"OWNED":
+			return "Sudah dimiliki"
+		"FULL":
+			return "Slot penuh (6/6)"
+		"MELEE ONLY":
+			return "MELEE ONLY — hero ini ranged"
+		"MAGIC ONLY":
+			return "MAGIC ONLY — hero ini bukan magic"
+		"POOR":
+			return "Gold kurang"
+	return ""
 
 
 func _buy_item(item_id: String) -> void:
@@ -435,7 +502,7 @@ func _build_hero_tab() -> void:
 	var h = _player_hero()
 	if h != null:
 		var hdata: Dictionary = HeroDB.get_hero(str(h.get("hero_type")))
-		_add_label("%s — Lv %d / %d" % [
+		_add_label("%s — Lv.%d / %d" % [
 			str(hdata.get("name", h.get("hero_type"))), int(h.get("level")),
 			HeroDB.max_hero_level], COL_GOLD, 15)
 		_add_label("HP %d/%d · DMG %d · Skill DMG %d · Armor %.0f · MR %.0f · RNG %d" % [
@@ -445,13 +512,15 @@ func _build_hero_tab() -> void:
 		if h.can_upgrade():
 			var cost: int = h.upgrade_cost()
 			var next: Dictionary = HeroDB.level_data(int(h.get("level")) + 1)
-			_add_button("Upgrade ke Lv%d — %d gold" % [int(h.get("level")) + 1, cost],
+			var afford := GameManager.gold >= cost
+			_add_button("Upgrade ke Lv.%d — %d gold" % [int(h.get("level")) + 1, cost],
 				"HP x%.2f · damage x%.2f · skill x%.2f" % [
 					float(next.get("hp_mult", 1.0)), float(next.get("dmg_mult", 1.0)),
 					float(next.get("skill_mult", 1.0))],
 				# ui_upgrade 0.6 — paritas upgrade hero _core.py:7243
 				func(): _run(func(): GameManager.try_upgrade_hero(), "ui_upgrade", 0.6),
-				GameManager.gold >= cost)
+				afford, "upgrade_hero",
+				{"cost": cost, "blocked": "" if afford else "POOR"})
 		else:
 			_add_label("Level maksimum tercapai.", COL_DIM)
 	else:
@@ -467,20 +536,34 @@ func _build_hero_tab() -> void:
 	grid.add_theme_constant_override("h_separation", 6)
 	grid.add_theme_constant_override("v_separation", 4)
 	_body.add_child(grid)
+	var roster_full := GameManager.owned_heroes().size() >= GameManager.max_heroes_owned
 	for ht in unlocked:
 		var htype := str(ht)
 		var d: Dictionary = HeroDB.get_hero(htype)
 		if d.is_empty():
 			continue
 		var cost := int(d.get("cost", 400))
+		var can := GameManager.can_buy_hero(htype)
+		var blocked := ""
+		if GameManager.owns_hero(htype):
+			blocked = "OWNED"
+		elif roster_full:
+			blocked = "FULL"
+		elif GameManager.gold < cost:
+			blocked = "POOR"
+		elif not can:
+			blocked = "LOCKED"
 		var b := _make_button("%s (%s) — %d g" % [
 				str(d.get("name", htype)), str(d.get("role", "-")), cost],
 			"%s\nHP %d · DMG %d · RANGE %d · %s" % [str(d.get("description", "")),
 				int(d.get("hp", 0)), int(d.get("damage", 0)), int(d.get("range", 0)),
 				str(d.get("dmg_type", "PHYSICAL"))],
-			_buy_hero.bind(htype), GameManager.can_buy_hero(htype))
-		if GameManager.owns_hero(htype):
+			_buy_hero.bind(htype), can, "buy_hero_" + htype,
+			{"cost": cost, "blocked": blocked})
+		if blocked == "OWNED":
 			b.text += " · DIMILIKI"
+		elif blocked == "FULL":
+			b.text += " · MAX"
 		b.custom_minimum_size = Vector2(320, 30)
 		grid.add_child(b)
 	_add_label("Hero lain (%d total di heroes.json) terbuka lewat progres level — "
@@ -501,8 +584,9 @@ func _build_nexus_tab() -> void:
 	if nx == null or not is_instance_valid(nx) or bool(nx.get("is_dead")):
 		_add_label("Radiant Nexus sudah hancur.", Color(1, 0.5, 0.5), 14)
 		return
-	_add_label("Radiant Nexus — Lv %d / %d" % [int(nx.get("level")), TowerDB.nexus_max_level()],
-		COL_GOLD, 15)
+	_add_label("Radiant Nexus — %s Lv.%d / %d" % [
+		HudLayout.castle_name(int(nx.get("level"))), int(nx.get("level")),
+		TowerDB.nexus_max_level()], COL_GOLD, 15)
 	_add_label("HP %d/%d · Shield %d/%d · DMG %d · RNG %d · skala minion %.2fx" % [
 		int(nx.get("hp")), int(nx.get("max_hp")), int(nx.get("shield")),
 		int(nx.get("shield_max")), int(nx.get("damage")), int(nx.get("attack_range")),
@@ -510,12 +594,14 @@ func _build_nexus_tab() -> void:
 	if nx.can_upgrade():
 		var cost: int = nx.upgrade_cost()
 		var nxt: Dictionary = TowerDB.nexus_stats(int(nx.get("level")) + 1)
-		_add_button("Upgrade Nexus ke Lv%d — %d gold" % [int(nx.get("level")) + 1, cost],
+		var afford := GameManager.gold >= cost
+		_add_button("Upgrade Nexus ke Lv.%d — %d gold" % [int(nx.get("level")) + 1, cost],
 			"HP %d · DMG %d · RNG %d · shield ratio HP naik" % [
 				int(nxt.get("hp", 0)), int(nxt.get("damage", 0)), int(nxt.get("range", 0))],
 			# ui_upgrade 0.5 — paritas try_upgrade_nexus _core.py:2668
 			func(): _run(func(): GameManager.try_upgrade_nexus(), "ui_upgrade", 0.5),
-			GameManager.gold >= cost)
+			afford, "upgrade_nexus",
+			{"cost": cost, "blocked": "" if afford else "POOR"})
 	else:
 		_add_label("Nexus sudah level maksimum.", COL_DIM)
 	if bool(nx.get("shield_active")) and bool(nx.get("free_shield_active")):
@@ -524,12 +610,14 @@ func _build_nexus_tab() -> void:
 			Color(0.6, 0.85, 1.0), 11)
 	if nx.can_buy_shield():
 		var cost: int = nx.shield_cost()
+		var afford := GameManager.gold >= cost
 		_add_button("Beli Castle Shield — %d gold" % cost,
 			"Shield permanen: menyerap damage 1:1, sisanya dimitigasi %.0f%%."
 			% (float(nx.get("shield_damage_reduction")) * 100.0),
 			# ui_upgrade 0.5 — paritas try_activate_castle_shield _core.py:2652
 			func(): _run(func(): GameManager.try_buy_nexus_shield(), "ui_upgrade", 0.5),
-			GameManager.gold >= cost)
+			afford, "nexus_shield",
+			{"cost": cost, "blocked": "" if afford else "POOR"})
 	elif bool(nx.get("castle_shield_purchased")):
 		_add_label("Castle Shield sudah dibeli.", Color(0.6, 0.95, 0.7))
 
@@ -596,18 +684,26 @@ func _add_label(text_val: String, col: Color = COL_TEXT, font_size: int = 12) ->
 	return l
 
 
-func _add_button(label: String, tooltip: String, cb: Callable, enabled: bool) -> Button:
-	var b := _make_button(label, tooltip, cb, enabled)
+func _add_button(label: String, tooltip: String, cb: Callable, enabled: bool,
+		ui_key: String = "", ui_data: Dictionary = {}) -> Button:
+	var b := _make_button(label, tooltip, cb, enabled, ui_key, ui_data)
 	b.custom_minimum_size = Vector2(0, 32)
 	_body.add_child(b)
 	return b
 
 
-func _make_button(label: String, tooltip: String, cb: Callable, enabled: bool) -> Button:
+func _make_button(label: String, tooltip: String, cb: Callable, enabled: bool,
+		ui_key: String = "", ui_data: Dictionary = {}) -> Button:
 	var b := Button.new()
 	b.text = label
 	b.tooltip_text = tooltip
 	b.disabled = not enabled
+	# ui_key/ui_data = identitas stabil tombol untuk audit closed-world
+	# UiHudParityTest (daftar tertutup di HudLayout.shop_ui_keys()).
+	if ui_key != "":
+		b.set_meta("ui_key", ui_key)
+	if not ui_data.is_empty():
+		b.set_meta("ui_data", ui_data)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.focus_mode = Control.FOCUS_NONE
 	b.add_theme_font_size_override("font_size", 12)

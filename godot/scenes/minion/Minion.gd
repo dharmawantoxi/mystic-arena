@@ -357,7 +357,7 @@ func die(killer_team: String = ""):
 	AudioManager.play_sfx("minion_death", 0.7)
 	if status != null:
 		status.clear()
-	GameManager.award_kill(killer_team, gold_reward)
+	GameManager.award_kill(killer_team, gold_reward, "minion")
 	GameManager.minion_died.emit(self, killer_team)
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.3)

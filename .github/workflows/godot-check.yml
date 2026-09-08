@@ -364,6 +364,31 @@ jobs:
             exit 1
           fi
 
+      # ── 4h. UiHudParityTest: paritas UI/HUD IN-MATCH (FASE 12). Oracle
+      # menjalankan draw pygame ASLI headless (UIRenderer, PopupRenderer,
+      # HeroPanel, ItemShopUI, Overlay, Menu, WaveAnnouncer, InputHandler):
+      # 82 skenario draw vs teks/geometri/kunci tombol ShopPanel Godot,
+      # format gold/income/mode/cooldown/match-time, kurva banner wave 121
+      # titik, gate equip melee/magic 222 hero, tabel biaya hero/menara/
+      # nexus, klik dunia (slot/hero/menara/move/deselect/klik-kanan),
+      # hotkey H/B/N/R/ESC, panel pause 400x400, panel game-over (stat +
+      # unlock + NEW HERO), dan audit closed-world ui_key. Fixture = seksi
+      # ui_hud. --quit-after 400: mayoritas baterai murni; satu-satunya
+      # tunggu waktu-nyata = tween banner (~0.3 dtk via time_scale 8).
+      - name: UiHudParityTest (UI/HUD in-match vs oracle Pygame)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/UiHudParityTest.tscn --quit-after 400 2>&1 | tee /tmp/uihud.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/uihud.log --label "UiHudParityTest" \
+              --require "[UiHudParityTest] PASS" > /tmp/uihud.gate 2>&1; then
+            cat /tmp/uihud.gate
+          else
+            cat /tmp/uihud.gate
+            echo "::error::UIHUD-FAIL-TAIL: $(tail -40 /tmp/uihud.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::UIHUD-FAIL-LINES: $(grep -m80 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/uihud.log | tr '\n' ' | ' | cut -c1-12000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

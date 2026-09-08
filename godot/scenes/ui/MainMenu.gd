@@ -46,6 +46,7 @@ var from_pause: bool = false
 var _bg: PanelContainer = null
 var _root: VBoxContainer = null      # dibangun ulang tiap ganti state
 var _confirm: PanelContainer = null  # dialog keluar (paritas exit_confirm)
+var _pause_panel: PanelContainer = null # panel pause 400x400 (anak MainMenu)
 var _hero_tab: String = "starter"    # paritas Menu.shop_tab _core.py:4810
 
 
@@ -152,6 +153,9 @@ func _show(new_state: int) -> void:
 	if _confirm != null and is_instance_valid(_confirm):
 		_confirm.queue_free()
 	_confirm = null
+	if _pause_panel != null and is_instance_valid(_pause_panel):
+		_pause_panel.queue_free()
+	_pause_panel = null
 	_root = VBoxContainer.new()
 	_root.name = "Content"
 	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -900,44 +904,68 @@ func _build_credits() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build_pause() -> void:
-	var center := VBoxContainer.new()
-	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	center.add_theme_constant_override("separation", 10)
-	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_root.add_child(center)
+	# Panel 400x400 terpusat (paritas geometri pause pygame) — anak LANGSUNG
+	# MainMenu (Control biasa, BUKAN container) dengan posisi/ukuran eksplisit:
+	# di dalam VBox _root/_bg geometrinya dikendalikan layout (bug: rect jadi
+	# (44,18,400,408) — margin backdrop + tinggi konten).
+	var panel := PanelContainer.new()
+	panel.name = "PausePanel"
+	panel.position = HudLayout.PAUSE_PANEL_POS
+	panel.size = HudLayout.PAUSE_PANEL_SIZE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = COL_PANEL
+	sb.border_color = COL_BORDER
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(12)
+	sb.content_margin_left = 20.0
+	sb.content_margin_right = 20.0
+	sb.content_margin_top = 16.0
+	sb.content_margin_bottom = 16.0
+	panel.add_theme_stylebox_override("panel", sb)
+	add_child(panel)
+	_pause_panel = panel
+
+	var inner := VBoxContainer.new()
+	inner.alignment = BoxContainer.ALIGNMENT_CENTER
+	# separation 7 (bukan 10): minimum gabungan konten + margin stylebox
+	# harus <= 400, kalau tidak Control.size dijepit naik ke minimum
+	# (bug: panel jadi 400x408). 5 gap x 3px = 15px dihemat -> min ~393.
+	inner.add_theme_constant_override("separation", 7)
+	panel.add_child(inner)
 
 	var title := Label.new()
 	title.text = "PAUSED"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 46)
 	title.add_theme_color_override("font_color", COL_GOLD)
-	center.add_child(title)
+	inner.add_child(title)
 
 	# badge difficulty (paritas mode badge 6949-6960)
 	var mode := Label.new()
-	var diff_color := COL_GREEN
-	if GameManager.difficulty == "easy":
-		diff_color = Color(0.4, 0.85, 1.0)
-	elif GameManager.difficulty == "hard":
-		diff_color = COL_RED
+	mode.name = "PauseMode"
 	mode.text = "MODE: %s  ·  LEVEL %d  ·  WAVE %d" % [
-		GameManager.difficulty.to_upper(), GameManager.level_number,
+		HudLayout.mode_label(GameManager.difficulty), GameManager.level_number,
 		GameManager.wave_number]
 	mode.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mode.add_theme_font_size_override("font_size", 14)
-	mode.add_theme_color_override("font_color", diff_color)
-	center.add_child(mode)
+	mode.add_theme_color_override("font_color",
+		HudLayout.mode_color(GameManager.difficulty))
+	inner.add_child(mode)
 
+	# Urutan paritas PAUSE_BUTTON_ORDER; label Indonesia disengaja (MainMenu
+	# Godot berbahasa Indonesia); ukuran 300x48 = pygame.
 	var buttons: Array = [
-		["LANJUT MAIN (RESUME)", COL_GREEN, _do_resume],
-		["PENGATURAN", Color(0.85, 0.75, 0.45), _show.bind(State.SETTINGS)],
-		["MENU UTAMA", COL_BLUE, _do_main_menu],
-		["KELUAR GAME", COL_RED, func(): get_tree().quit()],
+		["PauseResume", "LANJUT MAIN (RESUME)", COL_GREEN, _do_resume],
+		["PauseSettings", "PENGATURAN", Color(0.85, 0.75, 0.45), _show.bind(State.SETTINGS)],
+		["PauseMenu", "MENU UTAMA", COL_BLUE, _do_main_menu],
+		["PauseQuit", "KELUAR GAME", COL_RED, func(): get_tree().quit()],
 	]
 	for pair in buttons:
-		var b := _make_button(str(pair[0]), pair[1], pair[2], Vector2(320, 40), 15)
+		var b := _make_button(str(pair[1]), pair[2], pair[3],
+			HudLayout.PAUSE_BUTTON_SIZE, 15)
+		b.name = str(pair[0])
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		center.add_child(b)
+		inner.add_child(b)
 
 
 # ══════════════════════════════════════════════════════════

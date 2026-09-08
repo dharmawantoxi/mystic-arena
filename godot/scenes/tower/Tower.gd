@@ -346,7 +346,7 @@ func die(killer_team: String = "", _killer = null) -> void:
 	# _entity.py:1095-1101, volume_mult 0.8, throttle 300 ms).
 	AudioManager.play_sfx("tower_destroyed", 0.8)
 	# Gold reward: hanya tim pembunuh yang menabung (paritas GameManager.award_kill)
-	GameManager.award_kill(killer_team, gold_reward)
+	GameManager.award_kill(killer_team, gold_reward, "tower")
 	GameManager.tower_destroyed.emit(self, killer_team)
 	var tw := create_tween()
 	tw.set_parallel(true)

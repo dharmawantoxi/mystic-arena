@@ -12,12 +12,14 @@ const ShopPanelScript = preload("res://scenes/ui/ShopPanel.gd")
 const BAR_REFRESH := 0.2
 
 var _banner_tween: Tween
+var _wave_sub: Label = null
 var _field_timer: float = 0.0
 var _bar_timer: float = 0.0
 var _nexus_bars: Dictionary = {}   # team -> {hp: ProgressBar, shield: ProgressBar, label: Label}
 var _difficulty_label: Label = null
 var _over_panel: PanelContainer = null
 var _over_title: Label = null
+var _over_stats: Label = null
 var _over_body: Label = null
 var _next_button: Button = null
 
@@ -30,6 +32,9 @@ var _next_button: Button = null
 
 func _ready():
 	wave_banner.modulate.a = 0.0
+	wave_banner.set_meta("base_l", wave_banner.offset_left)
+	wave_banner.set_meta("base_r", wave_banner.offset_right)
+	_build_wave_sub()
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.wave_started.connect(_on_wave_started)
 	GameManager.level_started.connect(_on_level_started)
@@ -109,40 +114,72 @@ func _on_wave_started(wave_num: int):
 	wave_label.text = "WAVE %d" % wave_num
 	announce_wave(wave_num)
 
-# Banner besar "WAVE N" di tengah layar (mirip WaveAnnouncer: pop-in -> tahan -> fade out)
+# Subtitle banner ("E N E M I E S   I N C O M I N G") — posisi di bawah judul.
+func _build_wave_sub() -> void:
+	_wave_sub = Label.new()
+	_wave_sub.name = "WaveSub"
+	_wave_sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_wave_sub.anchor_left = 0.5
+	_wave_sub.anchor_top = 0.5
+	_wave_sub.anchor_right = 0.5
+	_wave_sub.anchor_bottom = 0.5
+	_wave_sub.offset_left = -300.0
+	_wave_sub.offset_top = -66.0
+	_wave_sub.offset_right = 300.0
+	_wave_sub.offset_bottom = -36.0
+	_wave_sub.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_wave_sub.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_wave_sub.add_theme_font_size_override("font_size", 22)
+	_wave_sub.add_theme_color_override("font_color", Color(0.78, 0.78, 0.86))
+	_wave_sub.add_theme_color_override("font_outline_color", Color(0.03, 0.03, 0.05, 1))
+	_wave_sub.add_theme_constant_override("outline_size", 4)
+	_wave_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_wave_sub.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_wave_sub.modulate.a = 0.0
+	_wave_sub.set_meta("base_l", _wave_sub.offset_left)
+	_wave_sub.set_meta("base_r", _wave_sub.offset_right)
+	add_child(_wave_sub)
+
+
+## Banner "WAVE N" — port gerak WaveAnnouncer: slide-in 0.4s (BACK OUT =
+## ease_out_back, c1 1.70158 sama) -> tahan 1.0s -> slide-out 0.6s (BACK IN).
+## Kurva frame-per-frame dikunci di HudLayout.wave_slide_x (120 titik fixture).
 func announce_wave(wave_num: int):
-	wave_banner.text = "WAVE %d" % wave_num
+	wave_banner.text = HudLayout.wave_title(wave_num)
+	_wave_sub.text = HudLayout.wave_subtitle()
 	if _banner_tween and _banner_tween.is_valid():
 		_banner_tween.kill()
-	wave_banner.pivot_offset = wave_banner.size / 2.0 # scale dari tengah
-	wave_banner.modulate.a = 0.0
-	wave_banner.scale = Vector2(0.8, 0.8)
+	wave_banner.scale = Vector2.ONE
 	_banner_tween = create_tween()
+	_banner_tween.set_parallel(true)
 	_banner_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_banner_tween.tween_property(wave_banner, "modulate:a", 1.0, 0.35)
-	_banner_tween.parallel().tween_property(wave_banner, "scale", Vector2(1.0, 1.0), 0.35)
-	_banner_tween.tween_interval(1.2)
-	_banner_tween.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	_banner_tween.tween_property(wave_banner, "modulate:a", 0.0, 0.5)
+	for lab in [wave_banner, _wave_sub]:
+		var base_l := float(lab.get_meta("base_l"))
+		var base_r := float(lab.get_meta("base_r"))
+		lab.offset_left = base_l - 1280.0
+		lab.offset_right = base_r - 1280.0
+		lab.modulate.a = 0.0
+		_banner_tween.tween_property(lab, "offset_left", base_l, HudLayout.WAVE_TWEEN_IN)
+		_banner_tween.tween_property(lab, "offset_right", base_r, HudLayout.WAVE_TWEEN_IN)
+		_banner_tween.tween_property(lab, "modulate:a", 1.0, HudLayout.WAVE_TWEEN_IN)
+	_banner_tween.set_parallel(false)
+	_banner_tween.tween_interval(HudLayout.WAVE_TWEEN_HOLD)
+	_banner_tween.set_parallel(true)
+	_banner_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
+	for lab in [wave_banner, _wave_sub]:
+		var base_l := float(lab.get_meta("base_l"))
+		var base_r := float(lab.get_meta("base_r"))
+		_banner_tween.tween_property(lab, "offset_left", base_l + 1280.0, HudLayout.WAVE_TWEEN_OUT)
+		_banner_tween.tween_property(lab, "offset_right", base_r + 1280.0, HudLayout.WAVE_TWEEN_OUT)
+		_banner_tween.tween_property(lab, "modulate:a", 0.0, HudLayout.WAVE_TWEEN_OUT)
 
-# 1234567 -> "1,234,567" (paritas f"{self.gold:,}" di pygame)
+# 1234567 -> "1,234,567" — kanon HudLayout, delegasi tipis (dipakai income_label).
 static func _format_thousands(n: int) -> String:
-	var s := str(absi(n))
-	var out := ""
-	var count := 0
-	for i in range(s.length() - 1, -1, -1):
-		out = s[i] + out
-		count += 1
-		if count % 3 == 0 and i > 0:
-			out = "," + out
-	return ("-" + out) if n < 0 else out
+	return HudLayout.format_thousands(n)
 
-# 3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" (paritas _core.format_gold_rate)
+# 3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" — kanon HudLayout, delegasi tipis.
 static func _format_gold_rate(rate: float) -> String:
-	var s := "%.1f" % rate
-	if s.ends_with(".0"):
-		s = s.substr(0, s.length() - 2)
-	return s
+	return HudLayout.format_gold_rate(rate)
 
 
 # ══════════════════════════════════════════════════════════
@@ -294,8 +331,8 @@ func _build_game_over_panel() -> void:
 	_over_panel.anchor_bottom = 0.5
 	_over_panel.offset_left = -260.0
 	_over_panel.offset_right = 260.0
-	_over_panel.offset_top = -96.0
-	_over_panel.offset_bottom = 96.0
+	_over_panel.offset_top = -186.0
+	_over_panel.offset_bottom = 186.0
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.04, 0.045, 0.08, 0.94)
 	sb.border_color = Color(1, 0.85, 0.4, 0.95)
@@ -324,11 +361,19 @@ func _build_game_over_panel() -> void:
 	_over_title.add_theme_constant_override("outline_size", 6)
 	vbox.add_child(_over_title)
 
+	# Baris stat paritas _draw_stats (label + nilai per baris).
+	_over_stats = Label.new()
+	_over_stats.text = ""
+	_over_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_over_stats.add_theme_font_size_override("font_size", 15)
+	_over_stats.add_theme_color_override("font_color", Color(0.92, 0.95, 1.0))
+	vbox.add_child(_over_stats)
+
 	_over_body = Label.new()
 	_over_body.text = ""
 	_over_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_over_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_over_body.add_theme_font_size_override("font_size", 14)
+	_over_body.add_theme_font_size_override("font_size", 13)
 	_over_body.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 	vbox.add_child(_over_body)
 
@@ -356,7 +401,7 @@ func _build_game_over_panel() -> void:
 	actions.add_child(menu_btn)
 
 	var hint := Label.new()
-	hint.text = "ENTER = lanjut level berikutnya  ·  R = ulangi  ·  ESC = menu utama"
+	hint.text = "ENTER/N = lanjut level berikutnya  ·  R = ulangi  ·  ESC = menu utama"
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", Color(0.7, 0.76, 0.9, 0.85))
@@ -384,9 +429,18 @@ func _on_game_over(victory: bool) -> void:
 	if _over_panel == null:
 		return
 	_over_panel.visible = true
-	_over_title.text = "VICTORY" if victory else "DEFEAT"
+	# Judul paritas overlay ("VICTORY! LV.1" / "DEFEAT LV.3").
+	_over_title.text = "%s LV.%d" % [
+		"VICTORY!" if victory else "DEFEAT", GameManager.level_number]
 	_over_title.add_theme_color_override("font_color",
 		Color(1, 0.9, 0.45) if victory else Color(1, 0.45, 0.45))
+	# Stat paritas _draw_stats: score ribuan, time m:ss, wave & kill polos.
+	# (Max Combo GAP — Godot tak punya sistem combo; NEW BEST! GAP — SaveManager
+	# tak menyimpan best per level.)
+	_over_stats.text = "Final Score: %s\nMatch Time: %s\nWaves Survived: %d\nTotal Kills: %d" % [
+		HudLayout.format_thousands(GameManager.score),
+		HudLayout.format_match_time(GameManager.match_time_seconds()),
+		GameManager.wave_number, GameManager.total_kills]
 	# Reward yang BENAR-BENAR diberikan (paritas _grant_meta_reward: menang
 	# pertama 3000 / replay 1500 sekali / 200 berikutnya / kalah 0), bukan
 	# lagi rumusan 3000 + level*100.
@@ -399,11 +453,26 @@ func _on_game_over(victory: bool) -> void:
 			replay_txt = "replay pertama"
 		else:
 			replay_txt = "replay berulang"
-	_over_body.text = "%s menang di level %d (wave %d).\n%s" % [
-		"Radiant" if victory else "Dire", GameManager.level_number, GameManager.wave_number,
-		"Meta reward: +%d gold (%s) tersimpan ke save." % [reward, replay_txt] if victory
-			else "Nexus Radiant hancur — meta reward 0 (kalah tidak dibayar)."]
+	var lines: Array = []
+	if victory:
+		lines.append("Meta reward: +%d gold (%s) tersimpan ke save." % [reward, replay_txt])
+	else:
+		lines.append("Nexus Radiant hancur — kalah tidak dibayar.")
+	# Paritas _get_newly_unlocked_level: menang + level berikut ADA + belum
+	# pernah ditamatkan (end_match sudah complete_level saat ini).
 	var nxt := GameManager.next_level_number()
+	if victory and nxt > 0 and not SaveManager.is_level_completed(nxt):
+		lines.append("NEW LEVEL UNLOCKED!")
+	# Baris NEW HERO: pygame MENGHITUNG subtitle ini tapi TIDAK me-render-nya
+	# (Overlay.draw mengabaikan param subtitle; satu-satunya jalur tampil =
+	# popup achievement). Godot menampilkannya — beda disengaja, data sama.
+	var new_heroes: Array = GameManager.heroes_unlocked_this_match
+	if victory and not new_heroes.is_empty():
+		var names: Array = []
+		for bt in new_heroes:
+			names.append(str(HeroDB.get_hero(str(bt)).get("name", str(bt))))
+		lines.append("NEW HERO: %s" % ", ".join(names))
+	_over_body.text = "\n".join(lines)
 	if _next_button != null:
 		_next_button.visible = victory and nxt > 0
 		if nxt > 0:

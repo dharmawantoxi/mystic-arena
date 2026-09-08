@@ -112,7 +112,10 @@ func update_state(hero) -> void:
 		_cd_label.text = "..."
 		modulate = Color(1.0, 0.95, 0.7, 1.0)
 	else:
-		_cd_label.text = "%d" % int(ceil(skills.cooldown_remaining(skill_key)))
+		# Angka detik paritas HeroPanel (frames // 60 + 1 — 60f tampil "2",
+		# bukan ceil()=1).
+		_cd_label.text = "%d" % HudLayout.cooldown_seconds(
+			skills.cooldown_frames(skill_key))
 		modulate = Color(0.78, 0.8, 0.88, 1.0)
 	_name_label.text = str(skills.skill_label(skill_key))
 	tooltip_text = "%s (%s) — %s" % [
