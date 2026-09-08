@@ -132,6 +132,21 @@ var _meta_reward_granted: bool = false
 ## Boss (mini/true) yang dikalahkan di match INI — baru di-unlock gratis
 ## kalau match dimenangkan (paritas bosses_defeated_this_match _core.py:1594).
 var bosses_defeated_this_match: Array = []
+## Tipe hero yang BARU di-unlock gratis dari match ini (paritas
+## heroes_unlocked_this_match _core.py:2347 — ditulis _auto_unlock..., DIBACA
+## HUD untuk baris "NEW HERO" panel game-over).
+var heroes_unlocked_this_match: Array = []
+## Skor match (paritas Game.score _core.py:2195: jumlah gold_reward kill
+## tim blue; kill hero +150 pygame BELUM diport — tanpa atribusi killer).
+var score: int = 0
+## Kill minion tim blue match ini (paritas Game.total_kills: minion SAJA).
+var total_kills: int = 0
+## Jam dinding mulai match, msec (paritas match_start_time; match_time
+## pygame memakai wall-clock TERMASUK pause, jadi tanpa penyesuaian pause).
+var match_start_msec: int = 0
+## Tab toko yang diminta sekali-buka (mis. SkillBar ITEM FORGE -> "item");
+## dikonsumsi ShopPanel._on_shop_changed lalu dikosongkan lagi.
+var requested_shop_tab: String = ""
 
 # ── PROGRESI LINTAS-SAVE: daftar hero yang dimiliki pemain ──
 ## Paritas `Game.purchased_heroes` (_core.py:1596-1604): daftar hero yang
@@ -273,12 +288,10 @@ func compute_gold_per_second(level_num: int, d: String = "") -> float:
 	return (float(economy.get("gold_per_second", 3)) + bonus) * difficulty_mult(d)
 
 
-## 3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" (paritas _core.format_gold_rate)
+## 3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" (paritas _core.format_gold_rate).
+## Kanon di HudLayout (banker's rounding bit-eksak); ini delegasi tipis.
 static func format_gold_rate(rate: float) -> String:
-	var s := "%.1f" % rate
-	if s.ends_with(".0"):
-		s = s.substr(0, s.length() - 2)
-	return s
+	return HudLayout.format_gold_rate(rate)
 
 
 func set_difficulty(d: String) -> void:
@@ -372,6 +385,12 @@ func start_level(lv: int, replay: bool = false):
 	meta_reward_earned = 0
 	_meta_reward_granted = false
 	bosses_defeated_this_match.clear()
+	# ── Skor/kill/timer/unlock match (paritas Game.reset/score) ──
+	score = 0
+	total_kills = 0
+	match_start_msec = Time.get_ticks_msec()
+	heroes_unlocked_this_match.clear()
+	requested_shop_tab = ""
 	# ── ENEMY SCALING (paritas _core.py:1460 + 1476-1483): hanya Hard ──
 	enemy_scaling_enabled = (difficulty == "hard")
 	if enemy_scaling_enabled:
@@ -679,12 +698,22 @@ func ai_spend(amount: int) -> bool:
 	return false
 
 
-func award_kill(killer_team: String, amount: int) -> void:
+## victim_kind: "minion" | "tower" ( dipakai total_kills: pygame hanya
+## menghitung MINION, _core.py:2219-2240; skor = jumlah gold_reward kill blue).
+func award_kill(killer_team: String, amount: int, victim_kind: String = "") -> void:
 	# Tim pemain (blue/radiant) menabung gold; AI (red) punya saldo sendiri
 	if killer_team == "blue":
 		gold += amount
+		score += amount
+		if victim_kind == "minion":
+			total_kills += 1
 	elif killer_team == "red":
 		ai_gold += amount
+
+
+## Detik sejak match mulai (wall-clock; paritas time.time()-match_start_time).
+func match_time_seconds() -> int:
+	return int(maxi(0, Time.get_ticks_msec() - match_start_msec) / 1000)
 
 
 # ══════════════════════════════════════════════════════════
@@ -891,6 +920,8 @@ func _auto_unlock_defeated_boss_heroes() -> void:
 		if not SaveManager.is_unlocked(bt):
 			SaveManager.unlock_hero(bt)
 			newly.append(bt)
+	# Selalu ditulis (bahkan kosong) — paritas _core.py:2347.
+	heroes_unlocked_this_match = newly.duplicate()
 	if not newly.is_empty():
 		var names: Array = []
 		for bt in newly:
@@ -1075,9 +1106,11 @@ func try_build_tower(tower_type: String) -> bool:
 	s["taken"] = true
 	var t = spawn_tower("blue", s["pos"], str(s["lane"]), "outer", base_type, 1)
 	s["tower"] = t
-	select_tower(t)
 	tower_built.emit(t)
-	shop_changed.emit()
+	# Paritas build_archer (popup_after null): popup bangun DITUTUP dan
+	# menara baru TIDAK dipilih — bukan dibuka detailnya.
+	clear_selection()
+	close_shop()
 	print("[Shop] menara %s dibangun (-%d gold)" % [t.display_name, cost])
 	return true
 
@@ -1115,6 +1148,9 @@ func try_sell_tower() -> bool:
 	if not bool(t.get("is_player_built")):
 		return false
 	var refund: int = t.sell_value()
+	if refund == 0:
+		refund = 50 # refund 50% dari 100G (paritas _try_sell_tower; Lv1
+		# tak punya tombol jual di UI, jadi cuma terjangkau via handler)
 	for s in build_slots:
 		if s.get("tower") == t:
 			s["taken"] = false

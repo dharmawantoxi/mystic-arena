@@ -42,10 +42,33 @@ sertifikasi paritas seluruh game.
 | Jalur damage basic hero | Pipeline school-aware satu-untuk-semua: physical→armor node, magic→MR, netral→tanpa mitigasi; armor hero = snapshot node; amp setelah mitigasi; block sebelum armor floor 1; blind dibaca dari status TARGET; crit buff tidak pernah aktif; lifesteal/cleave memakai damage post-mitigasi; reflect thornmail bertipe 'normal' | `CombatSystem.apply_damage` kini dispatch per jenis target, mirror `take_damage` pygame masing-masing: HERO = amp `int(round)` → armor ITEM (live dari inventory + aura, dikikis shred, negatif = bonus) utk SEMUA damage non-`fire`, TANPA magic_resist → block SETELAH armor (amount milik defender, aura guard menimpa tanpa roll, floor 0) → Bristleback; MINION = amp → shred bonus (double-dip) → armor−shred/MR; BOSS = amp → shred bonus → reduction−shred×0.06 (cap 0.60)/MR → resilience+cap, blind hanya `normal` bersource; TOWER = armor/MR sekolah; NEXUS = shield `int(x×(1−0.88))` truncation. Kalkulasi penyerang `calc_damage` = `_do_attack` pygame (bonus item → crit buff kit `int(×2)` → crit item `int(×mult)`; pembulatan `py_round` banker ala Python). Lifesteal float pra-mitigasi (ranged `int()` saat spawn), cleave netral tanpa source, Morgath serang instan 'normal', peluru menara/minion netral, boss ranged 'normal'. Dikunci `HeroBasicAttackParityTest` (29 skenario + probe get_block). |
 | Roll RNG guard & item | Roll combat tidak pernah teruji: damage uji bertipe `fire` (netral deterministik) sehingga windrun tidak pernah me-roll dan shadow realm hanya tampak sebagai bhp flat di harness skill | Dikunci fixture `hero_rng_guards` (14 skenario, 47 roll ter-script) + replay `HeroRngGuardParityTest`. Oracle menjalankan `take_damage`/`_do_attack` pygame ASLI dengan `random.random` DI-MONKEYPATCH per situs roll (`_entity.py::take_damage`, `hero_items.py::roll_crit` — pemanggil lain jatuh ke RNG asli, double-run seed beda tetap dijalankan); Godot memutar ulang lewat hook `ParityRng` di `CombatSystem.apply_damage` + `ItemInventory.roll_crit` (tanpa begin() = `randf()` global — perilaku produksi tak berubah) dan membandingkan HP + JUMLAH/nilai/URUTAN roll yang terkonsumsi. Windrun (Sylara W): fisik = `normal`/`projectile` dengan sekolah bukan magic — termasuk netral TANPA source; `0.75` persis TIDAK meleset (strict); sihir/fire tidak me-roll; flag mati tanpa roll. Shadow realm (Zephyr W): kebal total SEMUA damage tanpa roll, dipotong sebelum windrun/wall/veil. Urutan guard shadow → windrun (roll) → wind wall → veil → evasion terkunci lewat jumlah roll per tahap. Crit Dead Edge me-roll di `calc_damage` SEBELUM mitigasi target (crit buff men-diskip roll; ranged: roll crit saat spawn lalu roll block saat mendarat), block Scarlet Bulwark me-roll setelah armor utk semua non-fire (floor 0), miss = SATU roll `max(evasion, blind)`, True Strike tanpa roll, windrun penyerang ikut me-roll pada reflect Bristleback (nested take_damage). |
 
+| UI/HUD in-match (toko/panel/banner/klik/hotkey) | Panel/label/tombol dibangun manual tanpa oracle: income memakai `"%.1f"` engine yang tak terverifikasi, angka cooldown `ceil(detiks)` (60f tampil "1"), gate equip melee `< 110` + magic via `dmg_school` (46 hero role-magic salah), klik tanah kosong = deselect (bukan perintah gerak), tanpa klik kanan, tanpa tombol N, tanpa catatan skor/kill/timer/unlock match, pause tanpa panel, game-over tanpa stat | Seksi fixture `ui_hud` menjalankan draw pygame ASLI headless (82 skenario draw, 31 kasus klik, 28 hotkey, 222 hero predikat, kurva banner 121 titik, baterai touch-rect) dan diputar ulang `UiHudParityTest`. Kanon tunggal `HudLayout.gd`: `format_gold_rate` bit-eksak IEEE-754 (terbukti identik Python: baterai oracle + fuzz 200.000 nilai, 0 beda — `GameManager`/`HUD` delegasi), ribuan/match-time/mode/cooldown (`frames//60+1`), easing banner (slide-in 0.4 BACK OUT → tahan 1.0 → slide-out 0.6 BACK IN + subtitle letterspaced), nama castle (Lv6+ CITADEL), touch-rect 48px (center integer pygame), dan semesta TERTUTUP `ui_key` tombol toko yang diaudit tiap layar. Perilaku yang disamakan: panel hero (`Lv.n`, `hp/max`, `UPGRADE HERO (300G)`/`M A X   L E V E L`, `AUTO-CAST ON` no-op, `ITEM FORGE  (n/6)` → tab item, chip slot → forge, X = deselect), toko (suffix `MAX`/`DIMILIKI`, alasan disabled `MELEE ONLY`/`MAGIC ONLY`/`POOR`/`FULL`/`OWNED` di `ui_data`+tooltip, tanpa tombol jual di Lv1 + fallback +50G via handler, tutup seusai beli hero/bangun menara), gate equip (`range > 80` tolak melee_only; magic via `ItemDB.is_magic_hero` berbasis ROLE), prioritas klik (slot → nexus → hero biru → perintah → menara biru → deselect; tanah kosong + hero hidup = MOVE tetap dipilih; klik kanan = tutup + MOVE), hotkey H (toggle toko, paritas) + B (ekstensi Godot) + N (victory → next; defeat/last diam) + R/ESC, pause (panel 400×400 @(440,160), 4 tombol 300×48 seurutan, mode line), game-over (`VICTORY! LV.n`/`DEFEAT LV.n`, 4 baris stat, `NEW LEVEL UNLOCKED!`, `NEW HERO: …`, tombol next hanya victory+ada-lanjut). Beda disengaja yang dikunci eksplisit: UI Godot berbahasa Indonesia, toko satu-scroll tanpa halaman (himpunan 33 id direplay), klik musuh = move-to + aggro otomatis (tanpa `follow_target`), baris NEW HERO ditampilkan (pygame menghitung tapi tidak me-render), klik-kanan di atas panel tertelan. Belum teruji/sengaja terbuka: piksel (lebar chip metrik-font, gradien/shadow/dekorasi banner, ikon, kartu item), popup unlock geser + popup achievement, sistem combo (`Max Combo`), badge `NEW BEST!` (tanpa best per level di save), skor kill-hero +150 (tanpa atribusi killer), bangunan toko di map, sistem taktis (hold G/F/T/C/B/D), kontrol sentuh di layar, dan teks intro level (perilaku/skip-nya milik `CinematicTest`). |
+
 ## Belum setara — jangan ditandai selesai
 
-- **UI/HUD/toko/menu:** state dan beberapa transaksi tersedia, tetapi layout,
-  popup detail, ikon, navigasi dan interaksi belum sama dengan Pygame.
+- **UI/HUD/toko/menu:** perilaku in-match kini diuji oracle (`ui_hud` +
+  `UiHudParityTest` — lihat tabel di atas: format, banner, biaya, gate,
+  klik, hotkey, pause, game-over, audit `ui_key`). Yang TETAP TERBUKA,
+  eksplisit: (1) **piksel** — lebar chip (metrik font), gradien/shadow/
+  dekorasi banner, ikon skill, kartu item, dan seluruh komposit visual
+  belum lolos perbandingan screenshot; (2) **popup unlock geser**
+  (geometri 350×230 tercatat di fixture tapi Godot hanya menampilkan
+  baris teks) + **popup achievement** `NEW HERO UNLOCKED!`;
+  (3) **sistem combo** (`Max Combo` — Godot tidak punya);
+  (4) **badge `NEW BEST!`** (SaveManager tak menyimpan best per level);
+  (5) **skor kill-hero +150** (tanpa atribusi killer);
+  (6) **bangunan toko di map** (klik gedung ITEM FORGE/HERO SHOP —
+  Godot membuka toko via B/H); (7) **sistem taktis**
+  (`tactical_commands.py`: hold G/F/T/C/B/D — belum diport; B dipakai
+  Godot sebagai toggle toko); (8) **kontrol sentuh di layar**
+  (data tombol+visibilitas diport di `HudLayout`, UI-nya belum ada);
+  (9) **teks intro level** (sudah diport visual, replay teks belum ada —
+  `CinematicTest` mengunci perilaku/skip); (10) **transaksi Hero Shop
+  meta** di `MainMenu.gd` belum punya oracle sendiri; (11) beda kecil
+  yang didokumentasikan di kode: hero mati + klik kosong menutup juga
+  tokonya di Godot (pygame membiarkan `shop_open`), klik kanan di atas
+  panel toko tertelan (pygame menutup popup dari mana saja), baris stat
+  + `MUNDUR` di panel hero adalah tambahan Godot.
 - **Visual unit:** bake menyamakan sumber pose hero/boss, bukan seluruh komposit
   live FX. Minion, tower dan nexus masih memakai gambar prosedural pengganti.
   Kuantisasi pose, lighting, cuaca dan efek skill juga belum lolos perbandingan
@@ -62,8 +85,8 @@ sertifikasi paritas seluruh game.
   tidak memengaruhi state — dan tidak diuji. `_try_auto_cast` Godot
   memakai ulang list `_kit_lists()` (bukan list argumen yang dilempar
   Game.update) — sama isinya saat run normal.
-  `Hero.auto_cast_enabled` default True seperti pygame v27 (auto-cast juga
-  untuk hero terpilih; gate False hanya dipakai harness replay).
+`Hero.auto_cast_enabled` default True seperti pygame v27 (auto-cast juga
+untuk hero terpilih; gate False hanya dipakai harness replay).
   `_catchup_unlocks()` kini membaca daftar unlock lintas-save
   (`SaveManager.unlocked_heroes` -> `GameManager.purchased_heroes`) dan
   dikunci `HeroCatchupUnlockParityTest` — lihat tabel di atas.
@@ -122,8 +145,10 @@ sertifikasi paritas seluruh game.
   syarat `unlock_require_boss`, potong `meta_gold`, harga 4500) ada di
   `MainMenu.gd` tetapi belum punya oracle sendiri — yang diuji harness ini
   hanya AKIBAT daftar unlock terhadap catch-up, bukan validasi transaksinya;
-  (4) `heroes_unlocked_this_match` + overlay achievement "NEW HERO
-  UNLOCKED!" pygame belum diport (Godot hanya `print`).
+  (4) `heroes_unlocked_this_match` kini DIPORT (`GameManager` +
+  baris `NEW HERO: …` di panel game-over, dikunci `UiHudParityTest` —
+  pygame menghitung subtitle ini tapi tidak me-render-nya); yang tetap
+  terbuka hanya **popup achievement** `NEW HERO UNLOCKED!` (FX peta).
 - **Android/performa:** lolos tes headless bukan pengujian visual, sentuh,
   performa perangkat, ataupun verifikasi APK/AAB.
 
@@ -153,6 +178,7 @@ godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 
 godot --headless --path godot res://tests/HeroBasicAttackParityTest.tscn --quit-after 120
 godot --headless --path godot res://tests/HeroRngGuardParityTest.tscn --quit-after 120
 godot --headless --path godot res://tests/HeroCatchupUnlockParityTest.tscn --quit-after 120
+godot --headless --path godot res://tests/UiHudParityTest.tscn --quit-after 400
 ```
 
 `GameplayParityTest` membaca `godot/tests/fixtures/match_parity.json`: ekonomi
@@ -254,6 +280,28 @@ binding daftar unlock **tanpa** menghapus isi save. Regenerasi fixture
 HANYA bila `_core.py`/`_entity.py`/`_system.py`/`hero_balance.py`
 berubah.
 
+`UiHudParityTest` memutar ulang seksi fixture `ui_hud` (objek biasa, bukan
+string kompak) pada node `Main`/`HUD`/`ShopPanel`/`SkillBar`/`MainMenu`
+yang sebenarnya. Oracle menjalankan draw pygame ASLI headless dengan
+font/mouse/timer/waktu ter-pin: 82 skenario draw (gold/chip/badge, panel
+hero, item forge + 6 halaman, shop hero, popup menara/nexus/build, overlay
+menang/kalah, pause, intro), 31 kasus klik penuh yang berurutan dalam SATU
+`Game` (state mengalir: beli, upgrade, jual, regen, shield, tab, scroll,
+prioritas klik dunia, klik kanan, PLAY NEXT LEVEL), 28 hotkey (termasuk
+matriks N/R/H/ESC saat victory-L1/victory-L54/defeat), predikat
+range/magic 222 hero, tabel biaya hero/menara/nexus/shield/sell, kurva
+slide banner 121 titik, baterai format (gold/income/mode/cooldown/
+match-time), baterai touch-rect 48px, matriks tombol+visibilitas touch
+HUD, dan urutan draw (dokumentasi — Godot memakai scene tree).
+Dibandingkan di Godot: teks label HUD/panel/toko/game-over, daftar+
+urutan+enabled/disabled+alasan tombol (`ui_key`/`ui_data` dengan audit
+closed-world tiap layar — key asing/ganda gagal tes), geometri panel
+pause 400×400 + tombol 300×48, kurva easing, dan perilaku klik/hotkey
+lewat node sungguhan. Harness mem-snapshot `SaveManager.data` DAN berkas
+`user://mystic_save.json` lalu memulihkan keduanya (tidak menyentuh save
+pengguna). Regenerasi fixture HANYA bila `_core.py`/`_render.py`/
+`hero_items.py`/`ui_components/` berubah.
+
 Jika aturan Pygame memang berubah, sesuaikan Godot, **kemudian** regenerasi:
 
 ```bash
@@ -334,3 +382,16 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   pada PR (langkah baru setelah `HeroBasicAttackParityTest`); gate
   lulus = penanda `PASS` dan tanpa `SCRIPT ERROR`/`Parse Error`/
   `Compile Error`.
+- Fase UI/HUD in-match (FASE 12): oracle `ui_hud` lulus lokal (82 draw
+  headless run pygame asli, 31 klik berurutan, 28 hotkey, 222 predikat
+  hero, 121 titik banner, baterai format/touch; seksi lama fixture
+  byte-identik — sisi pygame TIDAK disentuh),
+  `gdparse`/`tscn_lint`/`check_refs`/`particles_lint` +
+  `gen_* --check` + scope-check lulus lokal. `format_gold_rate`
+  di-fuzz 200.000 nilai acak: 0 beda vs Python. Tidak ada Godot
+  headless lokal di lingkungan kerja — replay `UiHudParityTest`
+  (termasuk audit closed-world `ui_key` tiap layar toko)
+  diverifikasi lewat CI `godot-check.yml` pada PR (langkah baru
+  setelah `HeroCatchupUnlockParityTest`, `--quit-after 400`);
+  gate lulus = penanda `PASS` dan tanpa `SCRIPT ERROR`/
+  `Parse Error`/`Compile Error`.

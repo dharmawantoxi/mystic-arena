@@ -59,6 +59,12 @@ func _cd_frames(key: String) -> int:
 	return 0
 
 
+## Sisa cooldown mentah (frame) — dibaca SkillButton untuk angka detik
+## (paritas HeroPanel: cooldown // 60 + 1, bukan ceil(detiks)).
+func cooldown_frames(key: String) -> int:
+	return maxi(0, _cd_frames(key))
+
+
 func _cd_max_frames(key: String) -> int:
 	if hero == null or not is_instance_valid(hero):
 		return 300

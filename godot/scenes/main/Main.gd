@@ -447,6 +447,10 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _cinematic_click():
 				return
 			_on_click(get_global_mouse_position())
+			return
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT:
+			_on_right_click(get_global_mouse_position())
+			return
 		return
 	if event is InputEventKey:
 		_on_key(event as InputEventKey)
@@ -522,6 +526,11 @@ func _on_key(key: InputEventKey) -> void:
 		if key.keycode == KEY_R:
 			GameManager.restart_match()
 			return
+		# N: victory -> level berikut (tak ada = diam); defeat -> diam.
+		# Paritas victory_L1_n (next=true) vs victory_L54_n/defeat (false).
+		if key.keycode == KEY_N and GameManager.state == "victory":
+			GameManager.next_level()
+			return
 	# Skill hero terpilih — action sudah ada di project.godot (Q/W/E/R)
 	if key.is_action_pressed("skill_q"):
 		_cast_skill("q")
@@ -537,7 +546,7 @@ func _on_key(key: InputEventKey) -> void:
 		return
 	if key.is_action_pressed("toggle_shop"):
 		GameManager.toggle_shop()
-		print("[Main] toko %s" % ("dibuka (B)" if GameManager.shop_open else "ditutup"))
+		print("[Main] toko %s" % ("dibuka (B/H)" if GameManager.shop_open else "ditutup"))
 		return
 	if not enable_debug_controls:
 		return
@@ -567,19 +576,13 @@ func _cast_skill(slot_key: String) -> void:
 func _on_click(pos: Vector2) -> void:
 	if GameManager.state != "playing" or get_tree().paused:
 		return
-	# Prioritas klik: hero -> menara -> nexus -> slot bangun -> tanah kosong
-	var h = _pick_in_group("heroes", pos, 10.0)
-	if h != null:
-		if str(h.get("team")) == "blue":
-			GameManager.select_hero(h)
-		else:
-			GameManager.clear_selection() # hero musuh: lihat HP-nya saja, tidak dipilih
-		return
-	var t = _pick_in_group("towers", pos, 12.0)
-	if t != null:
-		GameManager.select_tower(t)
-		if str(t.get("team")) == "blue":
-			GameManager.open_shop()
+	# Prioritas klik paritas _handle_left_click (_core.py:7811-7879):
+	# slot -> nexus -> hero biru -> perintah hero -> menara biru -> deselect.
+	# (Bangunan toko pygame tak ada di Godot — toko dibuka B/H.)
+	var slot_idx := _pick_slot(pos)
+	if slot_idx >= 0:
+		GameManager.select_slot_index(slot_idx)
+		GameManager.open_shop()
 		return
 	var nx = _pick_in_group("nexus", pos, 0.0)
 	if nx != null:
@@ -587,13 +590,42 @@ func _on_click(pos: Vector2) -> void:
 		if str(nx.get("team")) == "blue":
 			GameManager.open_shop()
 		return
-	var slot_idx := _pick_slot(pos)
-	if slot_idx >= 0:
-		GameManager.select_slot_index(slot_idx)
+	var h = _pick_in_group("heroes", pos, 10.0)
+	if h != null and str(h.get("team")) == "blue":
+		GameManager.select_hero(h)
+		return
+	# Hero hidup terpilih: klik menara biru = pindah pilihan ke menara,
+	# sisanya (termasuk klik musuh — Godot tak punya follow_target, aggro
+	# otomatis mengambil alih) = MOVE, hero tetap dipilih.
+	var sel = GameManager.selected_hero
+	if sel != null and is_instance_valid(sel) and not bool(sel.get("is_dead")):
+		var bt = _pick_in_group("towers", pos, 12.0)
+		if bt != null and str(bt.get("team")) == "blue":
+			GameManager.select_tower(bt)
+			GameManager.open_shop()
+			return
+		if sel.has_method("set_destination"):
+			sel.set_destination(pos, false)
+		return
+	var t = _pick_in_group("towers", pos, 12.0)
+	if t != null and str(t.get("team")) == "blue":
+		GameManager.select_tower(t)
 		GameManager.open_shop()
 		return
 	GameManager.clear_selection()
 	GameManager.close_shop()
+
+
+## Klik kanan: tutup toko + gerakkan hero terpilih (paritas
+## _handle_right_click: close_popup + move_to kalau hero hidup).
+func _on_right_click(pos: Vector2) -> void:
+	if GameManager.state != "playing" or get_tree().paused:
+		return
+	GameManager.close_shop()
+	var sel = GameManager.selected_hero
+	if sel != null and is_instance_valid(sel) and not bool(sel.get("is_dead")) \
+			and sel.has_method("set_destination"):
+		sel.set_destination(pos, false)
 
 ## Unit terdekat dalam radius klik. `pad` menambah radius bawaan unit.
 func _pick_in_group(group: String, pos: Vector2, pad: float):

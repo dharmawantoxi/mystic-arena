@@ -273,10 +273,7 @@ func _build_prompt() -> void:
 
 ## Paritas ui_theme.letter (ui_theme.py:171): "ABC" -> "A B C"
 static func _letter(text: String) -> String:
-	var out := PackedStringArray()
-	for ch in text:
-		out.append(ch)
-	return " ".join(out)
+	return HudLayout.letter(text)
 
 
 ## Paritas f"{n:,}" Python (pemisah ribuan koma)

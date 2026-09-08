@@ -17,11 +17,16 @@ const REFRESH_INTERVAL := 0.05
 var _root: HBoxContainer = null
 var _info: VBoxContainer = null
 var _name_label: Label = null
+var _level_label: Label = null
+var _close_btn: Button = null
 var _hp_bar: ProgressBar = null
 var _hp_label: Label = null
 var _stats_label: Label = null
 var _item_row: HBoxContainer = null
 var _item_chips: Array = []
+var _autocast_btn: Button = null
+var _forge_btn: Button = null
+var _upgrade_btn: Button = null
 var _buttons: Dictionary = {}
 var _hero = null
 var _timer: float = 0.0
@@ -76,11 +81,29 @@ func _build() -> void:
 	_info.add_theme_constant_override("separation", 3)
 	panel.add_child(_info)
 
+	# Baris nama: "Kaizen" + "Lv.1" + tombol tutup X (paritas teks panel).
+	var name_row := HBoxContainer.new()
+	name_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	name_row.add_theme_constant_override("separation", 8)
+	_info.add_child(name_row)
 	_name_label = Label.new()
 	_name_label.add_theme_font_size_override("font_size", 15)
 	_name_label.add_theme_color_override("font_color", Color(0.85, 0.92, 1.0))
+	_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name_label.text = "tidak ada hero dipilih"
-	_info.add_child(_name_label)
+	name_row.add_child(_name_label)
+	_level_label = Label.new()
+	_level_label.add_theme_font_size_override("font_size", 15)
+	_level_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.45))
+	_level_label.text = ""
+	name_row.add_child(_level_label)
+	_close_btn = Button.new()
+	_close_btn.text = "X"
+	_close_btn.custom_minimum_size = Vector2(24, 22)
+	_close_btn.focus_mode = Control.FOCUS_NONE
+	_close_btn.tooltip_text = "Tutup panel (batal pilih hero)"
+	_close_btn.pressed.connect(_on_close_pressed)
+	name_row.add_child(_close_btn)
 
 	_hp_bar = ProgressBar.new()
 	_hp_bar.custom_minimum_size = Vector2(0, 14)
@@ -112,18 +135,37 @@ func _build() -> void:
 	_item_row.add_theme_constant_override("separation", 4)
 	_info.add_child(_item_row)
 	for i in range(ITEM_SLOTS):
-		var chip := Panel.new()
+		# Chip = tombol: klik slot (kosong/isi) membuka ITEM FORGE, paritas
+		# panel_slot0_empty (itemshop_open=true).
+		var chip := Button.new()
 		chip.custom_minimum_size = Vector2(18, 18)
-		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.focus_mode = Control.FOCUS_NONE
 		var csb := StyleBoxFlat.new()
 		csb.bg_color = Color(0.1, 0.11, 0.16, 0.95)
 		csb.border_color = Color(0.3, 0.33, 0.42, 0.9)
 		csb.set_border_width_all(1)
 		csb.set_corner_radius_all(4)
-		chip.add_theme_stylebox_override("panel", csb)
+		chip.add_theme_stylebox_override("normal", csb)
+		chip.add_theme_stylebox_override("hover", csb)
+		chip.add_theme_stylebox_override("pressed", csb)
+		chip.add_theme_stylebox_override("disabled", csb)
 		chip.tooltip_text = "slot item %d kosong" % (i + 1)
+		chip.pressed.connect(_open_forge)
 		_item_row.add_child(chip)
 		_item_chips.append(chip)
+
+	# ── baris aksi panel (paritas tombol HeroPanel; tinggi 22) ──
+	_autocast_btn = _make_action_button("AUTO-CAST ON")
+	_autocast_btn.tooltip_text = "Auto-cast selalu ON (paritas v29: toggle no-op)"
+	_autocast_btn.pressed.connect(_on_autocast_pressed)
+	_info.add_child(_autocast_btn)
+	_forge_btn = _make_action_button("ITEM FORGE  (0/6)")
+	_forge_btn.tooltip_text = "Buka ITEM FORGE untuk hero ini"
+	_forge_btn.pressed.connect(_open_forge)
+	_info.add_child(_forge_btn)
+	_upgrade_btn = _make_action_button("")
+	_upgrade_btn.pressed.connect(_on_upgrade_pressed)
+	_info.add_child(_upgrade_btn)
 
 	# ── 4 tombol skill ──
 	var skill_box := VBoxContainer.new()
@@ -142,7 +184,7 @@ func _build() -> void:
 		_buttons[str(k)] = btn
 
 	var hint := Label.new()
-	hint.text = "klik hero untuk memilih · QWER / tombol = skill · B = toko"
+	hint.text = "klik hero untuk memilih · QWER / tombol = skill · B/H = toko"
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_color", Color(0.7, 0.76, 0.9, 0.75))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -179,6 +221,36 @@ func _on_skill_requested(key: String) -> void:
 		h.call("cast_" + key)
 
 
+## X panel: batal pilih hero SAJA (toko tak disentuh) — paritas panel_close
+## (selected_after None).
+func _on_close_pressed() -> void:
+	GameManager.clear_selection()
+
+
+## Toggle auto-cast pygame v29 = NO-OP (auto_before==auto_after==true):
+## tombol ini murni indikator "AUTO-CAST ON".
+func _on_autocast_pressed() -> void:
+	pass
+
+
+## Buka toko langsung ke tab ITEM untuk hero terpilih (paritas
+## panel_open_items / panel_slot0_empty: itemshop_open=true).
+func _open_forge() -> void:
+	if _hero == null or not is_instance_valid(_hero):
+		return
+	GameManager.requested_shop_tab = "item"
+	GameManager.open_shop()
+
+
+## Upgrade dari panel (paritas popup_upgrade_hero); SFX = jalur ShopPanel.
+func _on_upgrade_pressed() -> void:
+	if GameManager.try_upgrade_hero():
+		AudioManager.play_sfx("ui_upgrade", 0.6)
+	else:
+		AudioManager.play_sfx("ui_error", 0.4)
+	_refresh_static()
+
+
 ## Bagian yang tidak berubah tiap frame: nama hero, level, slot item
 func _refresh_static() -> void:
 	var h = GameManager.selected_hero
@@ -187,31 +259,59 @@ func _refresh_static() -> void:
 	else:
 		_hero = null
 	var hero = _hero
+	_close_btn.disabled = hero == null
+	_autocast_btn.disabled = hero == null
+	_forge_btn.disabled = hero == null
+	_upgrade_btn.disabled = hero == null
 	if hero == null:
 		_name_label.text = "tidak ada hero dipilih"
+		_level_label.text = ""
 		_stats_label.text = "B → HERO: beli hero, lalu klik untuk memilih"
 		_hp_bar.value = 0.0
 		_hp_label.text = ""
+		_forge_btn.text = "ITEM FORGE  (0/6)"
+		_upgrade_btn.text = ""
 		_sync_items([])
 		for k in SKILL_KEYS:
 			_buttons[k].update_state(null)
 		return
 	var hdata: Dictionary = HeroDB.get_hero(str(hero.get("hero_type")))
-	_name_label.text = "%s  ·  Lv %d" % [
-		str(hdata.get("name", hero.get("hero_type"))), int(hero.get("level"))]
+	_name_label.text = str(hdata.get("name", hero.get("hero_type")))
+	_level_label.text = "Lv.%d" % int(hero.get("level"))
 	_stats_label.text = "DMG %d · ARM %.0f · MR %.0f · RNG %d" % [
 		int(hero.get("damage")), float(hero.get("armor")),
 		float(hero.get("magic_resist")), int(hero.get("attack_range"))]
 	var items = hero.get("items")
-	_sync_items(items.item_ids() if items != null else [])
+	var ids: Array = items.item_ids() if items != null else []
+	_sync_items(ids)
+	# Dua spasi sebelum kurung — persis "ITEM FORGE  (0/6)" pygame.
+	_forge_btn.text = "ITEM FORGE  (%d/6)" % ids.filter(
+		func(id): return str(id) != "").size()
+	if hero.has_method("can_upgrade") and hero.can_upgrade():
+		_upgrade_btn.text = "UPGRADE HERO (%dG)" % int(hero.upgrade_cost())
+		_upgrade_btn.disabled = false
+	else:
+		# Level max: label letterspaced, bukan tombol (paritas panel_max).
+		_upgrade_btn.text = HudLayout.letter("MAX LEVEL")
+		_upgrade_btn.disabled = true
 	for k in SKILL_KEYS:
 		_buttons[k].update_state(hero)
 
 
+func _make_action_button(label_text: String) -> Button:
+	var b := Button.new()
+	b.text = label_text
+	b.custom_minimum_size = Vector2(0, 22)
+	b.focus_mode = Control.FOCUS_NONE
+	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	b.add_theme_font_size_override("font_size", 11)
+	return b
+
+
 func _sync_items(ids: Array) -> void:
 	for i in range(_item_chips.size()):
-		var chip: Panel = _item_chips[i]
-		var sb := chip.get_theme_stylebox("panel") as StyleBoxFlat
+		var chip: Button = _item_chips[i]
+		var sb := chip.get_theme_stylebox("normal") as StyleBoxFlat
 		if i < ids.size() and str(ids[i]) != "":
 			var item_id := str(ids[i])
 			var col: Color = ItemDB.item_color(item_id)
@@ -238,7 +338,7 @@ func _refresh() -> void:
 	var hp := float(hero.get("hp"))
 	var max_hp := maxf(1.0, float(hero.get("max_hp")))
 	_hp_bar.value = clampf(100.0 * hp / max_hp, 0.0, 100.0)
-	_hp_label.text = "HP %d / %d%s" % [int(hp), int(max_hp),
+	_hp_label.text = "%d/%d%s" % [int(hp), int(max_hp),
 		"  ·  MUNDUR" if bool(hero.get("is_retreating")) else ""]
 	for k in SKILL_KEYS:
 		_buttons[k].update_state(hero)

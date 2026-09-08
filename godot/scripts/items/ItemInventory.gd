@@ -143,7 +143,7 @@ func can_equip(item_id: String) -> bool:
 		return false
 	if is_full():
 		return false
-	if db.is_melee_only(item_id) and not is_melee():
+	if db.is_melee_only(item_id) and not is_melee_for_equip():
 		return false
 	if bool(db.get_item(item_id).get("magic_only", false)) and not is_magic():
 		return false
@@ -158,10 +158,45 @@ func is_melee() -> bool:
 	return float(hero.get("attack_range")) < 110.0
 
 
+## Gate MELEE khusus equip (hero_items.py:4057): melee_only DITOLAK kalau
+## range hero SAAT INI > 80. BEDA dari is_melee() (flag/<110 — gate
+## get_range_bonus/block); 0 dari 222 hero di 80..110 jadi tak divergen,
+## tapi angka 80 evidence-anchored untuk jalur equip.
+func is_melee_for_equip() -> bool:
+	if hero == null:
+		return true
+	var rng := 100.0
+	if "attack_range" in hero and hero.get("attack_range") != null:
+		rng = float(hero.get("attack_range"))
+	return HudLayout.is_melee_range(rng)
+
+
 func is_magic() -> bool:
 	if hero == null:
 		return false
+	# Paritas is_magic_hero: ROLE (mage/sorcerer/...) — BUKAN dmg_school.
+	# 46 hero role-magic punya dmg_school fisik/None, jadi cek lama salah.
+	var db = _db()
+	if db != null and db.has_method("is_magic_hero"):
+		return bool(db.is_magic_hero(hero))
 	return str(hero.get("dmg_school")).to_lower() == "magic"
+
+
+## Alasan item tak bisa dipakai: "" (bisa) | "OWNED" | "FULL" |
+## "MELEE ONLY" | "MAGIC ONLY" (dua terakhir = label kartu pygame).
+func equip_block_reason(item_id: String) -> String:
+	var db = _db()
+	if db == null:
+		return ""
+	if has(item_id):
+		return "OWNED"
+	if is_full():
+		return "FULL"
+	if bool(db.is_melee_only(item_id)) and not is_melee_for_equip():
+		return "MELEE ONLY"
+	if bool(db.get_item(item_id).get("magic_only", false)) and not is_magic():
+		return "MAGIC ONLY"
+	return ""
 
 
 # ══════════════════════════════════════════════════════════
