@@ -27,6 +27,8 @@ on:
       - 'godot/**'
       - '_core.py'
       - '_entity.py'
+      - 'hero_items.py'
+      - 'tools/test_damage_school.py'
       - 'levels/**'
       - 'map_components/**'
       - 'bosses/**'
@@ -44,6 +46,8 @@ on:
       - 'godot/**'
       - '_core.py'
       - '_entity.py'
+      - 'hero_items.py'
+      - 'tools/test_damage_school.py'
       - 'levels/**'
       - 'map_components/**'
       - 'bosses/**'
@@ -284,12 +288,37 @@ jobs:
             exit 1
           fi
 
+      # ── 4e. HeroBasicAttackParityTest: paritas JALUR DAMAGE BASIC hero —
+      # kalkulasi _do_attack (bonus item/crit buff/crit item/lifesteal/
+      # cleave) + blok mitigasi take_damage TIAP jenis target (armor item
+      # utk semua damage non-fire, amp sebelum armor, block setelah armor,
+      # shred per rumus target, blind di penyerang, reflect bristleback/
+      # thornmail, shield int castle) vs oracle Pygame 29 skenario bebas
+      # RNG + probe get_block. Fixture = seksi hero_basic_attack.
+      - name: HeroBasicAttackParityTest (jalur damage basic hero vs oracle Pygame)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/HeroBasicAttackParityTest.tscn --quit-after 120 2>&1 | tee /tmp/babasic.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/babasic.log --label "HeroBasicAttackParityTest" \
+              --require "[HeroBasicAttackParityTest] PASS" > /tmp/babasic.gate 2>&1; then
+            cat /tmp/babasic.gate
+          else
+            cat /tmp/babasic.gate
+            echo "::error::BABASIC-FAIL-TAIL: $(tail -40 /tmp/babasic.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::BABASIC-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/babasic.log | tr '\n' ' | ' | cut -c1-2500)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
           python -m pip install --quiet pygame-ce
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_boss_true_aura_parity.py
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_basic_attack_no_impact_fx.py
+          # Kunci perilaku sekolah damage pygame (sumber kebenaran audit
+          # basic hero): armor item hero utk semua non-fire, armor/MR
+          # boss-tower-minion, Wind Wall/Windrun, resolve context.
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_damage_school.py
 
       - name: Simpan log kalau gagal
         if: failure()

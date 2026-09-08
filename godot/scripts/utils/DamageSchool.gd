@@ -1,9 +1,11 @@
-# DamageSchool.gd — Port dari _entity.py resolve_damage_school + armor/magic_resist
+# DamageSchool.gd — Port dari _entity.py resolve_damage_school + pembulatan Python
 extends RefCounted
 class_name DamageSchool
 
-# Di pygame: _is_physical_hit + resolve_damage_school
-# Di Godot: static helpers dipakai CombatSystem
+# Di pygame: _is_physical_hit + resolve_damage_school.
+# Mitigasi armor/MR TIDAK lagi universal di sini: tiap jenis target
+# (hero/minion/boss/tower) memakai blok take_damage-nya sendiri di
+# CombatSystem (audit jalur damage basic hero — lihat docs/GODOT_PARITY.md).
 
 static func resolve(school: String, dmg_type: String, source) -> String:
 	if school in ["physical","magic"]:
@@ -21,14 +23,19 @@ static func is_physical_hit(dmg_type: String, school: String) -> bool:
 		return false
 	return school != "magic"
 
-static func mitigate(amount: float, armor: float, magic_resist: float, school: String) -> float:
-	if school == "physical" and armor != 0:
-		if armor > 0:
-			var red = armor * 0.06 / (1.0 + armor * 0.06)
-			return max(1.0, round(amount * (1.0 - red)))
-		else:
-			var bonus = min(1.0, -armor * 0.06)
-			return round(amount * (1.0 + bonus))
-	elif school == "magic" and magic_resist > 0:
-		return max(1.0, round(amount * (1.0 - magic_resist)))
-	return amount
+
+## round() Python = banker's rounding (half to even); round() GDScript
+## membulatkan half AWAY from zero. pygame memakai int(round(x)) di seluruh
+## pipeline damage, jadi hasil .5 persis harus mengikuti Python
+## (contoh terkunci: reflect Bristleback 17*0.7353.. = 12.5 -> 12, bukan 13).
+static func py_round(x: float) -> float:
+	# floorf() (bukan floor()): floor() global mengembalikan Variant di
+	# Godot 4.3 → inferensi := gagal ("Cannot infer the type of 'diff'").
+	var f := floorf(x)
+	var diff := x - f
+	if diff > 0.5:
+		return f + 1.0
+	if diff < 0.5:
+		return f
+	# half -> genap (12.5 -> 12, 13.5 -> 13, -2.5 -> -2)
+	return f if int(f) % 2 == 0 else f + 1.0

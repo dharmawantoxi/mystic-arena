@@ -1,17 +1,31 @@
 # CombatSystem.gd — Autoload. Port pipeline damage _entity.py + hero_items.py.
 #
-# Urutan penyelesaian damage (paritas Hero.take_damage pygame 4550-4712):
-#   1. buff penghindar  : Windrun (Sylara W) 75% meleset fisik,
-#                         Wind Wall (Kaizen W) memblokir tipe "projectile",
-#                         Shadow Realm (Zephyr W) tidak bisa ditarget
-#   2. evasion / blind  : item evasion (cap 50%) + aura blind (Solar Brand)
-#   3. block            : Scarlet Bulwark (chance 55%, 25 melee / 14 ranged)
-#   4. armor shred      : Corroder (-6 armor) lalu mitigasi armor/magic resist
-#   5. dmg_amp          : debuff yang menaikkan damage diterima
-#   6. Bristleback      : Thorne W menahan 30% fisik / 15% sihir
-#   7. hp berkurang     : + damage number
-#   8. reflect 25%      : Bristleback memantulkan ke penyerang (source diputus)
-#   9. lifesteal/cleave : Demon Maw / Cleave Axe milik penyerang
+# Urutan penyelesaian damage (audit jalur basic hero — paritas
+# Hero.take_damage pygame 4525-4712 DAN take_damage tiap jenis target):
+#   1. guard kit hero   : Shadow Realm → Windrun (75% fisik) → Wind Wall
+#                         (blokir "projectile" non-magic) → Tempest Veil
+#   2. evasion / blind  : HERO = item evasion target + blind PENYERANG
+#                         (True Strike menembus); BOSS = blind hanya utk
+#                         damage_type "normal" yang punya source
+#   3. mitigasi TARGET  : per jenis unit, urutan pygame masing-masing:
+#                         hero    = amp int(round) → armor ITEM utk SEMUA
+#                                   damage non-"fire" (live dari inventory,
+#                                   dikikis shred, negatif = bonus) → block
+#                                   (roll + aura guard, floor 0) →
+#                                   Bristleback keep 0.70/0.85.
+#                                   Hero pygame TIDAK punya magic_resist.
+#                         minion  = amp → shred bonus → armor−shred / MR.
+#                         boss    = amp → shred bonus → reduction−shred*0.06
+#                                   (cap 0.60) / MR → resilience+anti-burst.
+#                         tower   = armor / MR sekolah saja.
+#                         nexus   = tanpa mitigasi sekolah (hanya shield).
+#   4. hp berkurang     : shield tower/nexus menyerap dulu (castle:
+#                         int truncation 88%) + damage number
+#   5. reflect          : Bristleback 25% ("normal" netral → kena armor
+#                         penyerang) + Thornmail int(dmg*0.85) "magic"
+#   6. on-hit penyerang : lifesteal (basis damage PRA-mitigasi; ranged
+#                         dibayar saat spawn di Hero.try_attack), cleave
+#                         netral, corroder shred
 extends Node
 
 const DAMAGE_NUMBER_SCENE := preload("res://scenes/fx/DamageNumber.tscn")
@@ -89,23 +103,26 @@ func nearest_enemy(unit, max_distance: float) -> Node2D:
 #  DAMAGE PENYERANG (sebelum mitigasi)
 # ══════════════════════════════════════════════════════════
 
-## Damage basic attack: bonus item + buff skill + crit (Dead Edge / Critical Strike)
+## Damage basic attack — mirror Hero._do_attack pygame 4244-4270 persis:
+## base (Warpath Thorne R di pygame MENIMPA hero.damage langsung, jadi sudah
+## masuk lewat `base`) + bonus item → crit buff kit (Grimjaw E
+## `_crit_buff_active`: int(damage*2) SETELAH bonus item) → crit item
+## (Dead Edge: int(damage*mult)). Tidak ada multiplier status lain —
+## pygame tidak punya jalur itu di _do_attack.
+## Rend crit (Soul Rend 150% ke target bertanda) belum ada di item Godot —
+## terbuka di docs/GODOT_PARITY.md.
 func calc_damage(attacker: Node, _defender: Node, base: float, _school: String) -> float:
 	var dmg := base
-	# Buff skill: Warpath (Thorne R) menaikkan damage ×1.5
-	var st = attacker.get("status")
-	if st != null:
-		dmg *= st.damage_mult()
-	# Critical Strike (Grimjaw E): basic attack ×2 selama buff
-	if st != null and st.has_buff("crit"):
-		return dmg * st.buff_val("crit", "mult", 2.0)
-	# Item: bonus damage flat + crit Dead Edge
 	var inv = attacker.get("items")
 	if inv != null:
 		dmg += inv.get_bonus_damage()
+	var kt = attacker.get("kit")
+	if kt is Dictionary and bool((kt as Dictionary).get("_crit_buff_active", false)):
+		return float(int(dmg * 2.0))
+	if inv != null:
 		var roll: Array = inv.roll_crit()
 		if roll[0]:
-			dmg *= float(roll[1])
+			return float(int(dmg * float(roll[1])))
 	return dmg
 
 
@@ -122,18 +139,140 @@ func calc_skill_damage(attacker: Node, multiplier: float) -> float:
 	return maxf(0.0, out)
 
 
-# ══════════════════════════════════════════════════════════
-#  MITIGASI
+## Mitigasi — per jenis target, mirror take_damage pygame masing-masing
 # ══════════════════════════════════════════════════════════
 
-func mitigate_damage(defender: Node, amount: float, school: String) -> float:
-	var armor := float(defender.get("armor")) if "armor" in defender else 0.0
-	var mr := float(defender.get("magic_resist")) if "magic_resist" in defender else 0.0
-	# Debuff armor shred (Corroder) — armor bisa jadi negatif (damage bonus)
-	var st = defender.get("status")
-	if st != null:
-		armor += st.armor_delta()
-	return DamageSchool.mitigate(amount, armor, mr, school)
+# ══════════════════════════════════════════════════════════
+#  MITIGASI — per jenis target, mirror take_damage pygame masing-masing
+# ══════════════════════════════════════════════════════════
+
+## Konversi aman ke float: float(null) di Godot 4.3 error
+## "Invalid call. Nonexistent 'float' constructor". Object.get()
+## mengembalikan null untuk properti yang absen (mis. stub status
+## ProbeStatus di test parity lama), jadi SEMUA baca timer/amount
+## status duck-typed harus lewat sini (null -> 0.0 -> efek nonaktif).
+func _num(v) -> float:
+	if v == null:
+		return 0.0
+	return float(v)
+
+
+## Deteksi jenis unit (duck-typing field khas masing-masing class).
+func _is_hero(unit) -> bool:
+	return unit != null and "hero_type" in unit and "skills" in unit
+
+
+func _is_minion(unit) -> bool:
+	return unit != null and "minion_type" in unit
+
+
+## HERO — mirror Hero.take_damage pygame 4636-4693.
+## Urutan: dmg_amp int(round) → armor (SEMUA damage non-'fire', dibaca LIVE
+## dari inventory: stat + aura − aura_reduction, dikikis shred; negatif =
+## bonus 6%/poin) → block (roll item pakai amount melee/ranged PEMILIK,
+## aura_guard_block menimpa tanpa roll, floor 0) → Bristleback keep
+## 0.70/0.85 per sekolah. TIDAK ada magic_resist untuk hero di pygame.
+func _hero_mitigate(target, dmg: float, dmg_type: String, st, eff_school: String) -> float:
+	# Baca timer lewat .get() (duck-typed, konvensi CombatSystem): stub status
+	# test parity lama tidak punya var ini — null -> 0.0 -> efek nonaktif.
+	if st != null and _num(st.get("dmg_amp_timer")) > 0.0:
+		dmg = float(int(DamageSchool.py_round(
+			dmg * (1.0 + _num(st.get("dmg_amp_amount"))))))
+	var inv = target.get("items")
+	if dmg_type != "fire" and dmg > 0.0:
+		var armor := float(inv.get_armor()) if inv != null else 0.0
+		if st != null:
+			armor += st.armor_delta()
+		if armor > 0.0:
+			var red := armor * 0.06 / (1.0 + armor * 0.06)
+			dmg = maxf(1.0, DamageSchool.py_round(dmg * (1.0 - red)))
+		elif armor < 0.0:
+			var bonus := minf(1.0, -armor * 0.06)
+			dmg = float(int(DamageSchool.py_round(dmg * (1.0 + bonus))))
+		# Damage block: roll pasif + aura guard menimpa (pygame 4660-4686)
+		var block_amt := 0.0
+		if inv != null:
+			var blk: Array = inv.get_block()
+			if float(blk[0]) > 0.0 and randf() < float(blk[0]):
+				block_amt = float(blk[1])
+			if float(inv.aura_guard_block) > block_amt:
+				block_amt = float(inv.aura_guard_block)
+		if block_amt > 0.0:
+			dmg = maxf(0.0, dmg - block_amt)
+			_float_text(target, "BLOCK", false)
+	# Bristleback: duri menahan 30% (15% utk magic) — pygame 4687-4693
+	var kt = target.get("kit")
+	if kt is Dictionary and bool((kt as Dictionary).get("_bristleback_active", false)) \
+			and dmg > 0.0:
+		var keep := 0.70 if eff_school != "magic" else 0.85
+		dmg = maxf(1.0, DamageSchool.py_round(dmg * keep))
+	return dmg
+
+
+## MINION — mirror Minion.take_damage pygame 5795-5821.
+## Urutan: dmg_amp → shred bonus damage ×(1+min(1,shred*0.06)) utk non-fire
+## (double-dip Corroder) → school: physical memakai armor−shred (negatif =
+## bonus), magic memakai magic_resist. Netral tanpa mitigasi sekolah.
+func _minion_mitigate(target, dmg: float, dmg_type: String, st,
+		eff_school: String, shred: float) -> float:
+	if dmg > 0.0:
+		if st != null and _num(st.get("dmg_amp_timer")) > 0.0:
+			dmg = float(int(DamageSchool.py_round(
+				dmg * (1.0 + _num(st.get("dmg_amp_amount"))))))
+		if dmg_type != "fire" and shred > 0.0:
+			dmg = float(int(DamageSchool.py_round(
+				dmg * (1.0 + minf(1.0, shred * 0.06)))))
+		var armor := float(target.get("armor")) - shred
+		if eff_school == "physical" and armor != 0.0:
+			if armor > 0.0:
+				var red := armor * 0.06 / (1.0 + armor * 0.06)
+				dmg = maxf(1.0, DamageSchool.py_round(dmg * (1.0 - red)))
+			else:
+				var bonus := minf(1.0, -armor * 0.06)
+				dmg = float(int(DamageSchool.py_round(dmg * (1.0 + bonus))))
+		elif eff_school == "magic" and float(target.get("magic_resist")) > 0.0:
+			dmg = maxf(1.0, DamageSchool.py_round(
+				dmg * (1.0 - float(target.get("magic_resist")))))
+	return dmg
+
+
+## BOSS — mirror Boss.take_damage pygame 5978-6037 (sebelum resilience).
+## Urutan: dmg_amp → shred bonus → school: physical = reduction dikurangi
+## shred×0.06 (bukan armor yang dikikis!) clamp [0, 0.60]; magic = MR.
+## Resilience + anti-burst dipanggil terpisah lewat
+## apply_boss_inherent_mitigation (sudah ada di Boss.gd).
+func _boss_mitigate(target, dmg: float, dmg_type: String, st,
+		eff_school: String, shred: float) -> float:
+	if dmg > 0.0:
+		if st != null and _num(st.get("dmg_amp_timer")) > 0.0:
+			dmg = float(int(DamageSchool.py_round(
+				dmg * (1.0 + _num(st.get("dmg_amp_amount"))))))
+		if dmg_type != "fire" and shred > 0.0:
+			dmg = float(int(DamageSchool.py_round(
+				dmg * (1.0 + minf(1.0, shred * 0.06)))))
+		var armor := float(target.get("armor"))
+		if eff_school == "physical" and armor > 0.0:
+			var red := armor * 0.06 / (1.0 + armor * 0.06)
+			red = minf(0.60, maxf(0.0, red - shred * 0.06))
+			dmg = maxf(1.0, DamageSchool.py_round(dmg * (1.0 - red)))
+		elif eff_school == "magic" and float(target.get("magic_resist")) > 0.0:
+			dmg = maxf(1.0, DamageSchool.py_round(
+				dmg * (1.0 - float(target.get("magic_resist")))))
+	return dmg
+
+
+## TOWER — mirror Tower.take_damage pygame 1053-1071 (tanpa shred/amp:
+## menara pygame tidak punya status itu). Nexus/castle TANPA mitigasi
+## sekolah sama sekali (Castle.take_damage 1758 hanya shield).
+func _tower_mitigate(target, dmg: float, eff_school: String) -> float:
+	var armor := float(target.get("armor"))
+	if eff_school == "physical" and armor > 0.0:
+		var red := armor * 0.06 / (1.0 + armor * 0.06)
+		dmg = maxf(1.0, DamageSchool.py_round(dmg * (1.0 - red)))
+	elif eff_school == "magic" and float(target.get("magic_resist")) > 0.0:
+		dmg = maxf(1.0, DamageSchool.py_round(
+			dmg * (1.0 - float(target.get("magic_resist")))))
+	return dmg
 
 
 # ══════════════════════════════════════════════════════════
@@ -203,44 +342,51 @@ func apply_damage(target, amount: float, from_team: String = "",
 		_float_text(target, "IMMUNE", false)
 		return 0.0
 
-	# ── 1. buff penghindar ──
-	if st != null:
-		# evasion item + blind aura
-		var miss: float = st.miss_chance(is_physical)
-		if miss > 0.0 and randf() < miss:
-			_float_text(target, "MISS", false)
-			return 0.0
+	# ── 1. HERO: evasion item + blind PENYERANG (pygame 4605-4635) ──
+	# Evasion dibaca dari item target, blind dari STATUS PENYERANG (aura
+	# Solar Brand membutakan unit yang menyerang). True Strike (Sundering
+	# Cudgel penyerang) menembus keduanya. Hanya untuk hit fisik.
+	if _is_hero(target) and is_physical and amount > 0.0:
+		if not _source_has_true_strike(source):
+			var inv = target.get("items")
+			var ev := float(inv.get_evasion()) if inv != null else 0.0
+			var blind := _source_blind(source)
+			var miss := maxf(ev, blind)
+			if miss > 0.0 and randf() < miss:
+				_float_text(target, "MISS", false)
+				return 0.0
 
-	# ── 2. block (Scarlet Bulwark) ──
-	var inv = target.get("items")
-	if inv != null and is_physical:
-		var blk: Array = inv.get_block(dmg_type == "normal")
-		if float(blk[0]) > 0.0 and randf() < float(blk[0]):
-			amount = maxf(1.0, amount - float(blk[1]))
-			_float_text(target, "BLOCK", false)
+	# ── 1b. BOSS: blind hanya utk damage_type 'normal' DENGAN source ──
+	# (pygame base_boss 5986-6003: serangan ranged 'projectile' tidak ikut
+	# blind; boss tidak punya evasion sendiri.)
+	if target.has_method("apply_boss_inherent_mitigation") \
+			and dmg_type == "normal" and amount > 0.0 \
+			and source != null and is_instance_valid(source):
+		if not _source_has_true_strike(source):
+			var bblind := _source_blind(source)
+			if bblind > 0.0 and randf() < bblind:
+				_float_text(target, "MISS", false)
+				return 0.0
 
-	# ── 3. mitigasi armor / magic resist (+ shred) ──
-	var dmg := mitigate_damage(target, amount, eff_school)
-
-	# ── 4. debuff yang menaikkan damage diterima ──
-	if st != null:
-		dmg *= st.incoming_mult()
-
-	# ── 5. Bristleback (Thorne W): duri menahan 30% fisik / 15% sihir ──
-	# State h.kit["_bristleback_active"] (mirror _entity.py:4687-4693). Sama
-	# seperti guard di atas, `self._school` pygame = sekolah serangan yang
-	# MASUK (di-set di awal take_damage) -> eff_school, bukan dmg_school statis.
-	if kt != null and kt is Dictionary \
-			and bool((kt as Dictionary).get("_bristleback_active", false)):
-		var keep := 0.70 if eff_school != "magic" else 0.85
-		dmg = maxf(1.0, round(dmg * keep))
-
-	# ── 5b. BOSS resilience + anti-burst (base_boss.py take_damage 6025-6037):
-	# damage_reduction (true 30% / mini 20%) lalu cap per hit (8% / 12% max
-	# HP). Boss adalah satu-satunya unit yang punya metode ini.
-	if target != null and is_instance_valid(target) \
-			and target.has_method("apply_boss_inherent_mitigation"):
+	# ── 2-5. mitigasi PER JENIS TARGET (mirror take_damage pygame
+	# masing-masing: urutan amp→armor→block→bristleback utk hero,
+	# amp→shred-bonus→school utk minion/boss, school saja utk tower;
+	# nexus tanpa mitigasi sekolah). ──
+	var shred := 0.0
+	if st != null and _num(st.get("armor_shred_timer")) > 0.0:
+		shred = _num(st.get("armor_shred_amount"))
+	var dmg := amount
+	if _is_hero(target):
+		dmg = _hero_mitigate(target, dmg, dmg_type, st, eff_school)
+	elif target.has_method("apply_boss_inherent_mitigation"):
+		dmg = _boss_mitigate(target, dmg, dmg_type, st, eff_school, shred)
+		# Resilience (true 30% / mini 20%) + anti-burst cap — SETELAH
+		# mitigasi sekolah, sebelum HP (pygame 6025-6037).
 		dmg = target.apply_boss_inherent_mitigation(dmg)
+	elif _is_minion(target):
+		dmg = _minion_mitigate(target, dmg, dmg_type, st, eff_school, shred)
+	elif "armor" in target and "magic_resist" in target and "tower_type" in target:
+		dmg = _tower_mitigate(target, dmg, eff_school)
 
 	dmg = maxf(0.0, dmg)
 	if dmg <= 0.0:
@@ -273,23 +419,51 @@ func apply_damage(target, amount: float, from_team: String = "",
 			"normal", null, "")
 
 	# ── 8b. Thornmail (razor_carapace) — pantulkan reflect_pct damage ──
-	# Item aktif auto-trigger saat HP < 55% (hero_items.py:2266-2273). Sama
-	# seperti Bristleback di atas, `source` diputus (pakai "" bukan source)
-	# supaya pantulan tidak memantul balik jadi loop tak berujung.
+	# Item aktif auto-trigger saat HP < 55% (hero_items.py:2266-2273).
+	# Mirror notify_damage_taken pygame: dmg = int(damage*refl) (boleh 0 =
+	# tidak memantul apa-apa, TANPA max(1,..)) dan bertipe 'MAGIC' —
+	# pantulan kena armor item / MR korban sesuai take_damage-nya.
+	# `source` diputus supaya pantulan tidak memantul balik jadi loop.
 	var tinv = target.get("items")
 	if tinv != null and dealt > 0.0 and source != null and is_instance_valid(source) \
 			and source != target and str(source.get("team")) != str(target.get("team")) \
 			and tinv.has_method("get_active_reflect_pct"):
 		var rpct := float(tinv.get_active_reflect_pct())
 		if rpct > 0.0:
-			apply_damage(source, maxf(1.0, floor(dealt * rpct)),
-				str(target.get("team")), "normal", null, "")
+			var rdmg := float(int(dealt * rpct))
+			if rdmg > 0.0:
+				apply_damage(source, rdmg,
+					str(target.get("team")), "magic", null, "")
 
-	# ── 9. lifesteal + cleave penyerang ──
+	# ── 9. lifesteal + cleave + corroder penyerang (basis damage
+	# PRA-mitigasi, paritas on_basic_attack_hit pygame) ──
 	if source != null and is_instance_valid(source) and dealt > 0.0:
-		_on_attacker_hit(source, target, dealt, is_physical)
+		_on_attacker_hit(source, target, dealt, is_physical, amount, dmg_type)
 
 	return dealt
+
+
+## True Strike penyerang (Sundering Cudgel): serangan basic tidak pernah
+## meleset (menembus evasion + blind). Mirror has_true_strike hero_items.
+func _source_has_true_strike(source) -> bool:
+	if source == null or not is_instance_valid(source):
+		return false
+	var sinv = source.get("items")
+	if sinv != null and sinv.has_method("has_true_strike"):
+		return bool(sinv.has_true_strike())
+	return false
+
+
+## Blind PENYERANG (aura Solar Brand membutakan unit di sekitarnya):
+## peluang serangan fisiknya meleset. Mirror blind_timer/blind_amount
+## yang dibaca dari source di take_damage pygame.
+func _source_blind(source) -> float:
+	if source == null or not is_instance_valid(source):
+		return 0.0
+	var sst = source.get("status")
+	if sst != null and _num(sst.get("blind_timer")) > 0.0:
+		return _num(sst.get("blind_amount"))
+	return 0.0
 
 
 ## Shield menyerap damage 1:1 lebih dulu (paritas Tower.take_damage 476-487 dan
@@ -311,29 +485,71 @@ func _shield_pass(target, dmg: float) -> Array:
 		target.shield = shield - absorbed
 		remaining -= absorbed
 	if remaining > 0.0 and "shield_damage_reduction" in target:
-		remaining *= 1.0 - float(target.get("shield_damage_reduction"))
+		# pygame Castle.take_damage 1791: int(x * (1 - 0.88)) — truncation
+		# Python (30*0.12 = 3.5999.. -> 3), bukan float bulat.
+		remaining = float(int(remaining * (1.0 - float(target.get("shield_damage_reduction")))))
 	return [absorbed, remaining]
 
 
-func _on_attacker_hit(attacker, target, dealt: float, is_physical: bool) -> void:
+## Heal lewat semantik property `hp` pygame: pemanggil mem-min ke max_hp
+## DULU, lalu setter memotong kenaikan dengan anti-heal dan/atau
+## memperbesarnya dengan heal_amp (debuff, _core.py:829-845). Dipakai
+## lifesteal supaya identik dengan `h.hp = min(h.max_hp, h.hp + dmg*ls)`.
+func heal_gain_py(unit, gain: float) -> void:
+	if gain <= 0.0 or unit == null or not is_instance_valid(unit):
+		return
+	if bool(unit.get("is_dead")):
+		return
+	var max_hp := float(unit.get("max_hp"))
+	var before := float(unit.get("hp"))
+	var value := minf(max_hp, before + gain)
+	var st = unit.get("status")
+	if st != null and value > before:
+		if _num(st.get("anti_heal_timer")) > 0.0:
+			value = before + (value - before) * (1.0 - _num(st.get("anti_heal_amount")))
+		if _num(st.get("heal_amp_timer")) > 0.0 and value > before:
+			value = before + (value - before) * (1.0 + _num(st.get("heal_amp_amount")))
+	unit.hp = value
+
+
+## On-hit pasif penyerang — basis damage PRA-mitigasi (pygame
+## on_basic_attack_hit menerima `damage` serangan, bukan damage mendarat).
+## Lifesteal ranged TIDAK dibayar di sini: pygame membayarnya saat
+## proyektil dilepas (Hero.try_attack), jalur 'projectile' di-skip.
+func _on_attacker_hit(attacker, target, dealt: float, is_physical: bool,
+		attack_amount: float, dmg_type: String) -> void:
 	var inv = attacker.get("items")
 	if inv == null:
 		return
-	# Lifesteal (Demon Maw / Vampiric)
+	# Lifesteal (Demon Maw): hp = min(max, hp + damage*ls) float via
+	# semantik setter pygame — hanya untuk serangan non-projectile.
 	var ls := float(inv.get_lifesteal_pct())
-	if ls > 0.0:
-		heal_unit(attacker, dealt * ls)
-	# Cleave (Cleave Axe, melee only): 50% damage ke musuh lain radius 110
+	if ls > 0.0 and dmg_type != "projectile" and attack_amount > 0.0:
+		heal_gain_py(attacker, attack_amount * ls)
+	# Cleave (Cleave Axe, melee only): splash int(damage*pct) ke musuh lain
+	# radius 110 dari TARGET — netral 'normal' TANPA source (pygame 2478-2493),
+	# jadi kena mitigasi take_damage korban, bukan school physical.
 	var cleave: Array = inv.get_cleave()
-	if cleave.size() == 2 and is_physical:
-		var splash := int(dealt * float(cleave[0]))
+	if cleave.size() == 2 and dmg_type == "normal" and attack_amount > 0.0:
+		var splash := int(attack_amount * float(cleave[0]))
 		if splash > 0:
+			# pygame _collect_onhit_units: minion + hero + boss saja (BUKAN
+			# tower/nexus), tanpa filter targetability — mirror loop cleave
+			# hero_items.py:2478-2493.
 			var center: Vector2 = (target as Node2D).global_position
-			for e in enemies_in_radius(str(attacker.get("team")), center, float(cleave[1])):
-				if e == target:
-					continue
-				apply_damage(e, float(splash), str(attacker.get("team")),
-					"normal", null, "physical")
+			var atk_team := str(attacker.get("team"))
+			for group in ["heroes", "bosses", "minions"]:
+				for e in get_tree().get_nodes_in_group(group):
+					if e == target or not is_instance_valid(e):
+						continue
+					if str(e.get("team")) == atk_team:
+						continue
+					if bool(e.get("is_dead")):
+						continue
+					if (e as Node2D).global_position.distance_to(center) > float(cleave[1]):
+						continue
+					apply_damage(e, float(splash), atk_team,
+						"normal", null, "")
 	# Corroder: kikis armor target
 	var shred := float(inv.get_armor_shred())
 	if shred > 0.0:

@@ -38,6 +38,7 @@ sertifikasi paritas seluruh game.
 | Catch-up stat hero | Buff melee normalisasi hp/damage di `get_balanced_stats` + koreksi starter saja | `HeroDB.catchup_base` mirror `hero_balance.starter_catchup_stats`: MENIMPA stat dasar SEMUA hero dari katalog MENTAH, `k = 1 + 0.32 × (1 − min(1, unlocks/12)) × sisa-hp`; hpK=1+(k−1)·1,25, dmgK=1+(k−1)·0,85; level-1/no-save → ×1,40/×1,272. `get_balanced_stats` tidak lagi mem-buff hp/damage melee (speed/cd tetap dinormalisasi ke px/s dan detik). |
 | Kaizen | Rig buatan ulang selalu mengalahkan sprite Pygame | Arena normal memakai bake renderer Pygame. Rig alternatif tetap ada di `KaizenDemo.tscn`, atau opt-in `mystic/rendering/experimental_hero_rigs`. |
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
+| Jalur damage basic hero | Pipeline school-aware satu-untuk-semua: physical→armor node, magic→MR, netral→tanpa mitigasi; armor hero = snapshot node; amp setelah mitigasi; block sebelum armor floor 1; blind dibaca dari status TARGET; crit buff tidak pernah aktif; lifesteal/cleave memakai damage post-mitigasi; reflect thornmail bertipe 'normal' | `CombatSystem.apply_damage` kini dispatch per jenis target, mirror `take_damage` pygame masing-masing: HERO = amp `int(round)` → armor ITEM (live dari inventory + aura, dikikis shred, negatif = bonus) utk SEMUA damage non-`fire`, TANPA magic_resist → block SETELAH armor (amount milik defender, aura guard menimpa tanpa roll, floor 0) → Bristleback; MINION = amp → shred bonus (double-dip) → armor−shred/MR; BOSS = amp → shred bonus → reduction−shred×0.06 (cap 0.60)/MR → resilience+cap, blind hanya `normal` bersource; TOWER = armor/MR sekolah; NEXUS = shield `int(x×(1−0.88))` truncation. Kalkulasi penyerang `calc_damage` = `_do_attack` pygame (bonus item → crit buff kit `int(×2)` → crit item `int(×mult)`; pembulatan `py_round` banker ala Python). Lifesteal float pra-mitigasi (ranged `int()` saat spawn), cleave netral tanpa source, Morgath serang instan 'normal', peluru menara/minion netral, boss ranged 'normal'. Dikunci `HeroBasicAttackParityTest` (29 skenario + probe get_block). |
 
 ## Belum setara — jangan ditandai selesai
 
@@ -70,12 +71,28 @@ sertifikasi paritas seluruh game.
   tampilan visualnya belum diaudit piksel-per-piksel dan dibiarkan terbuka.
   Aura ability/enrage juga belum (test `test_boss_true_aura_parity` baru
   mencakup aura true boss).
-- **Mitigasi damage hero (bias terdeteksi, TIDAK diam-diam disetel):** blok
-  armor `Hero.take_damage` pygame berlaku untuk SEMUA damage non-`fire` dan
-  hanya membaca armor dari ITEM; pipeline Godot school-aware (physical→armor,
-  magic→MR lewat `DamageSchool.mitigate`) dan membaca atribut armor node.
-  Fixture skill memakai `fire` di kedua sisi sehingga netral; selisihnya
-  menjadi ranah audit jalur damage dasar/`basic attack` tersendiri.
+- **Mitigasi damage hero — TERUTUP audit basic attack (7 September 2026):**
+  blok armor `Hero.take_damage` pygame (armor ITEM utk SEMUA damage non-
+  `fire`, tanpa MR) kini di-mirror persis oleh `CombatSystem` per jenis
+  target dan dikunci `HeroBasicAttackParityTest` — detail di tabel di atas.
+  Yang masih TERBUKA di jalur ini (eksplisit, tidak disembunyikan):
+  (1) **rend crit Sanguine Thorn belum ada sama sekali** di item Godot
+  (item aktif Soul Rend — silence/amp/target — belum diport; pygame
+  `_do_attack` crit pasti 150% ke target bertanda); (2) **roll RNG belum
+  teruji**: roll block Scarlet Bulwark 55%, roll crit Dead Edge, evasion
+  item, dan blind < 1.0 — oracle sengaja bebas RNG (double-run seed beda);
+  semantik nilainya terkunci (get_block/probe), roll-nya identik struktural
+  tapi tidak direplay; (3) **windrun & shadow realm** tetap milestone
+  tersendiri (lihat butir skill hero); (4) **context hero aktif**
+  (`resolve_damage_school` cabang `target_is_hero=True` utk damage tanpa
+  source dari skill hero) belum diport — hanya memengaruhi guard
+  windrun/bristleback-magic utk skill tanpa source, belum teruji;
+  (5) **serangan minion ranged Godot masih proyektil** (`projectile`,
+  bisa ditangkis Wind Wall) sementara pygame menyerang instan `normal`
+  tanpa source — school-nya kini netral (angka mitigasi sama), tapi tipe
+  damage & timing travel masih beda — ranah audit jalur minion tersendiri;
+  (6) travel time proyektil hero/boss ranged (visual, damage instan di
+  pygame boss) tidak diuji.
 - **Perintah taktis dan kontrol pemain:** `tactical_commands.py` belum diport;
   kontrol gerak/target dan overlay sentuh Android belum lengkap.
 - **Progresi/settings:** kunci difficulty sepanjang run, reset progresi karena
@@ -107,6 +124,7 @@ godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 960
 godot --headless --path godot res://tests/BossCoreParityTest.tscn --quit-after 420
 godot --headless --path godot res://tests/BossSmartAIParityTest.tscn --quit-after 2400
 godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 900
+godot --headless --path godot res://tests/HeroBasicAttackParityTest.tscn --quit-after 120
 ```
 
 `GameplayParityTest` membaca `godot/tests/fixtures/match_parity.json`: ekonomi
@@ -142,9 +160,24 @@ guard konsumsi kit: shadow realm & Bristleback DR+reflect), floor hp 1.0.
 Dibandingkan: jejak event per frame (attempt/cast/ask/bhp/bmove/bspd/batk/
 bface/dmg/alock/emove/slow) + state final (4 cooldown, active_skill, diff kit
 vs instance segar, kondisi probe). Serangan dasar dan gerak TIDAK di-simulasikan
-(di luar slice harness; dikunci tes lain). Regenerasi fixture HANYA bila
-`hero_skills/_bundle.py` atau `_entity.py` berubah — pygame tidak pernah
-disetel mengikuti Godot.
+di harness ini (serangan dasar dikunci `HeroBasicAttackParityTest` di bawah).
+Regenerasi fixture HANYA bila `hero_skills/_bundle.py` atau `_entity.py`
+berubah — pygame tidak pernah disetel mengikuti Godot.
+
+`HeroBasicAttackParityTest` memutar ulang seksi fixture `hero_basic_attack`
+(STRING JSON kompak; 29 skenario + 3 probe get_block) pada node
+Hero/Minion/Boss/Tower/Nexus ASLI + `CombatSystem.apply_damage` yang
+sebenarnya. Oracle pygame menjalankan `Hero._do_attack` betulan (melee &
+ranged: bonus item → crit buff `int(×2)` → crit item → lifesteal float /
+`int()` saat spawn → cleave netral) DAN memanggil `take_damage` tiap jenis
+target dengan matriks damage-type × school × state (armor item, aura live,
+shred, amp, block aura, blind penyerang, wind wall, bristleback + reflect,
+thornmail, MR minion, rumus shred boss, armor menara, int truncation shield
+castle). Skenario bebas RNG dan dijalankan dua kali dengan seed berbeda saat
+generate — hasil harus identik. Dibandingkan: `max_hp`/`hp0` tiap unit,
+HP semua unit tiap event (fase spawn & hit utk ranged), damage + school
+proyektil, dan nilai `get_block()` (amount mengikuti melee/ranged PEMILIK).
+Regenerasi fixture HANYA bila `_entity.py`/`hero_items.py`/`bosses/` berubah.
 
 Jika aturan Pygame memang berubah, sesuaikan Godot, **kemudian** regenerasi:
 
@@ -195,3 +228,11 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   Vulkan/OpenGL. Pesan engine `No renderers available` pada lingkungan ini
   adalah batasan build pengujian; hasil di atas **bukan** validasi gambar GPU,
   sentuhan perangkat, atau APK/AAB. CI memakai binary Godot standar.
+- Fase audit basic hero: oracle `hero_basic_attack` lulus lokal
+  (`tools/test_godot_match_parity.py` — 29 skenario × double-run seed beda,
+  58 event HP + 3 probe, sisi pygame tidak disentuh), `gdparse`/`tscn_lint`/
+  `check_refs`/`particles_lint` + `gen_*  --check` + scope-check lulus lokal.
+  Tidak ada Godot headless lokal di lingkungan kerja — replay
+  `HeroBasicAttackParityTest` (dan regresi lama lain) diverifikasi lewat CI
+  `godot-check.yml` pada PR; gate lulus = penanda `PASS` dan tanpa
+  `SCRIPT ERROR`/`Parse Error`/`Compile Error`.

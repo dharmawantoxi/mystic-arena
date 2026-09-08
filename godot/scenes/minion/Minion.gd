@@ -304,14 +304,17 @@ func try_attack():
 	AudioManager.play_combat("minion_hit")
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
 	if attack_range >= 80.0:
-		# Undead = ranged: proyektil (bisa ditangkis Wind Wall)
+		# Undead = ranged: proyektil (bisa ditangkis Wind Wall). pygame
+		# Minion.update menyerang INSTAN take_damage(damage, team) — NETRAL
+		# tanpa school — jadi proyektil ini juga netral; sisa deviasi
+		# (projectile vs instant) terbuka di docs/GODOT_PARITY.md.
 		var b = TowerBulletScript.new()
 		b.setup(target, dmg, team, "normal", {}, 420.0,
-			Color(0.85, 0.85, 0.95), self, dmg_school)
+			Color(0.85, 0.85, 0.95), self, "")
 		b.global_position = global_position + Vector2(0, -6)
 		GameManager.attach_fx(b)
 	else:
-		CombatSystem.apply_damage(target, dmg, team, "normal", self, dmg_school)
+		CombatSystem.apply_damage(target, dmg, team, "normal", self, "")
 
 
 func take_damage(amount: float, from_team: String = "", dmg_type: String = "normal",

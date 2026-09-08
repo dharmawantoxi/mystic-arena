@@ -613,8 +613,12 @@ func try_attack() -> bool:
 		# impact). Cleave tetap dihitung dari posisi boss saat ayunan — sama
 		# seperti pygame yang menghitung splash di momen serangan.
 		var b = TowerBulletScript.new()
+		# pygame base_boss.py:707: basic boss SELALU instan 'normal' +
+		# school 'physical' — proyektil di sini visual saja, damage-nya
+		# mendarat dengan damage_type 'normal' (tidak dipantulkan Wind
+		# Wall, sama seperti pygame).
 		b.setup(target, dmg, team, "normal", {}, 380.0,
-			fill_color.lightened(0.3), self, dmg_school)
+			fill_color.lightened(0.3), self, dmg_school, "normal")
 		b.global_position = global_position + Vector2(0, -20)
 		GameManager.attach_fx(b)
 	else:
