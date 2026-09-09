@@ -141,7 +141,7 @@ func _test_txn(case: Dictionary) -> void:
 		case["bosses_in"])
 	# Jalur produksi penuh (validasi + potong gold + append + save + sfx).
 	_menu._try_unlock_hero(str(case["hero"]))
-	var accepted := str(case["hero"]) in SaveManager.data["unlocked_heroes"]
+	var accepted: bool = str(case["hero"]) in SaveManager.data["unlocked_heroes"]
 	_compare(accepted, bool(case["accepted"]), "%s: diterima" % tag)
 	_compare(SaveManager.meta_gold(), int(case["meta_gold"]),
 		"%s: meta_gold setelah" % tag)
