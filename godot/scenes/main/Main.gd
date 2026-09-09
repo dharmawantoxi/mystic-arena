@@ -736,7 +736,9 @@ func _on_click(pos: Vector2) -> void:
 	# (1) Bangunan toko di map (paritas get_clicked_shop _render.py:246-260):
 	# Radiant = ITEM FORGE (tab ITEM), Dire = HERO SHOP (tab HERO).
 	if _arena_map != null and _arena_map.has_method("get_clicked_shop"):
-		var which := _arena_map.get_clicked_shop(pos)
+		# Tipe eksplisit: _arena_map tak bertipe sehingga pemanggilannya
+		# dinamis dan `:=` tidak bisa infer (Parse Error di Godot 4.3).
+		var which: String = _arena_map.get_clicked_shop(pos)
 		if which != "":
 			_open_shop_tab(which)
 			return
