@@ -225,7 +225,8 @@ jobs:
             cat /tmp/parity.gate
           else
             cat /tmp/parity.gate
-            echo "::error::PARITY-FAIL-TAIL: $(tail -12 /tmp/parity.log | tr '\n' ' | ' | cut -c1-400)"
+            echo "::error::PARITY-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error\|ERROR' /tmp/parity.log | tr '\n' ' | ' | cut -c1-5000)"
+            echo "::error::PARITY-FAIL-TAIL: $(tail -20 /tmp/parity.log | tr '\n' ' | ' | cut -c1-1200)"
             exit 1
           fi
 
