@@ -132069,4 +132069,391 @@
       }
     ]
   }
+,
+  "level_select_stats": {
+    "rules": {
+      "time_zero": "--:--",
+      "time_65": "1:05",
+      "time_3723": "62:03"
+    },
+    "cases": [
+      {
+        "name": "empty",
+        "level": 1,
+        "stats": {
+          "best_score": 0,
+          "best_time_seconds": 0,
+          "total_attempts": 0,
+          "wins": 0,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 0
+        },
+        "has_stats": false,
+        "score_text": "0",
+        "time_text": "--:--",
+        "attempts": 0,
+        "wins": 0,
+        "win_rate": 0
+      },
+      {
+        "name": "small_score",
+        "level": 1,
+        "stats": {
+          "best_score": 9876,
+          "best_time_seconds": 65,
+          "total_attempts": 4,
+          "wins": 3
+        },
+        "has_stats": true,
+        "score_text": "9,876",
+        "time_text": "1:05",
+        "attempts": 4,
+        "wins": 3,
+        "win_rate": 75
+      },
+      {
+        "name": "large_score_and_long_time",
+        "level": 1,
+        "stats": {
+          "best_score": 12345,
+          "best_time_seconds": 3723,
+          "total_attempts": 8,
+          "wins": 2
+        },
+        "has_stats": true,
+        "score_text": "12.3K",
+        "time_text": "62:03",
+        "attempts": 8,
+        "wins": 2,
+        "win_rate": 25
+      },
+      {
+        "name": "zero_best_time",
+        "level": 1,
+        "stats": {
+          "best_score": 400,
+          "best_time_seconds": 0,
+          "total_attempts": 1,
+          "wins": 1
+        },
+        "has_stats": true,
+        "score_text": "400",
+        "time_text": "--:--",
+        "attempts": 1,
+        "wins": 1,
+        "win_rate": 100
+      },
+      {
+        "name": "losses_only",
+        "level": 1,
+        "stats": {
+          "best_score": 0,
+          "best_time_seconds": 0,
+          "total_attempts": 3,
+          "wins": 0
+        },
+        "has_stats": true,
+        "score_text": "0",
+        "time_text": "--:--",
+        "attempts": 3,
+        "wins": 0,
+        "win_rate": 0
+      }
+    ]
+  },
+  "hero_shop_meta": {
+    "catalog": {
+      "free": "grimjaw",
+      "boss": "gornak",
+      "boss_cost": 4500,
+      "boss_requirement": "gornak"
+    },
+    "cases": [
+      {
+        "name": "invalid_catalog",
+        "hero": "__not_a_hero__",
+        "before": {
+          "purchased": [],
+          "bosses": [],
+          "meta_gold": 999999
+        },
+        "after": {
+          "purchased": [],
+          "bosses": [],
+          "meta_gold": 999999
+        },
+        "result": "rejected",
+        "cost": 600,
+        "boss": null
+      },
+      {
+        "name": "already_owned",
+        "hero": "grimjaw",
+        "before": {
+          "purchased": [
+            "grimjaw"
+          ],
+          "bosses": [],
+          "meta_gold": 0
+        },
+        "after": {
+          "purchased": [
+            "grimjaw"
+          ],
+          "bosses": [],
+          "meta_gold": 0
+        },
+        "result": "rejected",
+        "cost": 0,
+        "boss": null
+      },
+      {
+        "name": "boss_required",
+        "hero": "gornak",
+        "before": {
+          "purchased": [
+            "kaizen"
+          ],
+          "bosses": [],
+          "meta_gold": 4500
+        },
+        "after": {
+          "purchased": [
+            "kaizen"
+          ],
+          "bosses": [],
+          "meta_gold": 4500
+        },
+        "result": "rejected",
+        "cost": 4500,
+        "boss": "gornak"
+      },
+      {
+        "name": "insufficient_gold",
+        "hero": "gornak",
+        "before": {
+          "purchased": [
+            "kaizen"
+          ],
+          "bosses": [
+            "gornak"
+          ],
+          "meta_gold": 4499
+        },
+        "after": {
+          "purchased": [
+            "kaizen"
+          ],
+          "bosses": [
+            "gornak"
+          ],
+          "meta_gold": 4499
+        },
+        "result": "rejected",
+        "cost": 4500,
+        "boss": "gornak"
+      },
+      {
+        "name": "purchase_free",
+        "hero": "grimjaw",
+        "before": {
+          "purchased": [
+            "kaizen"
+          ],
+          "bosses": [],
+          "meta_gold": 0
+        },
+        "after": {
+          "purchased": [
+            "kaizen",
+            "grimjaw"
+          ],
+          "bosses": [],
+          "meta_gold": 0
+        },
+        "result": "purchased",
+        "cost": 0,
+        "boss": null
+      },
+      {
+        "name": "purchase_boss_exact",
+        "hero": "gornak",
+        "before": {
+          "purchased": [
+            "kaizen"
+          ],
+          "bosses": [
+            "gornak"
+          ],
+          "meta_gold": 4500
+        },
+        "after": {
+          "purchased": [
+            "kaizen",
+            "gornak"
+          ],
+          "bosses": [
+            "gornak"
+          ],
+          "meta_gold": 0
+        },
+        "result": "purchased",
+        "cost": 4500,
+        "boss": "gornak"
+      },
+      {
+        "name": "purchase_boss_repeated",
+        "hero": "gornak",
+        "before": {
+          "purchased": [
+            "kaizen",
+            "gornak"
+          ],
+          "bosses": [
+            "gornak"
+          ],
+          "meta_gold": 4500
+        },
+        "after": {
+          "purchased": [
+            "kaizen",
+            "gornak"
+          ],
+          "bosses": [
+            "gornak"
+          ],
+          "meta_gold": 4500
+        },
+        "result": "rejected",
+        "cost": 4500,
+        "boss": "gornak"
+      }
+    ]
+  },
+  "save_slots": {
+    "rules": {
+      "num_slots": 3,
+      "legacy_name": "progress.json",
+      "backup_name": "progress_backup.json.old"
+    },
+    "cases": [
+      {
+        "name": "empty_slots",
+        "slots": [
+          null,
+          null,
+          null
+        ],
+        "current": 1
+      },
+      {
+        "name": "two_slots_and_info",
+        "slots": [
+          {
+            "slot_num": 1,
+            "meta_gold": 120,
+            "completed_levels": [
+              1,
+              3
+            ],
+            "highest_level": 3,
+            "last_played_level": 3,
+            "purchased_heroes": [
+              "kaizen",
+              "abaddon"
+            ],
+            "unlocked_bosses": [
+              "abaddon"
+            ],
+            "playtime_seconds": 3600,
+            "has_created": true,
+            "has_last_played": true
+          },
+          {
+            "slot_num": 2,
+            "meta_gold": 900,
+            "completed_levels": [
+              1
+            ],
+            "highest_level": 1,
+            "last_played_level": 1,
+            "purchased_heroes": [
+              "kaizen"
+            ],
+            "unlocked_bosses": [],
+            "playtime_seconds": 90,
+            "has_created": true,
+            "has_last_played": true
+          },
+          null
+        ],
+        "current": 1
+      },
+      {
+        "name": "select_slot_two",
+        "current": 2,
+        "loaded": {
+          "slot_num": 2,
+          "meta_gold": 900,
+          "completed_levels": [
+            1
+          ],
+          "highest_level": 1,
+          "last_played_level": 1,
+          "purchased_heroes": [
+            "kaizen"
+          ],
+          "unlocked_bosses": [],
+          "playtime_seconds": 90,
+          "has_created": true,
+          "has_last_played": true
+        },
+        "loaded_gold": 900
+      },
+      {
+        "name": "legacy_migrated",
+        "migrated": true,
+        "slot1": {
+          "meta_gold": 777,
+          "completed_levels": [
+            4
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "has_created": true,
+          "has_last_played": true,
+          "playtime_seconds": 0
+        },
+        "legacy_exists": false,
+        "backup_exists": true
+      },
+      {
+        "name": "legacy_does_not_overwrite_slot",
+        "migrated": false,
+        "slot1_gold": 11,
+        "legacy_exists": true
+      }
+    ]
+  },
+  "phase20_determinism": {
+    "seeds": [
+      20260920,
+      42420
+    ],
+    "identical": true,
+    "rng_sites": []
+  }
+,
+  "save_slot_delete": {
+    "created": {
+      "exists": true,
+      "meta_gold": 321
+    },
+    "deleted": true,
+    "empty_after_delete": true,
+    "empty_delete_returns_false": true
+  }
 }

@@ -211,6 +211,9 @@ jobs:
       - name: GameplayParityTest (Pygame oracle + match lifecycle)
         run: |
           set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
           python -m pip install --quiet pygame-ce
           python3 tools/test_godot_match_parity.py
           godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300 2>&1 | tee /tmp/parity.log || true
@@ -595,9 +598,36 @@ jobs:
             exit 1
           fi
 
+      # ── 4p. ProgressionParityTest (FASE 20): tiga kandidat gap progresi.
+      # Oracle insert-only: BEST SCORE/BEST TIME dari SaveManager Pygame,
+      # transaksi Hero Shop meta dari Menu._unlock_hero_in_meta_shop, dan
+      # NUM_SLOTS + progress.json migration dari SaveManager asli. Godot
+      # mereplay MainMenu/SaveManager produksi; timestamp dinormalisasi,
+      # state save dan checksum cloud payload tetap diuji. Tidak ada klaim
+      # piksel/audio. user:// terisolasi agar slot pemain tidak tersentuh.
+      - name: ProgressionParityTest (level stats + Hero Shop + save slots)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/ProgressionParityTest.tscn --quit-after 240 2>&1 | tee /tmp/progression.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/progression.log --label "ProgressionParityTest" \
+              --require "[ProgressionParityTest] PASS" > /tmp/progression.gate 2>&1; then
+            cat /tmp/progression.gate
+          else
+            cat /tmp/progression.gate
+            echo "::error::PROGRESSION-FAIL-TAIL: $(tail -40 /tmp/progression.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::PROGRESSION-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/progression.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
           python -m pip install --quiet pygame-ce
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_boss_true_aura_parity.py
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_basic_attack_no_impact_fx.py
