@@ -221,6 +221,9 @@ func _build_backdrop() -> void:
 	sb.bg_color = COL_BG
 	sb.border_color = COL_BORDER
 	sb.border_width_bottom = 2
+	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.35)
+	sb.shadow_size = 8
+	sb.shadow_offset = Vector2(0, 3)
 	# padding konten (pygame: panel mulai x=... ; di sini margin global)
 	sb.content_margin_left = 44.0
 	sb.content_margin_right = 44.0
@@ -533,6 +536,10 @@ func _slot_card(slot_num: int) -> Control:
 	sb.border_color = COL_LOCKED if is_empty else COL_BORDER
 	sb.set_border_width_all(2)
 	sb.set_corner_radius_all(12)
+	# Kedalaman panel sama dengan ui_theme.panel(..., shadow=True) pygame.
+	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.55)
+	sb.shadow_size = 7
+	sb.shadow_offset = Vector2(0, 3)
 	sb.content_margin_left = 16.0
 	sb.content_margin_right = 16.0
 	sb.content_margin_top = 12.0
