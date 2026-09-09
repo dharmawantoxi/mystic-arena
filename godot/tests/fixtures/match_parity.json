@@ -125708,5 +125708,6364 @@
         ]
       }
     ]
+  },
+  "tactical_input": {
+    "fps": 60,
+    "scenarios": [
+      {
+        "name": "hotkey_gather_mouse_inside_tap",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          }
+        ],
+        "setup": {
+          "mouse": [
+            640,
+            360
+          ]
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              640,
+              360
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "gather",
+                [
+                  640,
+                  360
+                ],
+                true,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  640.0,
+                  360.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": true,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  640,
+                  360
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 10,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 590,
+                "command_target": null,
+                "cooldown": 20,
+                "gather_point": [
+                  640.0,
+                  360.0
+                ],
+                "gather_point_timer": 140,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 170,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": true,
+                "hold_elapsed": 10,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  640,
+                  360
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "gather"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 590,
+                "command_target": null,
+                "cooldown": 20,
+                "gather_point": [
+                  640.0,
+                  360.0
+                ],
+                "gather_point_timer": 140,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 170,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  640,
+                  360
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 585,
+                "command_target": null,
+                "cooldown": 15,
+                "gather_point": [
+                  640.0,
+                  360.0
+                ],
+                "gather_point_timer": 135,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 165,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  640,
+                  360
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_gather_mouse_outside_hold_f",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          }
+        ],
+        "setup": {
+          "mouse": [
+            2000,
+            100
+          ]
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              2000,
+              100
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "f"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "gather",
+                [],
+                true,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": true,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  2000,
+                  100
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 25,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 575,
+                "command_target": null,
+                "cooldown": 5,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 125,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 155,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": true,
+                "hold_elapsed": 25,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  2000,
+                  100
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "f"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "gather"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 30,
+                "command_target": null,
+                "cooldown": 5,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 125,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 155,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  2000,
+                  100
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 35,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 90,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 120,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 6
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  2000,
+                  100
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_protect_tower_selected",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 200.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 210.0,
+            "y": 310.0,
+            "type": "grimjaw"
+          },
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 250.0,
+            "y": 350.0
+          }
+        ],
+        "setup": {
+          "selected_tower": "t0"
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 200.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 210.0,
+              "y": 310.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": "t0",
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "t"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "protect_tower",
+                [
+                  "t0"
+                ],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 600,
+                "command_target": "t0",
+                "cooldown": 30,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": "protect_tower",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 595,
+                "command_target": "t0",
+                "cooldown": 25,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": "protect_tower",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 5,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "t"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "protect_tower"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 595,
+                "command_target": "t0",
+                "cooldown": 25,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_protect_tower_red_selected",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 200.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 210.0,
+            "y": 310.0,
+            "type": "grimjaw"
+          },
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "red",
+            "x": 900.0,
+            "y": 300.0
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "blue",
+            "x": 250.0,
+            "y": 350.0
+          }
+        ],
+        "setup": {
+          "selected_tower": "t0"
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 200.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 210.0,
+              "y": 310.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": "t0",
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "t"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "protect_tower",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 600,
+                "command_target": "t1",
+                "cooldown": 30,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": "protect_tower",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 595,
+                "command_target": "t1",
+                "cooldown": 25,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": "protect_tower",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 5,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "t"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "protect_tower"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 595,
+                "command_target": "t1",
+                "cooldown": 25,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_protect_castle",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "sylara"
+          }
+        ],
+        "setup": {},
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "c"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "protect_castle",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_castle",
+                "command_timer": 600,
+                "command_target": "castle_blue",
+                "cooldown": 30,
+                "gather_point": [
+                  100.0,
+                  620.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "PROTECT CASTLE! 2 heroes defending base!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  255,
+                  220,
+                  50
+                ],
+                "held_command": "protect_castle",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_castle",
+                "command_timer": 595,
+                "command_target": "castle_blue",
+                "cooldown": 25,
+                "gather_point": [
+                  100.0,
+                  620.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "PROTECT CASTLE! 2 heroes defending base!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  255,
+                  220,
+                  50
+                ],
+                "held_command": "protect_castle",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 5,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "c"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "protect_castle"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_castle",
+                "command_timer": 595,
+                "command_target": "castle_blue",
+                "cooldown": 25,
+                "gather_point": [
+                  100.0,
+                  620.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "PROTECT CASTLE! 2 heroes defending base!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  255,
+                  220,
+                  50
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_attack_boss_fires",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          },
+          {
+            "id": "boss0",
+            "kind": "boss",
+            "team": "red",
+            "x": 700.0,
+            "y": 400.0,
+            "type": "gornak"
+          }
+        ],
+        "setup": {},
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": true,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "b"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "attack_boss",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 600,
+                "command_target": "boss0",
+                "cooldown": 30,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 597,
+                "command_target": "boss0",
+                "cooldown": 27,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 147,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 177,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 3,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "b"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "attack_boss"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 597,
+                "command_target": "boss0",
+                "cooldown": 27,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 147,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 177,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_attack_dealer",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "r0",
+            "kind": "hero",
+            "team": "red",
+            "x": 700.0,
+            "y": 400.0,
+            "type": "thorne",
+            "damage_dealt": 1500
+          },
+          {
+            "id": "r1",
+            "kind": "hero",
+            "team": "red",
+            "x": 720.0,
+            "y": 420.0,
+            "type": "vex",
+            "damage_dealt": 4200
+          }
+        ],
+        "setup": {},
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": true
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "d"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "attack_damage_dealer",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_damage_dealer",
+                "command_timer": 600,
+                "command_target": "r1",
+                "cooldown": 30,
+                "gather_point": [
+                  720.0,
+                  420.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "ATTACK DAMAGE DEALER! Focus Vex (4200 dmg)!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  255,
+                  130,
+                  255
+                ],
+                "held_command": "attack_damage_dealer",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "r1",
+                  "target": "r1"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": true
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_damage_dealer",
+                "command_timer": 597,
+                "command_target": "r1",
+                "cooldown": 27,
+                "gather_point": [
+                  720.0,
+                  420.0
+                ],
+                "gather_point_timer": 147,
+                "feedback_text": "ATTACK DAMAGE DEALER! Focus Vex (4200 dmg)!",
+                "feedback_timer": 177,
+                "feedback_color": [
+                  255,
+                  130,
+                  255
+                ],
+                "held_command": "attack_damage_dealer",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 3,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "r1",
+                  "target": "r1"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": true
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "d"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "attack_damage_dealer"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_damage_dealer",
+                "command_timer": 597,
+                "command_target": "r1",
+                "cooldown": 27,
+                "gather_point": [
+                  720.0,
+                  420.0
+                ],
+                "gather_point_timer": 147,
+                "feedback_text": "ATTACK DAMAGE DEALER! Focus Vex (4200 dmg)!",
+                "feedback_timer": 177,
+                "feedback_color": [
+                  255,
+                  130,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "r1",
+                  "target": "r1"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": true
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_state_gate_victory",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          }
+        ],
+        "setup": {
+          "state": "victory",
+          "mouse": [
+            500,
+            400
+          ]
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              500,
+              400
+            ],
+            "state": "victory"
+          },
+          "panel": {
+            "gather": false,
+            "protect_tower": false,
+            "protect_castle": false,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "victory"
+              },
+              "panel": {
+                "gather": false,
+                "protect_tower": false,
+                "protect_castle": false,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "gather"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "victory"
+              },
+              "panel": {
+                "gather": false,
+                "protect_tower": false,
+                "protect_castle": false,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_down",
+              "key": "q"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "victory"
+              },
+              "panel": {
+                "gather": false,
+                "protect_tower": false,
+                "protect_castle": false,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "q"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "victory"
+              },
+              "panel": {
+                "gather": false,
+                "protect_tower": false,
+                "protect_castle": false,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "set_state",
+              "state": "playing"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_down",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "gather",
+                [
+                  500,
+                  400
+                ],
+                true,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": true,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "gather"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_release_map_mismatch",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          },
+          {
+            "id": "boss0",
+            "kind": "boss",
+            "team": "red",
+            "x": 700.0,
+            "y": 400.0,
+            "type": "gornak"
+          }
+        ],
+        "setup": {},
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": true,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "b"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "attack_boss",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 600,
+                "command_target": "boss0",
+                "cooldown": 30,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 8,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 592,
+                "command_target": "boss0",
+                "cooldown": 22,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 142,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 172,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 8,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "gather"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 592,
+                "command_target": "boss0",
+                "cooldown": 22,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 142,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 172,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 8,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 589,
+                "command_target": "boss0",
+                "cooldown": 19,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 139,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 169,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 11,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "b"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "attack_boss"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 589,
+                "command_target": "boss0",
+                "cooldown": 19,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 139,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 169,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 584,
+                "command_target": "boss0",
+                "cooldown": 14,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 134,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 164,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hotkey_hold_switch_g_to_b",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          },
+          {
+            "id": "boss0",
+            "kind": "boss",
+            "team": "red",
+            "x": 700.0,
+            "y": 400.0,
+            "type": "gornak"
+          }
+        ],
+        "setup": {
+          "mouse": [
+            500,
+            400
+          ]
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              500,
+              400
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": true,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "key_down",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "gather",
+                [
+                  500,
+                  400
+                ],
+                true,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": true,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 595,
+                "command_target": null,
+                "cooldown": 25,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": true,
+                "hold_elapsed": 5,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_down",
+              "key": "b"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "attack_boss",
+                [],
+                false,
+                false
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 595,
+                "command_target": null,
+                "cooldown": 25,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 592,
+                "command_target": null,
+                "cooldown": 22,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 142,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 172,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 3,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "g"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "gather"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 592,
+                "command_target": null,
+                "cooldown": 22,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 142,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 172,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 3,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "key_up",
+              "key": "b"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "attack_boss"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 592,
+                "command_target": null,
+                "cooldown": 22,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 142,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 172,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 587,
+                "command_target": null,
+                "cooldown": 17,
+                "gather_point": [
+                  500.0,
+                  400.0
+                ],
+                "gather_point_timer": 137,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 167,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  500,
+                  400
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "panel_gather_ignores_mouse",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          }
+        ],
+        "setup": {
+          "mouse": [
+            900,
+            600
+          ]
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              900,
+              600
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "gather",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  900,
+                  600
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 595,
+                "command_target": null,
+                "cooldown": 25,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 5,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  900,
+                  600
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_up",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "gather"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 595,
+                "command_target": null,
+                "cooldown": 25,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  900,
+                  600
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 590,
+                "command_target": null,
+                "cooldown": 20,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 140,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 170,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  900,
+                  600
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "panel_protect_tower_selected",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 200.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 210.0,
+            "y": 310.0,
+            "type": "grimjaw"
+          },
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 250.0,
+            "y": 350.0
+          }
+        ],
+        "setup": {
+          "selected_tower": "t0"
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 200.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 210.0,
+              "y": 310.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": "t0",
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "protect_tower"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "protect_tower",
+                [
+                  "t0"
+                ],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 600,
+                "command_target": "t0",
+                "cooldown": 30,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": "protect_tower",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 595,
+                "command_target": "t0",
+                "cooldown": 25,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": "protect_tower",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 5,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_up",
+              "action": "protect_tower"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "protect_tower"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_tower",
+                "command_timer": 595,
+                "command_target": "t0",
+                "cooldown": 25,
+                "gather_point": [
+                  250.0,
+                  350.0
+                ],
+                "gather_point_timer": 145,
+                "feedback_text": "PROTECT TOWER! 2 heroes defending Archer!",
+                "feedback_timer": 175,
+                "feedback_color": [
+                  100,
+                  255,
+                  100
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 200.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 210.0,
+                  "y": 310.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": "t0",
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "panel_hold_truncate",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "sylara"
+          }
+        ],
+        "setup": {},
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "protect_castle"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "protect_castle",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_castle",
+                "command_timer": 600,
+                "command_target": "castle_blue",
+                "cooldown": 30,
+                "gather_point": [
+                  100.0,
+                  620.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "PROTECT CASTLE! 2 heroes defending base!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  255,
+                  220,
+                  50
+                ],
+                "held_command": "protect_castle",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 25,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_castle",
+                "command_timer": 575,
+                "command_target": "castle_blue",
+                "cooldown": 5,
+                "gather_point": [
+                  100.0,
+                  620.0
+                ],
+                "gather_point_timer": 125,
+                "feedback_text": "PROTECT CASTLE! 2 heroes defending base!",
+                "feedback_timer": 155,
+                "feedback_color": [
+                  255,
+                  220,
+                  50
+                ],
+                "held_command": "protect_castle",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 25,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_up",
+              "action": "protect_castle"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "protect_castle"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "protect_castle",
+                "command_timer": 30,
+                "command_target": "castle_blue",
+                "cooldown": 5,
+                "gather_point": [
+                  100.0,
+                  620.0
+                ],
+                "gather_point_timer": 125,
+                "feedback_text": "PROTECT CASTLE! 2 heroes defending base!",
+                "feedback_timer": 155,
+                "feedback_color": [
+                  255,
+                  220,
+                  50
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 35,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": [
+                  100.0,
+                  620.0
+                ],
+                "gather_point_timer": 90,
+                "feedback_text": "PROTECT CASTLE! 2 heroes defending base!",
+                "feedback_timer": 120,
+                "feedback_color": [
+                  255,
+                  220,
+                  50
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 6
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "panel_pause_force_release",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          }
+        ],
+        "setup": {},
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "gather",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 25,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 575,
+                "command_target": null,
+                "cooldown": 5,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 125,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 155,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 25,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "pause_release"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                null
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 30,
+                "command_target": null,
+                "cooldown": 5,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 125,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 155,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_up",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 30,
+                "command_target": null,
+                "cooldown": 5,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 125,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 155,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 5,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 25,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 120,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 150,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "panel_blocked_no_heroes",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen",
+            "dead": true
+          }
+        ],
+        "setup": {},
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": false,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": false,
+            "protect_tower": false,
+            "protect_castle": false,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": false,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": false,
+                "protect_tower": false,
+                "protect_castle": false,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 3
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": false,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": false,
+                "protect_tower": false,
+                "protect_castle": false,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_up",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 3
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": false,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": false,
+                "protect_tower": false,
+                "protect_castle": false,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "panel_blocked_by_hero_panel",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          }
+        ],
+        "setup": {
+          "selected_hero": "h0"
+        },
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": "h0",
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": "h0",
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 3
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": "h0",
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "set_selected_hero",
+              "unit": null
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 3
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "gather",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": "gather",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 3
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_up",
+              "action": "gather"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "gather"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "gather",
+                "command_timer": 600,
+                "command_target": null,
+                "cooldown": 30,
+                "gather_point": [
+                  614.5,
+                  236.5
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "GATHER! 2 heroes regrouping!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  100,
+                  220,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 3
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "panel_attack_boss_gating",
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "kaizen"
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "blue",
+            "x": 320.0,
+            "y": 320.0,
+            "type": "grimjaw"
+          }
+        ],
+        "setup": {},
+        "random_script": [],
+        "random_consumed": [],
+        "pre": {
+          "manager": {
+            "active_command": null,
+            "command_timer": 0,
+            "command_target": null,
+            "cooldown": 0,
+            "gather_point": null,
+            "gather_point_timer": 0,
+            "feedback_text": "",
+            "feedback_timer": 0,
+            "feedback_color": [
+              255,
+              255,
+              255
+            ],
+            "held_command": null,
+            "hold_follow_mouse": false,
+            "hold_elapsed": 0,
+            "hold_has_fired": false,
+            "gather_push_fired": false,
+            "auto_check_timer": 0
+          },
+          "heroes": {
+            "h0": {
+              "x": 300.0,
+              "y": 300.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            },
+            "h1": {
+              "x": 320.0,
+              "y": 320.0,
+              "alive": true,
+              "follow_target": null,
+              "target": null
+            }
+          },
+          "game": {
+            "selected_hero": null,
+            "selected_tower": null,
+            "mouse": [
+              0,
+              0
+            ],
+            "state": "playing"
+          },
+          "panel": {
+            "gather": true,
+            "protect_tower": true,
+            "protect_castle": true,
+            "attack_boss": false,
+            "attack_damage_dealer": false
+          }
+        },
+        "steps": [
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "attack_boss"
+            },
+            "frames": 0,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 0
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 3
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": false,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "spawn_boss",
+              "unit": "boss0",
+              "type": "gornak",
+              "x": 700.0,
+              "y": 400.0
+            },
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": null,
+                "command_timer": 0,
+                "command_target": null,
+                "cooldown": 0,
+                "gather_point": null,
+                "gather_point_timer": 0,
+                "feedback_text": "",
+                "feedback_timer": 0,
+                "feedback_color": [
+                  255,
+                  255,
+                  255
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 6
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": null,
+                  "target": null
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_down",
+              "action": "attack_boss"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_start",
+                "attack_boss",
+                [],
+                false,
+                true
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 600,
+                "command_target": "boss0",
+                "cooldown": 30,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 150,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 180,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 6
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": null,
+            "frames": 3,
+            "calls": [],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 597,
+                "command_target": "boss0",
+                "cooldown": 27,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 147,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 177,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": "attack_boss",
+                "hold_follow_mouse": false,
+                "hold_elapsed": 3,
+                "hold_has_fired": true,
+                "gather_push_fired": false,
+                "auto_check_timer": 6
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          },
+          {
+            "action": {
+              "op": "panel_up",
+              "action": "attack_boss"
+            },
+            "frames": 0,
+            "calls": [
+              [
+                "hold_end",
+                "attack_boss"
+              ]
+            ],
+            "snapshot": {
+              "manager": {
+                "active_command": "attack_boss",
+                "command_timer": 597,
+                "command_target": "boss0",
+                "cooldown": 27,
+                "gather_point": [
+                  700.0,
+                  400.0
+                ],
+                "gather_point_timer": 147,
+                "feedback_text": "ATTACK BOSS! All heroes attack Gornak!",
+                "feedback_timer": 177,
+                "feedback_color": [
+                  255,
+                  100,
+                  100
+                ],
+                "held_command": null,
+                "hold_follow_mouse": false,
+                "hold_elapsed": 0,
+                "hold_has_fired": false,
+                "gather_push_fired": false,
+                "auto_check_timer": 6
+              },
+              "heroes": {
+                "h0": {
+                  "x": 300.0,
+                  "y": 300.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                },
+                "h1": {
+                  "x": 320.0,
+                  "y": 320.0,
+                  "alive": true,
+                  "follow_target": "boss0",
+                  "target": "boss0"
+                }
+              },
+              "game": {
+                "selected_hero": null,
+                "selected_tower": null,
+                "mouse": [
+                  0,
+                  0
+                ],
+                "state": "playing"
+              },
+              "panel": {
+                "gather": true,
+                "protect_tower": true,
+                "protect_castle": true,
+                "attack_boss": true,
+                "attack_damage_dealer": false
+              }
+            }
+          }
+        ]
+      }
+    ]
   }
 }

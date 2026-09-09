@@ -10,6 +10,7 @@ const SkillBarScript = preload("res://scenes/ui/SkillBar.gd")
 const ShopPanelScript = preload("res://scenes/ui/ShopPanel.gd")
 const ComboBadgeScript = preload("res://scenes/ui/ComboBadge.gd")
 const AchievementPopupScript = preload("res://scenes/ui/AchievementPopup.gd")
+const TacticalBarScript = preload("res://scenes/ui/TacticalBar.gd")
 ## Seberapa sering bar nexus/disability disegarkan (5 Hz cukup, hemat draw call)
 const BAR_REFRESH := 0.2
 
@@ -54,6 +55,12 @@ func _ready():
 	# SkillBar + ShopPanel dibangun dari kode (lihat file masing-masing)
 	add_child(SkillBarScript.new())
 	add_child(ShopPanelScript.new())
+	# FASE 18 — panel TACTICAL COMMANDS (HOLD): pemicu UI perintah taktis
+	# (port sidepanel _gambar_tactical + apply_hud_action; tekan/lepas =
+	# hold_start/hold_end di TacticalCommands.gd).
+	var tactical_bar = TacticalBarScript.new()
+	tactical_bar.name = "TacticalBar"
+	add_child(tactical_bar)
 	# FASE 13 — klaster skor: badge combo kanan-atas (port ComboCounter.draw)
 	# + popup achievement di layar arena (port AchievementPopup; trigger
 	# GameManager.unlock_achievement, mis. NEW HERO UNLOCKED! saat menang).

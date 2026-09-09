@@ -184,7 +184,7 @@ func _build() -> void:
 		_buttons[str(k)] = btn
 
 	var hint := Label.new()
-	hint.text = "klik hero untuk memilih · QWER / tombol = skill · B/H = toko"
+	hint.text = "klik hero untuk memilih · QWER / tombol = skill · H = toko · G/T/C/B/D = perintah taktis"
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_color", Color(0.7, 0.76, 0.9, 0.75))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

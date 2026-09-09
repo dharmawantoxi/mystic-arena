@@ -77,6 +77,15 @@ var auto_check_timer := 0
 
 ## Harness paritas: Vector2.INF = mouse viewport produksi.
 var mouse_override := Vector2.INF
+## Harness paritas FASE 18: saat true, setiap hold_start/hold_end produksi
+## dicatat ke hold_trace (pola mouse_override — produksi tak terpengaruh).
+## Entri hold_start = [nama, args, follow_mouse, hasil_bool]; hold_end =
+## [nama]. Dikosongkan reset(). Oracle pygame merekam jejak yang sama lewat
+## spy yang mem-wrap metode asli, lalu TacticalInputParityTest
+## membandingkannya — itulah yang membuktikan PEMICU UI (hotkey + tombol
+## panel) memanggil manajer dengan argumen yang tepat.
+var hold_trace_enabled := false
+var hold_trace: Array = []
 
 
 func _physics_process(_delta: float) -> void:
@@ -104,6 +113,7 @@ func reset() -> void:
 	gather_push_fired = false
 	auto_check_timer = 0
 	mouse_override = Vector2.INF
+	hold_trace.clear()
 
 
 func _main():
@@ -169,11 +179,24 @@ func _is_known_command(cmd_name: String) -> bool:
 
 
 func hold_start(cmd_name: String, args: Array = [], follow_mouse: bool = false) -> bool:
+	# Jejak harness dicatat di ENTRI metode (sebelum validasi) — cermin
+	# spy oracle yang mem-wrap hold_start pygame: panggilan dengan nama
+	# asing pun terekam (dan tetap ditolak).
+	var _trace_args: Array = []
+	for a in args:
+		_trace_args.append(a)
+	if hold_trace_enabled:
+		hold_trace.append(["hold_start", cmd_name, _trace_args,
+			bool(follow_mouse), null])
 	if not _is_known_command(cmd_name):
+		if hold_trace_enabled:
+			hold_trace[hold_trace.size() - 1][4] = false
 		return false
 	if cmd_name == held_command and hold_elapsed > 0:
 		# Key-repeat hold yang sama: masih menahan, jangan reset waktu
 		# dan jangan terbitkan ulang bersuara (anti spam).
+		if hold_trace_enabled:
+			hold_trace[hold_trace.size() - 1][4] = true
 		return true
 	held_command = cmd_name
 	hold_args = args.duplicate()
@@ -185,10 +208,15 @@ func hold_start(cmd_name: String, args: Array = [], follow_mouse: bool = false) 
 	var ok := _issue_held(true)
 	if ok:
 		hold_has_fired = true
+	if hold_trace_enabled:
+		hold_trace[hold_trace.size() - 1][4] = ok
 	return ok
 
 
 func hold_end(cmd_name = null) -> void:
+	if hold_trace_enabled:
+		hold_trace.append(["hold_end",
+			str(cmd_name) if cmd_name != null else null])
 	if held_command == null:
 		return
 	if cmd_name != null and str(cmd_name) != str(held_command):

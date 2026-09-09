@@ -529,6 +529,35 @@ jobs:
             exit 1
           fi
 
+      # ── 4n. TacticalInputParityTest (FASE 18): PEMICU UI perintah taktis.
+      # Oracle = jalur INPUT pygame ASLI headless: Game.handle_key /
+      # handle_key_up (hotkey hold G/F/T/C/B/D — gather memakai mouse +
+      # follow_mouse, T memakai selected_tower biru, KEYDOWN digate state
+      # "playing" tapi KEYUP tidak) + SidePanel._gambar_tactical/hit_test +
+      # mobile/hud.apply_hud_action (tombol panel: gather TANPA mouse) +
+      # cabang release/pause main.py. Godot mereplay lewat jalur produksi
+      # (Main._unhandled_input -> _on_key/_on_key_release + tombol
+      # TacticalBar HUD -> Main._tactical_panel_press/release) — TIDAK ADA
+      # hold_start/hold_end langsung dari harness. Jejak hold (nama/args/
+      # follow_mouse/hasil) direkam hook hold_trace produksi. user://
+      # terisolasi bahkan kalau harness berhenti di tengah.
+      - name: TacticalInputParityTest (pemicu UI taktis vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/TacticalInputParityTest.tscn --quit-after 600 2>&1 | tee /tmp/tacin.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/tacin.log --label "TacticalInputParityTest" \
+              --require "[TacticalInputParityTest] PASS" > /tmp/tacin.gate 2>&1; then
+            cat /tmp/tacin.gate
+          else
+            cat /tmp/tacin.gate
+            echo "::error::TACIN-FAIL-TAIL: $(tail -40 /tmp/tacin.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::TACIN-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/tacin.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

@@ -103,7 +103,7 @@ func _build() -> void:
 	header.add_child(_gold_label)
 
 	var close_btn := Button.new()
-	close_btn.text = "TUTUP  (B/H)"
+	close_btn.text = "TUTUP  (H)"
 	close_btn.custom_minimum_size = Vector2(104, 28)
 	close_btn.set_meta("ui_key", "shop_close")
 	close_btn.pressed.connect(func(): GameManager.close_shop())
