@@ -104,14 +104,15 @@ func _test_hero_shop(section: Dictionary) -> void:
 		}
 		var tag := "hero shop %s" % str(case["name"])
 		var want_after: Dictionary = case["after"]
-		_expect(after == want_after, tag + " state")
+		_expect(after == want_after, tag + " state got=" + str(after)
+			+ " want=" + str(want_after))
 		var want_ok := str(case["result"]) == "purchased"
-		_expect(bool(result.get("ok", false)) == want_ok, tag + " accepted")
+		_expect(bool(result.get("ok", false)) == want_ok, tag + " accepted result=" + str(result))
 		if want_ok:
-			_expect(str(result.get("reason")) == "purchased", tag + " reason")
-			_expect(int(result.get("cost", -1)) == int(case["cost"]), tag + " cost")
+			_expect(str(result.get("reason")) == "purchased", tag + " reason result=" + str(result))
+			_expect(int(result.get("cost", -1)) == int(case["cost"]), tag + " cost result=" + str(result))
 		else:
-			_expect(after == before, tag + " rejected atomically")
+			_expect(after == before, tag + " rejected atomically after=" + str(after))
 	menu.free()
 
 
@@ -137,8 +138,10 @@ func _test_save_slots(section: Dictionary) -> void:
 	slots = []
 	for i in range(1, SaveManager.NUM_SLOTS + 1):
 		slots.append(_slot_view(SaveManager.get_slot_info(i)))
-	_expect(slots == cases[1]["slots"], "metadata dua slot")
-	_expect(SaveManager.get_current_slot() == int(cases[1]["current"]), "slot aktif setelah save")
+	_expect(slots == cases[1]["slots"], "metadata dua slot got=" + str(slots)
+		+ " want=" + str(cases[1]["slots"]))
+	_expect(SaveManager.get_current_slot() == int(cases[1]["current"]),
+		"slot aktif setelah save got=%d want=%d" % [SaveManager.get_current_slot(), int(cases[1]["current"])])
 
 	SaveManager.set_current_slot(2, true)
 	var selected: Dictionary = {
@@ -146,7 +149,8 @@ func _test_save_slots(section: Dictionary) -> void:
 		"loaded": _slot_view(SaveManager.get_slot_info(2)),
 		"loaded_gold": SaveManager.meta_gold(),
 	}
-	_expect(selected == cases[2], "memilih dan memuat slot 2")
+	_expect(selected == cases[2], "memilih dan memuat slot 2 got=" + str(selected)
+		+ " want=" + str(cases[2]))
 
 	_clean_phase20_files()
 	var legacy := {"meta_gold": 777, "completed_levels": [4],
@@ -166,7 +170,8 @@ func _test_save_slots(section: Dictionary) -> void:
 		"legacy_exists": FileAccess.file_exists("user://progress.json"),
 		"backup_exists": FileAccess.file_exists("user://progress_backup.json.old"),
 	}
-	_expect(migrated_view == cases[3], "migrasi legacy ke slot 1")
+	_expect(migrated_view == cases[3], "migrasi legacy ke slot 1 got=" + str(migrated_view)
+		+ " want=" + str(cases[3]))
 
 	_clean_phase20_files()
 	_write_json("user://slot_1.json", {"meta_gold": 11})
@@ -175,7 +180,8 @@ func _test_save_slots(section: Dictionary) -> void:
 	var collision_view := {"migrated": collision,
 		"slot1_gold": int((JSON.parse_string(FileAccess.get_file_as_string("user://slot_1.json")) as Dictionary).get("meta_gold", 0)),
 		"legacy_exists": FileAccess.file_exists("user://progress.json")}
-	_expect(collision_view == cases[4], "legacy tidak overwrite slot 1")
+	_expect(collision_view == cases[4], "legacy tidak overwrite slot 1 got=" + str(collision_view)
+		+ " want=" + str(cases[4]))
 
 
 func _test_save_slot_delete(expected: Dictionary) -> void:
@@ -192,7 +198,8 @@ func _test_save_slot_delete(expected: Dictionary) -> void:
 		"empty_after_delete": SaveManager.get_slot_info(1) == null,
 		"empty_delete_returns_false": not SaveManager.delete_slot(1),
 	}
-	_expect(view == expected, "slot create + delete + empty delete")
+	_expect(view == expected, "slot create + delete + empty delete got=" + str(view)
+		+ " want=" + str(expected))
 
 
 func _test_cloud_payload() -> void:
@@ -213,9 +220,13 @@ func _test_cloud_payload() -> void:
 
 
 func _save_slot(slot_num: int, value: Dictionary) -> void:
+	# Pygame SaveManager.save(data, slot_num) writes an explicit slot without
+	# changing the active-slot selector; mirror that oracle contract in replay.
+	var active := SaveManager.get_current_slot()
 	SaveManager.set_current_slot(slot_num, false)
 	SaveManager.data = value.duplicate(true)
 	SaveManager.save()
+	SaveManager.current_slot = active
 
 
 func _slot_view(info) -> Variant:
