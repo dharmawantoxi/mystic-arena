@@ -164,6 +164,18 @@ func default_level_stats() -> Dictionary:
 	}
 
 
+## Paritas SaveManager.format_time (_system.py:1118-1125): detik → "M:SS"
+## (menit tidak di-pad dua digit, detik di-pad). 0 = "--:--" (belum pernah
+## menang di level ini). FASE 20.
+func format_time(seconds: int) -> String:
+	if seconds == 0:
+		return "--:--"
+	@warning_ignore("integer_division")
+	var minutes := seconds / 60
+	var secs := seconds % 60
+	return "%d:%02d" % [minutes, secs]
+
+
 ## Paritas SaveManager.get_level_stats: baca stat level (dict HIDUP bila
 ## sudah ada — mutasi update_level_stats langsung menulis ke save).
 func get_level_stats(level_data: Dictionary, level_num: int) -> Dictionary:
