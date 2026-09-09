@@ -967,10 +967,17 @@ func _apply_menu_coverage(covers: bool, is_pause: bool) -> void:
 	# Non-PAUSE: sembunyikan total. PAUSE: arena + HUD tetap tampil,
 	# menu hanya menambah lapisan dim gelap di atasnya.
 	var game_visible := not covers or is_pause
-	for path in [^"ArenaMap", ^"Containers", ^"FX"]:
+	for path in [^"ArenaMap", ^"FX"]:
 		var n := get_node_or_null(path)
 		if n != null:
 			n.visible = game_visible
+	# "Containers" adalah Node polos (TIDAK punya properti visible) —
+	# sembunyikan anak-anaknya (Towers/Minions/Heroes/Bosses, semua
+	# Node2D) satu per satu.
+	var containers := get_node_or_null(^"Containers")
+	if containers != null:
+		for child in containers.get_children():
+			child.visible = game_visible
 	if _slot_layer != null:
 		_slot_layer.visible = game_visible
 	var hud := get_node_or_null(^"UI/HUD")
