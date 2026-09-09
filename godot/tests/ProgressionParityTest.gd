@@ -20,6 +20,8 @@ var _checks: int = 0
 var _save_before: Dictionary = {}
 var _file_before: Dictionary = {}
 var _slot_before: int = 1
+var _error_messages: Array[String] = []
+var _done: bool = false
 
 
 func _ready() -> void:
