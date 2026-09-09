@@ -619,9 +619,36 @@ func _clone_pygame_save(value) -> Dictionary:
 	return out
 
 
+## Bandingkan dua nilai. Urutan kunci JSON bukan state (Godot dan Python
+## boleh menulis objek yang sama dengan urutan berbeda) — jadi nilai
+## dikanonisasi dulu: angka dinormalisasi, kunci diurutkan, baru dibanding.
 func _compare(got, want, tag: String) -> void:
-	_expect(str(got) == str(want),
-		"%s (dapet %s, mau %s)" % [tag, str(got), str(want)])
+	var a := _canon(got)
+	var b := _canon(want)
+	_expect(a == b, "%s (dapet %s, mau %s)" % [tag, a, b])
+
+
+## Serialisasi kanonik nilai: dipakai `_compare` supaya perbandingan
+## kebal terhadap urutan kunci dan terhadap float/int hasil parse JSON.
+func _canon(value) -> String:
+	var v := _norm(value)
+	var t := typeof(v)
+	if t == TYPE_DICTIONARY:
+		var d := v as Dictionary
+		var keys: Array = []
+		for key in d:
+			keys.append(str(key))
+		keys.sort()
+		var parts: Array = []
+		for key in keys:
+			parts.append("%s: %s" % [key, _canon(d[key])])
+		return "{" + ", ".join(parts) + "}"
+	if t == TYPE_ARRAY:
+		var items: Array = []
+		for item in (v as Array):
+			items.append(_canon(item))
+		return "[" + ", ".join(items) + "]"
+	return str(v)
 
 
 func _finish() -> void:
