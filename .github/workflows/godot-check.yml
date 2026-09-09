@@ -655,25 +655,36 @@ jobs:
             exit 1
           fi
 
-      # ── 4r. ProgressionParityTest (FASE 20C): multi-slot save + migrasi
-      # progress.json lokal. Oracle Pygame SaveManager asli, fixture insert-only
-      # save_slots/phase20_determinism/save_slot_delete, dan cloud payload
-      # checksum. Godot mereplay SaveManager/MainMenu produksi; semua metadata
-      # wall-clock dibandingkan sebagai presence flag. user:// terisolasi.
-      - name: ProgressionParityTest (save slots + migration vs oracle Pygame)
+      # ── 4r. SaveSlotParityTest (FASE 21): MULTI-SLOT SAVE + MIGRASI
+      # LEGACY (TANPA cloud save). Oracle = SaveManager ASLI _system.py
+      # (746-1125) yang menulis/membaca berkas beneran di direktori
+      # terisolasi dengan jam ter-pin (TZ=UTC) + jalur draw ASLI
+      # Menu._draw_slot_select. Seksi fixture save_slots: jalur berkas,
+      # 8 kasus migrasi legacy (rename -> *_backup.json.old, slot 1 yang
+      # sudah ada tidak ditimpa, legacy korup gagal tanpa efek, kunci
+      # asing ikut tersalin, idempotensi), 9 skenario save/load per-slot
+      # (metadata slot_created/slot_last_played, isolasi, backfill),
+      # 3 kasus hapus, 6 kasus get_slot_info/get_all_slot_info (slot
+      # korup -> null), 17 + 15 baterai format, dan 5 layar x 3 kartu
+      # slot. Godot mereplay lewat jalur produksi (SaveManager slot API +
+      # MainMenu._slot_card). String relatif "Xm/Xh/Xd ago" direproduksi
+      # dari OFFSET terhadap waktu nyata; cabang tanggal memakai
+      # timestamp absolut UTC. Piksel kartu & cloud save TIDAK diuji.
+      # user:// terisolasi bahkan kalau harness berhenti di tengah.
+      - name: SaveSlotParityTest (multi-slot save + migrasi legacy vs oracle Pygame)
         run: |
           set -o pipefail
           isolated=$(mktemp -d)
           trap 'rm -rf "$isolated"' EXIT
           export XDG_DATA_HOME="$isolated"
-          godot --headless --path godot res://tests/ProgressionParityTest.tscn --quit-after 300 2>&1 | tee /tmp/progression.log || true
-          if python3 godot/tools/godot_log_gate.py /tmp/progression.log --label "ProgressionParityTest" \
-              --require "[ProgressionParityTest] PASS" > /tmp/progression.gate 2>&1; then
-            cat /tmp/progression.gate
+          godot --headless --path godot res://tests/SaveSlotParityTest.tscn --quit-after 300 2>&1 | tee /tmp/saveslot.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/saveslot.log --label "SaveSlotParityTest" \
+              --require "[SaveSlotParityTest] PASS" > /tmp/saveslot.gate 2>&1; then
+            cat /tmp/saveslot.gate
           else
-            cat /tmp/progression.gate
-            echo "::error::PROGRESSION-FAIL-TAIL: $(tail -40 /tmp/progression.log | tr '\n' ' | ' | cut -c1-3000)"
-            echo "::error::PROGRESSION-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/progression.log | tr '\n' ' | ' | cut -c1-8000)"
+            cat /tmp/saveslot.gate
+            echo "::error::SAVESLOT-FAIL-TAIL: $(tail -40 /tmp/saveslot.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::SAVESLOT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/saveslot.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 
