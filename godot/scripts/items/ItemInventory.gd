@@ -509,6 +509,13 @@ var rend_target = null
 static func _sec(frames: float) -> float:
 	return float(frames) / FPS
 
+## Pygame menghitung timer dalam FRAME INTEGER (140 - 140 = 0 persis);
+## Godot mengurangi detik float (140 x 1/60 menyisakan ~1e-15), jadi
+## SEMUA gate "masihcooldown / masihaktif" memakai ambang ini, bukan
+## "> 0.0" telanjang — kalau tidak, kedaluarsa pas N frame bisa tetap
+## terbuka dan proc meleset satu serangan (tertangkap oracle item_procs).
+const EPS := 0.000000001
+
 
 ## Sisa cooldown item aktif (detik) — dipakai HUD/tooltip kalau nanti perlu.
 func active_cooldown(item_id: String) -> float:
@@ -517,7 +524,7 @@ func active_cooldown(item_id: String) -> float:
 
 ## Item aktif sedang menyala? (mis. Thornmail memantulkan damage)
 func active_running(item_id: String) -> bool:
-	return float(_active_timer.get(item_id, 0.0)) > 0.0
+	return float(_active_timer.get(item_id, 0.0)) > EPS
 
 
 ## Dipanggil Hero._physics_process tiap frame — paritas inv.update(1, enemies)
@@ -568,7 +575,7 @@ func _try_active(item_id: String, act: Dictionary, hp_ratio: float, delta: float
 		if active_running(item_id):
 			_tick_static_charge(item_id, act, delta)
 		return
-	if float(_active_cd.get(item_id, 0.0)) > 0.0:
+	if float(_active_cd.get(item_id, 0.0)) > EPS:
 		return
 	# ── Pemicu 1: HP di bawah ambang ──
 	if act.has("hp_threshold"):
@@ -641,7 +648,7 @@ func on_damage_taken(amount: float) -> void:
 		return
 	if not has("thunder_coil"):
 		return
-	if float(_active_cd.get("thunder_coil", 0.0)) > 0.0:
+	if float(_active_cd.get("thunder_coil", 0.0)) > EPS:
 		return
 	var db = _db()
 	if db == null:
@@ -689,7 +696,7 @@ func _burst_aoe(item_id: String, act: Dictionary, near: Array) -> void:
 ## Static Charge: zap N musuh terdekat tiap `tick` frame selama aura menyala.
 func _tick_static_charge(item_id: String, act: Dictionary, delta: float) -> void:
 	var cd := float(_tick_cd.get(item_id, 0.0)) - delta
-	if cd > 0.0:
+	if cd > EPS:
 		_tick_cd[item_id] = cd
 		return
 	_tick_cd[item_id] = _sec(float(act.get("tick", 30.0)))
@@ -842,7 +849,7 @@ func _bash_procs(db, target) -> void:
 	var key := "abyss_breaker:bash"
 	if not has("abyss_breaker"):
 		return
-	if float(_proc_cd.get(key, 0.0)) > 0.0:
+	if float(_proc_cd.get(key, 0.0)) > EPS:
 		return
 	var b = db.get_item("abyss_breaker").get("bash")
 	if not (b is Dictionary):
@@ -863,7 +870,7 @@ func _pierce_bash(db, target) -> void:
 	var key := "sundering_cudgel:bash"
 	if not has("sundering_cudgel"):
 		return
-	if float(_proc_cd.get(key, 0.0)) > 0.0:
+	if float(_proc_cd.get(key, 0.0)) > EPS:
 		return
 	var b = db.get_item("sundering_cudgel").get("bash")
 	if not (b is Dictionary):
@@ -966,8 +973,11 @@ func _miasma_proc(db, target, damage: float) -> void:
 
 ## Pasang/refresh racun pada satu target (cap damage per tick).
 func _apply_miasma(target, oa: Dictionary) -> void:
-	var per_tick: float = float(target.get("max_hp")) * float(oa.get("max_hp_pct_per_tick", 0.0))
-	per_tick = minf(per_tick, float(oa.get("cap_damage", 60.0)))
+	# pygame: dmg = int(max_hp * pct); dmg = max(6, min(cap, dmg))
+	# (hero_items.py:195-199) — truncation int() + floor 6 wajib,
+	# kalau tidak HP pembanding melenceng perpecahan (oracle item_procs).
+	var per_tick: float = float(int(float(target.get("max_hp")) * float(oa.get("max_hp_pct_per_tick", 0.0))))
+	per_tick = maxf(6.0, minf(per_tick, float(oa.get("cap_damage", 9999.0))))
 	for m in _miasma:
 		if m[0] == target:
 			m[1] = _sec(float(oa.get("duration", 0.0)))
@@ -1003,7 +1013,7 @@ func _empower(db, target) -> void:
 	if not has("runic_gavel"):
 		return
 	_empower_charge_init()
-	if _empower_charge > 0.0:
+	if _empower_charge > EPS:
 		return
 	var p = db.get_item("runic_gavel").get("passive")
 	if not (p is Dictionary):
@@ -1018,7 +1028,7 @@ func _empower(db, target) -> void:
 func _entangle(db, target) -> void:
 	if not has("vine_rod"):
 		return
-	if float(_proc_cd.get("vine_rod:root", 0.0)) > 0.0:
+	if float(_proc_cd.get("vine_rod:root", 0.0)) > EPS:
 		return
 	var vr = db.get_item("vine_rod").get("on_attack")
 	if not (vr is Dictionary):
