@@ -124,7 +124,7 @@ func _draw() -> void:
 		var ic := Vector2(rect.position.x + 34, rect.get_center().y)
 		draw_circle(ic + Vector2(0, 1), 17.0, Color(0, 0, 0, 0.4))
 		draw_circle(ic, 17.0, Color8(12, 14, 26))
-		UiTheme.draw_ring(ic, 17.0, accent if enabled else Color8(70, 74, 96),
+		UiTheme.draw_ring(self, ic, 17.0, accent if enabled else Color8(70, 74, 96),
 			2.0)
 		UiTheme.draw_icon(self, icon_name, ic,
 			accent if enabled else UiTheme.TEXT_FAINT, 0.9)

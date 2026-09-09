@@ -82,7 +82,7 @@ func _draw() -> void:
 	var kc := Vector2(kx, ky)
 	draw_circle(kc + Vector2(1, 2), knob * 0.5, Color8(12, 14, 24))
 	draw_circle(kc, knob * 0.5, Color8(245, 248, 255))
-	UiTheme.draw_ring(kc, knob * 0.5, edge, 1.0)
+	UiTheme.draw_ring(self, kc, knob * 0.5, edge, 1.0)
 	var lab := "ON" if is_on else "OFF"
 	var lx := rect.position.x + rect.size.x * 0.5 + (-8.0 if is_on else 8.0)
 	var f := UiTheme.font(font_style)

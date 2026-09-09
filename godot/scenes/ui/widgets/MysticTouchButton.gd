@@ -63,7 +63,7 @@ func _draw() -> void:
 		base = Color8(26, 30, 52, 235)
 	draw_circle(c + Vector2(0, 2), r, Color(0, 0, 0, 0.45))
 	draw_circle(c, r, base)
-	UiTheme.draw_ring(c, r - 1.0, accent, 2.5)
+	UiTheme.draw_ring(self, c, r - 1.0, accent, 2.5)
 	if glyph == "II":
 		var bw := r * 0.16
 		var x1 := c.x - bw * 1.2
@@ -78,7 +78,7 @@ func _draw() -> void:
 	if badge_count > 0:
 		var bc := Vector2(c.x + r * 0.62, c.y - r * 0.62)
 		draw_circle(bc, 11.0, Color8(200, 40, 52))
-		UiTheme.draw_ring(bc, 11.0, Color.WHITE, 2.0)
+		UiTheme.draw_ring(self, bc, 11.0, Color.WHITE, 2.0)
 		var f2 := UiTheme.font("body_bold")
 		var t := str(mini(badge_count, 99))
 		var bp2 := UiTheme.baseline_center(f2, t, bc, 12)

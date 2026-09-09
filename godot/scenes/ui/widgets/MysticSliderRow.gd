@@ -95,7 +95,7 @@ func _draw() -> void:
 	var kx := bx + fw
 	draw_circle(Vector2(kx, 25), 10.0, Color8(12, 14, 24))
 	draw_circle(Vector2(kx, 25), 7.0, Color8(245, 248, 255))
-	UiTheme.draw_ring(Vector2(kx, 25), 7.0, UiTheme.GOLD, 2.0)
+	UiTheme.draw_ring(self, Vector2(kx, 25), 7.0, UiTheme.GOLD, 2.0)
 	# Pill minus/plus 40x26 di kanan bar.
 	_minus_rect = Rect2(bx + bw + 12, 12, 40, 26)
 	_plus_rect = Rect2(bx + bw + 58, 12, 40, 26)

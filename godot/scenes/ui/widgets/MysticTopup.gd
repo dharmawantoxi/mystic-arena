@@ -502,7 +502,7 @@ class _Spinner extends Control:
 class _CheckRing extends Control:
 	func _draw() -> void:
 		var c := size * 0.5
-		UiTheme.draw_ring(c, 46.0, Color8(16, 60, 36), 6.0)
+		UiTheme.draw_ring(self, c, 46.0, Color8(16, 60, 36), 6.0)
 		draw_circle(c, 40.0, Color8(30, 120, 66))
 		draw_line(c + Vector2(-18, -2), c + Vector2(-4, 14),
 			Color8(140, 255, 175), 6.0, true)

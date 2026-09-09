@@ -95,7 +95,7 @@ func _draw_castle(base: Vector2, w: float) -> void:
 	for tx in [-330.0, -260.0, 260.0, 330.0]:
 		var tw := 54.0 * s
 		var th := 190.0 * s
-		var x := base.x + tx * s - tw * 0.5
+		var x: float = base.x + tx * s - tw * 0.5
 		draw_rect(Rect2(x, base.y - th, tw, th), c_far)
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(x, base.y - th),
@@ -128,7 +128,7 @@ func _draw_castle(base: Vector2, w: float) -> void:
 	for tx in [-190.0, 190.0]:
 		var tw2 := 70.0 * s
 		var th2 := 190.0 * s
-		var x2 := base.x + tx * s - tw2 * 0.5
+		var x2: float = base.x + tx * s - tw2 * 0.5
 		draw_rect(Rect2(x2, base.y - th2, tw2, th2), c_near)
 		draw_colored_polygon(PackedVector2Array([
 			Vector2(x2 - 8 * s, base.y - th2),
