@@ -310,7 +310,13 @@ func _shoot(cs) -> void:
 func _spawn_bullet(t: Node2D, dmg: float, btype: String, sp: Dictionary,
 		speed: float, col: Color) -> void:
 	var b = TowerBulletScript.new()
-	b.setup(t, dmg, team, btype, sp, speed, col, self)
+	# Pygame Bullet._on_hit (_entity.py:246-248) memanggil
+	# take_damage(damage, team, damage_type='projectile') TANPA source —
+	# peluru menara TIDAK pernah membawa penembak. Source diputus (null)
+	# supaya reflect Bristleback/Thornmail/blind/kill credit ikut paritas
+	# (semua syarat source is not None di pygame _entity.py:4699-4710 /
+	# hero_items.py:2460-2468).
+	b.setup(t, dmg, team, btype, sp, speed, col, null)
 	b.global_position = global_position + Vector2(cos(angle), sin(angle)) * 12.0 \
 		+ Vector2(0, -22)
 	GameManager.attach_fx(b)

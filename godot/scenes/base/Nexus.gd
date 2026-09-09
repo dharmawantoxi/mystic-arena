@@ -202,8 +202,12 @@ func _shoot() -> void:
 	if target == null:
 		return
 	var b = TowerBulletScript.new()
+	# Pygame Castle._shoot (_entity.py:1752-1755) membuat Bullet TANPA
+	# source dan Bullet._on_hit menerapkan take_damage(damage, team,
+	# 'projectile') tanpa source — nexus tidak pernah memberi kill credit
+	# maupun reflect (paritas Bristleback/Thornmail/blind).
 	b.setup(target, damage, team, "normal", {}, TowerDB.bullet_speed() * 0.85,
-		color_accent, self)
+		color_accent, null)
 	b.global_position = global_position + Vector2(cos(angle), sin(angle)) * 26.0
 	GameManager.attach_fx(b)
 

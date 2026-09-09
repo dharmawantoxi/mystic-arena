@@ -311,15 +311,18 @@ func try_attack():
 	if attack_range >= 80.0:
 		# Undead = ranged: proyektil (bisa ditangkis Wind Wall). pygame
 		# Minion.update menyerang INSTAN take_damage(damage, team) — NETRAL
-		# tanpa school — jadi proyektil ini juga netral; sisa deviasi
-		# (projectile vs instant) terbuka di docs/GODOT_PARITY.md.
+		# tanpa source & school (paritas _entity.py:5580-5581) — jadi
+		# proyektil ini juga netral; sisa deviasi (projectile vs instant)
+		# terbuka di docs/GODOT_PARITY.md. Source TETAP null: minion tidak
+		# pernah memberi kill credit / reflect Bristleback-Thornmail /
+		# blind (syarat source is not None di pygame).
 		var b = TowerBulletScript.new()
 		b.setup(target, dmg, team, "normal", {}, 420.0,
-			Color(0.85, 0.85, 0.95), self, "")
+			Color(0.85, 0.85, 0.95), null, "")
 		b.global_position = global_position + Vector2(0, -6)
 		GameManager.attach_fx(b)
 	else:
-		CombatSystem.apply_damage(target, dmg, team, "normal", self, "")
+		CombatSystem.apply_damage(target, dmg, team, "normal", null, "")
 
 
 func take_damage(amount: float, from_team: String = "", dmg_type: String = "normal",
@@ -352,7 +355,10 @@ func heal(amount: float) -> void:
 
 
 func die(killer_team: String = ""):
+	if is_dead:
+		return
 	is_dead = true
+	hp = 0.0
 	set_physics_process(false)
 	collision_layer = 0
 	collision_mask = 0

@@ -33,6 +33,16 @@ const DAMAGE_NUMBER_SCENE := preload("res://scenes/fx/DamageNumber.tscn")
 ## Group yang dianggap "unit" saat mencari musuh (nexus = base yang bisa dihancurkan)
 const UNIT_GROUPS: Array = ["heroes", "bosses", "minions", "towers", "nexus"]
 
+## Dispatcher kematian terpusat. pygame `take_damage` TIDAK memanggil die():
+## kematian diproses loop `Game.update` (_core.py:2196-2265). Di Godot SEMUA
+## jalur damage lewat `apply_damage`, jadi keputusan "unit ini mati" ditaruh
+## DI SINI — satu pintu — supaya pemanggil mana pun (serangan dasar, peluru
+## menara, kit boss, kit skill hero, item on-hit, cleave, reflect, ranged)
+## memicu `die()` unit yang benar + reward/popup/counter via register_*.
+## Harness mitigasi murni (mis. HeroSkillParityTest yang hanya menyentuh HP,
+## bukan kematian) menonaktifkannya — perilaku produksi tidak berubah.
+var death_dispatch_enabled: bool = true
+
 
 # ══════════════════════════════════════════════════════════
 #  QUERY UNIT
@@ -284,7 +294,8 @@ func _tower_mitigate(target, dmg: float, eff_school: String) -> float:
 ## Terapkan damage ke `target`. Return damage yang benar-benar mengurangi HP.
 ## `target.hp` diubah di sini supaya urutan mitigasi/reflect identik dengan pygame.
 func apply_damage(target, amount: float, from_team: String = "",
-		dmg_type: String = "normal", source = null, school: String = "") -> float:
+		dmg_type: String = "normal", source = null, school: String = "",
+		trigger_on_hit: bool = true) -> float:
 	if target == null or not is_instance_valid(target):
 		return 0.0
 	if bool(target.get("is_dead")):
@@ -446,10 +457,49 @@ func apply_damage(target, amount: float, from_team: String = "",
 
 	# ── 9. lifesteal + cleave + corroder penyerang (basis damage
 	# PRA-mitigasi, paritas on_basic_attack_hit pygame) ──
-	if source != null and is_instance_valid(source) and dealt > 0.0:
+	# trigger_on_hit=false: DAMAGE SKILL hero. Pygame memanggil
+	# take_damage(dmg, team, source=hero, school=...) dari _bundle.py,
+	# yang TIDAK memicu on_basic_attack_hit penyerang (jaket item on-hit
+	# hanya untuk serangan dasar); source tetap diisi supaya atribusi
+	# kill/reflect/blind/dispatch benar.
+	if trigger_on_hit and source != null and is_instance_valid(source) and dealt > 0.0:
 		_on_attacker_hit(source, target, dealt, is_physical, amount, dmg_type)
 
+	# ── 10. DISPATCH KEMATIAN — paritas loop Game.update pygame ──
+	# Pygame menandai alive=False di take_damage dan membayar reward di loop
+	# Game.update; Godot memotong DI SINI supaya jalur damage mana pun yang
+	# menulis HP <= 0 (peluru menara, kit boss, kit skill hero, item on-hit,
+	# cleave, reflect Bristleback, serangan ranged) memanggil die() unit yang
+	# benar. Urutan damping: SETELAH reflect/thornmail/on-hit penyerang —
+	# persis pygame yang masih mengeksekusi reflect saat korban "baru mati";
+	# reward tetap tepat sekali berkat guard `reward_processed` + guard
+	# `is_dead` di setiap die().
+	if death_dispatch_enabled and dmg > 0.0 and float(target.get("hp")) <= 0.0:
+		_dispatch_death(target, source, from_team)
+
 	return dealt
+
+
+## Panggil die() unit dengan argumen sesuai jenisnya (pygame: take_damage
+## tidak punya die(); Godot `die()` menerima killer/source untuk hero/boss
+## dan killer_team untuk minion/tower/nexus). Sudah mati -> no-op; unit
+## tanpa `die` (harness probe) -> no-op.
+func _dispatch_death(target, source, from_team: String) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if bool(target.get("is_dead")):
+		return
+	if not target.has_method("die"):
+		return
+	if "boss_type" in target or "hero_type" in target:
+		# Hero.die(killer) / Boss.die(killer): atribusi kill hero-vs-hero dan
+		# killed_by boss memakai OBJEK source, bukan label team.
+		target.die(source)
+	elif "tower_type" in target:
+		target.die(from_team, source)
+	else:
+		# Minion.die(killer_team) / Nexus.die(killer_team).
+		target.die(from_team)
 
 
 ## True Strike penyerang (Sundering Cudgel): serangan basic tidak pernah

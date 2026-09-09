@@ -645,12 +645,13 @@ func kit_hero_levels() -> Dictionary:
 ## e.take_damage(dmg, team[, source=, school=]) — kwargs DIPERTAHANKAN per
 ## call-site (attribution damage_dealt hanya bila source ada; sekolah
 ## menentukan armor-vs-MR). Lifesteal/cleave item TIDAK ikut: di pygame
-## damage skill tidak memicu jalur _on_attacker_hit penyerang.
+## damage skill tidak memicu jalur _on_attacker_hit penyerang (jaket
+## CombatSystem.apply_damage punya flag trigger_on_hit=false untuk ini).
 func kit_hit(e, dmg, from_team, src = null, school = "") -> void:
 	if e == null or not is_instance_valid(e):
 		return
 	var dealt := CombatSystem.apply_damage(e, float(dmg), str(from_team),
-		"normal", null, str(school) if school != null else "")
+		"normal", src, str(school) if school != null else "", false)
 	if src != null and is_instance_valid(src) and dealt > 0.0 \
 			and "damage_dealt" in src:
 		src.damage_dealt = float(src.get("damage_dealt")) + dealt

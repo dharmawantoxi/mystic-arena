@@ -106,6 +106,10 @@ func _boot() -> void:
 	GameManager.in_menu = true
 	GameManager.state = "idle"
 	GameManager.set_paused(false)
+	# Harness ini sengaja hanya menyentuh HP (floor 1.0) — dispatch
+	# kematian dari CombatSystem.apply_damage (FASE 16) dimatikan supaya
+	# jejak skill tetap murni; jalur kematian punya harness sendiri.
+	CombatSystem.death_dispatch_enabled = false
 	for row in hs["heroes"]:
 		_test_hero(str(row["hero_type"]), row)
 		if _failures > 40:
@@ -507,6 +511,7 @@ func _finish() -> void:
 	if _done:
 		return
 	_done = true
+	CombatSystem.death_dispatch_enabled = true
 	get_tree().paused = false
 	GameManager.set_paused(false)
 	GameManager.in_menu = true
