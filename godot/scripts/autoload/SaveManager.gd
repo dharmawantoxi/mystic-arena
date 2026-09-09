@@ -253,7 +253,9 @@ func _backfill() -> void:
 	for key in defaults:
 		if not data.has(key) or data[key] == null:
 			data[key] = defaults[key]
-	if not (data["unlocked_heroes"] is Array):
+	# Starter hanya Kaizen. Unlock lama tidak pernah dicabut, tetapi save
+	# kosong/malformed harus tetap mendapat starter seperti port sebelumnya.
+	if not (data["unlocked_heroes"] is Array) or data["unlocked_heroes"].is_empty():
 		data["unlocked_heroes"] = ["kaizen"]
 
 
