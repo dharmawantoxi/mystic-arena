@@ -319,7 +319,7 @@ func _pre_updates(units: Dictionary, count: int) -> void:
 				st.tick(FRAME)
 			var inv = u.get("items")
 			if inv != null:
-				var had := inv._miasma.size() > 0
+				var had: bool = inv._miasma.size() > 0
 				var cd0 := -1.0
 				if had:
 					cd0 = float(inv._miasma[0][2])
