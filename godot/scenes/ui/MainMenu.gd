@@ -1237,6 +1237,9 @@ func _build_settings() -> void:
 	sb.border_color = COL_BORDER
 	sb.set_border_width_all(2)
 	sb.set_corner_radius_all(10)
+	sb.shadow_color = Color(0.0, 0.0, 0.0, 0.5)
+	sb.shadow_size = 7
+	sb.shadow_offset = Vector2(0, 3)
 	sb.content_margin_left = 36.0
 	sb.content_margin_right = 36.0
 	sb.content_margin_top = 18.0
