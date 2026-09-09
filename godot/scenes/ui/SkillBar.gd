@@ -8,6 +8,9 @@
 # memanggil jalur yang sama (hero.cast_q/w/e/r), jadi tidak ada duplikasi logika.
 extends Control
 
+const UI_FONT: Font = preload("res://assets/fonts/Barlow-Regular.ttf")
+const UI_FONT_BOLD: Font = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+
 const SkillButtonScript = preload("res://scenes/ui/SkillButton.gd")
 const SKILL_KEYS: Array = ["q", "w", "e", "r"]
 const ITEM_SLOTS: int = 6
@@ -33,6 +36,11 @@ var _timer: float = 0.0
 
 
 func _ready() -> void:
+	var ui_theme := Theme.new()
+	ui_theme.default_font = UI_FONT
+	ui_theme.set_font("font", "Label", UI_FONT)
+	ui_theme.set_font("font", "Button", UI_FONT_BOLD)
+	theme = ui_theme
 	name = "SkillBar"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)

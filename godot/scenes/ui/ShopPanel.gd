@@ -10,6 +10,9 @@
 # maupun state unit, jadi keyboard dan mouse memakai jalur yang sama.
 extends Control
 
+const UI_FONT: Font = preload("res://assets/fonts/Barlow-Regular.ttf")
+const UI_FONT_BOLD: Font = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+
 const TABS: Array = [["tower", "MENARA"], ["item", "ITEM"],
 	["hero", "HERO"], ["nexus", "NEXUS"]]
 const ITEM_COLUMNS := 3
@@ -35,6 +38,11 @@ var _refresh_timer: float = 0.0
 
 
 func _ready() -> void:
+	var ui_theme := Theme.new()
+	ui_theme.default_font = UI_FONT
+	ui_theme.set_font("font", "Label", UI_FONT)
+	ui_theme.set_font("font", "Button", UI_FONT_BOLD)
+	theme = ui_theme
 	name = "ShopPanel"
 	# root tembus klik; yang menahan klik hanya _panel (biar arena tetap bisa
 	# diklik saat toko terbuka)

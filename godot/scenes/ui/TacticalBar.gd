@@ -21,6 +21,9 @@
 # sorot warna, font persis sidepanel) = aproksimasi, BELUM TERUJI.
 extends Control
 
+const UI_FONT: Font = preload("res://assets/fonts/Barlow-Regular.ttf")
+const UI_FONT_BOLD: Font = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+
 const COMMANDS: Array = [
 	["gather", "GATHER [G]", Color(0.39, 0.62, 1.0)],
 	["protect_tower", "PROTECT TOWER [T]", Color(0.40, 0.90, 0.47)],
@@ -40,6 +43,11 @@ var _held: Dictionary = {}
 var _timer: float = 0.0
 
 func _ready() -> void:
+	var ui_theme := Theme.new()
+	ui_theme.default_font = UI_FONT
+	ui_theme.set_font("font", "Label", UI_FONT)
+	ui_theme.set_font("font", "Button", UI_FONT_BOLD)
+	theme = ui_theme
 	name = "TacticalBar"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_to_group("tactical_bar")
