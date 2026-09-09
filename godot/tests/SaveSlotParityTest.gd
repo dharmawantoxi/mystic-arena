@@ -631,7 +631,7 @@ func _compare(got, want, tag: String) -> void:
 ## Serialisasi kanonik nilai: dipakai `_compare` supaya perbandingan
 ## kebal terhadap urutan kunci dan terhadap float/int hasil parse JSON.
 func _canon(value) -> String:
-	var v := _norm(value)
+	var v = _norm(value)
 	var t := typeof(v)
 	if t == TYPE_DICTIONARY:
 		var d := v as Dictionary
