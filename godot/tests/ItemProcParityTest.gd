@@ -316,6 +316,15 @@ func _pre_updates(units: Dictionary, count: int) -> void:
 			var inv = u.get("items")
 			if inv != null:
 				inv.tick(FRAME)
+				# DEBUG SEMENTARA (diagnosa CI): state miasma per tick.
+				if inv._miasma.size() > 0:
+					print("[IPROC-DBG] f%d %s owner=%s inv=%s arr_len=%d tick_cd=%.6f timer=%.3f dmg=%.1f hp=%.1f" % [
+						_i, tag, u.get("hero_type"), inv.get_instance_id(),
+						inv._miasma.size(), float(inv._miasma[0][2]),
+						float(inv._miasma[0][1]), float(inv._miasma[0][3]),
+						float(u.get("hp"))])
+			elif OS.is_debug_build():
+				print("[IPROC-DBG] %s inv NULL" % tag)
 
 
 ## Peluru milik `atk` yang paling baru ter-spawn (satu per serangan pada
