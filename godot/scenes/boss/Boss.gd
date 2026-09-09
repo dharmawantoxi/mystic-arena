@@ -392,6 +392,10 @@ func _callout(text: String, critical: bool = true) -> void:
 
 
 func _shake(amount: float) -> void:
+	# Toggle SETTINGS "Screen Shake" (paritas GameSettings.screen_shake_
+	# enabled pygame) — dimatikan = semua guncangan kamera di-skip.
+	if not GameManager.screen_shake_enabled:
+		return
 	var tree := Engine.get_main_loop()
 	if tree is SceneTree:
 		(tree as SceneTree).call_group("camera", "add_trauma", amount / 60.0)

@@ -48,7 +48,10 @@ const THROTTLE_DEFAULT := 50
 ## Volume master pygame (SoundManager.master_volume _system.py:493). Semua
 ## suara pygame = master × kategori × volume_mult, jadi tanpa pengali ini
 ## Godot terdengar ~43% lebih keras daripada pygame.
-const MASTER_VOLUME := 0.7
+const MASTER_VOLUME_DEFAULT := 0.7
+## Nilai RUNTIME — pygame punya slider "Master Volume" di SETTINGS; port
+## Godot mematahkannya lewat settings key "master" (apply_settings).
+var master_volume: float = MASTER_VOLUME_DEFAULT
 
 ## Volume kategori 'ambient' pygame (SoundManager.ambient_volume
 ## _system.py:497). Sengaja TIDAK dibaca dari SaveManager: pygame juga tidak
@@ -175,6 +178,7 @@ func _scan_sounds() -> void:
 
 ## Volume dari save (menu SETTINGS menggeser slider -> sini).
 func apply_settings() -> void:
+	master_volume = SaveManager.get_setting("master", MASTER_VOLUME_DEFAULT)
 	sfx_volume = SaveManager.get_setting("sfx", 0.6)
 	bgm_volume = SaveManager.get_setting("bgm", 0.35)
 	_apply_playing_volumes()
@@ -184,11 +188,11 @@ func apply_settings() -> void:
 ## Tidak ada tulis file di sini — SaveManager hanya dibaca, jadi menggeser
 ## slider SETTINGS tidak memicu I/O per frame.
 func _apply_playing_volumes() -> void:
-	_bgm_player.volume_db = _db(MASTER_VOLUME * bgm_volume)
+	_bgm_player.volume_db = _db(master_volume * bgm_volume)
 	if _ambient_player != null and _ambient_player.playing:
 		_ambient_player.volume_db = _ambient_db()
 	for p in _sfx_players:
-		p.volume_db = _db(MASTER_VOLUME * sfx_volume)
+		p.volume_db = _db(master_volume * sfx_volume)
 
 
 ## Volume linear -> dB dengan clamp (0 linear = -80 dB, bukan -inf).
@@ -216,7 +220,7 @@ func play_bgm(track_name: String, fade_sec: float = 1.5) -> void:
 	_current_bgm = track_name
 	_bgm_player.stream = _streams[track_name]
 	# pygame play_bgm: set_volume(master_volume * bgm_volume) — _system.py:632
-	_bgm_player.volume_db = _db(MASTER_VOLUME * bgm_volume)
+	_bgm_player.volume_db = _db(master_volume * bgm_volume)
 	_bgm_player.play()
 	if fade_sec > 0.0:
 		# fade-in sederhana (pygame pakai fade_ms; di Godot tween volume)
@@ -238,7 +242,7 @@ func stop_bgm(fade_sec: float = 0.5) -> void:
 
 func _bgm_stop_now() -> void:
 	_bgm_player.stop()
-	_bgm_player.volume_db = _db(MASTER_VOLUME * bgm_volume)
+	_bgm_player.volume_db = _db(master_volume * bgm_volume)
 
 
 func pause_bgm(paused: bool) -> void:
@@ -262,7 +266,7 @@ func pause_bgm(paused: bool) -> void:
 
 ## Volume akhir ambient dalam dB (master × ambient × volume_mult call site).
 func _ambient_db(mult: float = AMBIENT_MULT) -> float:
-	return _db(MASTER_VOLUME * AMBIENT_VOLUME * mult)
+	return _db(master_volume * AMBIENT_VOLUME * mult)
 
 
 ## Mulai loop ambient. GameManager.start_level() memanggilnya tiap masuk
@@ -348,7 +352,7 @@ func play_sfx(sound_name: String, volume_mult: float = 1.0, force: bool = false)
 	for p in _sfx_players:
 		if not p.playing:
 			p.stream = _streams[sound_name]
-			p.volume_db = _db(MASTER_VOLUME * sfx_volume * volume_mult)
+			p.volume_db = _db(master_volume * sfx_volume * volume_mult)
 			p.play()
 			return
 
@@ -382,7 +386,7 @@ func play_combat(kind: String, volume_mult: float = 1.0) -> bool:
 		if not p.playing:
 			p.stream = _streams[kind]
 			# combat_audio: dasar × volume_mult × (master × sfx_volume)
-			p.volume_db = _db(MASTER_VOLUME * sfx_volume
+			p.volume_db = _db(master_volume * sfx_volume
 				* float(cfg["volume"]) * volume_mult)
 			p.play()
 			_last_played_ms[kind] = now

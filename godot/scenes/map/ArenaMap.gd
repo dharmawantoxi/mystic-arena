@@ -42,6 +42,8 @@ extends Node2D
 # Shop positions (mirip _render.py radiant/dire)
 var radiant_shop_pos := Vector2(340, 540)
 var dire_shop_pos := Vector2(940, 180)
+## Radius klik bangunan toko — paritas `shop_size = 60` (_render.py:109).
+const SHOP_CLICK_RADIUS := 60.0
 
 # Base positions (paritas _core.BLUE_BASE_X/Y, RED_BASE_X/Y)
 const BLUE_BASE := Vector2(100, 620)
@@ -932,6 +934,17 @@ func get_enemy_base(team: String) -> Vector2:
 
 
 ## Base sendiri (dipakai Hero untuk retreat + regen 180 HP/s di radius 100)
+## Paritas MapRenderer.get_clicked_shop (_render.py:246-260):
+## "item" = bangunan Radiant (ITEM FORGE, dekat base biru), "hero" =
+## bangunan Dire (HERO SHOP, dekat base merah), "" = tidak kena.
+func get_clicked_shop(pos: Vector2) -> String:
+	if pos.distance_to(radiant_shop_pos) <= SHOP_CLICK_RADIUS:
+		return "item"
+	if pos.distance_to(dire_shop_pos) <= SHOP_CLICK_RADIUS:
+		return "hero"
+	return ""
+
+
 func get_own_base(team: String) -> Vector2:
 	return BLUE_BASE if team == "blue" else RED_BASE
 

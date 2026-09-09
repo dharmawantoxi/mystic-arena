@@ -113,6 +113,10 @@ static func _connect_once(sig: Signal, p_callable: Callable) -> void:
 func _ready():
 	_arena_map = get_node_or_null(^"ArenaMap")
 	_camera = get_node_or_null(^"Camera2D")
+	# Grup "camera" dibaca Boss._shake (screen shake) lewat call_group —
+	# tanpa mendaftarkan di sini, semua screen shake pygame menjadi no-op.
+	if _camera != null:
+		_camera.add_to_group("camera")
 	_frame_camera()
 	_build_slot_layer()
 	var popups = preload("res://scenes/fx/WorldPopups.gd").new()
@@ -125,6 +129,11 @@ func _ready():
 		_connect_once(menu.play_requested, _on_menu_play)
 		_connect_once(menu.resume_requested, _on_menu_resume)
 		_connect_once(menu.main_menu_requested, _on_menu_main_menu)
+		_connect_once(menu.menu_coverage_changed, _apply_menu_coverage)
+		# Emit pertama terjadi di MainMenu._ready (sebelum koneksi di atas),
+		# jadi sinkronkan state saat ini SEKARANG — kalau dilewatkan, boot
+		# menampilkan arena+HUD di belakang/sebelah layar menu (berantakan).
+		_apply_menu_coverage(menu.is_open(), menu.state == menu.State.PAUSE)
 	# Tetap dapat kunci walau SceneTree di-pause (P/ESC). Karena anak men-inherit,
 	# node yang mensimulasikan unit harus dipaksa PAUSABLE supaya get_tree().paused
 	# sungguh-sungguh membekukan hero/minion.
@@ -722,8 +731,15 @@ func _on_click(pos: Vector2) -> void:
 	if GameManager.state != "playing" or get_tree().paused:
 		return
 	# Prioritas klik paritas _handle_left_click (_core.py:7811-7879):
-	# slot -> nexus -> hero biru -> perintah hero -> menara biru -> deselect.
-	# (Bangunan toko pygame tak ada di Godot — toko dibuka H.)
+	# BANGUNAN TOKO -> slot -> nexus -> hero biru -> perintah hero ->
+	# menara biru -> deselect.
+	# (1) Bangunan toko di map (paritas get_clicked_shop _render.py:246-260):
+	# Radiant = ITEM FORGE (tab ITEM), Dire = HERO SHOP (tab HERO).
+	if _arena_map != null and _arena_map.has_method("get_clicked_shop"):
+		var which := _arena_map.get_clicked_shop(pos)
+		if which != "":
+			_open_shop_tab(which)
+			return
 	var slot_idx := _pick_slot(pos)
 	if slot_idx >= 0:
 		GameManager.select_slot_index(slot_idx)
@@ -760,6 +776,17 @@ func _on_click(pos: Vector2) -> void:
 	GameManager.clear_selection()
 	GameManager.close_shop()
 
+
+## Buka toko pada tab tertentu (dipakai bangunan toko di map). Kalau toko
+## sudah terbuka di tab lain, tutup dulu baru buka — open_shop() memang
+## no-op (tanpa emit) saat sudah terbuka, jadi tanpa reset tab tidak
+## berpindah. SFX ui_click 0.5 = paritas call site pygame.
+func _open_shop_tab(tab_id: String) -> void:
+	if GameManager.shop_open:
+		GameManager.close_shop()
+	GameManager.requested_shop_tab = tab_id
+	GameManager.open_shop()
+	AudioManager.play_sfx("ui_click", 0.5)
 
 ## Klik kanan: tutup toko + gerakkan hero terpilih (paritas
 ## _handle_right_click: close_popup + move_to kalau hero hidup).
@@ -929,6 +956,24 @@ func _on_menu_main_menu() -> void:
 	if menu != null and menu.has_method("show_main"):
 		menu.show_main()
 	print("[Main] kembali ke menu utama")
+
+## Menu non-PAUSE menutupi layar PENUH: arena, unit, slot, dan HUD
+## disembunyikan sehingga tidak ada kemungkinan layout "menu di samping
+## arena". PAUSE = arena BEKU tetap kelihatan di belakang dim menu
+## (paritas pygame: pause menggambar frame game terakhir + overlay).
+func _apply_menu_coverage(covers: bool, is_pause: bool) -> void:
+	# Non-PAUSE: sembunyikan total. PAUSE: arena + HUD tetap tampil,
+	# menu hanya menambah lapisan dim gelap di atasnya.
+	var game_visible := not covers or is_pause
+	for path in [^"ArenaMap", ^"Containers", ^"FX"]:
+		var n := get_node_or_null(path)
+		if n != null:
+			n.visible = game_visible
+	if _slot_layer != null:
+		_slot_layer.visible = game_visible
+	var hud := get_node_or_null(^"UI/HUD")
+	if hud != null:
+		hud.visible = game_visible
 
 func _cycle_theme() -> void:
 	if _arena_map == null or not _arena_map.has_method("cycle_theme"):

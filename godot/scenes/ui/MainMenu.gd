@@ -18,12 +18,23 @@ extends Control
 signal play_requested(level_num: int)
 signal resume_requested
 signal main_menu_requested
+## Dipancarkan tiap kali menu dibuka/ditutup/diganti state — Main.gd
+## menyembunyikan arena+HUD selama menu non-PAUSE menutupi layar penuh
+## (layar berantakan "menu di samping arena" tidak boleh bisa terjadi),
+## dan menampilkan arena beku di belakang dim selama PAUSE (paritas
+## pygame: pause = frame game beku + overlay gelap + panel).
+signal menu_coverage_changed(covers: bool, is_pause: bool)
 
 ## Paritas MenuState _core.py:3099-3105 — SEMUA state termasuk SLOT_SELECT
 ## (FASE 21: multi-slot save + migrasi legacy sudah diport).
 enum State { MAIN, SLOT_SELECT, LEVEL_SELECT, HERO_SHOP, SETTINGS, HOW_TO_PLAY, CREDITS, PAUSE }
 
-const COL_BG := Color(0.031, 0.033, 0.058, 0.985)
+## Layar menu non-PAUSE = LAYAR PENUH opak total (arena di belakangnya
+## disembunyikan Main.gd — alpha 1.0 jadi tidak ada celah transparansi).
+const COL_BG := Color(0.031, 0.033, 0.058, 1.0)
+## PAUSE = dim gelap semi-transparan di atas arena BEKU (paritas pygame
+## pause menu yang menggambar frame game terakhir + overlay gelap).
+const COL_BG_PAUSE := Color(0.031, 0.033, 0.058, 0.62)
 const COL_PANEL := Color(0.045, 0.05, 0.085, 0.97)
 const COL_BORDER := Color(1.0, 0.804, 0.333, 0.9)
 const COL_TEXT := Color(0.86, 0.9, 1.0)
@@ -68,6 +79,7 @@ var state: int = State.MAIN
 var from_pause: bool = false
 
 var _bg: PanelContainer = null
+var _bg_style: StyleBoxFlat = null
 var _root: VBoxContainer = null      # dibangun ulang tiap ganti state
 var _confirm: PanelContainer = null  # dialog keluar (paritas exit_confirm)
 var _pause_panel: PanelContainer = null # panel pause 400x400 (anak MainMenu)
@@ -87,7 +99,17 @@ func _ready() -> void:
 	# Harus tetap hidup saat SceneTree di-pause (menu PAUSE dibuka justru
 	# ketika get_tree().paused = true).
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Layar PENUH eksplisit (anchors + offsets): backdrop menu tidak boleh
+	# pernah lebih kecil dari viewport — bug layout lama membuat menu
+	# menempel di kiri layar sementara arena+HUD tetap kelihatan di samping.
+	anchor_left = 0.0
+	anchor_top = 0.0
+	anchor_right = 1.0
+	anchor_bottom = 1.0
+	offset_left = 0.0
+	offset_top = 0.0
+	offset_right = 0.0
+	offset_bottom = 0.0
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_backdrop()
 	_show(State.MAIN)
@@ -115,6 +137,7 @@ func show_main() -> void:
 
 func close() -> void:
 	hide()
+	menu_coverage_changed.emit(false, false)
 
 
 # ══════════════════════════════════════════════════════════
@@ -142,6 +165,8 @@ func _handle_escape() -> void:
 		_confirm.visible = false
 		return
 	if _slot_delete_confirm > 0:
+		# Bug lama: di sini flag tidak di-reset, jadi tiap _show() berikutnya
+		# membangun ulang dialog hapus di atas kartu.
 		_slot_delete_confirm = -1
 		return
 	match state:
@@ -165,7 +190,17 @@ func _handle_escape() -> void:
 func _build_backdrop() -> void:
 	_bg = PanelContainer.new()
 	_bg.name = "Backdrop"
-	_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# anchors + offsets eksplisit (bukan set_anchors_preset saja): panel
+	# backdrop WAJIB menutup seluruh viewport — tanpa offset eksplisit ada
+	# risiko rect tetap 0x0 di beberapa urutan layout.
+	_bg.anchor_left = 0.0
+	_bg.anchor_top = 0.0
+	_bg.anchor_right = 1.0
+	_bg.anchor_bottom = 1.0
+	_bg.offset_left = 0.0
+	_bg.offset_top = 0.0
+	_bg.offset_right = 0.0
+	_bg.offset_bottom = 0.0
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = COL_BG
 	sb.border_color = COL_BORDER
@@ -175,6 +210,7 @@ func _build_backdrop() -> void:
 	sb.content_margin_right = 44.0
 	sb.content_margin_top = 18.0
 	sb.content_margin_bottom = 14.0
+	_bg_style = sb
 	_bg.add_theme_stylebox_override("panel", sb)
 	add_child(_bg)
 
@@ -184,6 +220,11 @@ func _build_backdrop() -> void:
 func _show(new_state: int) -> void:
 	state = new_state
 	show()
+	# Warna backdrop per state + status penutupan terhadap arena (Main.gd
+	# yang mengikuti: non-PAUSE = arena disembunyikan, PAUSE = arena beku
+	# di belakang dim).
+	if _bg_style != null:
+		_bg_style.bg_color = COL_BG_PAUSE if new_state == State.PAUSE else COL_BG
 	if _root != null:
 		_root.queue_free()
 	# dialog konfirmasi keluar tidak boleh nyangkut di state baru (pygame
@@ -217,6 +258,7 @@ func _show(new_state: int) -> void:
 			_build_pause()
 		_:
 			_build_main()
+	menu_coverage_changed.emit(true, state == State.PAUSE)
 
 
 ## Judul layar (paritas ui_theme.screen_title) + tombol KEMBALI di kanan.
@@ -711,6 +753,14 @@ func _build_level_select() -> void:
 	for lv_data in BossDB.levels:
 		if lv_data is Dictionary:
 			grid.add_child(_level_card(lv_data))
+	if BossDB.levels.is_empty():
+		# levels.json belum ada/belum dikonversi — layar level select harus
+		# menjelaskan, bukan hening.
+		var warn := Label.new()
+		warn.text = "LEVELS JSON BELUM DIMUAT — jalankan dulu:\npython tools/convert_to_godot.py"
+		warn.add_theme_color_override("font_color", COL_RED)
+		warn.add_theme_font_size_override("font_size", 14)
+		grid.add_child(warn)
 
 
 ## ═══ FASE 20 — helper stat kartu level (paritas _core.py:4257-4278) ═══
@@ -1012,8 +1062,13 @@ func _build_hero_shop() -> void:
 		shown += 1
 	if shown == 0:
 		var empty := Label.new()
-		empty.text = "Tidak ada hero di kategori ini."
-		empty.add_theme_color_override("font_color", COL_DIM)
+		# Katalog kosong = data belum dikonversi — jangan biarkan layar
+		# "kosong diam-diam"; tunjukkan penyebab + perbaikannya.
+		empty.text = "Tidak ada hero di kategori ini." if not HeroDB.heroes.is_empty() \
+			else "heroes.json BELUM DIMUAT — jalankan dulu: python tools/convert_to_godot.py"
+		empty.add_theme_color_override("font_color",
+			COL_DIM if not HeroDB.heroes.is_empty() else COL_RED)
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		grid.add_child(empty)
 
 
@@ -1143,6 +1198,11 @@ func _try_unlock_hero(hero_type: String) -> void:
 #  SETTINGS (paritas _draw_settings _core.py:6221-6390, kolom AUDIO)
 # ══════════════════════════════════════════════════════════
 
+## Layout 2 kolom — paritas struktur _draw_settings pygame
+## (_core.py:6221-6390): KOLOM KIRI = AUDIO + CLOUD SAVE, KOLOM KANAN =
+## GAMEPLAY + DANGER ZONE. Opsi yang tidak punya padanan kerja di port
+## Godot (voice, game speed, language, FPS limit) sengaja TIDAK
+## dipalsukan — ditulis sebagai catatan apa adanya.
 func _build_settings() -> void:
 	_screen_header("PENGATURAN", State.PAUSE if from_pause else State.MAIN)
 
@@ -1154,50 +1214,152 @@ func _build_settings() -> void:
 	sb.border_color = COL_BORDER
 	sb.set_border_width_all(2)
 	sb.set_corner_radius_all(10)
-	sb.content_margin_left = 40.0
-	sb.content_margin_right = 40.0
-	sb.content_margin_top = 20.0
-	sb.content_margin_bottom = 20.0
+	sb.content_margin_left = 36.0
+	sb.content_margin_right = 36.0
+	sb.content_margin_top = 18.0
+	sb.content_margin_bottom = 18.0
 	panel.add_theme_stylebox_override("panel", sb)
 	_root.add_child(panel)
 
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 18)
-	panel.add_child(box)
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 36)
+	panel.add_child(cols)
 
-	var audio_header := Label.new()
-	audio_header.text = "AUDIO"
-	audio_header.add_theme_font_size_override("font_size", 18)
-	audio_header.add_theme_color_override("font_color", Color(0.5, 0.85, 0.95))
-	box.add_child(audio_header)
-	# pygame punya 4 slider (master/sfx/bgm/voice); port Godot baru punya bus
-	# sfx + bgm, jadi cuma 2 yang benar-benar berfungsi — sisanya jangan dipalsukan.
-	box.add_child(_volume_slider("Volume SFX", "sfx"))
-	box.add_child(_volume_slider("Volume Musik (BGM)", "bgm"))
+	# ── KOLOM KIRI: AUDIO + CLOUD SAVE ──
+	var left := VBoxContainer.new()
+	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left.add_theme_constant_override("separation", 12)
+	cols.add_child(left)
+	left.add_child(_settings_header("AUDIO"))
+	# pygame: master/sfx/bgm/voice. Port Godot punya master + sfx + bgm
+	# (voice TIDAK ada — semua audio di repo pygame adalah SFX/BGM, tidak
+	# ada file voice, jadi slider-nya tidak akan berfungsi dan tidak
+	# dipasang).
+	left.add_child(_volume_slider("Volume Master", "master", 0.7))
+	left.add_child(_volume_slider("Volume SFX", "sfx", 0.6))
+	left.add_child(_volume_slider("Volume Musik (BGM)", "bgm", 0.35))
 
-	var note := Label.new()
-	note.text = "Volume disimpan di SaveManager.data[\"settings\"] dan langsung " \
-		+ "diterapkan ke AudioManager. Difficulty diganti di layar PILIH LEVEL " \
-		+ "(sebelum mulai pertandingan)."
+	left.add_child(_settings_header("CLOUD SAVE"))
+	var cloud := Label.new()
+	cloud.text = "Cloud save (Play Games) belum di-port ke Godot — progres " \
+		+ "disimpan di 3 SLOT LOKAL (layar PILIH SLOT). Upload/_download " \
+		+ "manual tersedia di versi Pygame."
+	cloud.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	cloud.add_theme_font_size_override("font_size", 11)
+	cloud.add_theme_color_override("font_color", COL_DIM)
+	left.add_child(cloud)
+	var cloud_pad := Control.new()
+	cloud_pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left.add_child(cloud_pad)
 
-	# ── HAPUS SAVE (paritas tombol RESET SAVE _core.py:7012-7016 yang
-	# menghapus SLOT AKTIF, lengkap dengan dialog konfirmasinya) ──
-	var danger := Label.new()
-	danger.text = "PROGRESI"
-	danger.add_theme_font_size_override("font_size", 18)
-	danger.add_theme_color_override("font_color", Color(0.5, 0.85, 0.95))
-	box.add_child(danger)
-	box.add_child(_make_button(
+	# ── KOLOM KANAN: GAMEPLAY + PROGRESI ──
+	var right := VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 12)
+	cols.add_child(right)
+	right.add_child(_settings_header("GAMEPLAY"))
+
+	# Difficulty: pygame menggemboknya sampai semua level selesai dan
+	# menggantinya lewat settings; port Godot memutuskannya di layar PILIH
+	# LEVEL (sedikit di atas grid) — tampilkan nilai aktif + arahnya.
+	var diff_row := HBoxContainer.new()
+	diff_row.add_theme_constant_override("separation", 10)
+	var diff_label := Label.new()
+	diff_label.text = "Difficulty"
+	diff_label.custom_minimum_size = Vector2(200, 0)
+	diff_label.add_theme_font_size_override("font_size", 14)
+	diff_label.add_theme_color_override("font_color", COL_TEXT)
+	diff_row.add_child(diff_label)
+	var diff_val := Label.new()
+	diff_val.text = "MODE: %s" % HudLayout.mode_label(GameManager.difficulty)
+	diff_val.add_theme_font_size_override("font_size", 14)
+	diff_val.add_theme_color_override("font_color",
+		HudLayout.mode_color(GameManager.difficulty))
+	diff_row.add_child(diff_val)
+	right.add_child(diff_row)
+	var diff_note := Label.new()
+	diff_note.text = "Dipilih di layar PILIH LEVEL, sebelum match dimulai."
+	diff_note.add_theme_font_size_override("font_size", 11)
+	diff_note.add_theme_color_override("font_color", COL_DIM)
+	right.add_child(diff_note)
+
+	# Screen shake — paritas toggle pygame "Screen Shake"
+	# (GameSettings.screen_shake_enabled); kini BENAR-BENAR berfungsi:
+	# Camera2D masuk grup "camera" (Main._ready) + guard di Boss._shake.
+	right.add_child(_make_toggle(
+		"Screen Shake", "screen_shake", 1.0,
+		func(): _show(State.SETTINGS)))
+	# Damage numbers — paritas toggle pygame "Damage Numbers"; flag sudah
+	# dikonsumsi WorldPopups (start_level), kini bisa diubah live.
+	right.add_child(_make_toggle(
+		"Damage Numbers", "damage_numbers_enabled", 1.0,
+		func(): _show(State.SETTINGS)))
+
+	var gp_pad := Control.new()
+	gp_pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right.add_child(gp_pad)
+
+	# ── PROGRESI (paritas DANGER ZONE: RESET SAVE SLOT) ──
+	right.add_child(_settings_header("PROGRESI"))
+	# Hapus SLOT AKTIF (paritas tombol RESET SAVE _core.py:7012-7016)
+	# lengkap dengan dialog konfirmasinya.
+	right.add_child(_make_button(
 		"HAPUS SAVE GAME %d" % SaveManager.get_current_slot(), COL_RED,
 		_open_slot_delete_dialog.bind(SaveManager.get_current_slot()),
 		Vector2(320, 36), 14))
+	var note := Label.new()
+	note.text = "Volume & toggle disimpan di SaveManager.data[\"settings\"] " \
+		+ "per slot dan langsung berlaku."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_font_size_override("font_size", 11)
 	note.add_theme_color_override("font_color", COL_DIM)
-	box.add_child(note)
+	right.add_child(note)
 
 
-func _volume_slider(label_text: String, key: String) -> Control:
+func _settings_header(text: String) -> Label:
+	var h := Label.new()
+	h.text = text
+	h.add_theme_font_size_override("font_size", 18)
+	h.add_theme_color_override("font_color", Color(0.5, 0.85, 0.95))
+	return h
+
+
+## Toggle tombol (paritas _draw_toggle_setting pygame): teks
+## "● LABEL: AKTIF/MATIU" — status dari SaveManager settings (float 0/1).
+func _make_toggle(label_text: String, key: String, default_on: float,
+		refresh: Callable) -> Button:
+	var on := SaveManager.get_setting(key, default_on) > 0.5
+	var b := Button.new()
+	b.name = "Toggle_" + key
+	b.custom_minimum_size = Vector2(360, 38)
+	b.add_theme_font_size_override("font_size", 14)
+	var accent := COL_GREEN if on else COL_LOCKED
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(accent.r, accent.g, accent.b, 0.13)
+	normal.border_color = Color(accent.r, accent.g, accent.b, 0.75)
+	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(6)
+	var hover := normal.duplicate()
+	hover.bg_color = Color(accent.r, accent.g, accent.b, 0.3)
+	b.add_theme_stylebox_override("normal", normal)
+	b.add_theme_stylebox_override("hover", hover)
+	b.add_theme_stylebox_override("pressed", hover)
+	b.add_theme_color_override("font_color", accent)
+	b.text = "●  %s: %s" % [label_text.to_upper(), "AKTIF" if on else "MATIU"]
+	b.pressed.connect(func():
+		var now := SaveManager.get_setting(key, default_on) > 0.5
+		if key == "screen_shake":
+			GameManager.set_screen_shake(not now)
+		elif key == "damage_numbers_enabled":
+			GameManager.set_damage_numbers(not now)
+		SaveManager.set_setting(key, 0.0 if now else 1.0, true)
+		AudioManager.play_sfx("ui_click", 0.5)
+		refresh.call()
+	)
+	return b
+
+
+func _volume_slider(label_text: String, key: String, default_vol: float = 0.6) -> Control:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	var label := Label.new()
@@ -1210,7 +1372,7 @@ func _volume_slider(label_text: String, key: String) -> Control:
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.05
-	slider.value = SaveManager.get_setting(key, 0.6)
+	slider.value = SaveManager.get_setting(key, default_vol)
 	slider.custom_minimum_size = Vector2(420, 24)
 	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var value_label := Label.new()
