@@ -547,6 +547,24 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   `gen_hero_skill_kit --check`, dan `check_bosskit_scope`. Langkah CI
   baru **4l** menjalankan `DeathDispatchParityTest --quit-after 600` di
   user-data terisolasi melalui `godot_log_gate.py`.
+  Ronde CI pertama menemukan **tiga drift harness nyata** yang semuanya
+  sudah diperbaiki (bukan dilonggarkan): (1) `Hero.__init__` menskala
+  `base_hp`/`base_damage` lewat `hero_balance.starter_catchup_stats`
+  dengan input `game_instance.purchased_heroes` (`_entity.py:3355-3360`) —
+  `make_match_scoring_fixture` (FASE 13) membeli hero dan **tidak
+  memulihkan** `__main__.game_instance`, sehingga di proses yang sama
+  grimjaw lahir 1093/dmg 41 alih-alih 1120/42; kini `purchased_heroes`
+  di-pin kosong di oracle dan `GameManager.purchased_heroes = []` di
+  harness Godot; (2) `Hero._passive_heal` 0.15/frame (`_entity.py:3763-3766`)
+  menggeser HP korban yang selamat tiap frame — dibekukan di oracle,
+  paritas harness Godot yang men-`set_physics_process(false)` sehingga
+  `PASSIVE_HEAL_PER_SEC` tidak jalan; (3) selisih 1 damage pada troll
+  (763 vs 762) dan Thorne (1958 vs 1957) ternyata **gejala** dari (1),
+  bukan bug mitigasi armor — hilang setelah catch-up di-pin. Setelah
+  perbaikan, seluruh nilai yang di-flag CI cocok dengan keluaran Godot
+  (h0 1120, m0 762, h0 486, h1 1957, attacker 1113, korban 471) dan
+  perubahan fixture tetap **terkurung di seksi `death_dispatch`**
+  (47 baris, semua ≥ baris 102801; seksi lain byte-identik).
   **Yang TIDAK terverifikasi lokal, eksplisit:** binary Godot 4.3 tidak
   bisa diperoleh di sandbox (release-assets.githubusercontent.com,
   downloads.godotengine.org, conda/ghcr/nix/nuget semuanya diblokir;

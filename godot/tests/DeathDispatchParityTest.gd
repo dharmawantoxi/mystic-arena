@@ -182,6 +182,12 @@ func _reset(overrides: Dictionary = {}) -> void:
 	GameManager.set_paused(false)
 	GameManager.is_replay = false
 	GameManager.level_number = 1
+	# Input catch-up DI-PIN kosong, paritas `game.purchased_heroes = []` di
+	# oracle: Hero membaca base_hp/base_damage lewat
+	# hero_balance.starter_catchup_stats(GameManager.catchup_unlocks())
+	# (Hero.gd:_catchup_unlocks). Tanpa pin, stat hero mengikuti isi save
+	# harness dan `pre` tidak akan cocok (grimjaw 1093 vs 1120).
+	GameManager.purchased_heroes = []
 	GameManager.world_popups.reset()
 	# FX kontak hit diisolasi dari klaster ini (oracle pygame tidak
 	# membandingkan damage number di sini). Popup gold tetap hidup.

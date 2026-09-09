@@ -5175,6 +5175,11 @@ def make_death_dispatch_fixture(core, entity):
     masih menyisakan HP > 0 TIDAK boleh membayar apa pun, dan mayat yang
     dipukul ulang TIDAK boleh membayar dua kali.
 
+    Dua hal dibekukan harness di KEDUA engine supaya yang dibandingkan murni
+    dispatch: regen (passive heal hero 0.15/frame + regen minion) dan input
+    catch-up stat (`purchased_heroes` di-pin kosong — tanpa ini stat hero
+    mengikuti sisa save dari fase fixture sebelumnya di proses yang sama).
+
     Inventario item dibiarkan KOSONG supaya tidak ada situs RNG sama sekali
     (roll_crit berhenti di `chance <= 0` hero_items.py:2477-2478, evasion /
     blind / block hanya roll saat peluangnya > 0). Karena itu fixture ini
@@ -5230,6 +5235,16 @@ def make_death_dispatch_fixture(core, entity):
             game.state = "playing"
             game.level_intro = game.boss_intro = game.boss_death = None
             game.effects = rend.EffectManager()
+            # Input catch-up DI-PIN kosong. Hero.__init__ menskala base_hp/
+            # base_damage lewat hero_balance.starter_catchup_stats(_unlocks)
+            # (_entity.py:3355-3360), dan _unlocks dibaca dari
+            # game_instance.purchased_heroes. Tanpa pin ini stat hero diam-diam
+            # mengikuti sisa save yang ditinggalkan fase fixture SEBELUMNYA di
+            # proses yang sama (make_match_scoring_fixture membeli hero dan
+            # tidak memulihkan __main__.game_instance): grimjaw jadi
+            # hp 1093/dmg 41, bukan 1120/42. Godot mengunci sisi yang sama
+            # lewat GameManager.purchased_heroes = [] di harness.
+            game.purchased_heroes = []
             return init
 
         def make_unit(spec):
@@ -5251,6 +5266,11 @@ def make_death_dispatch_fixture(core, entity):
                 u.auto_cast_enabled = False
                 u.attack_timer = 0
                 u.stun_timer = 0
+                # Passive heal 0.15/frame (_entity.py:3763-3766) dibekukan:
+                # klaster ini mengunci DISPATCH, bukan regen. Harness Godot
+                # men-set set_physics_process(false) sehingga PASSIVE_HEAL_PER_SEC
+                # tidak pernah jalan — kedua sisi sama-sama tanpa regen.
+                u.passive_heal_rate = 0.0
                 if spec.get("bristleback"):
                     u._bristleback_active = True
             elif spec["kind"] == "minion":
