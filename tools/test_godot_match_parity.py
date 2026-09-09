@@ -5126,6 +5126,591 @@ def make_minion_tower_rewards_fixture(core, entity):
         rend.EffectManager.add_gold_popup = saved_gold_popup
 
 
+def make_death_dispatch_fixture(core, entity):
+    """FASE 16 — DISPATCH KEMATIAN terpusat, oracle JALUR SERANGAN NYATA pygame.
+
+    pygame TIDAK punya pintu kematian: `take_damage` hanya menulis
+    `alive = False` (+ `_killed_by`), dan pembayaran dilakukan loop
+    `Game.update` (_core.py:2196-2235) pada frame BERIKUTNYA. Di Godot semua
+    jalur damage lewat `CombatSystem.apply_damage`, jadi langkah 10
+    `_dispatch_death` memanggil `die()` unit yang benar tepat saat damage
+    mendarat. Fixture ini mengunci bahwa KEDUA model berakhir di state yang
+    sama — dan dijalankan lewat jalur serangan pygame SUNGGUHAN, bukan
+    `take_damage(10**9)` seperti FASE 15 (yang melewati seluruh pipeline
+    serangan dan karena itu tidak bisa membuktikan dispatch-nya):
+
+      tower_bullet  Tower._shoot -> Bullet.update -> Bullet._on_hit ->
+                    target.take_damage(dmg, team, 'projectile') TANPA source
+                    (_entity.py:246-248): peluru NORMAL archer, CANNON
+                    (+splash 60% ke musuh sekitar), dan ICE.
+      hero_melee    Hero._do_attack -> take_damage(source=hero, school=..)
+      hero_ranged   Hero._do_attack -> _spawn_projectile -> Hero.update ->
+                    take_damage('projectile', source=hero, school=..)
+      minion_attack Minion.update -> take_damage(dmg, team) NETRAL
+                    (_entity.py:5580-5581, tanpa source & school)
+      skill         take_damage(source=hero, school=..) — jalur
+                    hero_skills/_bundle.py (Godot: Hero.kit_hit)
+      direct        take_damage(amount, from_team, dmg_type, source, school)
+
+    Yang dikunci per langkah (snapshot CLOSED-WORLD, tanpa identitas
+    pembunuh):
+
+      * per unit  : dead / hp / rewarded / team. HANYA itu — Godot
+                    `Tower.die(killer_team, _killer)` MEMBUANG killer, jadi
+                    identitas pembunuh menara memang tidak ada di sisi Godot
+                    dan tidak boleh masuk oracle.
+      * hero_kills: hasil atribusi (_core.py:2510-2515 killer.kills += 1).
+                    Inilah bukti "source peluru = None -> TIDAK ada kill
+                    credit": menara/minion yang membunuh tidak pernah
+                    menaikkan kills siapa pun.
+      * global    : gold/score/ai_gold/total_kills/max_combo/combo/
+                    red_towers_destroyed — pembayaran loop reward pygame.
+
+    Reflek Bristleback dikunci lewat skenario khusus: hero korban dengan
+    `_bristleback_active=True` dipukul peluru menara -> HP menara TIDAK
+    berkurang (pygame _entity.py:4701-4711 mensyaratkan `source is not
+    None`, dan peluru menara memutus source).
+
+    Skenario guard membuktikan sisi negatif dispatch: damage besar yang
+    masih menyisakan HP > 0 TIDAK boleh membayar apa pun, dan mayat yang
+    dipukul ulang TIDAK boleh membayar dua kali.
+
+    Inventario item dibiarkan KOSONG supaya tidak ada situs RNG sama sekali
+    (roll_crit berhenti di `chance <= 0` hero_items.py:2477-2478, evasion /
+    blind / block hanya roll saat peluangnya > 0). Karena itu fixture ini
+    wajib identik pada dua seed berbeda.
+    """
+    import copy
+    import io
+    import math
+    from contextlib import redirect_stdout
+    import __main__
+    import pygame
+    import _render as rend
+    import _system
+
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    W, H = 1280, 720
+    saved_random = random.getstate()
+    saved_game = getattr(__main__, "game_instance", None)
+    saved_gps = core.GOLD_PER_SECOND
+
+    initial = {
+        "gold": 211, "score": 43, "ai_gold": 29,
+        "total_kills": 1, "max_combo": 2, "red_towers_destroyed": 1,
+    }
+
+    try:
+        core.GOLD_PER_SECOND = 0
+        with redirect_stdout(io.StringIO()):
+            game = core.Game(pygame.Surface((W, H)), level_number=1)
+        __main__.game_instance = game
+
+        def reset(overrides=None):
+            init = copy.deepcopy(initial)
+            init.update(copy.deepcopy(overrides or {}))
+            game.gold = init["gold"]
+            game.score = init["score"]
+            game.ai.gold = init["ai_gold"]
+            game.total_kills = init["total_kills"]
+            game.max_combo = init["max_combo"]
+            game.gold_per_second = 0.0
+            game._gold_income_milli = 0
+            game.gold_timer = 0
+            game.wave_timer = 10 ** 6
+            game.wave_number = 0
+            game.hero_respawn_timers = {}
+            game.towers, game.minions = [], []
+            game.heroes, game.ai.heroes = [], []
+            game.active_boss = None
+            game.pending_mini_bosses = []
+            game.red_towers_destroyed = init["red_towers_destroyed"]
+            game.true_boss_spawned = True
+            game.state = "playing"
+            game.level_intro = game.boss_intro = game.boss_death = None
+            game.effects = rend.EffectManager()
+            return init
+
+        def make_unit(spec):
+            x, y = float(spec["x"]), float(spec["y"])
+            if spec["kind"] == "tower":
+                u = entity.Tower(x, y, spec["team"],
+                                 spec.get("tower_kind", "outer"))
+                if spec.get("tower_type"):
+                    # Lewat Tower.upgrade ASLI, bukan set tower_type: cannon
+                    # & ice baru punya splash/slow/atk_slow di LEVEL 2
+                    # (TOWER_UPGRADE_PATHS), jadi level 1 "cannon" hanyalah
+                    # archer yang diganti namanya.
+                    assert u.upgrade(spec["tower_type"]), \
+                        "upgrade menara %s gagal" % spec["tower_type"]
+                u.shield = 0.0
+            elif spec["kind"] == "hero":
+                u = entity.Hero(spec["type"], spec["team"], x, y)
+                u.speed = 0.0
+                u.auto_cast_enabled = False
+                u.attack_timer = 0
+                u.stun_timer = 0
+                if spec.get("bristleback"):
+                    u._bristleback_active = True
+            elif spec["kind"] == "minion":
+                u = entity.Minion(spec["type"], spec["team"], "mid",
+                                  spec.get("nexus_level", 1))
+                u.x, u.y = x, y
+                u.base_speed = 0.0
+                u.speed = 0.0
+                # Regen minion per frame (_entity.py:5535-5536) dibekukan:
+                # klaster ini mengunci DISPATCH, bukan tick regen. Godot
+                # melakukan hal yang sama di harness.
+                u.regen = 0.0
+                u.timer = 0
+            else:
+                raise AssertionError(spec["kind"])
+            if "hp" in spec:
+                u.hp = float(spec["hp"])
+            return u
+
+        def snapshot(units):
+            per = {}
+            hero_kills = {}
+            for uid, u in units.items():
+                per[uid] = {"dead": not bool(u.alive), "hp": float(u.hp),
+                            "rewarded": bool(getattr(u, "_rewarded", False)),
+                            "team": str(u.team)}
+                if getattr(u, "hero_type", None):
+                    hero_kills[uid] = int(getattr(u, "kills", 0))
+            cc = game.effects.combo_counter
+            return {
+                "gold": game.gold, "score": game.score,
+                "ai_gold": game.ai.gold,
+                "total_kills": game.total_kills,
+                "max_combo": game.max_combo,
+                "combo": {"count": cc.count, "timer": cc.timer,
+                          "last_combo": cc.last_combo},
+                "red_towers_destroyed": game.red_towers_destroyed,
+                "units": per, "hero_kills": hero_kills,
+            }
+
+        def run_attack(atk, units):
+            kind = atk["kind"]
+            tgt = units[atk["target"]]
+            by = units[atk["by"]] if atk.get("by") else None
+            with redirect_stdout(io.StringIO()):
+                if kind == "tower_bullet":
+                    # Jalur Bullet ASLI: _shoot membuat Bullet, update()
+                    # menerbangkannya, _on_hit menerapkan damage TANPA
+                    # source (paritas _entity.py:246-248).
+                    assert by.target is None
+                    # timer=0 WAJIB sebelum _shoot: recoil cannon dihitung
+                    # (attack_cooldown - timer)/8 (_entity.py:963-966) —
+                    # timer besar melempar moncong, dan pelurunya, jutaan
+                    # piksel jauhnya.
+                    by.timer = 0
+                    by.target = tgt
+                    by.angle = math.atan2(tgt.y - by.y, tgt.x - by.x)
+                    by._shoot([tgt])
+                    assert by.bullets, "menara tidak menembak"
+                    arena = [u for u in units.values() if u is not by]
+                    guard = 0
+                    while by.bullets and guard < 400:
+                        for b in list(by.bullets):
+                            b.update(arena)
+                        by.bullets = [b for b in by.bullets if b.active]
+                        guard += 1
+                    assert guard < 400, "peluru tak pernah mendarat"
+                    by.target = None
+                elif kind == "hero_melee":
+                    assert getattr(by, "is_melee_hero", False), \
+                        "hero %s bukan melee" % by.hero_type
+                    by.target = tgt
+                    by.attack_timer = 0
+                    by._do_attack()
+                    assert not by.projectiles, \
+                        "hero melee tidak boleh melepas proyektil"
+                elif kind == "hero_ranged":
+                    assert not getattr(by, "is_melee_hero", True), \
+                        "hero %s bukan ranged" % by.hero_type
+                    by.target = tgt
+                    by.attack_timer = 0
+                    by._do_attack()
+                    assert by.projectiles, \
+                        "hero ranged wajib melepas proyektil"
+                    guard = 0
+                    # Hero.update ASLI yang menerbangkan proyektil dan
+                    # memanggil take_damage('projectile', source=hero,
+                    # school=..) saat mendarat (_entity.py:3907-3912).
+                    while by.projectiles and guard < 400:
+                        by.update([], [], [])
+                        guard += 1
+                    assert guard < 400, "proyektil tak pernah mendarat"
+                elif kind == "minion_attack":
+                    # Minion._get_enemies membaca SpatialGrid (minion+hero)
+                    # dan memeriksa tower/base langsung dari argumen
+                    # (_entity.py:5635-5680), jadi grid diisi dulu dan
+                    # menara diteruskan lewat all_towers — persis urutan
+                    # Game.update (_core.py:2013).
+                    mins = [u for u in units.values()
+                            if getattr(u, "minion_type", None)]
+                    hers = [u for u in units.values()
+                            if getattr(u, "hero_type", None)]
+                    tws = [u for u in units.values()
+                           if getattr(u, "tower_type", None)]
+                    _system.update_spatial_grid(mins, hers)
+                    # _find_target_smart hanya menyerang dalam self.range
+                    # (_entity.py:5683-5689): penyerang diparkir tepat di
+                    # dalam jangkauan, bukan menebak jarak.
+                    by.x = tgt.x - max(4.0, by.range - 5.0)
+                    by.y = tgt.y
+                    by.timer = 0
+                    # Minion.update ASLI: take_damage(damage, team) NETRAL
+                    by.update(mins + hers, tws, [])
+                    assert by.timer > 0, "minion tidak menyerang"
+                elif kind in ("skill", "direct"):
+                    src = units[atk["source"]] if atk.get("source") else None
+                    tgt.take_damage(float(atk["amount"]),
+                                    atk.get("from_team", ""),
+                                    atk.get("dmg_type", "normal"),
+                                    source=src, school=atk.get("school"))
+                else:
+                    raise AssertionError(kind)
+
+        def run(spec, seed):
+            random.seed(seed)
+            reset(spec.get("initial"))
+            units = {}
+            for uspec in spec["units"]:
+                u = make_unit(uspec)
+                units[uspec["id"]] = u
+                # Hanya unit ARENA yang masuk daftar game: loop reward
+                # pygame membayar unit yang ada di daftarnya, dan unit di
+                # luar daftar (penyerang) tidak pernah di-update sendiri —
+                # tidak ada combat liar di tengah skenario.
+                if uspec.get("arena", True):
+                    if uspec["kind"] == "minion":
+                        game.minions.append(u)
+                    elif uspec["kind"] == "tower":
+                        game.towers.append(u)
+                    elif uspec["team"] == "blue":
+                        game.heroes.append(u)
+                    else:
+                        game.ai.heroes.append(u)
+            # Snapshot PRA-serangan: Godot memakainya untuk memastikan
+            # setup-nya identik sebelum membandingkan hasil, dan guard di
+            # bawah memakainya sebagai basis "HP tidak boleh bergerak".
+            pre = snapshot(units)
+            run_attack(spec["attack"], units)
+            steps = []
+            for step in spec["steps"]:
+                # Serangan LANJUTAN per langkah (mis. memukul mayat lagi):
+                # direkam di fixture supaya Godot mereplay pukulan yang sama.
+                if step.get("attack"):
+                    run_attack(step["attack"], units)
+                for _ in range(step["frames"]):
+                    with redirect_stdout(io.StringIO()):
+                        game.update()
+                steps.append({"frames": step["frames"],
+                              "attack": step.get("attack"),
+                              "snapshot": snapshot(units)})
+            return steps, pre
+
+        def u(uid, kind, team, x, y, **kw):
+            return {"id": uid, "kind": kind, "team": team, "x": x, "y": y,
+                    **kw}
+
+        # Jarak antar kelompok sengaja >= 300 px: di luar jangkauan menara
+        # (<= 250) dan AI minion, jadi satu-satunya damage yang terjadi di
+        # sebuah skenario adalah damage yang di-script.
+        AT, VT = 300.0, 345.0          # penyerang / korban
+        specs = [
+            # ── MENARA: peluru normal / cannon / ice (source diputus) ──
+            {"name": "tower_bullet_normal_kills_minion",
+             "units": [
+                 u("t0", "tower", "blue", 300.0, 300.0, arena=False),
+                 u("m0", "minion", "red", VT, 300.0, type="goblin",
+                   hp=12.0)],
+             "attack": {"kind": "tower_bullet", "by": "t0", "target": "m0"},
+             "steps": [{"frames": 1}, {"frames": 1}, {"frames": 3}]},
+            {"name": "tower_bullet_cannon_kills_minion_and_splash",
+             "units": [
+                 u("t0", "tower", "blue", 300.0, 300.0, tower_type="cannon",
+                   arena=False),
+                 u("m0", "minion", "red", VT, 300.0, type="goblin",
+                   hp=40.0),
+                 u("m1", "minion", "red", VT + 25.0, 300.0, type="goblin",
+                   hp=6.0)],
+             "attack": {"kind": "tower_bullet", "by": "t0", "target": "m0"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            {"name": "tower_bullet_ice_kills_hero",
+             "units": [
+                 u("t0", "tower", "blue", 300.0, 300.0, tower_type="ice",
+                   arena=False),
+                 u("h0", "hero", "red", VT, 300.0, type="grimjaw",
+                   hp=12.0)],
+             "attack": {"kind": "tower_bullet", "by": "t0", "target": "h0"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            {"name": "tower_bullet_normal_kills_tower",
+             "units": [
+                 u("t0", "tower", "blue", 300.0, 300.0, arena=False),
+                 u("t1", "tower", "red", VT, 300.0, hp=10.0)],
+             "attack": {"kind": "tower_bullet", "by": "t0", "target": "t1"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            # ── HERO: melee instan vs ranged proyektil ──
+            {"name": "hero_melee_kills_minion",
+             "units": [
+                 u("h0", "hero", "blue", AT, 300.0, type="grimjaw",
+                   arena=False),
+                 u("m0", "minion", "red", VT, 300.0, type="goblin",
+                   hp=15.0)],
+             "attack": {"kind": "hero_melee", "by": "h0", "target": "m0"},
+             "steps": [{"frames": 1}, {"frames": 1}, {"frames": 3}]},
+            {"name": "hero_melee_kills_hero",
+             "units": [
+                 u("h0", "hero", "blue", AT, 300.0, type="grimjaw",
+                   arena=False),
+                 u("h1", "hero", "red", VT, 300.0, type="thorne",
+                   hp=40.0)],
+             "attack": {"kind": "hero_melee", "by": "h0", "target": "h1"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            {"name": "hero_ranged_kills_minion",
+             "units": [
+                 u("h0", "hero", "blue", AT, 300.0, type="sylara",
+                   arena=False),
+                 u("m0", "minion", "red", VT, 300.0, type="orc",
+                   hp=18.0)],
+             "attack": {"kind": "hero_ranged", "by": "h0", "target": "m0"},
+             "steps": [{"frames": 1}, {"frames": 1}, {"frames": 3}]},
+            {"name": "hero_ranged_kills_tower",
+             "units": [
+                 u("h0", "hero", "blue", AT, 300.0, type="sylara",
+                   arena=False),
+                 u("t1", "tower", "red", VT, 300.0, hp=25.0)],
+             "attack": {"kind": "hero_ranged", "by": "h0", "target": "t1"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            {"name": "hero_ranged_kills_hero",
+             "units": [
+                 u("h0", "hero", "blue", AT, 300.0, type="vex",
+                   arena=False),
+                 u("h1", "hero", "red", VT, 300.0, type="kaizen",
+                   hp=30.0)],
+             "attack": {"kind": "hero_ranged", "by": "h0", "target": "h1"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            # ── MINION: serangan netral tanpa source ──
+            {"name": "minion_attack_kills_tower",
+             "units": [
+                 u("m0", "minion", "blue", AT, 300.0, type="orc",
+                   arena=False),
+                 u("t1", "tower", "red", VT, 300.0, hp=8.0)],
+             "attack": {"kind": "minion_attack", "by": "m0", "target": "t1"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            {"name": "minion_attack_kills_minion",
+             "units": [
+                 u("m0", "minion", "red", AT, 300.0, type="troll",
+                   arena=False),
+                 u("m1", "minion", "blue", VT, 300.0, type="goblin",
+                   hp=10.0)],
+             "attack": {"kind": "minion_attack", "by": "m0", "target": "m1"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            # ── SKILL / kit hero: source=hero + school, tanpa on-hit ──
+            {"name": "skill_damage_kills_minion",
+             "units": [
+                 u("h0", "hero", "blue", 700.0, 300.0, type="sylara",
+                   arena=False),
+                 u("m0", "minion", "red", VT, 300.0, type="goblin",
+                   hp=60.0)],
+             "attack": {"kind": "skill", "source": "h0", "target": "m0",
+                        "amount": 500.0, "from_team": "blue",
+                        "dmg_type": "normal", "school": "magic"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            {"name": "skill_damage_kills_hero",
+             "units": [
+                 u("h0", "hero", "blue", 700.0, 300.0, type="grimjaw",
+                   arena=False),
+                 u("h1", "hero", "red", VT, 300.0, type="sylara",
+                   hp=70.0)],
+             "attack": {"kind": "skill", "source": "h0", "target": "h1",
+                        "amount": 900.0, "from_team": "blue",
+                        "dmg_type": "normal", "school": "fire"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            # ── SOURCE PELURU = None: tanpa kill credit & tanpa reflect ──
+            {"name": "bullet_source_none_no_reflect_no_credit",
+             # Korban ber-Bristleback. Pukulan HERO memantulkan 25% ke
+             # penyerang; peluru MENARA tidak (source diputus di
+             # Bullet._on_hit), jadi HP menara tidak boleh bergerak dan
+             # kills siapa pun tidak boleh naik.
+             "units": [
+                 u("t0", "tower", "blue", 300.0, 300.0, arena=False),
+                 u("h0", "hero", "red", VT, 300.0, type="thorne",
+                   hp=500.0, bristleback=True)],
+             "attack": {"kind": "tower_bullet", "by": "t0", "target": "h0"},
+             "expect_death": False,
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            {"name": "melee_source_present_reflects_to_attacker",
+             # Pembanding: serangan melee hero KE korban yang sama
+             # memantulkan damage ke penyerang — bukti bahwa absennya
+             # reflect di skenario peluru memang karena source None,
+             # bukan karena Bristleback-nya tidak aktif.
+             "units": [
+                 u("h0", "hero", "blue", AT, 300.0, type="grimjaw",
+                   arena=False),
+                 u("h1", "hero", "red", VT, 300.0, type="thorne",
+                   hp=500.0, bristleback=True)],
+             "attack": {"kind": "hero_melee", "by": "h0", "target": "h1"},
+             "expect_death": False,
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            {"name": "bullet_kill_gives_no_kill_credit",
+             # Menara membunuh HERO: reward jalan (+150 ke tim lawan
+             # korban), tetapi _process_hero_kill menolak karena killer
+             # bukan hero -> kills tidak naik di mana pun.
+             "units": [
+                 u("t0", "tower", "blue", 300.0, 300.0, arena=False),
+                 u("h0", "hero", "blue", 700.0, 300.0, type="kaizen",
+                   arena=False),
+                 u("h1", "hero", "red", VT, 300.0, type="grimjaw",
+                   hp=12.0)],
+             "attack": {"kind": "tower_bullet", "by": "t0", "target": "h1"},
+             "steps": [{"frames": 1}, {"frames": 2}]},
+            # ── GUARD: HP masih > 0 -> dispatch TIDAK boleh jalan ──
+            {"name": "guard_no_death_tower_survives",
+             "expect_death": False,
+             "units": [
+                 u("t0", "tower", "blue", 300.0, 300.0, arena=False),
+                 u("t1", "tower", "red", VT, 300.0, hp=900.0)],
+             "attack": {"kind": "tower_bullet", "by": "t0", "target": "t1"},
+             "steps": [{"frames": 1}, {"frames": 1}, {"frames": 3}]},
+            {"name": "guard_no_death_minion_survives",
+             "expect_death": False,
+             "units": [
+                 u("h0", "hero", "blue", AT, 300.0, type="grimjaw",
+                   arena=False),
+                 u("m0", "minion", "red", VT, 300.0, type="troll",
+                   hp=800.0)],
+             "attack": {"kind": "hero_melee", "by": "h0", "target": "m0"},
+             "steps": [{"frames": 1}, {"frames": 1}, {"frames": 3}]},
+            {"name": "guard_no_death_hero_survives",
+             "expect_death": False,
+             "units": [
+                 u("h0", "hero", "blue", AT, 300.0, type="vex",
+                   arena=False),
+                 u("h1", "hero", "red", VT, 300.0, type="thorne",
+                   hp=2000.0)],
+             "attack": {"kind": "hero_ranged", "by": "h0", "target": "h1"},
+             "steps": [{"frames": 1}, {"frames": 1}, {"frames": 3}]},
+            {"name": "guard_no_death_direct_big_damage",
+             "expect_death": False,
+             # "Damage besar" tapi HP sisa > 0: dispatch harus diam total
+             # (tanpa die(), tanpa reward, tanpa counter).
+             "units": [
+                 u("m0", "minion", "red", VT, 300.0, type="goblin",
+                   hp=100000.0),
+                 u("t1", "tower", "red", 900.0, 300.0, hp=100000.0)],
+             "attack": {"kind": "direct", "target": "m0", "amount": 99999.0,
+                        "from_team": "blue", "dmg_type": "normal"},
+             "steps": [{"frames": 1}, {"frames": 1}, {"frames": 3}]},
+            # ── GUARD: mayat dipukul ulang tidak membayar dua kali ──
+            {"name": "guard_dead_unit_hit_again_pays_once",
+             "units": [
+                 u("t0", "tower", "blue", 300.0, 300.0, arena=False),
+                 u("m0", "minion", "red", VT, 300.0, type="goblin",
+                   hp=12.0)],
+             "attack": {"kind": "tower_bullet", "by": "t0", "target": "m0"},
+             "steps": [{"frames": 1},
+                       {"frames": 1, "attack": {
+                           "kind": "direct", "target": "m0",
+                           "amount": 10 ** 9, "from_team": "blue",
+                           "dmg_type": "normal"}},
+                       {"frames": 3}]},
+        ]
+        scenarios = []
+        with redirect_stdout(io.StringIO()):
+            for spec in specs:
+                steps_a, pre_a = run(spec, 2601)
+                steps_b, pre_b = run(spec, 2602)
+                assert (steps_a, pre_a) == (steps_b, pre_b), \
+                    "dispatch kematian bocor RNG: %s" % spec["name"]
+                scenarios.append({"name": spec["name"],
+                                  "initial": spec.get("initial", {}),
+                                  "units": spec["units"],
+                                  "attack": spec["attack"],
+                                  "pre": pre_a,
+                                  "expect_death": spec.get("expect_death",
+                                                           True),
+                                  "steps": steps_a})
+
+        # ── Guard internal oracle ──
+        for spec in scenarios:
+            pre, last = spec["pre"], spec["steps"][-1]["snapshot"]
+            paid = [uid for uid, s in last["units"].items()
+                    if s["rewarded"]]
+            dead = [uid for uid, s in last["units"].items() if s["dead"]]
+            if not spec["expect_death"]:
+                # Sisi negatif dispatch: tidak ada yang mati, tidak ada
+                # yang dibayar, seluruh counter diam.
+                assert not dead, "%s: unit mati padahal HP > 0" % spec["name"]
+                assert not paid, "%s: reward jalan tanpa kematian" % \
+                    spec["name"]
+                assert (last["gold"], last["score"], last["ai_gold"],
+                        last["total_kills"], last["max_combo"],
+                        last["red_towers_destroyed"]) == \
+                    (pre["gold"], pre["score"], pre["ai_gold"],
+                     pre["total_kills"], pre["max_combo"],
+                     pre["red_towers_destroyed"]), \
+                    "%s: counter bergerak tanpa kematian" % spec["name"]
+            else:
+                assert dead, "%s: tidak ada unit mati" % spec["name"]
+                assert paid, "%s: mati tapi tidak dibayar" % spec["name"]
+            # HP unit yang bukan korban tidak boleh bergerak: bukti tidak
+            # ada combat liar antar unit yang diparkir berjauhan.
+            victim = spec["attack"]["target"]
+            for uid in last["units"]:
+                if uid == victim:
+                    continue
+                if spec["name"] == "melee_source_present_reflects_to_attacker":
+                    continue  # penyerang memang kena reflect Bristleback
+                if spec["name"] == "tower_bullet_cannon_kills_minion_and_splash" \
+                        and uid == "m1":
+                    continue  # korban splash cannon
+                a = pre["units"][uid]["hp"]
+                assert last["units"][uid]["hp"] == a, \
+                    "%s: HP %s bergerak tanpa script (%s -> %s)" % (
+                        spec["name"], uid, a, last["units"][uid]["hp"])
+
+        # Bukti eksplisit "source peluru = None -> tanpa reflect": korban
+        # ber-Bristleback yang dipukul PELURU tidak memantulkan apa pun
+        # (HP menara utuh), sedangkan korban yang sama dipukul MELEE hero
+        # memantulkan 25% ke penyerang. Tanpa pasangan ini, absennya
+        # reflect di skenario peluru bisa saja cuma karena Bristleback-nya
+        # tidak pernah aktif.
+        no_refl = next(s for s in scenarios
+                       if s["name"] == "bullet_source_none_no_reflect_no_credit")
+        refl = next(s for s in scenarios
+                    if s["name"] == "melee_source_present_reflects_to_attacker")
+        assert no_refl["steps"][-1]["snapshot"]["units"]["h0"]["hp"] < \
+            no_refl["pre"]["units"]["h0"]["hp"], \
+            "peluru menara tidak melukai korban Bristleback"
+        assert no_refl["steps"][-1]["snapshot"]["units"]["t0"]["hp"] == \
+            no_refl["pre"]["units"]["t0"]["hp"], \
+            "peluru menara (source=None) memantulkan reflect Bristleback"
+        assert refl["steps"][-1]["snapshot"]["units"]["h0"]["hp"] < \
+            refl["pre"]["units"]["h0"]["hp"], \
+            "melee hero (source=hero) TIDAK memantulkan reflect Bristleback"
+
+        # Bukti eksplisit "source peluru = None": di SEMUA skenario peluru
+        # menara, kills tidak boleh naik di hero mana pun.
+        for spec in scenarios:
+            if spec["attack"]["kind"] != "tower_bullet":
+                continue
+            base = spec["steps"][0]["snapshot"]["hero_kills"]
+            end = spec["steps"][-1]["snapshot"]["hero_kills"]
+            assert base == end, \
+                "%s: peluru menara memberi kill credit" % spec["name"]
+
+        return {"fps": 60, "initial": initial, "scenarios": scenarios}
+    finally:
+        __main__.game_instance = saved_game
+        core.GOLD_PER_SECOND = saved_gps
+        random.setstate(saved_random)
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -5193,6 +5778,14 @@ def make_fixture(core, entity, levels, paths):
         # ParityTest. Objek agar diff-able saat review.
         "minion_tower_rewards": make_minion_tower_rewards_fixture(
             core, entity),
+        # FASE 16 — DISPATCH KEMATIAN terpusat: oracle jalur SERANGAN NYATA
+        # pygame (Tower._shoot -> Bullet._on_hit, Hero._do_attack melee &
+        # proyektil, Minion.update, skill/kit) + loop reward Game.update.
+        # Mengunci bahwa CombatSystem langkah 10 _dispatch_death membayar
+        # tepat sekali, peluru menara (source diputus) tidak memberi kill
+        # credit/reflect, dan HP > 0 tidak memicu dispatch sama sekali.
+        # Direplay DeathDispatchParityTest.
+        "death_dispatch": make_death_dispatch_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -5338,6 +5931,23 @@ def main():
               f"{mt_kills} kematian ter-script, "
               f"{sum(len(s['snapshot']['gold_events']) for sc in mt['scenarios'] for s in sc['steps'])} "
               "event gold popup")
+
+        dd = actual["death_dispatch"]
+        dd_kinds = {}
+        for sc in dd["scenarios"]:
+            for atk in [sc["attack"]] + [s["attack"] for s in sc["steps"]
+                                         if s["attack"]]:
+                dd_kinds[atk["kind"]] = dd_kinds.get(atk["kind"], 0) + 1
+        dd_dead = sum(1 for sc in dd["scenarios"]
+                      for u in sc["steps"][-1]["snapshot"]["units"].values()
+                      if u["dead"])
+        dd_guard = sum(1 for sc in dd["scenarios"] if not sc["expect_death"])
+        dd_mix = ", ".join("%s×%d" % (k, dd_kinds[k]) for k in sorted(dd_kinds))
+        print("             death-dispatch oracle: "
+              f"{len(dd['scenarios'])} skenario serangan nyata, "
+              f"{sum(dd_kinds.values())} serangan ({dd_mix}), "
+              f"{dd_dead} kematian terbayar, "
+              f"{dd_guard} skenario guard tanpa kematian")
 
 
 if __name__ == "__main__":
