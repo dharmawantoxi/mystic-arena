@@ -1,29 +1,33 @@
 # ParityRng.gd — kanal RNG terkontrol untuk harness paritas damage.
 #
 # Mengapa ada: oracle pygame (tools/test_godot_match_parity.py, seksi
-# `hero_rng_guards`) menjalankan take_damage/_do_attack pygame ASLI dengan
-# `random.random` DI-MONKEYPATCH per situs roll (basename file + nama
-# fungsi: _entity.py::take_damage dan hero_items.py::roll_crit). GDScript
-# tidak punya monkeypatch, jadi roll combat yang mau di-parity-kan lewat
-# pintu ini:
+# `hero_rng_guards` dan `item_procs`) menjalankan take_damage/_do_attack/
+# inv.update pygame ASLI dengan `random.random` DI-MONKEYPATCH per situs
+# roll (basename file + nama fungsi: _entity.py::take_damage,
+# hero_items.py::roll_crit/_on_hit_common/notify_damage_taken, dan
+# base_boss.py::take_damage). GDScript tidak punya monkeypatch, jadi roll
+# combat yang mau di-parity-kan lewat pintu ini:
 #
-#   CombatSystem.apply_damage : windrun 75%, evasion/blind hero, block item
+#   CombatSystem.apply_damage : windrun 75%, evasion/blind hero, block item,
+#                               blind BOSS (base_boss.take_damage)
 #   ItemInventory.roll_crit   : crit Dead Edge
+#   ItemInventory proc        : bash Abyss Breaker, pierce bash Sundering
+#                               Cudgel, chain Fenrir/Thunder, multishot
+#                               Polycephaly, static charge Thunder Coil
+#                               (on-damage)
 #
 # Perilaku produksi TIDAK berubah: tanpa begin() -> next() = randf()
 # global persis seperti sebelumnya (hanya lewat pintu yang sama). Harness
-# (HeroRngGuardParityTest) memasang script lewat begin() dengan urutan
-# nilai roll dari fixture — termasuk script KOSONG (nol roll diharapkan:
-# roll apa pun di luar itu dicatat sebagai roll liar). end() mengembalikan
-# nilai yang BENAR-BENAR dikonsumsi; jumlah, nilai, dan urutan
-# dibandingkan dengan oracle, jadi roll yang hilang / bertambah /
-# tertukar urutan di salah satu engine gagal tes.
+# (HeroRngGuardParityTest / ItemProcParityTest) memasang script lewat
+# begin() dengan urutan nilai roll dari fixture — termasuk script KOSONG
+# (nol roll diharapkan: roll apa pun di luar itu dicatat sebagai roll
+# liar). end() mengembalikan nilai yang BENAR-BENAR dikonsumsi; jumlah,
+# nilai, dan urutan dibandingkan dengan oracle, jadi roll yang hilang /
+# bertambah / tertukar urutan di salah satu engine gagal tes.
 #
 # Roll yang SENGAJA tidak lewat pintu ini (masih randf() langsung, belum
-# di-parity-kan — lihat docs/GODOT_PARITY.md): blind boss (pygame-nya di
-# bosses/base_boss.py), proc item on-attack/on-damage (bash/chain/
-# frostbite/miasma/empower/entangle/static charge), dan sebaran posisi
-# damage number (visual).
+# di-parity-kan — lihat docs/GODOT_PARITY.md): sebaran posisi damage
+# number (visual).
 extends RefCounted
 class_name ParityRng
 

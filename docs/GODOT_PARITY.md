@@ -39,7 +39,8 @@ sertifikasi paritas seluruh game.
 | Sumber unlock catch-up (progresi) | `_catchup_unlocks()` Godot hard-code **0**: GameManager tidak menyimpan daftar hero yang dibeli/di-unlock lintas-save, jadi tiap save memakai bonus starter PENUH (×1,40 HP / ×1,272 dmg) — identik save BARU pygame walau roster pemain sudah penuh | Rantai sumber pygame diport utuh: save `purchased_heroes` (`_system.SaveManager.load`/`get_empty_save`) → `Game.reset` (_core.py:1596-1604, termasuk AUTO-GRANT `kaizen` untuk save kosong) → `__main__.game_instance` → `Hero.__init__` (`hero_balance.boss_unlocks_for_purchases` = `len()` hero BUKAN starter). Di Godot: `SaveManager.data["unlocked_heroes"]` (kunci lama Godot = padanan `purchased_heroes`) → `GameManager.purchased_heroes` (REFERENSI ke array save; diikat `bind_purchased_heroes()` di `start_level`, **dilepas dengan mengganti binding — bukan `clear()`** di `return_to_menu`, paritas `game_instance = None` main.py:587) → `GameManager.catchup_unlocks()` → `Hero._catchup_unlocks()`. Berlaku untuk hero KEDUA tim (pygame membaca daftar yang sama untuk hero AI). Unlock yang masuk di tengah match (boss dikalahkan) langsung terhitung karena array-nya dibagi referensi; hero yang SUDAH berdiri tidak dihitung ulang (sama seperti pygame). Save pemain tidak dimigrasi/dihapus: unlock lama dipakai apa adanya, penulisan hanya saat starter benar-benar baru di-grant. Dikunci fixture `hero_catchup_unlocks` + `HeroCatchupUnlockParityTest`. |
 | Kaizen | Rig buatan ulang selalu mengalahkan sprite Pygame | Arena normal memakai bake renderer Pygame. Rig alternatif tetap ada di `KaizenDemo.tscn`, atau opt-in `mystic/rendering/experimental_hero_rigs`. |
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
-| Jalur damage basic hero | Pipeline school-aware satu-untuk-semua: physical→armor node, magic→MR, netral→tanpa mitigasi; armor hero = snapshot node; amp setelah mitigasi; block sebelum armor floor 1; blind dibaca dari status TARGET; crit buff tidak pernah aktif; lifesteal/cleave memakai damage post-mitigasi; reflect thornmail bertipe 'normal' | `CombatSystem.apply_damage` kini dispatch per jenis target, mirror `take_damage` pygame masing-masing: HERO = amp `int(round)` → armor ITEM (live dari inventory + aura, dikikis shred, negatif = bonus) utk SEMUA damage non-`fire`, TANPA magic_resist → block SETELAH armor (amount milik defender, aura guard menimpa tanpa roll, floor 0) → Bristleback; MINION = amp → shred bonus (double-dip) → armor−shred/MR; BOSS = amp → shred bonus → reduction−shred×0.06 (cap 0.60)/MR → resilience+cap, blind hanya `normal` bersource; TOWER = armor/MR sekolah; NEXUS = shield `int(x×(1−0.88))` truncation. Kalkulasi penyerang `calc_damage` = `_do_attack` pygame (bonus item → crit buff kit `int(×2)` → crit item `int(×mult)`; pembulatan `py_round` banker ala Python). Lifesteal float pra-mitigasi (ranged `int()` saat spawn), cleave netral tanpa source, Morgath serang instan 'normal', peluru menara/minion netral, boss ranged 'normal'. Dikunci `HeroBasicAttackParityTest` (29 skenario + probe get_block). |
+| Jalur damage basic hero | Pipeline school-aware satu-untuk-semua: physical→armor node, magic→MR, netral→tanpa mitigasi; armor hero = snapshot node; amp setelah mitigasi; block sebelum armor floor 1; blind dibaca dari status TARGET; crit buff tidak pernah aktif; lifesteal/cleave memakai damage post-mitigasi; reflect thornmail bertipe 'normal' | `CombatSystem.apply_damage` kini dispatch per jenis target, mirror `take_damage` pygame masing-masing: HERO = amp `int(round)` → armor ITEM (live dari inventory + aura, dikikis shred, negatif = bonus) utk SEMUA damage non-`fire`, TANPA magic_resist → block SETELAH armor (amount milik defender, aura guard menimpa tanpa roll, floor 0) → Bristleback; MINION = amp → shred bonus (double-dip) → armor−shred/MR; BOSS = amp → shred bonus → reduction−shred×0.06 (cap 0.60)/MR → resilience+cap, blind hanya `normal` bersource; TOWER = armor/MR sekolah; NEXUS = shield `int(x×(1−0.88))` truncation. Kalkulasi penyerang `calc_damage` = `_do_attack` pygame (bonus item → crit buff kit `int(×2)` → rend Soul Rend `int(×1.5)` TANPA roll ke target bertanda → crit item `int(×mult)`; pembulatan `py_round` banker ala Python). Lifesteal float pra-mitigasi (ranged `int()` saat spawn), cleave netral tanpa source, Morgath serang instan 'normal', peluru menara/minion netral, boss ranged 'normal'. Dikunci `HeroBasicAttackParityTest` (29 skenario + probe get_block). |
+| Item tempur — Soul Rend + proc on-attack/on-damage + roll blind BOSS (FASE 19) | Soul Rend tidak ada (silence/amp jalan tapi tanpa penandaan `rend_target` → crit pasti 150% tidak pernah terjadi); proc on-attack jalan tapi: bash bonus dianggap magic (pygame NETRAL), pierce Cudgel di-roll SEBELUM chain (pygame sesudah), chain selalu stat thunder_coil (pygame: slot pertama), empower langsung proc di serangan pertama (pygame: charge 540f penuh sejak init), multishot damage float (pygame `int()`), static zap tiap 30f (pygame: `static_tick` berkurang 2×/frame → tiap 15f); roll bash/chain/multishot/static/blind-boss memakai `randf()` langsung tanpa pintu parity | Port 1:1 tanpa logika ganda: `ItemInventory.rend_target` + `get_rend_crit()` + trigger via `tick` (silence+amp+tanda, cd 1080f); `calc_damage` crit pasti 1.5x tanpa roll + short-circuit roll crit item; bash NETRAL, urutan situs `_on_hit_common` di-mirror (bash → chain → pierce → frostbite → miasma+multishot → empower → entangle), chain = dict SLOT PERTAMA, empower charge mirror `consume_empower_strike`, multishot `int(damage×70%)`, `_tick_cd` ikut loop timer generik (quirk zap 15f); semua roll proc + blind BOSS lewat `ParityRng`. Dikunci oracle `item_procs` (18 skenario, 24 roll ter-script) + `ItemProcParityTest`: HP per event + jumlah/nilai/urutan roll + flag state (rend_on/rend_marked/rend_cd_on/static_on/slow_on). |
 | Roll RNG guard & item | Roll combat tidak pernah teruji: damage uji bertipe `fire` (netral deterministik) sehingga windrun tidak pernah me-roll dan shadow realm hanya tampak sebagai bhp flat di harness skill | Dikunci fixture `hero_rng_guards` (14 skenario, 47 roll ter-script) + replay `HeroRngGuardParityTest`. Oracle menjalankan `take_damage`/`_do_attack` pygame ASLI dengan `random.random` DI-MONKEYPATCH per situs roll (`_entity.py::take_damage`, `hero_items.py::roll_crit` — pemanggil lain jatuh ke RNG asli, double-run seed beda tetap dijalankan); Godot memutar ulang lewat hook `ParityRng` di `CombatSystem.apply_damage` + `ItemInventory.roll_crit` (tanpa begin() = `randf()` global — perilaku produksi tak berubah) dan membandingkan HP + JUMLAH/nilai/URUTAN roll yang terkonsumsi. Windrun (Sylara W): fisik = `normal`/`projectile` dengan sekolah bukan magic — termasuk netral TANPA source; `0.75` persis TIDAK meleset (strict); sihir/fire tidak me-roll; flag mati tanpa roll. Shadow realm (Zephyr W): kebal total SEMUA damage tanpa roll, dipotong sebelum windrun/wall/veil. Urutan guard shadow → windrun (roll) → wind wall → veil → evasion terkunci lewat jumlah roll per tahap. Crit Dead Edge me-roll di `calc_damage` SEBELUM mitigasi target (crit buff men-diskip roll; ranged: roll crit saat spawn lalu roll block saat mendarat), block Scarlet Bulwark me-roll setelah armor utk semua non-fire (floor 0), miss = SATU roll `max(evasion, blind)`, True Strike tanpa roll, windrun penyerang ikut me-roll pada reflect Bristleback (nested take_damage). |
 | Skor match (klaster skor: combo, NEW BEST, kill hero, popup achievement) | Tidak ada sistem combo (`Max Combo` tidak dihitung), save tanpa best per level (badge `NEW BEST!` mustahil), kill hero tidak membayar +150 dan tanpa atribusi killer, popup achievement `NEW HERO UNLOCKED!` tidak ada (hanya baris teks Fase 12) | Klaster skor diport 1:1 + dikunci oracle `match_scoring`/`MatchScoringParityTest` (oracle menjalankan `Game.update` pygame SUNGGUHAN headless — unit betulan mati via `take_damage`, dua run seed beda harus identik): (1) **combo** — mesin state `ComboCounter.gd` frame @60fps (max_timer 120 = 2 dtk, target scale 1.3, color flash 20, expiry `last_combo`) diputar `GameManager._tick_combo` (akumulator 60Hz; membeku saat pause/menu/intro paritas `EffectManager.update`); `max_combo` dibaca **sebelum** `add_kill` (quirk pygame: rantai N kill berurutan → max_combo N−1) dan hanya menyala untuk kill minion RED oleh damage apa pun termasuk netral tanpa sumber; (2) **NEW BEST!** — `SaveManager.get/update_level_stats` (kunci save `level_stats` per level: attempts/playtime/total_kills/max_combo all-time bahkan saat kalah; best_score/best_time/wins hanya saat menang, time 0 diabaikan, sama-rata tidak beri flag) dipanggil `_grant_meta_reward` lalu flag `GameManager.new_best_score/new_best_time` membuntuti baris Final Score/Match Time panel game-over; (3) **kill hero +150** — `GameManager.register_hero_death` membayar FLAT 150 ke tim lawan KORBAN (hero merah mati → gold+skor pemain, hero biru → saldo AI, siapa pun pembunuhnya) + atribusi `killer.kills` hanya untuk hero pembunuh tim lawan (tower/minion/self/netral tidak); kematian minion kini dinilai dari tim korban (`register_minion_death`) sehingga kill netral pun membayar seperti pygame; `_rewarded` direset saat hero hidup lagi — respawn (600 frame) tidak membayar dua kali; (4) **popup achievement** — `AchievementPopup.gd` (antrean, tampil 180 frame, pengganti muncul di frame yang sama, slide 300px ease-out-back, panel 280×60 @(W−300,180), header `A C H I E V E M E N T`) dipicu `GameManager.unlock_achievement` (signal → FX HUD, pola `EffectManager.unlock_achievement`); trigger `NEW HERO UNLOCKED!` + deskripsi `… now FREE in Hero Shop!` dari `_auto_unlock_defeated_boss_heroes` (sudah-own → tanpa popup). Belum teruji/sengaja terbuka: komposit piksel badge combo + popup (font/shadow/ikon/truncation ellipsis judul), notifikasi tier sidepanel pygame (tidak ada sidepanel Godot), ~~popup gold `+nG` kematian minion~~ (data/antrean/posisi kini terkunci FASE 15 — baris reward minion+menara), tampilan BEST SCORE/best time di level-select (data `level_stats` sudah tertulis — ranah menu). Reward gold/skor kematian boss + atribusi/popup SLAYER mini/true kini terkunci FASE 14 (baris berikutnya); reward kematian minion + menara + popup gold `+nG` kini terkunci FASE 15 (baris reward minion+menara). |
 | Reward kematian boss (FASE 14) | Boss mati hanya dicatat tipenya dan memainkan cinematic; tidak membayar gold/skor, unlock boss baru tersimpan saat menang, tidak ada SLAYER maupun popup `+nG` | `Boss.take_damage → die(source) → GameManager.register_boss_death` mengikuti blok `Game.update` pygame `_core.py:2113–2163`: bayar **nilai runtime `boss.gold_reward`** ke gold+skor PEMAIN, tanpa memandang killer/tim boss, tanpa meta gold/combo/total_kills; `bosses_defeated_this_run` menghitung setiap instans, `bosses_defeated_this_match` dan `unlocked_bosses` unik berurutan. Boss unlock langsung dipersist dan bertahan saat kalah; hero gratis tetap menunggu menang. Guard per instans mencegah callback/tween/tick ganda. `_process_boss_kill` menambah `killer.kills` hanya hero lawan (hero yang sudah mati tetap valid); hanya hero **blue** menambah counter mini/true dan ID dedup in-match + popup `MINI BOSS SLAYER!` / `TRUE BOSS SLAYER!`, deskripsi dan ikon skull persis pygame. **HERO SLAYER tetap DIHAPUS**. Popup pertama-kali `BOSS/TRUE BOSS: … Defeated!` (owned vs tuntutan menghancurkan castle) tetap sesudah SLAYER. `FloatingTextQueue` + `WorldPopups`: gold `+{amount}G` di `(boss.x,boss.y−10)`, RGB `(255,220,50)`, font 18, velocity `(0,−1.5)`, 50 frame; map SLAYER di `(boss.x,boss.y−40)` via cabang critical (pygame menambah `!` lagi), jitter/drift, FIFO/cap 300 (berbagi dengan `DamageNumber` legacy lewat WeakRef), scale dan expiry frame diport. Ekor frame efek selesai sebelum pause cinematic; Main melepas active boss dan mengonsumsi satu pending mini pada frame kematian. Dikunci `boss_death_rewards` / `BossDeathRewardParityTest`; **piksel** font/shadow/glow/komposit cinematic dan audio SFX belum diuji. |
@@ -145,25 +146,24 @@ untuk hero terpilih; gate False hanya dipakai harness replay).
   blok armor `Hero.take_damage` pygame (armor ITEM utk SEMUA damage non-
   `fire`, tanpa MR) kini di-mirror persis oleh `CombatSystem` per jenis
   target dan dikunci `HeroBasicAttackParityTest` — detail di tabel di atas.
-  Yang masih TERBUKA di jalur ini (eksplisit, tidak disembunyikan):
-  (1) **rend crit Sanguine Thorn belum ada sama sekali** di item Godot
+  ~~(1) **rend crit Sanguine Thorn belum ada sama sekali** di item Godot
   (item aktif Soul Rend — silence/amp/target — belum diport; pygame
-  `_do_attack` crit pasti 150% ke target bertanda); (2) **roll block
-  Scarlet Bulwark 55%, roll crit Dead Edge, evasion item, dan blind < 1.0
-  kini DIREPLAY** penuh lewat `hero_rng_guards`/`HeroRngGuardParityTest`
-  (roll ter-script, urutan+jumlah konsumsi dibandingkan) — yang masih
-  tanpa oracle: roll blind BOSS (pygame-nya di `bosses/base_boss.py`,
-  Godot tetap `randf()` langsung) dan proc item on-attack/on-damage
-  (bash/chain/frostbite/miasma/empower/entangle/static charge);
+  `_do_attack` crit pasti 150% ke target bertanda)~~ — **DITUTUP FASE 19**:
+  `ItemInventory` kini menyimpan penandaan `rend_target` (trigger otomatis
+  via `tick`, silence + amp + tanda), `CombatSystem.calc_damage` memberi
+  crit PASTI 1.5x ke target bertanda TANPA roll dan MEN-DISKIP roll crit
+  item (urutan crit buff → rend → roll, persis `_do_attack` 4244-4270);
+  (2) **roll block Scarlet Bulwark 55%, roll crit Dead Edge, evasion item,
+  dan blind < 1.0 DIREPLAY** penuh lewat `hero_rng_guards`/
+  `HeroRngGuardParityTest` (roll ter-script, urutan+jumlah konsumsi
+  dibandingkan) — ~~yang masih tanpa oracle: roll blind BOSS (pygame-nya
+  di `bosses/base_boss.py`, Godot tetap `randf()` langsung) dan proc item
+  on-attack/on-damage (bash/chain/frostbite/miasma/empower/entangle/
+  static charge)~~ — **DITUTUP FASE 19**: roll blind BOSS kini lewat pintu
+  `ParityRng` dan seluruh proc dikunci oracle `item_procs`/
+  `ItemProcParityTest` (detail di baris tabel item tempur di atas);
+  masih TERBUKA di jalur ini (eksplisit, tidak disembunyikan):
   (3) **context hero aktif**
-  (`resolve_damage_school` cabang `target_is_hero=True` utk damage tanpa
-  source dari skill hero) belum diport — hanya memengaruhi guard
-  windrun/bristleback-magic utk skill tanpa source, belum teruji;
-  (4) **serangan minion ranged Godot masih proyektil** (`projectile`,
-  bisa ditangkis Wind Wall) sementara pygame menyerang instan `normal`
-  tanpa source — school-nya kini netral (angka mitigasi sama), tapi tipe
-  damage & timing travel masih beda — ranah audit jalur minion tersendiri;
-  (5) travel time proyektil hero/boss ranged (visual, damage instan di
   pygame boss) tidak diuji.
 - **Perintah taktis dan kontrol pemain:** `tactical_commands.py` belum diport;
   kontrol gerak/target dan overlay sentuh Android belum lengkap.
@@ -234,6 +234,7 @@ godot --headless --path godot res://tests/BossSmartAIParityTest.tscn --quit-afte
 godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 900
 godot --headless --path godot res://tests/HeroBasicAttackParityTest.tscn --quit-after 120
 godot --headless --path godot res://tests/HeroRngGuardParityTest.tscn --quit-after 120
+godot --headless --path godot res://tests/ItemProcParityTest.tscn --quit-after 600
 godot --headless --path godot res://tests/HeroCatchupUnlockParityTest.tscn --quit-after 120
 godot --headless --path godot res://tests/UiHudParityTest.tscn --quit-after 400
 godot --headless --path godot res://tests/MatchScoringParityTest.tscn --quit-after 300
@@ -319,6 +320,36 @@ spawn lalu roll block saat mendarat), evasion Monarch Wings 28%, blind
 < 1.0 penyerang (satu roll `max(ev, blind)`, True Strike tanpa roll),
 dan windrun pada reflect Bristleback (nested take_damage). Regenerasi
 fixture HANYA bila `_entity.py`/`hero_items.py` berubah.
+
+`ItemProcParityTest` memutar ulang seksi fixture `item_procs` (STRING JSON
+kompak; 18 skenario, 53 event, 24 roll ter-script) pada node
+Hero/Boss/Minion ASLI + `CombatSystem.apply_damage`/`ItemInventory` yang
+sebenarnya — pola `hero_rng_guards` diperluas ke ITEM TEMPUR (FASE 19).
+Oracle pygame menjalankan `_do_attack`/`take_damage`/`inv.update` asli
+dengan `random.random` DI-MONKEYPATCH per situs roll combat
+(`hero_items.py::_on_hit_common/_notify_damage_taken/roll_crit`,
+`_entity.py::take_damage`, `base_boss.py::take_damage`) — dua run seed
+beda wajib identik. Sisi Godot mereplay frame produksi yang sama
+(`status.tick` + `items.tick` per unit, urutan `Hero.update` pygame) dan
+membandingkan per event: HP semua unit (fase spawn & hit untuk ranged),
+daftar roll terkonsumsi (jumlah+nilai+urutan), dan flag state internal
+(`rend_on`/`rend_marked`/`rend_cd_on`/`static_on`/`slow_on`). Cakupan:
+Soul Rend Sanguine Thorn (trigger `inv.update`, silence + amp + penandaan,
+crit pasti 1.5x TANPA roll + short-circuit roll Dead Edge, cd 1080f,
+juga vs boss), bash Abyss Breaker (22%, damage NETRAL kena armor, cd 140f
+menahan roll), Arc Chain (dict chain dari SLOT PERTAMA — 0.19/0.21
+membedakan fenrir vs thunder), Piercing Bash Sundering Cudgel (28%,
+magic, situs SETELAH chain), Frostbite (tanpa roll), Miasma (racun tanpa
+roll, tick 30f) + multishot Polycephaly (roll HANYA ranged,
+`int(damage×70%)`), Empower Strike (charge 540f penuh sejak init —
+serangan pertama TIDAK proc; nol/parsial/penuh via injeksi
+`items_state`), Entangle vine_rod (root slow 1.0, cd 540f, expiry slow
+korban dikunci), Static Charge Thunder Coil (roll 20% saat pemilik kena
+damage, cd 1200f menahan roll, zap berkala dengan quirk pygame
+`static_tick` berkurang 2×/frame → zap tiap 15 frame), dan roll blind
+BOSS (hanya `normal` bersource, 0.40 persis kena, True Strike tanpa
+roll). Regenerasi fixture HANYA bila `_entity.py`/`hero_items.py`/
+`bosses/` berubah.
 
 `HeroCatchupUnlockParityTest` memutar ulang seksi fixture
 `hero_catchup_unlocks` (objek biasa, bukan string kompak) pada

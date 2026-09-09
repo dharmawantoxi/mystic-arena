@@ -1137,6 +1137,10 @@ def _ba_inject_hero_state(hero, cfg):
         hero.items.thorn_timer = int(cfg["thorn"])
     if cfg.get("veil"):
         hero.items.veil_timer = int(cfg["veil"])
+    # State internal inventory lain (mis. charge Empower Strike runic_gavel,
+    # oracle item_procs). Nilai = satuan FRAME pygame.
+    for key, val in (cfg.get("items_state") or {}).items():
+        setattr(hero.items, key, val)
     if cfg.get("hp_frac") is not None:
         hero.hp = hero.max_hp * float(cfg["hp_frac"])
 
@@ -1741,21 +1745,24 @@ _RG_ROLL_SITES = {("_entity.py", "take_damage"),
 class _RgScriptedRandom:
     """random.random ter-script untuk situs roll combat pygame.
 
-    Hanya panggilan dari _RG_ROLL_SITES (basename file + nama fungsi)
-    yang mengonsumsi urutan nilai; panggilan lain (audio, pitch sfx, FX)
+    Hanya panggilan dari situs roll (basename file + nama fungsi) yang
+    mengonsumsi urutan nilai; panggilan lain (audio, pitch sfx, FX)
     diarahkan ke RNG asli supaya fixture tidak tercemar dan cek
     double-run tetap menangkap roll liar yang memengaruhi hasil.
+    ``sites`` default = situs guard hero (FASE 17); oracle item tempur
+    (``item_procs``) memakai situs proc-nya sendiri.
     """
 
-    def __init__(self, values):
+    def __init__(self, values, sites=None):
         self._values = list(values)
         self._real = random.random
+        self._sites = _RG_ROLL_SITES if sites is None else sites
         self.consumed = []
 
     def __call__(self):
         code = sys._getframe(1).f_code
         if (os.path.basename(code.co_filename), code.co_name) \
-                not in _RG_ROLL_SITES:
+                not in self._sites:
             return self._real()
         if not self._values:
             raise AssertionError(
@@ -1902,6 +1909,569 @@ def make_hero_rng_guard_fixture(entity):
                 "ter-script per situs roll; nilai+jumlah+urutan konsumsi "
                 "direplay Godot lewat ParityRng (HeroRngGuardParityTest) "
                 "— lihat docs/GODOT_PARITY.md",
+    }
+
+
+# ══════════════════════════════════════════════════════════════
+# ITEM TEMPUR ORACLE — Soul Rend / proc on-attack / roll proc
+# on-damage / roll blind BOSS (FASE 19)
+# ══════════════════════════════════════════════════════════════
+#
+# Fixture `item_procs` menutup gap item tempur yang sengaja dilewati
+# seksi `hero_rng_guards` (docs/GODOT_PARITY.md sampai FASE 19):
+#   • Soul Rend (Sanguine Thorn): auto-trigger via inv.update saat hero
+#     punya target musuh hidup — silence + damage amp + PENANDAAN
+#     rend_target; serangan dasar ke target bertanda crit PASTI 150%
+#     (_do_attack) tanpa me-roll apa pun dan MEN-DISKIP roll crit item
+#     (Dead Edge) lewat short-circuit `not is_crit`.
+#   • proc on-attack (_on_hit_common): bash Abyss Breaker (roll 22%,
+#     damage NETRAL), Arc Chain Fenrir/Thunder (roll, slot pertama yang
+#     menang), Piercing Bash Sundering Cudgel (roll 28%, magic, site
+#     SETELAH chain), Frostbite (tanpa roll), Miasma + multishot
+#     Polycephaly (racun tanpa roll; multishot roll HANYA ranged),
+#     Empower Strike Runic Gavel (tanpa roll; charge 540 frame terisi
+#     sejak init — serangan pertama sebelum 9 dtk TIDAK proc), Entangle
+#     vine_rod (tanpa roll; CD internal 540).
+#   • proc on-damage: Static Charge Thunder Coil (roll 20% saat pemilik
+#     KENA damage, cd 1200 menahan roll; zap berkala 30 frame tanpa roll).
+#   • roll blind BOSS (base_boss.take_damage): serangan fisik penyerang
+#     buta meleset — roll < blind_amount; True Strike menembus TANPA
+#     roll; hanya damage_type 'normal' bersource.
+#
+# Determinisme: pola `hero_rng_guards` — `random.random` DI-MONKEYPATCH
+# per situs roll combat ((hero_items.py, _on_hit_common),
+# (hero_items.py, notify_damage_taken), (hero_items.py, roll_crit),
+# (_entity.py, take_damage), (base_boss.py, take_damage)); urutan +
+# jumlah konsumsi direkam per event dan direplay Godot lewat ParityRng
+# (ItemProcParityTest). Skenario melee/ranged menjalankan `_do_attack`
+# ASLI (jadi urutan take_damage → on_basic_attack_hit dan urutan antar
+# proc terkunci), plus `pre_item_updates`: frame produksi pygame ASLI
+# di-step manual sebelum aksi — _tick_tower_debuffs + inv.update(1,
+# enemies) SETIAP unit skenario (pemicu Soul Rend, kadaluarsa CD
+# internal, tick racun Miasma, zap Static Charge milik pemilik
+# thunder_coil).
+
+IP_SCENARIOS = [
+    # ── SOUL REND: trigger via update + crit pasti + penandaan ──
+    {
+        "name": "rend_trigger_and_guaranteed_crit",
+        "note": "Soul Rend terpicu inv.update pertama (rend_cd 0): target "
+                "di-silence + amp 30% + DI-TANDAI. _do_attack ke target "
+                "bertanda crit PASTI 1.5x TANPA roll; amp membuat damage "
+                "mendarat ×1.3. Serangan berikutnya (update atau tidak) "
+                "tetap crit selama penandaan hidup; rend_cd menahan "
+                "re-trigger (tanpa roll, tanpa re-silence).",
+        "attacker": {"hero_type": "kaizen", "items": ["sanguine_thorn"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"pre_item_updates": 1, "rolls": []},
+            {"pre_item_updates": 1, "rolls": []},
+            {"pre_item_updates": 0, "rolls": []},
+        ],
+    },
+    {
+        "name": "rend_requires_mark_short_circuits_crit_roll",
+        "note": "Tanpa inv.update, Soul Rend TIDAK terpicu walau item "
+                "ada: serangan ke target tidak bertanda -> roll crit Dead "
+                "Edge normal (0.90 >= 0.25 gagal -> damage polos). Setelah "
+                "satu update (penandaan aktif), crit rend 1.5x "
+                "SHORT-CIRCUIT roll Dead Edge: nol roll dikonsumsi walau "
+                "Dead Edge terpasang (script habis = roll liar = gagal).",
+        "attacker": {"hero_type": "kaizen",
+                     "items": ["sanguine_thorn", "dead_edge"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"pre_item_updates": 0, "rolls": [0.90]},
+            {"pre_item_updates": 1, "rolls": []},
+        ],
+    },
+    {
+        "name": "rend_amp_and_crit_vs_boss",
+        "note": "Soul Rend ke BOSS: crit pasti 1.5x + amp 30% ikut "
+                "memimpin mitigasi boss (armor physical -> resilience -> "
+                "cap) — penandaan & angka terkunci juga di defender boss.",
+        "attacker": {"hero_type": "kaizen", "items": ["sanguine_thorn"]},
+        "defender": {"kind": "boss", "boss_type": "gornak"},
+        "mode": "melee",
+        "attacks": [
+            {"pre_item_updates": 1, "rolls": []},
+            {"pre_item_updates": 0, "rolls": []},
+        ],
+    },
+    # ── BASH (Abyss Breaker): roll 22%, damage NETRAL, cd 140 ──
+    {
+        "name": "bash_proc_roll_and_cooldown",
+        "note": "bash 22%: 0.90 gagal, 0.22 persis TIDAK proc (strict), "
+                "0.10 proc (stun + 55 NETRAL). bash_cd menahan roll: "
+                "serangan saat cd -> NOL roll dikonsumsi; 140 update "
+                "kemudian cd gugur -> proc lagi.",
+        "attacker": {"hero_type": "kaizen", "items": ["abyss_breaker"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": [0.90]},
+            {"rolls": [0.22]},
+            {"rolls": [0.10]},
+            {"rolls": []},
+            {"pre_item_updates": 140, "rolls": [0.10]},
+        ],
+    },
+    {
+        "name": "bash_damage_neutral_school_vs_minion",
+        "note": "bonus damage bash pygame = take_damage(dmg, team) TANPA "
+                "school -> NETRAL ('normal'), bukan magic — kena armor "
+                "troll (2) seperti serangan fisik; magic akan kena MR "
+                "(0.05) dan menghasilkan HP korban berbeda -> gagal.",
+        "attacker": {"hero_type": "kaizen", "items": ["abyss_breaker"]},
+        "defender": {"kind": "minion", "minion_type": "troll"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": [0.10]},
+        ],
+    },
+    # ── PIERCE BASH (Sundering Cudgel): site SETELAH chain ──
+    {
+        "name": "pierce_bash_after_chain_order",
+        "note": "urutan situs _on_hit_common: bash Abyss (tidak dipakai) "
+                "-> CHAIN Fenrir (roll dulu) -> PIERCE Cudgel (roll "
+                "kemudian, damage MAGIC). [0.50, 0.10] = chain gagal + "
+                "pierce proc; urutan roll tertukar menghasilkan proc "
+                "berbeda -> gagal. Serangan kedua: pierce_cd 120 menahan "
+                "roll pierce (nol roll) sementara chain tetap me-roll; "
+                "120 update -> pierce proc lagi.",
+        "attacker": {"hero_type": "kaizen",
+                     "items": ["sundering_cudgel", "fenrir_chain"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "extras": [
+            {"kind": "hero", "hero_type": "thorne"},
+            {"kind": "hero", "hero_type": "thorne"},
+        ],
+        "mode": "melee",
+        "attacks": [
+            {"rolls": [0.50, 0.10]},
+            {"rolls": [0.10]},
+            {"pre_item_updates": 120, "rolls": [0.90, 0.10]},
+        ],
+    },
+    # ── CHAIN: slot item PERTAMA yang menang ──
+    {
+        "name": "chain_first_slot_fenrir_wins",
+        "note": "get_on_attack_chain mengembalikan dict chain dari SLOT "
+                "PERTAMA (fenrir 0.20/45 di sini) — bukan item tertentu. "
+                "0.19 proc 45; 0.21 >= 0.20 TIDAK proc (kalau engine "
+                "memakai thunder 0.22, 0.21 proc -> HP beda -> gagal).",
+        "attacker": {"hero_type": "kaizen",
+                     "items": ["fenrir_chain", "thunder_coil"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": [0.19]},
+            {"rolls": [0.21]},
+        ],
+    },
+    {
+        "name": "chain_first_slot_thunder_wins",
+        "note": "urutan slot dibalik: thunder_coil (0.22/40) yang "
+                "dipakai — 0.21 < 0.22 proc 40 (fenrir 0.20 tidak akan "
+                "proc dengan roll ini).",
+        "attacker": {"hero_type": "kaizen",
+                     "items": ["thunder_coil", "fenrir_chain"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": [0.21]},
+            {"rolls": [0.90]},
+        ],
+    },
+    # ── FROSTBITE: tanpa roll sama sekali ──
+    {
+        "name": "frostbite_no_roll",
+        "note": "Frostbound Eye: tiap serangan memasang slow+atk_slow+"
+                "anti_heal TANPA roll dan TANPA cd — dua serangan, nol "
+                "roll dikonsumsi (roll apa pun = gagal).",
+        "attacker": {"hero_type": "kaizen", "items": ["frostbound_eye"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": []},
+            {"rolls": []},
+        ],
+    },
+    # ── MIASMA: racun tanpa roll; multishot roll HANYA ranged ──
+    {
+        "name": "miasma_melee_poison_no_multishot_roll",
+        "note": "basilisk_breath melee: Miasma terpasang tanpa roll; "
+                "multishot TIDAK me-roll untuk melee. 31 update -> satu "
+                "tick racun (tick 30) masuk HP; serangan kedua me-refresh "
+                "racun (damage per tick = max, bukan reset ke bawah).",
+        "attacker": {"hero_type": "kaizen", "items": ["basilisk_breath"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": []},
+            {"pre_item_updates": 31, "rolls": []},
+        ],
+    },
+    {
+        "name": "miasma_multishot_ranged_roll",
+        "note": "ranged (sylara): serangan me-roll multishot 30% sekali "
+                "saat proyektil DILEPAS (on_ranged_attack_hit) — 0.10 = "
+                "2 ekstra int(damage×70%) + racun; 0.90 = tanpa ekstra, "
+                "racun utama tetap. Roll mitigasi mendarat setelahnya "
+                "dalam window yang sama.",
+        "attacker": {"hero_type": "sylara", "items": ["basilisk_breath"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "extras": [
+            {"kind": "hero", "hero_type": "thorne"},
+            {"kind": "hero", "hero_type": "thorne"},
+        ],
+        "mode": "ranged",
+        "attacks": [
+            {"rolls": [0.10]},
+            {"rolls": [0.90]},
+        ],
+    },
+    # ── STATIC CHARGE (Thunder Coil): proc on-damage + zap berkala ──
+    {
+        "name": "static_charge_on_damage_roll_and_zap",
+        "note": "Thunder Coil me-roll 20% saat PEMILIK kena damage "
+                "(notify_damage_taken), bukan saat menyerang: 0.10 "
+                "menyalakan aura, static_cd menahan roll berikutnya (nol "
+                "roll), 0.30 gagal, 0.05 menyalakan lagi. 30 update -> "
+                "satu zap 65 MAGIC ke penyerang (tanpa roll). State aura "
+                "dipatch per-hit lewat kunci aura statis.",
+        "attacker": {"hero_type": "kaizen"},
+        "defender": {"kind": "hero", "hero_type": "thorne",
+                     "items": ["thunder_coil"]},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.10]},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [],
+             "set": {"aura": {"static_timer": 0, "static_cd": 1200,
+                              "static_tick": 0}}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.30], "set": {"aura": {"static_cd": 0}}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.05], "set": {"aura": {"static_cd": 0}}},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [], "pre_item_updates": 30},
+        ],
+    },
+    # ── EMPOWER STRIKE (Runic Gavel): charge 540, tanpa roll ──
+    {
+        "name": "empower_charge_injected_ready",
+        "note": "charge di-nolkan lewat items_state (setara hero sudah "
+                "9 dtk di arena): serangan pertama proc 130 MAGIC + "
+                "reset charge 540; serangan kedua (tanpa update) charge "
+                "penuh -> tanpa proc, tanpa roll.",
+        "attacker": {"hero_type": "kaizen", "items": ["runic_gavel"],
+                     "items_state": {"empower_charge": 0}},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": []},
+            {"rolls": []},
+        ],
+    },
+    {
+        "name": "empower_default_charged_then_ticks",
+        "note": "charge AWAL = charge_time penuh (init pygame): serangan "
+                "pertama TIDAK proc (perilaku 9 dtk pertama match). 540 "
+                "update -> charge habis -> proc berikutnya.",
+        "attacker": {"hero_type": "kaizen", "items": ["runic_gavel"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": []},
+            {"pre_item_updates": 540, "rolls": []},
+        ],
+    },
+    {
+        "name": "empower_partial_charge_needs_remaining_ticks",
+        "note": "charge sisa 60 frame: serangan langsung tidak proc; 60 "
+                "update pas -> charge tepat 0 -> proc.",
+        "attacker": {"hero_type": "kaizen", "items": ["runic_gavel"],
+                     "items_state": {"empower_charge": 60}},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "melee",
+        "attacks": [
+            {"rolls": []},
+            {"pre_item_updates": 60, "rolls": []},
+        ],
+    },
+    # ── ENTANGLE (Vine Rod): root tanpa roll, cd internal 540 ──
+    {
+        "name": "entangle_root_and_internal_cd",
+        "note": "vine_rod (magic-only -> sylara): serangan dengan CD siap "
+                "me-ROOT (slow total 1.0 × 60f) tanpa roll; 61 update -> "
+                "slow gugur dan CD belum selesai (tanpa root baru); "
+                "540-61 update lagi -> CD pas habis -> root lagi. "
+                "slow_timer korban ikut dikunci lewat flag slow_on.",
+        "attacker": {"hero_type": "vex", "items": ["vine_rod"]},
+        "defender": {"kind": "hero", "hero_type": "thorne"},
+        "mode": "ranged",
+        "attacks": [
+            {"rolls": []},
+            {"pre_item_updates": 61, "rolls": []},
+            {"pre_item_updates": 479, "rolls": []},
+        ],
+    },
+    # ── ROLL BLIND BOSS (base_boss.take_damage) ──
+    {
+        "name": "boss_blind_roll",
+        "note": "blind 0.4 di penyerang vs BOSS: hanya damage_type "
+                "'normal' bersource yang me-roll (school magic pun ikut "
+                "karena tipe tetap normal); 0.30 < 0.40 meleset, 0.40 "
+                "persis kena (strict); 'projectile' dan hit tanpa source "
+                "TANPA roll. Roll di situs base_boss.take_damage.",
+        "attacker": {"hero_type": "kaizen", "blind": 0.4},
+        "defender": {"kind": "boss", "boss_type": "gornak"},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.30]},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.40]},
+            {"damage": 100, "dmg_type": "projectile", "school": "physical",
+             "rolls": []},
+            {"damage": 100, "dmg_type": "normal", "school": "magic",
+             "rolls": [0.10]},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "source": "none", "rolls": []},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": [0.99]},
+        ],
+    },
+    {
+        "name": "boss_blind_true_strike_no_roll",
+        "note": "True Strike (Sundering Cudgel penyerang) menembus blind "
+                "boss TANPA me-roll: nol roll, damage selalu mendarat.",
+        "attacker": {"hero_type": "kaizen", "items": ["sundering_cudgel"],
+                     "blind": 0.4},
+        "defender": {"kind": "boss", "boss_type": "gornak"},
+        "mode": "direct",
+        "hits": [
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": []},
+            {"damage": 100, "dmg_type": "normal", "school": "physical",
+             "rolls": []},
+        ],
+    },
+]
+
+## Situs roll oracle item tempur: proc on-hit + proc on-damage + crit item
+## + guard hero (serangan melee lewat _do_attack bisa menyentuh semuanya)
+## + blind boss.
+_IP_ROLL_SITES = {("hero_items.py", "_on_hit_common"),
+                  ("hero_items.py", "notify_damage_taken"),
+                  ("hero_items.py", "roll_crit"),
+                  ("_entity.py", "take_damage"),
+                  ("base_boss.py", "take_damage")}
+
+
+def _ip_state_flags(atk, dfn):
+    """Flag state internal yang ikut direkam per event (bukan cuma HP):
+    penandaan Soul Rend + CD-nya, aura Static Charge, dan slow korban
+    (root Entangle). Direferensikan ItemProcParityTest."""
+    dfn_inv = getattr(dfn, "items", None)
+    return {
+        "rend_on": bool(getattr(atk.items, "rend_timer", 0) > 0),
+        "rend_marked": atk.items.rend_target is dfn,
+        "rend_cd_on": bool(getattr(atk.items, "rend_cd", 0) > 0),
+        "static_on": bool(dfn_inv is not None
+                          and getattr(dfn_inv, "static_timer", 0) > 0),
+        "slow_on": bool(getattr(dfn, "slow_timer", 0) > 0),
+    }
+
+
+def _ip_run_scenario(spec, entity):
+    """Jalankan satu skenario item tempur pada unit pygame ASLI.
+
+    Pola _rg_run_scenario + dua kemampuan baru: ``pre_item_updates``
+    (inv.update(1, [dfn]) pygame ASLI di-step manual sebelum aksi) dan
+    flag state internal per event (_ip_state_flags). Serangan melee/
+    ranged tetap lewat _do_attack sungguhan; _MIASMA global dibersihkan
+    antar skenario supaya racun skenario sebelumnya tidak bocor.
+    """
+    import hero_items as _hi_mod
+    _hi_mod._MIASMA.clear()
+
+    mode = spec["mode"]
+    ranged = mode == "ranged"
+
+    atk_xy = BA_ATK_RANGED_XY if ranged else BA_ATK_MELEE_XY
+    atk = _ba_make_unit(spec["attacker"], entity,
+                        atk_xy[0], atk_xy[1], "blue")
+    dfn = _ba_make_unit(spec["defender"], entity,
+                        BA_DEF_XY[0], BA_DEF_XY[1], "red")
+    if spec["defender"].get("kind") == "minion":
+        # _ba_make_unit tidak memposisikan minion (seksi direct tidak
+        # butuh posisi); serangan nyata butuh jarak yang benar.
+        dfn.x, dfn.y = float(BA_DEF_XY[0]), float(BA_DEF_XY[1])
+    units = {"atk": atk, "def": dfn}
+    cfgs = {"atk": spec["attacker"], "def": spec["defender"]}
+    for i, extra_cfg in enumerate(spec.get("extras", ())):
+        tag = str(extra_cfg.get("tag", f"u{i}"))
+        units[tag] = _ba_make_unit(
+            extra_cfg, entity, BA_EXTRA_XY[0], BA_EXTRA_XY[1] + 20.0 * i,
+            "red")
+        cfgs[tag] = extra_cfg
+
+    record = {
+        "name": spec["name"],
+        "mode": mode,
+        "note": spec.get("note", ""),
+        "units": [_ba_unit_meta(t, cfgs[t], units[t],
+                                "blue" if t == "atk" else "red")
+                  for t in units],
+        "events": [],
+    }
+    if mode == "direct":
+        record["hits"] = spec["hits"]
+    else:
+        record["attacks"] = spec["attacks"]
+
+    def snap():
+        return {t: float(u.hp) for t, u in units.items()}
+
+    def run_scripted(rolls, action):
+        scripted = _RgScriptedRandom(rolls, sites=_IP_ROLL_SITES)
+        random.random = scripted
+        try:
+            action()
+        finally:
+            random.random = scripted._real
+        return scripted.consumed
+
+    try:
+        # Pool on-hit (chain/multishot/cleave) = dunia skenario ini.
+        _ba_install_fake_game(units)
+        atk.target = dfn
+
+        def _pre_updates(count):
+            """Step frame produksi pygame ASLI untuk semua unit skenario:
+            tick debuffMixin dulu (urutan Hero.update _entity.py:3794),
+            lalu inv.update(1, enemies) masing-masing inventaris — pemicu
+            Soul Rend, zap Static Charge (milik PEMILIK thunder_coil),
+            kadaluarsa cd proc, dan tick racun Miasma (global)."""
+            for _ in range(int(count)):
+                for u in units.values():
+                    tick_debuffs = getattr(u, "_tick_tower_debuffs", None)
+                    if tick_debuffs is not None:
+                        tick_debuffs()
+                    inv = getattr(u, "items", None)
+                    if inv is None:
+                        continue
+                    foes = [x for x in units.values()
+                            if x is not u
+                            and getattr(x, "team", None) != getattr(u, "team", None)
+                            and getattr(x, "alive", True)]
+                    inv.update(1, foes)
+
+        if mode == "direct":
+            for i, hit in enumerate(spec["hits"]):
+                if hit.get("set"):
+                    _ba_patch(dfn, hit["set"])
+                _pre_updates(hit.get("pre_item_updates", 0))
+                src = atk if hit.get("source", "attacker") == "attacker" \
+                    else None
+                consumed = run_scripted(hit.get("rolls", ()), lambda: dfn.take_damage(
+                    int(hit["damage"]), "blue",
+                    damage_type=hit["dmg_type"], source=src,
+                    school=hit.get("school")))
+                ev = {"i": i, "phase": "hit", "hp": snap(),
+                      "rolls": consumed}
+                ev.update(_ip_state_flags(atk, dfn))
+                record["events"].append(ev)
+        elif mode in ("melee", "ranged"):
+            for i, attack in enumerate(spec["attacks"]):
+                if attack.get("set"):
+                    _ba_patch(dfn, attack["set"])
+                _pre_updates(attack.get("pre_item_updates", 0))
+                if ranged:
+                    def _swing():
+                        atk.attack_timer = 0
+                        atk.no_attack_timer = 0
+                        atk.skill_timer = 0
+                        atk._do_attack()
+                        live = [p for p in atk.projectiles if p.get("alive")]
+                        assert live, "proyektil tidak ter-spawn"
+                        proj = live[-1]
+                        record["events"].append({
+                            "i": i, "phase": "spawn", "hp": snap(),
+                            "proj_damage": int(proj["damage"]),
+                            "proj_school": proj.get("school")})
+                        # Hit persis jalur projectile hero (_entity.py
+                        # 3913-3915) dalam window RNG yang sama.
+                        dfn.take_damage(
+                            proj["damage"], proj["team"],
+                            damage_type="projectile",
+                            source=proj.get("source"),
+                            school=proj.get("school"))
+                        for p in atk.projectiles:
+                            p["alive"] = False
+                        atk.projectiles = []
+                    consumed = run_scripted(attack.get("rolls", ()), _swing)
+                    ev = {"i": i, "phase": "hit", "hp": snap(),
+                          "rolls": consumed}
+                    ev.update(_ip_state_flags(atk, dfn))
+                    record["events"].append(ev)
+                else:
+                    def _swing():
+                        atk.attack_timer = 0
+                        atk.no_attack_timer = 0
+                        atk.skill_timer = 0
+                        atk._do_attack()
+                    consumed = run_scripted(attack.get("rolls", ()), _swing)
+                    ev = {"i": i, "phase": "hit", "hp": snap(),
+                          "rolls": consumed}
+                    ev.update(_ip_state_flags(atk, dfn))
+                    record["events"].append(ev)
+        else:
+            raise AssertionError(f"mode tak dikenal: {mode}")
+    finally:
+        _ba_clear_fake_game()
+        _hi_mod._MIASMA.clear()
+    return record
+
+
+def make_item_proc_fixture(entity):
+    """Oracle item tempur dari fungsi pygame ASLI (roll ter-script).
+
+    Pola hero_rng_guards: tiap skenario dijalankan DUA KALI dengan seed
+    berbeda dan hasilnya wajib identik — roll DI LUAR situs gate yang
+    memengaruhi hasil akan membuat dua run berbeda -> tolak fixture.
+    """
+    scenarios = []
+    for spec in IP_SCENARIOS:
+        runs = []
+        for seed in (2029, 101):
+            random.seed(seed)
+            runs.append(_ip_run_scenario(spec, entity))
+        assert runs[0] == runs[1], (
+            f"skenario {spec['name']} tidak deterministik — ada roll di "
+            "luar situs gate yang memengaruhi hasil")
+        scenarios.append(runs[0])
+
+    return {
+        "scenarios": scenarios,
+        "note": "item tempur: Soul Rend Sanguine Thorn (trigger inv.update, "
+                "silence+amp+penandaan, crit pasti 1.5x tanpa roll + "
+                "short-circuit roll crit item), proc on-attack (bash 22% "
+                "netral + cd, chain slot-pertama, pierce bash magic "
+                "SETELAH chain, frostbite tanpa roll, miasma + multishot "
+                "ranged-only, empower charge 540, entangle root + cd 540), "
+                "proc on-damage Static Charge (roll 20% + zap berkala), "
+                "dan roll blind BOSS (base_boss.take_damage; true strike "
+                "tanpa roll). Oracle menjalankan _do_attack/take_damage/"
+                "inv.update pygame ASLI dengan random.random ter-script "
+                "per situs; nilai+jumlah+urutan konsumsi + flag state "
+                "direplay Godot lewat ParityRng (ItemProcParityTest) — "
+                "lihat docs/GODOT_PARITY.md",
     }
 
 
@@ -7479,6 +8049,17 @@ def make_fixture(core, entity, levels, paths):
         "hero_rng_guards": json.dumps(
             make_hero_rng_guard_fixture(entity),
             separators=(",", ":")),
+        # FASE 19 — ITEM TEMPUR: Soul Rend Sanguine Thorn (trigger via
+        # inv.update + crit pasti 150% ke target bertanda, tanpa roll +
+        # short-circuit roll crit item), proc on-attack (bash/chain/pierce/
+        # frostbite/miasma+multishot/empower/entangle), proc on-damage
+        # Static Charge (roll 20% + zap berkala), dan roll blind BOSS
+        # (base_boss.take_damage). Oracle _do_attack/take_damage/inv.update
+        # pygame ASLI dengan random.random ter-script per situs; direplay
+        # ItemProcParityTest lewat ParityRng.
+        "item_procs": json.dumps(
+            make_item_proc_fixture(entity),
+            separators=(",", ":")),
         # FASE 11 — sumber jumlah unlock catch-up (progresi lintas-save):
         # save purchased_heroes -> game_instance -> Hero.__init__. Direplay
         # HeroCatchupUnlockParityTest. Seksi ini kecil dan enak dibaca saat
@@ -7639,6 +8220,13 @@ def main():
               f"{len(rg['scenarios'])} skenario, "
               f"{sum(len(s['events']) for s in rg['scenarios'])} event HP, "
               f"{rg_rolls} roll ter-script")
+        ip = json.loads(actual["item_procs"])
+        ip_rolls = sum(len(e.get("rolls", ()))
+                       for s in ip["scenarios"] for e in s["events"])
+        print("             item-proc oracle: "
+              f"{len(ip['scenarios'])} skenario, "
+              f"{sum(len(s['events']) for s in ip['scenarios'])} event, "
+              f"{ip_rolls} roll ter-script")
         uh = actual["ui_hud"]
         print("             ui-hud oracle: "
               f"{len(uh['scenarios'])} skenario draw, "
