@@ -49,6 +49,9 @@ var _camera: Camera2D = null
 var _slot_layer: Node2D = null
 ## AIPlayer telur (port _entity.AIPlayer — dibuat di _ready, dikelola sendiri)
 var _ai = null
+## Perintah taktis tim biru (port tactical_commands — dibuat di _ready,
+## dikelola sendiri via _physics_process 60 Hz)
+var _tactical = null
 var _slot_redraw_timer: float = 0.0
 var _slot_pulse: float = 0.0
 
@@ -125,6 +128,12 @@ func _ready():
 	_ai.name = "AIPlayer"
 	add_child(_ai)
 	_ai.process_mode = Node.PROCESS_MODE_PAUSABLE
+	# Perintah taktis (FASE 17): self-managed via _physics_process, baca
+	# Main.active_boss dari induknya — pola yang sama dengan _ai.
+	_tactical = preload("res://scripts/systems/TacticalCommands.gd").new()
+	_tactical.name = "TacticalCommands"
+	add_child(_tactical)
+	_tactical.process_mode = Node.PROCESS_MODE_PAUSABLE
 
 func _build_slot_layer() -> void:
 	_slot_layer = Node2D.new()
@@ -195,6 +204,8 @@ func _clear_field() -> void:
 	GameManager.blue_nexus = null
 	GameManager.red_nexus = null
 	GameManager.clear_selection()
+	if is_instance_valid(_tactical):
+		_tactical.reset()
 
 ## Buang semua cinematic aktif (intro level / banner boss / FX kematian).
 ## finish() melepas pause kalau cinematic itu yang memegangnya, jadi arena

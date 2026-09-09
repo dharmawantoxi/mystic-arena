@@ -5731,6 +5731,967 @@ def make_death_dispatch_fixture(core, entity):
         random.setstate(saved_random)
 
 
+def make_tactical_commands_fixture(core, entity):
+    """FASE 17 — perintah taktis, oracle TAKTIK ASLI pygame headless.
+
+    TacticalCommandManager (tactical_commands.py, 1051 baris, 28 fungsi)
+    dijalankan headless dengan unit betulan (Hero/Minion/Tower/Boss/Castle
+    pygame ASLI, mati/hidup via flag alive, perintah via move_to/follow_target
+    asli). TIDAK ada Game.update penuh — hanya tactical.update() yang di-step
+    manual per frame — supaya jejak murni taktik (tanpa liar combat, reward,
+    regen, income/wave). Dua seed berbeda wajib identik.
+
+    Yang dikunci per langkah (snapshot CLOSED-WORLD):
+      manager : active_command/command_timer/command_target/cooldown/
+                gather_point+timer/feedback_text+timer+color/held_command/
+                hold_follow_mouse/hold_elapsed/hold_has_fired/gather_push_fired/
+                auto_check_timer/command_color/status_text/command_origin.
+      heroes  : x/y/alive/destination+auto/follow_target/target/is_retreating/
+                range (untuk spread attack_boss/dealer).
+      units   : x/y/hp/max_hp/alive/team/name/damage_dealt (untuk seleksi
+                target: threatened tower, nearest enemy, damage dealer).
+      game    : selected_hero/selected_tower/mouse/wave/state.
+      result  : return op (ok bool untuk command/hold_start, uid/int untuk
+                helper, null untuk setter/tick).
+
+    Isolasi harness (kedua engine sama):
+      * FX/audio di-stub (add_damage_number/add_death_explosion/
+        add_notification/SoundManager.play/sidepanel) — pixel/audio BELUM
+        TERUJI, yang dibandingkan hanya state taktik.
+      * purchased_heroes=[] di-pin (tanpa ini stat hero mengikuti sisa save
+        FASE 13 via starter_catchup_stats — jebakan FASE 16).
+      * passive_heal_rate/regen dibekukan (paritas FASE 16).
+      * Castle.name="Castle" di-pin (pygame Castle tanpa .name → str(obj)
+        memuat alamat memori nondeterministik; Godot memetakan ke "Castle").
+      * Tower dibuat via Tower() + upgrade() ASLI bila perlu tipe cannon/ice
+        (splash/slow L2 — jebakan FASE 16), timer=0 sebelum _shoot bila ada.
+      * Random HANYA _auto_evaluate_protect 20% boss (tactical_commands.py):
+        di-script per situs frame (pola RG FASE 10), direplay Godot via
+        ParityRng. Skenario lain tidak menyentuh random sama sekali.
+
+    Inventario kosong, tidak ada situs RNG lain. Guard internal menolak:
+    cooldown/state gate bocor, hold TAP vs HOLD tertukar, push tanpa 60%
+    arrival, target salah (threat/nearest/dealer), timer tidak decay,
+    auto-protect salah kondisi, dan status/color menyimpang.
+    """
+    import copy
+    import io
+    import math
+    from contextlib import redirect_stdout
+    import __main__
+    import pygame
+    import _render as rend
+    import _system
+    import tactical_commands as tac
+    from bosses.base_boss import Boss
+
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    W, H = 1280, 720
+    saved_random = random.getstate()
+    saved_game = getattr(__main__, "game_instance", None)
+    saved_gps = core.GOLD_PER_SECOND
+    saved_play = _system.SoundManager.play
+    try:
+        import mobile.sidepanel as _sp
+        saved_sp = _sp.beri_tahu_global
+    except Exception:
+        _sp = None
+        saved_sp = None
+
+    # ── RNG ter-script per situs (pola RG): hanya _auto_evaluate_protect ──
+    _TAC_SITES = {("tactical_commands.py", "_auto_evaluate_protect")}
+
+    class _TacScriptedRandom:
+        def __init__(self, values):
+            self._values = list(values)
+            self._real = random.random
+            self.consumed = []
+        def __call__(self):
+            import sys as _sys, os as _os
+            code = _sys._getframe(1).f_code
+            if (_os.path.basename(code.co_filename), code.co_name) not in _TAC_SITES:
+                return self._real()
+            if not self._values:
+                raise AssertionError("script RNG taktis habis: roll tak terduga")
+            v = self._values.pop(0)
+            self.consumed.append(v)
+            return v
+
+    try:
+        core.GOLD_PER_SECOND = 0
+        _system.SoundManager.play = lambda self, *a, **k: None
+        if _sp is not None:
+            _sp.beri_tahu_global = lambda *a, **k: None
+        with redirect_stdout(io.StringIO()):
+            game = core.Game(pygame.Surface((W, H)), level_number=1)
+        __main__.game_instance = game
+        # Stub FX kontak (RNG FloatingText) — state taktik tidak menyentuhnya.
+        game.effects.add_damage_number = lambda *a, **k: None
+        game.effects.add_death_explosion = lambda *a, **k: None
+        if hasattr(game.ui, "add_notification"):
+            game.ui.add_notification = lambda *a, **k: None
+
+        def reset():
+            game.purchased_heroes = []
+            game.state = "playing"
+            game.wave_number = 1
+            game.mouse_x, game.mouse_y = 0, 0
+            game.selected_hero = None
+            game.selected_tower = None
+            game.heroes = []
+            game.ai.heroes = []
+            game.towers = []
+            game.minions = []
+            game.active_boss = None
+            # Bases dipakai ulang, di-reset penuh + nama deterministik.
+            for b in (game.blue_base, game.red_base):
+                b.hp = b.max_hp
+                b.alive = True
+                b.name = "Castle"
+                b._uid = "castle_blue" if b.team == "blue" else "castle_red"
+            game.tactical = tac.TacticalCommandManager(game)
+            return game.tactical
+
+        def make_unit(spec, units):
+            kind = spec["kind"]
+            team = spec.get("team", "blue")
+            x = float(spec.get("x", 300.0)); y = float(spec.get("y", 300.0))
+            uid = spec["id"]
+            if kind == "hero":
+                u = entity.Hero(spec["type"], team, x, y)
+                u.speed = 0.0
+                u.auto_cast_enabled = False
+                u.passive_heal_rate = 0.0
+                u.attack_timer = 0
+                if "hp" in spec:
+                    u.hp = float(spec["hp"])
+                if "damage_dealt" in spec:
+                    u.damage_dealt = int(spec["damage_dealt"])
+                if spec.get("dead"):
+                    u.alive = False
+                    u.hp = 0
+                if "retreating" in spec:
+                    u.is_retreating = bool(spec["retreating"])
+                    u.destination_auto = bool(spec.get("dest_auto", False))
+                    if spec.get("dest") is not None:
+                        u.destination = tuple(spec["dest"])
+                    else:
+                        u.destination = None
+            elif kind == "minion":
+                u = entity.Minion(spec["type"], team, spec.get("lane", "mid"),
+                                  spec.get("nexus_level", 1))
+                u.x, u.y = x, y
+                u.base_speed = 0.0; u.speed = 0.0
+                u.regen = 0.0; u.timer = 0
+                if "hp" in spec:
+                    u.hp = float(spec["hp"])
+                if spec.get("dead"):
+                    u.alive = False; u.hp = 0
+            elif kind == "tower":
+                u = entity.Tower(x, y, team, spec.get("tower_kind", "outer"))
+                if spec.get("tower_type"):
+                    assert u.upgrade(spec["tower_type"]), "upgrade gagal"
+                u.timer = 0
+                u.shield = 0.0
+                if "hp" in spec:
+                    u.hp = float(spec["hp"])
+                if spec.get("dead"):
+                    u.alive = False; u.hp = 0
+            elif kind == "boss":
+                u = Boss(spec.get("type", "gornak"))
+                u.team = team
+                u.x, u.y = x, y
+                u.entrance_timer = 10 ** 6
+                u.timer = 10 ** 9
+                if "hp" in spec:
+                    u.hp = float(spec["hp"])
+                if spec.get("dead"):
+                    u.alive = False; u.hp = 0
+            else:
+                raise AssertionError(kind)
+            u._uid = uid
+            units[uid] = u
+            # Masuk daftar arena pygame (taktik membaca dari sini).
+            if kind == "hero":
+                (game.heroes if team == "blue" else game.ai.heroes).append(u)
+            elif kind == "minion":
+                game.minions.append(u)
+            elif kind == "tower":
+                game.towers.append(u)
+            elif kind == "boss":
+                # Boss taktis = active_boss (bukan daftar).
+                game.active_boss = u
+            return u
+
+        def uid_of(obj):
+            if obj is None:
+                return None
+            return getattr(obj, "_uid", None)
+
+        def pt(p):
+            if p is None:
+                return None
+            return [round(float(p[0]), 4), round(float(p[1]), 4)]
+
+        def snapshot(units):
+            m = game.tactical
+            # Manager closed-world.
+            mgr = {
+                "active_command": m.active_command,
+                "command_timer": int(m.command_timer),
+                "command_target": uid_of(m.command_target),
+                "command_origin": m.command_origin,
+                "cooldown": int(m.cooldown),
+                "gather_point": pt(m.gather_point),
+                "gather_point_timer": int(m.gather_point_timer),
+                "feedback_text": str(m.feedback_text),
+                "feedback_timer": int(m.feedback_timer),
+                "feedback_color": [int(m.feedback_color[0]), int(m.feedback_color[1]), int(m.feedback_color[2])],
+                "held_command": m.held_command,
+                "hold_follow_mouse": bool(m.hold_follow_mouse),
+                "hold_elapsed": int(m.hold_elapsed),
+                "hold_has_fired": bool(m._hold_has_fired),
+                "gather_push_fired": bool(m._gather_push_fired),
+                "auto_check_timer": int(getattr(m, "_auto_check_timer", 0)),
+                "command_color": list(m._get_command_color()),
+                "status_text": str(m.get_status_text()),
+            }
+            # Hold args dinormalisasi (objek → uid) untuk replay Godot.
+            hold_args = []
+            for a in list(m.hold_args or ()):
+                if hasattr(a, "_uid"):
+                    hold_args.append(uid_of(a))
+                elif isinstance(a, (int, float, str, bool)) or a is None:
+                    hold_args.append(a)
+                else:
+                    hold_args.append(str(type(a).__name__))
+            mgr["hold_args"] = hold_args
+            mgr["hold_kwargs"] = dict(m.hold_kwargs or {})
+            heroes = {}
+            for uid, u in units.items():
+                if not hasattr(u, "hero_type"):
+                    continue
+                if str(getattr(u, "team", "")) != "blue":
+                    continue
+                heroes[uid] = {
+                    "x": round(float(u.x), 4), "y": round(float(u.y), 4),
+                    "alive": bool(u.alive),
+                    "destination": pt(getattr(u, "destination", None)),
+                    "destination_auto": bool(getattr(u, "destination_auto", False)),
+                    "follow_target": uid_of(getattr(u, "follow_target", None)),
+                    "target": uid_of(getattr(u, "target", None)),
+                    "is_retreating": bool(getattr(u, "is_retreating", False)),
+                    "range": float(getattr(u, "range", 0)),
+                }
+            allu = {}
+            for uid, u in units.items():
+                allu[uid] = {
+                    "x": round(float(getattr(u, "x", 0)), 4),
+                    "y": round(float(getattr(u, "y", 0)), 4),
+                    "hp": float(getattr(u, "hp", 0)),
+                    "max_hp": float(getattr(u, "max_hp", 1)),
+                    "alive": bool(getattr(u, "alive", False)),
+                    "team": str(getattr(u, "team", "")),
+                    "name": str(getattr(u, "name", getattr(u, "_uid", uid))),
+                    "damage_dealt": int(getattr(u, "damage_dealt", 0)) if hasattr(u, "damage_dealt") else 0,
+                }
+            # Castles selalu ikut (target protect_castle / fallback nearest).
+            for b in (game.blue_base, game.red_base):
+                uid = getattr(b, "_uid", "castle")
+                allu[uid] = {
+                    "x": round(float(b.x), 4), "y": round(float(b.y), 4),
+                    "hp": float(b.hp), "max_hp": float(b.max_hp),
+                    "alive": bool(b.alive), "team": str(b.team),
+                    "name": str(getattr(b, "name", "Castle")),
+                    "damage_dealt": 0,
+                }
+            gm = {
+                "selected_hero": uid_of(game.selected_hero),
+                "selected_tower": uid_of(game.selected_tower),
+                "mouse": [int(game.mouse_x), int(game.mouse_y)],
+                "wave": int(game.wave_number),
+                "state": str(game.state),
+            }
+            return {"manager": mgr, "heroes": heroes, "units": allu, "game": gm}
+
+        def run_action(action, units):
+            m = game.tactical
+            if action is None:
+                return None
+            op = action["op"]
+            with redirect_stdout(io.StringIO()):
+                if op == "gather":
+                    x = action.get("x", None); y = action.get("y", None)
+                    if x is None or y is None:
+                        return bool(m.command_gather(silent=bool(action.get("silent", False))))
+                    return bool(m.command_gather(float(x), float(y), silent=bool(action.get("silent", False))))
+                if op == "protect_tower":
+                    t = units.get(action["tower"]) if action.get("tower") else None
+                    return bool(m.command_protect_tower(t, silent=bool(action.get("silent", False))))
+                if op == "protect_castle":
+                    return bool(m.command_protect_castle(silent=bool(action.get("silent", False))))
+                if op == "attack_boss":
+                    return bool(m.command_attack_boss(silent=bool(action.get("silent", False))))
+                if op == "attack_dealer":
+                    return bool(m.command_attack_damage_dealer(silent=bool(action.get("silent", False))))
+                if op == "hold_start":
+                    args = []
+                    for a in action.get("args", []):
+                        # UID string yang cocok → objek; angka/string lain → literal.
+                        if isinstance(a, str) and a in units:
+                            args.append(units[a])
+                        else:
+                            args.append(a)
+                    return bool(m.hold_start(action["name"], *args, follow_mouse=bool(action.get("follow_mouse", False))))
+                if op == "hold_end":
+                    m.hold_end(action.get("name", None))
+                    return None
+                if op == "set_pos":
+                    u = units[action["unit"]]
+                    u.x = float(action["x"]); u.y = float(action["y"])
+                    return None
+                if op == "set_hp":
+                    key = action["unit"]
+                    if key in ("castle_blue", "castle_red"):
+                        b = game.blue_base if key == "castle_blue" else game.red_base
+                        b.hp = float(action["hp"])
+                    else:
+                        units[key].hp = float(action["hp"])
+                    return None
+                if op == "set_damage":
+                    units[action["unit"]].damage_dealt = int(action["damage"])
+                    return None
+                if op == "set_mouse":
+                    game.mouse_x = int(action["x"]); game.mouse_y = int(action["y"])
+                    return None
+                if op == "set_wave":
+                    game.wave_number = int(action["n"])
+                    return None
+                if op == "set_state":
+                    game.state = str(action["state"])
+                    return None
+                if op == "set_selected_hero":
+                    game.selected_hero = units.get(action["unit"]) if action.get("unit") else None
+                    return None
+                if op == "set_selected_tower":
+                    game.selected_tower = units.get(action["unit"]) if action.get("unit") else None
+                    return None
+                if op == "kill":
+                    key = action["unit"]
+                    if key in ("castle_blue", "castle_red"):
+                        b = game.blue_base if key == "castle_blue" else game.red_base
+                        b.alive = False; b.hp = 0
+                    else:
+                        units[key].alive = False; units[key].hp = 0
+                    return None
+                if op == "revive":
+                    key = action["unit"]
+                    hp = action.get("hp", None)
+                    if key in ("castle_blue", "castle_red"):
+                        b = game.blue_base if key == "castle_blue" else game.red_base
+                        b.alive = True
+                        b.hp = float(hp) if hp is not None else float(b.max_hp)
+                    else:
+                        u = units[key]
+                        u.alive = True
+                        u.hp = float(hp) if hp is not None else float(getattr(u, "max_hp", 100))
+                        # Boss mati di pygame tidak otomatis jadi active lagi;
+                        # harness mengembalikannya seperti spawn baru.
+                        if hasattr(u, "boss_type") and game.active_boss is not u:
+                            game.active_boss = u
+                    return None
+                if op == "spawn_boss":
+                    uid = action.get("unit", "boss0")
+                    b = Boss(action.get("type", "gornak"))
+                    b.team = action.get("team", "red")
+                    b.x = float(action.get("x", 700.0)); b.y = float(action.get("y", 400.0))
+                    b.entrance_timer = 10 ** 6; b.timer = 10 ** 9
+                    if "hp" in action:
+                        b.hp = float(action["hp"])
+                    b._uid = uid
+                    units[uid] = b
+                    game.active_boss = b
+                    return uid
+                if op == "helper_count":
+                    return int(m._count_enemies_near(float(action["x"]), float(action["y"]), float(action["radius"])))
+                if op == "helper_nearest":
+                    t = m._find_nearest_enemy_target(float(action["x"]), float(action["y"]))
+                    return uid_of(t)
+                if op == "helper_threatened":
+                    t = m._find_most_threatened_tower()
+                    return uid_of(t)
+                if op == "helper_dealer":
+                    t = m._find_enemy_damage_dealer()
+                    return uid_of(t)
+                if op == "can_issue":
+                    return bool(m.can_issue())
+                raise AssertionError(op)
+
+        def u(uid, kind, team, x, y, **kw):
+            d = {"id": uid, "kind": kind, "team": team, "x": x, "y": y}
+            d.update(kw)
+            return d
+
+        def run_spec(spec, seed):
+            random.seed(seed)
+            reset()
+            # Random ter-script per skenario (hanya situs taktis).
+            script = list(spec.get("random_script", []))
+            patched = _TacScriptedRandom(script)
+            real_random = random.random
+            random.random = patched
+            try:
+                units = {}
+                for uspec in spec.get("units", []):
+                    make_unit(uspec, units)
+                # Setup game-level.
+                setup = spec.get("setup", {})
+                if "selected_hero" in setup:
+                    game.selected_hero = units.get(setup["selected_hero"]) if setup["selected_hero"] else None
+                if "selected_tower" in setup:
+                    game.selected_tower = units.get(setup["selected_tower"]) if setup["selected_tower"] else None
+                if "mouse" in setup:
+                    game.mouse_x, game.mouse_y = int(setup["mouse"][0]), int(setup["mouse"][1])
+                if "wave" in setup:
+                    game.wave_number = int(setup["wave"])
+                if "state" in setup:
+                    game.state = str(setup["state"])
+                for key, val in (setup.get("castle_hp") or {}).items():
+                    b = game.blue_base if key == "castle_blue" else game.red_base
+                    b.hp = float(val)
+                for key in (setup.get("castle_dead") or []):
+                    b = game.blue_base if key == "castle_blue" else game.red_base
+                    b.alive = False; b.hp = 0
+                pre = snapshot(units)
+                steps = []
+                for st in spec["steps"]:
+                    res = run_action(st.get("action"), units)
+                    for _ in range(int(st.get("frames", 0))):
+                        with redirect_stdout(io.StringIO()):
+                            game.tactical.update()
+                    # Normalisasi result helper (uid/int/bool/null).
+                    steps.append({"action": st.get("action"), "frames": int(st.get("frames", 0)),
+                                  "result": res, "snapshot": snapshot(units)})
+                return steps, pre, list(patched.consumed)
+            finally:
+                random.random = real_random
+
+        # ── DAFTAR SKENARIO (closed-world, tanpa Game.update penuh) ──
+        specs = [
+            # 1. GATHER eksplisit 2 hero: formasi spread + timer/cooldown/feedback.
+            {"name": "gather_explicit_two",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {"selected_hero": "h0", "mouse": [0, 0], "wave": 1},
+             "steps": [
+                 {"action": {"op": "gather", "x": 500.0, "y": 400.0}, "frames": 0},
+                 {"action": None, "frames": 5},
+                 {"action": {"op": "can_issue"}, "frames": 0},
+                 {"action": None, "frames": 25},
+                 {"action": {"op": "can_issue"}, "frames": 0},
+             ]},
+            # 2. GATHER default via selected_hero (tanpa x/y).
+            {"name": "gather_selected_default",
+             "units": [u("h0", "hero", "blue", 410.0, 390.0, type="sylara"),
+                       u("h1", "hero", "blue", 600.0, 500.0, type="thorne")],
+             "setup": {"selected_hero": "h0"},
+             "steps": [
+                 {"action": {"op": "gather"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 3. GATHER avg+midmix (>=2 hero, tanpa selected): avg*0.65+red*0.35 clamp.
+            {"name": "gather_avg_midmix",
+             "units": [u("h0", "hero", "blue", 200.0, 600.0, type="kaizen"),
+                       u("h1", "hero", "blue", 300.0, 500.0, type="vex"),
+                       u("h2", "hero", "blue", 250.0, 550.0, type="zephyr")],
+             "setup": {"selected_hero": None},
+             "steps": [
+                 {"action": {"op": "gather"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 4. GATHER single default (640,360) + silent (tanpa feedback).
+            {"name": "gather_single_silent",
+             "units": [u("h0", "hero", "blue", 100.0, 100.0, type="kaizen")],
+             "setup": {"selected_hero": None},
+             "steps": [
+                 {"action": {"op": "gather", "silent": True}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 5. GATHER tanpa hero hidup → False + feedback merah.
+            {"name": "gather_no_heroes",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen", dead=True)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "gather", "x": 500.0, "y": 400.0}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 6. Gate cooldown + state: command kedua diblokir, victory diblokir.
+            {"name": "gather_cooldown_state_gate",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "gather", "x": 500.0, "y": 400.0}, "frames": 0},
+                 {"action": {"op": "gather", "x": 600.0, "y": 500.0}, "frames": 0},
+                 {"action": {"op": "set_state", "state": "victory"}, "frames": 0},
+                 {"action": {"op": "can_issue"}, "frames": 0},
+                 {"action": {"op": "set_state", "state": "playing"}, "frames": 30},
+                 {"action": {"op": "gather", "x": 600.0, "y": 500.0}, "frames": 0},
+             ]},
+            # 7. GATHER one-shot: arrival >=60% TAPI push tidak pernah picu
+            # (jalur mati: gather_point_timer=150 kedaluwarsa sebelum timer
+            # sentuh 300; push one-shot hanya hidup di mode HOLD).
+            {"name": "gather_oneshot_push_dead_arrived",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("h2", "hero", "blue", 340.0, 340.0, type="sylara"),
+                       u("t0", "tower", "red", 700.0, 400.0),
+                       u("m0", "minion", "red", 900.0, 500.0, type="goblin")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "gather", "x": 500.0, "y": 400.0}, "frames": 100},
+                 # 2/3 tiba (<100px dari titik) → push siap.
+                 {"action": {"op": "set_pos", "unit": "h0", "x": 510.0, "y": 405.0}, "frames": 0},
+                 {"action": {"op": "set_pos", "unit": "h1", "x": 490.0, "y": 395.0}, "frames": 0},
+                 {"action": None, "frames": 200},
+                 {"action": None, "frames": 5},
+             ]},
+            # 8. GATHER tanpa arrival → timer 300 lewat tanpa push.
+            {"name": "gather_no_push_far",
+             "units": [u("h0", "hero", "blue", 100.0, 100.0, type="kaizen"),
+                       u("h1", "hero", "blue", 120.0, 120.0, type="grimjaw"),
+                       u("t0", "tower", "red", 700.0, 400.0)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "gather", "x": 500.0, "y": 400.0}, "frames": 300},
+                 {"action": None, "frames": 5},
+             ]},
+            # 9. PROTECT_TOWER eksplisit low-threat: 4 hero → 2 terdekat.
+            {"name": "protect_tower_low_threat",
+             "units": [u("h0", "hero", "blue", 200.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 210.0, 310.0, type="grimjaw"),
+                       u("h2", "hero", "blue", 800.0, 600.0, type="sylara"),
+                       u("h3", "hero", "blue", 820.0, 620.0, type="thorne"),
+                       u("t0", "tower", "blue", 250.0, 350.0),
+                       u("m0", "minion", "red", 260.0, 360.0, type="goblin")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "protect_tower", "tower": "t0"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 10. PROTECT_TOWER high-threat (>=3 musuh) → 3 terdekat.
+            {"name": "protect_tower_high_threat",
+             "units": [u("h0", "hero", "blue", 200.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 210.0, 310.0, type="grimjaw"),
+                       u("h2", "hero", "blue", 220.0, 320.0, type="sylara"),
+                       u("h3", "hero", "blue", 230.0, 330.0, type="thorne"),
+                       u("h4", "hero", "blue", 900.0, 100.0, type="vex"),
+                       u("t0", "tower", "blue", 250.0, 350.0),
+                       u("m0", "minion", "red", 260.0, 360.0, type="goblin"),
+                       u("m1", "minion", "red", 270.0, 370.0, type="orc"),
+                       u("m2", "minion", "red", 280.0, 380.0, type="troll")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "protect_tower", "tower": "t0"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 11. PROTECT_TOWER <=3 hero → semua berangkat.
+            {"name": "protect_tower_small_roster",
+             "units": [u("h0", "hero", "blue", 100.0, 100.0, type="kaizen"),
+                       u("h1", "hero", "blue", 900.0, 600.0, type="grimjaw"),
+                       u("t0", "tower", "blue", 400.0, 400.0)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "protect_tower", "tower": "t0"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 12. PROTECT_TOWER auto: pilih skor threat tertinggi.
+            {"name": "protect_tower_auto_threatened",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("t0", "tower", "blue", 300.0, 400.0, hp=2000.0),
+                       u("t1", "tower", "blue", 600.0, 400.0, hp=500.0),
+                       u("m0", "minion", "red", 610.0, 410.0, type="goblin"),
+                       u("m1", "minion", "red", 620.0, 420.0, type="orc")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "helper_threatened"}, "frames": 0},
+                 {"action": {"op": "protect_tower"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 13. PROTECT_TOWER fallback: threat 0 semua → HP terendah.
+            {"name": "protect_tower_fallback_lowest_hp",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("t0", "tower", "blue", 300.0, 400.0, hp=1900.0),
+                       u("t1", "tower", "blue", 600.0, 400.0, hp=1200.0)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "helper_threatened"}, "frames": 0},
+                 {"action": {"op": "protect_tower"}, "frames": 0},
+             ]},
+            # 14. PROTECT_TOWER explicit hancur → pilih ulang otomatis.
+            {"name": "protect_tower_destroyed_reselect",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("t0", "tower", "blue", 300.0, 400.0, dead=True),
+                       u("t1", "tower", "blue", 600.0, 400.0)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "protect_tower", "tower": "t0"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 15. PROTECT_TOWER tanpa menara / tanpa hero.
+            {"name": "protect_tower_no_target",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "protect_tower"}, "frames": 0},
+                 {"action": {"op": "kill", "unit": "h0"}, "frames": 0},
+                 {"action": {"op": "protect_tower"}, "frames": 0},
+             ]},
+            # 16. PROTECT_CASTLE formasi + clamp.
+            {"name": "protect_castle_formation",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("h2", "hero", "blue", 340.0, 340.0, type="sylara")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "protect_castle"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 17. PROTECT_CASTLE hancur / tanpa hero.
+            {"name": "protect_castle_destroyed",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen")],
+             "setup": {"castle_dead": ["castle_blue"]},
+             "steps": [
+                 {"action": {"op": "protect_castle"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 18. ATTACK_BOSS sukses: follow+spread range*0.5+i*8.
+            {"name": "attack_boss_success",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="sylara"),
+                       u("boss0", "boss", "red", 700.0, 400.0, type="gornak")],
+             "setup": {"wave": 12},
+             "steps": [
+                 {"action": {"op": "attack_boss"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 19. ATTACK_BOSS tanpa boss.
+            {"name": "attack_boss_no_boss",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "attack_boss"}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+            # 20. ATTACK_DEALER: max damage_dealt + spread + feedback dmg.
+            {"name": "attack_dealer_success",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("r0", "hero", "red", 700.0, 400.0, type="thorne", damage_dealt=1500),
+                       u("r1", "hero", "red", 720.0, 420.0, type="vex", damage_dealt=4200),
+                       u("r2", "hero", "red", 740.0, 440.0, type="kaizen", damage_dealt=800)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "helper_dealer"}, "frames": 0},
+                 {"action": {"op": "attack_dealer"}, "frames": 0},
+                 {"action": None, "frames": 1},
+                 # Dealer berganti → fokus pindah saat refresh.
+                 {"action": {"op": "set_damage", "unit": "r0", "damage": 9000}, "frames": 30},
+                 {"action": {"op": "attack_dealer", "silent": True}, "frames": 0},
+             ]},
+            # 21. ATTACK_DEALER tanpa musuh.
+            {"name": "attack_dealer_no_enemy",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "attack_dealer"}, "frames": 0},
+             ]},
+            # 22. HOLD tap cepat (<20f): timer TIDAK dipotong.
+            {"name": "hold_tap_short",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "hold_start", "name": "gather", "args": [500.0, 400.0]}, "frames": 10},
+                 {"action": {"op": "hold_end", "name": "gather"}, "frames": 0},
+                 {"action": None, "frames": 5},
+             ]},
+            # 23. HOLD lama (>=20f): timer dipotong ke 30 saat dilepas.
+            {"name": "hold_long_truncate",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "hold_start", "name": "protect_castle"}, "frames": 40},
+                 {"action": {"op": "hold_end", "name": "protect_castle"}, "frames": 0},
+                 {"action": None, "frames": 35},
+             ]},
+            # 24. HOLD mismatch/idempotent/invalid.
+            {"name": "hold_mismatch_idempotent",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "hold_start", "name": "gather", "args": [500.0, 400.0]}, "frames": 5},
+                 # Key-repeat hold sama → True tanpa reset elapsed.
+                 {"action": {"op": "hold_start", "name": "gather", "args": [600.0, 500.0]}, "frames": 0},
+                 # Lepas nama salah → hold tetap.
+                 {"action": {"op": "hold_end", "name": "attack_boss"}, "frames": 0},
+                 {"action": None, "frames": 10},
+                 # Nama asing → False.
+                 {"action": {"op": "hold_start", "name": "ngawur"}, "frames": 0},
+                 {"action": {"op": "hold_end", "name": None}, "frames": 0},
+             ]},
+            # 25. HOLD gather follow_mouse: titik ikut kursor tiap refresh.
+            {"name": "hold_gather_follow_mouse",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {"mouse": [500, 400]},
+             "steps": [
+                 {"action": {"op": "hold_start", "name": "gather", "follow_mouse": True}, "frames": 0},
+                 {"action": {"op": "set_mouse", "x": 700, "y": 500}, "frames": 30},
+                 {"action": {"op": "set_mouse", "x": 2000, "y": 2000}, "frames": 30},
+                 {"action": {"op": "hold_end", "name": None}, "frames": 0},
+             ]},
+            # 26. HOLD armed: attack_boss tanpa boss → diam, boss muncul → loud.
+            {"name": "hold_armed_boss_appears",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "hold_start", "name": "attack_boss"}, "frames": 30},
+                 {"action": {"op": "spawn_boss", "unit": "boss0", "type": "gornak", "x": 700.0, "y": 400.0}, "frames": 35},
+                 {"action": {"op": "hold_end", "name": None}, "frames": 0},
+             ]},
+            # 27. HOLD gather push lock: arrival setelah 240f → push, refresh kunci target.
+            {"name": "hold_gather_push_lock",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("t0", "tower", "red", 700.0, 400.0)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "hold_start", "name": "gather", "args": [500.0, 400.0]}, "frames": 200},
+                 {"action": {"op": "set_pos", "unit": "h0", "x": 510.0, "y": 405.0}, "frames": 0},
+                 {"action": {"op": "set_pos", "unit": "h1", "x": 490.0, "y": 395.0}, "frames": 0},
+                 {"action": None, "frames": 50},
+                 {"action": None, "frames": 40},
+                 {"action": {"op": "hold_end", "name": None}, "frames": 0},
+             ]},
+            # 28. Helper _count_enemies_near: minion+hero+boss(×2) per radius.
+            {"name": "helper_count_enemies",
+             "units": [u("m0", "minion", "red", 500.0, 400.0, type="goblin"),
+                       u("m1", "minion", "red", 600.0, 400.0, type="orc"),
+                       u("m2", "minion", "blue", 510.0, 410.0, type="goblin"),
+                       u("r0", "hero", "red", 520.0, 420.0, type="thorne"),
+                       u("boss0", "boss", "red", 540.0, 440.0, type="gornak")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "helper_count", "x": 500.0, "y": 400.0, "radius": 50.0}, "frames": 0},
+                 {"action": {"op": "helper_count", "x": 500.0, "y": 400.0, "radius": 150.0}, "frames": 0},
+                 {"action": {"op": "helper_count", "x": 500.0, "y": 400.0, "radius": 250.0}, "frames": 0},
+                 {"action": {"op": "kill", "unit": "boss0"}, "frames": 0},
+                 {"action": {"op": "helper_count", "x": 500.0, "y": 400.0, "radius": 250.0}, "frames": 0},
+             ]},
+            # 29. Helper nearest: boss/tower/hero jarak, minion hanya bila kosong, fallback castle.
+            {"name": "helper_nearest_target",
+             "units": [u("t0", "tower", "red", 700.0, 400.0),
+                       u("r0", "hero", "red", 650.0, 400.0, type="thorne"),
+                       u("m0", "minion", "red", 520.0, 400.0, type="goblin"),
+                       u("boss0", "boss", "red", 800.0, 400.0, type="gornak")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "helper_nearest", "x": 500.0, "y": 400.0}, "frames": 0},
+                 {"action": {"op": "kill", "unit": "boss0"}, "frames": 0},
+                 {"action": {"op": "helper_nearest", "x": 500.0, "y": 400.0}, "frames": 0},
+                 {"action": {"op": "kill", "unit": "r0"}, "frames": 0},
+                 {"action": {"op": "kill", "unit": "t0"}, "frames": 0},
+                 {"action": {"op": "helper_nearest", "x": 500.0, "y": 400.0}, "frames": 0},
+                 {"action": {"op": "kill", "unit": "m0"}, "frames": 0},
+                 {"action": {"op": "helper_nearest", "x": 500.0, "y": 400.0}, "frames": 0},
+             ]},
+            # 30. Timer expiry: command/gather/feedback decay + clear.
+            {"name": "timers_expiry",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "gather", "x": 500.0, "y": 400.0}, "frames": 150},
+                 {"action": None, "frames": 30},
+                 {"action": None, "frames": 420},
+                 {"action": None, "frames": 5},
+             ]},
+            # 31. AUTO castle: hp<40% + >=2 musuh/300 → protect_castle otomatis.
+            {"name": "auto_protect_castle",
+             "units": [u("h0", "hero", "blue", 500.0, 500.0, type="kaizen"),
+                       u("h1", "hero", "blue", 520.0, 520.0, type="grimjaw"),
+                       u("m0", "minion", "red", 120.0, 600.0, type="goblin"),
+                       u("m1", "minion", "red", 140.0, 620.0, type="orc")],
+             "setup": {"castle_hp": {"castle_blue": 1000.0}},
+             "steps": [
+                 {"action": None, "frames": 89},
+                 {"action": None, "frames": 1},
+                 {"action": None, "frames": 5},
+             ]},
+            # 32. AUTO tower: hp<60% + >=2/250 ATAU >=4 musuh → protect_tower.
+            {"name": "auto_protect_tower",
+             "units": [u("h0", "hero", "blue", 500.0, 500.0, type="kaizen"),
+                       u("h1", "hero", "blue", 520.0, 520.0, type="grimjaw"),
+                       u("t0", "tower", "blue", 400.0, 400.0, hp=800.0),
+                       u("m0", "minion", "red", 410.0, 410.0, type="goblin"),
+                       u("m1", "minion", "red", 420.0, 420.0, type="orc")],
+             "setup": {},
+             "steps": [
+                 {"action": None, "frames": 90},
+                 {"action": None, "frames": 5},
+             ]},
+            # 33. AUTO tower via kerumunan (>=4 walau HP penuh).
+            {"name": "auto_protect_tower_swarm",
+             "units": [u("h0", "hero", "blue", 500.0, 500.0, type="kaizen"),
+                       u("h1", "hero", "blue", 520.0, 520.0, type="grimjaw"),
+                       u("t0", "tower", "blue", 400.0, 400.0),
+                       u("m0", "minion", "red", 410.0, 410.0, type="goblin"),
+                       u("m1", "minion", "red", 415.0, 415.0, type="orc"),
+                       u("m2", "minion", "red", 420.0, 420.0, type="troll"),
+                       u("m3", "minion", "red", 425.0, 425.0, type="undead")],
+             "setup": {},
+             "steps": [
+                 {"action": None, "frames": 90},
+                 {"action": None, "frames": 2},
+             ]},
+            # 34. AUTO boss: hp<80% + wave>=11 + roll<0.2 → attack_boss.
+            {"name": "auto_attack_boss_trigger",
+             "units": [u("h0", "hero", "blue", 500.0, 500.0, type="kaizen"),
+                       u("h1", "hero", "blue", 520.0, 520.0, type="grimjaw"),
+                       u("boss0", "boss", "red", 700.0, 400.0, type="gornak", hp=4000.0)],
+             "setup": {"wave": 12},
+             "random_script": [0.10],
+             "steps": [
+                 {"action": None, "frames": 90},
+                 {"action": None, "frames": 2},
+             ]},
+            # 35. AUTO boss roll gagal (>=0.2) → tetap idle.
+            {"name": "auto_attack_boss_no_roll",
+             "units": [u("h0", "hero", "blue", 500.0, 500.0, type="kaizen"),
+                       u("h1", "hero", "blue", 520.0, 520.0, type="grimjaw"),
+                       u("boss0", "boss", "red", 700.0, 400.0, type="gornak", hp=4000.0)],
+             "setup": {"wave": 12},
+             "random_script": [0.90],
+             "steps": [
+                 {"action": None, "frames": 90},
+                 {"action": None, "frames": 2},
+             ]},
+            # 36. AUTO diam: wave<11 walau boss sekarat → tanpa roll.
+            {"name": "auto_attack_boss_low_wave",
+             "units": [u("h0", "hero", "blue", 500.0, 500.0, type="kaizen"),
+                       u("boss0", "boss", "red", 700.0, 400.0, type="gornak", hp=5000.0)],
+             "setup": {"wave": 5},
+             "random_script": [],
+             "steps": [
+                 {"action": None, "frames": 180},
+             ]},
+            # 37. Retreat clear: is_retreating+dest_auto dibersihkan perintah.
+            {"name": "retreat_cleared",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen", retreating=True, dest_auto=True, dest=[100.0, 100.0]),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw", retreating=True)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "gather", "x": 500.0, "y": 400.0}, "frames": 0},
+                 {"action": None, "frames": 1},
+             ]},
+        ]
+        scenarios = []
+        with redirect_stdout(io.StringIO()):
+            for spec in specs:
+                steps_a, pre_a, cons_a = run_spec(spec, 1701)
+                steps_b, pre_b, cons_b = run_spec(spec, 1702)
+                assert (steps_a, pre_a, cons_a) == (steps_b, pre_b, cons_b), \
+                    "taktik bocor RNG: %s" % spec["name"]
+                scenarios.append({"name": spec["name"],
+                                  "units": spec.get("units", []),
+                                  "setup": spec.get("setup", {}),
+                                  "random_script": spec.get("random_script", []),
+                                  "random_consumed": cons_a,
+                                  "pre": pre_a,
+                                  "steps": steps_a})
+
+        # ── Guard internal oracle ──
+        for sc in scenarios:
+            last = sc["steps"][-1]["snapshot"]
+            mgr = last["manager"]
+            # Timer tidak boleh negatif; origin selalu None.
+            assert mgr["command_timer"] >= 0, "%s timer negatif" % sc["name"]
+            assert mgr["cooldown"] >= 0, "%s cooldown negatif" % sc["name"]
+            assert mgr["gather_point_timer"] >= 0
+            assert mgr["feedback_timer"] >= 0
+            assert mgr["command_origin"] is None
+            # Konsumsi random = panjang script (habis tepat).
+            assert len(sc["random_consumed"]) == len(sc["random_script"]), \
+                "%s random %d != script %d" % (sc["name"], len(sc["random_consumed"]), len(sc["random_script"]))
+        # Bukti gate: cooldown memblokir, victory memblokir.
+        gate = next(s for s in scenarios if s["name"] == "gather_cooldown_state_gate")
+        assert gate["steps"][1]["result"] is False, "cooldown tidak memblokir"
+        assert gate["steps"][3]["result"] is False, "victory tidak memblokir"
+        assert gate["steps"][5]["result"] is True, "post-cooldown harus bisa"
+        # Bukti TAP vs HOLD.
+        tap = next(s for s in scenarios if s["name"] == "hold_tap_short")
+        assert tap["steps"][1]["snapshot"]["manager"]["command_timer"] > 30, "TAP terpotong"
+        hold = next(s for s in scenarios if s["name"] == "hold_long_truncate")
+        assert hold["steps"][1]["snapshot"]["manager"]["command_timer"] == 30, "HOLD tidak dipotong ke 30"
+        # Bukti push: one-shot MATI walau arrival (visual 150 < 300);
+        # push HANYA via HOLD (hold_elapsed>=240, refresh jaga titik).
+        dead = next(s for s in scenarios if s["name"] == "gather_oneshot_push_dead_arrived")
+        assert dead["steps"][-1]["snapshot"]["manager"]["gather_push_fired"] is False
+        nopush = next(s for s in scenarios if s["name"] == "gather_no_push_far")
+        assert nopush["steps"][-1]["snapshot"]["manager"]["gather_push_fired"] is False
+        holdpush = next(s for s in scenarios if s["name"] == "hold_gather_push_lock")
+        assert holdpush["steps"][-2]["snapshot"]["manager"]["gather_push_fired"] is True, "HOLD push tidak picu"
+        # Bukti armed hold: boss muncul → loud (feedback + has_fired).
+        armed = next(s for s in scenarios if s["name"] == "hold_armed_boss_appears")
+        assert armed["steps"][0]["result"] is False, "armed harus gagal dulu"
+        assert armed["steps"][1]["snapshot"]["manager"]["hold_has_fired"] is True
+        assert armed["steps"][1]["snapshot"]["manager"]["active_command"] == "attack_boss"
+        # Bukti auto: castle/tower/boss trigger vs no-roll.
+        assert next(s for s in scenarios if s["name"] == "auto_protect_castle")["steps"][-1]["snapshot"]["manager"]["active_command"] == "protect_castle"
+        assert next(s for s in scenarios if s["name"] == "auto_protect_tower")["steps"][-1]["snapshot"]["manager"]["active_command"] == "protect_tower"
+        assert next(s for s in scenarios if s["name"] == "auto_attack_boss_trigger")["steps"][-1]["snapshot"]["manager"]["active_command"] == "attack_boss"
+        assert next(s for s in scenarios if s["name"] == "auto_attack_boss_no_roll")["steps"][-1]["snapshot"]["manager"]["active_command"] is None
+        assert next(s for s in scenarios if s["name"] == "auto_attack_boss_low_wave")["steps"][-1]["snapshot"]["manager"]["active_command"] is None
+
+        # Konstanta dibaca dari modul/instans ASLI (bukan salinan).
+        fresh = tac.TacticalCommandManager(game)
+        constants = {
+            "hold_tap_max_frames": int(tac.HOLD_TAP_MAX_FRAMES),
+            "hold_release_tail": int(tac.HOLD_RELEASE_TAIL),
+            "gather_push_delay_frames": int(tac.GATHER_PUSH_DELAY_FRAMES),
+            "cooldown_max": int(fresh.cooldown_max),
+            "command_duration": 600,
+            "gather_point_duration": 150,
+            "feedback_duration": 180,
+            "auto_interval": 90,
+            "screen": [int(tac.SCREEN_WIDTH), int(tac.SCREEN_HEIGHT)],
+            "blue_base": [int(tac.BLUE_BASE_X), int(tac.BLUE_BASE_Y)],
+            "red_base": [int(tac.RED_BASE_X), int(tac.RED_BASE_Y)],
+        }
+        # Warna perintah dari _get_command_color ASLI.
+        colors = {}
+        for cmd in ("gather", "protect_tower", "protect_castle", "attack_boss", "attack_damage_dealer", None):
+            fresh.active_command = cmd
+            colors["none" if cmd is None else cmd] = list(fresh._get_command_color())
+        fresh.active_command = None
+
+        return {"fps": 60, "constants": constants, "command_colors": colors,
+                "scenarios": scenarios}
+    finally:
+        __main__.game_instance = saved_game
+        core.GOLD_PER_SECOND = saved_gps
+        _system.SoundManager.play = saved_play
+        if _sp is not None and saved_sp is not None:
+            _sp.beri_tahu_global = saved_sp
+        random.setstate(saved_random)
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -5806,6 +6767,14 @@ def make_fixture(core, entity, levels, paths):
         # credit/reflect, dan HP > 0 tidak memicu dispatch sama sekali.
         # Direplay DeathDispatchParityTest.
         "death_dispatch": make_death_dispatch_fixture(core, entity),
+        # FASE 17 — PERINTAH TAKTIS: oracle MANAJER TAKTIK ASLI pygame
+        # headless (TacticalCommandManager.update di-step manual per frame
+        # dengan unit betulan, tanpa Game.update penuh). Mengunci gate
+        # cooldown/state, TAP-vs-HOLD, push gather (mati one-shot, hidup
+        # via HOLD), seleksi target (threat/nearest/dealer), timer decay,
+        # auto-protect (castle/tower/boss+roll 20%), status/color.
+        # Direplay TacticalCommandsParityTest.
+        "tactical_commands": make_tactical_commands_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -5968,6 +6937,25 @@ def main():
               f"{sum(dd_kinds.values())} serangan ({dd_mix}), "
               f"{dd_dead} kematian terbayar, "
               f"{dd_guard} skenario guard tanpa kematian")
+        tc = actual["tactical_commands"]
+        tc_steps = sum(len(sc["steps"]) for sc in tc["scenarios"])
+        tc_cmds = {}
+        for sc in tc["scenarios"]:
+            for st in sc["steps"]:
+                ac = st["snapshot"]["manager"]["active_command"]
+                if ac:
+                    tc_cmds[ac] = tc_cmds.get(ac, 0) + 1
+        tc_mix = ", ".join("%s×%d" % (k, tc_cmds[k])
+                            for k in sorted(tc_cmds))
+        tc_push = sum(1 for sc in tc["scenarios"]
+                      if sc["steps"][-1]["snapshot"]["manager"]
+                      ["gather_push_fired"])
+        tc_roll = sum(len(sc["random_consumed"]) for sc in tc["scenarios"])
+        print("             tactical-commands oracle: "
+              f"{len(tc['scenarios'])} skenario taktik, "
+              f"{tc_steps} langkah ({tc_mix}), "
+              f"{tc_push} skenario push gather, "
+              f"{tc_roll} roll boss 20% ter-script")
 
 
 if __name__ == "__main__":
