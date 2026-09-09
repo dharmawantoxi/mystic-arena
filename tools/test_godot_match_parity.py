@@ -8528,9 +8528,287 @@ def make_meta_shop_txn_fixture(core, entity):
     assert a == b, "meta_shop_txn: dua seed beda hasilnya beda"
     return a
 
+def _phase20_level_score_text(score):
+    """The branch is mirrored only for the card observation; score/time values
+    themselves come from the original SaveManager below."""
+    return (f"{score / 1000:.1f}K" if score >= 10000 else f"{score:,}")
+
+
+def make_level_select_fixture(core, system):
+    """FASE 20A — level-select state view from Pygame SaveManager asli.
+
+    This deliberately does not compare pixels.  The card's state contract is
+    the persisted level_stats, the Pygame formatter, and the win-rate rule
+    used by Menu._draw_level_card (_core.py:4239-4289).
+    """
+    cases = [
+        ("empty", {}, 1),
+        ("small_score", {"1": {"best_score": 9876,
+                                "best_time_seconds": 65,
+                                "total_attempts": 4, "wins": 3}}, 1),
+        ("large_score_and_long_time", {"1": {"best_score": 12345,
+                                               "best_time_seconds": 3723,
+                                               "total_attempts": 8, "wins": 2}}, 1),
+        ("zero_best_time", {"1": {"best_score": 400,
+                                    "best_time_seconds": 0,
+                                    "total_attempts": 1, "wins": 1}}, 1),
+        ("losses_only", {"1": {"best_score": 0,
+                                 "best_time_seconds": 0,
+                                 "total_attempts": 3, "wins": 0}}, 1),
+    ]
+    rows = []
+    for name, stats, level_num in cases:
+        data = {"level_stats": stats}
+        got = system.SaveManager.get_level_stats(data, level_num)
+        attempts = int(got.get("total_attempts", 0))
+        score = int(got.get("best_score", 0))
+        wins = int(got.get("wins", 0))
+        rows.append({
+            "name": name,
+            "level": level_num,
+            "stats": got,
+            "has_stats": attempts > 0,
+            "score_text": _phase20_level_score_text(score),
+            "time_text": system.SaveManager.format_time(
+                int(got.get("best_time_seconds", 0))),
+            "attempts": attempts,
+            "wins": wins,
+            "win_rate": int((wins / attempts) * 100) if attempts else 0,
+        })
+    return {"rules": {"time_zero": system.SaveManager.format_time(0),
+                       "time_65": system.SaveManager.format_time(65),
+                       "time_3723": system.SaveManager.format_time(3723)},
+            "cases": rows}
+
+
+def make_hero_shop_meta_fixture(core, system):
+    """FASE 20B — replay the actual Pygame Menu transaction."""
+    catalog = core.get_all_hero_types()
+    free = next((name for name, d in catalog.items()
+                 if int(d.get("unlock_cost", 600)) == 0
+                 and name not in ("kaizen",)), None)
+    boss_name = next((name for name, d in catalog.items()
+                      if d.get("unlock_require_boss")), None)
+    assert free and boss_name, "Hero Shop catalog lost free/boss-gated cases"
+    boss_req = catalog[boss_name].get("unlock_require_boss")
+    boss_cost = int(catalog[boss_name].get("unlock_cost", 600))
+    cases = [
+        ("invalid_catalog", "__not_a_hero__", [], [], 999999),
+        ("already_owned", free, [free], [], 0),
+        ("boss_required", boss_name, ["kaizen"], [], boss_cost),
+        ("insufficient_gold", boss_name, ["kaizen"], [boss_req], boss_cost - 1),
+        ("purchase_free", free, ["kaizen"], [], 0),
+        ("purchase_boss_exact", boss_name, ["kaizen"], [boss_req], boss_cost),
+        ("purchase_boss_repeated", boss_name, ["kaizen", boss_name],
+         [boss_req], boss_cost),
+    ]
+    saved_play = system.SoundManager.play
+    saved_save = system.SaveManager.save
+    rows = []
+    try:
+        # The original method has UI/audio side effects; silence only those
+        # side effects. Validation and mutation remain the Pygame method.
+        system.SoundManager.play = lambda *args, **kwargs: None
+        system.SaveManager.save = lambda *args, **kwargs: None
+        for name, hero_type, purchased, bosses, meta_gold in cases:
+            menu = object.__new__(core.Menu)
+            menu.save_data = {
+                "purchased_heroes": list(purchased),
+                "unlocked_bosses": list(bosses),
+                "meta_gold": meta_gold,
+            }
+            menu.meta_gold = meta_gold
+            before = {
+                "purchased": list(purchased), "bosses": list(bosses),
+                "meta_gold": meta_gold,
+            }
+            core.Menu._unlock_hero_in_meta_shop(menu, hero_type)
+            after = {
+                "purchased": list(menu.save_data.get("purchased_heroes", [])),
+                "bosses": list(menu.save_data.get("unlocked_bosses", [])),
+                "meta_gold": int(menu.save_data.get("meta_gold", 0)),
+            }
+            if after == before:
+                reason = "rejected"
+            elif hero_type in after["purchased"]:
+                reason = "purchased"
+            else:
+                reason = "changed"
+            rows.append({"name": name, "hero": hero_type, "before": before,
+                         "after": after, "result": reason,
+                         "cost": int(catalog.get(hero_type, {}).get(
+                             "unlock_cost", 600)),
+                         "boss": catalog.get(hero_type, {}).get(
+                             "unlock_require_boss")})
+    finally:
+        system.SoundManager.play = saved_play
+        system.SaveManager.save = saved_save
+    return {"catalog": {"free": free, "boss": boss_name,
+                         "boss_cost": boss_cost, "boss_requirement": boss_req},
+            "cases": rows}
+
+
+def _phase20_slot_view(info):
+    if info is None:
+        return None
+    return {
+        "slot_num": int(info["slot_num"]),
+        "meta_gold": int(info.get("meta_gold", 0)),
+        "completed_levels": list(info.get("completed_levels", [])),
+        "highest_level": int(info.get("highest_level", 0)),
+        "last_played_level": int(info.get("last_played_level", 1)),
+        "purchased_heroes": list(info.get("purchased_heroes", [])),
+        "unlocked_bosses": list(info.get("unlocked_bosses", [])),
+        "playtime_seconds": int(info.get("playtime_seconds", 0)),
+        # Wall-clock fields are intentionally reduced to presence; Pygame
+        # creates them with time.time(), so they are not state oracle data.
+        "has_created": float(info.get("slot_created", 0)) > 0,
+        "has_last_played": float(info.get("slot_last_played", 0)) > 0,
+    }
+
+
+def make_save_slots_fixture(core, system):
+    """FASE 20C — original Pygame multi-slot/migration API.
+
+    Every case runs inside the isolated MYSTIC_SAVE_DIR installed by main().
+    Timestamp values are normalized, never invented by the Godot side.
+    """
+    sm = system.SaveManager
+    old_slot = sm.get_current_slot()
+    rows = []
+    files = [sm.get_slot_file(i) for i in range(1, system.NUM_SLOTS + 1)]
+    legacy = system.LEGACY_SAVE_FILE
+    backup = os.path.join(os.path.dirname(legacy), "progress_backup.json.old")
+    try:
+        for path in files + [legacy, backup]:
+            if os.path.exists(path):
+                os.remove(path)
+        sm.set_current_slot(1)
+        rows.append({"name": "empty_slots", "slots":
+                     [_phase20_slot_view(x) for x in sm.get_all_slot_info()],
+                     "current": sm.get_current_slot()})
+
+        sm.save({"meta_gold": 120, "completed_levels": [1, 3],
+                 "last_played_level": 3, "purchased_heroes": ["kaizen", "abaddon"],
+                 "unlocked_bosses": ["abaddon"], "slot_playtime_seconds": 3600}, 1)
+        sm.save({"meta_gold": 900, "completed_levels": [1],
+                 "last_played_level": 1, "purchased_heroes": ["kaizen"],
+                 "unlocked_bosses": [], "slot_playtime_seconds": 90}, 2)
+        rows.append({"name": "two_slots_and_info", "slots":
+                     [_phase20_slot_view(x) for x in sm.get_all_slot_info()],
+                     "current": sm.get_current_slot()})
+
+        sm.set_current_slot(2)
+        loaded = sm.load(2)
+        rows.append({"name": "select_slot_two", "current": sm.get_current_slot(),
+                     "loaded": _phase20_slot_view(sm.get_slot_info(2)),
+                     "loaded_gold": loaded.get("meta_gold", 0)})
+
+        # Legacy migration: only after both normal slots are absent.
+        for path in files + [backup]:
+            if os.path.exists(path):
+                os.remove(path)
+        legacy_data = {"meta_gold": 777, "completed_levels": [4],
+                       "purchased_heroes": ["kaizen", "gornak"]}
+        os.makedirs(os.path.dirname(legacy), exist_ok=True)
+        with open(legacy, "w") as handle:
+            json.dump(legacy_data, handle)
+        migrated = sm.migrate_legacy_save()
+        migrated_raw = json.loads(Path(sm.get_slot_file(1)).read_text())
+        rows.append({"name": "legacy_migrated", "migrated": migrated,
+                     "slot1": {"meta_gold": migrated_raw.get("meta_gold"),
+                                "completed_levels": migrated_raw.get("completed_levels"),
+                                "purchased_heroes": migrated_raw.get("purchased_heroes"),
+                                "has_created": "slot_created" in migrated_raw,
+                                "has_last_played": "slot_last_played" in migrated_raw,
+                                "playtime_seconds": migrated_raw.get("slot_playtime_seconds")},
+                     "legacy_exists": os.path.exists(legacy),
+                     "backup_exists": os.path.exists(backup)})
+
+        # Existing slot must win; legacy is not overwritten or renamed.
+        for path in files + [backup]:
+            if os.path.exists(path):
+                os.remove(path)
+        with open(sm.get_slot_file(1), "w") as handle:
+            json.dump({"meta_gold": 11}, handle)
+        with open(legacy, "w") as handle:
+            json.dump({"meta_gold": 99}, handle)
+        collision = sm.migrate_legacy_save()
+        rows.append({"name": "legacy_does_not_overwrite_slot", "migrated": collision,
+                     "slot1_gold": json.loads(Path(sm.get_slot_file(1)).read_text()).get("meta_gold"),
+                     "legacy_exists": os.path.exists(legacy)})
+    finally:
+        for path in files + [legacy, backup]:
+            if os.path.exists(path):
+                os.remove(path)
+        sm.set_current_slot(old_slot)
+    return {"rules": {"num_slots": system.NUM_SLOTS,
+                       "legacy_name": os.path.basename(legacy),
+                       "backup_name": os.path.basename(backup)},
+            "cases": rows}
+
+def make_save_slot_delete_fixture(system):
+    """FASE 20C — production delete behavior, including empty-slot no-op."""
+    sm = system.SaveManager
+    old_slot = sm.get_current_slot()
+    files = [sm.get_slot_file(i) for i in range(1, system.NUM_SLOTS + 1)]
+    legacy = system.LEGACY_SAVE_FILE
+    backup = os.path.join(os.path.dirname(legacy), "progress_backup.json.old")
+    try:
+        for path in files + [legacy, backup]:
+            if os.path.exists(path):
+                os.remove(path)
+        sm.set_current_slot(1)
+        sm.save({"meta_gold": 321, "completed_levels": [1],
+                 "purchased_heroes": ["kaizen"]}, 1)
+        before = sm.get_slot_info(1)
+        created_exists = sm.slot_exists(1)
+        deleted = sm.delete_slot(1)
+        after = sm.get_slot_info(1)
+        empty_delete = sm.delete_slot(1)
+        return {
+            "created": {"exists": created_exists,
+                        "meta_gold": int(before.get("meta_gold", 0)) if before else -1},
+            "deleted": deleted,
+            "empty_after_delete": after is None,
+            "empty_delete_returns_false": not empty_delete,
+        }
+    finally:
+        for path in files + [legacy, backup]:
+            if os.path.exists(path):
+                os.remove(path)
+        sm.set_current_slot(old_slot)
+
+
+
+
+def make_phase20_slots_fixture(system):
+    """Generate multi-slot/migration oracle twice with distinct seeds.
+
+    Slot state itself must be independent of RNG and wall-clock values are
+    normalized to presence flags by _phase20_slot_view.
+    """
+    saved_random = random.getstate()
+    runs = []
+    try:
+        for seed in (20260920, 42420):
+            random.seed(seed)
+            runs.append({
+                "save_slots": make_save_slots_fixture(None, system),
+                "save_slot_delete": make_save_slot_delete_fixture(system),
+            })
+    finally:
+        random.setstate(saved_random)
+    assert runs[0] == runs[1], "save slots oracle differs between two seed runs"
+    return {
+        **runs[0],
+        "determinism": {"seeds": [20260920, 42420],
+                        "identical": True, "rng_sites": []},
+    }
 
 def make_fixture(core, entity, levels, paths):
     fps = 60
+    slot_phase20 = make_phase20_slots_fixture(sys.modules["_system"])
     result = {
         "_generated_by": "tools/test_godot_match_parity.py --write-fixture",
         "rules": {
@@ -8641,6 +8919,18 @@ def make_fixture(core, entity, levels, paths):
         # mini/true 4500) — 222 baris katalog, kasus guard/saldo/sfx/persist,
         # matriks keputusan kartu 5 state. Direplay MetaShopTxnParityTest.
         "meta_shop_txn": make_meta_shop_txn_fixture(core, entity),
+        # Legacy FASE 20 oracle sections retained insert-only for the
+        # progression replay. The richer DRAW/card oracle above remains the
+        # canonical level-select and shop section.
+        "progression_level_select_stats": make_level_select_fixture(
+            core, sys.modules["_system"]),
+        "hero_shop_meta": make_hero_shop_meta_fixture(
+            core, sys.modules["_system"]),
+        # FASE 20C — tiga slot lokal + migrasi progress.json; state-only
+        # oracle dari SaveManager Pygame asli, dengan timestamp dinormalisasi.
+        "save_slots": slot_phase20["save_slots"],
+        "save_slot_delete": slot_phase20["save_slot_delete"],
+        "phase20_determinism": slot_phase20["determinism"],
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -8688,6 +8978,36 @@ def make_fixture(core, entity, levels, paths):
     return result
 
 
+
+def _write_fixture_insert_only(expected):
+    """Add oracle sections without rewriting existing JSON sections.
+
+    Existing sections are compared structurally before the append. This keeps
+    prior fixture evidence reviewable and prevents a new phase from silently
+    regenerating old golden data.
+    """
+    FIXTURE.parent.mkdir(parents=True, exist_ok=True)
+    if not FIXTURE.exists():
+        FIXTURE.write_text(json.dumps(expected, indent=2, ensure_ascii=False) + "\n")
+        return
+    old_text = FIXTURE.read_text()
+    old = json.loads(old_text)
+    missing = [key for key in expected if key not in old]
+    for key in old:
+        assert key in expected, "Fixture lost old section %s" % key
+        assert old[key] == expected[key], (
+            "Existing fixture section %s changed; update Godot first and "
+            "perform an explicit insert-only regeneration" % key)
+    if not missing:
+        return
+    fragment = json.dumps({key: expected[key] for key in missing},
+                          indent=2, ensure_ascii=False)
+    inner = fragment[2:-2]
+    base = old_text.rstrip("\n")
+    assert base.endswith("}"), "Fixture root is not a JSON object"
+    base = base[:-1]
+    FIXTURE.write_text(base + ",\n" + inner + "\n}\n")
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write-fixture", action="store_true")
@@ -8720,9 +9040,8 @@ def main():
         }.items():
             assert economy[key] == actual, f"Re-export economy.json: {key} drifted"
     if args.write_fixture:
-        FIXTURE.parent.mkdir(parents=True, exist_ok=True)
-        FIXTURE.write_text(json.dumps(expected, indent=2, ensure_ascii=False) + "\n")
-        print(f"Wrote {FIXTURE.relative_to(ROOT)}")
+        _write_fixture_insert_only(expected)
+        print(f"Updated {FIXTURE.relative_to(ROOT)} (insert-only)")
     else:
         actual = json.loads(FIXTURE.read_text())
         assert actual == expected, (

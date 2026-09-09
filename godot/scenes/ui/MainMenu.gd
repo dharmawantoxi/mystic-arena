@@ -21,7 +21,7 @@ signal main_menu_requested
 
 ## Paritas MenuState _core.py:3099-3105 (SLOT_SELECT pygame dilewati —
 ## port Godot belum punya multi-slot save).
-enum State { MAIN, LEVEL_SELECT, HERO_SHOP, SETTINGS, HOW_TO_PLAY, CREDITS, PAUSE }
+enum State { MAIN, SLOT_SELECT, LEVEL_SELECT, HERO_SHOP, SETTINGS, HOW_TO_PLAY, CREDITS, PAUSE }
 
 const COL_BG := Color(0.031, 0.033, 0.058, 0.985)
 const COL_PANEL := Color(0.045, 0.05, 0.085, 0.97)
@@ -180,6 +180,8 @@ func _show(new_state: int) -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_PASS
 	_bg.add_child(_root)
 	match state:
+		State.SLOT_SELECT:
+			_build_slot_select()
 		State.LEVEL_SELECT:
 			_build_level_select()
 		State.HERO_SHOP:
@@ -272,7 +274,7 @@ func _build_main() -> void:
 	row.add_child(_make_button("LANJUTKAN — LEVEL %d" % cont, COL_BLUE,
 		func(): _request_play(cont), Vector2(250, 44), 18))
 	row.add_child(_make_button("MULAI GAME", COL_GREEN,
-		_show.bind(State.LEVEL_SELECT), Vector2(250, 44), 18))
+		_show.bind(State.SLOT_SELECT), Vector2(250, 44), 18))
 
 	var buttons: Array = [
 		["HERO SHOP", COL_GOLD, _show.bind(State.HERO_SHOP)],
@@ -303,6 +305,132 @@ func _build_main() -> void:
 	version.add_theme_font_size_override("font_size", 10)
 	version.add_theme_color_override("font_color", Color(0.5, 0.54, 0.66))
 	center.add_child(version)
+
+
+## Pilih slot save sebelum memilih level (paritas MenuState.SLOT_SELECT).
+func _build_slot_select() -> void:
+	_screen_header("PILIH SAVE GAME", State.MAIN)
+	var subtitle := Label.new()
+	subtitle.text = "Pilih save untuk melanjutkan atau mulai game baru"
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.add_theme_font_size_override("font_size", 14)
+	subtitle.add_theme_color_override("font_color", COL_DIM)
+	_root.add_child(subtitle)
+
+	var grid := GridContainer.new()
+	grid.columns = SaveManager.NUM_SLOTS
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 10)
+	grid.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_root.add_child(grid)
+	for slot_num in range(1, SaveManager.NUM_SLOTS + 1):
+		grid.add_child(_slot_card(slot_num, SaveManager.get_slot_info(slot_num)))
+
+	var hint := Label.new()
+	hint.text = "Slot kosong akan dibuat saat progres pertama disimpan."
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.add_theme_font_size_override("font_size", 11)
+	hint.add_theme_color_override("font_color", COL_DIM)
+	_root.add_child(hint)
+
+
+func _slot_card(slot_num: int, info) -> Control:
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(370, 300)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = COL_PANEL if info != null else Color(0.055, 0.065, 0.1)
+	sb.border_color = COL_BORDER if info != null else COL_BLUE
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(10)
+	sb.content_margin_left = 14.0
+	sb.content_margin_right = 14.0
+	sb.content_margin_top = 12.0
+	sb.content_margin_bottom = 12.0
+	card.add_theme_stylebox_override("panel", sb)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 7)
+	card.add_child(box)
+	var title := Label.new()
+	title.text = "SAVE GAME %d" % slot_num
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", COL_GOLD if info != null else COL_BLUE)
+	box.add_child(title)
+	box.add_child(HSeparator.new())
+	if info == null:
+		var empty := Label.new()
+		empty.text = "KOSONG\n\nMulai game baru"
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		empty.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		empty.add_theme_color_override("font_color", COL_DIM)
+		box.add_child(empty)
+	else:
+		var summary := Label.new()
+		summary.text = "Level tertinggi: %d\nLevel terakhir: %d\nMeta gold: %d\nHero: %d  ·  Boss: %d\nPlaytime: %s" % [
+			int(info["highest_level"]), int(info["last_played_level"]),
+			int(info["meta_gold"]), (info["purchased_heroes"] as Array).size(),
+			(info["unlocked_bosses"] as Array).size(),
+			_format_playtime(int(info["playtime_seconds"]))]
+		summary.add_theme_font_size_override("font_size", 13)
+		summary.add_theme_color_override("font_color", COL_TEXT)
+		summary.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		box.add_child(summary)
+	var actions := HBoxContainer.new()
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	actions.add_theme_constant_override("separation", 8)
+	box.add_child(actions)
+	actions.add_child(_make_button("PILIH", COL_GREEN,
+		_select_slot.bind(slot_num), Vector2(150, 34), 14))
+	if info != null:
+		actions.add_child(_make_button("HAPUS", COL_RED,
+			_delete_slot.bind(slot_num), Vector2(110, 34), 13))
+	return card
+
+
+func _format_playtime(seconds: int) -> String:
+	var hours := int(seconds / 3600)
+	var minutes := int((seconds % 3600) / 60)
+	return "%dh %dm" % [hours, minutes] if hours > 0 else "%dm" % minutes
+
+
+func _select_slot(slot_num: int) -> void:
+	if not SaveManager.set_current_slot(slot_num, true):
+		return
+	_show(State.LEVEL_SELECT)
+
+
+func _delete_slot(slot_num: int) -> void:
+	var dialog := ConfirmationDialog.new()
+	dialog.title = "Hapus Save Game"
+	dialog.dialog_text = "Hapus permanen Save Game %d?" % slot_num
+	dialog.confirmed.connect(func():
+		SaveManager.delete_slot(slot_num)
+		_show(State.SLOT_SELECT)
+		dialog.queue_free())
+	dialog.canceled.connect(dialog.queue_free)
+	add_child(dialog)
+	dialog.popup_centered()
+
+
+## State-only view model yang juga dipakai replay slot/progression.
+func level_stat_display(level_num: int) -> Dictionary:
+	var stats: Dictionary = SaveManager.get_level_stats(SaveManager.data, level_num)
+	var attempts := int(stats.get("total_attempts", 0))
+	var score := int(stats.get("best_score", 0))
+	var score_text := _format_level_score(score)
+	var wins := int(stats.get("wins", 0))
+	var win_rate := int(float(wins) / float(attempts) * 100.0) if attempts > 0 else 0
+	return {
+		"has_stats": attempts > 0,
+		"score": score,
+		"score_text": score_text,
+		"time_seconds": int(stats.get("best_time_seconds", 0)),
+		"time_text": SaveManager.format_time(int(stats.get("best_time_seconds", 0))),
+		"attempts": attempts,
+		"wins": wins,
+		"win_rate": win_rate,
+	}
 
 
 ## Ganti tab Hero Shop (paritas shop_tab) lalu bangun ulang grid.
@@ -841,31 +969,42 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	return card
 
 
-## Paritas _unlock_hero_in_meta_shop (_core.py:5298-5328): validasi katalog +
-## boss requirement + saldo, potong meta_gold, lalu SaveManager.unlock_hero().
-func _try_unlock_hero(hero_type: String) -> void:
+## State-only transaction used by the production Hero Shop button and replay.
+## Validation order matches Pygame: catalog, duplicate, boss gate, balance,
+## then one atomic persistent commit.
+func hero_shop_transaction(hero_type: String) -> Dictionary:
 	if HeroDB.get_hero(hero_type).is_empty():
-		AudioManager.play_sfx("ui_error")
-		return
+		return {"ok": false, "reason": "invalid_hero", "hero": hero_type}
 	if SaveManager.is_unlocked(hero_type):
-		AudioManager.play_sfx("ui_error")
-		return
+		return {"ok": false, "reason": "already_owned", "hero": hero_type}
 	var d: Dictionary = HeroDB.get_hero(hero_type)
-	# JSON null (starter tanpa syarat boss) — normalkan ke "" (FASE 20;
-	# str(null) = "<null>" dulu bikin beli semua starter selalu ditolak).
 	var req_raw = d.get("unlock_require_boss", "")
 	var req_boss := "" if req_raw == null else str(req_raw)
 	if not req_boss.is_empty() and not SaveManager.is_boss_unlocked(req_boss):
-		AudioManager.play_sfx("ui_error")
-		return
+		return {"ok": false, "reason": "boss_required", "hero": hero_type,
+			"boss": req_boss}
 	var cost := int(d.get("unlock_cost", 600))
 	if SaveManager.meta_gold() < cost:
+		return {"ok": false, "reason": "insufficient_gold", "hero": hero_type,
+			"cost": cost}
+	var before_gold := SaveManager.meta_gold()
+	if not SaveManager.commit_hero_purchase(hero_type, cost):
+		return {"ok": false, "reason": "commit_failed", "hero": hero_type}
+	return {"ok": true, "reason": "purchased", "hero": hero_type,
+		"cost": cost, "gold_before": before_gold,
+		"gold_after": SaveManager.meta_gold(),
+		"owned": SaveManager.is_unlocked(hero_type)}
+
+
+## Paritas _unlock_hero_in_meta_shop (_core.py:5298-5328): validasi katalog +
+## boss requirement + saldo, potong meta_gold, lalu SaveManager.unlock_hero().
+func _try_unlock_hero(hero_type: String) -> void:
+	var result := hero_shop_transaction(hero_type)
+	if not bool(result.get("ok", false)):
 		AudioManager.play_sfx("ui_error")
 		return
-	SaveManager.add_meta_gold(-cost)
-	SaveManager.unlock_hero(hero_type)
 	AudioManager.play_sfx("ui_buy")
-	print("[HeroShop] %s dibuka (-%d meta gold)" % [hero_type, cost])
+	print("[HeroShop] %s dibuka (-%d meta gold)" % [hero_type, int(result["cost"])])
 	_show(State.HERO_SHOP) # segarkan chip gold + status kartu
 
 

@@ -655,6 +655,28 @@ jobs:
             exit 1
           fi
 
+      # ── 4r. ProgressionParityTest (FASE 20C): multi-slot save + migrasi
+      # progress.json lokal. Oracle Pygame SaveManager asli, fixture insert-only
+      # save_slots/phase20_determinism/save_slot_delete, dan cloud payload
+      # checksum. Godot mereplay SaveManager/MainMenu produksi; semua metadata
+      # wall-clock dibandingkan sebagai presence flag. user:// terisolasi.
+      - name: ProgressionParityTest (save slots + migration vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/ProgressionParityTest.tscn --quit-after 300 2>&1 | tee /tmp/progression.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/progression.log --label "ProgressionParityTest" \
+              --require "[ProgressionParityTest] PASS" > /tmp/progression.gate 2>&1; then
+            cat /tmp/progression.gate
+          else
+            cat /tmp/progression.gate
+            echo "::error::PROGRESSION-FAIL-TAIL: $(tail -40 /tmp/progression.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::PROGRESSION-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/progression.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
