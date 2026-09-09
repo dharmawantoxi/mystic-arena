@@ -472,6 +472,36 @@ jobs:
             exit 1
           fi
 
+      # ── 4l. DeathDispatchParityTest (FASE 16): dispatch kematian terpusat.
+      # Oracle = jalur SERANGAN NYATA pygame (Tower._shoot -> Bullet._on_hit
+      # tanpa source, Hero._do_attack melee & proyektil, Minion.update netral,
+      # damage skill/kit) + loop reward Game.update. Godot mereplay lewat jalur
+      # produksi yang sama (Tower._shoot -> TowerBullet._on_hit,
+      # Hero.try_attack, Minion.try_attack, CombatSystem.apply_damage) —
+      # BUKAN take_damage(1e9)+die() seperti FASE 15, karena jalur itu justru
+      # melewati dispatch yang sedang diuji. Tidak ada register_* manual.
+      # Yang dikunci: peluru menara (source diputus) tidak memberi kill credit
+      # maupun reflect Bristleback, HP > 0 tidak memicu dispatch sama sekali,
+      # mayat yang dipukul ulang tetap dibayar sekali, dan snapshot per unit
+      # hanya dead/hp/rewarded/team (Tower.die membuang identitas killer).
+      # user:// terisolasi bahkan kalau harness berhenti di tengah.
+      - name: DeathDispatchParityTest (dispatch kematian vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/DeathDispatchParityTest.tscn --quit-after 600 2>&1 | tee /tmp/dthdisp.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/dthdisp.log --label "DeathDispatchParityTest" \
+              --require "[DeathDispatchParityTest] PASS" > /tmp/dthdisp.gate 2>&1; then
+            cat /tmp/dthdisp.gate
+          else
+            cat /tmp/dthdisp.gate
+            echo "::error::DTHDISP-FAIL-TAIL: $(tail -40 /tmp/dthdisp.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::DTHDISP-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/dthdisp.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

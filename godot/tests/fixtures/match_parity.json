@@ -102185,5 +102185,3044 @@
         ]
       }
     ]
+  },
+  "death_dispatch": {
+    "fps": 60,
+    "initial": {
+      "gold": 211,
+      "score": 43,
+      "ai_gold": 29,
+      "total_kills": 1,
+      "max_combo": 2,
+      "red_towers_destroyed": 1
+    },
+    "scenarios": [
+      {
+        "name": "tower_bullet_normal_kills_minion",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "arena": false
+          },
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "goblin",
+            "hp": 12.0
+          }
+        ],
+        "attack": {
+          "kind": "tower_bullet",
+          "by": "t0",
+          "target": "m0"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "t0": {
+              "dead": false,
+              "hp": 2000.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "m0": {
+              "dead": false,
+              "hp": 12.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {}
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 118,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 3,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 115,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_bullet_cannon_kills_minion_and_splash",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "tower_type": "cannon",
+            "arena": false
+          },
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "goblin",
+            "hp": 40.0
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "team": "red",
+            "x": 370.0,
+            "y": 300.0,
+            "type": "goblin",
+            "hp": 6.0
+          }
+        ],
+        "attack": {
+          "kind": "tower_bullet",
+          "by": "t0",
+          "target": "m0"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "t0": {
+              "dead": false,
+              "hp": 3000.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "m0": {
+              "dead": false,
+              "hp": 40.0,
+              "rewarded": false,
+              "team": "red"
+            },
+            "m1": {
+              "dead": false,
+              "hp": 6.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {}
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 227,
+              "score": 59,
+              "ai_gold": 29,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 2,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 3000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                },
+                "m1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 227,
+              "score": 59,
+              "ai_gold": 29,
+              "total_kills": 3,
+              "max_combo": 2,
+              "combo": {
+                "count": 2,
+                "timer": 117,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 3000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                },
+                "m1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_bullet_ice_kills_hero",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "tower_type": "ice",
+            "arena": false
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "grimjaw",
+            "hp": 12.0
+          }
+        ],
+        "attack": {
+          "kind": "tower_bullet",
+          "by": "t0",
+          "target": "h0"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "t0": {
+              "dead": false,
+              "hp": 2375.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h0": {
+              "dead": false,
+              "hp": 12.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2375.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2375.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "tower_bullet_normal_kills_tower",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "arena": false
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "hp": 10.0
+          }
+        ],
+        "attack": {
+          "kind": "tower_bullet",
+          "by": "t0",
+          "target": "t1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "t0": {
+              "dead": false,
+              "hp": 2000.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "t1": {
+              "dead": false,
+              "hp": 10.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {}
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 311,
+              "score": 143,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 311,
+              "score": 143,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_melee_kills_minion",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "grimjaw",
+            "arena": false
+          },
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "goblin",
+            "hp": 15.0
+          }
+        ],
+        "attack": {
+          "kind": "hero_melee",
+          "by": "h0",
+          "target": "m0"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 1120.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "m0": {
+              "dead": false,
+              "hp": 15.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 118,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 3,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 115,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_melee_kills_hero",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "grimjaw",
+            "arena": false
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "thorne",
+            "hp": 40.0
+          }
+        ],
+        "attack": {
+          "kind": "hero_melee",
+          "by": "h0",
+          "target": "h1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 1120.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h1": {
+              "dead": false,
+              "hp": 40.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0,
+            "h1": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_ranged_kills_minion",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "sylara",
+            "arena": false
+          },
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "orc",
+            "hp": 18.0
+          }
+        ],
+        "attack": {
+          "kind": "hero_ranged",
+          "by": "h0",
+          "target": "m0"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 658.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "m0": {
+              "dead": false,
+              "hp": 18.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 229,
+              "score": 61,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 658.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 229,
+              "score": 61,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 118,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 658.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 3,
+            "attack": null,
+            "snapshot": {
+              "gold": 229,
+              "score": 61,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 115,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 658.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_ranged_kills_tower",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "sylara",
+            "arena": false
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "hp": 25.0
+          }
+        ],
+        "attack": {
+          "kind": "hero_ranged",
+          "by": "h0",
+          "target": "t1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 658.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "t1": {
+              "dead": false,
+              "hp": 25.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 311,
+              "score": 143,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 658.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 311,
+              "score": 143,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 658.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "hero_ranged_kills_hero",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "vex",
+            "arena": false
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "kaizen",
+            "hp": 30.0
+          }
+        ],
+        "attack": {
+          "kind": "hero_ranged",
+          "by": "h0",
+          "target": "h1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 728.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h1": {
+              "dead": false,
+              "hp": 30.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0,
+            "h1": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 728.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 728.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_attack_kills_tower",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "orc",
+            "arena": false
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "hp": 8.0
+          }
+        ],
+        "attack": {
+          "kind": "minion_attack",
+          "by": "m0",
+          "target": "t1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "m0": {
+              "dead": false,
+              "hp": 110.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "t1": {
+              "dead": false,
+              "hp": 8.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {}
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 311,
+              "score": 143,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "units": {
+                "m0": {
+                  "dead": false,
+                  "hp": 110.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 311,
+              "score": 143,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 2,
+              "units": {
+                "m0": {
+                  "dead": false,
+                  "hp": 110.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          }
+        ]
+      },
+      {
+        "name": "minion_attack_kills_minion",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "troll",
+            "arena": false
+          },
+          {
+            "id": "m1",
+            "kind": "minion",
+            "team": "blue",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "goblin",
+            "hp": 10.0
+          }
+        ],
+        "attack": {
+          "kind": "minion_attack",
+          "by": "m0",
+          "target": "m1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "m0": {
+              "dead": false,
+              "hp": 320.0,
+              "rewarded": false,
+              "team": "red"
+            },
+            "m1": {
+              "dead": false,
+              "hp": 10.0,
+              "rewarded": false,
+              "team": "blue"
+            }
+          },
+          "hero_kills": {}
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 37,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "m0": {
+                  "dead": false,
+                  "hp": 320.0,
+                  "rewarded": false,
+                  "team": "red"
+                },
+                "m1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "blue"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 37,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "m0": {
+                  "dead": false,
+                  "hp": 320.0,
+                  "rewarded": false,
+                  "team": "red"
+                },
+                "m1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "blue"
+                }
+              },
+              "hero_kills": {}
+            }
+          }
+        ]
+      },
+      {
+        "name": "skill_damage_kills_minion",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 700.0,
+            "y": 300.0,
+            "type": "sylara",
+            "arena": false
+          },
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "goblin",
+            "hp": 60.0
+          }
+        ],
+        "attack": {
+          "kind": "skill",
+          "source": "h0",
+          "target": "m0",
+          "amount": 500.0,
+          "from_team": "blue",
+          "dmg_type": "normal",
+          "school": "magic"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 658.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "m0": {
+              "dead": false,
+              "hp": 60.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 658.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 117,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 658.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "skill_damage_kills_hero",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 700.0,
+            "y": 300.0,
+            "type": "grimjaw",
+            "arena": false
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "sylara",
+            "hp": 70.0
+          }
+        ],
+        "attack": {
+          "kind": "skill",
+          "source": "h0",
+          "target": "h1",
+          "amount": 900.0,
+          "from_team": "blue",
+          "dmg_type": "normal",
+          "school": "fire"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 1120.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h1": {
+              "dead": false,
+              "hp": 70.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0,
+            "h1": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 1,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "bullet_source_none_no_reflect_no_credit",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "arena": false
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "thorne",
+            "hp": 500.0,
+            "bristleback": true
+          }
+        ],
+        "attack": {
+          "kind": "tower_bullet",
+          "by": "t0",
+          "target": "h0"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "t0": {
+              "dead": false,
+              "hp": 2000.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h0": {
+              "dead": false,
+              "hp": 500.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0
+          }
+        },
+        "expect_death": false,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h0": {
+                  "dead": false,
+                  "hp": 486.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h0": {
+                  "dead": false,
+                  "hp": 486.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "melee_source_present_reflects_to_attacker",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "grimjaw",
+            "arena": false
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "thorne",
+            "hp": 500.0,
+            "bristleback": true
+          }
+        ],
+        "attack": {
+          "kind": "hero_melee",
+          "by": "h0",
+          "target": "h1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 1120.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h1": {
+              "dead": false,
+              "hp": 500.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0,
+            "h1": 0
+          }
+        },
+        "expect_death": false,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1113.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": false,
+                  "hp": 471.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1113.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": false,
+                  "hp": 471.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "bullet_kill_gives_no_kill_credit",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "arena": false
+          },
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 700.0,
+            "y": 300.0,
+            "type": "kaizen",
+            "arena": false
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "grimjaw",
+            "hp": 12.0
+          }
+        ],
+        "attack": {
+          "kind": "tower_bullet",
+          "by": "t0",
+          "target": "h1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "t0": {
+              "dead": false,
+              "hp": 2000.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h0": {
+              "dead": false,
+              "hp": 770.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h1": {
+              "dead": false,
+              "hp": 12.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0,
+            "h1": 0
+          }
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h0": {
+                  "dead": false,
+                  "hp": 770.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "frames": 2,
+            "attack": null,
+            "snapshot": {
+              "gold": 361,
+              "score": 193,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h0": {
+                  "dead": false,
+                  "hp": 770.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "guard_no_death_tower_survives",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "arena": false
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "hp": 900.0
+          }
+        ],
+        "attack": {
+          "kind": "tower_bullet",
+          "by": "t0",
+          "target": "t1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "t0": {
+              "dead": false,
+              "hp": 2000.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "t1": {
+              "dead": false,
+              "hp": 900.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {}
+        },
+        "expect_death": false,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": false,
+                  "hp": 880.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": false,
+                  "hp": 880.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 3,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "t1": {
+                  "dead": false,
+                  "hp": 880.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          }
+        ]
+      },
+      {
+        "name": "guard_no_death_minion_survives",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "grimjaw",
+            "arena": false
+          },
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "troll",
+            "hp": 800.0
+          }
+        ],
+        "attack": {
+          "kind": "hero_melee",
+          "by": "h0",
+          "target": "m0"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 1120.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "m0": {
+              "dead": false,
+              "hp": 800.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0
+          }
+        },
+        "expect_death": false,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": false,
+                  "hp": 762.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": false,
+                  "hp": 762.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          },
+          {
+            "frames": 3,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 1120.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": false,
+                  "hp": 762.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "guard_no_death_hero_survives",
+        "initial": {},
+        "units": [
+          {
+            "id": "h0",
+            "kind": "hero",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "type": "vex",
+            "arena": false
+          },
+          {
+            "id": "h1",
+            "kind": "hero",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "thorne",
+            "hp": 2000.0
+          }
+        ],
+        "attack": {
+          "kind": "hero_ranged",
+          "by": "h0",
+          "target": "h1"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "h0": {
+              "dead": false,
+              "hp": 728.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "h1": {
+              "dead": false,
+              "hp": 2000.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {
+            "h0": 0,
+            "h1": 0
+          }
+        },
+        "expect_death": false,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 728.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": false,
+                  "hp": 1957.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 728.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": false,
+                  "hp": 1957.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          },
+          {
+            "frames": 3,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "h0": {
+                  "dead": false,
+                  "hp": 728.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "h1": {
+                  "dead": false,
+                  "hp": 1957.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {
+                "h0": 0,
+                "h1": 0
+              }
+            }
+          }
+        ]
+      },
+      {
+        "name": "guard_no_death_direct_big_damage",
+        "initial": {},
+        "units": [
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "goblin",
+            "hp": 100000.0
+          },
+          {
+            "id": "t1",
+            "kind": "tower",
+            "team": "red",
+            "x": 900.0,
+            "y": 300.0,
+            "hp": 100000.0
+          }
+        ],
+        "attack": {
+          "kind": "direct",
+          "target": "m0",
+          "amount": 99999.0,
+          "from_team": "blue",
+          "dmg_type": "normal"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "m0": {
+              "dead": false,
+              "hp": 100000.0,
+              "rewarded": false,
+              "team": "red"
+            },
+            "t1": {
+              "dead": false,
+              "hp": 100000.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {}
+        },
+        "expect_death": false,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "m0": {
+                  "dead": false,
+                  "hp": 1.0,
+                  "rewarded": false,
+                  "team": "red"
+                },
+                "t1": {
+                  "dead": false,
+                  "hp": 100000.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "m0": {
+                  "dead": false,
+                  "hp": 1.0,
+                  "rewarded": false,
+                  "team": "red"
+                },
+                "t1": {
+                  "dead": false,
+                  "hp": 100000.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 3,
+            "attack": null,
+            "snapshot": {
+              "gold": 211,
+              "score": 43,
+              "ai_gold": 29,
+              "total_kills": 1,
+              "max_combo": 2,
+              "combo": {
+                "count": 0,
+                "timer": 0,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "m0": {
+                  "dead": false,
+                  "hp": 1.0,
+                  "rewarded": false,
+                  "team": "red"
+                },
+                "t1": {
+                  "dead": false,
+                  "hp": 100000.0,
+                  "rewarded": false,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          }
+        ]
+      },
+      {
+        "name": "guard_dead_unit_hit_again_pays_once",
+        "initial": {},
+        "units": [
+          {
+            "id": "t0",
+            "kind": "tower",
+            "team": "blue",
+            "x": 300.0,
+            "y": 300.0,
+            "arena": false
+          },
+          {
+            "id": "m0",
+            "kind": "minion",
+            "team": "red",
+            "x": 345.0,
+            "y": 300.0,
+            "type": "goblin",
+            "hp": 12.0
+          }
+        ],
+        "attack": {
+          "kind": "tower_bullet",
+          "by": "t0",
+          "target": "m0"
+        },
+        "pre": {
+          "gold": 211,
+          "score": 43,
+          "ai_gold": 29,
+          "total_kills": 1,
+          "max_combo": 2,
+          "combo": {
+            "count": 0,
+            "timer": 0,
+            "last_combo": 0
+          },
+          "red_towers_destroyed": 1,
+          "units": {
+            "t0": {
+              "dead": false,
+              "hp": 2000.0,
+              "rewarded": false,
+              "team": "blue"
+            },
+            "m0": {
+              "dead": false,
+              "hp": 12.0,
+              "rewarded": false,
+              "team": "red"
+            }
+          },
+          "hero_kills": {}
+        },
+        "expect_death": true,
+        "steps": [
+          {
+            "frames": 1,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 119,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 1,
+            "attack": {
+              "kind": "direct",
+              "target": "m0",
+              "amount": 1000000000,
+              "from_team": "blue",
+              "dmg_type": "normal"
+            },
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 118,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          },
+          {
+            "frames": 3,
+            "attack": null,
+            "snapshot": {
+              "gold": 219,
+              "score": 51,
+              "ai_gold": 29,
+              "total_kills": 2,
+              "max_combo": 2,
+              "combo": {
+                "count": 1,
+                "timer": 115,
+                "last_combo": 0
+              },
+              "red_towers_destroyed": 1,
+              "units": {
+                "t0": {
+                  "dead": false,
+                  "hp": 2000.0,
+                  "rewarded": false,
+                  "team": "blue"
+                },
+                "m0": {
+                  "dead": true,
+                  "hp": 0.0,
+                  "rewarded": true,
+                  "team": "red"
+                }
+              },
+              "hero_kills": {}
+            }
+          }
+        ]
+      }
+    ]
   }
 }
