@@ -20,7 +20,7 @@
 # _unlock_hero_in_meta_shop _core.py:5298-5328).
 extends Control
 
-const BakedUnitDBScript = preload("res://scripts/render/BakedUnitDB.gd")
+const BakedUnitDB = preload("res://scripts/render/BakedUnitDB.gd")
 
 signal play_requested(level_num: int)
 signal resume_requested
