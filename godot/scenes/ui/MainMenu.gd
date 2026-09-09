@@ -15,6 +15,12 @@
 # _unlock_hero_in_meta_shop _core.py:5298-5328).
 extends Control
 
+# Satu sumber tipografi untuk seluruh UI menu. Pygame menggunakan Barlow
+# sebagai font body; sebelumnya Control yang dibuat runtime jatuh ke fallback
+# Godot sehingga ukuran glyph, wrapping, dan lebar tombol berbeda antar layar.
+const UI_FONT: Font = preload("res://assets/fonts/Barlow-Regular.ttf")
+const UI_FONT_BOLD: Font = preload("res://assets/fonts/Barlow-SemiBold.ttf")
+
 signal play_requested(level_num: int)
 signal resume_requested
 signal main_menu_requested
@@ -94,6 +100,15 @@ var _slot_delete_return: int = 1
 
 
 func _ready() -> void:
+	# Theme diwariskan ke semua Label/Button/LineEdit yang dibangun runtime.
+	# Ini menjaga metrik teks sama di MAIN, SLOT_SELECT, shop, settings,
+	# pause, dan dialog modal; override warna/ukuran lokal tetap berlaku.
+	var ui_theme := Theme.new()
+	ui_theme.default_font = UI_FONT
+	ui_theme.set_font("font", "Label", UI_FONT)
+	ui_theme.set_font("font", "Button", UI_FONT_BOLD)
+	ui_theme.set_font("font", "LineEdit", UI_FONT)
+	theme = ui_theme
 	name = "MainMenu"
 	add_to_group("main_menu")
 	# Harus tetap hidup saat SceneTree di-pause (menu PAUSE dibuka justru

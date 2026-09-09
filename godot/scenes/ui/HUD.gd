@@ -13,6 +13,8 @@ const AchievementPopupScript = preload("res://scenes/ui/AchievementPopup.gd")
 const TacticalBarScript = preload("res://scenes/ui/TacticalBar.gd")
 ## Seberapa sering bar nexus/disability disegarkan (5 Hz cukup, hemat draw call)
 const BAR_REFRESH := 0.2
+const UI_FONT: Font = preload("res://assets/fonts/Barlow-Regular.ttf")
+const UI_FONT_BOLD: Font = preload("res://assets/fonts/Barlow-SemiBold.ttf")
 
 var _banner_tween: Tween
 var _wave_sub: Label = null
@@ -37,6 +39,14 @@ var _achievement_popup: Control = null
 @onready var field_label: Label = $TopLeft/FieldStatus
 
 func _ready():
+	# Semua popup/bar yang dibuat melalui kode harus memakai metrik Barlow
+	# yang sama dengan HUD statis dan renderer pygame.
+	var ui_theme := Theme.new()
+	ui_theme.default_font = UI_FONT
+	ui_theme.set_font("font", "Label", UI_FONT)
+	ui_theme.set_font("font", "Button", UI_FONT_BOLD)
+	ui_theme.set_font("font", "LineEdit", UI_FONT)
+	theme = ui_theme
 	wave_banner.modulate.a = 0.0
 	wave_banner.set_meta("base_l", wave_banner.offset_left)
 	wave_banner.set_meta("base_r", wave_banner.offset_right)
