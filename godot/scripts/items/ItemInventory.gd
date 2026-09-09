@@ -813,9 +813,20 @@ func _tick_procs(delta: float) -> void:
 			continue
 		m[1] -= delta
 		m[2] -= delta
-		if m[2] <= 0.0:
+		if m[2] <= EPS:
 			m[2] = 0.5  # tick 30 frame = 0.5 dtk (hero_items.py:224)
-			_damage_one(tgt, float(m[3]))
+			# pygame: tgt.take_damage(m["damage"], team, "magic") dgn
+			# team = getattr(src, "team") — tim dari SOURCE (hero
+			# penabur racun), BUKAN dari inventory yang kebetulan
+			# men-tick frame ini (_MIASMA global di-tick SEMUA unit;
+			# kalau tim diambil dari pemilik inventory, tick via update
+			# korban jadi damage satu tim sendiri dan tertahan — CI 4o).
+			var src_team := "blue"
+			if m.size() > 4 and m[4] != null and is_instance_valid(m[4]):
+				src_team = str(m[4].get("team"))
+			if CombatSystem != null:
+				CombatSystem.apply_damage(tgt, float(m[3]), src_team,
+						"magic")
 		if m[1] > 0.0:
 			still.append(m)
 	_miasma = still
@@ -953,7 +964,7 @@ func _miasma_proc(db, target, damage: float) -> void:
 	var data: Dictionary = db.get_item("basilisk_breath")
 	var oa = data.get("on_attack")
 	if oa is Dictionary:
-		_apply_miasma(target, oa)
+		_apply_miasma(target, hero, oa)
 	var ms = data.get("multishot")
 	if not (ms is Dictionary) or is_melee():
 		return
@@ -970,12 +981,12 @@ func _miasma_proc(db, target, damage: float) -> void:
 			continue
 		_damage_one(e, float(int(damage * pct)), "magic")
 		if oa is Dictionary:
-			_apply_miasma(e, oa)
+			_apply_miasma(e, hero, oa)
 		n += 1
 
 
 ## Pasang/refresh racun pada satu target (cap damage per tick).
-func _apply_miasma(target, oa: Dictionary) -> void:
+func _apply_miasma(target, source, oa: Dictionary) -> void:
 	# pygame: dmg = int(max_hp * pct); dmg = max(6, min(cap, dmg))
 	# (hero_items.py:195-199) — truncation int() + floor 6 wajib,
 	# kalau tidak HP pembanding melenceng perpecahan (oracle item_procs).
@@ -983,10 +994,18 @@ func _apply_miasma(target, oa: Dictionary) -> void:
 	per_tick = maxf(6.0, minf(per_tick, float(oa.get("cap_damage", 9999.0))))
 	for m in _miasma:
 		if m[0] == target:
-			m[1] = _sec(float(oa.get("duration", 0.0)))
-			m[3] = per_tick
+			# refresh pygame 201-203: timer MAX, tick_cd MIN, damage MAX,
+			# source DIGANTI.
+			m[1] = maxf(m[1], _sec(float(oa.get("duration", 0.0))))
+			m[2] = minf(m[2], 0.5)
+			m[3] = maxf(m[3], per_tick)
+			if m.size() > 4:
+				m[4] = source
+			else:
+				m.append(source)
 			return
-	_miasma.append([target, _sec(float(oa.get("duration", 0.0))), 0.5, per_tick])
+	_miasma.append([target, _sec(float(oa.get("duration", 0.0))), 0.5,
+			per_tick, source])
 
 
 ## Charge Empower Strike — mirror empower_charge pygame: PENUH sejak

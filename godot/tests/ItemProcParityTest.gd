@@ -67,8 +67,6 @@ var _scenario_count := 0
 var _event_checks := 0
 var _roll_checks := 0
 var _flag_checks := 0
-# DEBUG SEMENTARA: jejak decrement _miasma per (frame, unit).
-var _dbg_trace: Array[String] = []
 
 
 func _ready() -> void:
@@ -257,7 +255,6 @@ func _replay(sc: Dictionary) -> void:
 		for attack in sc["attacks"]:
 			if attack.has("set"):
 				_patch_defender(dfn, attack["set"])
-			_dbg_trace = []
 			_pre_updates(units, int(attack.get("pre_item_updates", 0)))
 			ParityRng.begin(attack.get("rolls", []))
 			atk.attack_timer = 0.0
@@ -271,7 +268,6 @@ func _replay(sc: Dictionary) -> void:
 		for attack in sc["attacks"]:
 			if attack.has("set"):
 				_patch_defender(dfn, attack["set"])
-			_dbg_trace = []
 			_pre_updates(units, int(attack.get("pre_item_updates", 0)))
 			ParityRng.begin(attack.get("rolls", []))
 			atk.attack_timer = 0.0
@@ -319,19 +315,7 @@ func _pre_updates(units: Dictionary, count: int) -> void:
 				st.tick(FRAME)
 			var inv = u.get("items")
 			if inv != null:
-				var had: bool = inv._miasma.size() > 0
-				var cd0 := -1.0
-				if had:
-					cd0 = float(inv._miasma[0][2])
 				inv.tick(FRAME)
-				# DEBUG SEMENTARA (diagnosa CI): siapa men-decrement.
-				if had and inv._miasma.size() > 0:
-					_dbg_trace.append("%s%d:%.4f" % [tag.substr(0, 1), _i,
-						float(inv._miasma[0][2])])
-				elif had:
-					_dbg_trace.append("%s%d:EMPTY" % [tag.substr(0, 1), _i])
-				elif cd0 >= 0.0:
-					pass
 
 
 ## Peluru milik `atk` yang paling baru ter-spawn (satu per serangan pada
@@ -364,13 +348,6 @@ func _compare_event(sc_name: String, ev: Dictionary, units: Dictionary) -> void:
 			_expect(false, "%s e%d: unit %s tidak ada" % [sc_name, int(ev["i"]), tag])
 			continue
 		var got := float(units[tag].hp)
-		# DEBUG SEMENTARA (diagnosa CI): sertakan trace decrement miasma
-		# per frame pada pesan gagal skenario miasma, agar terlihat di
-		# anotasi CI siapa yang me-decrement dan kapan tick terjadi.
-		if not is_equal_approx(got, float(want[tag])) and sc_name.contains("miasma_melee"):
-			_expect(false, "%s e%d %s hp TRACE %s"
-				% [sc_name, int(ev["i"]), tag, " | ".join(_dbg_trace)])
-			return
 		_near(got, float(want[tag]),
 			"%s e%d %s hp" % [sc_name, int(ev["i"]), tag], 0.51)
 
