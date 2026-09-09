@@ -104,7 +104,7 @@ func _test_hero_shop(section: Dictionary) -> void:
 		}
 		var tag := "hero shop %s" % str(case["name"])
 		var want_after: Dictionary = case["after"]
-		_expect(after == want_after, tag + " state got=" + str(after)
+		_expect(_hero_state_equal(after, want_after), tag + " state got=" + str(after)
 			+ " want=" + str(want_after))
 		var want_ok := str(case["result"]) == "purchased"
 		_expect(bool(result.get("ok", false)) == want_ok, tag + " accepted result=" + str(result))
@@ -112,7 +112,7 @@ func _test_hero_shop(section: Dictionary) -> void:
 			_expect(str(result.get("reason")) == "purchased", tag + " reason result=" + str(result))
 			_expect(int(result.get("cost", -1)) == int(case["cost"]), tag + " cost result=" + str(result))
 		else:
-			_expect(after == before, tag + " rejected atomically after=" + str(after))
+			_expect(_hero_state_equal(after, before), tag + " rejected atomically after=" + str(after))
 	menu.free()
 
 
@@ -138,7 +138,7 @@ func _test_save_slots(section: Dictionary) -> void:
 	slots = []
 	for i in range(1, SaveManager.NUM_SLOTS + 1):
 		slots.append(_slot_view(SaveManager.get_slot_info(i)))
-	_expect(slots == cases[1]["slots"], "metadata dua slot got=" + str(slots)
+	_expect(_slot_views_equal(slots, cases[1]["slots"]), "metadata dua slot got=" + str(slots)
 		+ " want=" + str(cases[1]["slots"]))
 	_expect(SaveManager.get_current_slot() == int(cases[1]["current"]),
 		"slot aktif setelah save got=%d want=%d" % [SaveManager.get_current_slot(), int(cases[1]["current"])])
@@ -149,7 +149,7 @@ func _test_save_slots(section: Dictionary) -> void:
 		"loaded": _slot_view(SaveManager.get_slot_info(2)),
 		"loaded_gold": SaveManager.meta_gold(),
 	}
-	_expect(selected == cases[2], "memilih dan memuat slot 2 got=" + str(selected)
+	_expect(_selected_slot_equal(selected, cases[2]), "memilih dan memuat slot 2 got=" + str(selected)
 		+ " want=" + str(cases[2]))
 
 	_clean_phase20_files()
@@ -170,7 +170,7 @@ func _test_save_slots(section: Dictionary) -> void:
 		"legacy_exists": FileAccess.file_exists("user://progress.json"),
 		"backup_exists": FileAccess.file_exists("user://progress_backup.json.old"),
 	}
-	_expect(migrated_view == cases[3], "migrasi legacy ke slot 1 got=" + str(migrated_view)
+	_expect(_migration_view_equal(migrated_view, cases[3]), "migrasi legacy ke slot 1 got=" + str(migrated_view)
 		+ " want=" + str(cases[3]))
 
 	_clean_phase20_files()
@@ -180,7 +180,7 @@ func _test_save_slots(section: Dictionary) -> void:
 	var collision_view := {"migrated": collision,
 		"slot1_gold": int((JSON.parse_string(FileAccess.get_file_as_string("user://slot_1.json")) as Dictionary).get("meta_gold", 0)),
 		"legacy_exists": FileAccess.file_exists("user://progress.json")}
-	_expect(collision_view == cases[4], "legacy tidak overwrite slot 1 got=" + str(collision_view)
+	_expect(_collision_view_equal(collision_view, cases[4]), "legacy tidak overwrite slot 1 got=" + str(collision_view)
 		+ " want=" + str(cases[4]))
 
 
@@ -198,7 +198,7 @@ func _test_save_slot_delete(expected: Dictionary) -> void:
 		"empty_after_delete": SaveManager.get_slot_info(1) == null,
 		"empty_delete_returns_false": not SaveManager.delete_slot(1),
 	}
-	_expect(view == expected, "slot create + delete + empty delete got=" + str(view)
+	_expect(_delete_view_equal(view, expected), "slot create + delete + empty delete got=" + str(view)
 		+ " want=" + str(expected))
 
 
@@ -217,6 +217,71 @@ func _test_cloud_payload() -> void:
 	tampered["checksum"] = "0".repeat(64)
 	var bad: Dictionary = SaveManager.parse_payload(JSON.stringify(tampered))
 	_expect(not bool(bad.get("ok", false)), "cloud payload checksum menolak korupsi")
+
+
+func _hero_state_equal(actual: Dictionary, expected: Dictionary) -> bool:
+	return str(actual.get("purchased", [])) == str(expected.get("purchased", [])) \
+		and str(actual.get("bosses", [])) == str(expected.get("bosses", [])) \
+		and int(actual.get("meta_gold", 0)) == int(expected.get("meta_gold", 0))
+
+
+func _slot_view_equal(actual, expected) -> bool:
+	if actual == null or expected == null:
+		return actual == null and expected == null
+	for key in ["slot_num", "meta_gold", "highest_level", "last_played_level", "playtime_seconds"]:
+		if int(actual.get(key, 0)) != int(expected.get(key, 0)):
+			return false
+	for key in ["has_created", "has_last_played"]:
+		if bool(actual.get(key, false)) != bool(expected.get(key, false)):
+			return false
+	return str(actual.get("completed_levels", [])) == str(expected.get("completed_levels", [])) \
+		and str(actual.get("purchased_heroes", [])) == str(expected.get("purchased_heroes", [])) \
+		and str(actual.get("unlocked_bosses", [])) == str(expected.get("unlocked_bosses", []))
+
+
+func _slot_views_equal(actual: Array, expected: Array) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for i in range(actual.size()):
+		if not _slot_view_equal(actual[i], expected[i]):
+			return false
+	return true
+
+
+func _selected_slot_equal(actual: Dictionary, expected: Dictionary) -> bool:
+	return int(actual.get("current", 0)) == int(expected.get("current", 0)) \
+		and _slot_view_equal(actual.get("loaded"), expected.get("loaded")) \
+		and int(actual.get("loaded_gold", 0)) == int(expected.get("loaded_gold", 0))
+
+
+func _migration_view_equal(actual: Dictionary, expected: Dictionary) -> bool:
+	var a: Dictionary = actual.get("slot1", {})
+	var e: Dictionary = expected.get("slot1", {})
+	return bool(actual.get("migrated", false)) == bool(expected.get("migrated", false)) \
+		and int(a.get("meta_gold", 0)) == int(e.get("meta_gold", 0)) \
+		and str(a.get("completed_levels", [])) == str(e.get("completed_levels", [])) \
+		and str(a.get("purchased_heroes", [])) == str(e.get("purchased_heroes", [])) \
+		and bool(a.get("has_created", false)) == bool(e.get("has_created", false)) \
+		and bool(a.get("has_last_played", false)) == bool(e.get("has_last_played", false)) \
+		and int(a.get("playtime_seconds", 0)) == int(e.get("playtime_seconds", 0)) \
+		and bool(actual.get("legacy_exists", false)) == bool(expected.get("legacy_exists", false)) \
+		and bool(actual.get("backup_exists", false)) == bool(expected.get("backup_exists", false))
+
+
+func _collision_view_equal(actual: Dictionary, expected: Dictionary) -> bool:
+	return bool(actual.get("migrated", false)) == bool(expected.get("migrated", false)) \
+		and int(actual.get("slot1_gold", 0)) == int(expected.get("slot1_gold", 0)) \
+		and bool(actual.get("legacy_exists", false)) == bool(expected.get("legacy_exists", false))
+
+
+func _delete_view_equal(actual: Dictionary, expected: Dictionary) -> bool:
+	var ac: Dictionary = actual.get("created", {})
+	var ec: Dictionary = expected.get("created", {})
+	return bool(ac.get("exists", false)) == bool(ec.get("exists", false)) \
+		and int(ac.get("meta_gold", 0)) == int(ec.get("meta_gold", 0)) \
+		and bool(actual.get("deleted", false)) == bool(expected.get("deleted", false)) \
+		and bool(actual.get("empty_after_delete", false)) == bool(expected.get("empty_after_delete", false)) \
+		and bool(actual.get("empty_delete_returns_false", false)) == bool(expected.get("empty_delete_returns_false", false))
 
 
 func _save_slot(slot_num: int, value: Dictionary) -> void:

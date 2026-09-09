@@ -795,7 +795,8 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 
 	var owned: bool = SaveManager.is_unlocked(hero_type)
 	var cost := int(d.get("unlock_cost", 600))
-	var req_boss := str(d.get("unlock_require_boss", ""))
+	var req_value = d.get("unlock_require_boss", "")
+	var req_boss := "" if req_value == null else str(req_value)
 	var boss_ready: bool = req_boss.is_empty() or SaveManager.is_boss_unlocked(req_boss)
 
 	var stat := Label.new()
@@ -852,7 +853,8 @@ func hero_shop_transaction(hero_type: String) -> Dictionary:
 	if SaveManager.is_unlocked(hero_type):
 		return {"ok": false, "reason": "already_owned", "hero": hero_type}
 	var d: Dictionary = HeroDB.get_hero(hero_type)
-	var req_boss := str(d.get("unlock_require_boss", ""))
+	var req_value = d.get("unlock_require_boss", "")
+	var req_boss := "" if req_value == null else str(req_value)
 	if not req_boss.is_empty() and not SaveManager.is_boss_unlocked(req_boss):
 		return {"ok": false, "reason": "boss_required", "hero": hero_type,
 			"boss": req_boss}
