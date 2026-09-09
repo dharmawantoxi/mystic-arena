@@ -141,13 +141,13 @@ func _test_card_case(case: Dictionary) -> void:
 		return
 
 	var expect: Dictionary = case["expect"]
-	_compare(str(values.get("score", "")), str(expect["score"]),
+	_compare(_value_text(values, "score"), str(expect["score"]),
 		"%s: string skor" % tag)
-	_compare(str(values.get("time", "")), str(expect["time"]),
+	_compare(_value_text(values, "time"), str(expect["time"]),
 		"%s: string waktu" % tag)
-	_compare(str(values.get("attempts", "")), str(expect["attempts"]),
+	_compare(_value_text(values, "attempts"), str(expect["attempts"]),
 		"%s: string attempts" % tag)
-	_compare(str(values.get("win_rate", "")),
+	_compare(_value_text(values, "win_rate"),
 		"%d%%" % int(expect["win_rate"]), "%s: string win-rate" % tag)
 	# Warna slot = RGB ui_theme pygame (data fixture colors).
 	var colors: Dictionary = _fx["colors"]
@@ -181,6 +181,13 @@ func _collect_parity_labels(card: Control) -> Dictionary:
 				"rgb": label.get_meta("parity_rgb"),
 			}
 	return out
+
+
+## Teks nilai slot stat (values dari _collect_parity_labels).
+func _value_text(values: Dictionary, key: String) -> String:
+	if values.has(key):
+		return str(values[key]["text"])
+	return ""
 
 
 func _check_rgb(values: Dictionary, key: String, rgb, tag: String) -> void:
