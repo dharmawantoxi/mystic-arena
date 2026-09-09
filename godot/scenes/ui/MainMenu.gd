@@ -1595,6 +1595,10 @@ func _make_button(label_text: String, accent: Color, handler: Callable,
 	normal.border_color = Color(accent.r, accent.g, accent.b, 0.75)
 	normal.set_border_width_all(1)
 	normal.set_corner_radius_all(6)
+	# ui_theme.button() pygame: depth shadow + compact pill geometry.
+	normal.shadow_color = Color(0.0, 0.0, 0.0, 0.48)
+	normal.shadow_size = 4
+	normal.shadow_offset = Vector2(0, 2)
 	normal.content_margin_left = 12.0
 	normal.content_margin_right = 12.0
 	var hover := normal.duplicate()
@@ -1606,8 +1610,13 @@ func _make_button(label_text: String, accent: Color, handler: Callable,
 	disabled.border_color = Color(0.3, 0.32, 0.4, 0.6)
 	b.add_theme_stylebox_override("normal", normal)
 	b.add_theme_stylebox_override("hover", hover)
+	var focus := hover.duplicate()
+	focus.border_color = accent.lightened(0.35)
+	focus.set_border_width_all(2)
 	b.add_theme_stylebox_override("pressed", pressed)
 	b.add_theme_stylebox_override("disabled", disabled)
+	b.add_theme_stylebox_override("focus", focus)
+	b.focus_mode = Control.FOCUS_ALL
 	b.add_theme_color_override("font_color", accent)
 	b.add_theme_color_override("font_hover_color", accent.lightened(0.25))
 	b.add_theme_color_override("font_pressed_color", accent.lightened(0.1))
