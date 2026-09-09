@@ -667,7 +667,13 @@ func _test_clicks() -> void:
 		if str(h.hero_type) == "kaizen":
 			kaizen = h
 	# world_hero: klik hero biru -> dipilih.
-	_main._on_click(kaizen.position)
+	# Prasyarat: hero TIDAK berada di atas bangunan toko — di pygame pun
+	# klik di situ membuka toko (get_clicked_shop dicek lebih dulu di
+	# _handle_left_click). Teleport ke titik kosong deterministik agar
+	# kasus "klik hero" selalu terdefinisi.
+	var hp := _find_empty_point()
+	kaizen.global_position = hp
+	_main._on_click(hp)
 	_expect(GameManager.selected_hero == kaizen, "world_hero select")
 	# world_tower: tanpa seleksi, klik menara biru -> popup (shop tower).
 	GameManager.clear_selection()
