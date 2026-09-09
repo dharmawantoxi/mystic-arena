@@ -333,7 +333,7 @@ func _refresh() -> void:
 	if hero == null or not is_instance_valid(hero) or bool(hero.get("is_dead")):
 		if hero != null:
 			_refresh_static()
-			return
+		return
 	var hp := float(hero.get("hp"))
 	var max_hp := maxf(1.0, float(hero.get("max_hp")))
 	_hp_bar.value = clampf(100.0 * hp / max_hp, 0.0, 100.0)

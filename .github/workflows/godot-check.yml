@@ -190,7 +190,6 @@ jobs:
           else
             cat /tmp/ai.gate
             echo "::error::AI-FAIL-TAIL: $(tail -8 /tmp/ai.log | tr '\n' ' | ' | cut -c1-400)"
-            echo "::error::AI-ERR: $(grep -a -A 3 'SCRIPT ERROR' /tmp/ai.log | head -24 | tr '\n' '|' | cut -c1-2500)"
             exit 1
           fi
 
