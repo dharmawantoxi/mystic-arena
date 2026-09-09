@@ -6692,6 +6692,752 @@ def make_tactical_commands_fixture(core, entity):
             _sp.beri_tahu_global = saved_sp
         random.setstate(saved_random)
 
+def make_tactical_input_fixture(core, entity):
+    """FASE 18 — PEMICU UI perintah taktis, oracle jalur INPUT pygame ASLI.
+
+    FASE 17 mengunci manajer taktik (TacticalCommands.gd vs
+    TacticalCommandManager.update() yang di-step manual). FASE 18 mengunci
+    BAGAIMANA input sampai ke manajer itu — dua permukaan pemicu pygame:
+
+      * HOTKEY  : main.py KEYDOWN -> Game.handle_key -> InputHandler.handle_key
+                  (_core.py:8343-8396) dan KEYUP -> Game.handle_key_up ->
+                  InputHandler.handle_key_up (_core.py:8440-8472). G/F =
+                  gather MEMAKAI posisi mouse + follow_mouse, T = protect_tower
+                  dengan selected_tower BIRU bila ada, KEYDOWN digate state
+                  "playing", KEYUP TANPA gate state.
+      * PANEL   : main.py sentuhan -> SidePanel.hit_test (popup gate +
+                  tombol visible — _gambar_tactical mobile/sidepanel.py) ->
+                  mobile/hud.apply_hud_action (gather TANPA posisi mouse,
+                  protect_tower pakai selected_tower) + cabang release
+                  (hold_end nama sentuhan yang menekan) + cabang pause/APP_BG
+                  (hold_end tanpa nama = lepas semuanya).
+
+    Oracle menjalankan KEDUA jalur betulan: game.handle_key /
+    game.handle_key_up ASLI, SidePanel betulan (rect panel dipaksa aktif
+    320px di kanan arena 1280x720 — panel asli hanya ada di layar >16:9)
+    dengan _gambar_tactical + hit_test ASLI untuk menentukan tombol
+    tertekan/tidak, lalu apply_hud_action ASLI. Manager = TacticalCommand-
+    Manager betulan (bukan stub) yang di-update() manual per frame; spy
+    kelas hanya MEREKAM hold_start/hold_end lalu memanggil yang asli, jadi
+    jejak + state sama-sama nyata.
+
+    Yang direkam per langkah:
+      calls    : jejak hold_start/hold_end yang diterima manajer —
+                 [op, nama, args(uid utk unit), follow_mouse, hasil_bool]
+                 / [op, nama]. Inilah bukti binding (argumen tepat).
+      panel    : visibilitas 5 tombol dari _gambar_tactical ASLI
+                 (mirror btn.visible = enabled pygame).
+      snapshot : closed-world FASE 17 (manager/heroes/units/game).
+      frames   : tactical.update() per frame (tanpa Game.update penuh).
+
+    Isolasi: sama dengan FASE 17 (FX/audio/sidepanel-notify di-stub,
+    purchased_heroes=[] di-pin, regen dibekukan, Castle.name di-pin,
+    random ter-script per situs — skenario input tidak me-roll).
+    Guard internal menolak: argumen hotkey vs panel tertukar, KEYDOWN
+    lolos saat state != playing, KEYUP hilang, gate visibilitas bocor,
+    popup tidak memblokir, release mismatch merusak hold, dan
+    truncation TAP-vs-HOLD tidak terjadi.
+    """
+    import io
+    from contextlib import redirect_stdout
+    import __main__
+    import pygame
+    import _render as rend
+    import _system
+    import tactical_commands as tac
+    import mobile.sidepanel as _sp
+    import mobile.hud as _hud_mod
+    from bosses.base_boss import Boss
+
+    pygame.init()
+    pygame.display.set_mode((1, 1))
+    W, H = 1280, 720
+    saved_random = random.getstate()
+    saved_game = getattr(__main__, "game_instance", None)
+    saved_gps = core.GOLD_PER_SECOND
+    saved_play = _system.SoundManager.play
+    saved_notify = _sp.beri_tahu_global
+    saved_hs = tac.TacticalCommandManager.hold_start
+    saved_he = tac.TacticalCommandManager.hold_end
+
+    KEYMAP = {"g": pygame.K_g, "f": pygame.K_f, "t": pygame.K_t,
+              "c": pygame.K_c, "b": pygame.K_b, "d": pygame.K_d,
+              "q": pygame.K_q}
+    TACTICAL_ACTIONS = ("gather", "protect_tower", "protect_castle",
+                        "attack_boss", "attack_damage_dealer")
+    _TAC_SITES = {("tactical_commands.py", "_auto_evaluate_protect")}
+
+    class _TacScriptedRandom:
+        def __init__(self, values):
+            self._values = list(values)
+            self._real = random.random
+            self.consumed = []
+        def __call__(self):
+            import sys as _sys, os as _os
+            code = _sys._getframe(1).f_code
+            if (_os.path.basename(code.co_filename), code.co_name) not in _TAC_SITES:
+                return self._real()
+            if not self._values:
+                raise AssertionError("script RNG taktis habis: roll tak terduga")
+            v = self._values.pop(0)
+            self.consumed.append(v)
+            return v
+
+    _calls = []
+
+    def _norm_arg(a):
+        if hasattr(a, "_uid"):
+            return getattr(a, "_uid")
+        return a
+
+    def _spy_hs(self, name, *args, **kwargs):
+        entry = ["hold_start", name,
+                 [_norm_arg(a) for a in args],
+                 bool(kwargs.get("follow_mouse", False)), None]
+        _calls.append(entry)
+        ret = saved_hs(self, name, *args, **kwargs)
+        entry[4] = bool(ret)
+        return ret
+
+    def _spy_he(self, name=None):
+        _calls.append(["hold_end", name])
+        return saved_he(self, name)
+
+    try:
+        core.GOLD_PER_SECOND = 0
+        _system.SoundManager.play = lambda self, *a, **k: None
+        _sp.beri_tahu_global = lambda *a, **k: False
+        tac.TacticalCommandManager.hold_start = _spy_hs
+        tac.TacticalCommandManager.hold_end = _spy_he
+        with redirect_stdout(io.StringIO()):
+            game = core.Game(pygame.Surface((W, H)), level_number=1)
+        __main__.game_instance = game
+        game.effects.add_damage_number = lambda *a, **k: None
+        game.effects.add_death_explosion = lambda *a, **k: None
+        if hasattr(game.ui, "add_notification"):
+            game.ui.add_notification = lambda *a, **k: None
+
+        # SidePanel betulan; rect panel dipaksa (panel asli hanya ada di
+        # layar > 16:9 — _PANEL_AKTIF pygame). _gambar_tactical membangun
+        # tombol betulan dari state game; hit_test menerapkan popup gate.
+        panel = _sp.SidePanel(rend.get_font)
+        panel.rect = pygame.Rect(1280, 0, 320, 720)
+        panel.aktif = True
+        panel_buf = pygame.Surface((320, 720))
+        PANEL_TAC_Y = 412  # layout panel penuh (di bawah zona hero)
+
+        held = {}  # mirror held_tac main.py: sentuhan aktif -> nama perintah
+
+        def reset():
+            game.purchased_heroes = []
+            game.state = "playing"
+            game.wave_number = 1
+            game.mouse_x, game.mouse_y = 0, 0
+            game.selected_hero = None
+            game.selected_tower = None
+            game.heroes = []
+            game.ai.heroes = []
+            game.towers = []
+            game.minions = []
+            game.active_boss = None
+            game.level_intro = None
+            game.boss_intro = None
+            game.boss_death = None
+            game.shop_open = False
+            for b in (game.blue_base, game.red_base):
+                b.hp = b.max_hp
+                b.alive = True
+                b.name = "Castle"
+                b._uid = "castle_blue" if b.team == "blue" else "castle_red"
+            game.tactical = tac.TacticalCommandManager(game)
+            held.clear()
+            del _calls[:]
+            return game.tactical
+
+        def make_unit(spec, units):
+            kind = spec["kind"]
+            team = spec.get("team", "blue")
+            x = float(spec.get("x", 300.0)); y = float(spec.get("y", 300.0))
+            uid = spec["id"]
+            if kind == "hero":
+                u = entity.Hero(spec["type"], team, x, y)
+                u.speed = 0.0
+                u.auto_cast_enabled = False
+                u.passive_heal_rate = 0.0
+                u.attack_timer = 0
+                if "hp" in spec:
+                    u.hp = float(spec["hp"])
+                if "damage_dealt" in spec:
+                    u.damage_dealt = int(spec["damage_dealt"])
+                if spec.get("dead"):
+                    u.alive = False
+                    u.hp = 0
+            elif kind == "minion":
+                u = entity.Minion(spec["type"], team, spec.get("lane", "mid"),
+                                  spec.get("nexus_level", 1))
+                u.x, u.y = x, y
+                u.base_speed = 0.0; u.speed = 0.0
+                u.regen = 0.0; u.timer = 0
+                if "hp" in spec:
+                    u.hp = float(spec["hp"])
+                if spec.get("dead"):
+                    u.alive = False; u.hp = 0
+            elif kind == "tower":
+                u = entity.Tower(x, y, team, spec.get("tower_kind", "outer"))
+                if spec.get("tower_type"):
+                    assert u.upgrade(spec["tower_type"]), "upgrade gagal"
+                u.timer = 0
+                u.shield = 0.0
+                if "hp" in spec:
+                    u.hp = float(spec["hp"])
+                if spec.get("dead"):
+                    u.alive = False; u.hp = 0
+            elif kind == "boss":
+                u = Boss(spec.get("type", "gornak"))
+                u.team = team
+                u.x, u.y = x, y
+                u.entrance_timer = 10 ** 6
+                u.timer = 10 ** 9
+                if "hp" in spec:
+                    u.hp = float(spec["hp"])
+                if spec.get("dead"):
+                    u.alive = False; u.hp = 0
+            else:
+                raise AssertionError(kind)
+            u._uid = uid
+            units[uid] = u
+            if kind == "hero":
+                (game.heroes if team == "blue" else game.ai.heroes).append(u)
+            elif kind == "minion":
+                game.minions.append(u)
+            elif kind == "tower":
+                game.towers.append(u)
+            elif kind == "boss":
+                game.active_boss = u
+            return u
+
+        def uid_of(obj):
+            if obj is None:
+                return None
+            return getattr(obj, "_uid", None)
+
+        def pt(p):
+            if p is None:
+                return None
+            return [round(float(p[0]), 4), round(float(p[1]), 4)]
+
+        def panel_available():
+            """Visibilitas 5 tombol dari _gambar_tactical ASLI."""
+            with redirect_stdout(io.StringIO()):
+                panel._gambar_tactical(panel_buf, game, PANEL_TAC_Y)
+            out = {}
+            for a in TACTICAL_ACTIONS:
+                b = panel.buttons.get(a)
+                out[a] = bool(b.visible) if b is not None else False
+            return out
+
+        def snapshot(units):
+            m = game.tactical
+            mgr = {
+                "active_command": m.active_command,
+                "command_timer": int(m.command_timer),
+                "command_target": uid_of(m.command_target),
+                "cooldown": int(m.cooldown),
+                "gather_point": pt(m.gather_point),
+                "gather_point_timer": int(m.gather_point_timer),
+                "feedback_text": str(m.feedback_text),
+                "feedback_timer": int(m.feedback_timer),
+                "feedback_color": [int(m.feedback_color[0]), int(m.feedback_color[1]), int(m.feedback_color[2])],
+                "held_command": m.held_command,
+                "hold_follow_mouse": bool(m.hold_follow_mouse),
+                "hold_elapsed": int(m.hold_elapsed),
+                "hold_has_fired": bool(m._hold_has_fired),
+                "gather_push_fired": bool(m._gather_push_fired),
+                "auto_check_timer": int(getattr(m, "_auto_check_timer", 0)),
+            }
+            heroes = {}
+            for uid, u in units.items():
+                if not hasattr(u, "hero_type") or str(getattr(u, "team", "")) != "blue":
+                    continue
+                heroes[uid] = {
+                    "x": round(float(u.x), 4), "y": round(float(u.y), 4),
+                    "alive": bool(u.alive),
+                    "follow_target": uid_of(getattr(u, "follow_target", None)),
+                    "target": uid_of(getattr(u, "target", None)),
+                }
+            gm = {
+                "selected_hero": uid_of(game.selected_hero),
+                "selected_tower": uid_of(game.selected_tower),
+                "mouse": [int(game.mouse_x), int(game.mouse_y)],
+                "state": str(game.state),
+            }
+            return {"manager": mgr, "heroes": heroes, "game": gm,
+                    "panel": panel_available()}
+
+        def panel_press(action):
+            """Sentuhan tombol panel: jalur main.py `side.hit_test` ->
+            `held_tac[tid] = hit` + `hud_mod.apply_hud_action(hit, ctx)`."""
+            avail = panel_available()
+            b = panel.buttons.get(action)
+            if b is None or not b.visible:
+                return  # tombol tidak digambar -> tidak bisa ditekan
+            pos = b.rect.center
+            hit = panel.hit_test(pos, game=game)
+            if hit != action:
+                return  # tertelan popup (ada_popup_game) / tombol lain
+            held[action] = hit
+            with redirect_stdout(io.StringIO()):
+                _hud_mod.apply_hud_action(hit, {"game": game, "menu": None})
+            return None
+
+        def panel_release(action):
+            """Jalur release main.py: `nama = held_tac.pop(tid)` lalu
+            `game.tactical.hold_end(nama)` bila sentuhan ini menahan."""
+            nama = held.pop(str(action), None)
+            if nama is not None:
+                game.tactical.hold_end(nama)
+            return None
+
+        def run_action(action, units):
+            if action is None:
+                return None
+            op = action["op"]
+            with redirect_stdout(io.StringIO()):
+                if op == "key_down":
+                    game.handle_key(KEYMAP[str(action["key"])])
+                    return None
+                if op == "key_up":
+                    game.handle_key_up(KEYMAP[str(action["key"])])
+                    return None
+                if op == "panel_down":
+                    return panel_press(str(action["action"]))
+                if op == "panel_up":
+                    return panel_release(str(action["action"]))
+                if op == "pause_release":
+                    # Pernyataan persis cabang pause main.py:479-486.
+                    if getattr(game, "tactical", None) is not None:
+                        game.tactical.hold_end()
+                    held.clear()
+                    return None
+                if op == "set_mouse":
+                    game.mouse_x = int(action["x"]); game.mouse_y = int(action["y"])
+                    return None
+                if op == "set_state":
+                    game.state = str(action["state"])
+                    return None
+                if op == "set_selected_hero":
+                    game.selected_hero = units.get(action["unit"]) if action.get("unit") else None
+                    return None
+                if op == "set_selected_tower":
+                    game.selected_tower = units.get(action["unit"]) if action.get("unit") else None
+                    return None
+                if op == "kill":
+                    units[action["unit"]].alive = False
+                    units[action["unit"]].hp = 0
+                    return None
+                if op == "spawn_boss":
+                    uid = action.get("unit", "boss0")
+                    b = Boss(action.get("type", "gornak"))
+                    b.team = action.get("team", "red")
+                    b.x = float(action.get("x", 700.0)); b.y = float(action.get("y", 400.0))
+                    b.entrance_timer = 10 ** 6; b.timer = 10 ** 9
+                    if "hp" in action:
+                        b.hp = float(action["hp"])
+                    b._uid = uid
+                    units[uid] = b
+                    game.active_boss = b
+                    return uid
+                raise AssertionError(op)
+
+        def u(uid, kind, team, x, y, **kw):
+            d = {"id": uid, "kind": kind, "team": team, "x": x, "y": y}
+            d.update(kw)
+            return d
+
+        def run_spec(spec, seed):
+            random.seed(seed)
+            reset()
+            script = list(spec.get("random_script", []))
+            patched = _TacScriptedRandom(script)
+            real_random = random.random
+            random.random = patched
+            try:
+                units = {}
+                for uspec in spec.get("units", []):
+                    make_unit(uspec, units)
+                setup = spec.get("setup", {})
+                if "selected_hero" in setup:
+                    game.selected_hero = units.get(setup["selected_hero"]) if setup["selected_hero"] else None
+                if "selected_tower" in setup:
+                    game.selected_tower = units.get(setup["selected_tower"]) if setup["selected_tower"] else None
+                if "mouse" in setup:
+                    game.mouse_x, game.mouse_y = int(setup["mouse"][0]), int(setup["mouse"][1])
+                if "state" in setup:
+                    game.state = str(setup["state"])
+                pre = snapshot(units)
+                steps = []
+                for st in spec["steps"]:
+                    del _calls[:]
+                    run_action(st.get("action"), units)
+                    for _ in range(int(st.get("frames", 0))):
+                        with redirect_stdout(io.StringIO()):
+                            game.tactical.update()
+                    steps.append({"action": st.get("action"),
+                                  "frames": int(st.get("frames", 0)),
+                                  "calls": [list(c) for c in _calls],
+                                  "snapshot": snapshot(units)})
+                return steps, pre, list(patched.consumed)
+            finally:
+                random.random = real_random
+
+        # ── DAFTAR SKENARIO (jalur INPUT betulan, tanpa Game.update penuh) ──
+        specs = [
+            # 1. HOTKEY G, mouse di dalam layar, TAP cepat (<20f): args mouse
+            #    + follow_mouse; timer TIDAK dipotong saat dilepas.
+            {"name": "hotkey_gather_mouse_inside_tap",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {"mouse": [640, 360]},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "g"}, "frames": 0},
+                 {"action": None, "frames": 10},
+                 {"action": {"op": "key_up", "key": "g"}, "frames": 0},
+                 {"action": None, "frames": 5},
+             ]},
+            # 2. HOTKEY F, mouse DI LUAR layar, HOLD lama (>=20f): gather
+            #    tanpa args + follow_mouse; timer dipotong ke 30 saat lepas.
+            {"name": "hotkey_gather_mouse_outside_hold_f",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {"mouse": [2000, 100]},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "f"}, "frames": 0},
+                 {"action": None, "frames": 25},
+                 {"action": {"op": "key_up", "key": "f"}, "frames": 0},
+                 {"action": None, "frames": 35},
+             ]},
+            # 3. HOTKEY T dengan menara biru terpilih -> arg tower.
+            {"name": "hotkey_protect_tower_selected",
+             "units": [u("h0", "hero", "blue", 200.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 210.0, 310.0, type="grimjaw"),
+                       u("t0", "tower", "blue", 250.0, 350.0)],
+             "setup": {"selected_tower": "t0"},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "t"}, "frames": 0},
+                 {"action": None, "frames": 5},
+                 {"action": {"op": "key_up", "key": "t"}, "frames": 0},
+             ]},
+            # 4. HOTKEY T dengan menara MERAH terpilih -> tanpa arg (auto).
+            {"name": "hotkey_protect_tower_red_selected",
+             "units": [u("h0", "hero", "blue", 200.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 210.0, 310.0, type="grimjaw"),
+                       u("t0", "tower", "red", 900.0, 300.0),
+                       u("t1", "tower", "blue", 250.0, 350.0)],
+             "setup": {"selected_tower": "t0"},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "t"}, "frames": 0},
+                 {"action": None, "frames": 5},
+                 {"action": {"op": "key_up", "key": "t"}, "frames": 0},
+             ]},
+            # 5. HOTKEY C (protect_castle) polos.
+            {"name": "hotkey_protect_castle",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="sylara")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "c"}, "frames": 0},
+                 {"action": None, "frames": 5},
+                 {"action": {"op": "key_up", "key": "c"}, "frames": 0},
+             ]},
+            # 6. HOTKEY B dengan boss hidup -> attack_boss menyala (ret True).
+            {"name": "hotkey_attack_boss_fires",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("boss0", "boss", "red", 700.0, 400.0, type="gornak")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "b"}, "frames": 0},
+                 {"action": None, "frames": 3},
+                 {"action": {"op": "key_up", "key": "b"}, "frames": 0},
+             ]},
+            # 7. HOTKEY D -> attack_damage_dealer (hero merah damage terbesar).
+            {"name": "hotkey_attack_dealer",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("r0", "hero", "red", 700.0, 400.0, type="thorne", damage_dealt=1500),
+                       u("r1", "hero", "red", 720.0, 420.0, type="vex", damage_dealt=4200)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "d"}, "frames": 0},
+                 {"action": None, "frames": 3},
+                 {"action": {"op": "key_up", "key": "d"}, "frames": 0},
+             ]},
+            # 8. GATE state: KEYDOWN saat victory TIDAK memanggil manajer,
+            #    KEYUP TETAP dirutekan (tanpa gate — paritas handle_key_up).
+            {"name": "hotkey_state_gate_victory",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {"state": "victory", "mouse": [500, 400]},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "g"}, "frames": 0},
+                 {"action": {"op": "key_up", "key": "g"}, "frames": 0},
+                 {"action": {"op": "key_down", "key": "q"}, "frames": 0},
+                 {"action": {"op": "key_up", "key": "q"}, "frames": 0},
+                 {"action": {"op": "set_state", "state": "playing"}, "frames": 0},
+                 {"action": {"op": "key_down", "key": "g"}, "frames": 0},
+                 {"action": {"op": "key_up", "key": "g"}, "frames": 0},
+             ]},
+            # 9. PETA pelepasan: hold B lalu KEYUP G -> hold_end(gather)
+            #    terekam TAPI no-op (nama tak cocok); KEYUP B melepas.
+            {"name": "hotkey_release_map_mismatch",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("boss0", "boss", "red", 700.0, 400.0, type="gornak")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "b"}, "frames": 0},
+                 {"action": None, "frames": 8},
+                 {"action": {"op": "key_up", "key": "g"}, "frames": 0},
+                 {"action": None, "frames": 3},
+                 {"action": {"op": "key_up", "key": "b"}, "frames": 0},
+                 {"action": None, "frames": 5},
+             ]},
+            # 10. HOLD berganti perintah di tengah: G lalu B saat cooldown
+            #     belum habis — manajer MENGGANTI held_command walau terbit
+            #     gagal (ret False, hold "dipersenjatai"); KEYUP G no-op
+            #     (nama tak cocok), KEYUP B melepas.
+            {"name": "hotkey_hold_switch_g_to_b",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw"),
+                       u("boss0", "boss", "red", 700.0, 400.0, type="gornak")],
+             "setup": {"mouse": [500, 400]},
+             "steps": [
+                 {"action": {"op": "key_down", "key": "g"}, "frames": 0},
+                 {"action": None, "frames": 5},
+                 {"action": {"op": "key_down", "key": "b"}, "frames": 0},
+                 {"action": None, "frames": 3},
+                 {"action": {"op": "key_up", "key": "g"}, "frames": 0},
+                 {"action": {"op": "key_up", "key": "b"}, "frames": 0},
+                 {"action": None, "frames": 5},
+             ]},
+            # 11. PANEL gather MENGABAIKAN mouse (beda dengan hotkey):
+            #     tanpa args + follow_mouse=False; titik = rata-rata hero.
+            {"name": "panel_gather_ignores_mouse",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {"mouse": [900, 600]},
+             "steps": [
+                 {"action": {"op": "panel_down", "action": "gather"}, "frames": 0},
+                 {"action": None, "frames": 5},
+                 {"action": {"op": "panel_up", "action": "gather"}, "frames": 0},
+                 {"action": None, "frames": 5},
+             ]},
+            # 12. PANEL protect_tower dengan menara biru terpilih -> arg tower.
+            {"name": "panel_protect_tower_selected",
+             "units": [u("h0", "hero", "blue", 200.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 210.0, 310.0, type="grimjaw"),
+                       u("t0", "tower", "blue", 250.0, 350.0)],
+             "setup": {"selected_tower": "t0"},
+             "steps": [
+                 {"action": {"op": "panel_down", "action": "protect_tower"}, "frames": 0},
+                 {"action": None, "frames": 5},
+                 {"action": {"op": "panel_up", "action": "protect_tower"}, "frames": 0},
+             ]},
+            # 13. PANEL hold lama (>=20f) lalu dilepas -> timer dipotong ke 30.
+            {"name": "panel_hold_truncate",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="sylara")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "panel_down", "action": "protect_castle"}, "frames": 0},
+                 {"action": None, "frames": 25},
+                 {"action": {"op": "panel_up", "action": "protect_castle"}, "frames": 0},
+                 {"action": None, "frames": 35},
+             ]},
+            # 14. PAUSE melepas SEMUA hold (main.py:486 hold_end() tanpa
+            #     nama + held_tac.clear()) — release panel yang datang
+            #     belakangan DIAM TOTAL (pop None, tanpa hold_end).
+            {"name": "panel_pause_force_release",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "panel_down", "action": "gather"}, "frames": 0},
+                 {"action": None, "frames": 25},
+                 {"action": {"op": "pause_release"}, "frames": 0},
+                 {"action": {"op": "panel_up", "action": "gather"}, "frames": 0},
+                 {"action": None, "frames": 5},
+             ]},
+            # 15. GATE visibilitas: semua hero mati -> tombol gather/tower/
+            #     castle disembunyikan (panel_available false), tekan = no-op.
+            {"name": "panel_blocked_no_heroes",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen", dead=True)],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "panel_down", "action": "gather"}, "frames": 0},
+                 {"action": None, "frames": 3},
+                 {"action": {"op": "panel_up", "action": "gather"}, "frames": 0},
+             ]},
+            # 16. GATE popup: hero terpilih hidup -> panel pygame tertutup
+            #     popup (ada_popup_game) -> tekan TIDAK sampai ke perintah.
+            {"name": "panel_blocked_by_hero_panel",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {"selected_hero": "h0"},
+             "steps": [
+                 {"action": {"op": "panel_down", "action": "gather"}, "frames": 0},
+                 {"action": None, "frames": 3},
+                 {"action": {"op": "set_selected_hero", "unit": None}, "frames": 0},
+                 {"action": {"op": "panel_down", "action": "gather"}, "frames": 0},
+                 {"action": {"op": "panel_up", "action": "gather"}, "frames": 0},
+             ]},
+            # 17. GATE boss: tombol ATTACK BOSS hanya tampak saat boss hidup;
+            #     setelah spawn, tekan panel menyala (ret True).
+            {"name": "panel_attack_boss_gating",
+             "units": [u("h0", "hero", "blue", 300.0, 300.0, type="kaizen"),
+                       u("h1", "hero", "blue", 320.0, 320.0, type="grimjaw")],
+             "setup": {},
+             "steps": [
+                 {"action": {"op": "panel_down", "action": "attack_boss"}, "frames": 0},
+                 {"action": None, "frames": 3},
+                 {"action": {"op": "spawn_boss", "unit": "boss0", "type": "gornak", "x": 700.0, "y": 400.0}, "frames": 3},
+                 {"action": {"op": "panel_down", "action": "attack_boss"}, "frames": 0},
+                 {"action": None, "frames": 3},
+                 {"action": {"op": "panel_up", "action": "attack_boss"}, "frames": 0},
+             ]},
+        ]
+
+        scenarios = []
+        with redirect_stdout(io.StringIO()):
+            for spec in specs:
+                steps_a, pre_a, cons_a = run_spec(spec, 2711)
+                steps_b, pre_b, cons_b = run_spec(spec, 2712)
+                assert (steps_a, pre_a, cons_a) == (steps_b, pre_b, cons_b), \
+                    "input taktis bocor RNG: %s" % spec["name"]
+                scenarios.append({"name": spec["name"],
+                                  "units": spec.get("units", []),
+                                  "setup": spec.get("setup", {}),
+                                  "random_script": spec.get("random_script", []),
+                                  "random_consumed": cons_a,
+                                  "pre": pre_a,
+                                  "steps": steps_a})
+
+        # ── Guard internal oracle ──
+        by_name = {sc["name"]: sc for sc in scenarios}
+
+        def calls_of(sc_name, idx):
+            return by_name[sc_name]["steps"][idx]["calls"]
+
+        # 1. Hotkey gather dalam layar: args mouse + follow_mouse, ret True.
+        c = calls_of("hotkey_gather_mouse_inside_tap", 0)
+        assert c == [["hold_start", "gather", [640, 360], True, True]], c
+        # TAP <20f: timer tidak dipotong.
+        s1 = by_name["hotkey_gather_mouse_inside_tap"]["steps"]
+        assert s1[1]["snapshot"]["manager"]["command_timer"] > 30, "TAP terpotong"
+        assert calls_of("hotkey_gather_mouse_inside_tap", 2) == [["hold_end", "gather"]]
+        # 2. Hotkey gather luar layar: tanpa args; HOLD >=20f dipotong ke 30.
+        c = calls_of("hotkey_gather_mouse_outside_hold_f", 0)
+        assert c == [["hold_start", "gather", [], True, True]], c
+        s2 = by_name["hotkey_gather_mouse_outside_hold_f"]["steps"]
+        assert s2[2]["snapshot"]["manager"]["command_timer"] == 30, "HOLD tidak dipotong"
+        # 3-4. protect_tower: arg tower biru vs tanpa arg (menara merah).
+        assert calls_of("hotkey_protect_tower_selected", 0) == [
+            ["hold_start", "protect_tower", ["t0"], False, True]]
+        assert calls_of("hotkey_protect_tower_red_selected", 0) == [
+            ["hold_start", "protect_tower", [], False, True]]
+        # 5-7. C/B/D polos; B menyala saat boss hidup.
+        assert calls_of("hotkey_protect_castle", 0) == [
+            ["hold_start", "protect_castle", [], False, True]]
+        assert calls_of("hotkey_attack_boss_fires", 0) == [
+            ["hold_start", "attack_boss", [], False, True]]
+        assert calls_of("hotkey_attack_dealer", 0) == [
+            ["hold_start", "attack_damage_dealer", [], False, True]]
+        # 8. Gate state: KEYDOWN victory = tanpa panggilan; KEYUP tetap
+        #    dirutekan (hold_end terekam walau tidak ada hold); Q bukan tuts
+        #    taktis (KEYDOWN & KEYUP tanpa panggilan).
+        s8 = by_name["hotkey_state_gate_victory"]["steps"]
+        assert s8[0]["calls"] == [], s8[0]["calls"]
+        assert s8[1]["calls"] == [["hold_end", "gather"]], s8[1]["calls"]
+        assert s8[2]["calls"] == [] and s8[3]["calls"] == []
+        assert s8[5]["calls"] == [["hold_start", "gather", [500, 400], True, True]]
+        # 9. Release map: KEYUP G saat hold B = hold_end(gather) no-op —
+        #    hold bertahan sampai KEYUP B.
+        s9 = by_name["hotkey_release_map_mismatch"]["steps"]
+        assert s9[2]["calls"] == [["hold_end", "gather"]]
+        assert s9[3]["snapshot"]["manager"]["held_command"] == "attack_boss"
+        assert s9[4]["calls"] == [["hold_end", "attack_boss"]]
+        assert s9[5]["snapshot"]["manager"]["held_command"] is None
+        # 10. Hold berganti di tengah cooldown: hold_start attack_boss
+        #     MENGGANTI held_command walau terbit gagal (ret False —
+        #     cooldown gather belum habis; hold baru "dipersenjatai").
+        #     KEYUP G no-op (nama tak cocok), KEYUP B melepas.
+        s10 = by_name["hotkey_hold_switch_g_to_b"]["steps"]
+        assert s10[2]["calls"] == [["hold_start", "attack_boss", [], False, False]]
+        assert s10[3]["snapshot"]["manager"]["held_command"] == "attack_boss"
+        assert s10[3]["snapshot"]["manager"]["hold_has_fired"] is False
+        assert s10[4]["calls"] == [["hold_end", "gather"]]
+        assert s10[4]["snapshot"]["manager"]["held_command"] == "attack_boss"
+        # 11. Panel gather: TANPA args + follow_mouse=False (≠ hotkey) dan
+        #     titik kumpul BUKAN posisi mouse.
+        assert calls_of("panel_gather_ignores_mouse", 0) == [
+            ["hold_start", "gather", [], False, True]]
+        gp = by_name["panel_gather_ignores_mouse"]["steps"][0]["snapshot"]["manager"]["gather_point"]
+        assert gp != [900, 600], "panel gather tidak boleh ikut mouse"
+        assert calls_of("panel_gather_ignores_mouse", 2) == [["hold_end", "gather"]]
+        # 12. Panel protect_tower: arg menara terpilih.
+        assert calls_of("panel_protect_tower_selected", 0) == [
+            ["hold_start", "protect_tower", ["t0"], False, True]]
+        # 13. Panel hold >=20f: dipotong ke 30 saat dilepas.
+        s13 = by_name["panel_hold_truncate"]["steps"]
+        assert s13[2]["snapshot"]["manager"]["command_timer"] == 30
+        # 14. Pause: hold_end tanpa nama memotong timer; release panel yang
+        #     datang BELAKANGAN diam total (held_tac sudah di-clear oleh
+        #     pause — paritas main.py:486, pop mengembalikan None).
+        s14 = by_name["panel_pause_force_release"]["steps"]
+        assert s14[2]["calls"] == [["hold_end", None]]
+        assert s14[2]["snapshot"]["manager"]["command_timer"] == 30
+        assert s14[3]["calls"] == []
+        assert s14[3]["snapshot"]["manager"]["held_command"] is None
+        # 15. Semua hero mati: tombol gather/tower/castle tersembunyi; tekan
+        #     panel tidak menghasilkan panggilan.
+        s15 = by_name["panel_blocked_no_heroes"]["steps"]
+        av = s15[0]["snapshot"]["panel"]
+        assert av["gather"] is False and av["protect_tower"] is False \
+            and av["protect_castle"] is False, av
+        assert s15[0]["calls"] == [] and s15[2]["calls"] == []
+        # 16. Popup panel hero: tekan pertama TIDAK sampai; setelah deselect,
+        #     tekan berikutnya menyala.
+        s16 = by_name["panel_blocked_by_hero_panel"]["steps"]
+        assert s16[0]["snapshot"]["panel"]["gather"] is True
+        assert s16[0]["calls"] == [], s16[0]["calls"]
+        assert s16[3]["calls"] == [["hold_start", "gather", [], False, True]]
+        # 17. Tombol boss muncul hanya saat boss hidup.
+        s17 = by_name["panel_attack_boss_gating"]["steps"]
+        assert s17[0]["snapshot"]["panel"]["attack_boss"] is False
+        assert s17[0]["calls"] == []
+        assert s17[2]["snapshot"]["panel"]["attack_boss"] is True
+        assert s17[3]["calls"] == [["hold_start", "attack_boss", [], False, True]]
+        # Guard umum: tidak ada langkah dengan calls asing / timer negatif.
+        for sc in scenarios:
+            for st in sc["steps"]:
+                for c2 in st["calls"]:
+                    assert c2[0] in ("hold_start", "hold_end"), c2
+                    if c2[0] == "hold_start":
+                        assert c2[1] in ("gather", "protect_tower",
+                                         "protect_castle", "attack_boss",
+                                         "attack_damage_dealer"), c2
+                assert st["snapshot"]["manager"]["command_timer"] >= 0
+                assert st["snapshot"]["manager"]["cooldown"] >= 0
+
+        return {"fps": 60, "scenarios": scenarios}
+    finally:
+        tac.TacticalCommandManager.hold_start = saved_hs
+        tac.TacticalCommandManager.hold_end = saved_he
+        __main__.game_instance = saved_game
+        core.GOLD_PER_SECOND = saved_gps
+        _system.SoundManager.play = saved_play
+        _sp.beri_tahu_global = saved_notify
+        random.setstate(saved_random)
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -6775,6 +7521,13 @@ def make_fixture(core, entity, levels, paths):
         # auto-protect (castle/tower/boss+roll 20%), status/color.
         # Direplay TacticalCommandsParityTest.
         "tactical_commands": make_tactical_commands_fixture(core, entity),
+        # FASE 18 — PEMICU UI PERINTAH TAKTIS: oracle jalur INPUT pygame
+        # ASLI (Game.handle_key/handle_key_up untuk hotkey G/F/T/C/B/D +
+        # SidePanel._gambar_tactical/hit_test + apply_hud_action untuk
+        # tombol panel + cabang release/pause main.py). Jejak hold_start/
+        # hold_end (nama/args/follow_mouse/hasil) + visibilitas tombol +
+        # closed-world manajer direplay TacticalInputParityTest.
+        "tactical_input": make_tactical_input_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -6956,6 +7709,15 @@ def main():
               f"{tc_steps} langkah ({tc_mix}), "
               f"{tc_push} skenario push gather, "
               f"{tc_roll} roll boss 20% ter-script")
+        ti = actual["tactical_input"]
+        ti_calls = [c for sc in ti["scenarios"] for st in sc["steps"]
+                    for c in st["calls"]]
+        ti_hs = sum(1 for c in ti_calls if c[0] == "hold_start")
+        ti_he = sum(1 for c in ti_calls if c[0] == "hold_end")
+        print("             tactical-input oracle: "
+              f"{len(ti['scenarios'])} skenario pemicu UI, "
+              f"{sum(len(sc['steps']) for sc in ti['scenarios'])} langkah, "
+              f"{ti_hs} hold_start + {ti_he} hold_end ter-rekam")
 
 
 if __name__ == "__main__":

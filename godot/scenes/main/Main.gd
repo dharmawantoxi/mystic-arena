@@ -20,7 +20,9 @@
 #      setelah 6 menara Dire hancur (paritas _core.py 2089), keduanya kena
 #      enemy scaling hard mode saat spawn (paritas _core.py 1822/2097),
 #   7. AI tim red membangun/meng-upgrade menara memakai GameManager.ai_gold,
-#   8. input: klik = pilih unit/slot, QWER = skill, B = toko,
+#   8. input: klik = pilih unit/slot, QWER = skill, H = toko,
+#      G/F/T/C/B/D = perintah taktis hold (FASE 18, paritas InputHandler
+#      pygame) + panel TACTICAL COMMANDS di HUD,
 #      ENTER setelah menang = LANJUT LEVEL BERIKUTNYA (kalah = ulang),
 #      R = replay, ESC setelah menang/kalah = menu utama, P/ESC = menu PAUSE,
 #      kontrol demo hanya aktif bila enable_debug_controls diaktifkan.
@@ -52,6 +54,17 @@ var _ai = null
 ## Perintah taktis tim biru (port tactical_commands — dibuat di _ready,
 ## dikelola sendiri via _physics_process 60 Hz)
 var _tactical = null
+## Pemicu UI FASE 18 — port InputHandler pygame (_core.py):
+## KEYDOWN G/F/T/C/B/D -> hold_start, KEYUP -> hold_end.
+## G dan F dua tuts untuk perintah yang sama (gather).
+const TACTICAL_KEY_TO_COMMAND := {
+	KEY_G: "gather",
+	KEY_F: "gather",
+	KEY_T: "protect_tower",
+	KEY_C: "protect_castle",
+	KEY_B: "attack_boss",
+	KEY_D: "attack_damage_dealer",
+}
 var _slot_redraw_timer: float = 0.0
 var _slot_pulse: float = 0.0
 
@@ -510,7 +523,13 @@ func _cinematic_key(key: InputEventKey) -> bool:
 	return false
 
 func _on_key(key: InputEventKey) -> void:
-	if not key.pressed or key.echo:
+	# KEYUP: lepas tactical command yang sedang di-hold lewat tuts
+	# G/F/T/C/B/D (paritas InputHandler.handle_key_up _core.py:8458-8472 —
+	# TANPA gate state: release tetap dirutekan walau match sudah usai).
+	if not key.pressed:
+		_on_key_release(key)
+		return
+	if key.echo:
 		return
 	# Cinematic dicek SEBELUM pause/gameplay (paritas Game.handle_key
 	# _core.py:2673-2686): ESC saat banner/perayaan = skip, bukan menu pause.
@@ -558,6 +577,13 @@ func _on_key(key: InputEventKey) -> void:
 		if key.keycode == KEY_N and GameManager.state == "victory":
 			GameManager.next_level()
 			return
+	# ── PERINTAH TAKTIS (FASE 18): paritas InputHandler.handle_key
+	# _core.py:8343-8396 — blok taktis HANYA saat state "playing", dan
+	# G/F/T/C/B/D return SEBELUM skill QWER (pygame: cabang elif berantai).
+	# HOTKEY gather MEMAKAI posisi mouse + follow_mouse (beda dari tombol
+	# panel yang gather tanpa posisi).
+	if GameManager.state == "playing" and _tactical_hotkey(key.keycode):
+		return
 	# Skill hero terpilih — action sudah ada di project.godot (Q/W/E/R)
 	if key.is_action_pressed("skill_q"):
 		_cast_skill("q")
@@ -573,7 +599,7 @@ func _on_key(key: InputEventKey) -> void:
 		return
 	if key.is_action_pressed("toggle_shop"):
 		GameManager.toggle_shop()
-		print("[Main] toko %s" % ("dibuka (B/H)" if GameManager.shop_open else "ditutup"))
+		print("[Main] toko %s" % ("dibuka (H)" if GameManager.shop_open else "ditutup"))
 		return
 	if not enable_debug_controls:
 		return
@@ -600,12 +626,104 @@ func _cast_skill(slot_key: String) -> void:
 	if h.has_method("cast_" + slot_key):
 		h.call("cast_" + slot_key)
 
+# ══════════════════════════════════════════════════════════
+#  PERINTAH TAKTIS — PEMICU INPUT (FASE 18)
+#  Port _core.py InputHandler.handle_key/handle_key_up + mobile/hud.py
+#  apply_hud_action + cabang release/pause/APP_BG main.py. Manajer
+#  (TacticalCommands.gd) tetap satu-satunya pemilik state taktis.
+# ══════════════════════════════════════════════════════════
+
+## KEYDOWN taktis (paritas InputHandler.handle_key _core.py:8343-8396):
+##   G/F -> gather di posisi mouse bila kursor di dalam layar, else gather
+##          default (follow_mouse=True di keduanya)
+##   T    -> protect_tower dengan selected_tower BIRU bila ada, else auto
+##   C/B/D -> protect_castle / attack_boss / attack_damage_dealer polos
+## Return true = tuts taktis (event dikonsumsi, jangan lanjut ke skill).
+func _tactical_hotkey(code: int) -> bool:
+	if _tactical == null or not is_instance_valid(_tactical):
+		return false
+	var cmd = TACTICAL_KEY_TO_COMMAND.get(code)
+	if cmd == null:
+		return false
+	match int(code):
+		KEY_G, KEY_F:
+			# Posisi mouse dibaca dari sumber yang sama dengan yang dipakai
+			# manajer saat menerbitkan ulang (pygame: g.mouse_x/mouse_y).
+			var m: Vector2 = _tactical._mouse_pos()
+			if m.x >= 0.0 and m.x < 1280.0 and m.y >= 0.0 and m.y < 720.0:
+				_tactical.hold_start("gather", [m.x, m.y], true)
+			else:
+				_tactical.hold_start("gather", [], true)
+		KEY_T:
+			var t = GameManager.selected_tower
+			if t != null and is_instance_valid(t) and str(t.get("team")) == "blue":
+				_tactical.hold_start("protect_tower", [t])
+			else:
+				_tactical.hold_start("protect_tower")
+		KEY_C:
+			_tactical.hold_start("protect_castle")
+		KEY_B:
+			_tactical.hold_start("attack_boss")
+		KEY_D:
+			_tactical.hold_start("attack_damage_dealer")
+	return true
+
+## KEYUP taktis (paritas InputHandler.handle_key_up _core.py:8440-8472):
+## tanpa gate state — release tetap dirutekan (hold_end nama yang tidak
+## cocok = no-op di manajer, sama seperti pygame).
+func _on_key_release(key: InputEventKey) -> void:
+	if GameManager.in_menu:
+		return # paritas main.py: KEYUP hanya dirutekan di STATE_GAME
+	if _tactical == null or not is_instance_valid(_tactical):
+		return
+	var cmd = TACTICAL_KEY_TO_COMMAND.get(key.keycode)
+	if cmd != null:
+		_tactical.hold_end(cmd)
+
+## Tekan tombol panel perintah (paritas mobile/hud.apply_hud_action):
+## gather TANPA posisi mouse; protect_tower pakai selected_tower biru.
+func _tactical_panel_press(cmd_name: String) -> bool:
+	if _tactical == null or not is_instance_valid(_tactical):
+		return false
+	if cmd_name == "protect_tower":
+		var t = GameManager.selected_tower
+		if t != null and is_instance_valid(t) and str(t.get("team")) == "blue":
+			return bool(_tactical.hold_start("protect_tower", [t]))
+		return bool(_tactical.hold_start("protect_tower"))
+	if cmd_name == "gather":
+		return bool(_tactical.hold_start("gather"))
+	return bool(_tactical.hold_start(cmd_name))
+
+## Lepas tombol panel perintah (paritas cabang release main.py:483-487 —
+## hold_end(nama) berdasar sentuhan yang menekan).
+func _tactical_panel_release(cmd_name: String) -> void:
+	if _tactical == null or not is_instance_valid(_tactical):
+		return
+	_tactical.hold_end(cmd_name)
+
+## Lepas SEMUA hold (paritas main.py:479-486 pause + APP_BG: hold "nyangkut"
+## tidak boleh tetap aktif setelah KEYUP/release-nya jatuh di layar lain).
+func _tactical_release_all() -> void:
+	if _tactical == null or not is_instance_valid(_tactical):
+		return
+	_tactical.hold_end()
+	var bar = get_tree().get_first_node_in_group("tactical_bar") \
+		if get_tree() != null else null
+	if bar != null and is_instance_valid(bar) and bar.has_method("release_all"):
+		bar.call("release_all")
+
+func _notification(what: int) -> void:
+	# APP_BG pygame (main.py:348-360): aplikasi ke latar membatalkan semua
+	# sentuhan tanpa event release -> lepas semua hold agar tidak nyangkut.
+	if what == NOTIFICATION_APPLICATION_PAUSED:
+		_tactical_release_all()
+
 func _on_click(pos: Vector2) -> void:
 	if GameManager.state != "playing" or get_tree().paused:
 		return
 	# Prioritas klik paritas _handle_left_click (_core.py:7811-7879):
 	# slot -> nexus -> hero biru -> perintah hero -> menara biru -> deselect.
-	# (Bangunan toko pygame tak ada di Godot — toko dibuka B/H.)
+	# (Bangunan toko pygame tak ada di Godot — toko dibuka H.)
 	var slot_idx := _pick_slot(pos)
 	if slot_idx >= 0:
 		GameManager.select_slot_index(slot_idx)
@@ -756,6 +874,11 @@ func _toggle_pause() -> void:
 		if menu != null:
 			menu.close()
 		return
+	# Paritas main.py:475-486: pause terjadi saat tuts/tombol masih ditahan
+	# -> KEYUP/release-nya jatuh di layar pause dan tidak pernah sampai,
+	# jadi semua hold taktis dilepas sekarang (tidak "nyangkut" setelah
+	# lanjut).
+	_tactical_release_all()
 	get_tree().paused = true
 	GameManager.set_paused(true)
 	AudioManager.pause_bgm(true)

@@ -771,10 +771,16 @@ func _test_hotkeys_playing() -> void:
 	_expect(GameManager.shop_open, "H buka toko")
 	_main._on_key(_key(KEY_H))
 	_expect(not GameManager.shop_open, "H tutup toko (toggle)")
+	# FASE 18: B kini paritas pygame (oracle ui_hud.hotkeys.b → hold_start
+	# attack_boss, shop tidak tersentuh) — "B = toko" (ekstensi Godot lama)
+	# dihapus bersama binding FASE 18.
 	_main._on_key(_key(KEY_B))
-	_expect(GameManager.shop_open, "B buka toko (ekstensi Godot)")
-	_main._on_key(_key(KEY_B))
-	_expect(not GameManager.shop_open, "B tutup toko")
+	_expect(not GameManager.shop_open, "B = perintah taktis (bukan toko)")
+	var _tac = _main._tactical
+	_expect(_tac.hold_active() and str(_tac.held_command) == "attack_boss",
+		"B menahan attack_boss (boss tak ada → hold dipersenjatai)")
+	_main._on_key(_keyup(KEY_B))
+	_expect(not _tac.hold_active(), "lepas B melepas hold")
 	_main._on_key(_key(KEY_N))
 	_expect(GameManager.state == "playing", "N saat playing diam")
 	_main._on_key(_key(KEY_R))
@@ -964,6 +970,13 @@ func _key(code: int) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.keycode = code
 	event.pressed = true
+	return event
+
+
+func _keyup(code: int) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = false
 	return event
 
 

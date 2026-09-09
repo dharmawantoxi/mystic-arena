@@ -61,6 +61,11 @@ func _run() -> void:
 	_expect(_main._arena_map.theme_name == initial_theme, "T cannot change the normal match theme")
 	_expect(GameManager.gold == initial_gold and GameManager.owned_heroes().is_empty(),
 		"Debug shortcuts cannot summon heroes or restart the normal match")
+	# FASE 18: D/T kini hotkey taktis (hold_start). Tuts sungguhan pasti
+	# dilepas — KEYUP di sini mencegah hold "dipersenjatai" menembak
+	# belakangan saat hero sudah dibeli di tes-tes berikutnya.
+	for code in [KEY_D, KEY_T]:
+		_main._on_key(_keyup(code))
 
 	_test_economy()
 	_test_purchases_and_respawn()
@@ -421,6 +426,13 @@ func _key(code: int) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.keycode = code
 	event.pressed = true
+	return event
+
+
+func _keyup(code: int) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.keycode = code
+	event.pressed = false
 	return event
 
 
