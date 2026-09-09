@@ -24,9 +24,10 @@
 # harness = script fixture). Satu-satunya situs RNG modul ini.
 #
 # Nama target (feedback/status/snapshot): menara memakai nama tipe dasar
-# ("Archer", TANPA suffix level — paritas Tower.name pygame), castle
-# memakai "Castle" (pygame Castle TIDAK punya .name; oracle mem-pin
-# "Castle" supaya status deterministik), sisanya display_name.
+# ("Archer" — paritas Tower.name pygame; BUKAN "Archer Tower" UI TowerDB
+# maupun "Archer Lv1" display_name), castle memakai "Castle" (pygame
+# Castle TIDAK punya .name; oracle mem-pin "Castle" supaya status
+# deterministik), sisanya display_name.
 #
 # Visual gather-point + teks feedback + suara BELUM TERUJI (piksel/audio):
 # yang di-parity-kan hanya state taktik. Suara ui_click/hero_skill tetap
@@ -798,8 +799,10 @@ func target_name(unit) -> String:
 	if (unit as Node).is_in_group("nexus"):
 		return "Castle"
 	if (unit as Node).is_in_group("towers"):
-		var ttype := str(unit.get("tower_type"))
-		return str(TowerDB.type_info(ttype).get("name", ttype.capitalize()))
+		# Paritas Tower.name pygame (_entity.py:695-697): NAMA TIPE DASAR
+		# ("Archer") — BUKAN nama UI TowerDB ("Archer Tower") maupun
+		# display_name ("Archer Lv1").
+		return str(unit.get("tower_type")).capitalize()
 	if "display_name" in unit:
 		return str(unit.get("display_name"))
 	return (unit as Node).name
