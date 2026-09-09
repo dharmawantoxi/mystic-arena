@@ -140,8 +140,13 @@ func _test_txn(case: Dictionary) -> void:
 	_reset_shop_state(int(case["gold_in"]), case["purchased_in"],
 		case["bosses_in"])
 	# Jalur produksi penuh (validasi + potong gold + append + save + sfx).
+	# "Diterima" = keanggotaan BERUBAH: hero belum ada sebelum panggilan
+	# lalu masuk daftar (rejeksi karena sudah dimiliki tetap ada di daftar).
+	var was_present: bool = str(case["hero"]) \
+		in SaveManager.data["unlocked_heroes"]
 	_menu._try_unlock_hero(str(case["hero"]))
-	var accepted: bool = str(case["hero"]) in SaveManager.data["unlocked_heroes"]
+	var accepted: bool = (not was_present) \
+		and (str(case["hero"]) in SaveManager.data["unlocked_heroes"])
 	_compare(accepted, bool(case["accepted"]), "%s: diterima" % tag)
 	_compare(SaveManager.meta_gold(), int(case["meta_gold"]),
 		"%s: meta_gold setelah" % tag)
