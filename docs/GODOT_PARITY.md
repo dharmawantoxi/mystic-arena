@@ -45,7 +45,8 @@ sertifikasi paritas seluruh game.
 | Reward kematian boss (FASE 14) | Boss mati hanya dicatat tipenya dan memainkan cinematic; tidak membayar gold/skor, unlock boss baru tersimpan saat menang, tidak ada SLAYER maupun popup `+nG` | `Boss.take_damage → die(source) → GameManager.register_boss_death` mengikuti blok `Game.update` pygame `_core.py:2113–2163`: bayar **nilai runtime `boss.gold_reward`** ke gold+skor PEMAIN, tanpa memandang killer/tim boss, tanpa meta gold/combo/total_kills; `bosses_defeated_this_run` menghitung setiap instans, `bosses_defeated_this_match` dan `unlocked_bosses` unik berurutan. Boss unlock langsung dipersist dan bertahan saat kalah; hero gratis tetap menunggu menang. Guard per instans mencegah callback/tween/tick ganda. `_process_boss_kill` menambah `killer.kills` hanya hero lawan (hero yang sudah mati tetap valid); hanya hero **blue** menambah counter mini/true dan ID dedup in-match + popup `MINI BOSS SLAYER!` / `TRUE BOSS SLAYER!`, deskripsi dan ikon skull persis pygame. **HERO SLAYER tetap DIHAPUS**. Popup pertama-kali `BOSS/TRUE BOSS: … Defeated!` (owned vs tuntutan menghancurkan castle) tetap sesudah SLAYER. `FloatingTextQueue` + `WorldPopups`: gold `+{amount}G` di `(boss.x,boss.y−10)`, RGB `(255,220,50)`, font 18, velocity `(0,−1.5)`, 50 frame; map SLAYER di `(boss.x,boss.y−40)` via cabang critical (pygame menambah `!` lagi), jitter/drift, FIFO/cap 300 (berbagi dengan `DamageNumber` legacy lewat WeakRef), scale dan expiry frame diport. Ekor frame efek selesai sebelum pause cinematic; Main melepas active boss dan mengonsumsi satu pending mini pada frame kematian. Dikunci `boss_death_rewards` / `BossDeathRewardParityTest`; **piksel** font/shadow/glow/komposit cinematic dan audio SFX belum diuji. |
 | Reward kematian minion + menara (FASE 15) | Minion merah mati tanpa popup gold `+nG`; reward menara lewat `award_kill` TIM PEMBUNUH (menara merah dihancurkan sumber netral/tanpa killer malah membayar AI — pygame memakai TIM KORBAN), tanpa guard anti bayar ganda, `red_towers_destroyed` belum diaudit sekali-per-menara | Klaster reward minion+menara mengikuti blok `Game.update` pygame `_core.py:2196–2227` lewat `Minion.die()/Tower.die() → GameManager.register_minion_death/register_tower_death` (menggantikan `award_kill` killer): (1) **minion** — dinilai TIM KORBAN: minion RED oleh damage apa pun (hero biru/merah/mati, tower, minion, nexus, boss, self, netral tanpa sumber) membayar gold+skor pemain + `total_kills` + combo, minion biru membayar AI **tanpa** popup; (2) **popup gold `+nG`** — `add_gold_popup(x, y−10, reward)` hanya minion RED (menara & minion biru tanpa popup — pygame tidak memanggilnya), via `FloatingTextQueue`/`WorldPopups` FASE 14: velocity `(0,−1.5)` decay 0.95, lifetime 50, scale 0.3→1.0 spring, x_drift RNG per situs; (3) **menara** — TIM KORBAN: menara RED hancur oleh apa pun membayar gold+skor pemain (nilai runtime `gold_reward` = 100/150), menara biru membayar AI, `total_kills` tidak naik, `red_towers_destroyed` naik TEPAT SEKALI per menara merah (syarat true boss ≥6); (4) **guard** — flag `reward_processed` per instans = `_rewarded` pygame (die() ulang/pukul mayat/callback ganda tidak membayar dua kali; flag hero dibuka lagi saat respawn); (5) urutan operasi persis pygame: gold → score → popup → total_kills → max_combo **dibaca SEBELUM add_kill** (quirk: rantai N kill berurutan → max_combo N−1). Nilai reward runtime diuji (goblin 8/orc 18/troll 45/dark_rider 65, skala nexus, override, tower outer 100/inner 150). Dikunci `minion_tower_rewards` / `MinionTowerRewardParityTest` (20 skenario oracle `Game.update` dua seed); **piksel** font/shadow popup tetap milik bucket piksel FX. |
 | Dispatch kematian terpusat (FASE 16) | Sebagian jalur damage menulis HP ≤0 TANPA memanggil `die()`, jadi reward tidak pernah dibayar: peluru menara (`Tower._spawn_bullet`) dan nexus (`Nexus._shoot`), kit boss, kit skill hero (`Hero.kit_hit`), item on-hit, cleave, reflect Bristleback/Thornmail, dan serangan ranged. Hanya `take_damage()` per node yang memanggil `die()` sendiri, sehingga pemanggil yang menulis `hp`/`apply_damage` langsung melewati pembayaran. Sumber peluru juga belum diputus, sehingga peluru menara bisa memberi kill credit dan memantulkan Bristleback — padahal pygame `Bullet._on_hit` memanggil `take_damage` TANPA `source` (`_entity.py:246–248`) | Semua jalur damage Godot lewat `CombatSystem.apply_damage`, jadi keputusan “unit ini mati” ditaruh DI SINI sebagai satu pintu: `death_dispatch_enabled` (default true) + langkah 10 — sesudah mitigasi/shield/reflect/thornmail/on-hit penyerang, persis pygame yang masih mengeksekusi reflect saat korban “baru mati” — jika `dmg > 0` dan `hp <= 0`, `_dispatch_death` memanggil `die()` unit yang benar menurut jenisnya: Hero/Boss `die(source)` (atribusi kill memakai OBJEK source), Tower `die(from_team, source)`, Minion/Nexus `die(from_team)`. Reward/popup/counter tetap lewat `register_*` FASE 13–15 dan tidak membayar dua kali (guard `reward_processed` + guard `is_dead` di tiap `die()`); `Minion.die()` dijadikan idempoten seperti Tower/Hero/Boss. **Source diputus (null)** di peluru menara, peluru nexus, dan serangan minion — paritas `Bullet._on_hit` (`_entity.py:246–248`) dan `Minion.update` (`_entity.py:5580–5581`): peluru/pukulan minion tidak pernah memberi kill credit, reflect Bristleback/Thornmail, maupun blind (semua syarat `source is not None`). `Hero.kit_hit` meneruskan `src` dengan `trigger_on_hit=false`: damage SKILL tetap dispatch kematian + atribusi kill/reflect, tetapi tidak memicu jaket on-hit serangan dasar — persis pygame yang memanggil `take_damage(source=hero, school=…)` tanpa `on_basic_attack_hit`. Dikunci `death_dispatch` / `DeathDispatchParityTest` (21 skenario **jalur serangan nyata**: peluru normal/cannon/ice, melee, proyektil ranged, minion, skill/kit, + guard tanpa kematian dan mayat dipukul ulang). Snapshot per unit HANYA `dead/hp/rewarded/team` — identitas pembunuh sengaja tidak direkam karena `Tower.die(killer_team, _killer)` MEMBUANG killer; atribusi dibaca dari hasil akhirnya (`hero.kills`). **Piksel** damage number/ledakan cannon dan **audio** (menara hancur, minion mati, hentakan proyektil) BELUM TERUJI. |
-| UI/HUD in-match (toko/panel/banner/klik/hotkey) | Panel/label/tombol dibangun manual tanpa oracle: income memakai `"%.1f"` engine yang tak terverifikasi, angka cooldown `ceil(detiks)` (60f tampil "1"), gate equip melee `< 110` + magic via `dmg_school` (46 hero role-magic salah), klik tanah kosong = deselect (bukan perintah gerak), tanpa klik kanan, tanpa tombol N, tanpa catatan skor/kill/timer/unlock match, pause tanpa panel, game-over tanpa stat | Seksi fixture `ui_hud` menjalankan draw pygame ASLI headless (82 skenario draw, 31 kasus klik, 28 hotkey, 222 hero predikat, kurva banner 121 titik, baterai touch-rect) dan diputar ulang `UiHudParityTest`. Kanon tunggal `HudLayout.gd`: `format_gold_rate` bit-eksak IEEE-754 (terbukti identik Python: baterai oracle + fuzz 200.000 nilai, 0 beda — `GameManager`/`HUD` delegasi), ribuan/match-time/mode/cooldown (`frames//60+1`), easing banner (slide-in 0.4 BACK OUT → tahan 1.0 → slide-out 0.6 BACK IN + subtitle letterspaced), nama castle (Lv6+ CITADEL), touch-rect 48px (center integer pygame), dan semesta TERTUTUP `ui_key` tombol toko yang diaudit tiap layar. Perilaku yang disamakan: panel hero (`Lv.n`, `hp/max`, `UPGRADE HERO (300G)`/`M A X   L E V E L`, `AUTO-CAST ON` no-op, `ITEM FORGE  (n/6)` → tab item, chip slot → forge, X = deselect), toko (suffix `MAX`/`DIMILIKI`, alasan disabled `MELEE ONLY`/`MAGIC ONLY`/`POOR`/`FULL`/`OWNED` di `ui_data`+tooltip, tanpa tombol jual di Lv1 + fallback +50G via handler, tutup seusai beli hero/bangun menara), gate equip (`range > 80` tolak melee_only; magic via `ItemDB.is_magic_hero` berbasis ROLE), prioritas klik (slot → nexus → hero biru → perintah → menara biru → deselect; tanah kosong + hero hidup = MOVE tetap dipilih; klik kanan = tutup + MOVE), hotkey H (toggle toko, paritas) + B (ekstensi Godot) + N (victory → next; defeat/last diam) + R/ESC, pause (panel 400×400 @(440,160), 4 tombol 300×48 seurutan, mode line), game-over (`VICTORY! LV.n`/`DEFEAT LV.n`, 5 baris stat termasuk `Max Combo` + penanda `NEW BEST!` — dikunci `match_scoring`/`MatchScoringParityTest`, `NEW LEVEL UNLOCKED!`, `NEW HERO: …`, tombol next hanya victory+ada-lanjut). Beda disengaja yang dikunci eksplisit: UI Godot berbahasa Indonesia, toko satu-scroll tanpa halaman (himpunan 33 id direplay), klik musuh = move-to + aggro otomatis (tanpa `follow_target`), baris NEW HERO ditampilkan (pygame menghitung tapi tidak me-render), klik-kanan di atas panel tertelan. Belum teruji/sengaja terbuka: piksel (lebar chip metrik-font, gradien/shadow/dekorasi banner, ikon, kartu item, komposit badge combo + popup achievement), popup unlock geser (350×230), notifikasi tier combo sidepanel pygame, ~~popup gold `+nG` kill minion~~ (terkunci FASE 15 — baris reward minion+menara), bangunan toko di map, sistem taktis (hold G/F/T/C/B/D), kontrol sentuh di layar, dan teks intro level (perilaku/skip-nya milik `CinematicTest`) — combo/`Max Combo`, badge `NEW BEST!`, skor kill-hero +150 + atribusi killer, dan popup achievement `NEW HERO UNLOCKED!` kini TERKUNCI di baris klaster skor + `match_scoring`/`MatchScoringParityTest`. |
+| Perintah taktis (FASE 17) | `tactical_commands.py` (1051 baris, 28 fungsi) belum ada padanannya di Godot: tidak ada GATHER/PROTECT/ATTACK, tidak ada mode HOLD, tidak ada auto-protect, dan `Hero` tanpa `follow_target` (klik musuh hanya move-to + aggro) | `TacticalCommands.gd` (anak `Main`, dibuat di `_ready` seperti `_ai`, self-managed 60 Hz) mem-port seluruh manager 1:1 — 5 issuer + HOLD + push gather + 4 helper target + auto-protect + warna/status — membaca state live produksi (`GameManager`: state/wave/selected/owned_heroes/nexus; grup towers/minions; `Main.active_boss`). `Hero.move_to` + `follow_target` (validasi + state follow di `_physics_process` persis prioritas pygame destination → follow → serang) dan nama target produksi (`target_name`: menara = nama tipe dasar tanpa `Lv`, castle = `Castle`, sisanya `display_name`). Roll 20% auto-boss lewat `ParityRng` (satu-satunya situs RNG modul). Dikunci `tactical_commands` / `TacticalCommandsParityTest` (37 skenario, 112 langkah: gate cooldown/state, TAP-vs-HOLD 20f/ekor-30, push gather, seleksi threat/nearest/dealer, decay timer, auto castle/tower/boss+roll, status/warna — dua seed identik). Jalur mati ikut dikunci: push one-shot tidak pernah picu (visual 150f < timer 300), push hanya via HOLD ≥240f. **Piksel** lingkaran gather-point + teks feedback dan **audio** ui_click/hero_skill BELUM TERUJI; tombol panel + hotkey taktis (G/F/T/C/B/D) belum diikat (sistem callable, tanpa pemicu UI). |
+| UI/HUD in-match (toko/panel/banner/klik/hotkey) | Panel/label/tombol dibangun manual tanpa oracle: income memakai `"%.1f"` engine yang tak terverifikasi, angka cooldown `ceil(detiks)` (60f tampil "1"), gate equip melee `< 110` + magic via `dmg_school` (46 hero role-magic salah), klik tanah kosong = deselect (bukan perintah gerak), tanpa klik kanan, tanpa tombol N, tanpa catatan skor/kill/timer/unlock match, pause tanpa panel, game-over tanpa stat | Seksi fixture `ui_hud` menjalankan draw pygame ASLI headless (82 skenario draw, 31 kasus klik, 28 hotkey, 222 hero predikat, kurva banner 121 titik, baterai touch-rect) dan diputar ulang `UiHudParityTest`. Kanon tunggal `HudLayout.gd`: `format_gold_rate` bit-eksak IEEE-754 (terbukti identik Python: baterai oracle + fuzz 200.000 nilai, 0 beda — `GameManager`/`HUD` delegasi), ribuan/match-time/mode/cooldown (`frames//60+1`), easing banner (slide-in 0.4 BACK OUT → tahan 1.0 → slide-out 0.6 BACK IN + subtitle letterspaced), nama castle (Lv6+ CITADEL), touch-rect 48px (center integer pygame), dan semesta TERTUTUP `ui_key` tombol toko yang diaudit tiap layar. Perilaku yang disamakan: panel hero (`Lv.n`, `hp/max`, `UPGRADE HERO (300G)`/`M A X   L E V E L`, `AUTO-CAST ON` no-op, `ITEM FORGE  (n/6)` → tab item, chip slot → forge, X = deselect), toko (suffix `MAX`/`DIMILIKI`, alasan disabled `MELEE ONLY`/`MAGIC ONLY`/`POOR`/`FULL`/`OWNED` di `ui_data`+tooltip, tanpa tombol jual di Lv1 + fallback +50G via handler, tutup seusai beli hero/bangun menara), gate equip (`range > 80` tolak melee_only; magic via `ItemDB.is_magic_hero` berbasis ROLE), prioritas klik (slot → nexus → hero biru → perintah → menara biru → deselect; tanah kosong + hero hidup = MOVE tetap dipilih; klik kanan = tutup + MOVE), hotkey H (toggle toko, paritas) + B (ekstensi Godot) + N (victory → next; defeat/last diam) + R/ESC, pause (panel 400×400 @(440,160), 4 tombol 300×48 seurutan, mode line), game-over (`VICTORY! LV.n`/`DEFEAT LV.n`, 5 baris stat termasuk `Max Combo` + penanda `NEW BEST!` — dikunci `match_scoring`/`MatchScoringParityTest`, `NEW LEVEL UNLOCKED!`, `NEW HERO: …`, tombol next hanya victory+ada-lanjut). Beda disengaja yang dikunci eksplisit: UI Godot berbahasa Indonesia, toko satu-scroll tanpa halaman (himpunan 33 id direplay), klik musuh = move-to + aggro otomatis (klik belum memakai `follow_target` FASE 17), baris NEW HERO ditampilkan (pygame menghitung tapi tidak me-render), klik-kanan di atas panel tertelan. Belum teruji/sengaja terbuka: piksel (lebar chip metrik-font, gradien/shadow/dekorasi banner, ikon, kartu item, komposit badge combo + popup achievement), popup unlock geser (350×230), notifikasi tier combo sidepanel pygame, ~~popup gold `+nG` kill minion~~ (terkunci FASE 15 — baris reward minion+menara), bangunan toko di map, sistem taktis TERKUNCI di baris perintah taktis + `tactical_commands`/`TacticalCommandsParityTest` (state perintah/hold/auto; tombol panel + hotkey G/F/T/C/B/D belum diikat), kontrol sentuh di layar, dan teks intro level (perilaku/skip-nya milik `CinematicTest`) — combo/`Max Combo`, badge `NEW BEST!`, skor kill-hero +150 + atribusi killer, dan popup achievement `NEW HERO UNLOCKED!` kini TERKUNCI di baris klaster skor + `match_scoring`/`MatchScoringParityTest`. |
 
 ## Belum setara — jangan ditandai selesai
 
@@ -91,9 +92,12 @@ sertifikasi paritas seluruh game.
   (geometri 350×230 tercatat di fixture tapi Godot hanya menampilkan
   baris teks) — popup achievement SUDAH diport (`AchievementPopup.gd`);
   (3) **bangunan toko di map** (klik gedung ITEM FORGE/HERO SHOP —
-  Godot membuka toko via B/H); (4) **sistem taktis**
-  (`tactical_commands.py`: hold G/F/T/C/B/D — belum diport; B dipakai
-  Godot sebagai toggle toko) + notifikasi tier combo sidepanel pygame
+  Godot membuka toko via B/H); (4) **pemicu UI taktis** (sistem
+  `tactical_commands.py` sendiri **DITUTUP FASE 17**: `TacticalCommands.gd` +
+  `Hero.follow_target` + oracle `tactical_commands` + replay
+  `TacticalCommandsParityTest` — yang terbuka hanya tombol panel perintah
+  dan hotkey hold G/F/T/C/B/D; B dipakai Godot sebagai toggle toko) +
+  notifikasi tier combo sidepanel pygame
   (`beri_tahu_global` — Godot tanpa sidepanel); (5) **kontrol sentuh
   di layar** (data tombol+visibilitas diport di `HudLayout`, UI-nya
   belum ada); (6) **teks intro level** (sudah diport visual, replay
@@ -522,11 +526,82 @@ dibandingkan supaya kegagalan menunjuk ke setup, bukan ke dispatch.
 Regenerasi fixture HANYA bila `_core.py`/`_entity.py`/`hero_items.py`
 berubah.
 
+`TacticalCommandsParityTest` memutar ulang **seluruh** seksi
+`tactical_commands` (37 skenario, 112 langkah) pada node
+Hero/Minion/Tower/Nexus/Boss Godot ASLI + `Main._tactical`
+(`TacticalCommands.gd`, dibuat di `Main._ready` seperti `_ai`) +
+`GameManager` sungguhan. Oracle TIDAK menjalankan `Game.update` penuh,
+melainkan `TacticalCommandManager.update()` pygame yang di-step manual
+per frame dengan unit betulan; Godot mereplay lewat jalur produksi yang
+sama: `command_*` / `hold_*` / `update()` + `Hero.move_to` /
+`follow_target` / `target` + `GameManager` (selected, state, wave,
+`owned_heroes`, nexus). **Tidak ada** `register_*` manual dan **tidak
+ada** set state taktik langsung — perintah/timer/cooldown/feedback/hold/
+push/auto boleh berubah HANYA sebagai akibat produksi. Roll 20%
+auto-attack-boss (satu-satunya situs RNG modul) di-script per skenario
+lewat `ParityRng.begin/end` dan konsumsinya dibandingkan.
+
+Skenario: gather eksplisit/default/avg-midmix/single-silent/tanpa-hero,
+gate cooldown+state, push one-shot (jalur mati: visual 150f kedaluwarsa
+sebelum timer 300) vs tanpa-arrival, protect tower (ancaman
+rendah/tinggi/roster-kecil/auto-threatened/fallback-HP/hancur-pilih-ulang/
+tanpa-target), protect castle (formasi+clamp/hancur), attack boss
+(sukses/tanpa-boss), attack dealer (sukses + fokus pindah/tanpa-musuh),
+HOLD tap-pendek vs potong-30, mismatch/idempotent/invalid,
+follow-mouse + clamp-layar, armed-menunggu-boss (gagal-diam lalu loud
+saat boss muncul), push-HOLD + kunci-target, helper count/nearest/
+threatened/dealer, kedaluwarsa timer, auto castle/tower/swarm/boss-roll/
+gagal-roll/wave-rendah, dan retreat-clear. Guard internal oracle menolak:
+gate bocor, TAP-vs-HOLD tertukar, push tanpa arrival 60%, target salah,
+timer negatif/tidak decay, auto salah kondisi, status/warna menyimpang,
+dan konsumsi random ≠ script. Snapshot dibandingkan rekursif closed-world
+per langkah: manager (20 key) + hero biru + semua unit + castle + game,
+termasuk snapshot PRA-aksi. Regenerasi fixture HANYA bila
+`tactical_commands.py`/`_core.py`/`_entity.py` berubah.
+
 CI `godot-check.yml` memeriksa freshness fixture dan log runtime. Sukses berarti
 ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
 `Compile Error`; exit code Godot saja tidak cukup.
 
 ### Hasil validasi perubahan ini
+
+- **FASE 17 — perintah taktis (PR ini):** oracle freshness lulus lokal
+  dengan `/tmp/parity-venv/bin/python tools/test_godot_match_parity.py`
+  (pygame-ce 2.5.8): seksi baru `tactical_commands` berisi 37 skenario /
+  112 langkah (gather×47, protect_tower×15, protect_castle×6,
+  attack_boss×6, attack_damage_dealer×4), 1 skenario push gather (HOLD),
+  2 roll boss 20% ter-script; dua seed berbeda identik dan seluruh guard
+  internal oracle lulus. `--write-fixture` menghasilkan **20.484 baris
+  insert-only fixture + 988 baris oracle** — semua seksi fixture lama
+  byte-identik (0 delesi), tidak ada perubahan kode runtime pygame, dan
+  save pengguna tidak disentuh (`XDG_DATA_HOME=$(mktemp -d)`). Blok print
+  `main()` menambah baris `tactical-commands oracle`. Audit menemukan dua
+  perilaku kunci yang dikunci eksplisit: (1) push gather ONE-SHOT adalah
+  jalur mati (`gather_point_timer` 150 kedaluwarsa sebelum
+  `command_timer` sentuh 300 — push hanya hidup via HOLD
+  `hold_elapsed >= 240`); (2) melee `range` pygame SELALU 70
+  (normalisasi BALANCE PASS, `_entity.py:3305`) sehingga spread fokus
+  attack_boss/dealer = 35+i·8 — cocok dengan `get_balanced_stats`
+  Godot. Audit presisi membuktikan NOL flip batas desimal-4 antara
+  float64 oracle dan float32 `Vector2` untuk seluruh titik spread.
+  Cek statis CI langkah 1 lulus lokal: `gdparse` seluruh `.gd`
+  (termasuk `TacticalCommands.gd` + `TacticalCommandsParityTest.gd` +
+  `Hero.gd` + `Main.gd`), `tscn_lint` 28 scene (termasuk
+  `TacticalCommandsParityTest.tscn`), `check_refs`, `particles_lint`
+  (94 berkas), 5 self-test `godot_log_gate`, `gen_boss_smart_ai
+  --check`, `gen_hero_skill_kit --check`, dan `check_bosskit_scope`.
+  Langkah CI baru **4m** menjalankan
+  `TacticalCommandsParityTest --quit-after 600` di user-data terisolasi
+  melalui `godot_log_gate.py`.
+  **Yang TIDAK terverifikasi lokal, eksplisit:** binary Godot 4.3 tidak
+  bisa diperoleh di sandbox (release-assets.githubusercontent.com,
+  downloads.godotengine.org, conda/ghcr/nix/nuget semuanya diblokir;
+  kompilasi dari sumber tidak layak pada 2 CPU / 3 GB RAM), jadi
+  `TacticalCommandsParityTest` sendiri **maupun regresi seluruh daftar
+  headless tidak dijalankan lokal** — semuanya diverifikasi oleh CI PR
+  ini (`gh run watch --exit-status`) dengan binary Godot 4.3 standar.
+  Tidak mengklaim pixel/audio parity, tidak mengklaim game 100%
+  ekuivalen, dan tidak ada uji Android.
 
 - **FASE 16 — dispatch kematian terpusat (uji lanjut PR #193):** oracle
   freshness lulus lokal dengan `/tmp/parity-venv/bin/python

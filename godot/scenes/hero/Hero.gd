@@ -122,6 +122,11 @@ var player_controlled: bool = false
 ## perjalanan, bukan berbaris lurus ke titik jalur (fix _entity.py:4038-4048).
 var destination: Vector2 = Vector2.INF
 var destination_auto: bool = false
+## Perintah taktis follow & attack (paritas follow_target _entity.py:3405).
+## Dipasang TacticalCommands (attack_boss/dealer, gather push) & klik musuh;
+## divalidasi tiap frame (mati/kawan -> null) dan dieksekusi SETELAH
+## destination, SEBELUM serang-biasa (paritas _entity.py:4074-4090).
+var follow_target: Node2D = null
 ## Kill hero-vs-hero (paritas _core.py:2506-2515 _process_hero_kill) — dipakai
 ## AIPlayer sebagai prioritas upgrade & beli item (sort by kills pygame).
 var kills: int = 0
@@ -310,6 +315,14 @@ func _physics_process(delta):
 
 	_regen(delta)
 
+	# ─── Validasi follow_target (paritas _entity.py:3973-3977) ───
+	# Target taktis yang mati / ternyata kawan langsung dibuang.
+	if follow_target != null:
+		if not is_instance_valid(follow_target) \
+				or bool(follow_target.get("is_dead")) \
+				or str(follow_target.get("team")) == team:
+			follow_target = null
+
 	# AI sederhana: cari target terdekat (port dari Hero._find_hunt_target)
 	if not target or not is_instance_valid(target) or bool(target.get("is_dead")):
 		target = CombatSystem.nearest_enemy(self, HUNT_RANGE)
@@ -358,6 +371,21 @@ func _physics_process(delta):
 					target = dfoe
 					try_attack()
 				is_moving = _move_to(dpos, eff_speed)
+	# ── 3. PLAYER COMMAND: follow & attack target (paritas _entity.py:4074-4090) ──
+	# Perintah taktis (attack_boss/dealer, gather push): kunci target, dekati
+	# sampai masuk attack range lalu serang. Prioritas di bawah destination
+	# (hero attack_boss yang masih punya titik spread menaati titiknya dulu).
+	elif follow_target != null:
+		target = follow_target
+		var fpos := (follow_target as Node2D).global_position
+		var fdist := global_position.distance_to(fpos)
+		facing = 1 if fpos.x > global_position.x else -1
+		visual_root.scale.x = facing # flip sprite / skeleton
+		if fdist <= attack_range:
+			velocity = Vector2.ZERO
+			try_attack()
+		else:
+			is_moving = _move_to(fpos, eff_speed)
 	elif target != null:
 		var dist = global_position.distance_to(target.global_position)
 		facing = 1 if target.global_position.x > global_position.x else -1
@@ -399,6 +427,15 @@ func _move_to(dest: Vector2, speed: float) -> bool:
 func set_destination(dest: Vector2, auto: bool = false) -> void:
 	destination = dest
 	destination_auto = auto
+
+
+## Perintah gerak pemain/taktis (paritas Hero.move_to _entity.py:3571-3575):
+## pasang destination, buang follow_target, batalkan retreat.
+func move_to(x: float, y: float, auto: bool = false) -> void:
+	destination = Vector2(x, y)
+	destination_auto = bool(auto)
+	follow_target = null
+	is_retreating = false
 
 
 func clear_destination() -> void:

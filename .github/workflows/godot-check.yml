@@ -502,6 +502,33 @@ jobs:
             exit 1
           fi
 
+      # ── 4m. TacticalCommandsParityTest (FASE 17): perintah taktis.
+      # Oracle = TacticalCommandManager pygame ASLI headless (di-step manual
+      # per frame dengan unit betulan, tanpa Game.update penuh). Godot mereplay
+      # lewat jalur produksi (Main._tactical + Hero.move_to/follow_target +
+      # GameManager) — BUKAN set state taktik langsung. Tidak ada register_*
+      # manual. Yang dikunci: gate cooldown/state, TAP-vs-HOLD (20f/30 ekor),
+      # push gather (mati one-shot, hidup via HOLD >= 240f), seleksi target
+      # (threat/nearest/dealer), decay timer, auto-protect (castle/tower/
+      # boss+roll 20% via ParityRng), dan status/warna. user:// terisolasi
+      # bahkan kalau harness berhenti di tengah.
+      - name: TacticalCommandsParityTest (perintah taktis vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/TacticalCommandsParityTest.tscn --quit-after 600 2>&1 | tee /tmp/taccmd.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/taccmd.log --label "TacticalCommandsParityTest" \
+              --require "[TacticalCommandsParityTest] PASS" > /tmp/taccmd.gate 2>&1; then
+            cat /tmp/taccmd.gate
+          else
+            cat /tmp/taccmd.gate
+            echo "::error::TACCMD-FAIL-TAIL: $(tail -40 /tmp/taccmd.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::TACCMD-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/taccmd.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
