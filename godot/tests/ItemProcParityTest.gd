@@ -227,6 +227,12 @@ func _replay(sc: Dictionary) -> void:
 	var atk = units["atk"]
 	var dfn = units["def"]
 	atk.target = dfn
+	# _MIASMA adalah global pygame — di-clear antar skenario oleh oracle;
+	# di Godot static juga, clear dari salah satu inventory (mirror).
+	for tag in units:
+		var inv2 = units[tag].get("items")
+		if inv2 != null:
+			inv2._miasma.clear()
 
 	var events: Array = sc["events"]
 	var ei := 0

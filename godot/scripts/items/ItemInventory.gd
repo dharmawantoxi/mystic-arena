@@ -786,9 +786,12 @@ func _notify(text: String) -> void:
 var _proc_cd: Dictionary = {}
 ## Racun Miasma yang sedang berjalan: [target, sisa_detik, tick_cd, damage]
 ## Paritas _MIASMA global pygame (hero_items.py:209-234) — di sana global
-## karena inventory tidak punya referensi ke semua target; di sini cukup
-## per-inventory sebab yang nge-tick adalah pemilik itemnya.
-var _miasma: Array = []
+## MODUL yang di-tick oleh SETIAP pemanggilan update() (tiap unit dengan
+## ItemInventory men-decrement SEMUA racun 1x per frame; dengan 2 unit,
+## racun yang sama menumpuk 2x/frame — lihat oracle item_procs). Maka
+## wajib static (dibagi lintas instance), bukan per-instance — kalau tidak,
+## tick racun hanya berjalan 1x/frame dan HP oracle meleset.
+static var _miasma: Array = []
 
 
 ## Turunkan cooldown proc + jalankan racun Miasma. Dipanggil dari tick().
