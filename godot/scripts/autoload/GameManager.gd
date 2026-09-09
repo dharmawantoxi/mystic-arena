@@ -335,6 +335,33 @@ static func format_gold_rate(rate: float) -> String:
 	return HudLayout.format_gold_rate(rate)
 
 
+# ── SETTINGS (paritas GameSettings pygame) ──
+## Screen shake (GameSettings.screen_shake_enabled). Dikaca dari save agar
+## Boss._shake tidak perlu membaca SaveManager tiap frame.
+var screen_shake_enabled: bool = true
+## Damage numbers (GameSettings.damage_numbers_enabled).
+var damage_numbers_enabled: bool = true
+
+
+## Sinkronkan kedua flag dari save (dipanggil boot + tiap start_level).
+func _load_gameplay_settings() -> void:
+	screen_shake_enabled = SaveManager.get_setting("screen_shake", 1.0) > 0.5
+	damage_numbers_enabled = SaveManager.get_setting(
+		"damage_numbers_enabled", 1.0) > 0.5
+	world_popups.damage_numbers_enabled = damage_numbers_enabled
+
+
+func set_screen_shake(enabled: bool) -> void:
+	screen_shake_enabled = enabled
+
+
+func set_damage_numbers(enabled: bool) -> void:
+	damage_numbers_enabled = enabled
+	# Live: antrean popup yang sedang berjalan ikut berubah (bukan hanya
+	# match berikutnya).
+	world_popups.damage_numbers_enabled = enabled
+
+
 func set_difficulty(d: String) -> void:
 	if not ["easy", "normal", "hard"].has(d):
 		return
@@ -434,8 +461,8 @@ func start_level(lv: int, replay: bool = false):
 	trueboss_kill_count = 0
 	achievements_unlocked.clear()
 	world_popups.reset()
+	_load_gameplay_settings()
 	var popup_settings: Dictionary = SaveManager.data.get("settings", {})
-	world_popups.damage_numbers_enabled = bool(popup_settings.get("damage_numbers_enabled", true))
 	var quality := str(popup_settings.get("quality", "medium"))
 	world_popups.max_damage_numbers = 8 if quality == "low" else (16 if quality == "medium" else 32)
 	# ── Skor/kill/timer/unlock match (paritas Game.reset/score) ──

@@ -18,7 +18,8 @@ var _banner_tween: Tween
 var _wave_sub: Label = null
 var _field_timer: float = 0.0
 var _bar_timer: float = 0.0
-var _nexus_bars: Dictionary = {}   # team -> {hp: ProgressBar, shield: ProgressBar, label: Label}
+## team -> {panel, hp: ProgressBar, shield: ProgressBar, label: Label}
+var _nexus_bars: Dictionary = {}
 var _difficulty_label: Label = null
 var _over_panel: PanelContainer = null
 var _over_title: Label = null
@@ -287,7 +288,7 @@ func _make_nexus_bar(_owner: Control, team: String) -> Control:
 	shield.add_theme_stylebox_override("fill", sh_fill)
 	vbox.add_child(shield)
 
-	_nexus_bars[team] = {"hp": hp, "shield": shield, "label": label}
+	_nexus_bars[team] = {"panel": panel, "hp": hp, "shield": shield, "label": label}
 	return panel
 
 
@@ -295,6 +296,13 @@ func _refresh_bars() -> void:
 	for team in ["blue", "red"]:
 		var bars: Dictionary = _nexus_bars.get(str(team), {})
 		if bars.is_empty():
+			continue
+		var nexus = GameManager.blue_nexus if team == "blue" else GameManager.red_nexus
+		var has_nexus := nexus != null and is_instance_valid(nexus)
+		# Nexus belum ada (menu / sebelum match) = bar DISEMBUYIKAN, bukan
+		# menampilkan fallback menyesatkan "Lv0 · 0/1 HP".
+		(bars["panel"] as Control).visible = has_nexus
+		if not has_nexus:
 			continue
 		var data: Array = GameManager.nexus_hp(str(team))
 		var hp := float(data[0])
@@ -310,11 +318,9 @@ func _refresh_bars() -> void:
 		else:
 			sh_bar.value = 0.0
 		sh_bar.visible = shield_max > 0.0
-		var nexus = GameManager.blue_nexus if team == "blue" else GameManager.red_nexus
-		var lv := int(nexus.get("level")) if nexus != null and is_instance_valid(nexus) else 0
 		label.text = "%s  Lv%d  ·  %d/%d HP%s" % [
-			"RADIANT NEXUS" if team == "blue" else "DIRE NEXUS", lv,
-			int(hp), int(max_hp),
+			"RADIANT NEXUS" if team == "blue" else "DIRE NEXUS",
+			int(nexus.get("level")), int(hp), int(max_hp),
 			"" if shield_max <= 0.0 else "  ·  shield %d" % int(shield)]
 
 

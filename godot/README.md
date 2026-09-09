@@ -51,11 +51,14 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ~/.venv-mystic/bin/python tools/conv
 
 # 2. Buka di Godot 4.3+ (diuji di 4.7.2 Forward+)
 godot godot/project.godot
-# F5 -> MENU UTAMA -> MULAI GAME -> pilih kartu LEVEL 1 -> MAIN.
+# F5 -> MENU UTAMA (layar penuh; arena+HUD disembunyikan selama menu).
+# MULAI GAME -> PILIH SLOT -> PILIH LEVEL -> pilih kartu LEVEL 1 -> MAIN.
+# (LANJUTKAN mem-bypass slot select, langsung mulai level berikutnya.)
 # Arena 1280x720: map forest, 2 nexus, 18 slot menara, roster kosong.
-# Lewati intro, B -> HERO -> beli Kaizen. Wave pertama setelah 5 detik,
+# Lewati intro, H -> tab HERO -> beli Kaizen. Wave pertama setelah 5 detik,
 # wave berikutnya minimal 25 detik + tunggu field clear; mini boss wave acak,
-# true boss Abaddon setelah 6 menara Dire hancur, HUD + skill bar QWER + toko (B).
+# true boss Abaddon setelah 6 menara Dire hancur, HUD + skill bar QWER +
+# toko (H, atau klik bangunan toko di map: Radiant=ITEM FORGE, Dire=HERO SHOP).
 # Menang -> ENTER lanjut LEVEL 2 (tema desert, boss razak/khalros/gorath/alchemist).
 ```
 
@@ -63,9 +66,10 @@ godot godot/project.godot
 
 | Input | Efek |
 |---|---|
-| **klik kiri** | pilih unit: hero Radiant (→ skill bar + toko) · menara milikmu (→ tab MENARA) · nexus (→ tab NEXUS) · lingkaran slot di lane (→ bangun menara) |
+| **klik kiri** | pilih unit: bangunan toko (Radiant → tab ITEM / Dire → tab HERO) · hero Radiant (→ skill bar) · menara milikmu (→ tab MENARA) · nexus (→ tab NEXUS) · lingkaran slot di lane (→ bangun menara) |
 | `Q` `W` `E` `R` | cast skill hero yang sedang dipilih (bisa juga lewat tombol di skill bar) |
-| `B` | buka/tutup toko (MENARA · ITEM · HERO · NEXUS) |
+| `H` | buka/tutup toko (MENARA · ITEM · HERO · NEXUS) — satu-satunya hotkey toko (paritas pygame; `B` kini milik perintah taktis) |
+| `G`/`F` `T` `C` `B` `D` (hold) | perintah taktis: GATHER (di posisi kursor) / PROTECT TOWER / PROTECT CASTLE / ATTACK BOSS / ATTACK DMG DEALER (panel-nya juga di HUD) |
 | `ENTER` | setelah VICTORY: **lanjut level berikutnya** · setelah DEFEAT: ulangi level |
 | `R` | setelah menang/kalah: replay level yang sama (is_replay → reward 1500/200, bukan 3000) |
 | `P` / `ESC` | menu PAUSE (RESUME / PENGATURAN / MENU UTAMA / KELUAR — paritas `MenuState.PAUSE`); ESC setelah menang/kalah = menu utama |
@@ -74,6 +78,19 @@ godot godot/project.godot
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
 Pilih difficulty di menu PILIH LEVEL sebelum match.
+
+### Perilaku layar menu
+
+- Menu utama/sub-menu = **layar penuh opak**: arena, unit, slot, dan HUD
+  disembunyikan selama menu terbuka (tidak ada lagi "menu menempel di samping
+  arena"). PAUSE berbeda: arena BEKU tetap terlihat di belakang lapisan dim
+  gelap — paritas pygame (pause = frame game terakhir + overlay).
+- Flow mulai: **MULAI GAME → PILIH SLOT SAVE → PILIH LEVEL** (paritas
+  pygame FASE 21); **LANJUTKAN** langsung mulai level berikutnya.
+- PENGATURAN berisi: Volume Master/SFX/BGM, Screen Shake (hidup — camera
+  trauma), Damage Numbers (live), info difficulty (dipilih di PILIH LEVEL),
+  HAPUS SAVE slot aktif (dialog konfirmasi), dan catatan jujur bahwa
+  cloud save Play Games belum di-port.
 
 ### Tombol debug
 
