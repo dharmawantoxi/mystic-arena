@@ -8008,6 +8008,525 @@ def make_tactical_input_fixture(core, entity):
         _sp.beri_tahu_global = saved_notify
         random.setstate(saved_random)
 
+# ═════════════════════════════════════════════════════════════════════
+# FASE 20 — LEVEL-SELECT STATS (BEST SCORE/BEST TIME) + TRANSAKSI
+# HERO SHOP META. Dua seksi baru:
+#
+#   level_select_stats : kartu level (LEVEL_SELECT) pygame ASLI —
+#                        Menu._draw_level_card headless dengan font proxy
+#                        perekam (pola ui_hud). Mengunci string stat FINAL
+#                        yang dirender + warna/px/style per slot, string
+#                        mentah pra-truncasi + lebar piksel pygame + hasil
+#                        aturan truncasi [:8] (ambang w//2-20 dari kartu
+#                        280px), kasus attempts==0 ("No stats yet"), kartu
+#                        TERKUNCI (blok stat tidak dirender), baterai
+#                        SaveManager.format_time, baterai format skor
+#                        (ribuan koma vs %.1fK), dan baterai win-rate
+#                        (int() truncation + band warna 3 tingkat).
+#   meta_shop_txn      : transaksi Hero Shop meta pygame ASLI —
+#                        Menu._unlock_hero_in_meta_shop + katalog EFEKTIF
+#                        get_all_hero_types (def kedua menimpa unlock_cost
+#                        dengan konstanta flat: starter 0, mini/true 4500).
+#                        Mengunci 222 baris katalog closed-world, kasus
+#                        transaksi (katalog/owned/gate boss/saldo/kurang-
+#                        pas/lebih/dua kali/sfx), persistensi disk, dan
+#                        matriks keputusan kartu (OWNED / boss-locked /
+#                        label pill FREE-UNLOCK + kind gold-neutral) pada
+#                        5 state save.
+#
+# Keduanya deterministik dan dijalankan DUA KALI dengan seed berbeda —
+# hasil wajib identik sebelum masuk fixture.
+# ═════════════════════════════════════════════════════════════════════
+
+def _headless_menu(core, sink_texts, sink_pills):
+    """Menu pygame ASLI headless: font proxy perekam render + pill perekam
+    + SoundManager diam (sfx terekam) + mouse/ticks ter-pin.
+
+    Return (menu, real_make_font, saved, mods) — pemanggil wajib memulihkan
+    lewat `saved` di finally. mods = (rend, ui_theme, system) untuk
+    restorasi tanpa impor kedua.
+    """
+    import pygame
+    import _render as rend
+    import ui_theme
+    import _system
+
+    pygame.init()
+    screen = pygame.display.set_mode((1280, 720))
+
+    class _RecFont:
+        """Proxy font perekam: catat (teks, warna, px, style) tiap render,
+        delegasikan sisanya (size() tetap metrik pygame asli)."""
+
+        def __init__(self, real, size, style, sink):
+            object.__setattr__(self, "_real", real)
+            object.__setattr__(self, "_size", size)
+            object.__setattr__(self, "_style", style)
+            object.__setattr__(self, "_sink", sink)
+
+        def render(self, text, antialias, color, background=None):
+            object.__getattribute__(self, "_sink").append({
+                "t": str(text),
+                "c": [int(v) for v in color],
+                "px": object.__getattribute__(self, "_size"),
+                "st": object.__getattribute__(self, "_style"),
+            })
+            real = object.__getattribute__(self, "_real")
+            if background is None:
+                return real.render(text, antialias, color)
+            return real.render(text, antialias, color, background)
+
+        def __getattr__(self, name):
+            return getattr(object.__getattribute__(self, "_real"), name)
+
+    orig_make_font = rend._make_font
+    rend._make_font = lambda size, style="body", bold=False: _RecFont(
+        orig_make_font(size, style, bold), size, style, sink_texts)
+    rend.clear_cache()  # surface cache dibuang
+    # PENTING: RenderCache.clear() TIDAK membersihkan cache font
+    # (_fonts) — font yang ter-cache dari maker sebelumnya akan lolos
+    # dari proxy perekam. Kosongkan secara eksplisit supaya SEMUA font
+    # kartu dirender lewat _RecFont.
+    if hasattr(rend, "_cache") and hasattr(rend._cache, "_fonts"):
+        rend._cache._fonts.clear()
+
+    orig_pill = ui_theme.pill
+
+    def _rec_pill(screen_, btns, bid, label, rect, kind, font, hover=False,
+                  enabled=True, icon=None, letter_gap=True):
+        sink_pills.append({"bid": bid, "label": label, "kind": kind,
+                           "enabled": bool(enabled)})
+        return orig_pill(screen_, btns, bid, label, rect, kind, font,
+                         hover=hover, enabled=enabled, icon=icon,
+                         letter_gap=letter_gap)
+
+    ui_theme.pill = _rec_pill
+
+    saved = {
+        "mouse": pygame.mouse.get_pos,
+        "ticks": pygame.time.get_ticks,
+        "play": _system.SoundManager.play,
+        "make_font": orig_make_font,
+        "pill": orig_pill,
+    }
+    pygame.mouse.get_pos = lambda: (-100, -100)
+    pygame.time.get_ticks = lambda: 1000000
+    _system.SoundManager.play = (
+        lambda self, name, volume_mult=1.0:
+        sink_pills.append({"sfx": name}))
+
+    menu = core.Menu(screen)
+    return menu, orig_make_font, saved, (rend, ui_theme, _system)
+
+
+def _restore_menu(mods, saved):
+    rend, ui_theme, system = mods
+    rend._make_font = saved["make_font"]
+    rend.clear_cache()
+    # Buang font proxy milik harness agar pemakaian get_font berikutnya
+    # (maker lain / test) tidak mewarisi perekam kita.
+    if hasattr(rend, "_cache") and hasattr(rend._cache, "_fonts"):
+        rend._cache._fonts.clear()
+    ui_theme.pill = saved["pill"]
+    import pygame
+    pygame.mouse.get_pos = saved["mouse"]
+    pygame.time.get_ticks = saved["ticks"]
+    system.SoundManager.play = saved["play"]
+
+
+def make_level_select_stats_fixture(core, entity):
+    """FASE 20 — seksi `level_select_stats`: BEST SCORE/BEST TIME per level
+    di kartu pilih level (paritas _core.py:4247-4291 + SaveManager.
+    format_time _system.py:1118-1125).
+
+    Oracle = jalur DRAW pygame ASLI (Menu._draw_level_card pada kartu 280px,
+    level 3) dengan font proxy perekam, DITAMBAH kalkulasi langsung dari
+    SaveManager ASLI (get_level_stats/format_time) untuk raw string +
+    lebar piksel + keputusan truncasi. Sumber kebenaran tunggal: kalau
+    hasil hitung langsung != teks ter-render, assert gagal saat generate.
+    """
+    import ui_theme
+    import _system
+    from levels import ALL_LEVELS, is_level_unlocked
+
+    lv3 = next(l for l in ALL_LEVELS if l["level_number"] == 3)
+    CARD_W, CARD_H = 280, 290        # geometri kartu _draw_level_select
+    LIMIT = CARD_W // 2 - 20         # ambang truncasi [:8] pygame
+
+    # Warna slot stat (ui_theme pygame) — dikirim sebagai data agar Godot
+    # memetakan band/nilai ke RGB yang sama persis.
+    COLORS = {
+        "label": list(ui_theme.TEXT_FAINT),
+        "score": list(ui_theme.GOLD_TEXT),
+        "time": list(ui_theme.CYAN_SOFT),
+        "attempts": list(ui_theme.TEXT_BODY),
+        "win_rate_gold": list(ui_theme.GOLD_TEXT),
+        "win_rate_green": list(ui_theme.GREEN),
+        "win_rate_low": [255, 150, 100],
+        "faint_text": list(ui_theme.TEXT_FAINT),
+    }
+    LABELS = ["BEST SCORE", "BEST TIME", "ATTEMPTS", "WIN RATE"]
+
+    def _classify_stats(texts, expect):
+        """Pisahkan teks blok stat dari rekaman penuh kartu (closed-world:
+        slot dikenali dari (px, style, warna) — tak ada teks lain di
+        kartu yang memakai kombinasi ini)."""
+        labels = sorted({t["t"] for t in texts
+                         if t["px"] == 12 and t["st"] == "body_semibold"})
+        pairs_bold = [t for t in texts
+                      if t["px"] == 20 and t["st"] == "body_bold"]
+        pairs_med = [t for t in texts
+                     if t["px"] == 19 and t["st"] == "body_medium"]
+        wr = [t for t in pairs_bold if t["t"].endswith("%")]
+        score = [t for t in pairs_bold if not t["t"].endswith("%")]
+        att = [t for t in pairs_med if "W/" in t["t"]]
+        time_ = [t for t in pairs_med if "W/" not in t["t"]]
+        out = {
+            "labels": labels,
+            "score": score[0] if len(score) == 1 else None,
+            "time": time_[0] if len(time_) == 1 else None,
+            "attempts": att[0] if len(att) == 1 else None,
+            "win_rate": wr[0] if len(wr) == 1 else None,
+        }
+        return out
+
+    def _build(seed):
+        random.seed(seed)
+        cases = []
+        fmt_time_battery = [
+            [v, _system.SaveManager.format_time(v)]
+            for v in (0, 1, 59, 60, 61, 119, 599, 600, 3599, 3600, 3725,
+                      86399)]
+        score_battery = []
+        win_rate_battery = []
+        texts, pills = [], []
+        menu, real_make, saved, mods = _headless_menu(core, texts, pills)
+        rend, ui_theme2, system = mods
+        try:
+            assert core.DEV_UNLIMITED_HERO_GOLD is False
+            core.GameSettings().difficulty = "normal"
+            val_bold = real_make(20, "body_bold")
+            val = real_make(19, "body_medium")
+
+            for v in (0, 999, 9999, 10000, 10001, 12345, 99999, 999999,
+                      9999999, 99999999, 999999999, 999999999999, 10 ** 15):
+                raw = (f"{v / 1000:.1f}K" if v >= 10000 else f"{v:,}")
+                wpx = val_bold.size(raw)[0]
+                cut = wpx > LIMIT
+                score_battery.append([v, raw, wpx, cut,
+                                      raw[:8] if cut else raw])
+
+            def draw_case(name, stats, completed):
+                menu.save_data["completed_levels"] = list(completed)
+                menu.save_data["level_stats"] = (
+                    {"3": dict(stats)} if stats is not None else {})
+                menu.buttons.clear()
+                del texts[:]
+                del pills[:]
+                menu._draw_level_card(lv3, 0, 0, CARD_W, CARD_H, completed)
+                unlocked = is_level_unlocked(3, completed)
+                live = _system.SaveManager.get_level_stats(menu.save_data, 3)
+                sv = live["best_score"]
+                score_raw = (f"{sv / 1000:.1f}K"
+                             if sv >= 10000 else f"{sv:,}")
+                time_raw = _system.SaveManager.format_time(
+                    live["best_time_seconds"])
+                sc_w = val_bold.size(score_raw)[0]
+                tm_w = val.size(time_raw)[0]
+                wins, att = live["wins"], live["total_attempts"]
+                rate = int((wins / att) * 100) if att else 0
+                band = 2 if rate >= 75 else (1 if rate >= 50 else 0)
+                expect = {
+                    "score_raw": score_raw, "score_w": sc_w,
+                    "score_cut": sc_w > LIMIT,
+                    "score": score_raw[:8] if sc_w > LIMIT else score_raw,
+                    "time_raw": time_raw, "time_w": tm_w,
+                    "time_cut": tm_w > LIMIT,
+                    "time": time_raw[:8] if tm_w > LIMIT else time_raw,
+                    "attempts": f"{wins}W/{att}",
+                    "win_rate": rate, "win_rate_band": band,
+                }
+                case = {
+                    "name": name, "unlocked": unlocked,
+                    "attempts": att, "stats_in": dict(live),
+                    "texts": [dict(t) for t in texts],
+                    "pills": [dict(p) for p in pills if "sfx" not in p],
+                    "expect": expect,
+                }
+                seen = _classify_stats(texts, expect)
+                if not unlocked:
+                    # Kartu terkunci: TANPA blok stat sama sekali.
+                    assert seen["labels"] == [], (name, seen["labels"])
+                    assert seen["score"] is None and seen["time"] is None
+                    assert seen["attempts"] is None
+                    assert seen["win_rate"] is None
+                elif att == 0:
+                    # attempts == 0 -> "No stats yet", tanpa slot stat.
+                    faint = [t for t in texts if t["px"] == 20
+                             and t["st"] == "body"
+                             and t["c"] == COLORS["faint_text"]]
+                    assert any(t["t"] == "No stats yet" for t in faint), name
+                    assert seen["labels"] == [], (name, seen["labels"])
+                    assert seen["score"] is None and seen["time"] is None
+                else:
+                    # Blok stat penuh: 4 label + 4 nilai, warna per slot.
+                    assert seen["labels"] == sorted(
+                        ui_theme.letter(l) for l in LABELS), name
+                    assert seen["score"]["t"] == expect["score"], name
+                    assert seen["score"]["c"] == COLORS["score"], name
+                    assert seen["time"]["t"] == expect["time"], name
+                    assert seen["time"]["c"] == COLORS["time"], name
+                    assert seen["attempts"]["t"] == expect["attempts"], name
+                    assert (seen["attempts"]["c"]
+                            == COLORS["attempts"]), name
+                    assert (seen["win_rate"]["t"]
+                            == f"{expect['win_rate']}%"), name
+                    wr_color = ([COLORS["win_rate_low"],
+                                 COLORS["win_rate_gold"],
+                                 COLORS["win_rate_green"]][band])
+                    assert seen["win_rate"]["c"] == wr_color, name
+                cases.append(case)
+
+            draw_case("empty_save", None, [1, 2])
+            draw_case("fresh_win_9999", {
+                "best_score": 9999, "best_time_seconds": 59,
+                "total_attempts": 1, "wins": 1, "total_kills": 0,
+                "max_combo": 0, "total_playtime_seconds": 59}, [1, 2])
+            draw_case("k_format_66pct", {
+                "best_score": 12345, "best_time_seconds": 605,
+                "total_attempts": 3, "wins": 2, "total_kills": 0,
+                "max_combo": 0, "total_playtime_seconds": 1900}, [1, 2])
+            draw_case("win_rate_74_trunc", {
+                "best_score": 12345, "best_time_seconds": 605,
+                "total_attempts": 200, "wins": 149, "total_kills": 0,
+                "max_combo": 0, "total_playtime_seconds": 0}, [1, 2])
+            draw_case("win_rate_75_green", {
+                "best_score": 9999, "best_time_seconds": 600,
+                "total_attempts": 4, "wins": 3, "total_kills": 0,
+                "max_combo": 0, "total_playtime_seconds": 0}, [1, 2])
+            draw_case("zero_wins_orange", {
+                "best_score": 0, "best_time_seconds": 0,
+                "total_attempts": 2, "wins": 0, "total_kills": 0,
+                "max_combo": 0, "total_playtime_seconds": 0}, [1, 2])
+            draw_case("huge_score_trunc", {
+                "best_score": 999999999999, "best_time_seconds": 3725,
+                "total_attempts": 1, "wins": 1, "total_kills": 0,
+                "max_combo": 0, "total_playtime_seconds": 3725}, [1, 2])
+            draw_case("k_boundary_no_time", {
+                "best_score": 99999999, "best_time_seconds": 0,
+                "total_attempts": 1, "wins": 1, "total_kills": 0,
+                "max_combo": 0, "total_playtime_seconds": 0}, [1, 2])
+            draw_case("locked_no_stats", {
+                "best_score": 12345, "best_time_seconds": 605,
+                "total_attempts": 3, "wins": 2, "total_kills": 0,
+                "max_combo": 0, "total_playtime_seconds": 0}, [1])
+
+            for wins, att in ((0, 2), (1, 3), (1, 2), (2, 3), (149, 200),
+                              (3, 4), (7, 10), (3, 5), (9, 10), (100, 100),
+                              (2, 4), (124, 250)):
+                rate = int((wins / att) * 100)
+                band = 2 if rate >= 75 else (1 if rate >= 50 else 0)
+                win_rate_battery.append([wins, att, rate, band])
+        finally:
+            _restore_menu(mods, saved)
+
+        return {
+            "card_w": CARD_W, "limit_px": LIMIT,
+            "fonts": {"score_px": 20, "score_style": "body_bold",
+                      "time_px": 19, "time_style": "body_medium",
+                      "label_px": 12, "label_style": "body_semibold"},
+            "colors": COLORS,
+            "labels": LABELS,
+            "cases": cases,
+            "format_time_battery": fmt_time_battery,
+            "score_format_battery": score_battery,
+            "win_rate_battery": win_rate_battery,
+        }
+
+    a = _build(20260908)
+    b = _build(31337)
+    assert a == b, "level_select_stats: dua seed beda hasilnya beda"
+    return a
+
+
+def make_meta_shop_txn_fixture(core, entity):
+    """FASE 20 — seksi `meta_shop_txn`: transaksi beli hero di Hero Shop
+    meta (paritas Menu._unlock_hero_in_meta_shop _core.py:5298-5328).
+
+    Audit yang dikunci: katalog EFEKTIF adalah def get_all_hero_types
+    KEDUA (_core.py:1255) yang MENIMPA unlock_cost semua hero dengan
+    konstanta flat (STARTER 0 / MINI 4500 / TRUE 4500) di atas harga
+    hasil rumus def pertama; urutan guard katalog -> duplikat -> gate
+    boss -> saldo; pengurangan gold lalu append purchased_heroes; save
+    disk hanya pada transaksi sukses; sfx ui_error/ui_buy per cabang;
+    matriks keputusan kartu (pill label/kind + status) pada 5 state save.
+    """
+    import ui_theme
+    import _system
+
+    catalog = core.get_all_hero_types()
+    consts = {
+        "starter": int(core.STARTER_HERO_UNLOCK_COST),
+        "mini": int(core.MINI_BOSS_HERO_UNLOCK_COST),
+        "true": int(core.TRUE_BOSS_HERO_UNLOCK_COST),
+    }
+
+    def _build(seed):
+        random.seed(seed)
+        rows = []
+        for hero in sorted(catalog):
+            st = catalog[hero]
+            row = {
+                "hero": hero,
+                "unlock_cost": int(st.get("unlock_cost", 600)),
+                "unlock_require_boss": st.get("unlock_require_boss"),
+                "is_boss_hero": bool(st.get("is_boss_hero")),
+                "boss_class": st.get("boss_class"),
+            }
+            expect = (consts["true"] if row["boss_class"] == "true"
+                      else consts["mini"] if row["is_boss_hero"]
+                      else consts["starter"])
+            assert row["unlock_cost"] == expect, (hero, row, expect)
+            rows.append(row)
+
+        def txn(name, hero, gold, purchased, bosses):
+            texts, pills = [], []
+            menu, _, saved, mods = _headless_menu(core, texts, pills)
+            try:
+                menu.save_data["purchased_heroes"] = list(purchased)
+                menu.save_data["unlocked_bosses"] = list(bosses)
+                menu.save_data["meta_gold"] = gold
+                menu.meta_gold = gold
+                del pills[:]
+                menu._unlock_hero_in_meta_shop(hero)
+                sfx = [p["sfx"] for p in pills if "sfx" in p]
+                res = {
+                    "name": name, "hero": hero, "gold_in": gold,
+                    "purchased_in": sorted(purchased),
+                    "bosses_in": sorted(bosses),
+                    "sfx": sfx,
+                    "accepted": "ui_buy" in sfx and "ui_error" not in sfx,
+                    "meta_gold": int(menu.meta_gold),
+                    "save_gold": int(menu.save_data.get("meta_gold", 0)),
+                    "purchased": sorted(
+                        menu.save_data.get("purchased_heroes", [])),
+                    "bosses": sorted(
+                        menu.save_data.get("unlocked_bosses", [])),
+                }
+                # Audit invarian pygame: saldo in-memory dan save_data
+                # selalu sinkron setelah transaksi.
+                assert res["meta_gold"] == res["save_gold"], name
+                # Rejeksi tidak boleh menyentuh saldo/daftar.
+                if not res["accepted"]:
+                    assert res["meta_gold"] == gold, name
+                    assert res["purchased"] == sorted(purchased), name
+                else:
+                    cost = catalog[hero].get("unlock_cost", 600)
+                    assert res["meta_gold"] == gold - cost, name
+                    assert hero in res["purchased"], name
+                return res
+            finally:
+                _restore_menu(mods, saved)
+
+        starter2 = sorted(k for k, v in catalog.items()
+                          if not v.get("is_boss_hero")
+                          and k != "kaizen")[0]
+        true_hero = sorted(k for k, v in catalog.items()
+                           if v.get("boss_class") == "true")[0]
+        txn_cases = [
+            txn("unknown_hero", "ninja_bukan_hero", 100000, ["kaizen"], []),
+            txn("already_owned", "kaizen", 100000, ["kaizen"], []),
+            txn("boss_gate_locked", "gornak", 100000, ["kaizen"], []),
+            txn("gate_ok_gold_4499", "gornak", 4499, ["kaizen"],
+                ["gornak"]),
+            txn("gate_ok_gold_4500_exact", "gornak", 4500, ["kaizen"],
+                ["gornak"]),
+            txn("gate_ok_gold_9000_surplus", "gornak", 9000, ["kaizen"],
+                ["gornak"]),
+            txn("starter_free_gold_0", starter2, 0, ["kaizen"], []),
+            txn("true_boss_4500", true_hero, 4500, ["kaizen"], [true_hero]),
+            txn("double_buy_rejected", "gornak", 4500, ["kaizen", "gornak"],
+                ["gornak"]),
+        ]
+        # Persistensi disk: transaksi sukses benar-benar ke SaveManager.save.
+        persist = txn("persist_after_success", "gornak", 4500, ["kaizen"],
+                      ["gornak"])
+        disk = _system.SaveManager.load()
+        assert disk.get("meta_gold") == 0, disk.get("meta_gold")
+        assert sorted(disk.get("purchased_heroes", [])) == \
+            ["gornak", "kaizen"], disk.get("purchased_heroes")
+        persist["disk_meta_gold"] = int(disk.get("meta_gold", 0))
+        persist["disk_purchased"] = sorted(disk.get("purchased_heroes", []))
+        txn_cases.append(persist)
+
+        # ── Matriks keputusan kartu (_draw_meta_hero_card ASLI, pill hook):
+        # 5 state save x 4 hero wakil (starter gratis, starter kedua, mini
+        # boss, true boss). Status = OWNED / boss_locked / unlock.
+        all_bosses = sorted({r["unlock_require_boss"] for r in rows
+                             if r["unlock_require_boss"]})
+        hero_pick = ["kaizen", starter2, "gornak", true_hero]
+        states = [
+            ["gold0_none", 0, [], []],
+            ["gold4499_none", 4499, [], []],
+            ["gold4500_none", 4500, [], []],
+            ["gold4500_allboss", 4500, [], all_bosses],
+            ["owned_all", 0, sorted(catalog), all_bosses],
+        ]
+        owned_text = ui_theme.letter("OWNED")
+        matrix = []
+        texts, pills = [], []
+        menu, _, saved, mods = _headless_menu(core, texts, pills)
+        try:
+            for st_name, gold, purchased, bosses in states:
+                menu.save_data["purchased_heroes"] = list(purchased)
+                menu.save_data["unlocked_bosses"] = list(bosses)
+                menu.save_data["meta_gold"] = gold
+                menu.meta_gold = gold
+                for hero in hero_pick:
+                    del texts[:]
+                    del pills[:]
+                    menu._draw_meta_hero_card(hero, dict(catalog[hero]),
+                                              0, 0, 380, 145)
+                    pill = next((p for p in pills if "sfx" not in p
+                                 and str(p.get("bid", "")).startswith(
+                                     "meta_unlock_")), None)
+                    owned = any(t["t"] == owned_text
+                                and t["c"] == list(ui_theme.GREEN)
+                                for t in texts)
+                    status = ("owned" if owned
+                              else "unlock" if pill is not None
+                              else "boss_locked")
+                    matrix.append({
+                        "hero": hero, "state": st_name, "status": status,
+                        "label": pill["label"] if pill else None,
+                        "kind": pill["kind"] if pill else None,
+                        "enabled": pill["enabled"] if pill else None,
+                    })
+                    if status == "unlock":
+                        can = menu.meta_gold >= catalog[hero].get(
+                            "unlock_cost", 600)
+                        assert (pill["kind"] == "gold") == can, (hero,
+                                                                 st_name)
+                        assert pill["enabled"] is True, (hero, st_name)
+        finally:
+            _restore_menu(mods, saved)
+
+        return {
+            "dev_flags": {
+                "unlimited_hero_gold": bool(core.DEV_UNLIMITED_HERO_GOLD),
+                "topup_enabled": bool(core.DEV_TOPUP_ENABLED),
+            },
+            "unlock_costs": consts,
+            "catalog": rows,
+            "txn_cases": txn_cases,
+            "card_matrix": matrix,
+            "matrix_states": [s[0] for s in states],
+        }
+
+    a = _build(20260908)
+    b = _build(31337)
+    assert a == b, "meta_shop_txn: dua seed beda hasilnya beda"
+    return a
 
 def _phase20_level_score_text(score):
     """The branch is mirrored only for the card observation; score/time values
@@ -8261,12 +8780,13 @@ def make_save_slot_delete_fixture(system):
         sm.set_current_slot(old_slot)
 
 
-def make_phase20_fixture(core, system):
-    """Generate the three FASE 20 sections twice with different seeds.
 
-    These paths intentionally consume no RNG. Running both seeds is still a
-    required determinism guard: any accidental timestamp/random leakage into
-    the state oracle fails here after timestamp normalization.
+
+def make_phase20_slots_fixture(system):
+    """Generate multi-slot/migration oracle twice with distinct seeds.
+
+    Slot state itself must be independent of RNG and wall-clock values are
+    normalized to presence flags by _phase20_slot_view.
     """
     saved_random = random.getstate()
     runs = []
@@ -8274,22 +8794,21 @@ def make_phase20_fixture(core, system):
         for seed in (20260920, 42420):
             random.seed(seed)
             runs.append({
-                "level_select_stats": make_level_select_fixture(core, system),
-                "hero_shop_meta": make_hero_shop_meta_fixture(core, system),
-                "save_slots": make_save_slots_fixture(core, system),
+                "save_slots": make_save_slots_fixture(None, system),
                 "save_slot_delete": make_save_slot_delete_fixture(system),
             })
     finally:
         random.setstate(saved_random)
-    assert runs[0] == runs[1], "FASE 20 oracle differs between two seed runs"
-    runs[0]["determinism"] = {"seeds": [20260920, 42420], "identical": True,
-                               "rng_sites": []}
-    return runs[0]
-
+    assert runs[0] == runs[1], "save slots oracle differs between two seed runs"
+    return {
+        **runs[0],
+        "determinism": {"seeds": [20260920, 42420],
+                        "identical": True, "rng_sites": []},
+    }
 
 def make_fixture(core, entity, levels, paths):
     fps = 60
-    phase20 = make_phase20_fixture(core, sys.modules["_system"])
+    slot_phase20 = make_phase20_slots_fixture(sys.modules["_system"])
     result = {
         "_generated_by": "tools/test_godot_match_parity.py --write-fixture",
         "rules": {
@@ -8389,17 +8908,29 @@ def make_fixture(core, entity, levels, paths):
         # hold_end (nama/args/follow_mouse/hasil) + visibilitas tombol +
         # closed-world manajer direplay TacticalInputParityTest.
         "tactical_input": make_tactical_input_fixture(core, entity),
-        # FASE 20A — statistik BEST SCORE/BEST TIME di kartu LEVEL SELECT.
-        # State/formatter dari SaveManager Pygame asli; Godot replay lewat
-        # MainMenu.level_stat_display().
-        "level_select_stats": phase20["level_select_stats"],
-        # FASE 20B — transaksi Hero Shop meta, replay Menu produksi.
-        "hero_shop_meta": phase20["hero_shop_meta"],
-        # FASE 20C — tiga slot + migrasi progress.json ke slot 1.
-        "save_slots": phase20["save_slots"],
-        # FASE 20C create/load/delete API (delete kosong tidak mengubah state).
-        "save_slot_delete": phase20["save_slot_delete"],
-        "phase20_determinism": phase20["determinism"],
+        # FASE 20 — BEST SCORE/BEST TIME per level di kartu LEVEL SELECT:
+        # oracle draw pygame ASLI (Menu._draw_level_card + SaveManager.
+        # format_time) — string stat final, truncasi [:8] (ambang w//2-20),
+        # "No stats yet", kartu terkunci, baterai format. Direplay
+        # LevelSelectStatsParityTest.
+        "level_select_stats": make_level_select_stats_fixture(core, entity),
+        # FASE 20 — TRANSAKSI HERO SHOP META: oracle _unlock_hero_in_meta_shop
+        # ASLI + katalog efektif get_all_hero_types (def kedua: starter 0,
+        # mini/true 4500) — 222 baris katalog, kasus guard/saldo/sfx/persist,
+        # matriks keputusan kartu 5 state. Direplay MetaShopTxnParityTest.
+        "meta_shop_txn": make_meta_shop_txn_fixture(core, entity),
+        # Legacy FASE 20 oracle sections retained insert-only for the
+        # progression replay. The richer DRAW/card oracle above remains the
+        # canonical level-select and shop section.
+        "progression_level_select_stats": make_level_select_fixture(
+            core, sys.modules["_system"]),
+        "hero_shop_meta": make_hero_shop_meta_fixture(
+            core, sys.modules["_system"]),
+        # FASE 20C — tiga slot lokal + migrasi progress.json; state-only
+        # oracle dari SaveManager Pygame asli, dengan timestamp dinormalisasi.
+        "save_slots": slot_phase20["save_slots"],
+        "save_slot_delete": slot_phase20["save_slot_delete"],
+        "phase20_determinism": slot_phase20["determinism"],
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -8447,12 +8978,13 @@ def make_fixture(core, entity, levels, paths):
     return result
 
 
-def _write_fixture_insert_only(expected):
-    """Append new top-level oracle sections without reserializing old bytes.
 
-    FASE fixtures are review artifacts: an oracle extension may add a key, but
-    an old section must remain byte-identical. Existing keys are therefore
-    checked structurally and never rewritten by --write-fixture.
+def _write_fixture_insert_only(expected):
+    """Add oracle sections without rewriting existing JSON sections.
+
+    Existing sections are compared structurally before the append. This keeps
+    prior fixture evidence reviewable and prevents a new phase from silently
+    regenerating old golden data.
     """
     FIXTURE.parent.mkdir(parents=True, exist_ok=True)
     if not FIXTURE.exists():
@@ -8470,12 +9002,11 @@ def _write_fixture_insert_only(expected):
         return
     fragment = json.dumps({key: expected[key] for key in missing},
                           indent=2, ensure_ascii=False)
-    inner = fragment[2:-2]  # strip root '{\\n' and '\\n}'
+    inner = fragment[2:-2]
     base = old_text.rstrip("\n")
     assert base.endswith("}"), "Fixture root is not a JSON object"
     base = base[:-1]
     FIXTURE.write_text(base + ",\n" + inner + "\n}\n")
-
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -8510,7 +9041,7 @@ def main():
             assert economy[key] == actual, f"Re-export economy.json: {key} drifted"
     if args.write_fixture:
         _write_fixture_insert_only(expected)
-        print(f"Wrote {FIXTURE.relative_to(ROOT)} (insert-only)")
+        print(f"Updated {FIXTURE.relative_to(ROOT)} (insert-only)")
     else:
         actual = json.loads(FIXTURE.read_text())
         assert actual == expected, (
@@ -8626,6 +9157,24 @@ def main():
               f"{len(ti['scenarios'])} skenario pemicu UI, "
               f"{sum(len(sc['steps']) for sc in ti['scenarios'])} langkah, "
               f"{ti_hs} hold_start + {ti_he} hold_end ter-rekam")
+        ls = actual["level_select_stats"]
+        ls_empty = sum(1 for c in ls["cases"] if c["attempts"] == 0
+                       and c["unlocked"])
+        ls_cut = sum(1 for c in ls["cases"] if c["expect"]["score_cut"]
+                     or c["expect"]["time_cut"])
+        print("             level-select-stats oracle: "
+              f"{len(ls['cases'])} kasus kartu ({ls_empty} tanpa attempt, "
+              f"{ls_cut} truncasi), "
+              f"{len(ls['format_time_battery'])} kasus format_time, "
+              f"{len(ls['score_format_battery'])} kasus format skor, "
+              f"{len(ls['win_rate_battery'])} kasus win-rate")
+        mx = actual["meta_shop_txn"]
+        mx_ok = sum(1 for c in mx["txn_cases"] if c["accepted"])
+        print("             meta-shop-txn oracle: "
+              f"{len(mx['catalog'])} baris katalog closed-world, "
+              f"{len(mx['txn_cases'])} kasus transaksi ({mx_ok} sukses), "
+              f"{len(mx['card_matrix'])} keputusan kartu "
+              f"({len(mx['matrix_states'])} state save)")
 
 
 if __name__ == "__main__":

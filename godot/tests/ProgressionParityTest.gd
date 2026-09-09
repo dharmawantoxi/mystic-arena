@@ -34,7 +34,7 @@ func _run() -> void:
 	_slot_before = SaveManager.get_current_slot()
 	_file_before = _snapshot_files()
 	var fixture = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
-	if not (fixture is Dictionary) or not fixture.has("level_select_stats") \
+	if not (fixture is Dictionary) or not fixture.has("progression_level_select_stats") \
 			or not fixture.has("hero_shop_meta") or not fixture.has("save_slots") \
 			or not fixture.has("save_slot_delete"):
 		_fail("fixture FASE 20 belum ada — jalankan tools/test_godot_match_parity.py --write-fixture")
@@ -50,7 +50,7 @@ func _run() -> void:
 	_expect((determinism.get("rng_sites", []) as Array).is_empty(),
 		"jalur FASE 20 tidak memakai RNG gameplay")
 
-	_test_level_select(fixture["level_select_stats"])
+	_test_level_select(fixture["progression_level_select_stats"])
 	_test_hero_shop(fixture["hero_shop_meta"])
 	_test_save_slots(fixture["save_slots"])
 	_test_save_slot_delete(fixture["save_slot_delete"])

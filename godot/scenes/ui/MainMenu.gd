@@ -19,7 +19,8 @@ signal play_requested(level_num: int)
 signal resume_requested
 signal main_menu_requested
 
-## Paritas MenuState _core.py:3099-3106, termasuk SLOT_SELECT multi-slot.
+## Paritas MenuState _core.py:3099-3105 (SLOT_SELECT pygame dilewati —
+## port Godot belum punya multi-slot save).
 enum State { MAIN, SLOT_SELECT, LEVEL_SELECT, HERO_SHOP, SETTINGS, HOW_TO_PLAY, CREDITS, PAUSE }
 
 const COL_BG := Color(0.031, 0.033, 0.058, 0.985)
@@ -36,6 +37,23 @@ const COL_LOCKED := Color(0.42, 0.45, 0.56)
 ## 3 kartu per baris — paritas layout LEVEL_SELECT pygame (max 4 kolom,
 ## 3 kalau lebih dari 4 level; kita punya 54).
 const LEVEL_COLUMNS := 3
+
+## Ambang truncasi string stat kartu level — paritas pygame `w // 2 - 20`
+## pada kartu 280px (_core.py:4260/4268: val_font.size > 120 → potong 8
+## karakter). Konstanta pygame di-pin apa adanya supaya keluaran STRING
+## sama, walau lebar kartu Godot (380) berbeda; metrik font tetap milik
+## Godot (batas tepatnya bergantung raster — terdokumentasi terbuka).
+const LEVEL_STAT_WIDTH_LIMIT := 120.0
+
+## Warna slot stat kartu level — data ui_theme pygame yang sama
+## (GOLD_TEXT / CYAN_SOFT / TEXT_BODY / TEXT_FAINT + 3 band win-rate).
+const COL_STAT_LABEL := Color8(96, 106, 136)
+const COL_STAT_SCORE := Color8(255, 220, 110)
+const COL_STAT_TIME := Color8(165, 220, 255)
+const COL_STAT_ATTEMPTS := Color8(198, 207, 230)
+const COL_WR_LOW := Color8(255, 150, 100)
+const COL_WR_GOLD := Color8(255, 220, 110)
+const COL_WR_GREEN := Color8(112, 226, 132)
 
 var state: int = State.MAIN
 ## True kalau menu dibuka dari dalam match (PAUSE) — MAIN-nya jadi "MAIN MENU"
@@ -338,8 +356,7 @@ func _slot_card(slot_num: int, info) -> Control:
 	title.add_theme_font_size_override("font_size", 20)
 	title.add_theme_color_override("font_color", COL_GOLD if info != null else COL_BLUE)
 	box.add_child(title)
-	var rule := HSeparator.new()
-	box.add_child(rule)
+	box.add_child(HSeparator.new())
 	if info == null:
 		var empty := Label.new()
 		empty.text = "KOSONG\n\nMulai game baru"
@@ -367,7 +384,7 @@ func _slot_card(slot_num: int, info) -> Control:
 		_select_slot.bind(slot_num), Vector2(150, 34), 14))
 	if info != null:
 		actions.add_child(_make_button("HAPUS", COL_RED,
-		_delete_slot.bind(slot_num), Vector2(110, 34), 13))
+			_delete_slot.bind(slot_num), Vector2(110, 34), 13))
 	return card
 
 
@@ -396,6 +413,26 @@ func _delete_slot(slot_num: int) -> void:
 	dialog.popup_centered()
 
 
+## State-only view model yang juga dipakai replay slot/progression.
+func level_stat_display(level_num: int) -> Dictionary:
+	var stats: Dictionary = SaveManager.get_level_stats(SaveManager.data, level_num)
+	var attempts := int(stats.get("total_attempts", 0))
+	var score := int(stats.get("best_score", 0))
+	var score_text := _format_level_score(score)
+	var wins := int(stats.get("wins", 0))
+	var win_rate := int(float(wins) / float(attempts) * 100.0) if attempts > 0 else 0
+	return {
+		"has_stats": attempts > 0,
+		"score": score,
+		"score_text": score_text,
+		"time_seconds": int(stats.get("best_time_seconds", 0)),
+		"time_text": SaveManager.format_time(int(stats.get("best_time_seconds", 0))),
+		"attempts": attempts,
+		"wins": wins,
+		"win_rate": win_rate,
+	}
+
+
 ## Ganti tab Hero Shop (paritas shop_tab) lalu bangun ulang grid.
 func _select_hero_tab(tab_id: String) -> void:
 	_hero_tab = tab_id
@@ -414,28 +451,6 @@ func _highest_completed() -> int:
 func _completed_count() -> int:
 	var completed = SaveManager.data.get("completed_levels", [])
 	return completed.size() if completed is Array else 0
-
-
-## State-only view model untuk kartu level. Nilainya berasal dari save yang
-## sedang aktif; formatter waktu adalah SaveManager.format_time Pygame.
-## Replay test memanggil fungsi ini lewat MainMenu produksi.
-func level_stat_display(level_num: int) -> Dictionary:
-	var stats := SaveManager.get_level_stats(SaveManager.data, level_num)
-	var attempts := int(stats.get("total_attempts", 0))
-	var score := int(stats.get("best_score", 0))
-	var score_text := ("%.1fK" % (float(score) / 1000.0)) if score >= 10000 else HudLayout.format_thousands(score)
-	var wins := int(stats.get("wins", 0))
-	var win_rate := int(float(wins) / float(attempts) * 100.0) if attempts > 0 else 0
-	return {
-		"has_stats": attempts > 0,
-		"score": score,
-		"score_text": score_text,
-		"time_seconds": int(stats.get("best_time_seconds", 0)),
-		"time_text": SaveManager.format_time(int(stats.get("best_time_seconds", 0))),
-		"attempts": attempts,
-		"wins": wins,
-		"win_rate": win_rate,
-	}
 
 
 func _request_play(level_num: int) -> void:
@@ -556,15 +571,82 @@ func _build_level_select() -> void:
 			grid.add_child(_level_card(lv_data))
 
 
+## ═══ FASE 20 — helper stat kartu level (paritas _core.py:4257-4278) ═══
+
+## Ribuan koma ala f"{n:,}" Python: 9999 -> "9,999".
+func _format_grouped(n: int) -> String:
+	var s := str(n)
+	var out := ""
+	for i in range(s.length()):
+		if i > 0 and (s.length() - i) % 3 == 0:
+			out += ","
+		out += s[i]
+	return out
+
+
+## Paritas skor kartu (_core.py:4257-4259): >= 10000 -> "%.1fK" dari
+## pembagian float, di bawahnya -> ribuan koma.
+func _format_level_score(score: int) -> String:
+	if score >= 10000:
+		return "%0.1fK" % (score / 1000.0)
+	return _format_grouped(score)
+
+
+## Paritas truncasi [:8] (_core.py:4260-4261/4266-4267): kalau lebar teks
+## terukur melebihi LEVEL_STAT_WIDTH_LIMIT (pygame 280//2-20), potong ke 8
+## karakter pertama. Pengukuran memakai metrik font nilai Godot.
+func _fit_stat_text(s: String, font_size: int) -> String:
+	var width := ThemeDB.fallback_font.get_string_size(
+		s, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	if width > LEVEL_STAT_WIDTH_LIMIT:
+		return s.substr(0, 8)
+	return s
+
+
+## Paritas win rate (_core.py:4271-4277): int((wins/attempts)*100) —
+## truncation ala int() Python — lalu band warna 3 tingkat
+## (>=75 hijau / >=50 emas / sisanya oranye). Return (rate, band).
+func _level_win_rate(wins: int, attempts: int) -> Vector2i:
+	var rate := 0
+	if attempts > 0:
+		rate = int(float(wins) / float(attempts) * 100.0)
+	var band := 2 if rate >= 75 else (1 if rate >= 50 else 0)
+	return Vector2i(rate, band)
+
+
+## Satu sel stat: label kecil redup + nilai (meta `parity` untuk replay
+## LevelSelectStatsParityTest — produksi tetap biasa tanpa harness).
+func _stat_cell(label: String, value: String, color: Color,
+		parity_key: String) -> VBoxContainer:
+	var cell := VBoxContainer.new()
+	cell.add_theme_constant_override("separation", 0)
+	var lab := Label.new()
+	lab.text = label
+	lab.add_theme_font_size_override("font_size", 10)
+	lab.add_theme_color_override("font_color", COL_STAT_LABEL)
+	cell.add_child(lab)
+	var val := Label.new()
+	val.text = value
+	val.add_theme_font_size_override("font_size", 16)
+	val.add_theme_color_override("font_color", color)
+	val.set_meta("parity", parity_key)
+	val.set_meta("parity_rgb", [int(color.r8), int(color.g8),
+		int(color.b8)])
+	cell.add_child(val)
+	return cell
+
+
 ## Satu kartu level — paritas _draw_level_card (_core.py:4121-4320): nomor +
-## nama + deskripsi + info boss + badge DONE/LOCKED. Klik kartu = main
-## (pygame: rect klik = seluruh kartu).
+## nama + deskripsi + info boss + badge DONE/LOCKED + blok stat BEST SCORE/
+## BEST TIME/ATTEMPTS/WIN RATE (FASE 20, _core.py:4247-4291). Klik kartu =
+## main (pygame: rect klik = seluruh kartu).
 func _level_card(lv: Dictionary) -> Control:
 	var level_num := int(lv.get("level_number", 0))
 	var unlocked: bool = GameManager.is_level_unlocked(level_num)
 	var completed: bool = SaveManager.is_level_completed(level_num)
 
 	var card := PanelContainer.new()
+	card.set_meta("level_num", level_num)
 	# 3 kolom x 380 + 2 x 14 gap = 1148 px — muat di 1192 px area konten
 	# (1280 - margin backdrop 88), tanpa scroll horizontal.
 	card.custom_minimum_size = Vector2(380, 158)
@@ -646,26 +728,56 @@ func _level_card(lv: Dictionary) -> Control:
 	info.add_theme_color_override("font_color", Color(0.95, 0.62, 0.62))
 	box.add_child(info)
 
-	# ── baris 4: statistik LEVEL SELECT (paritas _core.py:4257-4289) ──
-	# State dipisah dari pixel layout: nilai dan formatter harus sama dengan
-	# Pygame, termasuk --:-- untuk waktu yang belum pernah dicatat. Pygame
-	# hanya menampilkan bagian ini setelah level terbuka.
+	# ── baris 3.5: blok stat (FASE 20 — paritas _core.py:4247-4291) ──
+	# pygame hanya menggambar blok ini untuk kartu TERBUKA; attempts == 0
+	# menampilkan "No stats yet" (Godot: "Belum ada statistik" — beda
+	# bahasa yang dikunci eksplisit, nilai datanya tetap paritas).
 	if unlocked:
-		var stats := level_stat_display(level_num)
-		var stat_label := Label.new()
-		if bool(stats["has_stats"]):
-			stat_label.text = "BEST SCORE  %s   ·   BEST TIME  %s\nATTEMPTS  %dW/%d   ·   WIN RATE  %d%%" % [
-				str(stats["score_text"]), str(stats["time_text"]),
-				int(stats["wins"]), int(stats["attempts"]), int(stats["win_rate"])]
-			stat_label.add_theme_color_override("font_color", COL_TEXT)
+		var stats: Dictionary = SaveManager.get_level_stats(
+			SaveManager.data, level_num)
+		var attempts := int(stats.get("total_attempts", 0))
+		if attempts > 0:
+			var grid := GridContainer.new()
+			grid.columns = 2
+			grid.add_theme_constant_override("h_separation", 16)
+			grid.add_theme_constant_override("v_separation", 4)
+			box.add_child(grid)
+			var wins := int(stats.get("wins", 0))
+			var wr := _level_win_rate(wins, attempts)
+			# Slot skor (kolom 1): label + nilai warna GOLD_TEXT.
+			# Truncasi diukur pada px SETARA pygame (20/19 — val_font_bold/
+			# val_font _core.py:4262-4263) meski render lebih kecil, agar
+			# rasio string terhadap ambang 120px pygame dipertahankan.
+			grid.add_child(_stat_cell("SKOR TERBAIK",
+				_fit_stat_text(_format_level_score(int(
+					stats.get("best_score", 0))), 20),
+				COL_STAT_SCORE, "score"))
+			# Slot waktu (kolom 2): label + nilai warna CYAN_SOFT.
+			grid.add_child(_stat_cell("WAKTU TERBAIK",
+				_fit_stat_text(SaveManager.format_time(int(
+					stats.get("best_time_seconds", 0))), 19),
+				COL_STAT_TIME, "time"))
+			# Baris 2 (paritas row2_y = stats_y + 40): attempts + win rate.
+			grid.add_child(_stat_cell("ATTEMPT",
+				"%dW/%d" % [wins, attempts], COL_STAT_ATTEMPTS,
+				"attempts"))
+			# Band warna win rate (paritas _core.py:4274-4277):
+			# >=75 hijau / >=50 emas / sisanya oranye.
+			var wr_color: Color = COL_WR_LOW
+			if wr.y >= 2:
+				wr_color = COL_WR_GREEN
+			elif wr.y == 1:
+				wr_color = COL_WR_GOLD
+			grid.add_child(_stat_cell("WIN RATE", "%d%%" % wr.x, wr_color,
+				"win_rate"))
 		else:
-			stat_label.text = "No stats yet"
-			stat_label.add_theme_color_override("font_color", COL_DIM)
-		stat_label.add_theme_font_size_override("font_size", 10)
-		stat_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		box.add_child(stat_label)
+			var empty := Label.new()
+			empty.text = "Belum ada statistik"
+			empty.add_theme_font_size_override("font_size", 11)
+			empty.add_theme_color_override("font_color", COL_STAT_LABEL)
+			box.add_child(empty)
 
-	# ── baris 5: aksi ──
+	# ── baris 4: aksi ──
 	if unlocked:
 		var label := "MAIN" if not completed else "MAIN LAGI"
 		var btn := _make_button(label, COL_GREEN, _request_play.bind(level_num),
@@ -795,9 +907,15 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 
 	var owned: bool = SaveManager.is_unlocked(hero_type)
 	var cost := int(d.get("unlock_cost", 600))
-	var req_value = d.get("unlock_require_boss", "")
-	var req_boss := "" if req_value == null else str(req_value)
+	# JSON null (starter tanpa syarat boss) — str(null) = "<null>" yang
+	# bikin starter dianggap terkunci boss; normalkan ke "" (FASE 20).
+	var req_raw = d.get("unlock_require_boss", "")
+	var req_boss := "" if req_raw == null else str(req_raw)
 	var boss_ready: bool = req_boss.is_empty() or SaveManager.is_boss_unlocked(req_boss)
+	# Keputusan kartu dihitung sekali di sini (paritas _draw_meta_hero_card
+	# _core.py:5050-5060: can_unlock = DEV off AND gold >= cost). Meta di
+	# akhir fungsi dipakai replay MetaShopTxnParityTest.
+	var affordable: bool = SaveManager.meta_gold() >= cost
 
 	var stat := Label.new()
 	stat.text = "HP %d · DMG %d · RANGE %d · %s" % [
@@ -830,7 +948,6 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 		lock.add_theme_color_override("font_color", COL_LOCKED)
 		action.add_child(lock)
 	else:
-		var affordable: bool = SaveManager.meta_gold() >= cost
 		var label := "GRATIS" if cost <= 0 else "BUKA — %d" % cost
 		var btn := _make_button(label, COL_GOLD if affordable else COL_LOCKED,
 			_try_unlock_hero.bind(hero_type), Vector2(140, 28), 12)
@@ -841,20 +958,28 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 		bal.add_theme_font_size_override("font_size", 10)
 		bal.add_theme_color_override("font_color", COL_DIM)
 		action.add_child(bal)
+	# Meta keputusan kartu untuk replay MetaShopTxnParityTest (FASE 20):
+	# padanan status _draw_meta_hero_card pygame (OWNED / boss-locked /
+	# pill label+kind) tanpa mengubah tampilan apa pun.
+	card.set_meta("hero_type", hero_type)
+	card.set_meta("owned", owned)
+	card.set_meta("boss_ready", boss_ready)
+	card.set_meta("affordable", affordable)
+	card.set_meta("unlock_cost", cost)
 	return card
 
 
-## Paritas _unlock_hero_in_meta_shop (_core.py:5298-5328): validasi katalog +
-## boss requirement + saldo, potong meta_gold, lalu tulis satu transaksi.
-## Return view state agar replay test tidak hanya menguji tampilan tombol.
+## State-only transaction used by the production Hero Shop button and replay.
+## Validation order matches Pygame: catalog, duplicate, boss gate, balance,
+## then one atomic persistent commit.
 func hero_shop_transaction(hero_type: String) -> Dictionary:
 	if HeroDB.get_hero(hero_type).is_empty():
 		return {"ok": false, "reason": "invalid_hero", "hero": hero_type}
 	if SaveManager.is_unlocked(hero_type):
 		return {"ok": false, "reason": "already_owned", "hero": hero_type}
 	var d: Dictionary = HeroDB.get_hero(hero_type)
-	var req_value = d.get("unlock_require_boss", "")
-	var req_boss := "" if req_value == null else str(req_value)
+	var req_raw = d.get("unlock_require_boss", "")
+	var req_boss := "" if req_raw == null else str(req_raw)
 	if not req_boss.is_empty() and not SaveManager.is_boss_unlocked(req_boss):
 		return {"ok": false, "reason": "boss_required", "hero": hero_type,
 			"boss": req_boss}
@@ -871,9 +996,11 @@ func hero_shop_transaction(hero_type: String) -> Dictionary:
 		"owned": SaveManager.is_unlocked(hero_type)}
 
 
+## Paritas _unlock_hero_in_meta_shop (_core.py:5298-5328): validasi katalog +
+## boss requirement + saldo, potong meta_gold, lalu SaveManager.unlock_hero().
 func _try_unlock_hero(hero_type: String) -> void:
 	var result := hero_shop_transaction(hero_type)
-	if not bool(result["ok"]):
+	if not bool(result.get("ok", false)):
 		AudioManager.play_sfx("ui_error")
 		return
 	AudioManager.play_sfx("ui_buy")

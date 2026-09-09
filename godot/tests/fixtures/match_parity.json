@@ -132068,9 +132068,3825 @@
         ]
       }
     ]
+  },
+  "level_select_stats": {
+    "card_w": 280,
+    "limit_px": 120,
+    "fonts": {
+      "score_px": 20,
+      "score_style": "body_bold",
+      "time_px": 19,
+      "time_style": "body_medium",
+      "label_px": 12,
+      "label_style": "body_semibold"
+    },
+    "colors": {
+      "label": [
+        96,
+        106,
+        136
+      ],
+      "score": [
+        255,
+        220,
+        110
+      ],
+      "time": [
+        165,
+        220,
+        255
+      ],
+      "attempts": [
+        198,
+        207,
+        230
+      ],
+      "win_rate_gold": [
+        255,
+        220,
+        110
+      ],
+      "win_rate_green": [
+        112,
+        226,
+        132
+      ],
+      "win_rate_low": [
+        255,
+        150,
+        100
+      ],
+      "faint_text": [
+        96,
+        106,
+        136
+      ]
+    },
+    "labels": [
+      "BEST SCORE",
+      "BEST TIME",
+      "ATTEMPTS",
+      "WIN RATE"
+    ],
+    "cases": [
+      {
+        "name": "empty_save",
+        "unlocked": true,
+        "attempts": 0,
+        "stats_in": {
+          "best_score": 0,
+          "best_time_seconds": 0,
+          "total_attempts": 0,
+          "wins": 0,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 0
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "3",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 34,
+            "st": "title"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              240,
+              244,
+              255
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "NORMAL",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 16,
+            "st": "body_bold"
+          },
+          {
+            "t": "No stats yet",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 20,
+            "st": "body"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_3",
+            "label": "PLAY",
+            "kind": "success",
+            "enabled": true
+          }
+        ],
+        "expect": {
+          "score_raw": "0",
+          "score_w": 11,
+          "score_cut": false,
+          "score": "0",
+          "time_raw": "--:--",
+          "time_w": 33,
+          "time_cut": false,
+          "time": "--:--",
+          "attempts": "0W/0",
+          "win_rate": 0,
+          "win_rate_band": 0
+        }
+      },
+      {
+        "name": "fresh_win_9999",
+        "unlocked": true,
+        "attempts": 1,
+        "stats_in": {
+          "best_score": 9999,
+          "best_time_seconds": 59,
+          "total_attempts": 1,
+          "wins": 1,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 59
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              240,
+              244,
+              255
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "NORMAL",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 16,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   S C O R E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "9,999",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   T I M E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "0:59",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "A T T E M P T S",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1W/1",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "W I N   R A T E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "100%",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_3",
+            "label": "PLAY",
+            "kind": "success",
+            "enabled": true
+          }
+        ],
+        "expect": {
+          "score_raw": "9,999",
+          "score_w": 49,
+          "score_cut": false,
+          "score": "9,999",
+          "time_raw": "0:59",
+          "time_w": 38,
+          "time_cut": false,
+          "time": "0:59",
+          "attempts": "1W/1",
+          "win_rate": 100,
+          "win_rate_band": 2
+        }
+      },
+      {
+        "name": "k_format_66pct",
+        "unlocked": true,
+        "attempts": 3,
+        "stats_in": {
+          "best_score": 12345,
+          "best_time_seconds": 605,
+          "total_attempts": 3,
+          "wins": 2,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 1900
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              240,
+              244,
+              255
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "NORMAL",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 16,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   S C O R E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "12.3K",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   T I M E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "10:05",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "A T T E M P T S",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "2W/3",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "W I N   R A T E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "66%",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_3",
+            "label": "PLAY",
+            "kind": "success",
+            "enabled": true
+          }
+        ],
+        "expect": {
+          "score_raw": "12.3K",
+          "score_w": 47,
+          "score_cut": false,
+          "score": "12.3K",
+          "time_raw": "10:05",
+          "time_w": 46,
+          "time_cut": false,
+          "time": "10:05",
+          "attempts": "2W/3",
+          "win_rate": 66,
+          "win_rate_band": 1
+        }
+      },
+      {
+        "name": "win_rate_74_trunc",
+        "unlocked": true,
+        "attempts": 200,
+        "stats_in": {
+          "best_score": 12345,
+          "best_time_seconds": 605,
+          "total_attempts": 200,
+          "wins": 149,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 0
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              240,
+              244,
+              255
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "NORMAL",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 16,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   S C O R E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "12.3K",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   T I M E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "10:05",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "A T T E M P T S",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "149W/200",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "W I N   R A T E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "74%",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_3",
+            "label": "PLAY",
+            "kind": "success",
+            "enabled": true
+          }
+        ],
+        "expect": {
+          "score_raw": "12.3K",
+          "score_w": 47,
+          "score_cut": false,
+          "score": "12.3K",
+          "time_raw": "10:05",
+          "time_w": 46,
+          "time_cut": false,
+          "time": "10:05",
+          "attempts": "149W/200",
+          "win_rate": 74,
+          "win_rate_band": 1
+        }
+      },
+      {
+        "name": "win_rate_75_green",
+        "unlocked": true,
+        "attempts": 4,
+        "stats_in": {
+          "best_score": 9999,
+          "best_time_seconds": 600,
+          "total_attempts": 4,
+          "wins": 3,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 0
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              240,
+              244,
+              255
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "NORMAL",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 16,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   S C O R E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "9,999",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   T I M E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "10:00",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "A T T E M P T S",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "3W/4",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "W I N   R A T E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "75%",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_3",
+            "label": "PLAY",
+            "kind": "success",
+            "enabled": true
+          }
+        ],
+        "expect": {
+          "score_raw": "9,999",
+          "score_w": 49,
+          "score_cut": false,
+          "score": "9,999",
+          "time_raw": "10:00",
+          "time_w": 47,
+          "time_cut": false,
+          "time": "10:00",
+          "attempts": "3W/4",
+          "win_rate": 75,
+          "win_rate_band": 2
+        }
+      },
+      {
+        "name": "zero_wins_orange",
+        "unlocked": true,
+        "attempts": 2,
+        "stats_in": {
+          "best_score": 0,
+          "best_time_seconds": 0,
+          "total_attempts": 2,
+          "wins": 0,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 0
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              240,
+              244,
+              255
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "NORMAL",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 16,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   S C O R E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "0",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   T I M E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "--:--",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "A T T E M P T S",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "0W/2",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "W I N   R A T E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "0%",
+            "c": [
+              255,
+              150,
+              100
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_3",
+            "label": "PLAY",
+            "kind": "success",
+            "enabled": true
+          }
+        ],
+        "expect": {
+          "score_raw": "0",
+          "score_w": 11,
+          "score_cut": false,
+          "score": "0",
+          "time_raw": "--:--",
+          "time_w": 33,
+          "time_cut": false,
+          "time": "--:--",
+          "attempts": "0W/2",
+          "win_rate": 0,
+          "win_rate_band": 0
+        }
+      },
+      {
+        "name": "huge_score_trunc",
+        "unlocked": true,
+        "attempts": 1,
+        "stats_in": {
+          "best_score": 999999999999,
+          "best_time_seconds": 3725,
+          "total_attempts": 1,
+          "wins": 1,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 3725
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              240,
+              244,
+              255
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "NORMAL",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 16,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   S C O R E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "10000000",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   T I M E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "62:05",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "A T T E M P T S",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1W/1",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "W I N   R A T E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "100%",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_3",
+            "label": "PLAY",
+            "kind": "success",
+            "enabled": true
+          }
+        ],
+        "expect": {
+          "score_raw": "1000000000.0K",
+          "score_w": 134,
+          "score_cut": true,
+          "score": "10000000",
+          "time_raw": "62:05",
+          "time_w": 48,
+          "time_cut": false,
+          "time": "62:05",
+          "attempts": "1W/1",
+          "win_rate": 100,
+          "win_rate_band": 2
+        }
+      },
+      {
+        "name": "k_boundary_no_time",
+        "unlocked": true,
+        "attempts": 1,
+        "stats_in": {
+          "best_score": 99999999,
+          "best_time_seconds": 0,
+          "total_attempts": 1,
+          "wins": 1,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 0
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              240,
+              244,
+              255
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "NORMAL",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 16,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   S C O R E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "100000.0K",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "B E S T   T I M E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "--:--",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "A T T E M P T S",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1W/1",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 19,
+            "st": "body_medium"
+          },
+          {
+            "t": "W I N   R A T E",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 12,
+            "st": "body_semibold"
+          },
+          {
+            "t": "100%",
+            "c": [
+              112,
+              226,
+              132
+            ],
+            "px": 20,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "P L A Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_3",
+            "label": "PLAY",
+            "kind": "success",
+            "enabled": true
+          }
+        ],
+        "expect": {
+          "score_raw": "100000.0K",
+          "score_w": 90,
+          "score_cut": false,
+          "score": "100000.0K",
+          "time_raw": "--:--",
+          "time_w": 33,
+          "time_cut": false,
+          "time": "--:--",
+          "attempts": "1W/1",
+          "win_rate": 100,
+          "win_rate_band": 2
+        }
+      },
+      {
+        "name": "locked_no_stats",
+        "unlocked": false,
+        "attempts": 3,
+        "stats_in": {
+          "best_score": 12345,
+          "best_time_seconds": 605,
+          "total_attempts": 3,
+          "wins": 2,
+          "total_kills": 0,
+          "max_combo": 0,
+          "total_playtime_seconds": 0
+        },
+        "texts": [
+          {
+            "t": "L E V E L",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "3",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 34,
+            "st": "title"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              120,
+              124,
+              146
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Face the Flame Emperor",
+            "c": [
+              84,
+              88,
+              110
+            ],
+            "px": 18,
+            "st": "body_medium"
+          },
+          {
+            "t": "L O C K E D",
+            "c": [
+              160,
+              164,
+              190
+            ],
+            "px": 22,
+            "st": "body_bold"
+          },
+          {
+            "t": "L O C K E D",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 22,
+            "st": "body_bold"
+          },
+          {
+            "t": "Complete Level 2 first",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 20,
+            "st": "body"
+          },
+          {
+            "t": "L O C K E D",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 18,
+            "st": "body_bold"
+          },
+          {
+            "t": "L O C K E D",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 18,
+            "st": "body_bold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "level_locked_3",
+            "label": "LOCKED",
+            "kind": "locked",
+            "enabled": false
+          }
+        ],
+        "expect": {
+          "score_raw": "12.3K",
+          "score_w": 47,
+          "score_cut": false,
+          "score": "12.3K",
+          "time_raw": "10:05",
+          "time_w": 46,
+          "time_cut": false,
+          "time": "10:05",
+          "attempts": "2W/3",
+          "win_rate": 66,
+          "win_rate_band": 1
+        }
+      }
+    ],
+    "format_time_battery": [
+      [
+        0,
+        "--:--"
+      ],
+      [
+        1,
+        "0:01"
+      ],
+      [
+        59,
+        "0:59"
+      ],
+      [
+        60,
+        "1:00"
+      ],
+      [
+        61,
+        "1:01"
+      ],
+      [
+        119,
+        "1:59"
+      ],
+      [
+        599,
+        "9:59"
+      ],
+      [
+        600,
+        "10:00"
+      ],
+      [
+        3599,
+        "59:59"
+      ],
+      [
+        3600,
+        "60:00"
+      ],
+      [
+        3725,
+        "62:05"
+      ],
+      [
+        86399,
+        "1439:59"
+      ]
+    ],
+    "score_format_battery": [
+      [
+        0,
+        "0",
+        11,
+        false,
+        "0"
+      ],
+      [
+        999,
+        "999",
+        33,
+        false,
+        "999"
+      ],
+      [
+        9999,
+        "9,999",
+        49,
+        false,
+        "9,999"
+      ],
+      [
+        10000,
+        "10.0K",
+        46,
+        false,
+        "10.0K"
+      ],
+      [
+        10001,
+        "10.0K",
+        46,
+        false,
+        "10.0K"
+      ],
+      [
+        12345,
+        "12.3K",
+        47,
+        false,
+        "12.3K"
+      ],
+      [
+        99999,
+        "100.0K",
+        57,
+        false,
+        "100.0K"
+      ],
+      [
+        999999,
+        "1000.0K",
+        68,
+        false,
+        "1000.0K"
+      ],
+      [
+        9999999,
+        "10000.0K",
+        79,
+        false,
+        "10000.0K"
+      ],
+      [
+        99999999,
+        "100000.0K",
+        90,
+        false,
+        "100000.0K"
+      ],
+      [
+        999999999,
+        "1000000.0K",
+        101,
+        false,
+        "1000000.0K"
+      ],
+      [
+        999999999999,
+        "1000000000.0K",
+        134,
+        true,
+        "10000000"
+      ],
+      [
+        1000000000000000,
+        "1000000000000.0K",
+        167,
+        true,
+        "10000000"
+      ]
+    ],
+    "win_rate_battery": [
+      [
+        0,
+        2,
+        0,
+        0
+      ],
+      [
+        1,
+        3,
+        33,
+        0
+      ],
+      [
+        1,
+        2,
+        50,
+        1
+      ],
+      [
+        2,
+        3,
+        66,
+        1
+      ],
+      [
+        149,
+        200,
+        74,
+        1
+      ],
+      [
+        3,
+        4,
+        75,
+        2
+      ],
+      [
+        7,
+        10,
+        70,
+        1
+      ],
+      [
+        3,
+        5,
+        60,
+        1
+      ],
+      [
+        9,
+        10,
+        90,
+        2
+      ],
+      [
+        100,
+        100,
+        100,
+        2
+      ],
+      [
+        2,
+        4,
+        50,
+        1
+      ],
+      [
+        124,
+        250,
+        49,
+        0
+      ]
+    ]
+  },
+  "meta_shop_txn": {
+    "dev_flags": {
+      "unlimited_hero_gold": false,
+      "topup_enabled": false
+    },
+    "unlock_costs": {
+      "starter": 0,
+      "mini": 4500,
+      "true": 4500
+    },
+    "catalog": [
+      {
+        "hero": "abaddon",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "abaddon",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "aelyrion",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "aelyrion",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "aeralith",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "aeralith",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "akahime",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "akahime",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "akaroth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "akaroth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "akashari",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "akashari",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "akirakumo",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "akirakumo",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "akiraze",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "akiraze",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "alchemist",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "alchemist",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "ancient_apparition",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "ancient_apparition",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "astraelion",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "astraelion",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "aurelian",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "aurelian",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "aurelion",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "aurelion",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "aurelix",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "aurelix",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "aurelyssa",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "aurelyssa",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "aurethzar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "aurethzar",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "aurex",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "aurex",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "auroth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "auroth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "azkharion",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "azkharion",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "azureth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "azureth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "bhorgathul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "bhorgathul",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "broggmar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "broggmar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "brumhar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "brumhar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "celwynn",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "celwynn",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "cogsworth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "cogsworth",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "cryssalia",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "cryssalia",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "deidara",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "deidara",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "dorakai",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "dorakai",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "drakar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "drakar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "drav",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "drav",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "emberwick",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "emberwick",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "garumenshi",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "garumenshi",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "ghrakmaal",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "ghrakmaal",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "gorath",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "gorath",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "gornak",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "gornak",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "gravefang",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "gravefang",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "gravewake",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "gravewake",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "grimjack",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "grimjack",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "grimjaw",
+        "unlock_cost": 0,
+        "unlock_require_boss": null,
+        "is_boss_hero": false,
+        "boss_class": null
+      },
+      {
+        "hero": "grimkor",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "grimkor",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "grimstalker",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "grimstalker",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "grondarthul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "grondarthul",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "grondmauris",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "grondmauris",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "hitokage",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "hitokage",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "hollowbane",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "hollowbane",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "ignakhor",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "ignakhor",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "ignirus",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "ignirus",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "ignis_drachorn",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "ignis_drachorn",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "infrakzaar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "infrakzaar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaedrin",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaedrin",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaeldris",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaeldris",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaelthar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaelthar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaelthorn",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaelthorn",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaelthys",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaelthys",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaelvyrn",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaelvyrn",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaerinya",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaerinya",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "kaerissa",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaerissa",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaervosth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaervosth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kagetsuka",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kagetsuka",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "kaineroth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaineroth",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "kairenji",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kairenji",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaithros",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaithros",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "kaizen",
+        "unlock_cost": 0,
+        "unlock_require_boss": null,
+        "is_boss_hero": false,
+        "boss_class": null
+      },
+      {
+        "hero": "kaizoku_raijin",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaizoku_raijin",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kaoruken",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kaoruken",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "karzhul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "karzhul",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kassadin",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kassadin",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kazreth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kazreth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kazuren",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kazuren",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kazureth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kazureth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kenshiro",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kenshiro",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "khalros",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "khalros",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "khalzaredh",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "khalzaredh",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "khazan",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "khazan",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "korokai",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "korokai",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "krobellus",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "krobellus",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "krognarr",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "krognarr",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kryvoxar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kryvoxar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kunkka",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kunkka",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "kurogari",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kurogari",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "kyrenzai",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kyrenzai",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "kyumirra",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "kyumirra",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "leoric",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "leoric",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "luminar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "luminar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "lyrenya",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "lyrenya",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "lyrienne",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "lyrienne",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "lyssarethys",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "lyssarethys",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "malzareth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "malzareth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "malzeroth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "malzeroth",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "molgravar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "molgravar",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "morgath",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morgath",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morkhaera",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morkhaera",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morkhelvis",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morkhelvis",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morthraxis",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morthraxis",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "morthyrax",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morthyrax",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morvaenthir",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morvaenthir",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morvaeth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morvaeth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morvaeth2",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morvaeth2",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morvakhul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morvakhul",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morvath",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morvath",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morvein",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morvein",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morvekhar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morvekhar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "morvyssk",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "morvyssk",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "naraka",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "naraka",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nazulmor",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nazulmor",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nexthyrius",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nexthyrius",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nixweaver",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nixweaver",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "nyrellieth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyrellieth",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nyrethzalv",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyrethzalv",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nyxallaria",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxallaria",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "nyxara",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxara",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "nyxarath",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxarath",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nyxareth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxareth",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nyxareva",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxareva",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "nyxariel",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxariel",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "nyxaris",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxaris",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nyxaroth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxaroth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "nyxharr",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxharr",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "nyxraal",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxraal",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "nyxthrael",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyxthrael",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "nyzrak",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "nyzrak",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "obanai",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "obanai",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "okeanora",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "okeanora",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "pyraena",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "pyraena",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "pyraethis",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "pyraethis",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "pyraklos",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "pyraklos",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "pyrenth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "pyrenth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "pyrhaan",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "pyrhaan",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "rakzhan",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "rakzhan",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "ravokkar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "ravokkar",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "raz",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "raz",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "razak",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "razak",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "rynvara",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "rynvara",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "sanguire",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "sanguire",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "sanguiveth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "sanguiveth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "sasori",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "sasori",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "seiryukong",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "seiryukong",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "selunara",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "selunara",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "seraphienne",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "seraphienne",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "sethrakhar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "sethrakhar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "shimorakh",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "shimorakh",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "shirotaka",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "shirotaka",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "sirakzan",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "sirakzan",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "solara",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "solara",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "solareth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "solareth",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "solvanth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "solvanth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "solvarin",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "solvarin",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "sunakage",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "sunakage",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "sylara",
+        "unlock_cost": 0,
+        "unlock_require_boss": null,
+        "is_boss_hero": false,
+        "boss_class": null
+      },
+      {
+        "hero": "sylvantheros",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "sylvantheros",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "syrentha",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "syrentha",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "syrindra",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "syrindra",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "thalakryon",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thalakryon",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "thalgryn",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thalgryn",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "thalryndel",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thalryndel",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "thargoroth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thargoroth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "thoraz",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thoraz",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "thorgaruk",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thorgaruk",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "thorne",
+        "unlock_cost": 0,
+        "unlock_require_boss": null,
+        "is_boss_hero": false,
+        "boss_class": null
+      },
+      {
+        "hero": "thornvaegrim",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thornvaegrim",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "thorvak",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thorvak",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "thorvin",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "thorvin",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "tsukiyora",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "tsukiyora",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "urgharun",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "urgharun",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "ursath",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "ursath",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vaelindra",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vaelindra",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "vaelkorr",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vaelkorr",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vaelmyrra",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vaelmyrra",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "vaerith",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vaerith",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "valekris",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "valekris",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "valthar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "valthar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vardrok",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vardrok",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vargrath",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vargrath",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vargroth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vargroth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "varkul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "varkul",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "varkuthar",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "varkuthar",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "velmyrth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "velmyrth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "verdanix",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "verdanix",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "veshtrax",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "veshtrax",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vessyra",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vessyra",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vex",
+        "unlock_cost": 0,
+        "unlock_require_boss": null,
+        "is_boss_hero": false,
+        "boss_class": null
+      },
+      {
+        "hero": "vhaerinth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vhaerinth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vhaerith",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vhaerith",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vhalzun",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vhalzun",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vhorethzir",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vhorethzir",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "vhyssarion",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vhyssarion",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vokrahn",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vokrahn",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vorenmarr",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vorenmarr",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vorgath",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vorgath",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vorthakul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vorthakul",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vraskhan",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vraskhan",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vulkareth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vulkareth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "vyraeth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "vyraeth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "wiro",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "wiro",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xaelmoran",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xaelmoran",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "xaerissa",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xaerissa",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xareth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xareth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xarnathul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xarnathul",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xarnthuul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xarnthuul",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xelnarath",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xelnarath",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "xerakhotep",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xerakhotep",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xerakkuth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xerakkuth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xerathis",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xerathis",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xharokh",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xharokh",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xirthalis",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xirthalis",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "xyrael",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "xyrael",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "yamako",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "yamako",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "yhoranth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "yhoranth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "yomigetsu",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "yomigetsu",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "zahkareth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zahkareth",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zarethyr",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zarethyr",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "zephyr",
+        "unlock_cost": 0,
+        "unlock_require_boss": null,
+        "is_boss_hero": false,
+        "boss_class": null
+      },
+      {
+        "hero": "zhaeris",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zhaeris",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zharakzuul",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zharakzuul",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      },
+      {
+        "hero": "zharok",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zharok",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zhyrakaan",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zhyrakaan",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zhyvrek",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zhyvrek",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zorashi",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zorashi",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zorathiel",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zorathiel",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zorothrax",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zorothrax",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zulkhaven",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zulkhaven",
+        "is_boss_hero": true,
+        "boss_class": "mini"
+      },
+      {
+        "hero": "zyvareth",
+        "unlock_cost": 4500,
+        "unlock_require_boss": "zyvareth",
+        "is_boss_hero": true,
+        "boss_class": "true"
+      }
+    ],
+    "txn_cases": [
+      {
+        "name": "unknown_hero",
+        "hero": "ninja_bukan_hero",
+        "gold_in": 100000,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [],
+        "sfx": [
+          "ui_error"
+        ],
+        "accepted": false,
+        "meta_gold": 100000,
+        "save_gold": 100000,
+        "purchased": [
+          "kaizen"
+        ],
+        "bosses": []
+      },
+      {
+        "name": "already_owned",
+        "hero": "kaizen",
+        "gold_in": 100000,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [],
+        "sfx": [
+          "ui_error"
+        ],
+        "accepted": false,
+        "meta_gold": 100000,
+        "save_gold": 100000,
+        "purchased": [
+          "kaizen"
+        ],
+        "bosses": []
+      },
+      {
+        "name": "boss_gate_locked",
+        "hero": "gornak",
+        "gold_in": 100000,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [],
+        "sfx": [
+          "ui_error"
+        ],
+        "accepted": false,
+        "meta_gold": 100000,
+        "save_gold": 100000,
+        "purchased": [
+          "kaizen"
+        ],
+        "bosses": []
+      },
+      {
+        "name": "gate_ok_gold_4499",
+        "hero": "gornak",
+        "gold_in": 4499,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [
+          "gornak"
+        ],
+        "sfx": [
+          "ui_error"
+        ],
+        "accepted": false,
+        "meta_gold": 4499,
+        "save_gold": 4499,
+        "purchased": [
+          "kaizen"
+        ],
+        "bosses": [
+          "gornak"
+        ]
+      },
+      {
+        "name": "gate_ok_gold_4500_exact",
+        "hero": "gornak",
+        "gold_in": 4500,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [
+          "gornak"
+        ],
+        "sfx": [
+          "ui_buy"
+        ],
+        "accepted": true,
+        "meta_gold": 0,
+        "save_gold": 0,
+        "purchased": [
+          "gornak",
+          "kaizen"
+        ],
+        "bosses": [
+          "gornak"
+        ]
+      },
+      {
+        "name": "gate_ok_gold_9000_surplus",
+        "hero": "gornak",
+        "gold_in": 9000,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [
+          "gornak"
+        ],
+        "sfx": [
+          "ui_buy"
+        ],
+        "accepted": true,
+        "meta_gold": 4500,
+        "save_gold": 4500,
+        "purchased": [
+          "gornak",
+          "kaizen"
+        ],
+        "bosses": [
+          "gornak"
+        ]
+      },
+      {
+        "name": "starter_free_gold_0",
+        "hero": "grimjaw",
+        "gold_in": 0,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [],
+        "sfx": [
+          "ui_buy"
+        ],
+        "accepted": true,
+        "meta_gold": 0,
+        "save_gold": 0,
+        "purchased": [
+          "grimjaw",
+          "kaizen"
+        ],
+        "bosses": []
+      },
+      {
+        "name": "true_boss_4500",
+        "hero": "abaddon",
+        "gold_in": 4500,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [
+          "abaddon"
+        ],
+        "sfx": [
+          "ui_buy"
+        ],
+        "accepted": true,
+        "meta_gold": 0,
+        "save_gold": 0,
+        "purchased": [
+          "abaddon",
+          "kaizen"
+        ],
+        "bosses": [
+          "abaddon"
+        ]
+      },
+      {
+        "name": "double_buy_rejected",
+        "hero": "gornak",
+        "gold_in": 4500,
+        "purchased_in": [
+          "gornak",
+          "kaizen"
+        ],
+        "bosses_in": [
+          "gornak"
+        ],
+        "sfx": [
+          "ui_error"
+        ],
+        "accepted": false,
+        "meta_gold": 4500,
+        "save_gold": 4500,
+        "purchased": [
+          "gornak",
+          "kaizen"
+        ],
+        "bosses": [
+          "gornak"
+        ]
+      },
+      {
+        "name": "persist_after_success",
+        "hero": "gornak",
+        "gold_in": 4500,
+        "purchased_in": [
+          "kaizen"
+        ],
+        "bosses_in": [
+          "gornak"
+        ],
+        "sfx": [
+          "ui_buy"
+        ],
+        "accepted": true,
+        "meta_gold": 0,
+        "save_gold": 0,
+        "purchased": [
+          "gornak",
+          "kaizen"
+        ],
+        "bosses": [
+          "gornak"
+        ],
+        "disk_meta_gold": 0,
+        "disk_purchased": [
+          "gornak",
+          "kaizen"
+        ]
+      }
+    ],
+    "card_matrix": [
+      {
+        "hero": "kaizen",
+        "state": "gold0_none",
+        "status": "unlock",
+        "label": "FREE",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "grimjaw",
+        "state": "gold0_none",
+        "status": "unlock",
+        "label": "FREE",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "gornak",
+        "state": "gold0_none",
+        "status": "boss_locked",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "abaddon",
+        "state": "gold0_none",
+        "status": "boss_locked",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "kaizen",
+        "state": "gold4499_none",
+        "status": "unlock",
+        "label": "FREE",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "grimjaw",
+        "state": "gold4499_none",
+        "status": "unlock",
+        "label": "FREE",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "gornak",
+        "state": "gold4499_none",
+        "status": "boss_locked",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "abaddon",
+        "state": "gold4499_none",
+        "status": "boss_locked",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "kaizen",
+        "state": "gold4500_none",
+        "status": "unlock",
+        "label": "FREE",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "grimjaw",
+        "state": "gold4500_none",
+        "status": "unlock",
+        "label": "FREE",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "gornak",
+        "state": "gold4500_none",
+        "status": "boss_locked",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "abaddon",
+        "state": "gold4500_none",
+        "status": "boss_locked",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "kaizen",
+        "state": "gold4500_allboss",
+        "status": "unlock",
+        "label": "FREE",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "grimjaw",
+        "state": "gold4500_allboss",
+        "status": "unlock",
+        "label": "FREE",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "gornak",
+        "state": "gold4500_allboss",
+        "status": "unlock",
+        "label": "UNLOCK",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "abaddon",
+        "state": "gold4500_allboss",
+        "status": "unlock",
+        "label": "UNLOCK",
+        "kind": "gold",
+        "enabled": true
+      },
+      {
+        "hero": "kaizen",
+        "state": "owned_all",
+        "status": "owned",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "grimjaw",
+        "state": "owned_all",
+        "status": "owned",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "gornak",
+        "state": "owned_all",
+        "status": "owned",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      },
+      {
+        "hero": "abaddon",
+        "state": "owned_all",
+        "status": "owned",
+        "label": null,
+        "kind": null,
+        "enabled": null
+      }
+    ],
+    "matrix_states": [
+      "gold0_none",
+      "gold4499_none",
+      "gold4500_none",
+      "gold4500_allboss",
+      "owned_all"
+    ]
   }
 ,
-  "level_select_stats": {
+  "progression_level_select_stats": {
     "rules": {
       "time_zero": "--:--",
       "time_65": "1:05",
@@ -132445,8 +136261,7 @@
     ],
     "identical": true,
     "rng_sites": []
-  }
-,
+  },
   "save_slot_delete": {
     "created": {
       "exists": true,

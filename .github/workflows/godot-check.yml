@@ -211,22 +211,15 @@ jobs:
       - name: GameplayParityTest (Pygame oracle + match lifecycle)
         run: |
           set -o pipefail
-          isolated=$(mktemp -d)
-          trap 'rm -rf "$isolated"' EXIT
-          export XDG_DATA_HOME="$isolated"
           python -m pip install --quiet pygame-ce
           python3 tools/test_godot_match_parity.py
-          # GameplayParityTest creates the full production menu and match
-          # scene; keep enough frames for slow hosted runners after a clean
-          # XDG user-data import (the gate, not Godot's exit code, decides).
-          godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 900 2>&1 | tee /tmp/parity.log || true
+          godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300 2>&1 | tee /tmp/parity.log || true
           if python3 godot/tools/godot_log_gate.py /tmp/parity.log --label "GameplayParityTest" \
               --require "[GameplayParityTest] PASS" > /tmp/parity.gate 2>&1; then
             cat /tmp/parity.gate
           else
             cat /tmp/parity.gate
-            echo "::error::PARITY-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error\|ERROR' /tmp/parity.log | tr '\n' ' | ' | cut -c1-5000)"
-            echo "::error::PARITY-FAIL-TAIL: $(tail -20 /tmp/parity.log | tr '\n' ' | ' | cut -c1-1200)"
+            echo "::error::PARITY-FAIL-TAIL: $(tail -12 /tmp/parity.log | tr '\n' ' | ' | cut -c1-400)"
             exit 1
           fi
 
@@ -602,20 +595,78 @@ jobs:
             exit 1
           fi
 
-      # ── 4p. ProgressionParityTest (FASE 20): tiga kandidat gap progresi.
-      # Oracle insert-only: BEST SCORE/BEST TIME dari SaveManager Pygame,
-      # transaksi Hero Shop meta dari Menu._unlock_hero_in_meta_shop, dan
-      # NUM_SLOTS + progress.json migration dari SaveManager asli. Godot
-      # mereplay MainMenu/SaveManager produksi; timestamp dinormalisasi,
-      # state save dan checksum cloud payload tetap diuji. Tidak ada klaim
-      # piksel/audio. user:// terisolasi agar slot pemain tidak tersentuh.
-      - name: ProgressionParityTest (level stats + Hero Shop + save slots)
+      # ── 4p. LevelSelectStatsParityTest (FASE 20): BEST SCORE/BEST TIME
+      # per level di kartu LEVEL SELECT. Oracle = jalur DRAW pygame ASLI
+      # (Menu._draw_level_card kartu 280px headless dengan font proxy
+      # perekam + SaveManager ASLI get_level_stats/format_time — seksi
+      # fixture level_select_stats: 9 kasus kartu termasuk "No stats yet"
+      # dan kartu terkunci, 12 kasus format_time, 13 kasus format skor
+      # dengan lebar piksel pygame + aturan truncasi [:8] ambang w//2-20,
+      # 12 kasus win-rate int() + band warna). Godot mereplay lewat jalur
+      # produksi (MainMenu._level_card + SaveManager.format_time +
+      # _format_level_score/_fit_stat_text/_level_win_rate) — label
+      # Indonesia adalah beda disengaja yang terkunci, nilai data
+      # string/warna/band wajib identik. user:// terisolasi bahkan kalau
+      # harness berhenti di tengah.
+      - name: LevelSelectStatsParityTest (best score/time level-select vs oracle Pygame)
         run: |
           set -o pipefail
           isolated=$(mktemp -d)
           trap 'rm -rf "$isolated"' EXIT
           export XDG_DATA_HOME="$isolated"
-          godot --headless --path godot res://tests/ProgressionParityTest.tscn --quit-after 240 2>&1 | tee /tmp/progression.log || true
+          godot --headless --path godot res://tests/LevelSelectStatsParityTest.tscn --quit-after 300 2>&1 | tee /tmp/lsstat.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/lsstat.log --label "LevelSelectStatsParityTest" \
+              --require "[LevelSelectStatsParityTest] PASS" > /tmp/lsstat.gate 2>&1; then
+            cat /tmp/lsstat.gate
+          else
+            cat /tmp/lsstat.gate
+            echo "::error::LSSTAT-FAIL-TAIL: $(tail -40 /tmp/lsstat.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::LSSTAT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/lsstat.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4q. MetaShopTxnParityTest (FASE 20): TRANSAKSI HERO SHOP META.
+      # Oracle = Menu._unlock_hero_in_meta_shop ASLI + katalog EFEKTIF
+      # get_all_hero_types (def kedua _core.py:1255: starter 0, mini/true
+      # 4500 menimpa harga rumus def pertama) + keputusan kartu
+      # _draw_meta_hero_card (pill label/kind + status OWNED). Seksi
+      # fixture meta_shop_txn: 222 baris katalog closed-world, 10 kasus
+      # transaksi (katalog/duplikat/gate boss/saldo 4499-4500-9000/dua
+      # kali/sfx ui_error-ui_buy/persist disk), matriks 5 state save x 4
+      # hero wakil. Godot mereplay lewat jalur produksi
+      # (MainMenu._try_unlock_hero + SaveManager + meta keputusan kartu
+      # _hero_card) — pemetaan purchased_heroes = unlocked_heroes
+      # terkunci FASE 13. SFX tidak diuji (headless). user:// terisolasi
+      # bahkan kalau harness berhenti di tengah.
+      - name: MetaShopTxnParityTest (transaksi Hero Shop meta vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/MetaShopTxnParityTest.tscn --quit-after 300 2>&1 | tee /tmp/mshop.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/mshop.log --label "MetaShopTxnParityTest" \
+              --require "[MetaShopTxnParityTest] PASS" > /tmp/mshop.gate 2>&1; then
+            cat /tmp/mshop.gate
+          else
+            cat /tmp/mshop.gate
+            echo "::error::MSHOP-FAIL-TAIL: $(tail -40 /tmp/mshop.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::MSHOP-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/mshop.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4r. ProgressionParityTest (FASE 20C): multi-slot save + migrasi
+      # progress.json lokal. Oracle Pygame SaveManager asli, fixture insert-only
+      # save_slots/phase20_determinism/save_slot_delete, dan cloud payload
+      # checksum. Godot mereplay SaveManager/MainMenu produksi; semua metadata
+      # wall-clock dibandingkan sebagai presence flag. user:// terisolasi.
+      - name: ProgressionParityTest (save slots + migration vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/ProgressionParityTest.tscn --quit-after 300 2>&1 | tee /tmp/progression.log || true
           if python3 godot/tools/godot_log_gate.py /tmp/progression.log --label "ProgressionParityTest" \
               --require "[ProgressionParityTest] PASS" > /tmp/progression.gate 2>&1; then
             cat /tmp/progression.gate
@@ -629,9 +680,6 @@ jobs:
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
-          isolated=$(mktemp -d)
-          trap 'rm -rf "$isolated"' EXIT
-          export XDG_DATA_HOME="$isolated"
           python -m pip install --quiet pygame-ce
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_boss_true_aura_parity.py
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_basic_attack_no_impact_fx.py
