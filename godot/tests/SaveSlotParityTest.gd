@@ -124,11 +124,11 @@ func _run() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _test_paths_and_empty_save() -> void:
-	var meta: Dictionary = _fx["meta"]
+	var meta := _fx["meta"] as Dictionary
 	_expect(SaveManager.NUM_SLOTS == int(meta["num_slots"]),
 		"NUM_SLOTS (dapat %d, mau %d)"
 		% [SaveManager.NUM_SLOTS, int(meta["num_slots"])])
-	var paths: Dictionary = _fx["paths"]
+	var paths := _fx["paths"] as Dictionary
 	for key in paths["slot_files"]:
 		var want := str(paths["slot_files"][key])
 		var got := SaveManager.slot_path(int(key)).get_file()
@@ -141,7 +141,7 @@ func _test_paths_and_empty_save() -> void:
 
 	# get_empty_save: semua kunci pygame wajib ada dengan nilai default.
 	var empty := SaveManager.get_empty_save()
-	var want_empty: Dictionary = _fx["empty_save"]
+	var want_empty := _fx["empty_save"] as Dictionary
 	for key in want_empty:
 		_expect(empty.has(key), "get_empty_save punya kunci %s" % key)
 		if not empty.has(key):
@@ -321,7 +321,7 @@ func _test_formats() -> void:
 		_compare(SaveManager.format_playtime(float(row[0])), str(row[1]),
 			"format_playtime(%s)" % str(row[0]))
 	for row in _fx["format_last_played_battery"]:
-		var row_d: Dictionary = row
+		var row_d := row as Dictionary
 		var want := str(row_d["text"])
 		if row_d["offset"] == null:
 			# Cabang tanggal / timestamp 0: tidak bergantung waktu kini.
@@ -345,12 +345,12 @@ func _test_cards(case: Dictionary) -> void:
 	_clear_all()
 	SaveManager.set_current_slot(1)
 	for card in case["cards"]:
-		var cd: Dictionary = card
+		var cd := card as Dictionary
 		var slot_num := int(cd["slot_num"])
 		if cd["info"] == null:
 			continue
-		var payload: Dictionary = (cd["info"] as Dictionary).duplicate(true)
-		var expect: Dictionary = cd["expect"]
+		var payload := (cd["info"] as Dictionary).duplicate(true)
+		var expect := cd["expect"] as Dictionary
 		# String relatif dihitung dari now yang NYATA; cabang tanggal
 		# memakai timestamp absolut dari fixture (lihat oracle).
 		if not bool(expect.get("last_played_absolute", false)):
@@ -361,9 +361,9 @@ func _test_cards(case: Dictionary) -> void:
 	_menu._slot_delete_confirm = -1
 	_menu._show(_menu.State.SLOT_SELECT)
 	for card in case["cards"]:
-		var cd2: Dictionary = card
+		var cd2 := card as Dictionary
 		var num := int(cd2["slot_num"])
-		var expect: Dictionary = cd2["expect"]
+		var expect := cd2["expect"] as Dictionary
 		var node := _find_slot_card(num)
 		_expect(node != null, "%s: kartu slot %d ada" % [tag, num])
 		if node == null:
@@ -429,7 +429,8 @@ func _known_paths() -> Array:
 
 
 func _clear_all() -> void:
-	for path in _known_paths():
+	for raw_path in _known_paths():
+		var path := str(raw_path)
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
@@ -456,7 +457,8 @@ func _write_raw(path: String, text: String) -> void:
 ## dengan daftar oracle setelah dinormalisasi pola nama legacy Godot.
 func _files_after() -> Array:
 	var out: Array = []
-	for path in _known_paths():
+	for raw_path in _known_paths():
+		var path := str(raw_path)
 		if FileAccess.file_exists(path):
 			out.append(_norm_name(path.get_file()))
 	out.sort()

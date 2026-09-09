@@ -342,10 +342,32 @@ func format_last_played(timestamp) -> String:
 		return "%dh ago" % int(elapsed / 3600.0)
 	if elapsed < 604800:
 		return "%dd ago" % int(elapsed / 86400.0)
-	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(int(ts), true)
-	return "%02d %s %04d" % [int(dt.get("day", 1)),
-		MONTH_ABBR[clampi(int(dt.get("month", 1)) - 1, 0, 11)],
-		int(dt.get("year", 1970))]
+	# UTC MURNI: `Time.get_datetime_dict_from_unix_time` di Godot 4.3 cuma
+	# menerima SATU argumen ( zona mesin ) dan 4.3 tidak punya varian UTC,
+	# jadi tanggal dihitung sendiri dari hari sejak epoch — identik dengan
+	# `time.localtime()` oracle yang dipaksa TZ=UTC, bebas DST/zona mesin.
+	var parts := _civil_from_days(int(floor(ts / 86400.0)))
+	return "%02d %s %04d" % [parts.z,
+		MONTH_ABBR[clampi(parts.y - 1, 0, 11)], parts.x]
+
+
+## Konversi hari sejak epoch (1970-01-01) -> Vector3i(tahun, bulan, hari).
+## Algoritma civil_from_days Howard Hinnant; semua pembagian dilakukan
+## atas nilai NON-NEGATIF (koreksi `era` menjamin itu), jadi pembulatan
+## integer GDScript (potong ke nol) sama dengan floor().
+static func _civil_from_days(z: int) -> Vector3i:
+	var zz := z + 719468
+	var era: int = (zz if zz >= 0 else zz - 146096) / 146097
+	var doe: int = zz - era * 146097
+	var yoe: int = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365
+	var year: int = yoe + era * 400
+	var doy: int = doe - (365 * yoe + yoe / 4 - yoe / 100)
+	var mp: int = (5 * doy + 2) / 153
+	var day: int = doy - (153 * mp + 2) / 5 + 1
+	var month: int = mp + 3 if mp < 10 else mp - 9
+	if month <= 2:
+		year += 1
+	return Vector3i(year, month, day)
 
 
 ## setdefault semua kunci meta + metadata slot — paritas baris
