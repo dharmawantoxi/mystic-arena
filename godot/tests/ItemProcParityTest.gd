@@ -55,6 +55,9 @@ const EXTRA_POS := Vector2(340.0, 100.0)
 ## 1 frame pygame @60 FPS -> detik Godot.
 const FRAME := 1.0 / 60.0
 
+## Durasi debuff harness "selamanya" (pola HeroRngGuardParityTest).
+const BIG_T := 10.0 ** 6
+
 var _fixture: Dictionary = {}
 var _failures: int = 0
 var _checks: int = 0
