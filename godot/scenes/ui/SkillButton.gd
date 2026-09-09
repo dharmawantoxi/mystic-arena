@@ -25,8 +25,31 @@ func _init(p_key: String = "q") -> void:
 	clip_contents = true
 	focus_mode = Control.FOCUS_NONE
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	_style()
 	_build_children()
 	pressed.connect(_on_pressed)
+
+
+func _style() -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color8(26, 31, 54)
+	normal.border_color = UiTheme.EDGE_GOLD
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(10)
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color8(38, 45, 76)
+	hover.border_color = UiTheme.GOLD
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = Color8(18, 22, 40)
+	pressed.border_color = UiTheme.GOLD_DEEP
+	var disabled := normal.duplicate() as StyleBoxFlat
+	disabled.bg_color = Color8(20, 21, 30)
+	disabled.border_color = Color8(70, 74, 96)
+	add_theme_stylebox_override("normal", normal)
+	add_theme_stylebox_override("hover", hover)
+	add_theme_stylebox_override("pressed", pressed)
+	add_theme_stylebox_override("disabled", disabled)
+	add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 
 
 func _build_children() -> void:
@@ -49,11 +72,12 @@ func _build_children() -> void:
 	_key_label.name = "KeyLabel"
 	_key_label.text = skill_key.to_upper()
 	_key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_key_label.add_theme_font_size_override("font_size", 20)
-	_key_label.add_theme_color_override("font_color", Color(1, 0.92, 0.45))
-	_key_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.08, 0.9))
+	UiTheme.style_label(_key_label, 20, "body_bold", UiTheme.GOLD_TEXT,
+		true)
+	_key_label.add_theme_color_override("font_outline_color",
+		Color(0.04, 0.03, 0.08, 0.9))
 	_key_label.add_theme_constant_override("outline_size", 4)
-	_key_label.position = Vector2(6, 2)
+	_key_label.position = Vector2(7, 3)
 	add_child(_key_label)
 
 	_cd_label = Label.new()
@@ -62,8 +86,11 @@ func _build_children() -> void:
 	_cd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_cd_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_cd_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_cd_label.add_theme_font_size_override("font_size", 19)
-	_cd_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.95))
+	UiTheme.style_label(_cd_label, 22, "body_bold",
+		Color(1, 1, 1, 0.95))
+	_cd_label.add_theme_color_override("font_outline_color",
+		Color(0.02, 0.02, 0.05, 0.9))
+	_cd_label.add_theme_constant_override("outline_size", 5)
 	_cd_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_cd_label)
 
@@ -73,8 +100,8 @@ func _build_children() -> void:
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.clip_text = true
-	_name_label.add_theme_font_size_override("font_size", 9)
-	_name_label.add_theme_color_override("font_color", Color(0.82, 0.87, 1.0, 0.9))
+	UiTheme.style_label(_name_label, 9, "body_semibold",
+		Color(0.82, 0.87, 1.0, 0.9))
 	_name_label.anchor_left = 0.0
 	_name_label.anchor_right = 1.0
 	_name_label.anchor_top = 1.0
@@ -120,4 +147,4 @@ func update_state(hero) -> void:
 	_name_label.text = str(skills.skill_label(skill_key))
 	tooltip_text = "%s (%s) — %s" % [
 		skill_key.to_upper(), str(skills.skill_label(skill_key)),
-		"siap" if ready else "cooldown %.1fs" % skills.cooldown_remaining(skill_key)]
+		"ready" if ready else "cooldown %.1fs" % skills.cooldown_remaining(skill_key)]

@@ -61,7 +61,8 @@ func _process(delta: float) -> void:
 		_refresh()
 
 func _build() -> void:
-	_box = PanelContainer.new()
+	_box = MysticPanel.new(Color8(24, 29, 52), Color8(14, 17, 32),
+		Color8(82, 97, 140), 9.0, 2.0, false)
 	_box.name = "TacticalBox"
 	_box.mouse_filter = Control.MOUSE_FILTER_STOP
 	_box.anchor_left = 1.0
@@ -70,28 +71,25 @@ func _build() -> void:
 	_box.offset_right = -8.0
 	_box.offset_top = 172.0
 	_box.offset_bottom = 452.0
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.035, 0.04, 0.07, 0.92)
-	sb.border_color = Color(0.32, 0.38, 0.55, 0.9)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(9)
-	sb.content_margin_left = 10.0
-	sb.content_margin_right = 10.0
-	sb.content_margin_top = 6.0
-	sb.content_margin_bottom = 8.0
-	_box.add_theme_stylebox_override("panel", sb)
 	add_child(_box)
+	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 6)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	_box.add_child(margin)
 
 	var col := VBoxContainer.new()
 	col.name = "TacticalColumn"
 	col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	col.add_theme_constant_override("separation", 6)
-	_box.add_child(col)
+	margin.add_child(col)
 
 	_title = Label.new()
 	_title.text = "TACTICAL COMMANDS (HOLD)"
-	_title.add_theme_font_size_override("font_size", 11)
-	_title.add_theme_color_override("font_color", Color(0.85, 0.88, 0.98))
+	UiTheme.style_label(_title, 11, "body_bold", Color8(217, 224, 250),
+		true)
 	col.add_child(_title)
 
 	for spec in COMMANDS:
@@ -100,24 +98,31 @@ func _build() -> void:
 		btn.name = "Cmd_" + action
 		btn.text = str(spec[1])
 		btn.focus_mode = Control.FOCUS_NONE
-		btn.custom_minimum_size = Vector2(0, 30)
+		btn.custom_minimum_size = Vector2(0, 32)
+		btn.add_theme_font_override("font", UiTheme.font("body_bold"))
 		btn.add_theme_font_size_override("font_size", 11)
 		var c: Color = spec[2]
 		var normal := StyleBoxFlat.new()
-		normal.bg_color = Color(c.r * 0.25, c.g * 0.25, c.b * 0.25, 0.95)
-		normal.border_color = c
+		normal.bg_color = Color(c.r * 0.22, c.g * 0.22, c.b * 0.22, 0.95)
+		normal.border_color = Color(c.r, c.g, c.b, 0.9)
 		normal.set_border_width_all(1)
 		normal.set_corner_radius_all(6)
+		var hover := normal.duplicate() as StyleBoxFlat
+		hover.bg_color = Color(c.r * 0.38, c.g * 0.38, c.b * 0.38, 0.98)
+		hover.border_color = Color.WHITE
 		var pressed := StyleBoxFlat.new()
 		pressed.bg_color = Color(c.r * 0.55 + 0.1, c.g * 0.55 + 0.1,
 			c.b * 0.55 + 0.1, 0.98)
 		pressed.border_color = Color.WHITE
-		pressed.set_border_width_all(1)
+		pressed.set_border_width_all(2)
 		pressed.set_corner_radius_all(6)
 		btn.add_theme_stylebox_override("normal", normal)
-		btn.add_theme_stylebox_override("hover", normal)
+		btn.add_theme_stylebox_override("hover", hover)
 		btn.add_theme_stylebox_override("pressed", pressed)
 		btn.add_theme_stylebox_override("disabled", normal)
+		btn.add_theme_color_override("font_color", Color.WHITE)
+		btn.add_theme_color_override("font_hover_color", Color.WHITE)
+		btn.add_theme_color_override("font_pressed_color", Color.WHITE)
 		btn.tooltip_text = _tooltip(action)
 		# Tekan = MULAI menahan (main.py: hit -> held_tac + apply_hud_action).
 		btn.button_down.connect(_on_button_down.bind(action))
@@ -129,15 +134,15 @@ func _build() -> void:
 static func _tooltip(action: String) -> String:
 	match action:
 		"gather":
-			return "Semua hero kumpul & serang bersama (tahan untuk terus aktif)"
+			return "All heroes gather & attack together (hold to keep active)"
 		"protect_tower":
-			return "Min 2 hero lindungi tower (tahan untuk terus aktif)"
+			return "Min 2 heroes guard a tower (hold to keep active)"
 		"protect_castle":
-			return "Semua hero lindungi castle (tahan untuk terus aktif)"
+			return "All heroes guard the castle (hold to keep active)"
 		"attack_boss":
-			return "Semua hero serang boss (tahan untuk terus aktif)"
+			return "All heroes attack the boss (hold to keep active)"
 		"attack_damage_dealer":
-			return "Fokus hero musuh damage terbesar (tahan untuk terus aktif)"
+			return "Focus the enemy damage dealer (hold to keep active)"
 	return ""
 
 # ══════════════════════════════════════════════════════════

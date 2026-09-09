@@ -32,8 +32,9 @@
 #   * Nama berkas legacy Godot = `mystic_save.json` (port Godot tidak
 #     pernah punya `progress.json`), backup = `mystic_save_backup.json.old`
 #     — pola rename-nya yang diuji, bukan namanya.
-#   * Label UI kartu berbahasa Indonesia (KOSONG / LANJUTKAN / HAPUS SAVE)
-#     dengan pemetaan eksplisit LABEL_MAP terhadap label pygame.
+#   * Label UI kartu SAMA dengan pygame (CONTINUE / START NEW GAME /
+#     DELETE SAVE) — LABEL_MAP kini identitas, dipertahankan sebagai
+#     jangkar eksplisit kalau label pygame berubah di masa depan.
 #   * Truncasi nama level (`ui_theme.fit_ellipsis`) adalah FITUR PIKSEL —
 #     yang dibandingkan nama level MENTAHNYA.
 #   * Cloud save (mobile/cloud_save.py) TIDAK diport — di luar scope.
@@ -47,9 +48,9 @@ const MainMenuScript = preload("res://scenes/ui/MainMenu.gd")
 ## Label tombol pygame -> label Godot (beda bahasa yang disengaja, data
 ## keputusannya — tombol mana yang ada — tetap wajib identik).
 const LABEL_MAP := {
-	"CONTINUE": "LANJUTKAN",
-	"START NEW GAME": "MULAI BARU",
-	"DELETE SAVE": "HAPUS SAVE",
+	"CONTINUE": "CONTINUE",
+	"START NEW GAME": "START NEW GAME",
+	"DELETE SAVE": "DELETE SAVE",
 }
 
 ## Kunci khusus port Godot yang tidak ada di save pygame — tidak ikut
