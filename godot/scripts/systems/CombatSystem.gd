@@ -116,12 +116,12 @@ func nearest_enemy(unit, max_distance: float) -> Node2D:
 ## Damage basic attack — mirror Hero._do_attack pygame 4244-4270 persis:
 ## base (Warpath Thorne R di pygame MENIMPA hero.damage langsung, jadi sudah
 ## masuk lewat `base`) + bonus item → crit buff kit (Grimjaw E
-## `_crit_buff_active`: int(damage*2) SETELAH bonus item) → crit item
+## `_crit_buff_active`: int(damage*2) SETELAH bonus item) → SOUL REND
+## (Sanguine Thorn: crit PASTI 1.5x ke rend_target, TANPA roll dan
+## men-diskip roll crit item — _do_attack 4261-4267) → crit item
 ## (Dead Edge: int(damage*mult)). Tidak ada multiplier status lain —
 ## pygame tidak punya jalur itu di _do_attack.
-## Rend crit (Soul Rend 150% ke target bertanda) belum ada di item Godot —
-## terbuka di docs/GODOT_PARITY.md.
-func calc_damage(attacker: Node, _defender: Node, base: float, _school: String) -> float:
+func calc_damage(attacker: Node, defender: Node, base: float, _school: String) -> float:
 	var dmg := base
 	var inv = attacker.get("items")
 	if inv != null:
@@ -129,6 +129,16 @@ func calc_damage(attacker: Node, _defender: Node, base: float, _school: String) 
 	var kt = attacker.get("kit")
 	if kt is Dictionary and bool((kt as Dictionary).get("_crit_buff_active", false)):
 		return float(int(dmg * 2.0))
+	# ═══ SOUL REND: crit pasti ke target bertanda, tanpa roll ═══
+	# Pygame membandingkan identitas self.target dengan inv.rend_target;
+	# guard is_instance_valid murni untuk umur node Godot (rend_target
+	# bisa sudah freed saat timer belum habis) — tidak mengubah perilaku.
+	if inv != null and defender != null:
+		var rm := float(inv.get_rend_crit())
+		if rm > 0.0 and inv.rend_target != null \
+				and is_instance_valid(inv.rend_target) \
+				and inv.rend_target == defender:
+			return float(int(dmg * rm))
 	if inv != null:
 		var roll: Array = inv.roll_crit()
 		if roll[0]:
@@ -384,7 +394,10 @@ func apply_damage(target, amount: float, from_team: String = "",
 			and source != null and is_instance_valid(source):
 		if not _source_has_true_strike(source):
 			var bblind := _source_blind(source)
-			if bblind > 0.0 and randf() < bblind:
+			# Roll lewat ParityRng (harness parity; oracle pygame:
+			# random.random di base_boss.take_damage 5991-5994 —
+			# dulu randf() langsung, tanpa pintu parity).
+			if bblind > 0.0 and ParityRng.next() < bblind:
 				_float_text(target, "MISS", false)
 				return 0.0
 

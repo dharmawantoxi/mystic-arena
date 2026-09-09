@@ -7,9 +7,14 @@
 # Yang SUDAH: seluruh stat flat/persen, crit, cleave, corrosion (armor shred),
 #   block, aura (Steel/Freezing/Scorched/Cauterize) lewat CombatSystem.update_auras,
 #   17 ITEM AKTIF (lihat blok "ITEM AKTIF" di bawah — semuanya auto-trigger,
-#   pygame tidak punya tombol untuk item), serta seluruh efek ON-ATTACK
+#   pygame tidak punya tombol untuk item), seluruh efek ON-ATTACK
 #   (bash x2, chain x2, Frostbite, Miasma + multishot, Empower Strike,
-#   Entangle) dan pasif Leviathan Vitality.
+#   Entangle), pasif Leviathan Vitality, dan SOUL REND (Sanguine Thorn):
+#   trigger otomatis + penandaan rend_target + crit pasti 1.5x di
+#   CombatSystem.calc_damage (pygame _do_attack 4261-4267).
+# Roll RNG proc (bash/chain/multishot/static/blind boss) lewat pintu
+#   ParityRng — oracle `item_procs` (ItemProcParityTest) mengunci
+#   jumlah+nilai+urutan konsumsinya vs pygame.
 # Dengan itu Fase 5b lengkap: tidak ada lagi kunci di items.json yang
 #   ("active"/"on_attack"/"bash"/"multishot"/"block"/"aura"/"passive")
 #   tidak punya pembaca di sisi Godot.
@@ -326,6 +331,19 @@ func roll_crit() -> Array:
 	return [false, 1.0]
 
 
+## get_rend_crit() pygame — pengali crit PASTI selama Soul Rend aktif,
+## else 0.0. Tanpa roll: CombatSystem.calc_damage yang membandingkan
+## rend_target dengan defender (pygame _do_attack 4261-4267).
+func get_rend_crit() -> float:
+	if active_running("sanguine_thorn") and has("sanguine_thorn"):
+		var db = _db()
+		if db != null:
+			var act = db.get_item("sanguine_thorn").get("active")
+			if act is Dictionary:
+				return float(act.get("crit_mult", 0.0))
+	return 0.0
+
+
 ## Cleave Axe: [pct, radius] atau [] — hanya berlaku untuk hero melee
 func get_cleave() -> Array:
 	if not is_melee():
@@ -482,10 +500,21 @@ var _active_cd: Dictionary = {}
 var _active_timer: Dictionary = {}
 ## Timer tick untuk efek berkala (Static Charge thunder_coil)
 var _tick_cd: Dictionary = {}
+## Target Soul Rend (Sanguine Thorn) yang sedang bertanda — serangan
+## dasar pemilik ke unit ini crit pasti act.crit_mult (pygame
+## rend_target, dikosongkan saat rend_timer habis, hero_items.py:2167).
+var rend_target = null
 
 ## frame pygame -> detik Godot
 static func _sec(frames: float) -> float:
 	return float(frames) / FPS
+
+## Pygame menghitung timer dalam FRAME INTEGER (140 - 140 = 0 persis);
+## Godot mengurangi detik float (140 x 1/60 menyisakan ~1e-15), jadi
+## SEMUA gate "masihcooldown / masihaktif" memakai ambang ini, bukan
+## "> 0.0" telanjang — kalau tidak, kedaluarsa pas N frame bisa tetap
+## terbuka dan proc meleset satu serangan (tertangkap oracle item_procs).
+const EPS := 0.000000001
 
 
 ## Sisa cooldown item aktif (detik) — dipakai HUD/tooltip kalau nanti perlu.
@@ -495,7 +524,7 @@ func active_cooldown(item_id: String) -> float:
 
 ## Item aktif sedang menyala? (mis. Thornmail memantulkan damage)
 func active_running(item_id: String) -> bool:
-	return float(_active_timer.get(item_id, 0.0)) > 0.0
+	return float(_active_timer.get(item_id, 0.0)) > EPS
 
 
 ## Dipanggil Hero._physics_process tiap frame — paritas inv.update(1, enemies)
@@ -507,6 +536,17 @@ func tick(delta: float) -> void:
 		_active_cd[k] = maxf(0.0, float(_active_cd[k]) - delta)
 	for k in _active_timer.keys():
 		_active_timer[k] = maxf(0.0, float(_active_timer[k]) - delta)
+	# static_tick pygame ikut loop timer generik hero_items.py:2149-2162
+	# DAN di-decrement sekali lagi di blok Static Charge (2206) — total
+	# DUA kali per frame. Itu quirk sumber: zap efektif tiap 15 frame,
+	# bukan 30. Mirror persis: loop di sini + decrement di
+	# _tick_static_charge.
+	for k in _tick_cd.keys():
+		if float(_tick_cd[k]) > 0.0:
+			_tick_cd[k] = maxf(0.0, float(_tick_cd[k]) - delta)
+	# Penandaan Soul Rend gugur bersama timernya (pygame 2166-2167).
+	if not active_running("sanguine_thorn"):
+		rend_target = null
 	# Cooldown proc on-attack + racun Miasma (blok ON-ATTACK di bawah).
 	_tick_procs(delta)
 	if hero == null or bool(hero.get("is_dead")):
@@ -535,7 +575,7 @@ func _try_active(item_id: String, act: Dictionary, hp_ratio: float, delta: float
 		if active_running(item_id):
 			_tick_static_charge(item_id, act, delta)
 		return
-	if float(_active_cd.get(item_id, 0.0)) > 0.0:
+	if float(_active_cd.get(item_id, 0.0)) > EPS:
 		return
 	# ── Pemicu 1: HP di bawah ambang ──
 	if act.has("hp_threshold"):
@@ -576,6 +616,10 @@ func _fire_active(item_id: String, act: Dictionary, near: Array, tgt) -> void:
 			_silence_one(tgt, _sec(float(act.get("duration", 0.0))))
 			_amp_one(tgt, float(act.get("damage_amp", 0.0)),
 				_sec(float(act.get("duration", 0.0))))
+			# TANDAI target: serangan dasar pemilik ke unit ini crit
+			# pasti (get_rend_crit dibaca CombatSystem.calc_damage,
+			# pygame _do_attack 4261-4267).
+			rend_target = tgt
 		"rift_veil":
 			for e in near:
 				_amp_one(e, float(act.get("damage_amp", 0.0)),
@@ -604,7 +648,7 @@ func on_damage_taken(amount: float) -> void:
 		return
 	if not has("thunder_coil"):
 		return
-	if float(_active_cd.get("thunder_coil", 0.0)) > 0.0:
+	if float(_active_cd.get("thunder_coil", 0.0)) > EPS:
 		return
 	var db = _db()
 	if db == null:
@@ -612,7 +656,10 @@ func on_damage_taken(amount: float) -> void:
 	var act = db.get_item("thunder_coil").get("active")
 	if not (act is Dictionary):
 		return
-	if randf() >= float(act.get("proc_chance", 0.0)):
+	# Roll lewat ParityRng (oracle item_procs: random.random di
+	# hero_items.notify_damage_taken 2449-2452). CD-ready selalu
+	# mengonsumsi satu roll, proc atau tidak.
+	if ParityRng.next() >= float(act.get("proc_chance", 0.0)):
 		return
 	_active_timer["thunder_coil"] = _sec(float(act.get("duration", 0.0)))
 	_active_cd["thunder_coil"] = _sec(float(act.get("cooldown", 0.0)))
@@ -649,7 +696,7 @@ func _burst_aoe(item_id: String, act: Dictionary, near: Array) -> void:
 ## Static Charge: zap N musuh terdekat tiap `tick` frame selama aura menyala.
 func _tick_static_charge(item_id: String, act: Dictionary, delta: float) -> void:
 	var cd := float(_tick_cd.get(item_id, 0.0)) - delta
-	if cd > 0.0:
+	if cd > EPS:
 		_tick_cd[item_id] = cd
 		return
 	_tick_cd[item_id] = _sec(float(act.get("tick", 30.0)))
@@ -682,12 +729,14 @@ func _enemies_near(radius: float) -> Array:
 		hero.global_position, radius)
 
 
-func _damage_one(target, amount: float) -> void:
+func _damage_one(target, amount: float, dmg_type: String = "magic") -> void:
 	if amount <= 0.0 or target == null or not is_instance_valid(target):
 		return
 	if CombatSystem != null:
-		# school "magic": pygame memanggil take_damage(dmg, team, "magic")
-		CombatSystem.apply_damage(target, amount, str(hero.get("team")), "magic")
+		# default "magic": mayoritas proc pygame memanggil
+		# take_damage(dmg, team, "magic"); bash Abyss Breaker NETRAL
+		# (take_damage(dmg, team) — lihat _bash_procs).
+		CombatSystem.apply_damage(target, amount, str(hero.get("team")), dmg_type)
 
 
 func _stun_one(target, seconds: float) -> void:
@@ -737,15 +786,24 @@ func _notify(text: String) -> void:
 var _proc_cd: Dictionary = {}
 ## Racun Miasma yang sedang berjalan: [target, sisa_detik, tick_cd, damage]
 ## Paritas _MIASMA global pygame (hero_items.py:209-234) — di sana global
-## karena inventory tidak punya referensi ke semua target; di sini cukup
-## per-inventory sebab yang nge-tick adalah pemilik itemnya.
-var _miasma: Array = []
+## MODUL yang di-tick oleh SETIAP pemanggilan update() (tiap unit dengan
+## ItemInventory men-decrement SEMUA racun 1x per frame; dengan 2 unit,
+## racun yang sama menumpuk 2x/frame — lihat oracle item_procs). Maka
+## wajib static (dibagi lintas instance), bukan per-instance — kalau tidak,
+## tick racun hanya berjalan 1x/frame dan HP oracle meleset.
+static var _miasma: Array = []
 
 
 ## Turunkan cooldown proc + jalankan racun Miasma. Dipanggil dari tick().
 func _tick_procs(delta: float) -> void:
 	for k in _proc_cd.keys():
 		_proc_cd[k] = maxf(0.0, float(_proc_cd[k]) - delta)
+	# Charge Empower Strike terisi turun seiring waktu (pygame
+	# hero_items.py:2170-2172 — hanya saat runic_gavel dipakai).
+	if hero != null and has("runic_gavel"):
+		_empower_charge_init()
+		if _empower_charge > 0.0:
+			_empower_charge = maxf(0.0, _empower_charge - delta)
 	if _miasma.is_empty():
 		return
 	var still: Array = []
@@ -755,9 +813,20 @@ func _tick_procs(delta: float) -> void:
 			continue
 		m[1] -= delta
 		m[2] -= delta
-		if m[2] <= 0.0:
+		if m[2] <= EPS:
 			m[2] = 0.5  # tick 30 frame = 0.5 dtk (hero_items.py:224)
-			_damage_one(tgt, float(m[3]))
+			# pygame: tgt.take_damage(m["damage"], team, "magic") dgn
+			# team = getattr(src, "team") — tim dari SOURCE (hero
+			# penabur racun), BUKAN dari inventory yang kebetulan
+			# men-tick frame ini (_MIASMA global di-tick SEMUA unit;
+			# kalau tim diambil dari pemilik inventory, tick via update
+			# korban jadi damage satu tim sendiri dan tertahan — CI 4o).
+			var src_team := "blue"
+			if m.size() > 4 and m[4] != null and is_instance_valid(m[4]):
+				src_team = str(m[4].get("team"))
+			if CombatSystem != null:
+				CombatSystem.apply_damage(tgt, float(m[3]), src_team,
+						"magic")
 		if m[1] > 0.0:
 			still.append(m)
 	_miasma = still
@@ -765,6 +834,11 @@ func _tick_procs(delta: float) -> void:
 
 ## Dipanggil CombatSystem._on_attacker_hit setiap serangan dasar kena.
 ## `damage` = damage yang benar-benar masuk, dipakai multishot (damage_pct).
+##
+## URUTAN = urutan situs di _on_hit_common pygame (hero_items.py:2519-2666),
+## penting untuk oracle item_procs yang mengunci urutan roll:
+##   bash Abyss -> chain -> pierce Cudgel -> frostbite -> miasma(+multishot)
+##   -> empower -> entangle.
 func on_attack_hit(target, damage: float) -> void:
 	if hero == null or target == null or not is_instance_valid(target):
 		return
@@ -775,49 +849,79 @@ func on_attack_hit(target, damage: float) -> void:
 		return
 	_bash_procs(db, target)
 	_chain_proc(db, target)
+	_pierce_bash(db, target)
 	_frostbite(db, target)
 	_miasma_proc(db, target, damage)
 	_empower(db, target)
 	_entangle(db, target)
 
 
-## Bash (abyss_breaker 22% / sundering_cudgel 28%): stun singkat + damage.
-## Dua item terpisah dengan cooldown sendiri — pygame memakai bash_cd dan
-## pierce_bash_cd yang berbeda, jadi hero ber-dua-duanya bisa proc keduanya.
+## Bash (abyss_breaker 22%): stun singkat + damage NETRAL — pygame
+## memanggil take_damage(dmg, team) TANPA school (hero_items.py:2549-2551),
+## jadi kena armor seperti serangan fisik, BUKAN magic.
 func _bash_procs(db, target) -> void:
-	for item_id in ["abyss_breaker", "sundering_cudgel"]:
-		if not has(item_id):
-			continue
-		var key: String = str(item_id) + ":bash"
-		if float(_proc_cd.get(key, 0.0)) > 0.0:
-			continue
-		var b = db.get_item(item_id).get("bash")
-		if not (b is Dictionary):
-			continue
-		if randf() >= float(b.get("chance", 0.0)):
-			continue
-		_proc_cd[key] = _sec(float(b.get("cooldown", 0.0)))
-		_stun_one(target, _sec(float(b.get("stun", 0.0))))
-		_damage_one(target, float(b.get("damage", 0.0)))
-		_notify_at(target, "BASH" if item_id == "abyss_breaker" else "PIERCE")
+	var key := "abyss_breaker:bash"
+	if not has("abyss_breaker"):
+		return
+	if float(_proc_cd.get(key, 0.0)) > EPS:
+		return
+	var b = db.get_item("abyss_breaker").get("bash")
+	if not (b is Dictionary):
+		return
+	# Roll lewat ParityRng (oracle item_procs: random.random di
+	# hero_items._on_hit_common); CD-ready selalu mengonsumsi roll.
+	if ParityRng.next() >= float(b.get("chance", 0.0)):
+		return
+	_proc_cd[key] = _sec(float(b.get("cooldown", 0.0)))
+	_stun_one(target, _sec(float(b.get("stun", 0.0))))
+	_damage_one(target, float(b.get("damage", 0.0)), "normal")
+	_notify_at(target, "BASH")
+
+
+## Piercing Bash (sundering_cudgel 28%, cd internal sendiri pierce_bash_cd):
+## site pygame SETELAH chain (hero_items.py:2584-2597) — damage-nya MAGIC.
+func _pierce_bash(db, target) -> void:
+	var key := "sundering_cudgel:bash"
+	if not has("sundering_cudgel"):
+		return
+	if float(_proc_cd.get(key, 0.0)) > EPS:
+		return
+	var b = db.get_item("sundering_cudgel").get("bash")
+	if not (b is Dictionary):
+		return
+	if ParityRng.next() >= float(b.get("chance", 0.0)):
+		return
+	_proc_cd[key] = _sec(float(b.get("cooldown", 0.0)))
+	_stun_one(target, _sec(float(b.get("stun", 0.0))))
+	_damage_one(target, float(b.get("damage", 0.0)), "magic")
+	_notify_at(target, "PIERCE")
 
 
 ## Arc Chain (fenrir_chain 20%) / Arc Lightning (thunder_coil 22%):
 ## sambaran berantai ke N musuh sekitar TARGET (bukan sekitar hero).
 func _chain_proc(db, target) -> void:
+	# pygame get_on_attack_chain (hero_items.py:2082-2103): dict chain
+	# dari SLOT PERTAMA yang layak — thunder_coil TIDAK otomatis menang;
+	# yang dipakai statistik & peluangnya adalah item terdepan di slot.
 	var chain: Dictionary = {}
-	# pygame get_on_attack_chain: thunder_coil menang kalau punya dua-duanya
-	for item_id in ["thunder_coil", "fenrir_chain"]:
-		if has(item_id):
-			var oa = db.get_item(item_id).get("on_attack")
-			if oa is Dictionary and oa.has("chance"):
-				chain = oa
-				break
-	if chain.is_empty() or randf() >= float(chain.get("chance", 0.0)):
+	for s in slots:
+		var sid := str(s)
+		if sid == "":
+			continue
+		var oa = db.get_item(sid).get("on_attack")
+		if oa is Dictionary and oa.has("chance") and oa.has("targets") \
+				and oa.has("radius") and oa.has("damage"):
+			chain = oa
+			break
+	if chain.is_empty():
+		return
+	# Roll lewat ParityRng (oracle item_procs: random.random di
+	# hero_items._on_hit_common 2559).
+	if ParityRng.next() >= float(chain.get("chance", 0.0)):
 		return
 	var limit := int(chain.get("targets", 3))
 	var dmg := float(chain.get("damage", 0.0))
-	_damage_one(target, dmg)
+	_damage_one(target, dmg, "magic")
 	var hit := 1
 	for e in _enemies_near_point((target as Node2D).global_position,
 			float(chain.get("radius", 240.0))):
@@ -825,7 +929,7 @@ func _chain_proc(db, target) -> void:
 			break
 		if e == target:
 			continue
-		_damage_one(e, dmg)
+		_damage_one(e, dmg, "magic")
 		hit += 1
 
 
@@ -851,18 +955,20 @@ func _frostbite(db, target) -> void:
 
 ## Miasma (basilisk_breath): racun % Max HP target per tick, di-cap cap_damage.
 ## Sekalian Polycephaly (multishot 30%) — tembakan ekstra ke musuh terdekat,
-## HANYA untuk hero ranged (hero_items.py:2621-2641).
+## HANYA untuk hero ranged (hero_items.py:2621-2641). Racunnya sendiri
+## TANPA roll; multishot me-roll sekali (ParityRng) dan damage ekstranya
+## int(damage×pct) PRA-mitigasi seperti pygame (2637).
 func _miasma_proc(db, target, damage: float) -> void:
 	if not has("basilisk_breath"):
 		return
 	var data: Dictionary = db.get_item("basilisk_breath")
 	var oa = data.get("on_attack")
 	if oa is Dictionary:
-		_apply_miasma(target, oa)
+		_apply_miasma(target, hero, oa)
 	var ms = data.get("multishot")
 	if not (ms is Dictionary) or is_melee():
 		return
-	if randf() >= float(ms.get("chance", 0.0)):
+	if ParityRng.next() >= float(ms.get("chance", 0.0)):
 		return
 	var extra := int(ms.get("targets", 2))
 	var pct := float(ms.get("damage_pct", 0.0))
@@ -873,36 +979,69 @@ func _miasma_proc(db, target, damage: float) -> void:
 			break
 		if e == target:
 			continue
-		_damage_one(e, damage * pct)
+		_damage_one(e, float(int(damage * pct)), "magic")
 		if oa is Dictionary:
-			_apply_miasma(e, oa)
+			_apply_miasma(e, hero, oa)
 		n += 1
 
 
 ## Pasang/refresh racun pada satu target (cap damage per tick).
-func _apply_miasma(target, oa: Dictionary) -> void:
-	var per_tick: float = float(target.get("max_hp")) * float(oa.get("max_hp_pct_per_tick", 0.0))
-	per_tick = minf(per_tick, float(oa.get("cap_damage", 60.0)))
+func _apply_miasma(target, source, oa: Dictionary) -> void:
+	# pygame: dmg = int(max_hp * pct); dmg = max(6, min(cap, dmg))
+	# (hero_items.py:195-199) — truncation int() + floor 6 wajib,
+	# kalau tidak HP pembanding melenceng perpecahan (oracle item_procs).
+	var per_tick: float = float(int(float(target.get("max_hp")) * float(oa.get("max_hp_pct_per_tick", 0.0))))
+	per_tick = maxf(6.0, minf(per_tick, float(oa.get("cap_damage", 9999.0))))
 	for m in _miasma:
 		if m[0] == target:
-			m[1] = _sec(float(oa.get("duration", 0.0)))
-			m[3] = per_tick
+			# refresh pygame 201-203: timer MAX, tick_cd MIN, damage MAX,
+			# source DIGANTI.
+			m[1] = maxf(m[1], _sec(float(oa.get("duration", 0.0))))
+			m[2] = minf(m[2], 0.5)
+			m[3] = maxf(m[3], per_tick)
+			if m.size() > 4:
+				m[4] = source
+			else:
+				m.append(source)
 			return
-	_miasma.append([target, _sec(float(oa.get("duration", 0.0))), 0.5, per_tick])
+	_miasma.append([target, _sec(float(oa.get("duration", 0.0))), 0.5,
+			per_tick, source])
 
 
-## Empower Strike (runic_gavel): serangan pertama setelah charge penuh
-## memberi bonus magic damage, lalu charge diisi ulang (charge_time 540 frame).
+## Charge Empower Strike — mirror empower_charge pygame: PENUH sejak
+## __init__ (charge_time 540 frame), berkurang tiap frame lewat
+## update(), dan baru bisa dikonsumsi saat habis (consume_empower_strike
+## hero_items.py:2042-2048 mereset penuh setelah proc). Dulu sisi Godot
+## langsung boleh proc di serangan pertama — beda dengan 9 detik pertama
+## match pygame; kini di-mirror (init lazy dari ItemDB, fallback 540f).
+var _empower_charge := -1.0
+
+
+func _empower_charge_init() -> void:
+	if _empower_charge >= 0.0:
+		return
+	var ct := 540.0
+	var db = _db()
+	if db != null:
+		var p = db.get_item("runic_gavel").get("passive")
+		if p is Dictionary:
+			ct = float(p.get("charge_time", 540.0))
+	_empower_charge = _sec(ct)
+
+
+## Empower Strike (runic_gavel): serangan setelah charge habis memberi
+## bonus magic damage 130, lalu charge terisi penuh lagi. Tanpa roll.
 func _empower(db, target) -> void:
 	if not has("runic_gavel"):
 		return
-	if float(_proc_cd.get("runic_gavel:empower", 0.0)) > 0.0:
+	_empower_charge_init()
+	if _empower_charge > EPS:
 		return
 	var p = db.get_item("runic_gavel").get("passive")
 	if not (p is Dictionary):
 		return
-	_proc_cd["runic_gavel:empower"] = _sec(float(p.get("charge_time", 540.0)))
-	_damage_one(target, float(p.get("damage", 0.0)))
+	_empower_charge = _sec(float(p.get("charge_time", 540.0)))
+	_damage_one(target, float(p.get("damage", 0.0)), "magic")
 	_notify_at(target, "EMPOWER")
 
 
@@ -911,7 +1050,7 @@ func _empower(db, target) -> void:
 func _entangle(db, target) -> void:
 	if not has("vine_rod"):
 		return
-	if float(_proc_cd.get("vine_rod:root", 0.0)) > 0.0:
+	if float(_proc_cd.get("vine_rod:root", 0.0)) > EPS:
 		return
 	var vr = db.get_item("vine_rod").get("on_attack")
 	if not (vr is Dictionary):

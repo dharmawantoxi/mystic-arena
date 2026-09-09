@@ -558,6 +558,43 @@ jobs:
             exit 1
           fi
 
+      # ── 4o. ItemProcParityTest (FASE 19): ITEM TEMPUR. Oracle = jalur
+      # combat pygame ASLI (Hero._do_attack melee & proyektil, take_damage
+      # hero/minion/boss, HeroItemInventory.update di-step manual per
+      # frame — pemicu Soul Rend, zap Static Charge, kadaluarsa cd proc,
+      # tick racun Miasma) dengan random.random ter-script per situs roll
+      # ((hero_items.py, _on_hit_common/notify_damage_taken/roll_crit),
+      # (_entity.py, take_damage), (base_boss.py, take_damage)). Yang
+      # dikunci: Soul Rend (trigger inv.update, silence+amp+penandaan,
+      # crit pasti 1.5x TANPA roll + short-circuit roll crit item), bash
+      # 22% NETRAL + cd, chain slot-pertama, pierce bash magic SETELAH
+      # chain, frostbite tanpa roll, miasma + multishot ranged-only
+      # (int(damage×70%)), empower charge 540 (serangan pertama TIDAK
+      # proc), entangle root + cd 540, static charge on-damage 20% + zap
+      # (quirk static_tick 2x/frame -> zap tiap 15 frame), dan roll blind
+      # BOSS (true strike tanpa roll). Godot mereplay lewat jalur
+      # produksi (Hero.try_attack/try_attack proyektil, take_damage,
+      # status.tick + items.tick) — roll direplay lewat ParityRng;
+      # dibandingkan HP semua unit per event, daftar roll terkonsumsi
+      # (jumlah+nilai+urutan), dan flag state (rend/static/slow).
+      # user:// terisolasi bahkan kalau harness berhenti di tengah.
+      - name: ItemProcParityTest (item tempur vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/ItemProcParityTest.tscn --quit-after 600 2>&1 | tee /tmp/itemproc.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/itemproc.log --label "ItemProcParityTest" \
+              --require "[ItemProcParityTest] PASS" > /tmp/itemproc.gate 2>&1; then
+            cat /tmp/itemproc.gate
+          else
+            cat /tmp/itemproc.gate
+            echo "::error::ITEMPROC-FAIL-TAIL: $(tail -40 /tmp/itemproc.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::ITEMPROC-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/itemproc.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
