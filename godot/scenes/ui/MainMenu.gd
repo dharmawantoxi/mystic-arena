@@ -37,19 +37,20 @@ enum State { MAIN, SLOT_SELECT, LEVEL_SELECT, HERO_SHOP, SETTINGS, HOW_TO_PLAY, 
 
 ## Layar menu non-PAUSE = LAYAR PENUH opak total (arena di belakangnya
 ## disembunyikan Main.gd — alpha 1.0 jadi tidak ada celah transparansi).
-const COL_BG := Color(0.031, 0.033, 0.058, 1.0)
+# Palet dikunci dari ui_theme.py pygame (RGB integer), bukan aproksimasi.
+const COL_BG := Color8(9, 12, 26)
 ## PAUSE = dim gelap semi-transparan di atas arena BEKU (paritas pygame
 ## pause menu yang menggambar frame game terakhir + overlay gelap).
-const COL_BG_PAUSE := Color(0.031, 0.033, 0.058, 0.62)
-const COL_PANEL := Color(0.045, 0.05, 0.085, 0.97)
-const COL_BORDER := Color(1.0, 0.804, 0.333, 0.9)
-const COL_TEXT := Color(0.86, 0.9, 1.0)
-const COL_DIM := Color(0.66, 0.71, 0.84, 0.9)
-const COL_GOLD := Color(1.0, 0.87, 0.38)
-const COL_BLUE := Color(0.4, 0.72, 1.0)
-const COL_GREEN := Color(0.42, 0.9, 0.55)
-const COL_RED := Color(1.0, 0.42, 0.42)
-const COL_LOCKED := Color(0.42, 0.45, 0.56)
+const COL_BG_PAUSE := Color(0.035, 0.047, 0.102, 0.62)
+const COL_PANEL := Color8(21, 26, 48)
+const COL_BORDER := Color8(176, 144, 82)
+const COL_TEXT := Color8(240, 244, 255)
+const COL_DIM := Color8(132, 142, 170)
+const COL_GOLD := Color8(255, 220, 110)
+const COL_BLUE := Color8(102, 184, 255)
+const COL_GREEN := Color8(107, 230, 140)
+const COL_RED := Color8(255, 107, 107)
+const COL_LOCKED := Color8(96, 106, 136)
 
 ## 3 kartu per baris — paritas layout LEVEL_SELECT pygame (max 4 kolom,
 ## 3 kalau lebih dari 4 level; kita punya 54).
