@@ -216,7 +216,10 @@ jobs:
           export XDG_DATA_HOME="$isolated"
           python -m pip install --quiet pygame-ce
           python3 tools/test_godot_match_parity.py
-          godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300 2>&1 | tee /tmp/parity.log || true
+          # GameplayParityTest creates the full production menu and match
+          # scene; keep enough frames for slow hosted runners after a clean
+          # XDG user-data import (the gate, not Godot's exit code, decides).
+          godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 900 2>&1 | tee /tmp/parity.log || true
           if python3 godot/tools/godot_log_gate.py /tmp/parity.log --label "GameplayParityTest" \
               --require "[GameplayParityTest] PASS" > /tmp/parity.gate 2>&1; then
             cat /tmp/parity.gate
