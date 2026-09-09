@@ -44,8 +44,9 @@ func _run() -> void:
 
 	var determinism: Dictionary = fixture.get("phase20_determinism", {})
 	_expect(bool(determinism.get("identical", false)), "dua seed oracle FASE 20 identik")
-	_expect(determinism.get("seeds", []) == [20260920, 42420],
-		"seed oracle FASE 20 tercatat")
+	var seeds: Array = determinism.get("seeds", [])
+	_expect(seeds.size() == 2 and int(seeds[0]) == 20260920
+			and int(seeds[1]) == 42420, "seed oracle FASE 20 tercatat")
 	_expect((determinism.get("rng_sites", []) as Array).is_empty(),
 		"jalur FASE 20 tidak memakai RNG gameplay")
 
