@@ -50,6 +50,8 @@ sertifikasi paritas seluruh game.
 | Pemicu UI perintah taktis (FASE 18) | Manajer taktis FASE 17 callable tapi TANPA pemicu: hotkey G/F/T/C/B/D tidak melakukan apa pun (B malah toggle toko — "ekstensi Godot" FASE 12 yang menyimpang dari oracle pygame), tidak ada panel perintah, KEYUP tidak dirutekan, hold "nyangkut" saat pause | Dua permukaan pemicu diikat ke `TacticalCommands.gd` yang sama (tanpa logika ganda): (1) **HOTKEY** — `Main._on_key` blok taktis (paritas `InputHandler.handle_key` `_core.py:8343-8396`): G/F = gather di posisi mouse bila kursor di dalam layar (`follow_mouse=True`), T = protect_tower dengan `selected_tower` BIRU bila ada, C/B/D polos, digate `state == "playing"`, dikonsumsi SEBELUM skill QWER; `Main._on_key_release` (paritas `handle_key_up`: TANPA gate state, peta G/F→gather) dirutekan dari `_unhandled_input` untuk event `pressed=false`; B dihapus dari action `toggle_shop` (H satu-satunya, paritas oracle `ui_hud.hotkeys.b` = hold attack_boss). (2) **PANEL** — `TacticalBar.gd` (HUD, dibangun dari kode pola SkillBar): 5 tombol GATHER [G]/PROTECT TOWER [T]/PROTECT CASTLE [C]/ATTACK BOSS [B]/ATTACK DMG DEALER [D] dengan visibilitas = syarat `_gambar_tactical` pygame (state playing; hero hidup >0/≥1; boss aktif; hero merah hidup — hidden saat tak memenuhi, bukan abu-abu), tekan = `button_down` → `Main._tactical_panel_press` (paritas `apply_hud_action`: gather TANPA posisi mouse ≠ hotkey, protect_tower pakai selected_tower), lepas dirutekan per-sentuhan (`button_up` + `TacticalBar._input` klik-kiri lepas — paritas `held_tac` claimed-touch main.py: release tetap sampai walau kursor sudah pindah), gate popup (paritas `ada_popup_game`: hero terpilih hidup / popup tower-nexus-slot menutupi tombol → tekan tidak tembus). **PAUSE / aplikasi ke latar** = `Main._tactical_release_all()` (paritas `main.py:479-486` `hold_end()` tanpa nama + `held_tac.clear()`; release belakangan diam total) dipanggil `_toggle_pause` + `NOTIFICATION_APPLICATION_PAUSED`. Dikunci `tactical_input` / `TacticalInputParityTest` (17 skenario, 73 langkah, dua seed identik): oracle menjalankan jalur INPUT pygame ASLI (`Game.handle_key`/`handle_key_up`, `SidePanel._gambar_tactical`+`hit_test` dengan rect panel dipaksa, `apply_hud_action`, cabang release/pause main.py), Godot mereplay lewat `Main._unhandled_input` + tombol HUD produksi — jejak `hold_start`/`hold_end` (nama/args/follow_mouse/hasil) direkam hook `hold_trace` produksi + visibilitas tombol + snapshot closed-world manajer. Audit terkunci: KEYUP tanpa gate state (victory: KEYDOWN diam, KEYUP tetap `hold_end`), release nama-salah = no-op (hold B tetap saat KEYUP G), pergantian perintah di tengah cooldown mengganti `held_command` walau terbit gagal (ret False, hold "dipersenjatai"), panel gather mengabaikan mouse, pause memotong timer ke 30. **Piksel** panel (chip HOLD, warna/font sidepanel) dan **audio** BELUM TERUJI; sentuh multi-jari dua tombol panel serentak tidak diuji (manajer memang satu hold). |
 | UI/HUD in-match (toko/panel/banner/klik/hotkey) | Panel/label/tombol dibangun manual tanpa oracle: income memakai `"%.1f"` engine yang tak terverifikasi, angka cooldown `ceil(detiks)` (60f tampil "1"), gate equip melee `< 110` + magic via `dmg_school` (46 hero role-magic salah), klik tanah kosong = deselect (bukan perintah gerak), tanpa klik kanan, tanpa tombol N, tanpa catatan skor/kill/timer/unlock match, pause tanpa panel, game-over tanpa stat | Seksi fixture `ui_hud` menjalankan draw pygame ASLI headless (82 skenario draw, 31 kasus klik, 28 hotkey, 222 hero predikat, kurva banner 121 titik, baterai touch-rect) dan diputar ulang `UiHudParityTest`. Kanon tunggal `HudLayout.gd`: `format_gold_rate` bit-eksak IEEE-754 (terbukti identik Python: baterai oracle + fuzz 200.000 nilai, 0 beda — `GameManager`/`HUD` delegasi), ribuan/match-time/mode/cooldown (`frames//60+1`), easing banner (slide-in 0.4 BACK OUT → tahan 1.0 → slide-out 0.6 BACK IN + subtitle letterspaced), nama castle (Lv6+ CITADEL), touch-rect 48px (center integer pygame), dan semesta TERTUTUP `ui_key` tombol toko yang diaudit tiap layar. Perilaku yang disamakan: panel hero (`Lv.n`, `hp/max`, `UPGRADE HERO (300G)`/`M A X   L E V E L`, `AUTO-CAST ON` no-op, `ITEM FORGE  (n/6)` → tab item, chip slot → forge, X = deselect), toko (suffix `MAX`/`DIMILIKI`, alasan disabled `MELEE ONLY`/`MAGIC ONLY`/`POOR`/`FULL`/`OWNED` di `ui_data`+tooltip, tanpa tombol jual di Lv1 + fallback +50G via handler, tutup seusai beli hero/bangun menara), gate equip (`range > 80` tolak melee_only; magic via `ItemDB.is_magic_hero` berbasis ROLE), prioritas klik (slot → nexus → hero biru → perintah → menara biru → deselect; tanah kosong + hero hidup = MOVE tetap dipilih; klik kanan = tutup + MOVE), hotkey H (toggle toko, paritas) + B (kini paritas oracle: hotkey taktis attack_boss — FASE 18; "B = toko" ekstensi Godot lama dihapus) + N (victory → next; defeat/last diam) + R/ESC, pause (panel 400×400 @(440,160), 4 tombol 300×48 seurutan, mode line), game-over (`VICTORY! LV.n`/`DEFEAT LV.n`, 5 baris stat termasuk `Max Combo` + penanda `NEW BEST!` — dikunci `match_scoring`/`MatchScoringParityTest`, `NEW LEVEL UNLOCKED!`, `NEW HERO: …`, tombol next hanya victory+ada-lanjut). Beda disengaja yang dikunci eksplisit: UI Godot berbahasa Indonesia, toko satu-scroll tanpa halaman (himpunan 33 id direplay), klik musuh = move-to + aggro otomatis (klik belum memakai `follow_target` FASE 17), baris NEW HERO ditampilkan (pygame menghitung tapi tidak me-render), klik-kanan di atas panel tertelan. Belum teruji/sengaja terbuka: piksel (lebar chip metrik-font, gradien/shadow/dekorasi banner, ikon, kartu item, komposit badge combo + popup achievement), popup unlock geser (350×230), notifikasi tier combo sidepanel pygame, ~~popup gold `+nG` kill minion~~ (terkunci FASE 15 — baris reward minion+menara), bangunan toko di map, sistem taktis TERKUNCI di baris perintah taktis + `tactical_commands`/`TacticalCommandsParityTest` (state perintah/hold/auto) DAN `tactical_input`/`TacticalInputParityTest` (pemicu UI tombol panel + hotkey G/F/T/C/B/D — FASE 18), kontrol sentuh di layar, dan teks intro level (perilaku/skip-nya milik `CinematicTest`) — combo/`Max Combo`, badge `NEW BEST!`, skor kill-hero +150 + atribusi killer, dan popup achievement `NEW HERO UNLOCKED!` kini TERKUNCI di baris klaster skor + `match_scoring`/`MatchScoringParityTest`. |
 
+| **Multi-slot save + migrasi legacy (FASE 21)** | Satu berkas `user://mystic_save.json`; tanpa konsep slot, tanpa `get_slot_info`/`delete_slot`/`format_playtime`/`format_last_played`, dan layar `SLOT_SELECT` pygame dilewati | `NUM_SLOTS = 3` + `slot_1.json`..`slot_3.json`, slot aktif (`set_current_slot`; nomor di luar 1..3 diabaikan), metadata `slot_created`/`slot_last_played`/`slot_playtime_seconds`, `migrate_legacy_save()` (jalan hanya kalau berkas legacy ada **dan** slot 1 kosong; legacy di-rename ke backup, TIDAK dihapus; berkas rusak → gagal tanpa efek; idempoten), `save`/`load_slot` (backfill `setdefault` persis `SaveManager.load`), `get_empty_save`, `delete_slot`, `get_slot_info`/`get_all_slot_info` (slot korup → `null`), `format_playtime`/`format_last_played` (UTC) — dikunci oracle `save_slots` + replay `SaveSlotParityTest`. Layar `SLOT_SELECT` Godot (`MainMenu._slot_card`: level tertinggi + nama level, gold ber-grouping, jumlah hero/boss, string terakhir dimainkan, tombol LANJUTKAN/MULAI BARU/HAPUS SAVE + dialog konfirmasi) dipakai produksi; MULAI GAME kini lewat layar slot (paritas `btn_id == "play"`), LANJUTKAN tetap mem-bypass. Tombol HAPUS SAVE di pengaturan menghapus slot aktif (paritas `reset_save`). `SAVE_PATH` menjadi **var** yang mengikuti slot aktif (10 harness lama membacanya untuk snapshot/restore). **Cloud save tidak diport** (luar scope, tercatat terbuka di bawah). |
+
 ## Belum setara — jangan ditandai selesai
 
 - ~~**Reward kematian boss belum membayar gold/skor, tracking unlock langsung,
@@ -181,10 +183,24 @@ untuk hero terpilih; gate False hanya dipakai harness replay).
   catch-up sama-sama 0, tetapi status OWNED `kaizen` di Hero Shop untuk
   save yang benar-benar baru muncul lebih awal di Godot — belum
   disamakan karena mengubahnya menyentuh alur save;
-  (2) **multi-slot save + migrasi legacy + cloud save** (`_system.py`
+  (2) ~~**multi-slot save + migrasi legacy + cloud save** (`_system.py`
   NUM_SLOTS/`migrate_legacy_save`, `mobile/cloud_save.py`) belum ada di
   Godot: satu berkas `user://mystic_save.json`, jadi `get_slot_info`,
-  playtime, dan `level_stats` belum diport;
+  playtime, dan `level_stats` belum diport~~ — **DITUTUP FASE 21** untuk
+  multi-slot + migrasi legacy (`save_slots`/`SaveSlotParityTest`: jalur
+  berkas, 8 kasus migrasi, 9 skenario save/load per-slot, 3 kasus hapus,
+  6 kasus `get_slot_info`, 32 baterai format, 5 layar × 3 kartu slot —
+  lihat baris tabel di atas). **CLOUD SAVE (`mobile/cloud_save.py`)
+  MASIH TERBUKA** dan sengaja dikeluarkan dari scope FASE 21: Godot tidak
+  mengunggah snapshot Play Games, jadi auto-upload di `SaveManager.save()`
+  pygame belum punya padanan. Yang juga tetap terbuka di jalur ini:
+  **`slot_playtime_seconds` tidak pernah bertambah di pygame** — tidak ada
+  satu pun pemanggil yang menambahnya (selalu 0) dan kartu slot tidak
+  menampilkannya, jadi port Godot setia menyimpan 0 alih-alih mengarang
+  akumulasi. Peta nama legacy berbeda dan terdokumentasi: Godot tidak
+  pernah punya `progress.json`, jadi berkas tunggal lamanya
+  (`user://mystic_save.json`) yang dimigrasi ke slot 1 lalu dipindahkan ke
+  `mystic_save_backup.json.old`;
   (3) ~~**alur pembelian hero di Hero Shop meta** (`_unlock_hero_in_meta_shop`:
   syarat `unlock_require_boss`, potong `meta_gold`, harga 4500) ada di
   `MainMenu.gd` tetapi belum punya oracle sendiri — yang diuji harness ini
@@ -215,10 +231,15 @@ untuk hero terpilih; gate False hanya dipakai harness replay).
   terbuka di jalur ini: **piksel** blok stat (lebar chip metrik font —
   batas tepat truncasi bergantung raster font; konstanta ambang pygame
   120px dipertahankan) dan label bahasa Indonesia yang memang beda
-  disengaja; (5) slot save tunggal + `level_stats` Godot terisi sejak
-  FASE 13 dan kini sudah TERTAMPIL (FASE 20); save lama tetap tidak
-  dimigrasi — backfill `level_stats: {}`, statistik mulai terkumpul dari
-  sekarang, isi lama pygame tidak diimpor.
+  disengaja; (5) ~~slot save tunggal~~ — **DITUTUP FASE 21**: 3 slot +
+  migrasi legacy Godot (`mystic_save.json` → `slot_1.json`; save
+  pengguna tidak pernah dihapus — lihat baris tabel di atas). Yang TETAP
+  TERBUKA di jalur ini: **piksel** kartu slot (gradasi/ikon vektor dan
+  truncasi nama level `ui_theme.fit_ellipsis` yang bergantung metrik font
+  — yang dikunci hanya nama level MENTAHNYA), label kartu bahasa
+  Indonesia (beda disengaja, dipetakan eksplisit di harness), dan isi
+  `level_stats` lama tetap tidak diimpor — backfill `level_stats: {}`,
+  statistik mulai terkumpul dari sekarang.
 - **Android/performa:** lolos tes headless bukan pengujian visual, sentuh,
   performa perangkat, ataupun verifikasi APK/AAB.
 
@@ -260,6 +281,7 @@ godot --headless --path godot res://tests/MetaShopTxnParityTest.tscn --quit-afte
 godot --headless --path godot res://tests/BossDeathRewardParityTest.tscn --quit-after 600
 godot --headless --path godot res://tests/MinionTowerRewardParityTest.tscn --quit-after 600
 godot --headless --path godot res://tests/DeathDispatchParityTest.tscn --quit-after 600
+godot --headless --path godot res://tests/SaveSlotParityTest.tscn --quit-after 300
 python3 godot/tools/test_godot_log_gate.py
 ```
 

@@ -19,9 +19,9 @@ signal play_requested(level_num: int)
 signal resume_requested
 signal main_menu_requested
 
-## Paritas MenuState _core.py:3099-3105 (SLOT_SELECT pygame dilewati —
-## port Godot belum punya multi-slot save).
-enum State { MAIN, LEVEL_SELECT, HERO_SHOP, SETTINGS, HOW_TO_PLAY, CREDITS, PAUSE }
+## Paritas MenuState _core.py:3099-3105 — SEMUA state termasuk SLOT_SELECT
+## (FASE 21: multi-slot save + migrasi legacy sudah diport).
+enum State { MAIN, SLOT_SELECT, LEVEL_SELECT, HERO_SHOP, SETTINGS, HOW_TO_PLAY, CREDITS, PAUSE }
 
 const COL_BG := Color(0.031, 0.033, 0.058, 0.985)
 const COL_PANEL := Color(0.045, 0.05, 0.085, 0.97)
@@ -37,6 +37,13 @@ const COL_LOCKED := Color(0.42, 0.45, 0.56)
 ## 3 kartu per baris — paritas layout LEVEL_SELECT pygame (max 4 kolom,
 ## 3 kalau lebih dari 4 level; kita punya 54).
 const LEVEL_COLUMNS := 3
+
+## Geometri kartu SLOT_SELECT — paritas _draw_slot_select _core.py:3237-3244
+## (3 kartu x 320px, gap 30). Konstanta pygame di-pin apa adanya walau
+## lebar layar Godot berbeda; nilai DATA kartu yang dikunci oracle.
+const SLOT_CARD_W := 320.0
+const SLOT_CARD_H := 460.0
+const SLOT_CARD_GAP := 30
 
 ## Ambang truncasi string stat kartu level — paritas pygame `w // 2 - 20`
 ## pada kartu 280px (_core.py:4260/4268: val_font.size > 120 → potong 8
@@ -65,6 +72,13 @@ var _root: VBoxContainer = null      # dibangun ulang tiap ganti state
 var _confirm: PanelContainer = null  # dialog keluar (paritas exit_confirm)
 var _pause_panel: PanelContainer = null # panel pause 400x400 (anak MainMenu)
 var _hero_tab: String = "starter"    # paritas Menu.shop_tab _core.py:4810
+## Slot yang menunggu konfirmasi hapus (-1 = tidak ada) — paritas
+## `Menu.slot_delete_confirm` _core.py:3134, dan state yang harus
+## ditampilkan setelah dialog selesai (kartu slot ATAU pengaturan).
+var _slot_delete_confirm: int = -1
+## (nilai awal = State.SLOT_SELECT; selalu diset ulang oleh
+## `_open_slot_delete_dialog` sebelum dialog dibangun)
+var _slot_delete_return: int = 1
 
 
 func _ready() -> void:
@@ -121,7 +135,14 @@ func _unhandled_input(event: InputEvent) -> void:
 ## sub-menu -> kembali, PAUSE -> resume.
 func _handle_escape() -> void:
 	if _confirm != null and _confirm.visible:
+		# Paritas _core.py:4356-4363: ESC membatalkan konfirmasi hapus slot
+		# (state-nya ikut dibuang, bukan cuma dialog yang disembunyikan).
+		if _confirm.has_meta("slot_delete"):
+			_slot_delete_confirm = -1
 		_confirm.visible = false
+		return
+	if _slot_delete_confirm > 0:
+		_slot_delete_confirm = -1
 		return
 	match state:
 		State.MAIN:
@@ -180,6 +201,8 @@ func _show(new_state: int) -> void:
 	_root.mouse_filter = Control.MOUSE_FILTER_PASS
 	_bg.add_child(_root)
 	match state:
+		State.SLOT_SELECT:
+			_build_slot_select()
 		State.LEVEL_SELECT:
 			_build_level_select()
 		State.HERO_SHOP:
@@ -271,8 +294,11 @@ func _build_main() -> void:
 	cont = maxi(cont, 1) # data level belum ada -> mulai dari 1, jangan "LEVEL 0"
 	row.add_child(_make_button("LANJUTKAN — LEVEL %d" % cont, COL_BLUE,
 		func(): _request_play(cont), Vector2(250, 44), 18))
+	# Paritas _on_button_click "play" _core.py:7022-7023: MULAI GAME lewat
+	# layar PILIH SLOT dulu (slot aktif ditentukan di situ). LANJUTKAN
+	# mem-bypass slot select seperti pygame.
 	row.add_child(_make_button("MULAI GAME", COL_GREEN,
-		_show.bind(State.LEVEL_SELECT), Vector2(250, 44), 18))
+		_show.bind(State.SLOT_SELECT), Vector2(250, 44), 18))
 
 	var buttons: Array = [
 		["HERO SHOP", COL_GOLD, _show.bind(State.HERO_SHOP)],
@@ -371,6 +397,250 @@ func _open_exit_confirm() -> void:
 	row.add_child(_make_button("BATAL", COL_GREEN,
 		func(): _confirm.visible = false, Vector2(140, 32)))
 
+
+# ══════════════════════════════════════════════════════════
+#  SLOT_SELECT (paritas _draw_slot_select _core.py:3217-3262)
+# ══════════════════════════════════════════════════════════
+
+func _build_slot_select() -> void:
+	_screen_header("PILIH SLOT SAVE", State.MAIN)
+	var sub := Label.new()
+	sub.text = "Pilih slot untuk lanjut, atau mulai permainan baru"
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_font_size_override("font_size", 13)
+	sub.add_theme_color_override("font_color", COL_DIM)
+	_root.add_child(sub)
+
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", SLOT_CARD_GAP)
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_root.add_child(row)
+	for i in range(1, SaveManager.NUM_SLOTS + 1):
+		row.add_child(_slot_card(i))
+
+	# Dialog konfirmasi hapus (paritas slot_delete_confirm) dibangun
+	# TERAKHIR supaya menutupi kartu — pygame menggambarnya setelah kartu
+	# dan menganggapnya modal yang memblokir semua input.
+	if _slot_delete_confirm > 0:
+		_build_slot_delete_dialog(_slot_delete_confirm)
+
+
+## Satu kartu slot — paritas `_draw_slot_card` + `_draw_slot_content` +
+## `_draw_slot_action_buttons` (_core.py:3264-3468). Nilai DATA yang
+## dikunci oracle `save_slots` disimpan di meta kartu (nomor slot, status
+## kosong, level tertinggi + nama level, string gold, jumlah hero/boss,
+## string terakhir dimainkan, dan label tombol aksi) supaya
+## SaveSlotParityTest bisa mereplaynya lewat jalur produksi.
+##
+## Beda disengaja yang terdokumentasi: label UI Godot berbahasa Indonesia
+## (KOSONG / LEVEL TERTINGGI / HAPUS SAVE / ...); nilai datanya identik
+## dengan pygame. Truncasi nama level adalah FITUR PIKSEL (metrik font
+## `ui_theme.fit_ellipsis`) dan tidak diklaim paritas.
+func _slot_card(slot_num: int) -> Control:
+	var info = SaveManager.get_slot_info(slot_num)
+	var is_empty: bool = not (info is Dictionary)
+	var highest := 0
+	var level_name := ""
+	var gold := 0
+	var heroes := 0
+	var bosses := 0
+	var last_played := ""
+	if not is_empty:
+		var d: Dictionary = info
+		highest = int(d.get("highest_level", 0))
+		var hero_arr = d.get("purchased_heroes", [])
+		var boss_arr = d.get("unlocked_bosses", [])
+		heroes = hero_arr.size() if hero_arr is Array else 0
+		bosses = boss_arr.size() if boss_arr is Array else 0
+		gold = int(d.get("meta_gold", 0))
+		last_played = SaveManager.format_last_played(
+			float(d.get("slot_last_played", 0)))
+		if highest > 0:
+			level_name = str(BossDB.get_level(highest).get("name", ""))
+
+	var card := PanelContainer.new()
+	card.set_meta("slot_num", slot_num)
+	card.set_meta("is_empty", is_empty)
+	card.set_meta("highest_level", highest)
+	card.set_meta("level_name", level_name)
+	card.set_meta("gold", gold)
+	card.set_meta("gold_text", "%s Gold" % _format_grouped(gold))
+	card.set_meta("heroes", heroes)
+	card.set_meta("bosses", bosses)
+	card.set_meta("last_played", last_played)
+	card.custom_minimum_size = Vector2(SLOT_CARD_W, SLOT_CARD_H)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.07, 0.08, 0.11) if is_empty else COL_PANEL
+	sb.border_color = COL_LOCKED if is_empty else COL_BORDER
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(12)
+	sb.content_margin_left = 16.0
+	sb.content_margin_right = 16.0
+	sb.content_margin_top = 12.0
+	sb.content_margin_bottom = 14.0
+	card.add_theme_stylebox_override("panel", sb)
+
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	card.add_child(box)
+
+	var tag := Label.new()
+	tag.text = "SAVE GAME"
+	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tag.add_theme_font_size_override("font_size", 12)
+	tag.add_theme_color_override(
+		"font_color", COL_DIM if is_empty else COL_GOLD)
+	box.add_child(tag)
+	var num := Label.new()
+	num.text = str(slot_num)
+	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	num.add_theme_font_size_override("font_size", 46)
+	num.add_theme_color_override(
+		"font_color", COL_LOCKED if is_empty else COL_GOLD)
+	box.add_child(num)
+
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(spacer)
+
+	if is_empty:
+		var empty := Label.new()
+		empty.text = "KOSONG"
+		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		empty.add_theme_font_size_override("font_size", 22)
+		empty.add_theme_color_override("font_color", COL_LOCKED)
+		box.add_child(empty)
+		var hint := Label.new()
+		hint.text = "Ketuk untuk mulai permainan baru"
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hint.add_theme_font_size_override("font_size", 12)
+		hint.add_theme_color_override("font_color", COL_DIM)
+		box.add_child(hint)
+	else:
+		if highest > 0:
+			box.add_child(_slot_line("LEVEL TERTINGGI SELESAI", COL_DIM, 11))
+			box.add_child(_slot_line("LV. %d" % highest, COL_GOLD, 24))
+			box.add_child(_slot_line(level_name, COL_TEXT, 15))
+		else:
+			box.add_child(_slot_line("Belum ada level selesai", COL_DIM, 13))
+		box.add_child(_slot_line("%s Gold" % _format_grouped(gold),
+			COL_GOLD, 18))
+		box.add_child(_slot_line("Hero: %d" % heroes, COL_BLUE, 13))
+		box.add_child(_slot_line("Boss: %d" % bosses, COL_RED, 13))
+		box.add_child(_slot_line("TERAKHIR DIMAINKAN", COL_DIM, 11))
+		box.add_child(_slot_line(last_played, COL_TEXT, 15))
+
+	# ── tombol aksi (paritas pill CONTINUE/START NEW GAME + DELETE SAVE) ──
+	var play_label := "MULAI BARU" if is_empty else "LANJUTKAN"
+	card.set_meta("play_label", play_label)
+	box.add_child(_make_button(play_label,
+		COL_BLUE if is_empty else COL_GREEN,
+		_on_slot_select.bind(slot_num), Vector2(280, 40), 15))
+	if not is_empty:
+		card.set_meta("delete_label", "HAPUS SAVE")
+		box.add_child(_make_button("HAPUS SAVE", COL_RED,
+			_open_slot_delete_dialog.bind(slot_num), Vector2(280, 30), 13))
+	else:
+		card.set_meta("delete_label", "")
+	card.set_meta("has_delete", not is_empty)
+	return card
+
+
+## Satu baris teks kartu slot.
+func _slot_line(text: String, color: Color, font_size: int) -> Label:
+	var lab := Label.new()
+	lab.text = text
+	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lab.add_theme_font_size_override("font_size", font_size)
+	lab.add_theme_color_override("font_color", color)
+	return lab
+
+
+## Pilih slot: jadikan slot aktif, muat ulang progresinya, lalu lanjut ke
+## PILIH LEVEL — paritas handler `slot_select_N` _core.py:7427-7432.
+func _on_slot_select(slot_num: int) -> void:
+	SaveManager.set_current_slot(slot_num)
+	# Paritas `Menu.reload_progress` _core.py:3576-3578: save_data diganti
+	# dengan isi slot yang baru aktif.
+	SaveManager.load_save()
+	_show(State.LEVEL_SELECT)
+
+
+## Buka dialog konfirmasi hapus untuk slot ini (paritas `slot_delete_N`
+## _core.py:7438-7444 + tombol RESET SAVE di pengaturan _core.py:7016).
+func _open_slot_delete_dialog(slot_num: int) -> void:
+	_slot_delete_confirm = slot_num
+	if state == State.SLOT_SELECT or state == State.SETTINGS:
+		_slot_delete_return = state
+	else:
+		_slot_delete_return = State.SLOT_SELECT
+	_build_slot_delete_dialog(slot_num)
+
+
+## Dialog konfirmasi hapus — paritas `_draw_delete_confirm_dialog`
+## _core.py:3471-3570 ("Delete SLOT n?" + "This action cannot be undone!"
+## + tombol YES/NO). Modal: menutupi kartu slot.
+func _build_slot_delete_dialog(slot_num: int) -> void:
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+	_confirm = PanelContainer.new()
+	_confirm.name = "SlotDeleteConfirm"
+	_confirm.set_meta("slot_delete", slot_num)
+	_confirm.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	_confirm.mouse_filter = Control.MOUSE_FILTER_STOP
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.16, 0.10, 0.12)
+	sb.border_color = COL_RED
+	sb.set_border_width_all(3)
+	sb.set_corner_radius_all(12)
+	sb.content_margin_left = 24.0
+	sb.content_margin_right = 24.0
+	sb.content_margin_top = 16.0
+	sb.content_margin_bottom = 16.0
+	_confirm.add_theme_stylebox_override("panel", sb)
+	add_child(_confirm)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 10)
+	_confirm.add_child(box)
+	var title := Label.new()
+	title.text = "HAPUS SLOT?"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", COL_RED)
+	box.add_child(title)
+	var msg := Label.new()
+	msg.text = "Hapus SAVE GAME %d?" % slot_num
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.add_theme_font_size_override("font_size", 16)
+	msg.add_theme_color_override("font_color", COL_TEXT)
+	box.add_child(msg)
+	var warn := Label.new()
+	warn.text = "Tindakan ini tidak bisa dibatalkan!"
+	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	warn.add_theme_font_size_override("font_size", 12)
+	warn.add_theme_color_override("font_color", Color(0.86, 0.7, 0.7))
+	box.add_child(warn)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 16)
+	box.add_child(row)
+	row.add_child(_make_button("YA, HAPUS", COL_RED,
+		_on_slot_delete_confirm.bind(true), Vector2(160, 36)))
+	row.add_child(_make_button("BATAL", COL_GREEN,
+		_on_slot_delete_confirm.bind(false), Vector2(160, 36)))
+
+
+## Paritas handler `slot_delete_yes` / `slot_delete_no` _core.py:7406-7420
+## dan `reset_confirm_yes` _core.py:7333-7341: hapus berkas slot lalu
+## muat ulang progresi (slot yang dihapus jadi kosong).
+func _on_slot_delete_confirm(confirmed: bool) -> void:
+	var slot_num := _slot_delete_confirm
+	_slot_delete_confirm = -1
+	if confirmed and slot_num > 0:
+		SaveManager.delete_slot(slot_num)
+		SaveManager.load_save()
+	_show(_slot_delete_return)
 
 # ══════════════════════════════════════════════════════════
 #  LEVEL_SELECT (paritas _draw_level_select _core.py:3946-4100)
@@ -909,6 +1179,18 @@ func _build_settings() -> void:
 	note.text = "Volume disimpan di SaveManager.data[\"settings\"] dan langsung " \
 		+ "diterapkan ke AudioManager. Difficulty diganti di layar PILIH LEVEL " \
 		+ "(sebelum mulai pertandingan)."
+
+	# ── HAPUS SAVE (paritas tombol RESET SAVE _core.py:7012-7016 yang
+	# menghapus SLOT AKTIF, lengkap dengan dialog konfirmasinya) ──
+	var danger := Label.new()
+	danger.text = "PROGRESI"
+	danger.add_theme_font_size_override("font_size", 18)
+	danger.add_theme_color_override("font_color", Color(0.5, 0.85, 0.95))
+	box.add_child(danger)
+	box.add_child(_make_button(
+		"HAPUS SAVE GAME %d" % SaveManager.get_current_slot(), COL_RED,
+		_open_slot_delete_dialog.bind(SaveManager.get_current_slot()),
+		Vector2(320, 36), 14))
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_font_size_override("font_size", 11)
 	note.add_theme_color_override("font_color", COL_DIM)

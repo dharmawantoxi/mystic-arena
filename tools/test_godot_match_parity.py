@@ -8529,6 +8529,608 @@ def make_meta_shop_txn_fixture(core, entity):
     return a
 
 
+# ═════════════════════════════════════════════════════════════════════
+# FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY (TANPA CLOUD SAVE).
+#
+# Sumber kebenaran: `_system.py:746-1125` (NUM_SLOTS, LEGACY_SAVE_FILE,
+# SaveManager.migrate_legacy_save/save/load/get_empty_save/delete_slot/
+# get_slot_info/get_all_slot_info/format_playtime/format_last_played) dan
+# layar SLOT_SELECT pygame ASLI (`_core.py:3217-3512`: _draw_slot_select,
+# _draw_slot_card, _draw_slot_content, _draw_slot_action_buttons).
+#
+# Seksi fixture `save_slots` mengunci:
+#   * jalur berkas (slot_N.json · legacy progress.json · backup .old),
+#   * migrasi legacy (8 kasus: tanpa legacy, legacy saja, legacy + slot 1
+#     sudah ada, legacy korup, legacy kosong, legacy parsial, kunci asing
+#     ikut tersalin, migrasi idempoten) — termasuk rename legacy -> backup,
+#   * save/load per-slot (metadata slot_created/slot_last_played, isolasi
+#     antar slot, load slot kosong/korup -> get_empty_save + backfill),
+#   * delete_slot + get_slot_info/get_all_slot_info (slot korup -> None),
+#   * baterai format_playtime & format_last_played,
+#   * kartu SLOT_SELECT: nilai DATA yang dirender pygame (LV. n + nama
+#     level, gold ber-grouping, jumlah hero/boss, string last played) dan
+#     tombol pill kartu (CONTINUE / START NEW GAME / DELETE SAVE).
+#
+# JAM: selama seksi ini jalan, `_system.time` dipin ke NOW
+# (2026-01-01T00:00:00Z) dan TZ dipaksa UTC — satu-satunya cara dua run
+# seed berbeda menghasilkan string yang identik. String relatif
+# ("Xm/Xh/Xd ago") disimpan sebagai OFFSET dari now (bukan timestamp
+# absolut) supaya replay Godot yang berjalan pada waktu nyata bisa
+# mereproduksinya; stabilitasnya dijaga assert (hasil harus sama untuk
+# elapsed dan elapsed + 2 detik). Cabang tanggal absolut disimpan apa
+# adanya: formatnya hanya bergantung timestamp, bukan now.
+#
+# TIDAK diuji (eksplisit): cloud save (`mobile/cloud_save.py` — di luar
+# scope FASE 21), piksel kartu (gradasi, ikon vektor, metrik font untuk
+# truncasi nama level), dan SFX (headless).
+# ═════════════════════════════════════════════════════════════════════
+
+## Jam oracle: `time()` ter-pin, atribut lain (localtime/strftime/...) tetap
+## didelegasikan ke modul time asli supaya `format_last_played` menjalankan
+## jalur pygame yang sesungguhnya.
+class _PinnedClock:
+    def __init__(self, real, now):
+        object.__setattr__(self, "_real", real)
+        object.__setattr__(self, "_now", now)
+
+    def time(self):
+        return object.__getattribute__(self, "_now")
+
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "_real"), name)
+
+
+def make_save_slots_fixture(core, entity):
+    """FASE 21 — seksi `save_slots`: MULTI-SLOT SAVE + MIGRASI LEGACY.
+
+    Oracle = SaveManager ASLI `_system.py` yang benar-benar menulis/membaca
+    berkas di direktori sementara (SAVE_DIR dipinjam lewat monkeypatch,
+    bukan MYSTIC_SAVE_DIR milik proses), DITAMBAH jalur draw pygame ASLI
+    `Menu._draw_slot_select` untuk mengunci nilai data kartu slot.
+    """
+    import shutil
+    import time as time_mod
+    import ui_theme
+    import _system
+    from levels import get_level_config
+
+    SM = _system.SaveManager
+    NOW = 1767225600.0          # 2026-01-01T00:00:00Z (jam oracle ter-pin)
+    LEGACY_NAME = "progress.json"
+    BACKUP_NAME = "progress_backup.json.old"
+    CARD_W, CARD_H, GAP_X = 320, 460, 30
+
+    LEGACY_DATA = {
+        "unlocked_bosses": ["gornak", "zharok"],
+        "purchased_heroes": ["kaizen", "gornak"],
+        "meta_gold": 12500,
+        "completed_levels": [1, 2, 3],
+        "last_played_level": 4,
+    }
+
+    # Guard locale: cabang tanggal `format_last_played` memakai
+    # strftime("%d %b %Y") — nama bulan bahasa Inggris hanya terjamin di
+    # locale C (CI dan replay Godot memakai tabel bulan sendiri).
+    assert time_mod.strftime("%b", time_mod.localtime(0)) == "Jan", (
+        "locale bukan C — nama bulan format_last_played tidak deterministik")
+
+    def _build(seed):
+        random.seed(seed)
+        tmp = tempfile.mkdtemp(prefix="mystic-save-slots-")
+        saved = {
+            "SAVE_DIR": _system.SAVE_DIR,
+            "LEGACY": _system.LEGACY_SAVE_FILE,
+            "time": _system.time,
+            "slot": SM._current_slot,
+            "tz": os.environ.get("TZ"),
+        }
+
+        def slot_path(n):
+            return os.path.join(tmp, "slot_%d.json" % n)
+
+        def legacy_path():
+            return os.path.join(tmp, LEGACY_NAME)
+
+        def backup_path():
+            return os.path.join(tmp, BACKUP_NAME)
+
+        def write_json(path, data):
+            with open(path, "w") as f:
+                json.dump(data, f, indent=2)
+
+        def read_json(path):
+            with open(path, "r") as f:
+                return json.load(f)
+
+        def files():
+            return sorted(os.listdir(tmp))
+
+        def clean():
+            for name in files():
+                os.remove(os.path.join(tmp, name))
+
+        def read_slot(n):
+            return read_json(slot_path(n)) if os.path.exists(slot_path(n)) else None
+
+        try:
+            _system.SAVE_DIR = tmp
+            _system.LEGACY_SAVE_FILE = legacy_path()
+            _system.time = _PinnedClock(saved["time"], NOW)
+            os.environ["TZ"] = "UTC"
+            if hasattr(time_mod, "tzset"):
+                time_mod.tzset()
+            SM._current_slot = 1
+
+            # ── A. jalur berkas ──
+            assert int(_system.NUM_SLOTS) == 3, _system.NUM_SLOTS
+            paths = {
+                "num_slots": int(_system.NUM_SLOTS),
+                "slot_files": {str(n): os.path.basename(SM.get_slot_file(n))
+                               for n in (1, 2, 3)},
+                "legacy_file": LEGACY_NAME,
+                "backup_file": BACKUP_NAME,
+            }
+
+            # ── B. save kosong (paritas get_empty_save) ──
+            clean()
+            empty = SM.get_empty_save()
+            assert empty["slot_created"] == NOW
+            assert empty["slot_last_played"] == NOW
+            assert empty["slot_playtime_seconds"] == 0
+            assert empty["level_stats"] == {}
+            assert empty["run_difficulty"] is None
+
+            # ── C. migrasi legacy ──
+            def migration_case(name, legacy, pre_slots):
+                clean()
+                SM._current_slot = 1
+                if legacy is not None:
+                    with open(legacy_path(), "w") as f:
+                        f.write("{ rusak" if legacy == "corrupt"
+                                else json.dumps(legacy, indent=2))
+                for n, data in (pre_slots or {}).items():
+                    write_json(slot_path(n), data)
+                migrated = bool(SM.migrate_legacy_save())
+                case = {
+                    "name": name,
+                    "legacy_before": (None if legacy is None
+                                      else legacy if legacy != "corrupt"
+                                      else "corrupt"),
+                    "pre_slot1": pre_slots.get(1) if pre_slots else None,
+                    "migrated": migrated,
+                    "files_after": files(),
+                    "legacy_exists_after": os.path.exists(legacy_path()),
+                    "backup_exists_after": os.path.exists(backup_path()),
+                    "slot1_after": read_slot(1),
+                    "backup_content": (read_json(backup_path())
+                                       if os.path.exists(backup_path())
+                                       else None),
+                    "load_after": SM.load(1),
+                }
+                return case
+
+            migration_cases = [
+                migration_case("no_legacy", None, None),
+                migration_case("legacy_only", dict(LEGACY_DATA), None),
+                migration_case("legacy_and_slot1", dict(LEGACY_DATA),
+                               {1: {"meta_gold": 7}}),
+                migration_case("legacy_corrupt", "corrupt", None),
+                migration_case("legacy_empty_object", {}, None),
+                migration_case("legacy_partial", {"meta_gold": 300}, None),
+                migration_case("legacy_extra_keys",
+                               {"foo": 1, "meta_gold": 5}, None),
+            ]
+            # Migrasi idempoten: panggilan kedua wajib False (slot 1 sudah
+            # ada) dan berkas backup tidak ditimpa/dibuang.
+            clean()
+            SM._current_slot = 1
+            write_json(legacy_path(), dict(LEGACY_DATA))
+            first = bool(SM.migrate_legacy_save())
+            backup_after_first = (read_json(backup_path())
+                                  if os.path.exists(backup_path()) else None)
+            second = bool(SM.migrate_legacy_save())
+            migration_cases.append({
+                "name": "idempotent_second_call",
+                "legacy_before": dict(LEGACY_DATA),
+                "pre_slot1": None,
+                "migrated": False,          # hasil panggilan KEDUA
+                "first_call": first,
+                "second_call": second,
+                "files_after": files(),
+                "legacy_exists_after": os.path.exists(legacy_path()),
+                "backup_exists_after": os.path.exists(backup_path()),
+                "slot1_after": read_slot(1),
+                "backup_content": backup_after_first,
+                "load_after": SM.load(1),
+            })
+            assert first is True and second is False, (first, second)
+
+            # ── D. save / load per-slot ──
+            # Jejak yang direkam ADALAH skripnya (tiap langkah + hasilnya),
+            # jadi replay Godot tinggal menjalankan ulang langkah demi
+            # langkah lewat jalur produksi tanpa mengarang urutan sendiri.
+            def script_case(name, script):
+                clean()
+                SM._current_slot = 1
+                trace = []
+                for step in script:
+                    kind = step[0]
+                    if kind == "set_slot":
+                        trace.append(["set_slot", int(step[1])])
+                        SM.set_current_slot(int(step[1]))
+                        trace.append(["current_slot",
+                                      int(SM.get_current_slot())])
+                    elif kind == "save":
+                        data = dict(step[1])
+                        slot = step[2] if len(step) > 2 else None
+                        # PENTING: `SM.save` MUTASI dict yang diterimanya
+                        # (menambah slot_created/slot_last_played) — yang
+                        # direkam ke jejak harus SALINAN pra-save supaya
+                        # replay menyetel `data` dari payload asli.
+                        trace.append(["save", dict(data), slot])
+                        SM.save(data, slot)
+                    elif kind == "write":
+                        trace.append(["write", int(step[1]), step[2]])
+                        write_json(slot_path(int(step[1])), step[2])
+                    elif kind == "write_raw":
+                        # Berkas slot yang TIDAK valid JSON (jalur exception
+                        # SaveManager.load -> get_empty_save).
+                        trace.append(["write_raw", int(step[1]),
+                                      str(step[2])])
+                        with open(slot_path(int(step[1])), "w") as f:
+                            f.write(str(step[2]))
+                    elif kind == "exists":
+                        trace.append(["exists", int(step[1]),
+                                      bool(SM.slot_exists(int(step[1])))])
+                    elif kind == "load":
+                        trace.append(["load", int(step[1]),
+                                      SM.load(int(step[1]))])
+                    elif kind == "delete":
+                        trace.append(["delete", int(step[1]),
+                                      bool(SM.delete_slot(int(step[1])))])
+                    elif kind == "files":
+                        trace.append(["files", files()])
+                    elif kind == "read":
+                        trace.append(["read", int(step[1]),
+                                      read_slot(int(step[1]))])
+                return {"name": name, "trace": trace, "files": files()}
+
+            save_load_cases = [
+                script_case("save_default_slot", [
+                    ("set_slot", 2), ("save", {"meta_gold": 100}),
+                    ("files",), ("read", 2), ("read", 1)]),
+                script_case("save_explicit_slot", [
+                    ("save", {"meta_gold": 55}, 3),
+                    ("files",), ("read", 3), ("read", 1)]),
+                script_case("save_metadata_created", [
+                    ("save", {"meta_gold": 1}), ("read", 1)]),
+                script_case("save_metadata_preserved", [
+                    ("save", {"meta_gold": 1, "slot_created": 111.0}),
+                    ("read", 1)]),
+                script_case("slots_isolated", [
+                    ("write", 1, {"meta_gold": 11}),
+                    ("write", 2, {"meta_gold": 22}),
+                    ("write", 3, {"meta_gold": 33}),
+                    ("load", 1), ("load", 2), ("load", 3), ("files",)]),
+                script_case("load_missing_returns_empty", [
+                    ("exists", 3), ("load", 3)]),
+                script_case("load_corrupt_returns_empty", [
+                    ("write_raw", 2, "{ bukan json"), ("load", 2)]),
+                script_case("load_backfill_partial", [
+                    ("write", 1, {"meta_gold": 9}), ("load", 1)]),
+                script_case("invalid_slot_numbers", [
+                    ("set_slot", 0), ("set_slot", 4), ("set_slot", -1),
+                    ("set_slot", 99), ("set_slot", 3),
+                    ("save", {"meta_gold": 77}), ("files",)]),
+            ]
+            # ── E. delete_slot ──
+            def delete_case(name, pre, target):
+                clean()
+                SM._current_slot = 1
+                for n, data in pre.items():
+                    write_json(slot_path(n), data)
+                result = bool(SM.delete_slot(target))
+                return {
+                    "name": name,
+                    "pre": {str(k): v for k, v in pre.items()},
+                    "target": int(target),
+                    "result": result,
+                    "files_after": files(),
+                    "exists_after": {str(n): bool(SM.slot_exists(n))
+                                     for n in (1, 2, 3)},
+                    "info_after": SM.get_slot_info(target),
+                    "load_after": SM.load(target),
+                }
+
+            delete_cases = [
+                delete_case("delete_existing", {2: {"meta_gold": 5}}, 2),
+                delete_case("delete_missing", {}, 3),
+                delete_case("delete_isolated",
+                            {1: {"meta_gold": 1}, 2: {"meta_gold": 2},
+                             3: {"meta_gold": 3}}, 2),
+            ]
+
+            # ── F. get_slot_info / get_all_slot_info ──
+            def info_case(name, pre, query):
+                clean()
+                SM._current_slot = 1
+                for n, data in pre.items():
+                    write_json(slot_path(n), data)
+                # Kunci `pre` WAJIB string: kunci integer tidak selamat
+                # dari round-trip JSON (jadi "1" saat dibaca balik) dan
+                # membuat pengecekan freshness gagal tanpa sebab nyata.
+                pre_str = {str(n): data for n, data in pre.items()}
+                if query == "all":
+                    got = SM.get_all_slot_info()
+                    return {"name": name, "query": "all", "pre": pre_str,
+                            "raw": None, "files": files(), "info": got}
+                return {"name": name, "query": int(query), "pre": pre_str,
+                        "raw": None, "files": files(),
+                        "info": SM.get_slot_info(query)}
+
+            filled = {
+                "unlocked_bosses": ["gornak"],
+                "purchased_heroes": ["kaizen", "vex"],
+                "meta_gold": 4321,
+                "completed_levels": [7, 2, 5],
+                "last_played_level": 8,
+                "slot_created": NOW - 864000.0,
+                "slot_last_played": NOW - 3600.0,
+                "slot_playtime_seconds": 0,
+            }
+            info_cases = [
+                info_case("filled", {1: dict(filled)}, 1),
+                info_case("no_completed",
+                          {2: {"meta_gold": 50, "completed_levels": []}}, 2),
+                info_case("missing_slot", {}, 3),
+                info_case("partial_slot", {1: {"meta_gold": 90}}, 1),
+                info_case("all_slots_mixed", {1: dict(filled),
+                                              3: {"meta_gold": 12}}, "all"),
+            ]
+            # Slot korup -> get_slot_info mengembalikan None (jalur
+            # exception _system.py:979-981), berkas tetap ada.
+            clean()
+            SM._current_slot = 1
+            with open(slot_path(1), "w") as f:
+                f.write("[ rusak")
+            info_cases.append({"name": "corrupt_slot", "query": 1,
+                               "pre": None, "raw": "[ rusak",
+                               "files": files(),
+                               "info": SM.get_slot_info(1)})
+
+            # ── G. baterai format ──
+            playtime_values = (0, 1, 59, 60, 61, 119, 3599, 3600, 3601,
+                               3660, 3661, 7199, 7200, 86399, 86400,
+                               359999, 360000)
+            playtime_values = random.sample(list(playtime_values),
+                                            len(playtime_values))
+            format_playtime_battery = sorted(
+                [[v, SM.format_playtime(v)] for v in playtime_values],
+                key=lambda row: row[0])
+
+            # Offset relatif terhadap `now` (detik di masa lalu; nilai
+            # positif = timestamp di masa depan — pygame menghasilkan
+            # elapsed negatif -> "Just now"). Semua offset sengaja
+            # berjarak > 2 detik dari ambang 60 / 3600 / 86400 / 604800
+            # agar hasilnya stabil walau replay Godot menghitung ulang
+            # selang beberapa detik kemudian.
+            last_played_offsets = (0, 5, 55, 60, 3595, 3600, 86390, 86400,
+                                   172800, 604700, 120)
+            last_played_offsets = random.sample(list(last_played_offsets),
+                                                len(last_played_offsets))
+            format_last_played_battery = []
+            for off in sorted(last_played_offsets):
+                ts = NOW - off
+                text = SM.format_last_played(ts)
+                # Stabilitas: replay Godot menghitung ulang pada waktu
+                # nyata, jadi hasilnya wajib sama untuk elapsed +2 detik.
+                assert SM.format_last_played(ts - 2) == text, (off, text)
+                format_last_played_battery.append(
+                    {"offset": int(off), "timestamp": ts, "text": text})
+            # Cabang tanggal absolut (>= 7 hari): string tidak bergantung
+            # pada `now`, cukup pada timestamp + TZ.
+            for ts in (1234567890.0, 1600000000.0, NOW - 900000.0):
+                format_last_played_battery.append(
+                    {"offset": None, "timestamp": ts,
+                     "text": SM.format_last_played(ts)})
+            # Timestamp 0 = "Never" (slot baru yang belum pernah dimainkan).
+            format_last_played_battery.append(
+                {"offset": None, "timestamp": 0.0,
+                 "text": SM.format_last_played(0)})
+            by_text = {row["text"] for row in format_last_played_battery}
+            assert "Never" in by_text and "Just now" in by_text, by_text
+
+            # ── H. kartu SLOT_SELECT (jalur draw pygame ASLI) ──
+            def slot_payload(completed, gold, heroes, bosses, ago):
+                return {
+                    "unlocked_bosses": ["b%d" % i for i in range(bosses)],
+                    "purchased_heroes": (["kaizen"] +
+                                         ["h%d" % i for i in range(heroes)]),
+                    "meta_gold": gold,
+                    "completed_levels": list(completed),
+                    "last_played_level": (max(completed) + 1
+                                          if completed else 1),
+                    "slot_created": NOW - 864000.0,
+                    "slot_last_played": NOW - ago,
+                    "slot_playtime_seconds": 0,
+                }
+
+            card_specs = [
+                ("all_empty", {}),
+                ("slot1_filled", {1: slot_payload([1, 2, 3], 12500, 4, 2,
+                                                  3600)}),
+                ("all_filled", {
+                    1: slot_payload([1], 0, 0, 0, 0),
+                    2: slot_payload([27], 999, 2, 5, 86400),
+                    3: slot_payload([54], 12345678, 9, 12, 172800),
+                }),
+                ("no_completed", {2: slot_payload([], 250, 1, 1, 60)}),
+                ("old_save", {3: slot_payload([9], 1000, 3, 3, 900000)}),
+            ]
+
+            card_cases = []
+            texts, pills = [], []
+            menu, real_make, saved_menu, mods = _headless_menu(
+                core, texts, pills)
+            try:
+                for spec_name, spec_files in card_specs:
+                    clean()
+                    SM._current_slot = 1
+                    for n, data in spec_files.items():
+                        write_json(slot_path(n), data)
+                    infos = SM.get_all_slot_info()
+                    menu.buttons = {}
+                    menu.slot_delete_confirm = None
+                    del texts[:]
+                    del pills[:]
+                    menu._draw_slot_select()
+                    rendered = [str(t["t"]) for t in texts]
+                    pill_by_id = {str(p["bid"]): p for p in pills
+                                  if "sfx" not in p}
+                    cards = []
+                    for i in range(_system.NUM_SLOTS):
+                        info = infos[i]
+                        slot_num = i + 1
+                        select_bid = "slot_select_%d" % slot_num
+                        delete_bid = "slot_delete_%d" % slot_num
+                        assert select_bid in pill_by_id, (spec_name, slot_num)
+                        if info is None:
+                            expect = {
+                                "is_empty": True, "highest_level": 0,
+                                "level_name": None, "gold": 0,
+                                "heroes": 0, "bosses": 0,
+                                "last_played": None,
+                                "last_played_offset": None,
+                                "play_label": str(pill_by_id[select_bid]["label"]),
+                                "has_delete": delete_bid in pill_by_id,
+                                "delete_label": (str(pill_by_id[delete_bid]["label"])
+                                                 if delete_bid in pill_by_id
+                                                 else None),
+                            }
+                            assert expect["play_label"] == "START NEW GAME"
+                            assert not expect["has_delete"]
+                            assert ui_theme.letter("EMPTY") in rendered
+                            assert "Tap to start new game" in rendered
+                        else:
+                            highest = int(info["highest_level"])
+                            cfg = get_level_config(highest) if highest else None
+                            level_name = (str(cfg["name"]) if cfg else None)
+                            gold_text = "%s Gold" % format(
+                                int(info["meta_gold"]), ",")
+                            offset = int(NOW - float(info["slot_last_played"]))
+                            last_played = SM.format_last_played(
+                                info["slot_last_played"])
+                            # Cabang tanggal (>= 7 hari) hanya bergantung
+                            # pada timestamp, jadi replay memakai nilai
+                            # ABSOLUT (now_pin - offset). Cabang relatif
+                            # ("Xm ago") harus dihitung dari now yang
+                            # NYATA — disimpan sebagai offset.
+                            absolute = offset >= 604800
+                            is_date = (last_played != "Never"
+                                       and last_played != "Just now"
+                                       and not last_played.endswith("ago"))
+                            assert is_date == absolute, (offset, last_played)
+                            expect = {
+                                "is_empty": False,
+                                "highest_level": highest,
+                                "level_name": level_name,
+                                "gold": int(info["meta_gold"]),
+                                "gold_text": gold_text,
+                                "heroes": len(info["purchased_heroes"]),
+                                "bosses": len(info["unlocked_bosses"]),
+                                "last_played": last_played,
+                                "last_played_offset": offset,
+                                "last_played_ts": float(
+                                    info["slot_last_played"]),
+                                "last_played_absolute": bool(absolute),
+                                "play_label": str(pill_by_id[select_bid]["label"]),
+                                "has_delete": delete_bid in pill_by_id,
+                                "delete_label": (str(pill_by_id[delete_bid]["label"])
+                                                 if delete_bid in pill_by_id
+                                                 else None),
+                            }
+                            assert expect["play_label"] == "CONTINUE"
+                            assert expect["has_delete"]
+                            assert expect["delete_label"] == "DELETE SAVE"
+                            assert gold_text in rendered, (spec_name, slot_num)
+                            assert ("Heroes: %d" % expect["heroes"]
+                                    in rendered), (spec_name, slot_num)
+                            assert ("Bosses: %d" % expect["bosses"]
+                                    in rendered), (spec_name, slot_num)
+                            assert last_played in rendered, (spec_name, slot_num)
+                            if highest > 0:
+                                assert ("LV. %d" % highest) in rendered
+                                # Nama level mentah atau hasil truncasi
+                                # ui_theme.fit_ellipsis(lebar kartu - 40).
+                                shown = ui_theme.fit_ellipsis(
+                                    real_make(17, "body_medium"),
+                                    str(level_name), CARD_W - 40)
+                                assert shown in rendered, (spec_name, slot_num)
+                                expect["level_name_shown"] = shown
+                            else:
+                                assert "No levels completed yet" in rendered
+                        cards.append({"slot_num": slot_num,
+                                      "info": info,
+                                      "expect": expect})
+                    card_cases.append({
+                        "name": spec_name,
+                        "files": files(),
+                        "cards": cards,
+                        "texts": [dict(t) for t in texts],
+                        "pills": [dict(p) for p in pills],
+                    })
+            finally:
+                _restore_menu(mods, saved_menu)
+
+            return {
+                "meta": {
+                    "num_slots": int(_system.NUM_SLOTS),
+                    "now_pin": NOW,
+                    "tz": "UTC",
+                    "month_abbr_guard": "Jan",
+                    "card_w": CARD_W, "card_h": CARD_H, "gap_x": GAP_X,
+                    "name_max_w": CARD_W - 40,
+                    "cloud_save": False,
+                },
+                "paths": paths,
+                "empty_save": empty,
+                "migration_cases": migration_cases,
+                "save_load_cases": save_load_cases,
+                "delete_cases": delete_cases,
+                "info_cases": info_cases,
+                "format_playtime_battery": format_playtime_battery,
+                "format_last_played_battery": format_last_played_battery,
+                "card_cases": card_cases,
+                "labels": {
+                    "title": "SELECT SAVE GAME",
+                    "subtitle": ("Choose a save game to continue or start "
+                                 "new"),
+                    "save_game": ui_theme.letter("SAVE GAME"),
+                    "empty": ui_theme.letter("EMPTY"),
+                    "highest": ui_theme.letter("HIGHEST LEVEL COMPLETED"),
+                    "last_played": ui_theme.letter("LAST PLAYED"),
+                    "back": ui_theme.letter("BACK"),
+                },
+            }
+        finally:
+            _system.SAVE_DIR = saved["SAVE_DIR"]
+            _system.LEGACY_SAVE_FILE = saved["LEGACY"]
+            _system.time = saved["time"]
+            SM._current_slot = saved["slot"]
+            if saved["tz"] is None:
+                os.environ.pop("TZ", None)
+            else:
+                os.environ["TZ"] = saved["tz"]
+            if hasattr(time_mod, "tzset"):
+                time_mod.tzset()
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    a = _build(20260909)
+    b = _build(31337)
+    assert a == b, "save_slots: dua seed beda hasilnya beda"
+    return a
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -8641,6 +9243,17 @@ def make_fixture(core, entity, levels, paths):
         # mini/true 4500) — 222 baris katalog, kasus guard/saldo/sfx/persist,
         # matriks keputusan kartu 5 state. Direplay MetaShopTxnParityTest.
         "meta_shop_txn": make_meta_shop_txn_fixture(core, entity),
+        # FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY (TANPA cloud save):
+        # oracle SaveManager ASLI `_system.py` yang menulis/membaca berkas
+        # beneran di direktori terisolasi (jam ter-pin, TZ=UTC) + jalur
+        # draw pygame ASLI `Menu._draw_slot_select`. Mengunci jalur berkas,
+        # 8 kasus migrasi legacy (termasuk rename -> progress_backup.
+        # json.old & idempotensi), save/load per-slot, delete_slot,
+        # get_slot_info/get_all_slot_info (slot korup -> None), baterai
+        # format_playtime/format_last_played (string relatif disimpan
+        # sebagai OFFSET dari now), dan nilai DATA kartu slot. Direplay
+        # SaveSlotParityTest.
+        "save_slots": make_save_slots_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -8856,6 +9469,19 @@ def main():
               f"{len(mx['txn_cases'])} kasus transaksi ({mx_ok} sukses), "
               f"{len(mx['card_matrix'])} keputusan kartu "
               f"({len(mx['matrix_states'])} state save)")
+        ss = actual["save_slots"]
+        ss_migrated = sum(1 for c in ss["migration_cases"]
+                          if c["migrated"])
+        print("             save-slots oracle: "
+              f"{len(ss['migration_cases'])} kasus migrasi "
+              f"({ss_migrated} berhasil), "
+              f"{len(ss['save_load_cases'])} skenario save/load, "
+              f"{len(ss['delete_cases'])} kasus hapus, "
+              f"{len(ss['info_cases'])} kasus info slot, "
+              f"{len(ss['format_playtime_battery'])} format_playtime + "
+              f"{len(ss['format_last_played_battery'])} format_last_played, "
+              f"{len(ss['card_cases'])} layar kartu "
+              f"({sum(len(c['cards']) for c in ss['card_cases'])} kartu)")
 
 
 if __name__ == "__main__":

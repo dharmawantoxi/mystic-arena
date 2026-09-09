@@ -135884,5 +135884,3483 @@
       "gold4500_allboss",
       "owned_all"
     ]
+  },
+  "save_slots": {
+    "meta": {
+      "num_slots": 3,
+      "now_pin": 1767225600.0,
+      "tz": "UTC",
+      "month_abbr_guard": "Jan",
+      "card_w": 320,
+      "card_h": 460,
+      "gap_x": 30,
+      "name_max_w": 280,
+      "cloud_save": false
+    },
+    "paths": {
+      "num_slots": 3,
+      "slot_files": {
+        "1": "slot_1.json",
+        "2": "slot_2.json",
+        "3": "slot_3.json"
+      },
+      "legacy_file": "progress.json",
+      "backup_file": "progress_backup.json.old"
+    },
+    "empty_save": {
+      "unlocked_bosses": [],
+      "purchased_heroes": [],
+      "meta_gold": 0,
+      "completed_levels": [],
+      "last_played_level": 1,
+      "slot_created": 1767225600.0,
+      "slot_last_played": 1767225600.0,
+      "slot_playtime_seconds": 0,
+      "level_stats": {},
+      "run_difficulty": null
+    },
+    "migration_cases": [
+      {
+        "name": "no_legacy",
+        "legacy_before": null,
+        "pre_slot1": null,
+        "migrated": false,
+        "files_after": [],
+        "legacy_exists_after": false,
+        "backup_exists_after": false,
+        "slot1_after": null,
+        "backup_content": null,
+        "load_after": {
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "meta_gold": 0,
+          "completed_levels": [],
+          "last_played_level": 1,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "legacy_only",
+        "legacy_before": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4
+        },
+        "pre_slot1": null,
+        "migrated": true,
+        "files_after": [
+          "progress_backup.json.old",
+          "slot_1.json"
+        ],
+        "legacy_exists_after": false,
+        "backup_exists_after": true,
+        "slot1_after": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0
+        },
+        "backup_content": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4
+        },
+        "load_after": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "legacy_and_slot1",
+        "legacy_before": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4
+        },
+        "pre_slot1": {
+          "meta_gold": 7
+        },
+        "migrated": false,
+        "files_after": [
+          "progress.json",
+          "slot_1.json"
+        ],
+        "legacy_exists_after": true,
+        "backup_exists_after": false,
+        "slot1_after": {
+          "meta_gold": 7
+        },
+        "backup_content": null,
+        "load_after": {
+          "meta_gold": 7,
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "completed_levels": [],
+          "last_played_level": 1,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "legacy_corrupt",
+        "legacy_before": "corrupt",
+        "pre_slot1": null,
+        "migrated": false,
+        "files_after": [
+          "progress.json"
+        ],
+        "legacy_exists_after": true,
+        "backup_exists_after": false,
+        "slot1_after": null,
+        "backup_content": null,
+        "load_after": {
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "meta_gold": 0,
+          "completed_levels": [],
+          "last_played_level": 1,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "legacy_empty_object",
+        "legacy_before": {},
+        "pre_slot1": null,
+        "migrated": true,
+        "files_after": [
+          "progress_backup.json.old",
+          "slot_1.json"
+        ],
+        "legacy_exists_after": false,
+        "backup_exists_after": true,
+        "slot1_after": {
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0
+        },
+        "backup_content": {},
+        "load_after": {
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "meta_gold": 0,
+          "completed_levels": [],
+          "last_played_level": 1,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "legacy_partial",
+        "legacy_before": {
+          "meta_gold": 300
+        },
+        "pre_slot1": null,
+        "migrated": true,
+        "files_after": [
+          "progress_backup.json.old",
+          "slot_1.json"
+        ],
+        "legacy_exists_after": false,
+        "backup_exists_after": true,
+        "slot1_after": {
+          "meta_gold": 300,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0
+        },
+        "backup_content": {
+          "meta_gold": 300
+        },
+        "load_after": {
+          "meta_gold": 300,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "completed_levels": [],
+          "last_played_level": 1,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "legacy_extra_keys",
+        "legacy_before": {
+          "foo": 1,
+          "meta_gold": 5
+        },
+        "pre_slot1": null,
+        "migrated": true,
+        "files_after": [
+          "progress_backup.json.old",
+          "slot_1.json"
+        ],
+        "legacy_exists_after": false,
+        "backup_exists_after": true,
+        "slot1_after": {
+          "foo": 1,
+          "meta_gold": 5,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0
+        },
+        "backup_content": {
+          "foo": 1,
+          "meta_gold": 5
+        },
+        "load_after": {
+          "foo": 1,
+          "meta_gold": 5,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "completed_levels": [],
+          "last_played_level": 1,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "idempotent_second_call",
+        "legacy_before": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4
+        },
+        "pre_slot1": null,
+        "migrated": false,
+        "first_call": true,
+        "second_call": false,
+        "files_after": [
+          "progress_backup.json.old",
+          "slot_1.json"
+        ],
+        "legacy_exists_after": false,
+        "backup_exists_after": true,
+        "slot1_after": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0
+        },
+        "backup_content": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4
+        },
+        "load_after": {
+          "unlocked_bosses": [
+            "gornak",
+            "zharok"
+          ],
+          "purchased_heroes": [
+            "kaizen",
+            "gornak"
+          ],
+          "meta_gold": 12500,
+          "completed_levels": [
+            1,
+            2,
+            3
+          ],
+          "last_played_level": 4,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      }
+    ],
+    "save_load_cases": [
+      {
+        "name": "save_default_slot",
+        "trace": [
+          [
+            "set_slot",
+            2
+          ],
+          [
+            "current_slot",
+            2
+          ],
+          [
+            "save",
+            {
+              "meta_gold": 100
+            },
+            null
+          ],
+          [
+            "files",
+            [
+              "slot_2.json"
+            ]
+          ],
+          [
+            "read",
+            2,
+            {
+              "meta_gold": 100,
+              "slot_last_played": 1767225600.0,
+              "slot_created": 1767225600.0
+            }
+          ],
+          [
+            "read",
+            1,
+            null
+          ]
+        ],
+        "files": [
+          "slot_2.json"
+        ]
+      },
+      {
+        "name": "save_explicit_slot",
+        "trace": [
+          [
+            "save",
+            {
+              "meta_gold": 55
+            },
+            3
+          ],
+          [
+            "files",
+            [
+              "slot_3.json"
+            ]
+          ],
+          [
+            "read",
+            3,
+            {
+              "meta_gold": 55,
+              "slot_last_played": 1767225600.0,
+              "slot_created": 1767225600.0
+            }
+          ],
+          [
+            "read",
+            1,
+            null
+          ]
+        ],
+        "files": [
+          "slot_3.json"
+        ]
+      },
+      {
+        "name": "save_metadata_created",
+        "trace": [
+          [
+            "save",
+            {
+              "meta_gold": 1
+            },
+            null
+          ],
+          [
+            "read",
+            1,
+            {
+              "meta_gold": 1,
+              "slot_last_played": 1767225600.0,
+              "slot_created": 1767225600.0
+            }
+          ]
+        ],
+        "files": [
+          "slot_1.json"
+        ]
+      },
+      {
+        "name": "save_metadata_preserved",
+        "trace": [
+          [
+            "save",
+            {
+              "meta_gold": 1,
+              "slot_created": 111.0
+            },
+            null
+          ],
+          [
+            "read",
+            1,
+            {
+              "meta_gold": 1,
+              "slot_created": 111.0,
+              "slot_last_played": 1767225600.0
+            }
+          ]
+        ],
+        "files": [
+          "slot_1.json"
+        ]
+      },
+      {
+        "name": "slots_isolated",
+        "trace": [
+          [
+            "write",
+            1,
+            {
+              "meta_gold": 11
+            }
+          ],
+          [
+            "write",
+            2,
+            {
+              "meta_gold": 22
+            }
+          ],
+          [
+            "write",
+            3,
+            {
+              "meta_gold": 33
+            }
+          ],
+          [
+            "load",
+            1,
+            {
+              "meta_gold": 11,
+              "unlocked_bosses": [],
+              "purchased_heroes": [],
+              "completed_levels": [],
+              "last_played_level": 1,
+              "slot_created": 1767225600.0,
+              "slot_last_played": 1767225600.0,
+              "slot_playtime_seconds": 0,
+              "level_stats": {},
+              "run_difficulty": null
+            }
+          ],
+          [
+            "load",
+            2,
+            {
+              "meta_gold": 22,
+              "unlocked_bosses": [],
+              "purchased_heroes": [],
+              "completed_levels": [],
+              "last_played_level": 1,
+              "slot_created": 1767225600.0,
+              "slot_last_played": 1767225600.0,
+              "slot_playtime_seconds": 0,
+              "level_stats": {},
+              "run_difficulty": null
+            }
+          ],
+          [
+            "load",
+            3,
+            {
+              "meta_gold": 33,
+              "unlocked_bosses": [],
+              "purchased_heroes": [],
+              "completed_levels": [],
+              "last_played_level": 1,
+              "slot_created": 1767225600.0,
+              "slot_last_played": 1767225600.0,
+              "slot_playtime_seconds": 0,
+              "level_stats": {},
+              "run_difficulty": null
+            }
+          ],
+          [
+            "files",
+            [
+              "slot_1.json",
+              "slot_2.json",
+              "slot_3.json"
+            ]
+          ]
+        ],
+        "files": [
+          "slot_1.json",
+          "slot_2.json",
+          "slot_3.json"
+        ]
+      },
+      {
+        "name": "load_missing_returns_empty",
+        "trace": [
+          [
+            "exists",
+            3,
+            false
+          ],
+          [
+            "load",
+            3,
+            {
+              "unlocked_bosses": [],
+              "purchased_heroes": [],
+              "meta_gold": 0,
+              "completed_levels": [],
+              "last_played_level": 1,
+              "slot_created": 1767225600.0,
+              "slot_last_played": 1767225600.0,
+              "slot_playtime_seconds": 0,
+              "level_stats": {},
+              "run_difficulty": null
+            }
+          ]
+        ],
+        "files": []
+      },
+      {
+        "name": "load_corrupt_returns_empty",
+        "trace": [
+          [
+            "write_raw",
+            2,
+            "{ bukan json"
+          ],
+          [
+            "load",
+            2,
+            {
+              "unlocked_bosses": [],
+              "purchased_heroes": [],
+              "meta_gold": 0,
+              "completed_levels": [],
+              "last_played_level": 1,
+              "slot_created": 1767225600.0,
+              "slot_last_played": 1767225600.0,
+              "slot_playtime_seconds": 0,
+              "level_stats": {},
+              "run_difficulty": null
+            }
+          ]
+        ],
+        "files": [
+          "slot_2.json"
+        ]
+      },
+      {
+        "name": "load_backfill_partial",
+        "trace": [
+          [
+            "write",
+            1,
+            {
+              "meta_gold": 9
+            }
+          ],
+          [
+            "load",
+            1,
+            {
+              "meta_gold": 9,
+              "unlocked_bosses": [],
+              "purchased_heroes": [],
+              "completed_levels": [],
+              "last_played_level": 1,
+              "slot_created": 1767225600.0,
+              "slot_last_played": 1767225600.0,
+              "slot_playtime_seconds": 0,
+              "level_stats": {},
+              "run_difficulty": null
+            }
+          ]
+        ],
+        "files": [
+          "slot_1.json"
+        ]
+      },
+      {
+        "name": "invalid_slot_numbers",
+        "trace": [
+          [
+            "set_slot",
+            0
+          ],
+          [
+            "current_slot",
+            1
+          ],
+          [
+            "set_slot",
+            4
+          ],
+          [
+            "current_slot",
+            1
+          ],
+          [
+            "set_slot",
+            -1
+          ],
+          [
+            "current_slot",
+            1
+          ],
+          [
+            "set_slot",
+            99
+          ],
+          [
+            "current_slot",
+            1
+          ],
+          [
+            "set_slot",
+            3
+          ],
+          [
+            "current_slot",
+            3
+          ],
+          [
+            "save",
+            {
+              "meta_gold": 77
+            },
+            null
+          ],
+          [
+            "files",
+            [
+              "slot_3.json"
+            ]
+          ]
+        ],
+        "files": [
+          "slot_3.json"
+        ]
+      }
+    ],
+    "delete_cases": [
+      {
+        "name": "delete_existing",
+        "pre": {
+          "2": {
+            "meta_gold": 5
+          }
+        },
+        "target": 2,
+        "result": true,
+        "files_after": [],
+        "exists_after": {
+          "1": false,
+          "2": false,
+          "3": false
+        },
+        "info_after": null,
+        "load_after": {
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "meta_gold": 0,
+          "completed_levels": [],
+          "last_played_level": 1,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "delete_missing",
+        "pre": {},
+        "target": 3,
+        "result": false,
+        "files_after": [],
+        "exists_after": {
+          "1": false,
+          "2": false,
+          "3": false
+        },
+        "info_after": null,
+        "load_after": {
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "meta_gold": 0,
+          "completed_levels": [],
+          "last_played_level": 1,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      },
+      {
+        "name": "delete_isolated",
+        "pre": {
+          "1": {
+            "meta_gold": 1
+          },
+          "2": {
+            "meta_gold": 2
+          },
+          "3": {
+            "meta_gold": 3
+          }
+        },
+        "target": 2,
+        "result": true,
+        "files_after": [
+          "slot_1.json",
+          "slot_3.json"
+        ],
+        "exists_after": {
+          "1": true,
+          "2": false,
+          "3": true
+        },
+        "info_after": null,
+        "load_after": {
+          "unlocked_bosses": [],
+          "purchased_heroes": [],
+          "meta_gold": 0,
+          "completed_levels": [],
+          "last_played_level": 1,
+          "slot_created": 1767225600.0,
+          "slot_last_played": 1767225600.0,
+          "slot_playtime_seconds": 0,
+          "level_stats": {},
+          "run_difficulty": null
+        }
+      }
+    ],
+    "info_cases": [
+      {
+        "name": "filled",
+        "query": 1,
+        "pre": {
+          "1": {
+            "unlocked_bosses": [
+              "gornak"
+            ],
+            "purchased_heroes": [
+              "kaizen",
+              "vex"
+            ],
+            "meta_gold": 4321,
+            "completed_levels": [
+              7,
+              2,
+              5
+            ],
+            "last_played_level": 8,
+            "slot_created": 1766361600.0,
+            "slot_last_played": 1767222000.0,
+            "slot_playtime_seconds": 0
+          }
+        },
+        "raw": null,
+        "files": [
+          "slot_1.json"
+        ],
+        "info": {
+          "slot_num": 1,
+          "meta_gold": 4321,
+          "completed_levels": [
+            7,
+            2,
+            5
+          ],
+          "highest_level": 7,
+          "last_played_level": 8,
+          "purchased_heroes": [
+            "kaizen",
+            "vex"
+          ],
+          "unlocked_bosses": [
+            "gornak"
+          ],
+          "slot_created": 1766361600.0,
+          "slot_last_played": 1767222000.0,
+          "playtime_seconds": 0
+        }
+      },
+      {
+        "name": "no_completed",
+        "query": 2,
+        "pre": {
+          "2": {
+            "meta_gold": 50,
+            "completed_levels": []
+          }
+        },
+        "raw": null,
+        "files": [
+          "slot_2.json"
+        ],
+        "info": {
+          "slot_num": 2,
+          "meta_gold": 50,
+          "completed_levels": [],
+          "highest_level": 0,
+          "last_played_level": 1,
+          "purchased_heroes": [],
+          "unlocked_bosses": [],
+          "slot_created": 0,
+          "slot_last_played": 0,
+          "playtime_seconds": 0
+        }
+      },
+      {
+        "name": "missing_slot",
+        "query": 3,
+        "pre": {},
+        "raw": null,
+        "files": [],
+        "info": null
+      },
+      {
+        "name": "partial_slot",
+        "query": 1,
+        "pre": {
+          "1": {
+            "meta_gold": 90
+          }
+        },
+        "raw": null,
+        "files": [
+          "slot_1.json"
+        ],
+        "info": {
+          "slot_num": 1,
+          "meta_gold": 90,
+          "completed_levels": [],
+          "highest_level": 0,
+          "last_played_level": 1,
+          "purchased_heroes": [],
+          "unlocked_bosses": [],
+          "slot_created": 0,
+          "slot_last_played": 0,
+          "playtime_seconds": 0
+        }
+      },
+      {
+        "name": "all_slots_mixed",
+        "query": "all",
+        "pre": {
+          "1": {
+            "unlocked_bosses": [
+              "gornak"
+            ],
+            "purchased_heroes": [
+              "kaizen",
+              "vex"
+            ],
+            "meta_gold": 4321,
+            "completed_levels": [
+              7,
+              2,
+              5
+            ],
+            "last_played_level": 8,
+            "slot_created": 1766361600.0,
+            "slot_last_played": 1767222000.0,
+            "slot_playtime_seconds": 0
+          },
+          "3": {
+            "meta_gold": 12
+          }
+        },
+        "raw": null,
+        "files": [
+          "slot_1.json",
+          "slot_3.json"
+        ],
+        "info": [
+          {
+            "slot_num": 1,
+            "meta_gold": 4321,
+            "completed_levels": [
+              7,
+              2,
+              5
+            ],
+            "highest_level": 7,
+            "last_played_level": 8,
+            "purchased_heroes": [
+              "kaizen",
+              "vex"
+            ],
+            "unlocked_bosses": [
+              "gornak"
+            ],
+            "slot_created": 1766361600.0,
+            "slot_last_played": 1767222000.0,
+            "playtime_seconds": 0
+          },
+          null,
+          {
+            "slot_num": 3,
+            "meta_gold": 12,
+            "completed_levels": [],
+            "highest_level": 0,
+            "last_played_level": 1,
+            "purchased_heroes": [],
+            "unlocked_bosses": [],
+            "slot_created": 0,
+            "slot_last_played": 0,
+            "playtime_seconds": 0
+          }
+        ]
+      },
+      {
+        "name": "corrupt_slot",
+        "query": 1,
+        "pre": null,
+        "raw": "[ rusak",
+        "files": [
+          "slot_1.json"
+        ],
+        "info": null
+      }
+    ],
+    "format_playtime_battery": [
+      [
+        0,
+        "0m"
+      ],
+      [
+        1,
+        "0m"
+      ],
+      [
+        59,
+        "0m"
+      ],
+      [
+        60,
+        "1m"
+      ],
+      [
+        61,
+        "1m"
+      ],
+      [
+        119,
+        "1m"
+      ],
+      [
+        3599,
+        "59m"
+      ],
+      [
+        3600,
+        "1h 0m"
+      ],
+      [
+        3601,
+        "1h 0m"
+      ],
+      [
+        3660,
+        "1h 1m"
+      ],
+      [
+        3661,
+        "1h 1m"
+      ],
+      [
+        7199,
+        "1h 59m"
+      ],
+      [
+        7200,
+        "2h 0m"
+      ],
+      [
+        86399,
+        "23h 59m"
+      ],
+      [
+        86400,
+        "24h 0m"
+      ],
+      [
+        359999,
+        "99h 59m"
+      ],
+      [
+        360000,
+        "100h 0m"
+      ]
+    ],
+    "format_last_played_battery": [
+      {
+        "offset": 0,
+        "timestamp": 1767225600.0,
+        "text": "Just now"
+      },
+      {
+        "offset": 5,
+        "timestamp": 1767225595.0,
+        "text": "Just now"
+      },
+      {
+        "offset": 55,
+        "timestamp": 1767225545.0,
+        "text": "Just now"
+      },
+      {
+        "offset": 60,
+        "timestamp": 1767225540.0,
+        "text": "1m ago"
+      },
+      {
+        "offset": 120,
+        "timestamp": 1767225480.0,
+        "text": "2m ago"
+      },
+      {
+        "offset": 3595,
+        "timestamp": 1767222005.0,
+        "text": "59m ago"
+      },
+      {
+        "offset": 3600,
+        "timestamp": 1767222000.0,
+        "text": "1h ago"
+      },
+      {
+        "offset": 86390,
+        "timestamp": 1767139210.0,
+        "text": "23h ago"
+      },
+      {
+        "offset": 86400,
+        "timestamp": 1767139200.0,
+        "text": "1d ago"
+      },
+      {
+        "offset": 172800,
+        "timestamp": 1767052800.0,
+        "text": "2d ago"
+      },
+      {
+        "offset": 604700,
+        "timestamp": 1766620900.0,
+        "text": "6d ago"
+      },
+      {
+        "offset": null,
+        "timestamp": 1234567890.0,
+        "text": "13 Feb 2009"
+      },
+      {
+        "offset": null,
+        "timestamp": 1600000000.0,
+        "text": "13 Sep 2020"
+      },
+      {
+        "offset": null,
+        "timestamp": 1766325600.0,
+        "text": "21 Dec 2025"
+      },
+      {
+        "offset": null,
+        "timestamp": 0.0,
+        "text": "Never"
+      }
+    ],
+    "card_cases": [
+      {
+        "name": "all_empty",
+        "files": [],
+        "cards": [
+          {
+            "slot_num": 1,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          },
+          {
+            "slot_num": 2,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          },
+          {
+            "slot_num": 3,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          }
+        ],
+        "texts": [
+          {
+            "t": "SELECT SAVE GAME",
+            "c": [
+              8,
+              9,
+              18
+            ],
+            "px": 64,
+            "st": "title"
+          },
+          {
+            "t": "SELECT SAVE GAME",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 64,
+            "st": "title"
+          },
+          {
+            "t": "Choose a save game to continue or start new",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "2",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "3",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "slot_select_1",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_2",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_3",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_back",
+            "label": "BACK",
+            "kind": "neutral",
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "name": "slot1_filled",
+        "files": [
+          "slot_1.json"
+        ],
+        "cards": [
+          {
+            "slot_num": 1,
+            "info": {
+              "slot_num": 1,
+              "meta_gold": 12500,
+              "completed_levels": [
+                1,
+                2,
+                3
+              ],
+              "highest_level": 3,
+              "last_played_level": 4,
+              "purchased_heroes": [
+                "kaizen",
+                "h0",
+                "h1",
+                "h2",
+                "h3"
+              ],
+              "unlocked_bosses": [
+                "b0",
+                "b1"
+              ],
+              "slot_created": 1766361600.0,
+              "slot_last_played": 1767222000.0,
+              "playtime_seconds": 0
+            },
+            "expect": {
+              "is_empty": false,
+              "highest_level": 3,
+              "level_name": "Infernal Depths",
+              "gold": 12500,
+              "gold_text": "12,500 Gold",
+              "heroes": 5,
+              "bosses": 2,
+              "last_played": "1h ago",
+              "last_played_offset": 3600,
+              "last_played_ts": 1767222000.0,
+              "last_played_absolute": false,
+              "play_label": "CONTINUE",
+              "has_delete": true,
+              "delete_label": "DELETE SAVE",
+              "level_name_shown": "Infernal Depths"
+            }
+          },
+          {
+            "slot_num": 2,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          },
+          {
+            "slot_num": 3,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          }
+        ],
+        "texts": [
+          {
+            "t": "SELECT SAVE GAME",
+            "c": [
+              8,
+              9,
+              18
+            ],
+            "px": 64,
+            "st": "title"
+          },
+          {
+            "t": "Choose a save game to continue or start new",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "H I G H E S T   L E V E L   C O M P L E T E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "LV. 3",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 30,
+            "st": "body_bold"
+          },
+          {
+            "t": "Infernal Depths",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 17,
+            "st": "body_medium"
+          },
+          {
+            "t": "12,500 Gold",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 30,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Heroes: 5",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "Bosses: 2",
+            "c": [
+              255,
+              150,
+              150
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "L A S T   P L A Y E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1h ago",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              255,
+              214,
+              214
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "2",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "3",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "slot_select_1",
+            "label": "CONTINUE",
+            "kind": "success",
+            "enabled": true
+          },
+          {
+            "bid": "slot_delete_1",
+            "label": "DELETE SAVE",
+            "kind": "danger",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_2",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_3",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_back",
+            "label": "BACK",
+            "kind": "neutral",
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "name": "all_filled",
+        "files": [
+          "slot_1.json",
+          "slot_2.json",
+          "slot_3.json"
+        ],
+        "cards": [
+          {
+            "slot_num": 1,
+            "info": {
+              "slot_num": 1,
+              "meta_gold": 0,
+              "completed_levels": [
+                1
+              ],
+              "highest_level": 1,
+              "last_played_level": 2,
+              "purchased_heroes": [
+                "kaizen"
+              ],
+              "unlocked_bosses": [],
+              "slot_created": 1766361600.0,
+              "slot_last_played": 1767225600.0,
+              "playtime_seconds": 0
+            },
+            "expect": {
+              "is_empty": false,
+              "highest_level": 1,
+              "level_name": "The Fallen Realm",
+              "gold": 0,
+              "gold_text": "0 Gold",
+              "heroes": 1,
+              "bosses": 0,
+              "last_played": "Just now",
+              "last_played_offset": 0,
+              "last_played_ts": 1767225600.0,
+              "last_played_absolute": false,
+              "play_label": "CONTINUE",
+              "has_delete": true,
+              "delete_label": "DELETE SAVE",
+              "level_name_shown": "The Fallen Realm"
+            }
+          },
+          {
+            "slot_num": 2,
+            "info": {
+              "slot_num": 2,
+              "meta_gold": 999,
+              "completed_levels": [
+                27
+              ],
+              "highest_level": 27,
+              "last_played_level": 28,
+              "purchased_heroes": [
+                "kaizen",
+                "h0",
+                "h1"
+              ],
+              "unlocked_bosses": [
+                "b0",
+                "b1",
+                "b2",
+                "b3",
+                "b4"
+              ],
+              "slot_created": 1766361600.0,
+              "slot_last_played": 1767139200.0,
+              "playtime_seconds": 0
+            },
+            "expect": {
+              "is_empty": false,
+              "highest_level": 27,
+              "level_name": "The Astral Sovereign",
+              "gold": 999,
+              "gold_text": "999 Gold",
+              "heroes": 3,
+              "bosses": 5,
+              "last_played": "1d ago",
+              "last_played_offset": 86400,
+              "last_played_ts": 1767139200.0,
+              "last_played_absolute": false,
+              "play_label": "CONTINUE",
+              "has_delete": true,
+              "delete_label": "DELETE SAVE",
+              "level_name_shown": "The Astral Sovereign"
+            }
+          },
+          {
+            "slot_num": 3,
+            "info": {
+              "slot_num": 3,
+              "meta_gold": 12345678,
+              "completed_levels": [
+                54
+              ],
+              "highest_level": 54,
+              "last_played_level": 55,
+              "purchased_heroes": [
+                "kaizen",
+                "h0",
+                "h1",
+                "h2",
+                "h3",
+                "h4",
+                "h5",
+                "h6",
+                "h7",
+                "h8"
+              ],
+              "unlocked_bosses": [
+                "b0",
+                "b1",
+                "b2",
+                "b3",
+                "b4",
+                "b5",
+                "b6",
+                "b7",
+                "b8",
+                "b9",
+                "b10",
+                "b11"
+              ],
+              "slot_created": 1766361600.0,
+              "slot_last_played": 1767052800.0,
+              "playtime_seconds": 0
+            },
+            "expect": {
+              "is_empty": false,
+              "highest_level": 54,
+              "level_name": "The Substitute Shinigami",
+              "gold": 12345678,
+              "gold_text": "12,345,678 Gold",
+              "heroes": 10,
+              "bosses": 12,
+              "last_played": "2d ago",
+              "last_played_offset": 172800,
+              "last_played_ts": 1767052800.0,
+              "last_played_absolute": false,
+              "play_label": "CONTINUE",
+              "has_delete": true,
+              "delete_label": "DELETE SAVE",
+              "level_name_shown": "The Substitute Shinigami"
+            }
+          }
+        ],
+        "texts": [
+          {
+            "t": "SELECT SAVE GAME",
+            "c": [
+              8,
+              9,
+              18
+            ],
+            "px": 64,
+            "st": "title"
+          },
+          {
+            "t": "Choose a save game to continue or start new",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "H I G H E S T   L E V E L   C O M P L E T E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "LV. 1",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 30,
+            "st": "body_bold"
+          },
+          {
+            "t": "The Fallen Realm",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 17,
+            "st": "body_medium"
+          },
+          {
+            "t": "0 Gold",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 30,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Heroes: 1",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "Bosses: 0",
+            "c": [
+              255,
+              150,
+              150
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "L A S T   P L A Y E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Just now",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              255,
+              214,
+              214
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "2",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "H I G H E S T   L E V E L   C O M P L E T E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "LV. 27",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 30,
+            "st": "body_bold"
+          },
+          {
+            "t": "The Astral Sovereign",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 17,
+            "st": "body_medium"
+          },
+          {
+            "t": "999 Gold",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 30,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Heroes: 3",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "Bosses: 5",
+            "c": [
+              255,
+              150,
+              150
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "L A S T   P L A Y E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1d ago",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              255,
+              214,
+              214
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "3",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "H I G H E S T   L E V E L   C O M P L E T E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "LV. 54",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 30,
+            "st": "body_bold"
+          },
+          {
+            "t": "The Substitute Shinigami",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 17,
+            "st": "body_medium"
+          },
+          {
+            "t": "12,345,678 Gold",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 30,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Heroes: 10",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "Bosses: 12",
+            "c": [
+              255,
+              150,
+              150
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "L A S T   P L A Y E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "2d ago",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              255,
+              214,
+              214
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "slot_select_1",
+            "label": "CONTINUE",
+            "kind": "success",
+            "enabled": true
+          },
+          {
+            "bid": "slot_delete_1",
+            "label": "DELETE SAVE",
+            "kind": "danger",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_2",
+            "label": "CONTINUE",
+            "kind": "success",
+            "enabled": true
+          },
+          {
+            "bid": "slot_delete_2",
+            "label": "DELETE SAVE",
+            "kind": "danger",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_3",
+            "label": "CONTINUE",
+            "kind": "success",
+            "enabled": true
+          },
+          {
+            "bid": "slot_delete_3",
+            "label": "DELETE SAVE",
+            "kind": "danger",
+            "enabled": true
+          },
+          {
+            "bid": "slot_back",
+            "label": "BACK",
+            "kind": "neutral",
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "name": "no_completed",
+        "files": [
+          "slot_2.json"
+        ],
+        "cards": [
+          {
+            "slot_num": 1,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          },
+          {
+            "slot_num": 2,
+            "info": {
+              "slot_num": 2,
+              "meta_gold": 250,
+              "completed_levels": [],
+              "highest_level": 0,
+              "last_played_level": 1,
+              "purchased_heroes": [
+                "kaizen",
+                "h0"
+              ],
+              "unlocked_bosses": [
+                "b0"
+              ],
+              "slot_created": 1766361600.0,
+              "slot_last_played": 1767225540.0,
+              "playtime_seconds": 0
+            },
+            "expect": {
+              "is_empty": false,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 250,
+              "gold_text": "250 Gold",
+              "heroes": 2,
+              "bosses": 1,
+              "last_played": "1m ago",
+              "last_played_offset": 60,
+              "last_played_ts": 1767225540.0,
+              "last_played_absolute": false,
+              "play_label": "CONTINUE",
+              "has_delete": true,
+              "delete_label": "DELETE SAVE"
+            }
+          },
+          {
+            "slot_num": 3,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          }
+        ],
+        "texts": [
+          {
+            "t": "SELECT SAVE GAME",
+            "c": [
+              8,
+              9,
+              18
+            ],
+            "px": 64,
+            "st": "title"
+          },
+          {
+            "t": "Choose a save game to continue or start new",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "No levels completed yet",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "250 Gold",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 30,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Heroes: 2",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "Bosses: 1",
+            "c": [
+              255,
+              150,
+              150
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "L A S T   P L A Y E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1m ago",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              255,
+              214,
+              214
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "3",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "slot_select_1",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_2",
+            "label": "CONTINUE",
+            "kind": "success",
+            "enabled": true
+          },
+          {
+            "bid": "slot_delete_2",
+            "label": "DELETE SAVE",
+            "kind": "danger",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_3",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_back",
+            "label": "BACK",
+            "kind": "neutral",
+            "enabled": true
+          }
+        ]
+      },
+      {
+        "name": "old_save",
+        "files": [
+          "slot_3.json"
+        ],
+        "cards": [
+          {
+            "slot_num": 1,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          },
+          {
+            "slot_num": 2,
+            "info": null,
+            "expect": {
+              "is_empty": true,
+              "highest_level": 0,
+              "level_name": null,
+              "gold": 0,
+              "heroes": 0,
+              "bosses": 0,
+              "last_played": null,
+              "last_played_offset": null,
+              "play_label": "START NEW GAME",
+              "has_delete": false,
+              "delete_label": null
+            }
+          },
+          {
+            "slot_num": 3,
+            "info": {
+              "slot_num": 3,
+              "meta_gold": 1000,
+              "completed_levels": [
+                9
+              ],
+              "highest_level": 9,
+              "last_played_level": 10,
+              "purchased_heroes": [
+                "kaizen",
+                "h0",
+                "h1",
+                "h2"
+              ],
+              "unlocked_bosses": [
+                "b0",
+                "b1",
+                "b2"
+              ],
+              "slot_created": 1766361600.0,
+              "slot_last_played": 1766325600.0,
+              "playtime_seconds": 0
+            },
+            "expect": {
+              "is_empty": false,
+              "highest_level": 9,
+              "level_name": "Soulforged Expanse",
+              "gold": 1000,
+              "gold_text": "1,000 Gold",
+              "heroes": 4,
+              "bosses": 3,
+              "last_played": "21 Dec 2025",
+              "last_played_offset": 900000,
+              "last_played_ts": 1766325600.0,
+              "last_played_absolute": true,
+              "play_label": "CONTINUE",
+              "has_delete": true,
+              "delete_label": "DELETE SAVE",
+              "level_name_shown": "Soulforged Expanse"
+            }
+          }
+        ],
+        "texts": [
+          {
+            "t": "SELECT SAVE GAME",
+            "c": [
+              8,
+              9,
+              18
+            ],
+            "px": 64,
+            "st": "title"
+          },
+          {
+            "t": "Choose a save game to continue or start new",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "1",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "2",
+            "c": [
+              96,
+              106,
+              136
+            ],
+            "px": 58,
+            "st": "body_bold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              148,
+              158,
+              188
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "E M P T Y",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 28,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Tap to start new game",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              205,
+              240,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "START NEW GAME",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "S A V E   G A M E",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "H I G H E S T   L E V E L   C O M P L E T E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "LV. 9",
+            "c": [
+              255,
+              255,
+              255
+            ],
+            "px": 30,
+            "st": "body_bold"
+          },
+          {
+            "t": "Soulforged Expanse",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 17,
+            "st": "body_medium"
+          },
+          {
+            "t": "1,000 Gold",
+            "c": [
+              255,
+              220,
+              110
+            ],
+            "px": 30,
+            "st": "body_semibold"
+          },
+          {
+            "t": "Heroes: 4",
+            "c": [
+              165,
+              220,
+              255
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "Bosses: 3",
+            "c": [
+              255,
+              150,
+              150
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "L A S T   P L A Y E D",
+            "c": [
+              132,
+              142,
+              170
+            ],
+            "px": 18,
+            "st": "body_semibold"
+          },
+          {
+            "t": "21 Dec 2025",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              214,
+              255,
+              222
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "C O N T I N U E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 24,
+            "st": "body_medium"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              255,
+              214,
+              214
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "D E L E T E   S A V E",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 20,
+            "st": "body_semibold"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              198,
+              207,
+              230
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          },
+          {
+            "t": "B A C K",
+            "c": [
+              5,
+              6,
+              12
+            ],
+            "px": 26,
+            "st": "body_semibold"
+          }
+        ],
+        "pills": [
+          {
+            "bid": "slot_select_1",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_2",
+            "label": "START NEW GAME",
+            "kind": "cyan",
+            "enabled": true
+          },
+          {
+            "bid": "slot_select_3",
+            "label": "CONTINUE",
+            "kind": "success",
+            "enabled": true
+          },
+          {
+            "bid": "slot_delete_3",
+            "label": "DELETE SAVE",
+            "kind": "danger",
+            "enabled": true
+          },
+          {
+            "bid": "slot_back",
+            "label": "BACK",
+            "kind": "neutral",
+            "enabled": true
+          }
+        ]
+      }
+    ],
+    "labels": {
+      "title": "SELECT SAVE GAME",
+      "subtitle": "Choose a save game to continue or start new",
+      "save_game": "S A V E   G A M E",
+      "empty": "E M P T Y",
+      "highest": "H I G H E S T   L E V E L   C O M P L E T E D",
+      "last_played": "L A S T   P L A Y E D",
+      "back": "B A C K"
+    }
   }
 }

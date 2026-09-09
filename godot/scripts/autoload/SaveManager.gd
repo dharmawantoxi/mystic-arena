@@ -14,13 +14,54 @@
 #                           dibaca badge NEW BEST! panel menang/kalah)
 # Kunci lama ("gold", "unlocked_heroes") tetap dipertahankan supaya save
 # Godot yang sudah ada tidak rusak; end_match() sekarang menulis ke "meta_gold".
+# ══════════════════════════════════════════════════════════
+#  FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY (TANPA CLOUD)
+# ══════════════════════════════════════════════════════════
+# Paritas _system.py:746-1020: tiga slot (`slot_1.json` .. `slot_3.json`),
+# metadata per slot (`slot_created` / `slot_last_played` /
+# `slot_playtime_seconds`), migrasi SEKALI dari berkas legacy ke slot 1,
+# `delete_slot`, `get_slot_info`/`get_all_slot_info`, `format_playtime`,
+# dan `format_last_played`.
+#
+# PETA NAMA LEGACY: berkas tunggal lama Godot adalah `user://mystic_save.
+# json` (BUKAN `progress.json` seperti pygame - port Godot tidak pernah
+# punya berkas itu), jadi `LEGACY_SAVE_FILE` menunjuk ke sana dan setelah
+# migrasi dipindahkan ke `mystic_save_backup.json.old`, persis pola pygame
+# `progress.json -> progress_backup.json.old`. Save pengguna TIDAK pernah
+# dihapus: migrasi hanya jalan kalau slot 1 masih kosong, dan berkas lama
+# tidak dibuang (cuma di-rename).
+#
+# CLOUD SAVE (`mobile/cloud_save.py`) TIDAK ikut diport - di luar scope
+# FASE 21; ketiadaannya tidak mengubah state yang dikunci oracle.
 extends Node
 
 ## Dipancarkan SETELAH file ditutup. Harness mengamati write asli pada
 ## user:// terisolasi, bukan mengganti save() dengan mock yang selalu PASS.
 signal saved
 
-const SAVE_PATH := "user://mystic_save.json"
+## Jumlah slot — paritas `NUM_SLOTS` _system.py:746.
+const NUM_SLOTS := 3
+## Pola nama berkas slot — paritas `get_slot_file` _system.py:765-767.
+const SLOT_PATH_TEMPLATE := "user://slot_%d.json"
+## Berkas save TUNGGAL warisan port Godot (lihat catatan peta nama di file
+## ini, bagian FASE 21).
+const LEGACY_SAVE_FILE := "user://mystic_save.json"
+## Hasil rename berkas legacy setelah migrasi — paritas `progress_backup.
+## json.old` _system.py:834-836.
+const LEGACY_BACKUP_FILE := "user://mystic_save_backup.json.old"
+## Nama bulan singkat locale C — dipakai `format_last_played` pada cabang
+## tanggal (paritas `time.strftime("%d %b %Y")`).
+const MONTH_ABBR := ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+	"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+## Berkas slot AKTIF — mengikuti `current_slot`. Dulu `const` yang selalu
+## "user://mystic_save.json"; sekarang VAR karena sepuluh harness lama
+## membaca/menulis jalur ini untuk snapshot & restore, dan mereka harus
+## ikut berpindah bersama slot aktif.
+var SAVE_PATH: String = SLOT_PATH_TEMPLATE % 1
+## Slot aktif untuk save/load tanpa argumen — paritas `SaveManager.
+## _current_slot` _system.py:759 (default 1).
+var current_slot: int = 1
 
 ## Default = paritas _system.py get_empty_save() + settings Godot.
 ## "unlocked_heroes" adalah padanan purchased_heroes pygame (kaizen granted
@@ -41,25 +82,297 @@ var data: Dictionary = {
 }
 
 func _ready():
+	# Migrasi legacy dijalankan sebelum load pertama — paritas SaveManager.
+	# load _system.py:884 yang memanggil migrate_legacy_save() lebih dulu.
 	load_save()
 
-func load_save():
-	if FileAccess.file_exists(SAVE_PATH):
-		var f = FileAccess.open(SAVE_PATH, FileAccess.READ)
-		var parsed = JSON.parse_string(f.get_as_text())
-		if parsed is Dictionary:
-			data.merge(parsed, true)
-			# Backfill kunci baru untuk save lama (paritas SaveManager.load
-			# _system.py:894-901 yang setdefault() semua field meta).
-			_backfill()
-			print("[SaveManager] Loaded save: ", data)
-	else:
-		print("[SaveManager] No save, using defaults")
 
-## setdefault semua kunci meta — save hasil versi Godot lama tidak punya
+# ══════════════════════════════════════════════════════════
+#  SLOT (paritas _system.py:763-798)
+# ══════════════════════════════════════════════════════════
+
+## Jalur berkas slot — paritas `get_slot_file` _system.py:765-767.
+func slot_path(slot_num: int) -> String:
+	return SLOT_PATH_TEMPLATE % slot_num
+
+
+## Slot aktif — paritas `get_current_slot` _system.py:770-772.
+func get_current_slot() -> int:
+	return current_slot
+
+
+## Ganti slot aktif — paritas `set_current_slot` _system.py:775-780:
+## nomor di luar 1..NUM_SLOTS DIABAIKAN (slot aktif tidak berubah).
+func set_current_slot(slot_num: int) -> void:
+	if slot_num < 1 or slot_num > NUM_SLOTS:
+		return
+	current_slot = slot_num
+	SAVE_PATH = slot_path(slot_num)
+	print("[SaveManager] Active slot: %d" % slot_num)
+
+
+## `user://` selalu ada di Godot — padanan `ensure_save_dir` _system.py:782.
+func ensure_save_dir() -> void:
+	pass
+
+
+## Ada berkas save di slot ini? — paritas `slot_exists` _system.py:788-795.
+func slot_exists(slot_num: int) -> bool:
+	return FileAccess.file_exists(slot_path(slot_num))
+
+
+# ══════════════════════════════════════════════════════════
+#  MIGRASI LEGACY -> SLOT 1 (paritas _system.py:797-845)
+# ══════════════════════════════════════════════════════════
+
+## Pindahkan save tunggal lama ke slot 1. Berjalan hanya kalau berkas
+## legacy ADA dan slot 1 MASIH KOSONG; kalau gagal (JSON rusak / slot 1
+## sudah ada) mengembalikan false dan tidak menyentuh apa pun — paritas
+## persis `migrate_legacy_save`, termasuk rename berkas lama ke
+## `*_backup.json.old` (bukan dihapus).
+func migrate_legacy_save() -> bool:
+	if not FileAccess.file_exists(LEGACY_SAVE_FILE):
+		return false
+	var slot_1 := slot_path(1)
+	if FileAccess.file_exists(slot_1):
+		# Slot 1 sudah ada — jangan menimpa save yang lebih baru.
+		return false
+
+	var f := FileAccess.open(LEGACY_SAVE_FILE, FileAccess.READ)
+	if f == null:
+		return false
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		# Paritas jalur exception pygame: berkas rusak -> gagal tanpa efek.
+		print("[SaveManager] Migration failed: legacy save is not an object")
+		return false
+
+	var migrated: Dictionary = parsed
+	var now := Time.get_unix_time_from_system()
+	migrated["slot_created"] = now
+	migrated["slot_last_played"] = now
+	migrated["slot_playtime_seconds"] = 0
+
+	var w := FileAccess.open(slot_1, FileAccess.WRITE)
+	if w == null:
+		print("[SaveManager] Migration failed: cannot write %s" % slot_1)
+		return false
+	w.store_string(JSON.stringify(migrated, "\t"))
+	w.close()
+	print("[SaveManager] Legacy save migrated to Slot 1")
+
+	# Rename berkas lama (backup) — kegagalan rename TIDAK membatalkan
+	# migrasi, sama seperti `except: pass` di pygame.
+	var err := DirAccess.rename_absolute(
+		ProjectSettings.globalize_path(LEGACY_SAVE_FILE),
+		ProjectSettings.globalize_path(LEGACY_BACKUP_FILE))
+	if err != OK:
+		print("[SaveManager] Legacy backup skipped (err %d)" % err)
+	return true
+
+
+# ══════════════════════════════════════════════════════════
+#  SAVE / LOAD (paritas _system.py:847-911)
+# ══════════════════════════════════════════════════════════
+
+## Tulis `data` ke slot (default = slot aktif) — paritas `save`
+## _system.py:847-876: `slot_last_played` SELALU diperbarui, `slot_created`
+## hanya dibuat kalau belum ada. CLOUD auto-upload pygame sengaja tidak
+## diport (lihat catatan FASE 21 di kepala berkas).
+func save(slot_num: int = -1) -> void:
+	_backfill(data)
+	var target := current_slot if slot_num < 0 else slot_num
+	var now := Time.get_unix_time_from_system()
+	data["slot_last_played"] = now
+	if not data.has("slot_created") or data["slot_created"] == null:
+		data["slot_created"] = now
+	var f = FileAccess.open(slot_path(target), FileAccess.WRITE)
+	if f == null:
+		push_error("[SaveManager] Cannot open file: " + slot_path(target))
+		return
+	f.store_string(JSON.stringify(data, "\t"))
+	f.close()
+	saved.emit()
+	print("[SaveManager] Slot %d saved!" % target)
+
+
+## Baca slot (default = slot aktif) — paritas `load` _system.py:878-911:
+## migrasi legacy dipicu lebih dulu, berkas yang tidak ada/rusak
+## mengembalikan `get_empty_save()`, dan kunci yang absen di-backfill
+## (setdefault) tanpa menimpa nilai yang sudah tersimpan.
+func load_slot(slot_num: int = -1) -> Dictionary:
+	var target := current_slot if slot_num < 0 else slot_num
+	migrate_legacy_save()
+	var path := slot_path(target)
+	if FileAccess.file_exists(path):
+		var f = FileAccess.open(path, FileAccess.READ)
+		if f != null:
+			var parsed = JSON.parse_string(f.get_as_text())
+			f.close()
+			if parsed is Dictionary:
+				var loaded: Dictionary = parsed
+				_apply_defaults(loaded)
+				print("[SaveManager] Slot %d loaded!" % target)
+				return loaded
+			print("[SaveManager] Slot %d is not an object — using empty save"
+				% target)
+	return get_empty_save()
+
+
+## Muat slot aktif ke `data` — padanan `Menu.reload_progress` yang
+## menugaskan ulang `self.save_data = SaveManager.load()`.
+func load_save() -> void:
+	data = load_slot(current_slot)
+	print("[SaveManager] Loaded save: ", data)
+
+
+## Save kosong — paritas `get_empty_save` _system.py:913-928 DITAMBAH
+## kunci khusus Godot (`unlocked_heroes` = purchased_heroes pygame,
+## `gold`, `settings`, `replay_reward_counts`) supaya hasilnya tetap save
+## yang valid bagi seluruh sistem produksi.
+func get_empty_save() -> Dictionary:
+	var now := Time.get_unix_time_from_system()
+	return {
+		# ── paritas _system.py get_empty_save (urutan kunci sama) ──
+		"unlocked_bosses": [],
+		"purchased_heroes": [],
+		"meta_gold": 0,
+		"completed_levels": [],
+		"last_played_level": 1,
+		"slot_created": now,
+		"slot_last_played": now,
+		"slot_playtime_seconds": 0,
+		"level_stats": {},
+		"run_difficulty": null,
+		# ── kunci khusus port Godot ──
+		"unlocked_heroes": ["kaizen"],
+		"gold": 0,
+		"settings": {"sfx": 0.6, "bgm": 0.35, "quality": "medium"},
+		"replay_reward_counts": {},
+	}
+
+
+## Hapus berkas slot — paritas `delete_slot` _system.py:929-944 (true
+## hanya kalau berkasnya benar-benar ada danberhasil dihapus).
+func delete_slot(slot_num: int) -> bool:
+	if not FileAccess.file_exists(slot_path(slot_num)):
+		return false
+	var err := DirAccess.remove_absolute(
+		ProjectSettings.globalize_path(slot_path(slot_num)))
+	if err != OK:
+		print("[SaveManager] Delete failed (err %d)" % err)
+		return false
+	print("[SaveManager] Slot %d deleted!" % slot_num)
+	return true
+
+
+# ══════════════════════════════════════════════════════════
+#  METADATA SLOT (paritas _system.py:946-1022)
+# ══════════════════════════════════════════════════════════
+
+## Ringkasan slot untuk UI — paritas `get_slot_info` _system.py:946-980:
+## `null` kalau slot kosong ATAU berkasnya rusak (jalur exception pygame).
+func get_slot_info(slot_num: int):
+	if not slot_exists(slot_num):
+		return null
+	var f = FileAccess.open(slot_path(slot_num), FileAccess.READ)
+	if f == null:
+		return null
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		print("[SaveManager] Get slot info failed: not an object")
+		return null
+	var d: Dictionary = parsed
+	var completed = d.get("completed_levels", [])
+	if not (completed is Array):
+		completed = []
+	var highest := 0
+	for lv in completed:
+		highest = maxi(highest, int(lv))
+	return {
+		"slot_num": slot_num,
+		"meta_gold": d.get("meta_gold", 0),
+		"completed_levels": completed,
+		"highest_level": highest,
+		"last_played_level": d.get("last_played_level", 1),
+		"purchased_heroes": d.get("purchased_heroes", []),
+		"unlocked_bosses": d.get("unlocked_bosses", []),
+		"slot_created": d.get("slot_created", 0),
+		"slot_last_played": d.get("slot_last_played", 0),
+		"playtime_seconds": d.get("slot_playtime_seconds", 0),
+	}
+
+
+## Info semua slot (larik sepanjang NUM_SLOTS; unsur bisa null).
+func get_all_slot_info() -> Array:
+	var out: Array = []
+	for i in range(1, NUM_SLOTS + 1):
+		out.append(get_slot_info(i))
+	return out
+
+
+## Detik -> "Xh Ym" / "Ym" — paritas `format_playtime` _system.py:988-996.
+func format_playtime(seconds) -> String:
+	var total := int(seconds)
+	@warning_ignore("integer_division")
+	var hours := total / 3600
+	@warning_ignore("integer_division")
+	var minutes := (total % 3600) / 60
+	if hours > 0:
+		return "%dh %dm" % [hours, minutes]
+	return "%dm" % minutes
+
+
+## Timestamp -> "Never" / "Just now" / "Xm|Xh|Xd ago" / "DD Mon YYYY".
+## Paritas `format_last_played` _system.py:997-1022 — ambang 60 / 3600 /
+## 86400 / 604800 detik, dan cabang tanggal memakai UTC (oracle pygame
+## menjalankan strftime dengan TZ=UTC; lihat seksi `save_slots`).
+func format_last_played(timestamp) -> String:
+	var ts := float(timestamp)
+	if ts == 0.0:
+		return "Never"
+	var elapsed := Time.get_unix_time_from_system() - ts
+	if elapsed < 60:
+		return "Just now"
+	if elapsed < 3600:
+		return "%dm ago" % int(elapsed / 60.0)
+	if elapsed < 86400:
+		return "%dh ago" % int(elapsed / 3600.0)
+	if elapsed < 604800:
+		return "%dd ago" % int(elapsed / 86400.0)
+	var dt: Dictionary = Time.get_datetime_dict_from_unix_time(int(ts), true)
+	return "%02d %s %04d" % [int(dt.get("day", 1)),
+		MONTH_ABBR[clampi(int(dt.get("month", 1)) - 1, 0, 11)],
+		int(dt.get("year", 1970))]
+
+
+## setdefault semua kunci meta + metadata slot — paritas baris
+## `data.setdefault(...)` di `SaveManager.load` _system.py:894-901.
+func _apply_defaults(target: Dictionary) -> void:
+	_backfill(target)
+	var now := Time.get_unix_time_from_system()
+	if not target.has("slot_created") or target["slot_created"] == null:
+		target["slot_created"] = now
+	if not target.has("slot_last_played") or target["slot_last_played"] == null:
+		target["slot_last_played"] = now
+	if (not target.has("slot_playtime_seconds")
+			or target["slot_playtime_seconds"] == null):
+		target["slot_playtime_seconds"] = 0
+	if not target.has("run_difficulty"):
+		target["run_difficulty"] = null
+
+
+## setdefault kunci meta — save hasil versi Godot lama tidak punya
 ## meta_gold/replay_reward_counts, dan Dictionary.merge tidak menambah kunci
 ## yang nilainya null/absen di file.
-func _backfill() -> void:
+## `target` kosong/absen = pakai `data` (dipakai harness lama yang
+## memanggil `_backfill()` tanpa argumen).
+func _backfill(target: Variant = null) -> void:
+	var d := data
+	if target is Dictionary:
+		d = target
 	var defaults: Dictionary = {
 		"meta_gold": 0,
 		"replay_reward_counts": {},
@@ -67,30 +380,25 @@ func _backfill() -> void:
 		"last_played_level": 1,
 		"completed_levels": [],
 		"unlocked_heroes": ["kaizen"],
+		# `purchased_heroes` adalah kunci MIRROR sisi pygame (daftar yang
+		# sama dengan `unlocked_heroes` di Godot). pygame menyetelnya lewat
+		# `data.setdefault('purchased_heroes', [])` saat load, jadi bentuk
+		# save hasil load wajib memilikinya walau port Godot tidak pernah
+		# membacanya. Backfill polos (bukan salinan unlocked_heroes):
+		# persis perilaku setdefault pygame untuk save yang tidak punya
+		# kunci ini.
+		"purchased_heroes": [],
 		"settings": {"sfx": 0.6, "bgm": 0.35, "quality": "medium"},
 		"level_stats": {},
 	}
 	for key in defaults:
-		if not data.has(key) or data[key] == null:
-			data[key] = defaults[key]
+		if not d.has(key) or d[key] == null:
+			d[key] = defaults[key]
 	# Starter hanya Kaizen. Unlock lama tidak pernah dicabut saat upgrade port.
-	if not (data["unlocked_heroes"] is Array) or data["unlocked_heroes"].is_empty():
-		data["unlocked_heroes"] = ["kaizen"]
+	if (not (d["unlocked_heroes"] is Array)
+			or d["unlocked_heroes"].is_empty()):
+		d["unlocked_heroes"] = ["kaizen"]
 
-
-func save():
-	_backfill()
-	var f = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if f == null:
-		push_error("[SaveManager] Cannot open file: " + SAVE_PATH)
-		return
-	f.store_string(JSON.stringify(data, "\t"))
-	f.close()
-	saved.emit()
-	print("[SaveManager] Saved")
-	# TODO: integrate godot Google Play Games plugin for cloud save
-	# if OS.has_feature("android"):
-	#     GooglePlayGames.save_snapshot("mystic_save", data)
 
 # ══════════════════════════════════════════════════════════
 #  HERO (padanan purchased_heroes pygame)
