@@ -47,39 +47,37 @@ func _build() -> void:
 	_root = HBoxContainer.new()
 	_root.name = "BarRoot"
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# tengah-bawah, di atas baris hint keyboard (HUD HintLabel y = -46..-18)
+	# tengah-bawah layar
 	_root.anchor_left = 0.5
 	_root.anchor_right = 0.5
 	_root.anchor_top = 1.0
 	_root.anchor_bottom = 1.0
 	_root.offset_left = -286.0
 	_root.offset_right = 286.0
-	_root.offset_top = -152.0
+	_root.offset_top = -158.0
 	_root.offset_bottom = -52.0
 	_root.add_theme_constant_override("separation", 12)
 	add_child(_root)
 
 	# ── panel info hero ──
-	var panel := PanelContainer.new()
+	var panel := MysticPanel.new(Color8(28, 38, 66), Color8(18, 24, 44),
+		Color8(96, 152, 214), 10.0, 2.0, false)
 	panel.name = "HeroPanel"
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.custom_minimum_size = Vector2(250, 0)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.055, 0.09, 0.9)
-	sb.border_color = Color(0.35, 0.5, 0.95, 0.85)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(10)
-	sb.content_margin_left = 10.0
-	sb.content_margin_right = 10.0
-	sb.content_margin_top = 6.0
-	sb.content_margin_bottom = 6.0
-	panel.add_theme_stylebox_override("panel", sb)
 	_root.add_child(panel)
+	var margin := MarginContainer.new()
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 6)
+	margin.add_theme_constant_override("margin_bottom", 6)
+	panel.add_child(margin)
 
 	_info = VBoxContainer.new()
 	_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_info.add_theme_constant_override("separation", 3)
-	panel.add_child(_info)
+	margin.add_child(_info)
 
 	# Baris nama: "Kaizen" + "Lv.1" + tombol tutup X (paritas teks panel).
 	var name_row := HBoxContainer.new()
@@ -87,21 +85,25 @@ func _build() -> void:
 	name_row.add_theme_constant_override("separation", 8)
 	_info.add_child(name_row)
 	_name_label = Label.new()
-	_name_label.add_theme_font_size_override("font_size", 15)
-	_name_label.add_theme_color_override("font_color", Color(0.85, 0.92, 1.0))
+	UiTheme.style_label(_name_label, 15, "body_semibold",
+		Color8(217, 235, 255), true)
 	_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_name_label.text = "tidak ada hero dipilih"
+	_name_label.text = "No hero selected"
 	name_row.add_child(_name_label)
 	_level_label = Label.new()
-	_level_label.add_theme_font_size_override("font_size", 15)
-	_level_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.45))
+	UiTheme.style_label(_level_label, 15, "body_bold", UiTheme.GOLD_TEXT,
+		true)
 	_level_label.text = ""
 	name_row.add_child(_level_label)
 	_close_btn = Button.new()
 	_close_btn.text = "X"
 	_close_btn.custom_minimum_size = Vector2(24, 22)
 	_close_btn.focus_mode = Control.FOCUS_NONE
-	_close_btn.tooltip_text = "Tutup panel (batal pilih hero)"
+	_close_btn.tooltip_text = "Close panel (deselect hero)"
+	_close_btn.add_theme_font_override("font", UiTheme.font("body_bold"))
+	_close_btn.add_theme_font_size_override("font_size", 12)
+	_close_btn.add_theme_color_override("font_color", UiTheme.TEXT_DIM)
+	_close_btn.add_theme_color_override("font_hover_color", UiTheme.RED)
 	_close_btn.pressed.connect(_on_close_pressed)
 	name_row.add_child(_close_btn)
 
@@ -121,13 +123,12 @@ func _build() -> void:
 	_info.add_child(_hp_bar)
 
 	_hp_label = Label.new()
-	_hp_label.add_theme_font_size_override("font_size", 11)
-	_hp_label.add_theme_color_override("font_color", Color(0.75, 0.95, 0.78))
+	UiTheme.style_label(_hp_label, 11, "body_semibold",
+		Color8(191, 242, 199))
 	_info.add_child(_hp_label)
 
 	_stats_label = Label.new()
-	_stats_label.add_theme_font_size_override("font_size", 11)
-	_stats_label.add_theme_color_override("font_color", Color(0.72, 0.78, 0.9))
+	UiTheme.style_label(_stats_label, 11, "body", Color8(184, 199, 230))
 	_info.add_child(_stats_label)
 
 	_item_row = HBoxContainer.new()
@@ -149,21 +150,21 @@ func _build() -> void:
 		chip.add_theme_stylebox_override("hover", csb)
 		chip.add_theme_stylebox_override("pressed", csb)
 		chip.add_theme_stylebox_override("disabled", csb)
-		chip.tooltip_text = "slot item %d kosong" % (i + 1)
+		chip.tooltip_text = "item slot %d empty" % (i + 1)
 		chip.pressed.connect(_open_forge)
 		_item_row.add_child(chip)
 		_item_chips.append(chip)
 
-	# ── baris aksi panel (paritas tombol HeroPanel; tinggi 22) ──
-	_autocast_btn = _make_action_button("AUTO-CAST ON")
-	_autocast_btn.tooltip_text = "Auto-cast selalu ON (paritas v29: toggle no-op)"
+	# ── baris aksi panel (paritas tombol HeroPanel) ──
+	_autocast_btn = _make_action_button("AUTO-CAST ON", "neutral", "")
+	_autocast_btn.tooltip_text = "Auto-cast is always ON (parity v29: toggle no-op)"
 	_autocast_btn.pressed.connect(_on_autocast_pressed)
 	_info.add_child(_autocast_btn)
-	_forge_btn = _make_action_button("ITEM FORGE  (0/6)")
-	_forge_btn.tooltip_text = "Buka ITEM FORGE untuk hero ini"
+	_forge_btn = _make_action_button("ITEM FORGE  (0/6)", "gold", "gem")
+	_forge_btn.tooltip_text = "Open the ITEM FORGE for this hero"
 	_forge_btn.pressed.connect(_open_forge)
 	_info.add_child(_forge_btn)
-	_upgrade_btn = _make_action_button("")
+	_upgrade_btn = _make_action_button("", "success", "plus")
 	_upgrade_btn.pressed.connect(_on_upgrade_pressed)
 	_info.add_child(_upgrade_btn)
 
@@ -184,9 +185,8 @@ func _build() -> void:
 		_buttons[str(k)] = btn
 
 	var hint := Label.new()
-	hint.text = "klik hero untuk memilih · QWER / tombol = skill · H = toko · G/T/C/B/D = perintah taktis"
-	hint.add_theme_font_size_override("font_size", 10)
-	hint.add_theme_color_override("font_color", Color(0.7, 0.76, 0.9, 0.75))
+	hint.text = "click a hero to select · QWER / buttons = skills · H = shop · G/T/C/B/D = tactical orders"
+	UiTheme.style_label(hint, 10, "body", Color(0.7, 0.76, 0.9, 0.75))
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	skill_box.add_child(hint)
 
@@ -264,9 +264,9 @@ func _refresh_static() -> void:
 	_forge_btn.disabled = hero == null
 	_upgrade_btn.disabled = hero == null
 	if hero == null:
-		_name_label.text = "tidak ada hero dipilih"
+		_name_label.text = "No hero selected"
 		_level_label.text = ""
-		_stats_label.text = "B → HERO: beli hero, lalu klik untuk memilih"
+		_stats_label.text = "H = SHOP: buy a hero, then click to select"
 		_hp_bar.value = 0.0
 		_hp_label.text = ""
 		_forge_btn.text = "ITEM FORGE  (0/6)"
@@ -298,13 +298,12 @@ func _refresh_static() -> void:
 		_buttons[k].update_state(hero)
 
 
-func _make_action_button(label_text: String) -> Button:
-	var b := Button.new()
-	b.text = label_text
-	b.custom_minimum_size = Vector2(0, 22)
+func _make_action_button(label_text: String, kind: String,
+		icon: String) -> Button:
+	var b := MysticPill.new(label_text, kind, icon, 11, false)
+	b.custom_minimum_size = Vector2(0, 26)
+	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	b.focus_mode = Control.FOCUS_NONE
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_size_override("font_size", 11)
 	return b
 
 
@@ -323,7 +322,7 @@ func _sync_items(ids: Array) -> void:
 			if sb != null:
 				sb.bg_color = Color(0.1, 0.11, 0.16, 0.95)
 				sb.border_color = Color(0.3, 0.33, 0.42, 0.9)
-			chip.tooltip_text = "slot item %d kosong" % (i + 1)
+			chip.tooltip_text = "item slot %d empty" % (i + 1)
 		# StyleBoxFlat yang di-mutate tidak otomatis memicu redraw Panel
 		chip.queue_redraw()
 
@@ -334,11 +333,11 @@ func _refresh() -> void:
 	if hero == null or not is_instance_valid(hero) or bool(hero.get("is_dead")):
 		if hero != null:
 			_refresh_static()
-		return
+			return
 	var hp := float(hero.get("hp"))
 	var max_hp := maxf(1.0, float(hero.get("max_hp")))
 	_hp_bar.value = clampf(100.0 * hp / max_hp, 0.0, 100.0)
 	_hp_label.text = "%d/%d%s" % [int(hp), int(max_hp),
-		"  ·  MUNDUR" if bool(hero.get("is_retreating")) else ""]
+		"  ·  RETREATING" if bool(hero.get("is_retreating")) else ""]
 	for k in SKILL_KEYS:
 		_buttons[k].update_state(hero)

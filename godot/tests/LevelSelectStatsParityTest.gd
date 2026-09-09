@@ -19,10 +19,9 @@
 #               LEBAR PIKSEL PYGAME dari fixture (fungsi murni), dan
 #               baterai win-rate int() + band warna.
 #
-# Beda disengaja yang dikunci eksplisit: label stat Godot berbahasa
-# Indonesia (SKOR TERBAIK/…), "No stats yet" -> "Belum ada statistik",
-# ukuran/posisi piksel kartu (Godot kartu 380px, pygame 280px) — nilai
-# data string/warna/band wajib identik. Batas tepat truncasi tergantung
+# Beda disengaja yang dikunci eksplisit: ukuran/posisi piksel kartu
+# (Godot kartu 380px, pygame 280px) — string ("No stats yet", BEST
+# SCORE/…) / warna / band wajib identik. Batas tepat truncasi tergantung
 # metrik font (ambang 120px pygame di-pin sebagai konstanta produksi).
 #
 # Jalankan dengan XDG_DATA_HOME=$(mktemp -d) agar user:// TERISOLASI.
@@ -135,7 +134,7 @@ func _test_card_case(case: Dictionary) -> void:
 			"%s: tanpa attempt tanpa slot stat" % tag)
 		var has_empty := false
 		for child in card.find_children("*", "Label", true, false):
-			if str(child.text) == "Belum ada statistik":
+			if str(child.text) == "No stats yet":
 				has_empty = true
 		_expect(has_empty, "%s: baris 'Belum ada statistik' ada" % tag)
 		return

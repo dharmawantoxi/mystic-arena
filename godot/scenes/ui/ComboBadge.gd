@@ -33,10 +33,15 @@ func _ready() -> void:
 	_count_label.size = Vector2(180.0, 68.0)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_count_label.add_theme_font_override("font", UiTheme.font("body_bold"))
 	_count_label.add_theme_font_size_override("font_size", 46)
 	_count_label.add_theme_color_override("font_outline_color",
 		Color(0, 0, 0, 0.9))
 	_count_label.add_theme_constant_override("outline_size", 4)
+	_count_label.add_theme_color_override("font_shadow_color",
+		Color(0, 0, 0, 0.7))
+	_count_label.add_theme_constant_override("shadow_offset_x", 3)
+	_count_label.add_theme_constant_override("shadow_offset_y", 3)
 	add_child(_count_label)
 
 	_tier_label = Label.new()
@@ -44,10 +49,15 @@ func _ready() -> void:
 	_tier_label.position = Vector2(0.0, 30.0) - Vector2(0.0, 11.0)
 	_tier_label.size = Vector2(180.0, 22.0)
 	_tier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tier_label.add_theme_font_override("font", UiTheme.font("body_bold"))
 	_tier_label.add_theme_font_size_override("font_size", 19)
 	_tier_label.add_theme_color_override("font_outline_color",
 		Color(0, 0, 0, 0.9))
 	_tier_label.add_theme_constant_override("outline_size", 3)
+	_tier_label.add_theme_color_override("font_shadow_color",
+		Color(0, 0, 0, 0.7))
+	_tier_label.add_theme_constant_override("shadow_offset_x", 2)
+	_tier_label.add_theme_constant_override("shadow_offset_y", 2)
 	add_child(_tier_label)
 
 	var bar_rect := HudLayout.combo_bar_rect(SCREEN_W)

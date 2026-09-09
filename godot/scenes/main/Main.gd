@@ -134,6 +134,16 @@ func _ready():
 		# jadi sinkronkan state saat ini SEKARANG — kalau dilewatkan, boot
 		# menampilkan arena+HUD di belakang/sebelah layar menu (berantakan).
 		_apply_menu_coverage(menu.is_open(), menu.state == menu.State.PAUSE)
+	# Terapkan settings tersimpan (Game Speed + FPS Limit paritas pygame).
+	Engine.time_scale = float(SaveManager.get_setting("game_speed", 1.0))
+	Engine.max_fps = int(SaveManager.get_setting("fps_limit", 60))
+	# Splashscreen 3 detik sebelum menu (paritas splash_screen.py) —
+	# dilewati saat headless (harness CI tidak butuh menunggu splash).
+	if DisplayServer.get_name() != "headless":
+		var splash := MysticSplash.new()
+		splash.name = "Splash"
+		add_child(splash)
+		splash.finished.connect(splash.queue_free)
 	# Tetap dapat kunci walau SceneTree di-pause (P/ESC). Karena anak men-inherit,
 	# node yang mensimulasikan unit harus dipaksa PAUSABLE supaya get_tree().paused
 	# sungguh-sungguh membekukan hero/minion.

@@ -642,7 +642,7 @@ func _test_shop_item() -> void:
 	_expect(GameManager.shop_open, "forge tetap buka")
 	_expect(kaizen.items.has("dead_edge"), "dead_edge dimiliki")
 	var db := _button_by_key("item_buy_dead_edge")
-	_expect(db != null and db.disabled and db.text.ends_with("— dimiliki"),
+	_expect(db != null and db.disabled and db.text.ends_with("— OWNED"),
 		"owned label (got %s)" % (db.text if db else "?"))
 	GameManager.select_hero(kaizen)
 

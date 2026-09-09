@@ -87,43 +87,44 @@ func _draw() -> void:
 	var rect := HudLayout.achievement_panel_rect(timer)
 	var alpha := HudLayout.achievement_alpha(timer)
 
-	# Panel gelap + border emas (aproximasi piksel; geometri kanon).
-	draw_rect(rect, Color(0.07, 0.07, 0.11, 0.92 * alpha))
-	draw_rect(rect, Color(1.0, 0.86, 0.2, alpha), false, 3.0)
+	# Panel gradasi + border emas + sudut (geometri kanon HudLayout).
+	var top := Color(0.10, 0.11, 0.17, 0.95 * alpha)
+	var bot := Color(0.05, 0.05, 0.09, 0.95 * alpha)
+	UiTheme.draw_vgrad(self, rect, top, bot, 10.0)
+	draw_style_box(UiTheme.border_style(
+		Color(1.0, 0.86, 0.2, alpha), 2.0, 10.0), rect)
+	UiTheme.corner_ticks(self, rect, Color(1.0, 0.91, 0.61, alpha), 9.0,
+		2.0, 2.0)
 
 	# Header letterspaced + judul + deskripsi (posisi/teks/warna kanon).
-	var font := ThemeDB.fallback_font
-	var header_color := Color(HudLayout.ACHIEVEMENT_HEADER_COLOR, alpha)
-	var title_color := Color(HudLayout.ACHIEVEMENT_TITLE_COLOR, alpha)
-	var desc_color := Color(HudLayout.ACHIEVEMENT_DESC_COLOR, alpha)
+	var header_c := Color(HudLayout.ACHIEVEMENT_HEADER_COLOR, alpha)
+	var title_c := Color(HudLayout.ACHIEVEMENT_TITLE_COLOR, alpha)
+	var desc_c := Color(HudLayout.ACHIEVEMENT_DESC_COLOR, alpha)
 	var origin := rect.position + HudLayout.ACHIEVEMENT_TEXT_HEADER
-	draw_string(font, origin, HudLayout.letter("ACHIEVEMENT"),
-		HORIZONTAL_ALIGNMENT_LEFT, -1, 13, header_color)
-	draw_string(font, rect.position + HudLayout.ACHIEVEMENT_TEXT_TITLE,
-		str(current["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, title_color)
-	draw_string(font, rect.position + HudLayout.ACHIEVEMENT_TEXT_DESC,
+	var fh := UiTheme.font("body_semibold")
+	UiTheme.draw_text_shadow(self, fh, HudLayout.letter("ACHIEVEMENT"), 13,
+		header_c, origin, Color(0, 0, 0, 0.8 * alpha))
+	var ft := UiTheme.font("body_bold")
+	UiTheme.draw_text_shadow(self, ft, str(current["title"]), 17, title_c,
+		rect.position + HudLayout.ACHIEVEMENT_TEXT_TITLE,
+		Color(0, 0, 0, 0.8 * alpha))
+	var fd := UiTheme.font("body")
+	draw_string(fd, rect.position + HudLayout.ACHIEVEMENT_TEXT_DESC,
 		str(current["description"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
-		desc_color)
+		desc_c)
 
-	# Ikon lingkaran emas di kiri (aproximasi _draw_icon pygame).
+	# Ikon lingkaran emas di kiri (ikon vektor ui_theme pygame).
 	var icon_c := rect.position + HudLayout.ACHIEVEMENT_ICON_POS
 	draw_circle(icon_c, 16.0, Color(0.24, 0.16, 0.04, alpha))
 	draw_arc(icon_c, 16.0, 0.0, TAU, 24, Color(1.0, 0.86, 0.2, alpha), 2.0)
-	match str(current["icon"]):
-		"star":
-			_draw_star(icon_c, 8.0, Color(1.0, 0.86, 0.2, alpha))
-		"sword":
-			draw_line(icon_c + Vector2(0, -9), icon_c + Vector2(0, 7),
-				Color(0.85, 0.85, 0.95, alpha), 3.0)
-			draw_line(icon_c + Vector2(-5, 4), icon_c + Vector2(5, 4),
-				Color(0.5, 0.3, 0.15, alpha), 3.0)
-		"skull":
-			draw_circle(icon_c + Vector2(0, -2), 6.5,
-				Color(0.95, 0.95, 0.9, alpha))
-			draw_rect(Rect2(icon_c + Vector2(-4, 3), Vector2(8, 5)),
-				Color(0.95, 0.95, 0.9, alpha))
-		_:
-			draw_circle(icon_c, 6.0, Color(1.0, 0.86, 0.2, alpha))
+	var icon_name := str(current["icon"])
+	if icon_name == "sword":
+		icon_name = "swords"
+	elif icon_name != "star" and icon_name != "skull" \
+			and icon_name != "shield" and icon_name != "coin":
+		icon_name = "star"
+	UiTheme.draw_icon(self, icon_name, icon_c,
+		Color(1.0, 0.86, 0.2, alpha), 0.9)
 
 
 func _draw_star(c: Vector2, r: float, color: Color) -> void:

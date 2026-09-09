@@ -1,4 +1,4 @@
-# ShopPanel.gd — panel toko terpadu: MENARA / ITEM / HERO / NEXUS.
+# ShopPanel.gd — panel toko terpadu: TOWER / ITEM / HERO / NEXUS.
 #
 # Port dari _core.py: build popup (try_build_tower), shop item 6 slot
 # (hero_items.ITEM_CATALOG), shop hero (unlocked_heroes) dan Castle upgrade
@@ -10,8 +10,10 @@
 # maupun state unit, jadi keyboard dan mouse memakai jalur yang sama.
 extends Control
 
-const TABS: Array = [["tower", "MENARA"], ["item", "ITEM"],
+const TABS: Array = [["tower", "TOWER"], ["item", "ITEM"],
 	["hero", "HERO"], ["nexus", "NEXUS"]]
+const TAB_TITLES := {"tower": "TOWER", "item": "ITEM FORGE",
+	"hero": "HERO", "nexus": "NEXUS"}
 const ITEM_COLUMNS := 3
 ## Seberapa sering panel menyegarkan angka yang bergerak (HP nexus / gold)
 const REFRESH_INTERVAL := 0.25
@@ -55,7 +57,8 @@ func _ready() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build() -> void:
-	_panel = PanelContainer.new()
+	_panel = MysticPanel.new(UiTheme.PANEL_TOP, UiTheme.PANEL_BOTTOM,
+		UiTheme.GOLD, 12.0, 2.0, true)
 	_panel.name = "Panel"
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.anchor_left = 0.5
@@ -66,24 +69,18 @@ func _build() -> void:
 	_panel.offset_right = 345.0
 	_panel.offset_top = -258.0
 	_panel.offset_bottom = 132.0
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COL_BG
-	sb.border_color = COL_BORDER
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(12)
-	sb.content_margin_left = 14.0
-	sb.content_margin_right = 14.0
-	sb.content_margin_top = 10.0
-	sb.content_margin_bottom = 10.0
-	sb.shadow_color = Color(0, 0, 0, 0.5)
-	sb.shadow_size = 12
-	_panel.add_theme_stylebox_override("panel", sb)
 	add_child(_panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	_panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_theme_constant_override("separation", 8)
-	_panel.add_child(vbox)
+	margin.add_child(vbox)
 
 	# ── header: judul + gold + tombol tutup ──
 	var header := HBoxContainer.new()
@@ -91,19 +88,16 @@ func _build() -> void:
 	vbox.add_child(header)
 
 	_title = Label.new()
-	_title.text = "TOKO"
-	_title.add_theme_font_size_override("font_size", 19)
-	_title.add_theme_color_override("font_color", COL_GOLD)
+	_title.text = "SHOP"
+	UiTheme.style_label(_title, 19, "body_bold", UiTheme.GOLD_TEXT, true)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title)
 
 	_gold_label = Label.new()
-	_gold_label.add_theme_font_size_override("font_size", 17)
-	_gold_label.add_theme_color_override("font_color", COL_GOLD)
+	UiTheme.style_label(_gold_label, 16, "body_semibold", UiTheme.GOLD, true)
 	header.add_child(_gold_label)
 
-	var close_btn := Button.new()
-	close_btn.text = "TUTUP  (H)"
+	var close_btn := MysticPill.new("CLOSE (H)", "neutral", "", 12, false)
 	close_btn.custom_minimum_size = Vector2(104, 28)
 	close_btn.set_meta("ui_key", "shop_close")
 	close_btn.pressed.connect(func(): GameManager.close_shop())
@@ -115,9 +109,7 @@ func _build() -> void:
 	vbox.add_child(_tab_box)
 	var group := ButtonGroup.new()
 	for pair in TABS:
-		var b := Button.new()
-		b.text = str(pair[1])
-		b.toggle_mode = true
+		var b := MysticTab.new(str(pair[1]), UiTheme.GOLD, 13)
 		b.button_group = group
 		b.custom_minimum_size = Vector2(110, 30)
 		b.set_meta("ui_key", "to_" + str(pair[0]))
@@ -140,8 +132,7 @@ func _build() -> void:
 	_context = Label.new()
 	_context.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_context.custom_minimum_size = Vector2(0, 30)
-	_context.add_theme_font_size_override("font_size", 11)
-	_context.add_theme_color_override("font_color", COL_DIM)
+	UiTheme.style_label(_context, 11, "body", UiTheme.TEXT_DIM)
 	vbox.add_child(_context)
 
 
@@ -246,6 +237,7 @@ func _sync_tab_buttons() -> void:
 	for key in _tab_buttons:
 		var b: Button = _tab_buttons[key]
 		b.set_pressed_no_signal(str(key) == _tab)
+		b.queue_redraw() # set_pressed_no_signal tak emit toggled
 
 
 func _update_gold_label() -> void:
@@ -262,6 +254,7 @@ func _rebuild_body() -> void:
 	for c in _body.get_children():
 		_body.remove_child(c)
 		c.queue_free()
+	_title.text = str(TAB_TITLES.get(_tab, "SHOP"))
 	match _tab:
 		"item":
 			_build_item_tab()
@@ -281,7 +274,7 @@ func _update_context() -> void:
 		parts.append("hero: %s Lv.%d" % [str(h.get("hero_type")), int(h.get("level"))])
 	var t = GameManager.selected_tower
 	if t != null and is_instance_valid(t):
-		parts.append("menara: %s" % str(t.get("display_name")))
+		parts.append("tower: %s" % str(t.get("display_name")))
 	var s: Dictionary = GameManager.slot(GameManager.selected_slot)
 	if not s.is_empty():
 		parts.append("slot: lane %s (%s)" % [str(s["lane"]),
@@ -289,8 +282,8 @@ func _update_context() -> void:
 	var nx = GameManager.blue_nexus
 	if nx != null and is_instance_valid(nx):
 		parts.append("nexus: Lv.%d" % int(nx.get("level")))
-	_context.text = "[%s]  %s · gold %d · AI %d · difficulty %s · D ganti difficulty" % [
-		_tab.to_upper(), " | ".join(parts) if not parts.is_empty() else "tidak ada yang dipilih",
+	_context.text = "[%s]  %s · gold %d · AI %d · difficulty %s · D changes difficulty" % [
+		_tab.to_upper(), " | ".join(parts) if not parts.is_empty() else "nothing selected",
 		GameManager.gold, GameManager.ai_gold, GameManager.difficulty.to_upper()]
 
 
@@ -304,13 +297,13 @@ func _build_tower_tab() -> void:
 	var s: Dictionary = GameManager.slot(GameManager.selected_slot)
 	if not s.is_empty():
 		if str(s["team"]) != "blue":
-			_add_label("Slot ini milik Dire — tidak bisa dibangun.", COL_DIM)
+			_add_label("This slot belongs to Dire — cannot build.", COL_DIM)
 			return
 		if bool(s["taken"]):
-			_add_label("Slot sudah terisi menara.", COL_DIM)
+			_add_label("Slot is already occupied.", COL_DIM)
 			return
 		var cost := TowerDB.build_cost()
-		_add_label("Slot kosong di lane %s — bangun menara Lv1 (%d gold)" % [
+		_add_label("Empty slot on lane %s — build a Lv1 tower (%d gold)" % [
 			str(s["lane"]).to_upper(), cost], COL_TEXT, 15)
 		var grid := GridContainer.new()
 		grid.columns = 2
@@ -322,21 +315,21 @@ func _build_tower_tab() -> void:
 			var afford := GameManager.gold >= cost
 			var b := _make_button("%s %s — %d g" % [
 					str(ti.get("icon", "")), str(ti.get("name", tt)), cost],
-				"%s\n%s\nCatatan: stat Lv1 semua jalur sama (Archer Lv1); "
+				"%s\n%s\nNote: Lv1 stats are identical on all paths (Archer Lv1); "
 				% [str(ti.get("desc", "")), str(ti.get("special", ""))]
-				+ "kekuatannya baru muncul setelah upgrade ke Lv2.",
+				+ "strengths emerge after upgrading to Lv2.",
 				_build_tower.bind(str(tt)), afford, "build_" + str(tt),
 				{"cost": cost, "blocked": "" if afford else "POOR"})
 			b.custom_minimum_size = Vector2(320, 34)
 			grid.add_child(b)
-		_add_label("Upgrade Lv1 -> Lv2 memilih jalur dan menaikkan HP x%.2f."
+		_add_label("Upgrading Lv1 → Lv2 chooses a path and multiplies HP by x%.2f."
 			% TowerDB.hp_multiplier(), COL_DIM, 11)
 		return
-	_add_label("Klik lingkaran slot di lane untuk membangun menara.", COL_TEXT, 14)
-	_add_label("Slot kosong: Radiant %d · Dire %d  (3 slot per lane per tim)" % [
+	_add_label("Click a slot circle on a lane to build a tower.", COL_TEXT, 14)
+	_add_label("Empty slots: Radiant %d · Dire %d  (3 slots per lane per team)" % [
 		GameManager.free_slots_for("blue").size(), GameManager.free_slots_for("red").size()],
 		COL_DIM)
-	_add_label("Klik menara milikmu untuk upgrade / jual / Regen Shield.", COL_DIM)
+	_add_label("Click one of your towers to upgrade / sell / Regen Shield.", COL_DIM)
 
 
 func _tower_detail(t) -> void:
@@ -347,14 +340,14 @@ func _tower_detail(t) -> void:
 		int(t.get("hp")), int(t.get("max_hp")), int(t.get("shield")), int(t.get("shield_max")),
 		int(t.get("damage")), str(t.get("dmg_school")), int(t.get("attack_range")),
 		float(t.get("attack_cooldown")), int(t.get("armor"))], COL_DIM, 11)
-	_add_label("Spesial: %s" % str(info.get("special", "-")), COL_DIM, 11)
+	_add_label("Special: %s" % str(info.get("special", "-")), COL_DIM, 11)
 	if not bool(t.get("is_player_built")):
-		_add_label("Menara Dire — tidak bisa di-upgrade atau dijual.", COL_DIM)
+		_add_label("Dire tower — cannot be upgraded or sold.", COL_DIM)
 		return
 
 	if t.can_upgrade():
 		if TowerDB.can_choose_path(int(t.get("level"))):
-			_add_label("Pilih jalur upgrade ke Lv2:", COL_TEXT, 13)
+			_add_label("Choose an upgrade path to Lv2:", COL_TEXT, 13)
 			var grid := GridContainer.new()
 			grid.columns = 2
 			grid.add_theme_constant_override("h_separation", 6)
@@ -373,36 +366,36 @@ func _tower_detail(t) -> void:
 		else:
 			var cost: int = t.upgrade_cost(str(t.get("tower_type")))
 			var afford := GameManager.gold >= cost
-			_add_button("Upgrade ke Lv.%d — %d gold" % [int(t.get("level")) + 1, cost],
-				"HP x%.2f, damage & jangkauan naik." % TowerDB.hp_multiplier(),
+			_add_button("Upgrade to Lv.%d — %d gold" % [int(t.get("level")) + 1, cost],
+				"HP x%.2f, damage & range up." % TowerDB.hp_multiplier(),
 				# ui_upgrade 0.5 — paritas _core.py:2481 / 7243 / 7341
 				func(): _run(func(): GameManager.try_upgrade_tower(""), "ui_upgrade", 0.5),
 				afford, "upgrade_tower",
 				{"cost": cost, "blocked": "" if afford else "POOR"})
 	else:
-		_add_label("Level maksimum (%d) tercapai." % TowerDB.max_level(), COL_DIM)
+		_add_label("Maximum level (%d) reached." % TowerDB.max_level(), COL_DIM)
 
 	if bool(t.get("regen_shield_active")):
-		_add_label("Regen Shield: AKTIF (shield pulih setelah 3 detik tidak kena damage)",
+		_add_label("Regen Shield: ACTIVE (shield regenerates after 3s without damage)",
 			Color(0.55, 0.95, 0.65))
 	elif t.has_method("can_activate_regen_shield") and t.can_activate_regen_shield():
 		var rcost := int(t.regen_shield_cost())
 		var afford := GameManager.gold >= rcost
-		_add_button("Beli Regen Shield — %d gold" % rcost,
-			"Shield menara ikut regen (paritas Tower.activate_regen_shield).",
+		_add_button("Buy Regen Shield — %d gold" % rcost,
+			"Tower shield regenerates over time.",
 			# ui_upgrade 0.5 — paritas _try_activate_regen_shield _core.py:8240
 			func(): _run(func(): GameManager.try_buy_tower_regen_shield(), "ui_upgrade", 0.5),
 			afford, "tower_regen",
 			{"cost": rcost, "blocked": "" if afford else "POOR"})
 	else:
-		_add_label("Regen Shield terbuka di Lv.%d+ (harga %d gold)" % [
+		_add_label("Regen Shield unlocks at Lv.%d+ (%d gold)" % [
 			TowerDB.regen_shield_min_level(), TowerDB.regen_shield_cost()], COL_DIM, 11)
 
 	# Popup tower Lv1 pygame TAK punya tombol jual (refund +50 fallback cuma
 	# terjangkau via handler) — tombol disembunyikan di Lv1.
 	if int(t.get("level")) > 1:
-		_add_button("Jual menara (+%d gold)" % int(t.sell_value()),
-			"Refund 50% dari total biaya upgrade yang sudah dibayar.",
+		_add_button("Sell tower (+%d gold)" % int(t.sell_value()),
+			"Refunds 50% of total upgrade costs paid.",
 			# ui_sell 1.0 — paritas _try_sell_tower _core.py:8219
 			func(): _run(func(): GameManager.try_sell_tower(), "ui_sell"), true,
 			"sell_tower", {"refund": int(t.sell_value())})
@@ -423,15 +416,15 @@ func _pick_path(t, target_type: String) -> void:
 func _build_item_tab() -> void:
 	var h = _player_hero()
 	if h == null:
-		_add_label("Pilih hero Radiant dulu (klik hero biru di arena).", COL_TEXT, 14)
-		_add_label("Item dibeli per hero: 6 slot, harga 4500-6000 gold per tier.", COL_DIM)
+		_add_label("Select a Radiant hero first (click a blue hero in the arena).", COL_TEXT, 14)
+		_add_label("Items are bought per hero: 6 slots, 4500-6000 gold per tier.", COL_DIM)
 		return
 	var items = h.get("items")
 	var hdata: Dictionary = HeroDB.get_hero(str(h.get("hero_type")))
-	_add_label("%s — %d/%d slot item" % [
+	_add_label("%s — %d/%d item slots" % [
 		str(hdata.get("name", h.get("hero_type"))),
 		items.count() if items != null else 0, ItemDB.max_slots()], COL_GOLD, 15)
-	_add_label("Tipe serangan: %s · %s — item bertanda hanya untuk tipe itu." % [
+	_add_label("Attack type: %s · %s — marked items are exclusive to that type." % [
 		str(h.get("dmg_school")), "MELEE" if bool(h.get("is_melee_hero")) else "RANGED"], COL_DIM, 11)
 	# baris item yang sudah dimiliki
 	var owned: Array = items.item_ids() if items != null else []
@@ -439,7 +432,7 @@ func _build_item_tab() -> void:
 	for id in owned:
 		if str(id) != "":
 			owned_text.append(ItemDB.item_name(str(id)))
-	_add_label("Dimiliki: %s" % (", ".join(owned_text) if not owned_text.is_empty() else "-"),
+	_add_label("Owned: %s" % (", ".join(owned_text) if not owned_text.is_empty() else "-"),
 		Color(0.6, 0.9, 0.7), 11)
 
 	var grouped: Dictionary = ItemDB.grouped()
@@ -464,11 +457,11 @@ func _build_item_tab() -> void:
 				reason = "POOR"
 			var label := "%s — %d g" % [ItemDB.item_name(iid), cost]
 			if have:
-				label = "%s — dimiliki" % ItemDB.item_name(iid)
+				label = "%s — OWNED" % ItemDB.item_name(iid)
 			var tip := "%s\n%s" % [ItemDB.item_desc(iid), _item_reason_tip(reason)]
 			var b := _make_button(label, tip, _buy_item.bind(iid),
 				can and not have and afford, "item_buy_" + iid,
-				{"cost": cost, "blocked": reason})
+				{"cost": cost, "blocked": reason}, ItemDB.item_glow(iid))
 			b.custom_minimum_size = Vector2(214, 30)
 			b.add_theme_color_override("font_color",
 				ItemDB.item_color(iid) if (can and not have) else COL_DIM)
@@ -479,15 +472,15 @@ func _build_item_tab() -> void:
 static func _item_reason_tip(reason: String) -> String:
 	match reason:
 		"OWNED":
-			return "Sudah dimiliki"
+			return "Already owned"
 		"FULL":
-			return "Slot penuh (6/6)"
+			return "Slots full (6/6)"
 		"MELEE ONLY":
-			return "MELEE ONLY — hero ini ranged"
+			return "MELEE ONLY — this hero is ranged"
 		"MAGIC ONLY":
-			return "MAGIC ONLY — hero ini bukan magic"
+			return "MAGIC ONLY — this hero is not magic"
 		"POOR":
-			return "Gold kurang"
+			return "Not enough gold"
 	return ""
 
 
@@ -513,7 +506,7 @@ func _build_hero_tab() -> void:
 			var cost: int = h.upgrade_cost()
 			var next: Dictionary = HeroDB.level_data(int(h.get("level")) + 1)
 			var afford := GameManager.gold >= cost
-			_add_button("Upgrade ke Lv.%d — %d gold" % [int(h.get("level")) + 1, cost],
+			_add_button("Upgrade to Lv.%d — %d gold" % [int(h.get("level")) + 1, cost],
 				"HP x%.2f · damage x%.2f · skill x%.2f" % [
 					float(next.get("hp_mult", 1.0)), float(next.get("dmg_mult", 1.0)),
 					float(next.get("skill_mult", 1.0))],
@@ -522,11 +515,11 @@ func _build_hero_tab() -> void:
 				afford, "upgrade_hero",
 				{"cost": cost, "blocked": "" if afford else "POOR"})
 		else:
-			_add_label("Level maksimum tercapai.", COL_DIM)
+			_add_label("Maximum level reached.", COL_DIM)
 	else:
-		_add_label("Pilih hero Radiant untuk melihat status & upgrade.", COL_TEXT, 14)
+		_add_label("Select a Radiant hero to view stats & upgrades.", COL_TEXT, 14)
 
-	_add_label("Beli hero (%d/%d dimiliki, termasuk yang respawn):" % [
+	_add_label("Buy heroes (%d/%d owned, including respawning):" % [
 		GameManager.owned_heroes().size(), GameManager.max_heroes_owned], COL_TEXT, 13)
 	var unlocked = SaveManager.data.get("unlocked_heroes", [])
 	if not (unlocked is Array):
@@ -554,21 +547,20 @@ func _build_hero_tab() -> void:
 		elif not can:
 			blocked = "LOCKED"
 		var b := _make_button("%s (%s) — %d g" % [
-				str(d.get("name", htype)), str(d.get("role", "-")), cost],
+			str(d.get("name", htype)), str(d.get("role", "-")), cost],
 			"%s\nHP %d · DMG %d · RANGE %d · %s" % [str(d.get("description", "")),
 				int(d.get("hp", 0)), int(d.get("damage", 0)), int(d.get("range", 0)),
 				str(d.get("dmg_type", "PHYSICAL"))],
 			_buy_hero.bind(htype), can, "buy_hero_" + htype,
 			{"cost": cost, "blocked": blocked})
 		if blocked == "OWNED":
-			b.text += " · DIMILIKI"
+			b.text += " · OWNED"
 		elif blocked == "FULL":
 			b.text += " · MAX"
 		b.custom_minimum_size = Vector2(320, 30)
 		grid.add_child(b)
-	_add_label("Hero lain (%d total di heroes.json) terbuka lewat progres level — "
-		% HeroDB.get_all_types().size()
-		+ "lihat SaveManager.unlocked_heroes.", COL_DIM, 11)
+	_add_label("Other heroes (%d total in heroes.json) unlock through level progress."
+		% HeroDB.get_all_types().size(), COL_DIM, 11)
 
 
 func _buy_hero(hero_type: String) -> void:
@@ -582,12 +574,12 @@ func _buy_hero(hero_type: String) -> void:
 func _build_nexus_tab() -> void:
 	var nx = GameManager.blue_nexus
 	if nx == null or not is_instance_valid(nx) or bool(nx.get("is_dead")):
-		_add_label("Radiant Nexus sudah hancur.", Color(1, 0.5, 0.5), 14)
+		_add_label("Radiant Nexus has been destroyed.", Color(1, 0.5, 0.5), 14)
 		return
 	_add_label("Radiant Nexus — %s Lv.%d / %d" % [
 		HudLayout.castle_name(int(nx.get("level"))), int(nx.get("level")),
 		TowerDB.nexus_max_level()], COL_GOLD, 15)
-	_add_label("HP %d/%d · Shield %d/%d · DMG %d · RNG %d · skala minion %.2fx" % [
+	_add_label("HP %d/%d · Shield %d/%d · DMG %d · RNG %d · minion scale %.2fx" % [
 		int(nx.get("hp")), int(nx.get("max_hp")), int(nx.get("shield")),
 		int(nx.get("shield_max")), int(nx.get("damage")), int(nx.get("attack_range")),
 		float(nx.get("minion_scale"))], COL_DIM, 11)
@@ -595,35 +587,35 @@ func _build_nexus_tab() -> void:
 		var cost: int = nx.upgrade_cost()
 		var nxt: Dictionary = TowerDB.nexus_stats(int(nx.get("level")) + 1)
 		var afford := GameManager.gold >= cost
-		_add_button("Upgrade Nexus ke Lv.%d — %d gold" % [int(nx.get("level")) + 1, cost],
-			"HP %d · DMG %d · RNG %d · shield ratio HP naik" % [
+		_add_button("Upgrade Nexus to Lv.%d — %d gold" % [int(nx.get("level")) + 1, cost],
+			"HP %d · DMG %d · RNG %d · HP shield ratio up" % [
 				int(nxt.get("hp", 0)), int(nxt.get("damage", 0)), int(nxt.get("range", 0))],
 			# ui_upgrade 0.5 — paritas try_upgrade_nexus _core.py:2668
 			func(): _run(func(): GameManager.try_upgrade_nexus(), "ui_upgrade", 0.5),
 			afford, "upgrade_nexus",
 			{"cost": cost, "blocked": "" if afford else "POOR"})
 	else:
-		_add_label("Nexus sudah level maksimum.", COL_DIM)
+		_add_label("Nexus is at maximum level.", COL_DIM)
 	if bool(nx.get("shield_active")) and bool(nx.get("free_shield_active")):
-		_add_label("Castle Shield GRATIS aktif (sampai wave 10) — damage tersisa "
-			+ "dikurangi %.0f%%." % (float(nx.get("shield_damage_reduction")) * 100.0),
+		_add_label("FREE Castle Shield active (until wave 10) — remaining damage "
+			+ "reduced by %.0f%%." % (float(nx.get("shield_damage_reduction")) * 100.0),
 			Color(0.6, 0.85, 1.0), 11)
 	if nx.can_buy_shield():
 		var cost: int = nx.shield_cost()
 		var afford := GameManager.gold >= cost
-		_add_button("Beli Castle Shield — %d gold" % cost,
-			"Shield permanen: menyerap damage 1:1, sisanya dimitigasi %.0f%%."
+		_add_button("Buy Castle Shield — %d gold" % cost,
+			"Permanent shield: absorbs damage 1:1, remainder mitigated by %.0f%%."
 			% (float(nx.get("shield_damage_reduction")) * 100.0),
 			# ui_upgrade 0.5 — paritas try_activate_castle_shield _core.py:2652
 			func(): _run(func(): GameManager.try_buy_nexus_shield(), "ui_upgrade", 0.5),
 			afford, "nexus_shield",
 			{"cost": cost, "blocked": "" if afford else "POOR"})
 	elif bool(nx.get("castle_shield_purchased")):
-		_add_label("Castle Shield sudah dibeli.", Color(0.6, 0.95, 0.7))
+		_add_label("Castle Shield already purchased.", Color(0.6, 0.95, 0.7))
 
 	var enemy = GameManager.red_nexus
 	if enemy != null and is_instance_valid(enemy):
-		_add_label("Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — hancurkan untuk MENANG." % [
+		_add_label("Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — destroy it to WIN." % [
 			int(enemy.get("level")), int(enemy.get("hp")), int(enemy.get("max_hp")),
 			int(enemy.get("shield")), int(enemy.get("shield_max"))],
 			Color(1.0, 0.62, 0.62), 12)
@@ -677,6 +669,7 @@ func _add_label(text_val: String, col: Color = COL_TEXT, font_size: int = 12) ->
 	var l := Label.new()
 	l.text = text_val
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.add_theme_font_override("font", UiTheme.font("body"))
 	l.add_theme_font_size_override("font_size", font_size)
 	l.add_theme_color_override("font_color", col)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -693,7 +686,8 @@ func _add_button(label: String, tooltip: String, cb: Callable, enabled: bool,
 
 
 func _make_button(label: String, tooltip: String, cb: Callable, enabled: bool,
-		ui_key: String = "", ui_data: Dictionary = {}) -> Button:
+		ui_key: String = "", ui_data: Dictionary = {},
+		edge: Color = Color(0, 0, 0, 0)) -> Button:
 	var b := Button.new()
 	b.text = label
 	b.tooltip_text = tooltip
@@ -706,10 +700,12 @@ func _make_button(label: String, tooltip: String, cb: Callable, enabled: bool,
 		b.set_meta("ui_data", ui_data)
 	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.focus_mode = Control.FOCUS_NONE
+	b.add_theme_font_override("font", UiTheme.font("body_semibold"))
 	b.add_theme_font_size_override("font_size", 12)
+	var edge_c := edge if edge.a > 0.0 else Color(0.42, 0.5, 0.72, 0.85)
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = Color(0.11, 0.13, 0.2, 0.95) if enabled else Color(0.08, 0.09, 0.13, 0.9)
-	normal.border_color = Color(0.42, 0.5, 0.72, 0.85) if enabled else Color(0.22, 0.24, 0.3, 0.7)
+	normal.border_color = edge_c if enabled else Color(0.22, 0.24, 0.3, 0.7)
 	normal.set_border_width_all(1)
 	normal.set_corner_radius_all(6)
 	normal.content_margin_left = 10.0

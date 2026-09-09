@@ -1,10 +1,15 @@
 # MainMenu.gd — Menu utama + sub-menu, dibangun 100% dari kode.
 #
 # Port state machine `class MenuState` pygame (_core.py:3097-3105):
-#   MAIN · LEVEL_SELECT · HERO_SHOP · SETTINGS · HOW_TO_PLAY · CREDITS · PAUSE
+#   MAIN · SLOT_SELECT · LEVEL_SELECT · HERO_SHOP · SETTINGS ·
+#   HOW_TO_PLAY · CREDITS · PAUSE
 # pygame menggambar semuanya manual per frame di Menu.draw(); di Godot cukup
-# bangun ulang isi container tiap pindah state (pola HUD.gd/ShopPanel.gd —
-# tanpa .tscn besar, tanpa per-frame draw).
+# bangun ulang isi container tiap pindah state.
+#
+# Tampilan = 1:1 ui_theme pygame (MysticMenuBg, MysticPanel, MysticButton,
+# MysticPill, MysticTab, MysticTitle, MysticChip — lihat scenes/ui/widgets/).
+# String = verbatim pygame (mayoritas Inggris; segelintir yang aslinya
+# Indonesia di pygame — legenda PHY/MAG/TNK, label cloud — ikut apa adanya).
 #
 # Sinyal keluar (dipasang Main.gd):
 #   play_requested(level_num) — LEVEL_SELECT/CONTINUE -> mulai match
@@ -14,6 +19,8 @@
 # toggle_level_difficulty), pembelian hero lewat SaveManager (paritas
 # _unlock_hero_in_meta_shop _core.py:5298-5328).
 extends Control
+
+const BakedUnitDBScript = preload("res://scripts/render/BakedUnitDB.gd")
 
 signal play_requested(level_num: int)
 signal resume_requested
@@ -29,9 +36,6 @@ signal menu_coverage_changed(covers: bool, is_pause: bool)
 ## (FASE 21: multi-slot save + migrasi legacy sudah diport).
 enum State { MAIN, SLOT_SELECT, LEVEL_SELECT, HERO_SHOP, SETTINGS, HOW_TO_PLAY, CREDITS, PAUSE }
 
-## Layar menu non-PAUSE = LAYAR PENUH opak total (arena di belakangnya
-## disembunyikan Main.gd — alpha 1.0 jadi tidak ada celah transparansi).
-const COL_BG := Color(0.031, 0.033, 0.058, 1.0)
 ## PAUSE = dim gelap semi-transparan di atas arena BEKU (paritas pygame
 ## pause menu yang menggambar frame game terakhir + overlay gelap).
 const COL_BG_PAUSE := Color(0.031, 0.033, 0.058, 0.62)
@@ -73,16 +77,25 @@ const COL_WR_LOW := Color8(255, 150, 100)
 const COL_WR_GOLD := Color8(255, 220, 110)
 const COL_WR_GREEN := Color8(112, 226, 132)
 
+## Opsi settings (paritas GameSettings._system pygame).
+const FPS_OPTIONS := [30, 60, 120, 0]
+const SPEED_OPTIONS := [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+
+## Cache potret hero shop (hero_type -> AtlasTexture frame idle pertama).
+static var _portrait_cache: Dictionary = {}
+
 var state: int = State.MAIN
 ## True kalau menu dibuka dari dalam match (PAUSE) — MAIN-nya jadi "MAIN MENU"
 ## yang kembali ke permainan, bukan menutup game.
 var from_pause: bool = false
 
-var _bg: PanelContainer = null
-var _bg_style: StyleBoxFlat = null
+var _bg: Control = null
+var _menubg: MysticMenuBg = null
+var _dim: ColorRect = null
 var _root: VBoxContainer = null      # dibangun ulang tiap ganti state
 var _confirm: PanelContainer = null  # dialog keluar (paritas exit_confirm)
 var _pause_panel: PanelContainer = null # panel pause 400x400 (anak MainMenu)
+var _topup: MysticTopup = null       # dialog top up (anak MainMenu)
 var _hero_tab: String = "starter"    # paritas Menu.shop_tab _core.py:4810
 ## Slot yang menunggu konfirmasi hapus (-1 = tidak ada) — paritas
 ## `Menu.slot_delete_confirm` _core.py:3134, dan state yang harus
@@ -99,9 +112,6 @@ func _ready() -> void:
 	# Harus tetap hidup saat SceneTree di-pause (menu PAUSE dibuka justru
 	# ketika get_tree().paused = true).
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	# Layar PENUH eksplisit (anchors + offsets): backdrop menu tidak boleh
-	# pernah lebih kecil dari viewport — bug layout lama membuat menu
-	# menempel di kiri layar sementara arena+HUD tetap kelihatan di samping.
 	anchor_left = 0.0
 	anchor_top = 0.0
 	anchor_right = 1.0
@@ -188,11 +198,8 @@ func _handle_escape() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build_backdrop() -> void:
-	_bg = PanelContainer.new()
+	_bg = Control.new()
 	_bg.name = "Backdrop"
-	# anchors + offsets eksplisit (bukan set_anchors_preset saja): panel
-	# backdrop WAJIB menutup seluruh viewport — tanpa offset eksplisit ada
-	# risiko rect tetap 0x0 di beberapa urutan layout.
 	_bg.anchor_left = 0.0
 	_bg.anchor_top = 0.0
 	_bg.anchor_right = 1.0
@@ -201,18 +208,17 @@ func _build_backdrop() -> void:
 	_bg.offset_top = 0.0
 	_bg.offset_right = 0.0
 	_bg.offset_bottom = 0.0
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COL_BG
-	sb.border_color = COL_BORDER
-	sb.border_width_bottom = 2
-	# padding konten (pygame: panel mulai x=... ; di sini margin global)
-	sb.content_margin_left = 44.0
-	sb.content_margin_right = 44.0
-	sb.content_margin_top = 18.0
-	sb.content_margin_bottom = 14.0
-	_bg_style = sb
-	_bg.add_theme_stylebox_override("panel", sb)
+	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_bg)
+	_menubg = MysticMenuBg.new()
+	_menubg.name = "MenuBackground"
+	_bg.add_child(_menubg)
+	_dim = ColorRect.new()
+	_dim.name = "Dim"
+	_dim.color = Color(0, 0, 0, 0)
+	_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bg.add_child(_dim)
 
 
 ## Bersihkan isi lalu bangun state baru — padanan Menu.draw() yang memanggil
@@ -220,11 +226,11 @@ func _build_backdrop() -> void:
 func _show(new_state: int) -> void:
 	state = new_state
 	show()
-	# Warna backdrop per state + status penutupan terhadap arena (Main.gd
-	# yang mengikuti: non-PAUSE = arena disembunyikan, PAUSE = arena beku
-	# di belakang dim).
-	if _bg_style != null:
-		_bg_style.bg_color = COL_BG_PAUSE if new_state == State.PAUSE else COL_BG
+	# PAUSE = arena beku di belakang dim; non-PAUSE = MenuBackground penuh
+	# (arena disembunyikan Main.gd).
+	var is_pause := new_state == State.PAUSE
+	_menubg.visible = not is_pause
+	_dim.color = COL_BG_PAUSE if is_pause else Color(0, 0, 0, 0)
 	if _root != null:
 		_root.queue_free()
 	# dialog konfirmasi keluar tidak boleh nyangkut di state baru (pygame
@@ -235,9 +241,19 @@ func _show(new_state: int) -> void:
 	if _pause_panel != null and is_instance_valid(_pause_panel):
 		_pause_panel.queue_free()
 	_pause_panel = null
+	if _topup != null and is_instance_valid(_topup):
+		_topup.queue_free()
+	_topup = null
 	_root = VBoxContainer.new()
 	_root.name = "Content"
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_root.anchor_left = 0.0
+	_root.anchor_top = 0.0
+	_root.anchor_right = 1.0
+	_root.anchor_bottom = 1.0
+	_root.offset_left = 44.0
+	_root.offset_top = 18.0
+	_root.offset_right = -44.0
+	_root.offset_bottom = -14.0
 	_root.add_theme_constant_override("separation", 6)
 	_root.mouse_filter = Control.MOUSE_FILTER_PASS
 	_bg.add_child(_root)
@@ -261,20 +277,47 @@ func _show(new_state: int) -> void:
 	menu_coverage_changed.emit(true, state == State.PAUSE)
 
 
-## Judul layar (paritas ui_theme.screen_title) + tombol KEMBALI di kanan.
-func _screen_header(title: String, back_to: int = -1) -> void:
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 12)
-	_root.add_child(header)
-	var label := Label.new()
-	label.text = title
-	label.add_theme_font_size_override("font_size", 30)
-	label.add_theme_color_override("font_color", COL_GOLD)
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_child(label)
-	if back_to >= 0:
-		header.add_child(_make_button("KEMBALI (ESC)", COL_DIM,
-			_show.bind(back_to), Vector2(150, 30)))
+## Judul layar tengah (paritas ui_theme.screen_title).
+func _screen_header(title: String) -> void:
+	var t := MysticTitle.new(title, 30)
+	t.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	_root.add_child(t)
+
+
+## Tombol BACK seragam di tengah bawah (paritas ui_theme.back_button:
+## pill netral 200x42 + ikon panah).
+func _screen_footer_back(back_to: int) -> void:
+	var center := CenterContainer.new()
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_root.add_child(center)
+	var back := MysticPill.new("BACK", "neutral", "back", 20, false)
+	back.custom_minimum_size = Vector2(200, 42)
+	center.add_child(back)
+	back.pressed.connect(AudioManager.play_sfx.bind("ui_click", 0.5))
+	back.pressed.connect(_show.bind(back_to))
+
+
+## Tombol menu premium + SFX ui_click (paritas SoundManager tiap handler).
+func _mbtn(label_text: String, accent: Color, icon: String,
+		handler: Callable, min_size: Vector2, font_size: int = 15) -> MysticButton:
+	var b := MysticButton.new(label_text, accent, icon, font_size)
+	b.custom_minimum_size = min_size
+	if handler.is_valid():
+		b.pressed.connect(AudioManager.play_sfx.bind("ui_click", 0.5))
+		b.pressed.connect(handler)
+	return b
+
+
+## Pill aksi + SFX ui_click.
+func _mpill(label_text: String, kind: String, icon: String,
+		handler: Callable, min_size: Vector2, font_size: int = 15,
+		letter_gap: bool = true) -> MysticPill:
+	var b := MysticPill.new(label_text, kind, icon, font_size, letter_gap)
+	b.custom_minimum_size = min_size
+	if handler.is_valid():
+		b.pressed.connect(AudioManager.play_sfx.bind("ui_click", 0.5))
+		b.pressed.connect(handler)
+	return b
 
 
 # ══════════════════════════════════════════════════════════
@@ -302,30 +345,46 @@ func _do_main_menu() -> void:
 func _build_main() -> void:
 	var center := VBoxContainer.new()
 	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	center.add_theme_constant_override("separation", 8)
+	center.add_theme_constant_override("separation", 6)
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_root.add_child(center)
-	# spacer supaya blok tombol jatuh di tengah-bawah seperti pygame (y=336+)
 	var spacer_top := Control.new()
-	spacer_top.custom_minimum_size = Vector2(0, 96)
 	spacer_top.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.add_child(spacer_top)
 
-	var title := Label.new()
-	title.text = "MYSTIC ARENA"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 58)
-	title.add_theme_color_override("font_color", COL_GOLD)
-	title.add_theme_color_override("font_outline_color", Color(0.1, 0.06, 0.02, 1))
-	title.add_theme_constant_override("outline_size", 8)
+	var title := MysticTitle.new("MYSTIC ARENA", 54)
+	title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	center.add_child(title)
-	var subtitle := Label.new()
-	subtitle.text = "BATTLE ARENA  ·  Dark Fantasy MOBA / Tower Defense"
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	subtitle.add_theme_font_size_override("font_size", 15)
-	subtitle.add_theme_color_override("font_color", COL_BLUE)
-	center.add_child(subtitle)
+	# ── pelat subtitle BATTLE ARENA (letterspaced, 32 semibold cyan) ──
+	var plate_wrap := CenterContainer.new()
+	center.add_child(plate_wrap)
+	var plate := MysticPanel.new(UiTheme.PANEL_TOP, UiTheme.PANEL_BOTTOM,
+		UiTheme.EDGE_GOLD, 10.0, 1.0, false)
+	plate.show_shadow = false
+	plate_wrap.add_child(plate)
+	var plate_margin := MarginContainer.new()
+	plate_margin.add_theme_constant_override("margin_left", 30)
+	plate_margin.add_theme_constant_override("margin_right", 30)
+	plate_margin.add_theme_constant_override("margin_top", 6)
+	plate_margin.add_theme_constant_override("margin_bottom", 6)
+	plate.add_child(plate_margin)
+	var sub := Label.new()
+	sub.text = UiTheme.letter("BATTLE ARENA")
+	UiTheme.style_label(sub, 26, "body_semibold", Color8(150, 195, 255))
+	plate_margin.add_child(sub)
+	# ── tagline + flourish ──
+	var tag := Label.new()
+	tag.text = "Dark Fantasy MOBA  •  Tower Defense"
+	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiTheme.style_label(tag, 18, "body_medium", UiTheme.TEXT_DIM)
+	center.add_child(tag)
+	var fl_wrap := CenterContainer.new()
+	center.add_child(fl_wrap)
+	var fl := MysticFlourish.new(true)
+	fl.custom_minimum_size = Vector2(460, 18)
+	fl_wrap.add_child(fl)
 
-	# ── tombol: LANJUTKAN + MULAI GAME sejajar (paritas CONTINUE/PLAY GAME) ──
+	# ── baris pertama: CONTINUE + PLAY GAME sejajar ──
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 14)
@@ -334,43 +393,48 @@ func _build_main() -> void:
 	if cont <= 0 and GameManager.level_count() > 0:
 		cont = int(SaveManager.data.get("last_played_level", 1))
 	cont = maxi(cont, 1) # data level belum ada -> mulai dari 1, jangan "LEVEL 0"
-	row.add_child(_make_button("LANJUTKAN — LEVEL %d" % cont, COL_BLUE,
-		func(): _request_play(cont), Vector2(250, 44), 18))
-	# Paritas _on_button_click "play" _core.py:7022-7023: MULAI GAME lewat
-	# layar PILIH SLOT dulu (slot aktif ditentukan di situ). LANJUTKAN
+	row.add_child(_mbtn("CONTINUE", Color8(140, 225, 255), "continue",
+		func(): _request_play(cont), Vector2(300, 50), 20))
+	# Paritas _on_button_click "play" _core.py:7022-7023: PLAY GAME lewat
+	# layar PILIH SLOT dulu (slot aktif ditentukan di situ). CONTINUE
 	# mem-bypass slot select seperti pygame.
-	row.add_child(_make_button("MULAI GAME", COL_GREEN,
-		_show.bind(State.SLOT_SELECT), Vector2(250, 44), 18))
+	row.add_child(_mbtn("PLAY GAME", Color8(100, 220, 110), "play",
+		_show.bind(State.SLOT_SELECT), Vector2(300, 50), 20))
 
 	var buttons: Array = [
-		["HERO SHOP", COL_GOLD, _show.bind(State.HERO_SHOP)],
-		["CARA MAIN (HOW TO PLAY)", COL_BLUE, _show.bind(State.HOW_TO_PLAY)],
-		["PENGATURAN (SETTINGS)", Color(0.85, 0.75, 0.45), _show.bind(State.SETTINGS)],
-		["KREDIT", Color(0.8, 0.55, 0.85), _show.bind(State.CREDITS)],
-		["KELUAR GAME", COL_RED, _open_exit_confirm],
+		["HERO SHOP", Color8(255, 220, 100), "coin", _show.bind(State.HERO_SHOP)],
+		["HOW TO PLAY", Color8(110, 180, 255), "help", _show.bind(State.HOW_TO_PLAY)],
+		["SETTINGS", Color8(205, 180, 105), "gear", _show.bind(State.SETTINGS)],
+		["CREDITS", Color8(200, 130, 210), "star", _show.bind(State.CREDITS)],
+		["QUIT GAME", Color8(225, 90, 90), "quit", _open_exit_confirm],
 	]
 	for pair in buttons:
-		center.add_child(_make_button(str(pair[0]), pair[1], pair[2],
-			Vector2(360, 38), 15))
+		var b := _mbtn(str(pair[0]), pair[1], str(pair[2]), pair[3],
+			Vector2(360, 46), 17)
+		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		center.add_child(b)
 
 	var spacer_bottom := Control.new()
 	spacer_bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	center.add_child(spacer_bottom)
-	var meta := SaveManager.meta_gold()
-	var info := Label.new()
-	info.text = "Meta gold: %d  ·  %d / %d level selesai  ·  %d hero dimiliki" % [
-		meta, _completed_count(), GameManager.level_count(),
-		(SaveManager.data.get("unlocked_heroes", []) as Array).size()]
-	info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info.add_theme_font_size_override("font_size", 12)
-	info.add_theme_color_override("font_color", COL_DIM)
-	center.add_child(info)
+	# ── footer: input mode (kiri) + version (tengah) ──
+	var footer := Control.new()
+	footer.custom_minimum_size = Vector2(0, 24)
+	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(footer)
+	var input_lab := Label.new()
+	input_lab.text = "INPUT: KEYBOARD + MOUSE"
+	UiTheme.style_label(input_lab, 12, "body", Color8(110, 200, 210))
+	input_lab.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	input_lab.position = Vector2(-20, -24)
+	footer.add_child(input_lab)
 	var version := Label.new()
-	version.text = "v2.0  ·  Port Godot 4  ·  sumber kebenaran gameplay: pygame"
+	version.text = "v2.0  •  MOBA Tower Defense"
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	version.add_theme_font_size_override("font_size", 10)
-	version.add_theme_color_override("font_color", Color(0.5, 0.54, 0.66))
-	center.add_child(version)
+	UiTheme.style_label(version, 12, "body", UiTheme.TEXT_FAINT)
+	version.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	version.offset_top = -24
+	footer.add_child(version)
 
 
 ## Ganti tab Hero Shop (paritas shop_tab) lalu bangun ulang grid.
@@ -399,45 +463,85 @@ func _request_play(level_num: int) -> void:
 	play_requested.emit(level_num)
 
 
-## Dialog konfirmasi keluar (paritas exit_confirm _core.py:4348-4351: keluar
+## Dialog konfirmasi keluar (paritas _draw_exit_confirm_dialog: keluar
 ## tidak pernah langsung tanpa persetujuan pemain).
 func _open_exit_confirm() -> void:
-	if _confirm != null and is_instance_valid(_confirm):
-		_confirm.queue_free()
-	_confirm = PanelContainer.new()
-	_confirm.name = "ExitConfirm"
-	# PRESET_CENTER dengan mode MINSIZE: dialog seukuran kontennya, persis
-	# di tengah layar (set_anchors_preset saja meninggalkan offset 0 -> pojok).
-	_confirm.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_confirm.mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COL_PANEL
-	sb.border_color = COL_RED
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(10)
-	sb.content_margin_left = 18.0
-	sb.content_margin_right = 18.0
-	sb.content_margin_top = 12.0
-	sb.content_margin_bottom = 12.0
-	_confirm.add_theme_stylebox_override("panel", sb)
-	add_child(_confirm)
+	_confirm = _make_dialog(Color8(255, 105, 105))
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
-	_confirm.add_child(box)
-	var q := Label.new()
-	q.text = "Keluar dari Mystic Arena?"
-	q.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	q.add_theme_font_size_override("font_size", 17)
-	q.add_theme_color_override("font_color", COL_TEXT)
-	box.add_child(q)
+	_dialog_add(box)
+	var t := MysticTitle.new("QUIT GAME?", 26, UiTheme.GOLD_TEXT,
+		UiTheme.GOLD_DEEP)
+	t.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	box.add_child(t)
+	var msg := Label.new()
+	msg.text = "Are you sure you want to close the game?"
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiTheme.style_label(msg, 15, "body", UiTheme.TEXT_BODY)
+	box.add_child(msg)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
 	box.add_child(row)
-	row.add_child(_make_button("YA, KELUAR", COL_RED,
-		func(): get_tree().quit(), Vector2(140, 32)))
-	row.add_child(_make_button("BATAL", COL_GREEN,
-		func(): _confirm.visible = false, Vector2(140, 32)))
+	row.add_child(_mpill("YES, EXIT", "danger", "", func(): get_tree().quit(),
+		Vector2(150, 40), 15, false))
+	row.add_child(_mpill("NO, STAY", "success", "", _hide_confirm,
+		Vector2(150, 40), 15, false))
+
+
+func _hide_confirm() -> void:
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.visible = false
+
+
+## Dialog modal tengah-layar: dim + MysticPanel + MarginContainer.
+## Return panel; isi ditambah via _dialog_add().
+var _dialog_margin: MarginContainer = null
+
+func _make_dialog(edge: Color) -> MysticPanel:
+	if _confirm != null and is_instance_valid(_confirm):
+		_confirm.queue_free()
+	_confirm = null
+	var dim := ColorRect.new()
+	dim.name = "DialogDim"
+	dim.color = Color(0, 0, 0, 180.0 / 255.0)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(dim)
+	var panel := MysticPanel.new(UiTheme.PANEL_TOP, UiTheme.PANEL_BOTTOM,
+		edge, 12.0, 2.0, true)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.name = "ConfirmDialog"
+	add_child(panel)
+	_confirm = panel
+	# Dim ikut hilang bersama dialog.
+	panel.tree_exiting.connect(dim.queue_free)
+	_dialog_margin = MarginContainer.new()
+	_dialog_margin.add_theme_constant_override("margin_left", 24)
+	_dialog_margin.add_theme_constant_override("margin_right", 24)
+	_dialog_margin.add_theme_constant_override("margin_top", 18)
+	_dialog_margin.add_theme_constant_override("margin_bottom", 18)
+	panel.add_child(_dialog_margin)
+	return panel
+
+
+func _dialog_add(c: Control) -> void:
+	_dialog_margin.add_child(c)
+
+
+## Pusatkan dialog ke ukuran minimum kontennya. (PRESET_CENTER saja
+## meninggalkan size 0x0 pada panel baru — MainMenu bukan container yang
+## bisa men-sort anaknya, jadi ukuran + posisi harus eksplisit.)
+func _center_dialog() -> void:
+	if _confirm == null or not is_instance_valid(_confirm):
+		return
+	var ms := _confirm.get_combined_minimum_size()
+	var vp := get_viewport_rect().size
+	if vp.x <= 0.0 or vp.y <= 0.0:
+		vp = Vector2(1280, 720)
+	_confirm.size = ms
+	_confirm.position = (vp - ms) * 0.5
 
 
 # ══════════════════════════════════════════════════════════
@@ -445,12 +549,11 @@ func _open_exit_confirm() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build_slot_select() -> void:
-	_screen_header("PILIH SLOT SAVE", State.MAIN)
+	_screen_header("SELECT SAVE SLOT")
 	var sub := Label.new()
-	sub.text = "Pilih slot untuk lanjut, atau mulai permainan baru"
+	sub.text = "Select a slot to continue, or start a new game"
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 13)
-	sub.add_theme_color_override("font_color", COL_DIM)
+	UiTheme.style_label(sub, 13, "body", UiTheme.TEXT_DIM)
 	_root.add_child(sub)
 
 	var row := HBoxContainer.new()
@@ -460,6 +563,7 @@ func _build_slot_select() -> void:
 	_root.add_child(row)
 	for i in range(1, SaveManager.NUM_SLOTS + 1):
 		row.add_child(_slot_card(i))
+	_screen_footer_back(State.MAIN)
 
 	# Dialog konfirmasi hapus (paritas slot_delete_confirm) dibangun
 	# TERAKHIR supaya menutupi kartu — pygame menggambarnya setelah kartu
@@ -475,9 +579,7 @@ func _build_slot_select() -> void:
 ## string terakhir dimainkan, dan label tombol aksi) supaya
 ## SaveSlotParityTest bisa mereplaynya lewat jalur produksi.
 ##
-## Beda disengaja yang terdokumentasi: label UI Godot berbahasa Indonesia
-## (KOSONG / LEVEL TERTINGGI / HAPUS SAVE / ...); nilai datanya identik
-## dengan pygame. Truncasi nama level adalah FITUR PIKSEL (metrik font
+## Truncasi nama level adalah FITUR PIKSEL (metrik font
 ## `ui_theme.fit_ellipsis`) dan tidak diklaim paritas.
 func _slot_card(slot_num: int) -> Control:
 	var info = SaveManager.get_slot_info(slot_num)
@@ -501,7 +603,11 @@ func _slot_card(slot_num: int) -> Control:
 		if highest > 0:
 			level_name = str(BossDB.get_level(highest).get("name", ""))
 
-	var card := PanelContainer.new()
+	var card := MysticPanel.new(
+		UiTheme.LOCKED_BG_TOP if is_empty else UiTheme.PANEL_TOP,
+		UiTheme.LOCKED_BG_BOTTOM if is_empty else UiTheme.PANEL_BOTTOM,
+		UiTheme.LOCKED_EDGE if is_empty else UiTheme.EDGE_GOLD,
+		12.0, 2.0, not is_empty)
 	card.set_meta("slot_num", slot_num)
 	card.set_meta("is_empty", is_empty)
 	card.set_meta("highest_level", highest)
@@ -512,34 +618,27 @@ func _slot_card(slot_num: int) -> Control:
 	card.set_meta("bosses", bosses)
 	card.set_meta("last_played", last_played)
 	card.custom_minimum_size = Vector2(SLOT_CARD_W, SLOT_CARD_H)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.07, 0.08, 0.11) if is_empty else COL_PANEL
-	sb.border_color = COL_LOCKED if is_empty else COL_BORDER
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(12)
-	sb.content_margin_left = 16.0
-	sb.content_margin_right = 16.0
-	sb.content_margin_top = 12.0
-	sb.content_margin_bottom = 14.0
-	card.add_theme_stylebox_override("panel", sb)
 
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	card.add_child(margin)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 6)
-	card.add_child(box)
+	margin.add_child(box)
 
 	var tag := Label.new()
-	tag.text = "SAVE GAME"
+	tag.text = UiTheme.letter("SAVE GAME")
 	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	tag.add_theme_font_size_override("font_size", 12)
-	tag.add_theme_color_override(
-		"font_color", COL_DIM if is_empty else COL_GOLD)
+	UiTheme.style_label(tag, 12, "body_semibold",
+		UiTheme.TEXT_DIM if is_empty else UiTheme.GOLD_TEXT)
 	box.add_child(tag)
-	var num := Label.new()
-	num.text = str(slot_num)
-	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	num.add_theme_font_size_override("font_size", 46)
-	num.add_theme_color_override(
-		"font_color", COL_LOCKED if is_empty else COL_GOLD)
+	var num := MysticTitle.new(str(slot_num), 46,
+		UiTheme.TEXT_DIM if is_empty else UiTheme.GOLD_TEXT,
+		UiTheme.TEXT_FAINT if is_empty else UiTheme.GOLD_DEEP)
+	num.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	box.add_child(num)
 
 	var spacer := Control.new()
@@ -548,41 +647,58 @@ func _slot_card(slot_num: int) -> Control:
 
 	if is_empty:
 		var empty := Label.new()
-		empty.text = "KOSONG"
+		empty.text = UiTheme.letter("EMPTY")
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		empty.add_theme_font_size_override("font_size", 22)
-		empty.add_theme_color_override("font_color", COL_LOCKED)
+		UiTheme.style_label(empty, 22, "body_bold", UiTheme.TEXT_DIM, true)
 		box.add_child(empty)
 		var hint := Label.new()
-		hint.text = "Ketuk untuk mulai permainan baru"
+		hint.text = "Tap to start a new game"
 		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		hint.add_theme_font_size_override("font_size", 12)
-		hint.add_theme_color_override("font_color", COL_DIM)
+		UiTheme.style_label(hint, 12, "body", UiTheme.TEXT_DIM)
 		box.add_child(hint)
 	else:
 		if highest > 0:
-			box.add_child(_slot_line("LEVEL TERTINGGI SELESAI", COL_DIM, 11))
-			box.add_child(_slot_line("LV. %d" % highest, COL_GOLD, 24))
-			box.add_child(_slot_line(level_name, COL_TEXT, 15))
+			box.add_child(_slot_line(UiTheme.letter("HIGHEST LEVEL COMPLETED"),
+				UiTheme.TEXT_DIM, 11))
+			box.add_child(_slot_line("LV. %d" % highest, UiTheme.GOLD_TEXT,
+				24, "body_bold"))
+			box.add_child(_slot_line(level_name, UiTheme.TEXT_BODY, 15,
+				"body_semibold"))
 		else:
-			box.add_child(_slot_line("Belum ada level selesai", COL_DIM, 13))
-		box.add_child(_slot_line("%s Gold" % _format_grouped(gold),
-			COL_GOLD, 18))
-		box.add_child(_slot_line("Hero: %d" % heroes, COL_BLUE, 13))
-		box.add_child(_slot_line("Boss: %d" % bosses, COL_RED, 13))
-		box.add_child(_slot_line("TERAKHIR DIMAINKAN", COL_DIM, 11))
-		box.add_child(_slot_line(last_played, COL_TEXT, 15))
+			box.add_child(_slot_line("No levels completed", UiTheme.TEXT_DIM,
+				13))
+		var grow := HBoxContainer.new()
+		grow.alignment = BoxContainer.ALIGNMENT_CENTER
+		grow.add_theme_constant_override("separation", 6)
+		box.add_child(grow)
+		grow.add_child(MysticIcon.new("coin", UiTheme.GOLD, 0.9))
+		var gv := Label.new()
+		gv.text = "%s Gold" % _format_grouped(gold)
+		UiTheme.style_label(gv, 18, "body_bold", UiTheme.GOLD_TEXT, true)
+		grow.add_child(gv)
+		box.add_child(_slot_line("Heroes: %d" % heroes, UiTheme.CYAN, 13,
+			"body_semibold"))
+		box.add_child(_slot_line("Bosses: %d" % bosses, UiTheme.RED, 13,
+			"body_semibold"))
+		box.add_child(_slot_line(UiTheme.letter("LAST PLAYED"),
+			UiTheme.TEXT_DIM, 11))
+		box.add_child(_slot_line(last_played, UiTheme.TEXT_BODY, 15,
+			"body_semibold"))
 
 	# ── tombol aksi (paritas pill CONTINUE/START NEW GAME + DELETE SAVE) ──
-	var play_label := "MULAI BARU" if is_empty else "LANJUTKAN"
+	var play_label := "START NEW GAME" if is_empty else "CONTINUE"
 	card.set_meta("play_label", play_label)
-	box.add_child(_make_button(play_label,
-		COL_BLUE if is_empty else COL_GREEN,
-		_on_slot_select.bind(slot_num), Vector2(280, 40), 15))
+	var play := _mpill(play_label, "success", "play",
+		_on_slot_select.bind(slot_num), Vector2(0, 40), 15, false)
+	play.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_child(play)
 	if not is_empty:
-		card.set_meta("delete_label", "HAPUS SAVE")
-		box.add_child(_make_button("HAPUS SAVE", COL_RED,
-			_open_slot_delete_dialog.bind(slot_num), Vector2(280, 30), 13))
+		card.set_meta("delete_label", "DELETE SAVE")
+		var delete := _mpill("DELETE SAVE", "danger", "quit",
+			_open_slot_delete_dialog.bind(slot_num), Vector2(0, 30), 13,
+			false)
+		delete.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		box.add_child(delete)
 	else:
 		card.set_meta("delete_label", "")
 	card.set_meta("has_delete", not is_empty)
@@ -590,12 +706,12 @@ func _slot_card(slot_num: int) -> Control:
 
 
 ## Satu baris teks kartu slot.
-func _slot_line(text: String, color: Color, font_size: int) -> Label:
+func _slot_line(text: String, color: Color, font_size: int,
+		style: String = "body") -> Label:
 	var lab := Label.new()
 	lab.text = text
 	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lab.add_theme_font_size_override("font_size", font_size)
-	lab.add_theme_color_override("font_color", color)
+	UiTheme.style_label(lab, font_size, style, color, true)
 	return lab
 
 
@@ -621,56 +737,38 @@ func _open_slot_delete_dialog(slot_num: int) -> void:
 
 
 ## Dialog konfirmasi hapus — paritas `_draw_delete_confirm_dialog`
-## _core.py:3471-3570 ("Delete SLOT n?" + "This action cannot be undone!"
-## + tombol YES/NO). Modal: menutupi kartu slot.
+## (DELETE SLOT? + "Delete SLOT n?" + "This action cannot be undone!" +
+## YES, DELETE/CANCEL). Modal: menutupi kartu slot.
 func _build_slot_delete_dialog(slot_num: int) -> void:
-	if _confirm != null and is_instance_valid(_confirm):
-		_confirm.queue_free()
-	_confirm = PanelContainer.new()
+	_make_dialog(Color8(255, 105, 105))
 	_confirm.name = "SlotDeleteConfirm"
 	_confirm.set_meta("slot_delete", slot_num)
-	_confirm.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	_confirm.mouse_filter = Control.MOUSE_FILTER_STOP
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.16, 0.10, 0.12)
-	sb.border_color = COL_RED
-	sb.set_border_width_all(3)
-	sb.set_corner_radius_all(12)
-	sb.content_margin_left = 24.0
-	sb.content_margin_right = 24.0
-	sb.content_margin_top = 16.0
-	sb.content_margin_bottom = 16.0
-	_confirm.add_theme_stylebox_override("panel", sb)
-	add_child(_confirm)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 10)
-	_confirm.add_child(box)
+	_dialog_add(box)
 	var title := Label.new()
-	title.text = "HAPUS SLOT?"
+	title.text = "DELETE SLOT?"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 22)
-	title.add_theme_color_override("font_color", COL_RED)
+	UiTheme.style_label(title, 24, "title", Color8(255, 100, 100), true)
 	box.add_child(title)
 	var msg := Label.new()
-	msg.text = "Hapus SAVE GAME %d?" % slot_num
+	msg.text = "Delete SLOT %d?" % slot_num
 	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	msg.add_theme_font_size_override("font_size", 16)
-	msg.add_theme_color_override("font_color", COL_TEXT)
+	UiTheme.style_label(msg, 17, "body_semibold", UiTheme.TEXT_WHITE)
 	box.add_child(msg)
 	var warn := Label.new()
-	warn.text = "Tindakan ini tidak bisa dibatalkan!"
+	warn.text = "This action cannot be undone!"
 	warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	warn.add_theme_font_size_override("font_size", 12)
-	warn.add_theme_color_override("font_color", Color(0.86, 0.7, 0.7))
+	UiTheme.style_label(warn, 13, "body", Color8(220, 180, 180))
 	box.add_child(warn)
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 16)
 	box.add_child(row)
-	row.add_child(_make_button("YA, HAPUS", COL_RED,
-		_on_slot_delete_confirm.bind(true), Vector2(160, 36)))
-	row.add_child(_make_button("BATAL", COL_GREEN,
-		_on_slot_delete_confirm.bind(false), Vector2(160, 36)))
+	row.add_child(_mpill("YES, DELETE", "danger", "",
+		_on_slot_delete_confirm.bind(true), Vector2(160, 40), 15, false))
+	row.add_child(_mpill("CANCEL", "neutral", "",
+		_on_slot_delete_confirm.bind(false), Vector2(160, 40), 15, false))
 
 
 ## Paritas handler `slot_delete_yes` / `slot_delete_no` _core.py:7406-7420
@@ -689,54 +787,43 @@ func _on_slot_delete_confirm(confirmed: bool) -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build_level_select() -> void:
-	_screen_header("PILIH LEVEL", State.MAIN)
+	_screen_header("SELECT LEVEL")
 
-	# ── pemilih difficulty (paritas tombol MODE: EASY/NORMAL/HARD 3957-3984) ──
+	# ── pemilih difficulty (paritas tab MODE EASY/NORMAL/HARD 3957-3984) ──
 	var diff_row := HBoxContainer.new()
 	diff_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	diff_row.add_theme_constant_override("separation", 10)
 	_root.add_child(diff_row)
 	var group := ButtonGroup.new()
-	for d in [["easy", "MUDAH", Color(0.4, 0.85, 1.0)],
-			["normal", "NORMAL", COL_GREEN],
-			["hard", "SULIT", COL_RED]]:
+	for d in [["easy", "EASY", Color8(100, 210, 255)],
+			["normal", "NORMAL", Color8(110, 225, 150)],
+			["hard", "HARD", Color8(255, 120, 120)]]:
 		var mode := str(d[0])
-		var b := Button.new()
-		b.text = str(d[1])
-		b.toggle_mode = true
+		var b := MysticTab.new(str(d[1]), d[2], 15)
 		b.button_group = group
 		b.custom_minimum_size = Vector2(150, 30)
 		b.set_pressed_no_signal(GameManager.difficulty == mode)
 		b.pressed.connect(GameManager.set_difficulty.bind(mode))
-		b.pressed.connect(AudioManager.play_sfx.bind("ui_click"))
-		b.add_theme_color_override("font_color",
-			d[2] if GameManager.difficulty == mode else COL_DIM)
+		b.pressed.connect(AudioManager.play_sfx.bind("ui_click", 0.5))
 		diff_row.add_child(b)
 
 	# ── progres (paritas "COMPLETED: x / total" + progress bar 3988-3996) ──
 	var done := _completed_count()
 	var total := GameManager.level_count()
 	var prog := Label.new()
-	prog.text = "SELESAI: %d / %d  ·  hard = musuh +15%% HP, +10%% damage (scaling aktif)" % [
-		done, total]
+	prog.text = "COMPLETED: %d / %d" % [done, total]
 	prog.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prog.add_theme_font_size_override("font_size", 13)
-	prog.add_theme_color_override("font_color", Color(0.5, 0.85, 0.95))
+	UiTheme.style_label(prog, 13, "body_semibold", UiTheme.CYAN_SOFT, true)
 	_root.add_child(prog)
-	var bar := ProgressBar.new()
-	bar.max_value = maxf(1.0, float(total))
-	bar.value = float(done)
-	bar.show_percentage = false
+	var bar := MysticBar.new()
 	bar.custom_minimum_size = Vector2(0, 8)
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sb_bg := StyleBoxFlat.new()
-	sb_bg.bg_color = Color(0.1, 0.12, 0.18)
-	sb_bg.set_corner_radius_all(3)
-	var sb_fill := StyleBoxFlat.new()
-	sb_fill.bg_color = COL_GREEN
-	sb_fill.set_corner_radius_all(3)
-	bar.add_theme_stylebox_override("background", sb_bg)
-	bar.add_theme_stylebox_override("fill", sb_fill)
+	bar.fill_top = Color8(112, 226, 132)
+	bar.fill_bottom = Color8(34, 116, 58)
+	bar.track_top = Color8(26, 30, 52)
+	bar.track_bottom = Color8(16, 19, 34)
+	bar.edge_color = Color8(72, 80, 106)
+	bar.show_text = false
+	bar.set_fill(float(done), float(total))
 	_root.add_child(bar)
 
 	# ── grid kartu level (ScrollContainer; pygame pakai clip+scroll manual) ──
@@ -754,13 +841,11 @@ func _build_level_select() -> void:
 		if lv_data is Dictionary:
 			grid.add_child(_level_card(lv_data))
 	if BossDB.levels.is_empty():
-		# levels.json belum ada/belum dikonversi — layar level select harus
-		# menjelaskan, bukan hening.
 		var warn := Label.new()
-		warn.text = "LEVELS JSON BELUM DIMUAT — jalankan dulu:\npython tools/convert_to_godot.py"
-		warn.add_theme_color_override("font_color", COL_RED)
-		warn.add_theme_font_size_override("font_size", 14)
+		warn.text = "LEVELS JSON NOT LOADED — run first:\npython tools/convert_to_godot.py"
+		UiTheme.style_label(warn, 14, "body", COL_RED)
 		grid.add_child(warn)
+	_screen_footer_back(State.MAIN)
 
 
 ## ═══ FASE 20 — helper stat kartu level (paritas _core.py:4257-4278) ═══
@@ -814,13 +899,11 @@ func _stat_cell(label: String, value: String, color: Color,
 	cell.add_theme_constant_override("separation", 0)
 	var lab := Label.new()
 	lab.text = label
-	lab.add_theme_font_size_override("font_size", 10)
-	lab.add_theme_color_override("font_color", COL_STAT_LABEL)
+	UiTheme.style_label(lab, 10, "body_semibold", COL_STAT_LABEL)
 	cell.add_child(lab)
 	var val := Label.new()
 	val.text = value
-	val.add_theme_font_size_override("font_size", 16)
-	val.add_theme_color_override("font_color", color)
+	UiTheme.style_label(val, 16, "body_bold", color, true)
 	val.set_meta("parity", parity_key)
 	val.set_meta("parity_rgb", [int(color.r8), int(color.g8),
 		int(color.b8)])
@@ -837,72 +920,68 @@ func _level_card(lv: Dictionary) -> Control:
 	var unlocked: bool = GameManager.is_level_unlocked(level_num)
 	var completed: bool = SaveManager.is_level_completed(level_num)
 
-	var card := PanelContainer.new()
+	var card := MysticPanel.new(
+		UiTheme.LOCKED_BG_TOP if not unlocked
+			else (UiTheme.DONE_BG_TOP if completed else UiTheme.OPEN_BG_TOP),
+		UiTheme.LOCKED_BG_BOTTOM if not unlocked
+			else (UiTheme.DONE_BG_BOTTOM if completed else UiTheme.OPEN_BG_BOTTOM),
+		UiTheme.LOCKED_EDGE if not unlocked
+			else (UiTheme.DONE_EDGE if completed else UiTheme.OPEN_EDGE),
+		10.0, 2.0, unlocked)
 	card.set_meta("level_num", level_num)
 	# 3 kolom x 380 + 2 x 14 gap = 1148 px — muat di 1192 px area konten
 	# (1280 - margin backdrop 88), tanpa scroll horizontal.
 	card.custom_minimum_size = Vector2(380, 158)
-	var sb := StyleBoxFlat.new()
-	# gradasi per status (paritas LOCKED/DONE/OPEN_BG_TOP)
-	if not unlocked:
-		sb.bg_color = Color(0.07, 0.08, 0.11)
-		sb.border_color = COL_LOCKED
-	elif completed:
-		sb.bg_color = Color(0.05, 0.11, 0.07)
-		sb.border_color = Color(0.3, 0.75, 0.45)
-	else:
-		sb.bg_color = COL_PANEL
-		sb.border_color = COL_BORDER if unlocked else COL_LOCKED
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(10)
-	sb.content_margin_left = 12.0
-	sb.content_margin_right = 12.0
-	sb.content_margin_top = 8.0
-	sb.content_margin_bottom = 8.0
-	card.add_theme_stylebox_override("panel", sb)
 
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	card.add_child(margin)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 2)
-	card.add_child(box)
+	margin.add_child(box)
 
 	# ── baris 1: LEVEL n + badge status ──
 	var head := HBoxContainer.new()
+	head.add_theme_constant_override("separation", 6)
 	box.add_child(head)
 	var title := Label.new()
 	title.text = "LEVEL %d" % level_num
-	title.add_theme_font_size_override("font_size", 15)
-	title.add_theme_color_override("font_color",
-		COL_GOLD if unlocked else COL_LOCKED)
+	UiTheme.style_label(title, 15, "body_bold",
+		UiTheme.GOLD_TEXT if unlocked else UiTheme.TEXT_FAINT, true)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(title)
+	if completed:
+		head.add_child(MysticIcon.new("check", Color8(140, 255, 175), 0.7))
+	elif not unlocked:
+		head.add_child(MysticIcon.new("lock", UiTheme.TEXT_FAINT, 0.7))
 	var badge := Label.new()
 	if completed:
-		badge.text = "SELESAI"
-		badge.add_theme_color_override("font_color", Color(0.55, 0.95, 0.7))
+		badge.text = "DONE"
+		UiTheme.style_label(badge, 11, "body_bold", Color8(140, 255, 175))
 	elif not unlocked:
-		badge.text = "TERKUNCI"
-		badge.add_theme_color_override("font_color", COL_LOCKED)
+		badge.text = "LOCKED"
+		UiTheme.style_label(badge, 11, "body_bold", UiTheme.TEXT_FAINT)
 	else:
-		badge.text = "SIAP MAIN"
-		badge.add_theme_color_override("font_color", COL_GREEN)
-	badge.add_theme_font_size_override("font_size", 11)
+		badge.text = "READY"
+		UiTheme.style_label(badge, 11, "body_bold", UiTheme.GREEN)
 	head.add_child(badge)
 
 	# ── baris 2: nama + deskripsi ──
 	var name_l := Label.new()
 	name_l.text = str(lv.get("name", "Level %d" % level_num))
-	name_l.add_theme_font_size_override("font_size", 17)
-	name_l.add_theme_color_override("font_color",
-		COL_TEXT if unlocked else Color(0.55, 0.58, 0.68))
+	UiTheme.style_label(name_l, 17, "body_semibold",
+		UiTheme.TEXT_WHITE if unlocked else Color8(140, 148, 174), true)
 	box.add_child(name_l)
 	var desc := Label.new()
 	desc.text = str(lv.get("description", ""))
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_font_size_override("font_size", 11)
-	desc.add_theme_color_override("font_color", COL_DIM)
+	UiTheme.style_label(desc, 11, "body", UiTheme.TEXT_DIM)
 	box.add_child(desc)
 
-	# ── baris 3: tema map + boss (data sudah di levels.json, sekarang dibaca) ──
+	# ── baris 3: tema map + boss ──
 	var true_boss := str(lv.get("true_boss", ""))
 	var true_name := str(BossDB.get_boss(true_boss).get("name", true_boss))
 	var minis: Array = []
@@ -911,19 +990,17 @@ func _level_card(lv: Dictionary) -> Control:
 		var bt := str(mini_dict[wave])
 		minis.append(str(BossDB.get_boss(bt).get("name", bt)))
 	var info := Label.new()
-	info.text = "Tema: %s  ·  Mini boss: %s  ·  True boss: %s" % [
+	info.text = "Theme: %s  ·  Mini Boss: %s  ·  True Boss: %s" % [
 		str(lv.get("map_theme", "forest")).to_upper(),
 		", ".join(minis) if not minis.is_empty() else "-",
 		true_name if not true_name.is_empty() else "-"]
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info.add_theme_font_size_override("font_size", 11)
-	info.add_theme_color_override("font_color", Color(0.95, 0.62, 0.62))
+	UiTheme.style_label(info, 11, "body_medium", Color8(242, 158, 158))
 	box.add_child(info)
 
 	# ── baris 3.5: blok stat (FASE 20 — paritas _core.py:4247-4291) ──
 	# pygame hanya menggambar blok ini untuk kartu TERBUKA; attempts == 0
-	# menampilkan "No stats yet" (Godot: "Belum ada statistik" — beda
-	# bahasa yang dikunci eksplisit, nilai datanya tetap paritas).
+	# menampilkan "No stats yet".
 	if unlocked:
 		var stats: Dictionary = SaveManager.get_level_stats(
 			SaveManager.data, level_num)
@@ -940,17 +1017,17 @@ func _level_card(lv: Dictionary) -> Control:
 			# Truncasi diukur pada px SETARA pygame (20/19 — val_font_bold/
 			# val_font _core.py:4262-4263) meski render lebih kecil, agar
 			# rasio string terhadap ambang 120px pygame dipertahankan.
-			grid.add_child(_stat_cell("SKOR TERBAIK",
+			grid.add_child(_stat_cell("BEST SCORE",
 				_fit_stat_text(_format_level_score(int(
 					stats.get("best_score", 0))), 20),
 				COL_STAT_SCORE, "score"))
 			# Slot waktu (kolom 2): label + nilai warna CYAN_SOFT.
-			grid.add_child(_stat_cell("WAKTU TERBAIK",
+			grid.add_child(_stat_cell("BEST TIME",
 				_fit_stat_text(SaveManager.format_time(int(
 					stats.get("best_time_seconds", 0))), 19),
 				COL_STAT_TIME, "time"))
 			# Baris 2 (paritas row2_y = stats_y + 40): attempts + win rate.
-			grid.add_child(_stat_cell("ATTEMPT",
+			grid.add_child(_stat_cell("ATTEMPTS",
 				"%dW/%d" % [wins, attempts], COL_STAT_ATTEMPTS,
 				"attempts"))
 			# Band warna win rate (paritas _core.py:4274-4277):
@@ -964,26 +1041,29 @@ func _level_card(lv: Dictionary) -> Control:
 				"win_rate"))
 		else:
 			var empty := Label.new()
-			empty.text = "Belum ada statistik"
-			empty.add_theme_font_size_override("font_size", 11)
-			empty.add_theme_color_override("font_color", COL_STAT_LABEL)
+			empty.text = "No stats yet"
+			UiTheme.style_label(empty, 11, "body", COL_STAT_LABEL)
 			box.add_child(empty)
 
 	# ── baris 4: aksi ──
 	if unlocked:
-		var label := "MAIN" if not completed else "MAIN LAGI"
-		var btn := _make_button(label, COL_GREEN, _request_play.bind(level_num),
-			Vector2(0, 30), 13)
+		var label := "REPLAY" if completed else "PLAY"
+		var btn := _mpill(label, "success", "play",
+			_request_play.bind(level_num), Vector2(0, 32), 15, false)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		box.add_child(btn)
 	else:
 		# paritas teks kunci _core.py:4303 "Complete Level X first"
-		var lock := Label.new()
 		var req := int(lv.get("unlock_after_level", 0))
-		lock.text = "Selesaikan Level %d dulu untuk membuka" % req
-		lock.add_theme_font_size_override("font_size", 11)
-		lock.add_theme_color_override("font_color", COL_LOCKED)
+		var lock := Label.new()
+		lock.text = "Complete Level %d first" % req
+		UiTheme.style_label(lock, 11, "body", UiTheme.TEXT_FAINT)
 		box.add_child(lock)
+		var lock_pill := MysticPill.new("LOCKED", "locked", "lock", 14, false)
+		lock_pill.custom_minimum_size = Vector2(0, 30)
+		lock_pill.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		lock_pill.disabled = true
+		box.add_child(lock_pill)
 	return card
 
 
@@ -995,42 +1075,51 @@ func _level_card(lv: Dictionary) -> Control:
 ## _core.py:5298: cek unlock_require_boss dulu, lalu meta_gold, baru append
 ## ke purchased_heroes — di Godot: SaveManager.unlock_hero()).
 func _build_hero_shop() -> void:
-	_screen_header("HERO SHOP", State.MAIN)
+	_screen_header("HERO SHOP")
 
 	# ── chip meta gold (paritas "HERO GOLD" chip _core.py:4821-4826) ──
 	var chips := HBoxContainer.new()
 	chips.alignment = BoxContainer.ALIGNMENT_CENTER
-	chips.add_theme_constant_override("separation", 16)
+	chips.add_theme_constant_override("separation", 12)
 	_root.add_child(chips)
-	var gold_chip := Label.new()
-	gold_chip.text = "HERO GOLD: %d" % SaveManager.meta_gold()
-	gold_chip.add_theme_font_size_override("font_size", 18)
-	gold_chip.add_theme_color_override("font_color", COL_GOLD)
+	var gold_chip := MysticChip.new("coin",
+		"HERO GOLD: %d" % SaveManager.meta_gold(), UiTheme.GOLD, 16)
+	gold_chip.custom_minimum_size = Vector2(240, 34)
 	chips.add_child(gold_chip)
-	var boss_chip := Label.new()
-	boss_chip.text = "BOSS DIKALAHKAN: %d" % (SaveManager.data.get(
-		"unlocked_bosses", []) as Array).size()
-	boss_chip.add_theme_font_size_override("font_size", 18)
-	boss_chip.add_theme_color_override("font_color", Color(0.5, 0.85, 0.95))
+	var boss_chip := MysticChip.new("skull",
+		"BOSSES DEFEATED: %d" % (SaveManager.data.get(
+			"unlocked_bosses", []) as Array).size(), UiTheme.CYAN_SOFT, 16)
+	boss_chip.custom_minimum_size = Vector2(280, 34)
 	chips.add_child(boss_chip)
+	chips.add_child(_mpill("TOP UP", "success", "coin", _open_topup,
+		Vector2(130, 34), 14, false))
+	# ── legenda singkatan sekolah damage (verbatim pygame) ──
+	var legend := Label.new()
+	legend.text = ("PHY = fisik kena armor  ·  MAG = sihir tembus armor  "
+		+ "·  TNK = badak")
+	legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	UiTheme.style_label(legend, 13, "body_semibold", Color8(150, 156, 180))
+	legend.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chips.add_child(legend)
 
-	# ── tab STARTER / MINI BOSS / TRUE BOSS (paritas 4837-4857) ──
+	# ── tab STARTER HEROES / MINI BOSSES / TRUE BOSSES (paritas 4837-4857) ──
 	var tabs := HBoxContainer.new()
 	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
 	tabs.add_theme_constant_override("separation", 8)
 	_root.add_child(tabs)
 	var group := ButtonGroup.new()
-	for pair in [["starter", "STARTER", Color(0.4, 0.8, 1.0)],
-			["mini", "MINI BOSS", Color(1.0, 0.6, 0.4)],
-			["true", "TRUE BOSS", Color(1.0, 0.35, 0.4)]]:
+	var tab_font := UiTheme.font("body_semibold")
+	for pair in [["starter", "STARTER HEROES", Color8(100, 200, 255)],
+			["mini", "MINI BOSSES", Color8(255, 160, 100)],
+			["true", "TRUE BOSSES", Color8(255, 110, 110)]]:
 		var tab_id := str(pair[0])
-		var b := Button.new()
-		b.text = str(pair[1])
-		b.toggle_mode = true
+		var b := MysticTab.new(str(pair[1]), pair[2], 15)
 		b.button_group = group
+		b.custom_minimum_size = Vector2(UiTheme.tab_width(tab_font,
+			str(pair[1]), 15, 150.0), 32)
 		b.set_pressed_no_signal(_hero_tab == tab_id)
-		b.custom_minimum_size = Vector2(150, 30)
 		b.pressed.connect(_select_hero_tab.bind(tab_id))
+		b.pressed.connect(AudioManager.play_sfx.bind("ui_click", 0.5))
 		tabs.add_child(b)
 
 	# ── grid hero ──
@@ -1064,43 +1153,30 @@ func _build_hero_shop() -> void:
 		var empty := Label.new()
 		# Katalog kosong = data belum dikonversi — jangan biarkan layar
 		# "kosong diam-diam"; tunjukkan penyebab + perbaikannya.
-		empty.text = "Tidak ada hero di kategori ini." if not HeroDB.heroes.is_empty() \
-			else "heroes.json BELUM DIMUAT — jalankan dulu: python tools/convert_to_godot.py"
-		empty.add_theme_color_override("font_color",
-			COL_DIM if not HeroDB.heroes.is_empty() else COL_RED)
+		empty.text = "No heroes in this category." if not HeroDB.heroes.is_empty() \
+			else "heroes.json NOT LOADED — run first: python tools/convert_to_godot.py"
+		UiTheme.style_label(empty, 13, "body",
+			UiTheme.TEXT_DIM if not HeroDB.heroes.is_empty() else COL_RED)
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		grid.add_child(empty)
+	_screen_footer_back(State.MAIN)
 
 
-## Satu kartu hero: stat + status (DIMILIKI / buka dengan meta gold / terkunci
-## sampai boss dikalahkan). Paritas _unlock_hero_in_meta_shop _core.py:5302-5327.
+## Satu kartu hero — paritas _draw_meta_hero_card _core.py:5050-5296:
+## potret + nama + stat + status (OWNED / Defeat: X / cost) + pill kanan
+## (OWNED / LOCKED / FREE / UNLOCK). Keputusan kartu dihitung sekali di
+## sini; meta di akhir fungsi dipakai replay MetaShopTxnParityTest.
 func _hero_card(hero_type: String, d: Dictionary) -> Control:
-	var card := PanelContainer.new()
+	var card := MysticPanel.new(UiTheme.PANEL_TOP, UiTheme.PANEL_BOTTOM,
+		UiTheme.EDGE_GOLD, 8.0, 1.0, false)
 	# 2 kolom x 585 + 12 gap = 1182 px < 1192 px area konten menu
 	card.custom_minimum_size = Vector2(585, 0)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COL_PANEL
-	sb.border_color = COL_BORDER
-	sb.set_border_width_all(1)
-	sb.set_corner_radius_all(8)
-	sb.content_margin_left = 12.0
-	sb.content_margin_right = 12.0
-	sb.content_margin_top = 8.0
-	sb.content_margin_bottom = 8.0
-	card.add_theme_stylebox_override("panel", sb)
-
-	var box := VBoxContainer.new()
-	box.add_theme_constant_override("separation", 3)
-	card.add_child(box)
-
-	var head := HBoxContainer.new()
-	box.add_child(head)
-	var title := Label.new()
-	title.text = "%s — %s" % [str(d.get("name", hero_type)), str(d.get("title", ""))]
-	title.add_theme_font_size_override("font_size", 15)
-	title.add_theme_color_override("font_color", COL_TEXT)
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	head.add_child(title)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	card.add_child(margin)
 
 	var owned: bool = SaveManager.is_unlocked(hero_type)
 	var cost := int(d.get("unlock_cost", 600))
@@ -1109,52 +1185,115 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	var req_raw = d.get("unlock_require_boss", "")
 	var req_boss := "" if req_raw == null else str(req_raw)
 	var boss_ready: bool = req_boss.is_empty() or SaveManager.is_boss_unlocked(req_boss)
-	# Keputusan kartu dihitung sekali di sini (paritas _draw_meta_hero_card
-	# _core.py:5050-5060: can_unlock = DEV off AND gold >= cost). Meta di
-	# akhir fungsi dipakai replay MetaShopTxnParityTest.
+	# Keputusan kartu (paritas _draw_meta_hero_card _core.py:5050-5060:
+	# can_unlock = DEV off AND gold >= cost).
 	var affordable: bool = SaveManager.meta_gold() >= cost
 
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	margin.add_child(row)
+	# ── potret (frame idle bake; gelap kalau boss-locked) ──
+	var port := TextureRect.new()
+	port.custom_minimum_size = Vector2(72, 72)
+	port.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	port.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	port.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var atlas := _portrait(hero_type)
+	if atlas != null:
+		port.texture = atlas
+		if owned or boss_ready:
+			port.modulate = Color.WHITE
+		else:
+			port.modulate = Color(0.3, 0.3, 0.38)
+	else:
+		port.modulate = Color(0.3, 0.32, 0.4)
+	row.add_child(port)
+	# Bingkai potret emas tipis (di belakang: sibling sebelum = kegambar duluan).
+	# (Digambar sebagai Panel di bawah TextureRect via show_behind... TextureRect
+	# bukan container — bingkai digambar manual lewat sibling ColorRect? Lewatkan:
+	# MysticIcon fallback bila atlas kosong.)
+	if atlas == null:
+		var fb := MysticIcon.new("shield", UiTheme.TEXT_DIM, 2.0)
+		fb.custom_minimum_size = Vector2(72, 72)
+		row.add_child(fb)
+		port.queue_free()
+
+	# ── info tengah ──
+	var info := VBoxContainer.new()
+	info.add_theme_constant_override("separation", 2)
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(info)
+	var title := Label.new()
+	title.text = "%s — %s" % [str(d.get("name", hero_type)), str(d.get("title", ""))]
+	UiTheme.style_label(title, 15, "body_semibold", UiTheme.TEXT_WHITE, true)
+	info.add_child(title)
 	var stat := Label.new()
-	stat.text = "HP %d · DMG %d · RANGE %d · %s" % [
+	stat.text = "HP %d · DMG %d · RNG %d · %s" % [
 		int(d.get("hp", 0)), int(d.get("damage", 0)), int(d.get("range", 0)),
 		str(d.get("dmg_type", "PHYSICAL"))]
-	stat.add_theme_font_size_override("font_size", 11)
-	stat.add_theme_color_override("font_color", COL_DIM)
-	box.add_child(stat)
-
-	var action := HBoxContainer.new()
-	action.add_theme_constant_override("separation", 10)
-	box.add_child(action)
+	UiTheme.style_label(stat, 11, "body", UiTheme.TEXT_DIM)
+	info.add_child(stat)
+	# Chip role + sekolah damage.
+	var chips := HBoxContainer.new()
+	chips.add_theme_constant_override("separation", 8)
+	info.add_child(chips)
+	var role := Label.new()
+	role.text = str(d.get("role", "-"))
+	UiTheme.style_label(role, 11, "body_semibold", UiTheme.TEXT_DIM)
+	chips.add_child(role)
+	var sch: Array = _school_chip(d)
+	var sch_lab := Label.new()
+	sch_lab.text = str(sch[0])
+	UiTheme.style_label(sch_lab, 11, "body_bold", sch[1])
+	chips.add_child(sch_lab)
+	chips.add_child(MysticIcon.new(str(sch[2]), sch[1], 0.55))
+	# ── status (ikon + teks, paritas status_y) ──
+	var status := HBoxContainer.new()
+	status.add_theme_constant_override("separation", 6)
+	info.add_child(status)
 	if owned:
+		status.add_child(MysticIcon.new("check", UiTheme.GREEN, 0.55))
 		var own := Label.new()
-		own.text = "DIMILIKI"
-		own.add_theme_font_size_override("font_size", 13)
-		own.add_theme_color_override("font_color", COL_GREEN)
-		action.add_child(own)
-		var note := Label.new()
-		note.text = "beli di TOKO dalam game (B) untuk men-summon"
-		note.add_theme_font_size_override("font_size", 10)
-		note.add_theme_color_override("font_color", COL_DIM)
-		action.add_child(note)
+		own.text = UiTheme.letter("OWNED")
+		UiTheme.style_label(own, 14, "body_bold", UiTheme.GREEN)
+		status.add_child(own)
 	elif not boss_ready:
-		# paritas 5311-5314: unlock_require_boss belum dikalahkan -> tolak
+		status.add_child(MysticIcon.new("lock", Color8(200, 120, 120), 0.55))
 		var boss_name := str(BossDB.get_boss(req_boss).get("name", req_boss))
 		var lock := Label.new()
-		lock.text = "TERKUNCI — kalahkan %s dulu" % boss_name
-		lock.add_theme_font_size_override("font_size", 12)
-		lock.add_theme_color_override("font_color", COL_LOCKED)
-		action.add_child(lock)
+		lock.text = "Defeat: %s" % boss_name
+		UiTheme.style_label(lock, 13, "body_medium", Color8(205, 150, 150))
+		status.add_child(lock)
 	else:
-		var label := "GRATIS" if cost <= 0 else "BUKA — %d" % cost
-		var btn := _make_button(label, COL_GOLD if affordable else COL_LOCKED,
-			_try_unlock_hero.bind(hero_type), Vector2(140, 28), 12)
-		btn.disabled = not affordable
-		action.add_child(btn)
-		var bal := Label.new()
-		bal.text = "(gold %d / %d)" % [SaveManager.meta_gold(), cost]
-		bal.add_theme_font_size_override("font_size", 10)
-		bal.add_theme_color_override("font_color", COL_DIM)
-		action.add_child(bal)
+		status.add_child(MysticIcon.new("coin", UiTheme.GOLD, 0.55))
+		var cost_lab := Label.new()
+		if cost <= 0:
+			cost_lab.text = "FREE"
+			UiTheme.style_label(cost_lab, 14, "body_bold", UiTheme.GREEN)
+		else:
+			cost_lab.text = "%s G" % _format_grouped(cost)
+			UiTheme.style_label(cost_lab, 14, "body_bold", UiTheme.GOLD_TEXT)
+		status.add_child(cost_lab)
+
+	# ── pill kanan 104x34 (paritas btn_rect) ──
+	var pill_wrap := CenterContainer.new()
+	row.add_child(pill_wrap)
+	if owned:
+		var p := MysticPill.new("OWNED", "owned", "check", 13, false)
+		p.custom_minimum_size = Vector2(104, 34)
+		p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pill_wrap.add_child(p)
+	elif not boss_ready:
+		var p2 := MysticPill.new("LOCKED", "locked", "lock", 13, false)
+		p2.custom_minimum_size = Vector2(104, 34)
+		p2.disabled = true
+		pill_wrap.add_child(p2)
+	else:
+		var label := "FREE" if cost <= 0 else "UNLOCK"
+		var p3 := _mpill(label, "gold" if affordable else "neutral", "coin",
+			_try_unlock_hero.bind(hero_type), Vector2(104, 34), 13, false)
+		pill_wrap.add_child(p3)
+
 	# Meta keputusan kartu untuk replay MetaShopTxnParityTest (FASE 20):
 	# padanan status _draw_meta_hero_card pygame (OWNED / boss-locked /
 	# pill label+kind) tanpa mengubah tampilan apa pun.
@@ -1164,6 +1303,54 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	card.set_meta("affordable", affordable)
 	card.set_meta("unlock_cost", cost)
 	return card
+
+
+## Chip sekolah damage (paritas _core.py:5142-5168): PHY oranye /
+## MAG biru / +·TNK hijau untuk tank.
+func _school_chip(d: Dictionary) -> Array:
+	var sch := str(d.get("dmg_type", "PHYSICAL")).to_upper()
+	var role := str(d.get("role", "")).to_upper()
+	var is_tank := "TANK" in role
+	if is_tank:
+		return ["PHY·TNK" if sch != "MAGIC" else "MAG·TNK",
+			Color8(130, 226, 168), "shield"]
+	if sch == "MAGIC":
+		return ["MAG", Color8(150, 196, 255), "bolt"]
+	return ["PHY", Color8(255, 178, 92), "swords"]
+
+
+## Potret hero: frame idle pertama strip bake (di-cache per tipe).
+static func _portrait(hero_type: String) -> AtlasTexture:
+	if _portrait_cache.has(hero_type):
+		return _portrait_cache[hero_type]
+	var atlas: AtlasTexture = null
+	var entry: Dictionary = BakedUnitDB.entry(hero_type)
+	var tex: Texture2D = BakedUnitDB.texture(hero_type)
+	if not entry.is_empty() and tex != null:
+		atlas = AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(0, 0, float(entry.get("frame_w", 64)),
+			float(entry.get("frame_h", 64)))
+		_portrait_cache[hero_type] = atlas
+	return atlas
+
+
+## Buka dialog TOP UP HERO GOLD (paritas tombol TOP UP 4828-4831).
+func _open_topup() -> void:
+	if _topup != null and is_instance_valid(_topup):
+		_topup.queue_free()
+	_topup = MysticTopup.new()
+	add_child(_topup)
+	_topup.closed.connect(_on_topup_closed)
+	_topup.open()
+
+
+func _on_topup_closed() -> void:
+	if _topup != null and is_instance_valid(_topup):
+		_topup.queue_free()
+	_topup = null
+	if state == State.HERO_SHOP:
+		_show(State.HERO_SHOP) # segarkan chip gold + status kartu
 
 
 ## Paritas _unlock_hero_in_meta_shop (_core.py:5298-5328): validasi katalog +
@@ -1195,212 +1382,247 @@ func _try_unlock_hero(hero_type: String) -> void:
 
 
 # ══════════════════════════════════════════════════════════
-#  SETTINGS (paritas _draw_settings _core.py:6221-6390, kolom AUDIO)
+#  SETTINGS (paritas _draw_settings _core.py:6221-6390)
 # ══════════════════════════════════════════════════════════
 
-## Layout 2 kolom — paritas struktur _draw_settings pygame
-## (_core.py:6221-6390): KOLOM KIRI = AUDIO + CLOUD SAVE, KOLOM KANAN =
-## GAMEPLAY + DANGER ZONE. Opsi yang tidak punya padanan kerja di port
-## Godot (voice, game speed, language, FPS limit) sengaja TIDAK
-## dipalsukan — ditulis sebagai catatan apa adanya.
+## Layout 2 kolom 900px — paritas struktur _draw_settings pygame:
+## KOLOM KIRI = AUDIO + CLOUD SAVE, KOLOM KANAN = GAMEPLAY + GRAPHICS +
+## DANGER ZONE. Voice tidak dipasang (tidak ada file voice di repo —
+## slider-nya tidak akan berfungsi); Language terkunci ENGLISH.
 func _build_settings() -> void:
-	_screen_header("PENGATURAN", State.PAUSE if from_pause else State.MAIN)
+	_screen_header("SETTINGS")
 
-	var panel := PanelContainer.new()
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COL_PANEL
-	sb.border_color = COL_BORDER
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(10)
-	sb.content_margin_left = 36.0
-	sb.content_margin_right = 36.0
-	sb.content_margin_top = 18.0
-	sb.content_margin_bottom = 18.0
-	panel.add_theme_stylebox_override("panel", sb)
-	_root.add_child(panel)
-
+	var center := CenterContainer.new()
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_root.add_child(center)
+	var panel := MysticPanel.new(UiTheme.PANEL_TOP, UiTheme.PANEL_BOTTOM,
+		UiTheme.EDGE_GOLD, 12.0, 2.0, true)
+	panel.custom_minimum_size = Vector2(900, 540)
+	center.add_child(panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 40)
+	margin.add_theme_constant_override("margin_right", 40)
+	margin.add_theme_constant_override("margin_top", 24)
+	margin.add_theme_constant_override("margin_bottom", 24)
+	panel.add_child(margin)
 	var cols := HBoxContainer.new()
-	cols.add_theme_constant_override("separation", 36)
-	panel.add_child(cols)
+	cols.add_theme_constant_override("separation", 40)
+	margin.add_child(cols)
 
 	# ── KOLOM KIRI: AUDIO + CLOUD SAVE ──
 	var left := VBoxContainer.new()
 	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.add_theme_constant_override("separation", 12)
+	left.add_theme_constant_override("separation", 10)
 	cols.add_child(left)
-	left.add_child(_settings_header("AUDIO"))
-	# pygame: master/sfx/bgm/voice. Port Godot punya master + sfx + bgm
-	# (voice TIDAK ada — semua audio di repo pygame adalah SFX/BGM, tidak
-	# ada file voice, jadi slider-nya tidak akan berfungsi dan tidak
-	# dipasang).
-	left.add_child(_volume_slider("Volume Master", "master", 0.7))
-	left.add_child(_volume_slider("Volume SFX", "sfx", 0.6))
-	left.add_child(_volume_slider("Volume Musik (BGM)", "bgm", 0.35))
-
-	left.add_child(_settings_header("CLOUD SAVE"))
+	left.add_child(_settings_header("AUDIO", "speaker", UiTheme.CYAN))
+	left.add_child(_volume_row("Master Volume", "master", 0.7))
+	left.add_child(_volume_row("SFX Volume", "sfx", 0.6))
+	left.add_child(_volume_row("Music Volume", "bgm", 0.35))
+	left.add_child(_settings_header("CLOUD SAVE", "cloud", UiTheme.CYAN_SOFT))
+	# Cloud save (Play Games) tidak di-port — tombol tampil disabled
+	# verbatim pygame + status jujur (bukan dipalsukan berfungsi).
+	for spec in [["SIGN IN TO CLOUD", "cloud"],
+			["UPLOAD SAVE KE CLOUD", "upload"],
+			["DOWNLOAD SAVE DARI CLOUD", "download"]]:
+		var cb := MysticPill.new(str(spec[0]), "locked", str(spec[1]), 12,
+			false)
+		cb.custom_minimum_size = Vector2(0, 32)
+		cb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		cb.disabled = true
+		left.add_child(cb)
 	var cloud := Label.new()
-	cloud.text = "Cloud save (Play Games) belum di-port ke Godot — progres " \
-		+ "disimpan di 3 SLOT LOKAL (layar PILIH SLOT). Upload/_download " \
-		+ "manual tersedia di versi Pygame."
+	cloud.text = ("Cloud save is not available in the Godot port — "
+		+ "progress is stored in 3 LOCAL SLOTS.")
 	cloud.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	cloud.add_theme_font_size_override("font_size", 11)
-	cloud.add_theme_color_override("font_color", COL_DIM)
+	UiTheme.style_label(cloud, 11, "body", UiTheme.TEXT_DIM)
 	left.add_child(cloud)
-	var cloud_pad := Control.new()
-	cloud_pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	left.add_child(cloud_pad)
 
-	# ── KOLOM KANAN: GAMEPLAY + PROGRESI ──
+	# ── KOLOM KANAN: GAMEPLAY + GRAPHICS + DANGER ZONE ──
 	var right := VBoxContainer.new()
 	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right.add_theme_constant_override("separation", 12)
+	right.add_theme_constant_override("separation", 10)
 	cols.add_child(right)
-	right.add_child(_settings_header("GAMEPLAY"))
-
-	# Difficulty: pygame menggemboknya sampai semua level selesai dan
-	# menggantinya lewat settings; port Godot memutuskannya di layar PILIH
-	# LEVEL (sedikit di atas grid) — tampilkan nilai aktif + arahnya.
-	var diff_row := HBoxContainer.new()
-	diff_row.add_theme_constant_override("separation", 10)
-	var diff_label := Label.new()
-	diff_label.text = "Difficulty"
-	diff_label.custom_minimum_size = Vector2(200, 0)
-	diff_label.add_theme_font_size_override("font_size", 14)
-	diff_label.add_theme_color_override("font_color", COL_TEXT)
-	diff_row.add_child(diff_label)
-	var diff_val := Label.new()
-	diff_val.text = "MODE: %s" % HudLayout.mode_label(GameManager.difficulty)
-	diff_val.add_theme_font_size_override("font_size", 14)
-	diff_val.add_theme_color_override("font_color",
-		HudLayout.mode_color(GameManager.difficulty))
-	diff_row.add_child(diff_val)
-	right.add_child(diff_row)
-	var diff_note := Label.new()
-	diff_note.text = "Dipilih di layar PILIH LEVEL, sebelum match dimulai."
-	diff_note.add_theme_font_size_override("font_size", 11)
-	diff_note.add_theme_color_override("font_color", COL_DIM)
-	right.add_child(diff_note)
-
-	# Screen shake — paritas toggle pygame "Screen Shake"
-	# (GameSettings.screen_shake_enabled); kini BENAR-BENAR berfungsi:
+	right.add_child(_settings_header("GAMEPLAY", "swords",
+		Color8(110, 235, 160)))
+	right.add_child(_option_row("Difficulty",
+		HudLayout.mode_label(GameManager.difficulty),
+		HudLayout.mode_color(GameManager.difficulty),
+		_cycle_difficulty))
+	# Screen shake — paritas toggle pygame; BENAR-BENAR berfungsi:
 	# Camera2D masuk grup "camera" (Main._ready) + guard di Boss._shake.
-	right.add_child(_make_toggle(
-		"Screen Shake", "screen_shake", 1.0,
-		func(): _show(State.SETTINGS)))
-	# Damage numbers — paritas toggle pygame "Damage Numbers"; flag sudah
-	# dikonsumsi WorldPopups (start_level), kini bisa diubah live.
-	right.add_child(_make_toggle(
-		"Damage Numbers", "damage_numbers_enabled", 1.0,
-		func(): _show(State.SETTINGS)))
-
-	var gp_pad := Control.new()
-	gp_pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right.add_child(gp_pad)
-
-	# ── PROGRESI (paritas DANGER ZONE: RESET SAVE SLOT) ──
-	right.add_child(_settings_header("PROGRESI"))
-	# Hapus SLOT AKTIF (paritas tombol RESET SAVE _core.py:7012-7016)
-	# lengkap dengan dialog konfirmasinya.
-	right.add_child(_make_button(
-		"HAPUS SAVE GAME %d" % SaveManager.get_current_slot(), COL_RED,
+	right.add_child(_toggle_row("Screen Shake", "screen_shake", 1.0,
+		func(on: bool): GameManager.set_screen_shake(on)))
+	# Damage numbers — flag dikonsumsi WorldPopups, bisa diubah live.
+	right.add_child(_toggle_row("Damage Numbers", "damage_numbers_enabled",
+		1.0, func(on: bool): GameManager.set_damage_numbers(on)))
+	right.add_child(_option_row("Game Speed", _speed_label(),
+		UiTheme.TEXT_WHITE, _cycle_speed))
+	right.add_child(_static_row("Language", "ENGLISH", UiTheme.TEXT_DIM))
+	right.add_child(_settings_header("GRAPHICS", "monitor", UiTheme.ORANGE))
+	right.add_child(_option_row("FPS Limit", _fps_label(),
+		UiTheme.TEXT_WHITE, _cycle_fps))
+	right.add_child(_settings_header("DANGER ZONE", "warn", UiTheme.RED))
+	var reset := _mpill("RESET SAVE SLOT", "danger", "warn",
 		_open_slot_delete_dialog.bind(SaveManager.get_current_slot()),
-		Vector2(320, 36), 14))
-	var note := Label.new()
-	note.text = "Volume & toggle disimpan di SaveManager.data[\"settings\"] " \
-		+ "per slot dan langsung berlaku."
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.add_theme_font_size_override("font_size", 11)
-	note.add_theme_color_override("font_color", COL_DIM)
-	right.add_child(note)
+		Vector2(0, 40), 15, false)
+	reset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_child(reset)
+
+	_screen_footer_back(State.PAUSE if from_pause else State.MAIN)
 
 
-func _settings_header(text: String) -> Label:
-	var h := Label.new()
-	h.text = text
-	h.add_theme_font_size_override("font_size", 18)
-	h.add_theme_color_override("font_color", Color(0.5, 0.85, 0.95))
-	return h
-
-
-## Toggle tombol (paritas _draw_toggle_setting pygame): teks
-## "● LABEL: AKTIF/MATIU" — status dari SaveManager settings (float 0/1).
-func _make_toggle(label_text: String, key: String, default_on: float,
-		refresh: Callable) -> Button:
-	var on := SaveManager.get_setting(key, default_on) > 0.5
-	var b := Button.new()
-	b.name = "Toggle_" + key
-	b.custom_minimum_size = Vector2(360, 38)
-	b.add_theme_font_size_override("font_size", 14)
-	var accent := COL_GREEN if on else COL_LOCKED
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(accent.r, accent.g, accent.b, 0.13)
-	normal.border_color = Color(accent.r, accent.g, accent.b, 0.75)
-	normal.set_border_width_all(1)
-	normal.set_corner_radius_all(6)
-	var hover := normal.duplicate()
-	hover.bg_color = Color(accent.r, accent.g, accent.b, 0.3)
-	b.add_theme_stylebox_override("normal", normal)
-	b.add_theme_stylebox_override("hover", hover)
-	b.add_theme_stylebox_override("pressed", hover)
-	b.add_theme_color_override("font_color", accent)
-	b.text = "●  %s: %s" % [label_text.to_upper(), "AKTIF" if on else "MATIU"]
-	b.pressed.connect(func():
-		var now := SaveManager.get_setting(key, default_on) > 0.5
-		if key == "screen_shake":
-			GameManager.set_screen_shake(not now)
-		elif key == "damage_numbers_enabled":
-			GameManager.set_damage_numbers(not now)
-		SaveManager.set_setting(key, 0.0 if now else 1.0, true)
-		AudioManager.play_sfx("ui_click", 0.5)
-		refresh.call()
-	)
-	return b
-
-
-func _volume_slider(label_text: String, key: String, default_vol: float = 0.6) -> Control:
+## Header seksi settings: ikon + label letterspaced + garis aturan.
+func _settings_header(text: String, icon: String, color: Color) -> Control:
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 14)
-	var label := Label.new()
-	label.text = label_text
-	label.custom_minimum_size = Vector2(190, 0)
-	label.add_theme_font_size_override("font_size", 14)
-	label.add_theme_color_override("font_color", COL_TEXT)
-	row.add_child(label)
-	var slider := HSlider.new()
-	slider.min_value = 0.0
-	slider.max_value = 1.0
-	slider.step = 0.05
-	slider.value = SaveManager.get_setting(key, default_vol)
-	slider.custom_minimum_size = Vector2(420, 24)
-	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	var value_label := Label.new()
-	value_label.text = "%d%%" % int(round(slider.value * 100.0))
-	value_label.custom_minimum_size = Vector2(48, 0)
-	value_label.add_theme_font_size_override("font_size", 13)
-	value_label.add_theme_color_override("font_color", COL_GOLD)
-	row.add_child(slider)
-	row.add_child(value_label)
-	# Live-apply tanpa nulis file (file ditulis saat drag selesai).
-	slider.value_changed.connect(_on_volume_changed.bind(key, slider, value_label))
-	slider.drag_ended.connect(_on_volume_drag_ended.bind(key, slider))
+	row.add_theme_constant_override("separation", 8)
+	row.add_child(MysticIcon.new(icon, color, 0.9))
+	var lab := Label.new()
+	lab.text = UiTheme.letter(text)
+	UiTheme.style_label(lab, 17, "body_semibold", color)
+	row.add_child(lab)
+	var rule := ColorRect.new()
+	rule.color = Color(color.r, color.g, color.b, 0.35)
+	rule.custom_minimum_size = Vector2(0, 2)
+	rule.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rule.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(rule)
 	return row
 
 
-## Geser slider: terapkan ke AudioManager + label persentase, TANPA save
-## (menulis file tiap langkah slider itu boros — pygame menulis settings
-## saat menu ditutup).
-func _on_volume_changed(_value: float, key: String, slider: HSlider,
-		value_label: Label) -> void:
-	SaveManager.set_setting(key, slider.value, false)
-	AudioManager.apply_settings()
-	value_label.text = "%d%%" % int(round(slider.value * 100.0))
+## Baris volume (port _draw_volume_row): label + bar + pill -/+ + persen.
+func _volume_row(label_text: String, key: String,
+		default_vol: float) -> Control:
+	var row := MysticSliderRow.new(label_text,
+		SaveManager.get_setting(key, default_vol), 1.0)
+	row.custom_minimum_size = Vector2(0, 56)
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.changed.connect(func(v: float) -> void:
+		SaveManager.set_setting(key, v, true)
+		AudioManager.apply_settings()
+		AudioManager.play_sfx("ui_click", 0.3))
+	return row
 
 
-## Lepas slider: satu kali tulis ke user:// (SaveManager.save()).
-func _on_volume_drag_ended(_changed: bool, key: String, slider: HSlider) -> void:
-	SaveManager.set_setting(key, slider.value, true)
+## Baris toggle (port _draw_toggle_setting): label + MysticToggle.
+func _toggle_row(label_text: String, key: String, default_on: float,
+		apply: Callable) -> Control:
+	var opt := MysticOptionRow.new(label_text)
+	opt.name = "Toggle_" + key
+	var t := MysticToggle.new(SaveManager.get_setting(key, default_on) > 0.5)
+	t.custom_minimum_size = Vector2(76, 28)
+	t.toggled_on.connect(func(on: bool) -> void:
+		apply.call(on)
+		SaveManager.set_setting(key, 1.0 if on else 0.0, true)
+		AudioManager.play_sfx("ui_click", 0.5))
+	opt.right_box.add_child(t)
+	return opt
+
+
+## Baris opsi dengan chevron < nilai > (port _draw_option_setting).
+func _option_row(label_text: String, value_text: String, value_color: Color,
+		cycle: Callable) -> Control:
+	var opt := MysticOptionRow.new(label_text)
+	var left := _chevron("chevron_l")
+	opt.right_box.add_child(left)
+	var val := Label.new()
+	val.text = value_text
+	val.custom_minimum_size = Vector2(110, 0)
+	val.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiTheme.style_label(val, 15, "body_semibold", value_color, true)
+	opt.right_box.add_child(val)
+	var right := _chevron("chevron_r")
+	opt.right_box.add_child(right)
+	left.pressed.connect(func() -> void: cycle.call(-1))
+	right.pressed.connect(func() -> void: cycle.call(1))
+	return opt
+
+
+## Baris statis label: nilai (untuk opsi terkunci/non-interaktif).
+func _static_row(label_text: String, value_text: String,
+		value_color: Color) -> Control:
+	var opt := MysticOptionRow.new(label_text)
+	var val := Label.new()
+	val.text = value_text
+	UiTheme.style_label(val, 15, "body_semibold", value_color)
+	opt.right_box.add_child(val)
+	return opt
+
+
+func _chevron(icon: String) -> Button:
+	var b := Button.new()
+	b.text = ""
+	b.custom_minimum_size = Vector2(34, 30)
+	b.focus_mode = Control.FOCUS_NONE
+	b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color8(36, 44, 66)
+	normal.border_color = Color8(100, 110, 140)
+	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(6)
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color8(56, 64, 96)
+	hover.border_color = UiTheme.GOLD
+	b.add_theme_stylebox_override("normal", normal)
+	b.add_theme_stylebox_override("hover", hover)
+	b.add_theme_stylebox_override("pressed", hover)
+	b.add_theme_stylebox_override("focus", normal)
+	var icon_c := MysticIcon.new(icon, UiTheme.TEXT_WHITE, 0.7)
+	icon_c.set_anchors_preset(Control.PRESET_FULL_RECT)
+	b.add_child(icon_c)
+	return b
+
+
+func _cycle_difficulty(direction: int) -> void:
+	var modes := ["easy", "normal", "hard"]
+	var idx := modes.find(GameManager.difficulty)
+	if idx < 0:
+		idx = 1
+	GameManager.set_difficulty(modes[(idx + direction) % 3])
+	AudioManager.play_sfx("ui_click", 0.5)
+	_show(State.SETTINGS)
+
+
+func _speed_label() -> String:
+	var v := float(SaveManager.get_setting("game_speed", 1.0))
+	var s := "%.2f" % v
+	while s.ends_with("0") and not s.ends_with(".0"):
+		s = s.substr(0, s.length() - 1)
+	return s + "x"
+
+
+func _cycle_speed(direction: int) -> void:
+	var v := float(SaveManager.get_setting("game_speed", 1.0))
+	var idx := 2
+	var best := 999.0
+	for i in SPEED_OPTIONS.size():
+		var dist: float = absf(float(SPEED_OPTIONS[i]) - v)
+		if dist < best:
+			best = dist
+			idx = i
+	var next: float = SPEED_OPTIONS[(idx + direction) % SPEED_OPTIONS.size()]
+	SaveManager.set_setting("game_speed", next, true)
+	Engine.time_scale = next
+	AudioManager.play_sfx("ui_click", 0.5)
+	_show(State.SETTINGS)
+
+
+func _fps_label() -> String:
+	var v := int(SaveManager.get_setting("fps_limit", 60))
+	if v == 0:
+		return "Unlimited"
+	return "%d FPS" % v
+
+
+func _cycle_fps(direction: int) -> void:
+	var v := int(SaveManager.get_setting("fps_limit", 60))
+	var idx := FPS_OPTIONS.find(v)
+	if idx < 0:
+		idx = 1
+	var next: int = FPS_OPTIONS[(idx + direction) % FPS_OPTIONS.size()]
+	SaveManager.set_setting("fps_limit", next, true)
+	Engine.max_fps = next
+	AudioManager.play_sfx("ui_click", 0.5)
+	_show(State.SETTINGS)
 
 
 # ══════════════════════════════════════════════════════════
@@ -1408,58 +1630,66 @@ func _on_volume_drag_ended(_changed: bool, key: String, slider: HSlider) -> void
 # ══════════════════════════════════════════════════════════
 
 func _build_how_to_play() -> void:
-	_screen_header("CARA MAIN", State.MAIN)
+	_screen_header("HOW TO PLAY")
+	var center := CenterContainer.new()
+	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_root.add_child(center)
+	var panel := MysticPanel.new(UiTheme.PANEL_TOP, UiTheme.PANEL_BOTTOM,
+		UiTheme.EDGE_GOLD, 12.0, 2.0, true)
+	panel.custom_minimum_size = Vector2(900, 0)
+	center.add_child(panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 28)
+	margin.add_theme_constant_override("margin_right", 28)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+	panel.add_child(margin)
 	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	_root.add_child(scroll)
+	margin.add_child(scroll)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(box)
-	# Terjemahan bebas dari sections pygame, disesuaikan kontrol port Godot.
+	# Verbatim pygame (sections _core.py:6161-6192).
 	var sections: Array = [
-		["TUJUAN", [
-			"Hancurkan Nexus (castle) Dire sebelum Nexus Radiant hancur.",
-			"Menang = meta gold untuk membuka hero di HERO SHOP."]],
-		["MEMBANGUN MENARA", [
-			"Klik lingkaran slot kosong (+) di lane lalu bangun menara (100 gold).",
-			"4 jalur: Archer / Cannon / Ice / Mage. Upgrade Lv1→Lv2 memilih jalur."]],
-		["HERO & SKILL", [
-			"Mulai tanpa hero. Buka B → HERO untuk membeli hero yang sudah di-unlock.",
-			"Maksimal 5 hero unik. Hero mati respawn setelah 10 detik dengan level/item tetap.",
-			"Klik hero Radiant untuk memilihnya, lalu Q/W/E/R untuk skill (R = ultimate).",
-			"Hero yang tidak dipilih bertarung sendiri (auto-cast)."]],
-		["WAVE MINION", [
-			"Wave pertama setelah 5 detik. Minion keluar bertahap di ketiga lane.",
-			"Wave berikutnya menunggu 25 detik dan semua minion wave lama habis."]],
-		["TOKO (B)", [
-			"4 tab: MENARA / ITEM / HERO / NEXUS. Item = 6 slot per hero.",
-			"Upgrade nexus menaikkan HP + skala minion timmu."]],
-		["PROGRESI", [
-			"Menang pertama: 3000 meta gold. Replay menang: 1500 (sekali), lalu 200.",
-			"Boss yang dikalahkan + castle jatuh = heronya terbuka GRATIS.",
-			"ENTER setelah menang = lanjut level berikutnya (tema & boss baru)."]],
-		["MODE SULIT", [
-			"Hard: musuh +15% HP, +10% damage, castle Dire mulai lebih tinggi.",
-			"Gold income lebih kecil (x0.75). Mudah: x1.25."]],
+		["OBJECTIVE", "shield", [
+			"Destroy the enemy castle before they destroy yours!"]],
+		["BUILDING TOWERS", "gem", [
+			"Tap empty build slots (+) to build towers. Cost: 100 gold."]],
+		["HEROES", "crown", [
+			"Buy heroes from Hero Shop. Tap to select, tap enemy to attack."]],
+		["TACTICAL COMMANDS", "swords", [
+			"G = GATHER all heroes together",
+			"T = PROTECT TOWER (min 2)   |   C = PROTECT CASTLE (all)",
+			"B = ATTACK BOSS (all)   |   D = ATTACK TOP DEALER (all)"]],
+		["SKILLS", "bolt", [
+			"Q, W, E, R auto-cast when enemies nearby. R = Ultimate!"]],
+		["UPGRADES", "plus", [
+			"Tap towers, castle, or hero to upgrade. Stronger = win!"]],
+		["CASTLE SHIELD", "shield", [
+			"At Castle Level 4, buy a permanent shield for 850 gold."]],
 	]
 	for section in sections:
-		var head := Label.new()
-		head.text = str(section[0])
-		head.add_theme_font_size_override("font_size", 15)
-		head.add_theme_color_override("font_color", COL_GOLD)
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 8)
 		box.add_child(head)
-		for line in section[1]:
+		head.add_child(MysticIcon.new(str(section[1]), UiTheme.GOLD, 0.8))
+		var h := Label.new()
+		h.text = UiTheme.letter(str(section[0]))
+		UiTheme.style_label(h, 17, "body_bold", UiTheme.GOLD_TEXT)
+		head.add_child(h)
+		for line in section[2]:
 			var body := Label.new()
-			body.text = "·  " + str(line)
+			body.text = str(line)
 			body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			body.add_theme_font_size_override("font_size", 12)
-			body.add_theme_color_override("font_color", COL_TEXT)
+			UiTheme.style_label(body, 15, "body_medium", UiTheme.TEXT_BODY)
+			body.offset_left = 30.0
 			box.add_child(body)
 		var gap := Control.new()
-		gap.custom_minimum_size = Vector2(0, 10)
+		gap.custom_minimum_size = Vector2(0, 8)
 		box.add_child(gap)
+	_screen_footer_back(State.MAIN)
 
 
 # ══════════════════════════════════════════════════════════
@@ -1467,30 +1697,54 @@ func _build_how_to_play() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build_credits() -> void:
-	_screen_header("KREDIT", State.MAIN)
+	_screen_header("CREDITS")
 	var center := VBoxContainer.new()
 	center.alignment = BoxContainer.ALIGNMENT_CENTER
-	center.add_theme_constant_override("separation", 12)
+	center.add_theme_constant_override("separation", 6)
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_root.add_child(center)
+	var game_title := MysticTitle.new("Tower Defense Battle Arena", 30)
+	game_title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	center.add_child(game_title)
+	var gap0 := Control.new()
+	gap0.custom_minimum_size = Vector2(0, 10)
+	center.add_child(gap0)
 	var credits: Array = [
-		["Tower Defense Battle Arena", COL_GOLD, 24],
-		["Game Design & Programming", COL_DIM, 12],
-		["Dharmawan Toxi", COL_TEXT, 18],
-		["Art Direction", COL_DIM, 12],
-		["Dark Fantasy Vector Style", COL_TEXT, 16],
-		["Sound Effects & Music", COL_DIM, 12],
-		["Custom SFX Library", COL_TEXT, 16],
-		["Port Godot 4", COL_DIM, 12],
-		["Pygame Community  •  Python 3.10+  •  Godot 4.3", COL_TEXT, 14],
+		["Game Design & Programming", "Dharmawan Toxi"],
+		["Art Direction", "Dark Fantasy Vector Style"],
+		["Sound Effects & Music", "Custom SFX Library"],
+		["Special Thanks", "Pygame Community  •  Python 3.10+"],
 	]
 	for row in credits:
-		var l := Label.new()
-		l.text = str(row[0])
-		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.add_theme_font_size_override("font_size", int(row[2]))
-		l.add_theme_color_override("font_color", row[1])
-		center.add_child(l)
+		var role := Label.new()
+		role.text = UiTheme.letter(str(row[0]))
+		role.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UiTheme.style_label(role, 13, "body_medium", UiTheme.TEXT_DIM)
+		center.add_child(role)
+		var who := Label.new()
+		who.text = str(row[1])
+		who.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UiTheme.style_label(who, 17, "body_semibold", UiTheme.TEXT_WHITE,
+			true)
+		center.add_child(who)
+		var gap := Control.new()
+		gap.custom_minimum_size = Vector2(0, 8)
+		center.add_child(gap)
+	# "Made with ♥ using Pygame" (hati digambar, bukan emoji).
+	var heart_row := HBoxContainer.new()
+	heart_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	heart_row.add_theme_constant_override("separation", 8)
+	center.add_child(heart_row)
+	var left := Label.new()
+	left.text = "Made with"
+	UiTheme.style_label(left, 15, "body_medium", Color8(255, 150, 200))
+	heart_row.add_child(left)
+	heart_row.add_child(MysticIcon.new("heart", Color8(255, 120, 160), 0.9))
+	var right := Label.new()
+	right.text = "using Pygame"
+	UiTheme.style_label(right, 15, "body_medium", Color8(255, 150, 200))
+	heart_row.add_child(right)
+	_screen_footer_back(State.MAIN)
 
 
 # ══════════════════════════════════════════════════════════
@@ -1502,103 +1756,54 @@ func _build_pause() -> void:
 	# MainMenu (Control biasa, BUKAN container) dengan posisi/ukuran eksplisit:
 	# di dalam VBox _root/_bg geometrinya dikendalikan layout (bug: rect jadi
 	# (44,18,400,408) — margin backdrop + tinggi konten).
-	var panel := PanelContainer.new()
+	var panel := MysticPanel.new(UiTheme.PANEL_TOP, UiTheme.PANEL_BOTTOM,
+		UiTheme.EDGE_GOLD, 12.0, 2.0, true)
 	panel.name = "PausePanel"
 	panel.position = HudLayout.PAUSE_PANEL_POS
 	panel.size = HudLayout.PAUSE_PANEL_SIZE
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COL_PANEL
-	sb.border_color = COL_BORDER
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(12)
-	sb.content_margin_left = 20.0
-	sb.content_margin_right = 20.0
-	sb.content_margin_top = 16.0
-	sb.content_margin_bottom = 16.0
-	panel.add_theme_stylebox_override("panel", sb)
 	add_child(panel)
 	_pause_panel = panel
 
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	panel.add_child(margin)
 	var inner := VBoxContainer.new()
 	inner.alignment = BoxContainer.ALIGNMENT_CENTER
-	# separation 7 (bukan 10): minimum gabungan konten + margin stylebox
-	# harus <= 400, kalau tidak Control.size dijepit naik ke minimum
-	# (bug: panel jadi 400x408). 5 gap x 3px = 15px dihemat -> min ~393.
+	# separation 7: minimum gabungan konten + margin harus <= 400, kalau
+	# tidak Control.size dijepit naik ke minimum (bug lama: 400x408).
 	inner.add_theme_constant_override("separation", 7)
-	panel.add_child(inner)
+	margin.add_child(inner)
 
-	var title := Label.new()
-	title.text = "PAUSED"
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 46)
-	title.add_theme_color_override("font_color", COL_GOLD)
+	var title := MysticTitle.new("PAUSED", 42)
+	title.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	inner.add_child(title)
 
 	# badge difficulty (paritas mode badge 6949-6960)
 	var mode := Label.new()
 	mode.name = "PauseMode"
-	mode.text = "MODE: %s  ·  LEVEL %d  ·  WAVE %d" % [
-		HudLayout.mode_label(GameManager.difficulty), GameManager.level_number,
-		GameManager.wave_number]
+	mode.text = "MODE: %s" % HudLayout.mode_label(GameManager.difficulty)
 	mode.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	mode.add_theme_font_size_override("font_size", 14)
-	mode.add_theme_color_override("font_color",
+	UiTheme.style_label(mode, 14, "body_semibold",
 		HudLayout.mode_color(GameManager.difficulty))
 	inner.add_child(mode)
+	inner.add_child(MysticFlourish.new(false))
 
-	# Urutan paritas PAUSE_BUTTON_ORDER; label Indonesia disengaja (MainMenu
-	# Godot berbahasa Indonesia); ukuran 300x48 = pygame.
+	# Urutan paritas PAUSE_BUTTON_ORDER; ukuran 300x48 = pygame.
 	var buttons: Array = [
-		["PauseResume", "LANJUT MAIN (RESUME)", COL_GREEN, _do_resume],
-		["PauseSettings", "PENGATURAN", Color(0.85, 0.75, 0.45), _show.bind(State.SETTINGS)],
-		["PauseMenu", "MENU UTAMA", COL_BLUE, _do_main_menu],
-		["PauseQuit", "KELUAR GAME", COL_RED, func(): get_tree().quit()],
+		["PauseResume", "RESUME", Color8(100, 200, 100), "play", _do_resume],
+		["PauseSettings", "SETTINGS", Color8(200, 180, 100), "gear",
+			_show.bind(State.SETTINGS)],
+		["PauseMenu", "MAIN MENU", Color8(100, 180, 255), "back",
+			_do_main_menu],
+		["PauseQuit", "QUIT GAME", Color8(220, 80, 80), "quit",
+			func(): get_tree().quit()],
 	]
 	for pair in buttons:
-		var b := _make_button(str(pair[1]), pair[2], pair[3],
-			HudLayout.PAUSE_BUTTON_SIZE, 15)
+		var b := _mbtn(str(pair[1]), pair[2], str(pair[3]), pair[4],
+			HudLayout.PAUSE_BUTTON_SIZE, 16)
 		b.name = str(pair[0])
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		inner.add_child(b)
-
-
-# ══════════════════════════════════════════════════════════
-#  WIDGET HELPER
-# ══════════════════════════════════════════════════════════
-
-## Tombol dengan aksen warna pygame-style (tiap tombol menu punya warna
-## sendiri di _draw_main_menu). Klik -> SFX ui_click (paritas SoundManager).
-func _make_button(label_text: String, accent: Color, handler: Callable,
-		min_size: Vector2 = Vector2(0, 34), font_size: int = 14) -> Button:
-	var b := Button.new()
-	b.text = label_text
-	b.custom_minimum_size = min_size
-	b.add_theme_font_size_override("font_size", font_size)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(accent.r, accent.g, accent.b, 0.13)
-	normal.border_color = Color(accent.r, accent.g, accent.b, 0.75)
-	normal.set_border_width_all(1)
-	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 12.0
-	normal.content_margin_right = 12.0
-	var hover := normal.duplicate()
-	hover.bg_color = Color(accent.r, accent.g, accent.b, 0.3)
-	var pressed := normal.duplicate()
-	pressed.bg_color = Color(accent.r, accent.g, accent.b, 0.42)
-	var disabled := normal.duplicate()
-	disabled.bg_color = Color(0.08, 0.09, 0.13, 0.7)
-	disabled.border_color = Color(0.3, 0.32, 0.4, 0.6)
-	b.add_theme_stylebox_override("normal", normal)
-	b.add_theme_stylebox_override("hover", hover)
-	b.add_theme_stylebox_override("pressed", pressed)
-	b.add_theme_stylebox_override("disabled", disabled)
-	b.add_theme_color_override("font_color", accent)
-	b.add_theme_color_override("font_hover_color", accent.lightened(0.25))
-	b.add_theme_color_override("font_pressed_color", accent.lightened(0.1))
-	b.add_theme_color_override("font_disabled_color", Color(0.45, 0.47, 0.55))
-	# Dua koneksi terpisah: SFX ui_click selalu bunyi dulu, lalu aksinya
-	# (paritas SoundManager().play('ui_click') di setiap handler menu pygame).
-	if handler.is_valid():
-		b.pressed.connect(AudioManager.play_sfx.bind("ui_click", 0.5))
-		b.pressed.connect(handler)
-	return b

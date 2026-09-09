@@ -4,6 +4,9 @@
 # Di Godot: Control statis untuk angka yang jarang berubah; bagian yang baru
 # (bar nexus, difficulty, banner victory/defeat, SkillBar, ShopPanel) dibangun
 # dari kode supaya HUD.tscn tidak perlu dirombak.
+#
+# Tampilan = 1:1 pygame: chip emas + ikon koin, banner WAVE Cinzel + panel
+# emas, bar nexus, overlay menang/kalah gradasi + hint aksi [N]/[R]/[ESC].
 extends Control
 
 const SkillBarScript = preload("res://scenes/ui/SkillBar.gd")
@@ -26,6 +29,7 @@ var _over_title: Label = null
 var _over_stats: Label = null
 var _over_body: Label = null
 var _next_button: Button = null
+var _over_hint: Label = null
 var _combo_badge: Control = null
 var _achievement_popup: Control = null
 
@@ -37,9 +41,11 @@ var _achievement_popup: Control = null
 @onready var field_label: Label = $TopLeft/FieldStatus
 
 func _ready():
+	_restyle_chips()
 	wave_banner.modulate.a = 0.0
 	wave_banner.set_meta("base_l", wave_banner.offset_left)
 	wave_banner.set_meta("base_r", wave_banner.offset_right)
+	_restyle_wave_banner()
 	_build_wave_sub()
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.wave_started.connect(_on_wave_started)
@@ -77,6 +83,62 @@ func _ready():
 	refresh()
 	_refresh_field()
 	_refresh_bars()
+
+
+## Terapkan font Barlow/bayangan ke chip HUD.tscn + ikon koin vektor.
+## HintLabel disembunyikan: pygame hanya menampilkan hint bar dalam mode
+## controller (pemain keyboard tidak melihat apa-apa di bawah layar).
+func _restyle_chips() -> void:
+	UiTheme.style_label(gold_label, 22, "body_bold",
+		Color8(255, 236, 160), true)
+	UiTheme.style_label(income_label, 15, "body_semibold",
+		Color8(196, 241, 168), true)
+	UiTheme.style_label(level_label, 13, "body_semibold",
+		Color8(217, 230, 255), true)
+	UiTheme.style_label(wave_label, 13, "body_bold",
+		Color8(255, 235, 115), true)
+	UiTheme.style_label(field_label, 12, "body", Color8(184, 199, 230))
+	# Ikon koin vektor menggantikan Panel kuning tscn.
+	var row := gold_label.get_parent()
+	var old = row.find_child("CoinIcon", false, false)
+	if old != null:
+		var idx := old.get_index()
+		old.queue_free()
+		var coin := MysticIcon.new("coin", UiTheme.GOLD, 1.0)
+		coin.name = "CoinIcon"
+		coin.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		row.add_child(coin)
+		row.move_child(coin, idx)
+	var hint := find_child("HintLabel", true, false)
+	if hint != null:
+		(hint as Control).visible = false
+
+
+## Banner WAVE: Cinzel 46 emas + outline + panel emas di belakang teks.
+func _restyle_wave_banner() -> void:
+	wave_banner.add_theme_font_override("font", UiTheme.font("title"))
+	wave_banner.add_theme_font_size_override("font_size", 46)
+	wave_banner.add_theme_color_override("font_color", UiTheme.GOLD_TEXT)
+	wave_banner.add_theme_color_override("font_outline_color",
+		Color(0.10, 0.05, 0.0, 1.0))
+	wave_banner.add_theme_constant_override("outline_size", 6)
+	wave_banner.add_theme_color_override("font_shadow_color",
+		Color(0, 0, 0, 0.6))
+	wave_banner.add_theme_constant_override("shadow_offset_x", 3)
+	wave_banner.add_theme_constant_override("shadow_offset_y", 3)
+	var bg := MysticPanel.new(Color8(20, 24, 44, 235),
+		Color8(10, 12, 24, 235), UiTheme.GOLD, 10.0, 2.0, false)
+	bg.show_behind_parent = true
+	bg.show_shadow = true
+	bg.shadow_alpha = 0.5
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.offset_left = 100.0
+	bg.offset_right = -100.0
+	bg.offset_top = 20.0
+	bg.offset_bottom = -20.0
+	wave_banner.add_child(bg)
+
 
 # Hitungan unit di medan — di-update ~3x/detik (bukan tiap frame) biar murah.
 func _process(delta: float) -> void:
@@ -133,7 +195,7 @@ func _refresh_field() -> void:
 	for b in tree.get_nodes_in_group("bosses"):
 		if is_instance_valid(b) and not bool(b.get("is_dead")):
 			bosses += 1
-	field_label.text = "medan: %d hero · %d minion · %d boss · %d fps" % [
+	field_label.text = "field: %d heroes · %d minions · %d bosses · %d fps" % [
 		heroes, minions, bosses, int(Engine.get_frames_per_second())]
 
 func _on_wave_started(wave_num: int):
@@ -155,10 +217,16 @@ func _build_wave_sub() -> void:
 	_wave_sub.offset_bottom = -36.0
 	_wave_sub.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_wave_sub.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_wave_sub.add_theme_font_override("font",
+		UiTheme.font("body_semibold"))
 	_wave_sub.add_theme_font_size_override("font_size", 22)
-	_wave_sub.add_theme_color_override("font_color", Color(0.78, 0.78, 0.86))
+	_wave_sub.add_theme_color_override("font_color", Color8(199, 199, 220))
 	_wave_sub.add_theme_color_override("font_outline_color", Color(0.03, 0.03, 0.05, 1))
 	_wave_sub.add_theme_constant_override("outline_size", 4)
+	_wave_sub.add_theme_color_override("font_shadow_color",
+		Color(0, 0, 0, 0.6))
+	_wave_sub.add_theme_constant_override("shadow_offset_x", 2)
+	_wave_sub.add_theme_constant_override("shadow_offset_y", 2)
 	_wave_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_wave_sub.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_wave_sub.modulate.a = 0.0
@@ -254,8 +322,7 @@ func _make_nexus_bar(_owner: Control, team: String) -> Control:
 
 	var label := Label.new()
 	label.text = ("RADIANT NEXUS" if is_blue else "DIRE NEXUS") + "  Lv1"
-	label.add_theme_font_size_override("font_size", 11)
-	label.add_theme_color_override("font_color", accent.lightened(0.35))
+	UiTheme.style_label(label, 11, "body_bold", accent.lightened(0.35), true)
 	vbox.add_child(label)
 
 	var hp := ProgressBar.new()
@@ -336,6 +403,8 @@ func _build_difficulty_label() -> void:
 	_difficulty_label.offset_top = 112.0
 	_difficulty_label.offset_right = 420.0
 	_difficulty_label.offset_bottom = 132.0
+	_difficulty_label.add_theme_font_override("font",
+		UiTheme.font("body_semibold"))
 	_difficulty_label.add_theme_font_size_override("font_size", 12)
 	_difficulty_label.add_theme_color_override("font_color", Color(0.82, 0.86, 0.98, 0.9))
 	_difficulty_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.08, 0.85))
@@ -352,7 +421,9 @@ func _on_difficulty_changed(d: String) -> void:
 
 
 func _build_game_over_panel() -> void:
-	_over_panel = PanelContainer.new()
+	_over_panel = MysticPanel.new(UiTheme.PANEL_TOP, UiTheme.PANEL_BOTTOM,
+		UiTheme.GOLD, 14.0, 3.0, true)
+	_over_panel.tick_length = 16.0
 	_over_panel.name = "GameOverPanel"
 	_over_panel.visible = false
 	_over_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -362,84 +433,84 @@ func _build_game_over_panel() -> void:
 	_over_panel.anchor_bottom = 0.5
 	_over_panel.offset_left = -260.0
 	_over_panel.offset_right = 260.0
-	_over_panel.offset_top = -186.0
-	_over_panel.offset_bottom = 186.0
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.04, 0.045, 0.08, 0.94)
-	sb.border_color = Color(1, 0.85, 0.4, 0.95)
-	sb.set_border_width_all(3)
-	sb.set_corner_radius_all(14)
-	sb.content_margin_left = 22.0
-	sb.content_margin_right = 22.0
-	sb.content_margin_top = 14.0
-	sb.content_margin_bottom = 14.0
-	sb.shadow_color = Color(0, 0, 0, 0.6)
-	sb.shadow_size = 18
-	_over_panel.add_theme_stylebox_override("panel", sb)
+	_over_panel.offset_top = -196.0
+	_over_panel.offset_bottom = 196.0
 	add_child(_over_panel)
 
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_top", 14)
+	margin.add_theme_constant_override("margin_bottom", 14)
+	_over_panel.add_child(margin)
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 8)
-	_over_panel.add_child(vbox)
+	margin.add_child(vbox)
 
 	_over_title = Label.new()
 	_over_title.text = "VICTORY"
 	_over_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_over_title.add_theme_font_override("font", UiTheme.font("title"))
 	_over_title.add_theme_font_size_override("font_size", 44)
-	_over_title.add_theme_color_override("font_color", Color(1, 0.9, 0.45))
-	_over_title.add_theme_color_override("font_outline_color", Color(0.12, 0.06, 0, 1))
+	_over_title.add_theme_color_override("font_color", UiTheme.GOLD_TEXT)
+	_over_title.add_theme_color_override("font_outline_color",
+		Color(0.12, 0.06, 0, 1))
 	_over_title.add_theme_constant_override("outline_size", 6)
+	_over_title.add_theme_color_override("font_shadow_color",
+		Color(0, 0, 0, 0.6))
+	_over_title.add_theme_constant_override("shadow_offset_x", 3)
+	_over_title.add_theme_constant_override("shadow_offset_y", 3)
 	vbox.add_child(_over_title)
+	var fl := MysticFlourish.new(true)
+	fl.custom_minimum_size = Vector2(0, 16)
+	vbox.add_child(fl)
 
 	# Baris stat paritas _draw_stats (label + nilai per baris).
 	_over_stats = Label.new()
 	_over_stats.text = ""
 	_over_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_over_stats.add_theme_font_size_override("font_size", 15)
-	_over_stats.add_theme_color_override("font_color", Color(0.92, 0.95, 1.0))
+	UiTheme.style_label(_over_stats, 15, "body_semibold",
+		Color8(235, 242, 255), true)
 	vbox.add_child(_over_stats)
 
 	_over_body = Label.new()
 	_over_body.text = ""
 	_over_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_over_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_over_body.add_theme_font_size_override("font_size", 13)
-	_over_body.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
+	UiTheme.style_label(_over_body, 13, "body", Color8(217, 230, 255))
 	vbox.add_child(_over_body)
 
 	# Tombol alur setelah match (paritas tombol pygame: play_next_level /
-	# replay / main menu — _core.py:7734-7743 + 8320-8336). Keyboard tetap
-	# jalan (ENTER/R/ESC di Main._on_key), tombol ini untuk mouse/touch.
+	# replay / main menu). Keyboard tetap jalan (N/R/ESC di Main._on_key),
+	# tombol ini untuk mouse/touch.
 	var actions := HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 10)
 	vbox.add_child(actions)
-	_next_button = Button.new()
-	_next_button.text = "LANJUT KE LEVEL 2  (ENTER)"
-	_next_button.custom_minimum_size = Vector2(210, 34)
+	_next_button = MysticPill.new("NEXT LEVEL (N)", "success", "play", 14,
+		false)
+	_next_button.custom_minimum_size = Vector2(190, 38)
 	_next_button.pressed.connect(func(): GameManager.next_level())
 	actions.add_child(_next_button)
-	var replay_btn := Button.new()
-	replay_btn.text = "ULANGI  (R)"
-	replay_btn.custom_minimum_size = Vector2(130, 34)
+	var replay_btn := MysticPill.new("REPLAY (R)", "neutral", "", 14, false)
+	replay_btn.custom_minimum_size = Vector2(140, 38)
 	replay_btn.pressed.connect(func(): GameManager.restart_match())
 	actions.add_child(replay_btn)
-	var menu_btn := Button.new()
-	menu_btn.text = "MENU UTAMA  (ESC)"
-	menu_btn.custom_minimum_size = Vector2(160, 34)
+	var menu_btn := MysticPill.new("MAIN MENU (ESC)", "neutral", "", 14,
+		false)
+	menu_btn.custom_minimum_size = Vector2(170, 38)
 	menu_btn.pressed.connect(_goto_main_menu)
 	actions.add_child(menu_btn)
 
-	var hint := Label.new()
-	hint.text = "ENTER/N = lanjut level berikutnya  ·  R = ulangi  ·  ESC = menu utama"
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 12)
-	hint.add_theme_color_override("font_color", Color(0.7, 0.76, 0.9, 0.85))
-	vbox.add_child(hint)
+	_over_hint = Label.new()
+	_over_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiTheme.style_label(_over_hint, 13, "body_semibold",
+		Color8(179, 194, 230))
+	vbox.add_child(_over_hint)
 
 
-## Tombol MENU UTAMA pada panel game over: jalankan alur yang sama dengan
+## Tombol MAIN MENU pada panel game over: jalankan alur yang sama dengan
 ## Main._on_menu_main_menu (unpause + buang match + tampilkan menu MAIN)
 ## supaya klik mouse dan keyboard ESC identik.
 func _goto_main_menu() -> void:
@@ -464,13 +535,11 @@ func _on_game_over(victory: bool) -> void:
 	_over_title.text = "%s LV.%d" % [
 		"VICTORY!" if victory else "DEFEAT", GameManager.level_number]
 	_over_title.add_theme_color_override("font_color",
-		Color(1, 0.9, 0.45) if victory else Color(1, 0.45, 0.45))
+		UiTheme.GOLD_TEXT if victory else Color8(255, 120, 120))
 	# Stat paritas _draw_stats (ui_components/_bundle.py:2976-3060): lima
 	# baris — Final Score (ribuan), Match Time (m:ss), Waves Survived,
 	# Total Kills, Max Combo (x{n}); baris skor/waktu mendapat penanda
-	# NEW BEST! saat flag _grant_meta_reward menyala (badge gradasi+ikon
-	# bintang pygame = piksel, tidak diaudit; data baris direplay dari
-	# fixture ui_hud overlay + match_scoring).
+	# NEW BEST! saat flag _grant_meta_reward menyala.
 	var rows: Array = [
 		["Final Score", HudLayout.format_thousands(GameManager.score),
 			GameManager.new_best_score],
@@ -494,16 +563,16 @@ func _on_game_over(victory: bool) -> void:
 	var replay_txt := ""
 	if victory:
 		if reward >= 3000:
-			replay_txt = "menang pertama"
+			replay_txt = "first win"
 		elif reward >= 1500:
-			replay_txt = "replay pertama"
+			replay_txt = "first replay"
 		else:
-			replay_txt = "replay berulang"
+			replay_txt = "repeat replay"
 	var lines: Array = []
 	if victory:
-		lines.append("Meta reward: +%d gold (%s) tersimpan ke save." % [reward, replay_txt])
+		lines.append("Meta reward: +%d gold (%s) saved to save file." % [reward, replay_txt])
 	else:
-		lines.append("Nexus Radiant hancur — kalah tidak dibayar.")
+		lines.append("Radiant Nexus destroyed — defeat earns nothing.")
 	# Paritas _get_newly_unlocked_level: menang + level berikut ADA + belum
 	# pernah ditamatkan (end_match sudah complete_level saat ini).
 	var nxt := GameManager.next_level_number()
@@ -519,10 +588,17 @@ func _on_game_over(victory: bool) -> void:
 			names.append(str(HeroDB.get_hero(str(bt)).get("name", str(bt))))
 		lines.append("NEW HERO: %s" % ", ".join(names))
 	_over_body.text = "\n".join(lines)
+	# Hint aksi keyboard (paritas action_text overlay pygame).
+	if victory and nxt > 0:
+		_over_hint.text = "[N] Next Level   [R] Replay   [ESC] Menu"
+	elif victory:
+		_over_hint.text = "[R] Replay   [ESC] Menu (You cleared all levels!)"
+	else:
+		_over_hint.text = "[R] Retry   [ESC] Menu"
 	if _next_button != null:
 		_next_button.visible = victory and nxt > 0
 		if nxt > 0:
-			_next_button.text = "LANJUT KE LEVEL %d  (ENTER)" % nxt
+			(_next_button as MysticPill).text = "NEXT LEVEL %d (N)" % nxt
 	_over_panel.pivot_offset = _over_panel.size / 2.0
 	_over_panel.scale = Vector2(0.85, 0.85)
 	_over_panel.modulate.a = 0.0
@@ -535,4 +611,4 @@ func _on_game_over(victory: bool) -> void:
 
 func _on_nexus_destroyed(team: String, _killer_team: String) -> void:
 	if field_label != null:
-		field_label.text = "nexus %s hancur" % ("Radiant" if team == "blue" else "Dire")
+		field_label.text = "nexus %s destroyed" % ("Radiant" if team == "blue" else "Dire")
