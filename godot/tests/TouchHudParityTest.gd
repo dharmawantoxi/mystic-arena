@@ -129,6 +129,11 @@ func _run() -> void:
 	_step("match+skip")
 	var connector := get_tree().get_first_node_in_group("game_connector")
 	_expect(connector != null, "connector ada")
+	# Paritas _request_play (MainMenu): TUTUP menu dulu baru mulai match —
+	# start_match langsung (ala BattleSmokeTest) membuat menu tetap terbuka
+	# dan TouchHUD benar-benar sembunyi (bug harness, bukan produksi).
+	_menu.close()
+	_expect(not _menu.is_open(), "menu tertutup saat match dimulai")
 	if connector != null and connector.has_method("start_match"):
 		connector.start_match(1)
 	else:
