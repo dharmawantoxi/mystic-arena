@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://main_mystic"]
+[gd_scene load_steps=7 format=3 uid="uid://main_mystic"]
 
 [ext_resource type="PackedScene" path="res://scenes/map/ArenaMap.tscn" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="2"]
 [ext_resource type="Script" path="res://scripts/core/GameManagerConnector.gd" id="3"]
 [ext_resource type="Script" path="res://scenes/main/Main.gd" id="4"]
 [ext_resource type="Script" path="res://scenes/ui/MainMenu.gd" id="5"]
+[ext_resource type="Script" path="res://scenes/main/GameCamera.gd" id="6"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("4")
@@ -25,6 +26,7 @@ script = ExtResource("4")
 layer = 10
 
 [node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("6")
 position = Vector2(640, 360)
 current = true
 zoom = Vector2(1, 1)

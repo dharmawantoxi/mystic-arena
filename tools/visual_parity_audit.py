@@ -442,7 +442,191 @@ def check_coverage():
 
 
 # ══════════════════════════════════════════════════════════════════
-#  6. SMOKE — panggil renderer pygame, tangkap exception
+#  6. GEOMETRI — setiap frame di manifest harus MUAT di dalam PNG
+# ══════════════════════════════════════════════════════════════════
+#
+# Kenapa perlu: Godot mengiris strip memakai AtlasTexture dari angka di
+# manifest. Kalau indeks/anchor meleset sedikit saja, unit tampil sebagai
+# kotak kosong, terpotong, atau melayang — dan satu-satunya cara tahu
+# adalah menjalankan Godot dan melihat 222 unit satu-satu. Pemeriksaan ini
+# menjawabnya TANPA engine: semua region harus muat di dalam berkas PNG,
+# dan titik jangkar harus berada di dalam sel.
+#
+# Nyata: pemeriksaan inilah yang menangkap anchor nexus (107) yang keluar
+# dari tinggi sel (106) sebelum Fase 7 digabung.
+
+def _img_size(res_path):
+    """Ukuran (px, py) berkas `res://...` di dalam godot/. None kalau absen."""
+    from PIL import Image
+    rel = str(res_path).replace("res://", "")
+    if not rel:
+        return None
+    path = os.path.join(GODOT, rel)
+    if not os.path.exists(path):
+        return None
+    with Image.open(path) as im:
+        return im.size
+
+
+## Jumlah frame strip dasar/rage: idle 8 + walk 8 + attack 8 (Fase 5).
+UNIT_STYLE_FRAMES = 24
+
+
+def _check_regions(label, entries, problems):
+    """Validasi kumpulan entri manifest: region & anchor harus valid."""
+    checked = 0
+    for key, e in sorted(entries.items()):
+        if not isinstance(e, dict):
+            problems.append("%s/%s: entri bukan objek" % (label, key))
+            continue
+        fpr = int(e.get("frames_per_row", 8))
+        # Kumpulkan (berkas, lebar sel, tinggi sel, anchor, [indeks...]).
+        # PENTING: strip skill/rage adalah berkas TERPISAH dengan ukuran
+        # sel sendiri — jangan divalidasi terhadap strip dasar.
+        groups = []
+        base_size = _img_size(e.get("png", ""))
+        if base_size is None:
+            problems.append("%s/%s: berkas tidak ada %s"
+                            % (label, key, e.get("png", "")))
+            continue
+        fw = int(e.get("frame_w", 0))
+        fh = int(e.get("frame_h", 0))
+        anchor = e.get("anchor", [0, 0])
+        idxs = []
+        anims = e.get("anims", {})
+        if isinstance(anims, dict) and anims:
+            for name, spec in anims.items():
+                if isinstance(spec, list) and len(spec) == 2:
+                    idxs.extend(range(int(spec[0]),
+                                      int(spec[0]) + int(spec[1])))
+        # menara: levels -> {level: {"idle": [...], "shoot": [...]}}
+        levels = e.get("levels", {})
+        if isinstance(levels, dict) and levels:
+            for lv, spec in levels.items():
+                if isinstance(spec, dict):
+                    for k2 in ("idle", "shoot"):
+                        for i in spec.get(k2, []):
+                            idxs.append(int(i))
+                else:
+                    idxs.append(int(spec))
+        # nexus: levels -> {level: indeks}
+        # (sudah tercakup cabang else di atas)
+        groups.append((base_size, fw, fh, anchor, idxs))
+        # strip skill (Fase 5c) — berkas & geometri sendiri
+        if e.get("skill_frame_w"):
+            ssize = _img_size(e.get("skills_png", ""))
+            if ssize is None:
+                problems.append("%s/%s: berkas skill tidak ada %s"
+                                % (label, key, e.get("skills_png", "")))
+            else:
+                sfw = int(e.get("skill_frame_w", 0))
+                sfh = int(e.get("skill_frame_h", 0))
+                sanchor = e.get("skill_anchor", [0, 0])
+                sidx = []
+                sanims = e.get("skill_anims", {})
+                if isinstance(sanims, dict):
+                    for name, spec in sanims.items():
+                        if isinstance(spec, list) and len(spec) == 2:
+                            sidx.extend(range(int(spec[0]),
+                                              int(spec[0]) + int(spec[1])))
+                groups.append((ssize, sfw, sfh, sanchor, sidx))
+        # strip rage (Fase 5c) — berkas & geometri sendiri
+        if e.get("rage_frame_w"):
+            rsize = _img_size(e.get("rage_png", ""))
+            if rsize is None:
+                problems.append("%s/%s: berkas rage tidak ada %s"
+                                % (label, key, e.get("rage_png", "")))
+            else:
+                rfw = int(e.get("rage_frame_w", 0))
+                rfh = int(e.get("rage_frame_h", 0))
+                ranchor = e.get("rage_anchor", [0, 0])
+                # Layout rage = layout strip dasar ([idle 8|walk 8|attack 8]).
+                groups.append((rsize, rfw, rfh, ranchor,
+                               list(range(UNIT_STYLE_FRAMES))))
+        for (size, gw, gh, ganchor, gidx) in groups:
+            iw, ih = size
+            if gw <= 0 or gh <= 0:
+                problems.append("%s/%s: ukuran sel %sx%s tidak valid"
+                                % (label, key, gw, gh))
+                continue
+            checked += 1
+            if not gidx:
+                continue
+            for i in gidx:
+                col, row = i % fpr, i // fpr
+                x1 = (col + 1) * gw
+                y1 = (row + 1) * gh
+                if x1 > iw or y1 > ih:
+                    problems.append(
+                        "%s/%s: frame %d keluar dari PNG (%d,%d > %dx%d)"
+                        % (label, key, i, x1, y1, iw, ih))
+                    break
+            if isinstance(ganchor, list) and len(ganchor) >= 2:
+                ax, ay = float(ganchor[0]), float(ganchor[1])
+                if not (0.0 <= ax <= gw and 0.0 <= ay <= gh):
+                    problems.append(
+                        "%s/%s: anchor (%g,%g) di luar sel %dx%d"
+                        % (label, key, ax, ay, gw, gh))
+    return checked
+
+
+def check_geometry():
+    """Semua frame & anchor di baked_units.json / baked_props.json valid."""
+    problems = []
+    total = 0
+    up = os.path.join(GODOT, "data", "baked_units.json")
+    pp = os.path.join(GODOT, "data", "baked_props.json")
+    if os.path.exists(up):
+        d = json.loads(_read(up))
+        total += _check_regions("unit", d.get("units", {}), problems)
+    if os.path.exists(pp):
+        d = json.loads(_read(pp))
+        for sec in ("minions", "towers", "nexus"):
+            total += _check_regions(sec, d.get(sec, {}), problems)
+    lines = ["%d grup frame divalidasi (region + anchor)" % total]
+    for p in problems[:20]:
+        lines.append("  %s" % p)
+    if problems:
+        lines.append("  → %d masalah: sprite akan tampil kosong/terpotong "
+                     "di Godot" % len(problems))
+    return not problems, lines
+
+
+# ══════════════════════════════════════════════════════════════════
+#  7. CALLGROUP — call_group ke metode yang tak ada = NO-OP senyap
+# ══════════════════════════════════════════════════════════════════
+#
+# Inilah penyebab screen shake mati total tanpa ada yang tahu: Boss.gd /
+# Hero.gd memanggil call_group("camera", "add_trauma", ...) tetapi tidak ada
+# satu pun skrip yang mendefinisikan `add_trauma`. Godot tidak error — ia
+# diam saja, dan efeknya hilang dari layar. Pemeriksaan ini mencocokkan
+# SETIAP metode yang dipanggil lewat call_group dengan definisi
+# `func <nama>(` di proyek, jadi no-op senyap langsung ketahuan.
+
+def check_callgroup():
+    """Setiap metode call_group harus punya definisi `func` di suatu .gd."""
+    calls, defs = set(), set()
+    for dirpath, _dirs, files in os.walk(os.path.join(ROOT, "godot")):
+        for name in files:
+            if not name.endswith(".gd"):
+                continue
+            src = _read(os.path.join(dirpath, name))
+            for m in re.finditer(r'call_group\(\s*"[^"]*"\s*,\s*"([^"]+)"',
+                                 src):
+                calls.add(m.group(1))
+            for m in re.finditer(r'^\s*func\s+([A-Za-z_]\w*)\s*\(',
+                                 src, re.M):
+                defs.add(m.group(1))
+    missing = sorted(c for c in calls if c not in defs)
+    lines = ["%d metode call_group diperiksa" % len(calls)]
+    for name in missing[:20]:
+        lines.append('  call_group(..., "%s") — TIDAK ada `func %s(` di '
+                     "proyek mana pun -> no-op senyap" % (name, name))
+    return not missing, lines
+
+
+# ══════════════════════════════════════════════════════════════════
+#  8. SMOKE — panggil renderer pygame, tangkap exception
 # ══════════════════════════════════════════════════════════════════
 
 SMOKE_SRC = r'''
@@ -604,7 +788,7 @@ def check_hardcode():
 # ══════════════════════════════════════════════════════════════════
 
 ALL = ["palette", "encoder", "fresh-unit", "fresh-map", "fresh-prop",
-       "coverage", "smoke", "hardcode"]
+       "geometry", "callgroup", "coverage", "smoke", "hardcode"]
 
 
 def main():
@@ -630,6 +814,10 @@ def main():
         rep.add("FRESH-MAP", *check_fresh_maps(full=args.full))
     if "fresh-prop" in want:
         rep.add("FRESH-PROP", *check_fresh_props(full=args.full))
+    if "geometry" in want:
+        rep.add("GEOMETRI", *check_geometry())
+    if "callgroup" in want:
+        rep.add("CALLGROUP", *check_callgroup())
     if "coverage" in want:
         rep.add("COVERAGE", *check_coverage())
     if "smoke" in want:

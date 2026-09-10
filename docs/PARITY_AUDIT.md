@@ -204,9 +204,11 @@ Perlu dicatat supaya tidak dicari lagi:
 3. **Bar HP minion tidak ikut bake** — sengaja, karena pygame menggambarnya
    *live* di luar cache sprite. Godot menggambar bar HP-nya sendiri.
 
-4. **`KillFeed` & `PathPreview`** pygame belum ditemukan padanannya di Godot
-   (pemindaian nama; belum diverifikasi apakah memang belum ada atau hanya
-   beda nama).
+4. **`PathPreview` belum ada di Godot** — pygame menggambar panah merah
+   beranimasi di sepanjang jalur lane selama 2 detik (120 frame) setiap wave
+   dimulai (`_render.py:1275-1367`, dipicu `_core.py:1762`, digambar
+   `_render.py:789`). Di Godot tidak ada satu pun berkas `PathPreview`.
+   Ini fitur yang benar-benar hilang dari layar.
 
 5. **HUD/menu tidak diaudit piksel demi piksel** di sini — sudah dikunci
    `UiHudParityTest.gd` + `godot/tests/fixtures/match_parity.json`.
@@ -214,3 +216,59 @@ Perlu dicatat supaya tidak dicari lagi:
 6. **Satu warna `UiTheme` ditulis ulang sebagai literal** di
    `godot/scenes/ui/TopupDialog.gd` — bukan salah, tapi kalau `UiTheme.gd`
    diubah, berkas ini tidak akan mengikuti.
+
+## 6. Temuan lanjutan (diverifikasi setelah laporan ini terbit)
+
+Audit lanjutan memakai dua pemeriksaan baru (`GEOMETRI`, `CALLGROUP`) dan
+menyisir `_render.py` kelas demi kelas. Hasilnya:
+
+* **`KillFeed` BUKAN divergensi** — dibuat (`_render.py:622`) dan di-update
+  (`:783`), tetapi `kill_feed.draw` dan `kill_feed.add` tidak pernah
+  dipanggil di mana pun. Kode mati: pygame sendiri pun tidak menampilkannya.
+* **`PopupAnimation` BUKAN divergensi** — pola yang sama persis
+  (`_core.py:2584` membuat, `:2597` update, tanpa `.draw`). Kode mati.
+* **`ScreenShake` DULU divergensi terbesar, sudah diperbaiki** — lihat
+  temuan 7.
+
+### Temuan 7: semua screen shake di Godot adalah no-op senyap
+
+`Boss._shake()` dan `Hero.kit_shake()` memanggil
+`call_group("camera", "add_trauma", ...)` — tetapi **tidak ada satu pun
+skrip di proyek yang mendefinisikan `add_trauma`**. `Camera2D` di
+`scenes/main.tscn` adalah node polos tanpa skrip, dan Godot **tidak
+mengeluarkan error** untuk `call_group` ke metode yang tidak ada: ia diam
+saja. Jadi setiap guncangan layar hilang tanpa jejak, sementara pygame
+memanggilnya dari puluhan tempat (modul `heroes/*_fx.py`, boss, menara) dan
+menerapkannya ke seluruh surface dunia (`_core.py:2826`).
+
+**Perbaikan:** `godot/scenes/main/GameCamera.gd` (kamera arena + shake),
+dipasang ke node `Camera2D` di `scenes/main.tscn`. Angkanya disalin dari
+`_render.ScreenShake` (`_render.py:572-599`), bukan dikira-kira:
+
+| perilaku | pygame | GameCamera.gd |
+|---|---|---|
+| peluruhan | `intensity *= 0.85` per frame | `pow(0.85, delta*60)` |
+| beberapa sumber | `max`, tidak menjumlah | `maxf`, tidak menjumlah |
+| batas berhenti | `< 0.5` → `0` | `< 0.5` → `0` |
+| offset | `randint(-int(i), int(i))` | `randi_range(-span, span)` |
+| satuan | piksel | `1.0 trauma = 60 px` |
+| UI ikut? | tidak (`draw_ui` terpisah) | tidak (`offset` kamera) |
+
+Satuan `1.0 trauma = 60 px` dipilih karena pemanggil yang sudah ada
+memakai `amount / 60.0`: `Boss._shake(25.0)` → trauma `0.4167` → **25 px**,
+tepat sama dengan `add_shake(25.0)` di pygame.
+
+### Pemeriksaan baru supaya ini tidak perlu dicek manual lagi
+
+* **`GEOMETRI`** — setiap indeks frame di `baked_units.json` /
+  `baked_props.json` harus memunculkan region yang **muat di dalam PNG**, dan
+  titik jangkar harus **berada di dalam sel**. 465 grup tervalidasi, bersih.
+  Pemeriksaan ini terbukti bergigi lewat uji negatif: anchor nexus yang
+  pernah meleset (`[60,107]` pada sel tinggi 106), indeks frame menara di
+  luar berkas, dan berkas yang hilang — semuanya tertangkap.
+* **`CALLGROUP`** — setiap metode yang dipanggil lewat `call_group` harus
+  punya definisi `func` di proyek. Inilah yang akan menangkap temuan 7
+  kalau ia muncul lagi di masa depan.
+
+Keduanya sudah masuk `ALL` dan otomatis ikut di `--full`, jadi CI
+(`.github/workflows/godot-check.yml`) menjalankannya setiap push.
