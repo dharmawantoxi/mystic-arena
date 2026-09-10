@@ -196,13 +196,53 @@ def check_baked_assets():
     if map_count < 54:
         issues.append(f"assets/maps/*.png hanya {map_count}, harus 54")
 
+    # ── Fase 7: props (minion/menara/nexus) ──
+    # Sebelumnya tidak ada sama sekali, sehingga Godot menggambar menara,
+    # minion, dan nexus sebagai placeholder geometris. Jumlah saja tidak
+    # cukup (dulu 222 unit lolos cek jumlah tapi isinya usang) — karena
+    # itu `visual_parity_audit.py` dipanggil di bawah untuk membandingkan
+    # byte hasil bake ulang.
+    props_dir = ROOT / "godot" / "assets" / "props"
+    prop_count = len(list(props_dir.glob("*.png"))) if props_dir.exists() else 0
+    props_json = GODOT_DATA / "baked_props.json"
+    if not props_json.exists():
+        issues.append("baked_props.json hilang — jalankan --props-png")
+    else:
+        try:
+            pd = json.loads(props_json.read_text())
+            for key, want in (("minions", 10), ("towers", 8), ("nexus", 2)):
+                got = len(pd.get(key, {}))
+                if got < want:
+                    issues.append(f"baked_props.json {key} hanya {got}, harus {want}")
+        except Exception as e:
+            issues.append(f"baked_props.json corrupt: {e}")
+    if prop_count < 20:
+        issues.append(f"assets/props/*.png hanya {prop_count}, harus 20 "
+                      "(10 minion + 8 menara + 2 nexus)")
+
     if issues:
         print(f"  ⚠️  {len(issues)} isu baked assets:")
         for iss in issues:
             print(f"     - {iss}")
-        print("  → Jalankan: SDL_VIDEODRIVER=dummy python tools/convert_to_godot.py --units-png --maps-png")
+        print("  → Jalankan: SDL_VIDEODRIVER=dummy python "
+              "tools/convert_to_godot.py --units-png --maps-png --props-png")
         return False, issues
-    print(f"  ✅ Baked assets lengkap — {unit_count} unit PNG, {map_count} map PNG.")
+    print(f"  ✅ Baked assets lengkap — {unit_count} unit PNG, "
+          f"{map_count} map PNG, {prop_count} props PNG.")
+    # Jumlah lengkap BUKAN berarti isinya mutakhir (dulu 222 unit lolos
+    # cek jumlah padahal isinya usang). Satu-satunya cara tahu: bake ulang
+    # dan bandingkan byte — itu tugas visual_parity_audit.py.
+    print("  ↳ cek keusangan isi lewat tools/visual_parity_audit.py ...")
+    code, out, err = run(
+        f"{sys.executable} tools/visual_parity_audit.py "
+        "--section encoder,fresh-unit,fresh-map,fresh-prop")
+    tail = (out or err or "").strip().splitlines()
+    if code != 0:
+        issues.append("tools/visual_parity_audit.py menemukan bake usang")
+        for ln in tail[-12:]:
+            print(f"     {ln}")
+        return False, issues
+    print("  ✅ Bake mutakhir (re-bake identik byte-per-byte).")
     return True, []
 
 def check_parity_oracle():

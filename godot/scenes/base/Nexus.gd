@@ -12,6 +12,7 @@
 extends Node2D
 
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
+const BakedPropDB = preload("res://scripts/render/BakedPropDB.gd")
 const FPS := 60.0
 
 @export var team: String = "blue"
@@ -46,6 +47,8 @@ var angle: float = 0.0
 var selected: bool = false
 var pulse: float = 0.0
 var display_name: String = "Nexus"
+## Cache entri manifest bake kastil (Fase 7).
+var _baked: Dictionary = {}
 
 
 
@@ -267,10 +270,39 @@ func die(killer_team: String = "") -> void:
 func _draw() -> void:
 	var team_col := Color(0.30, 0.55, 1.0) if team == "blue" else Color(0.92, 0.30, 0.28)
 	var cfg: Dictionary = TowerDB.shield_cfg()
-	# halaman batu
+	# halaman batu (lapisan dasar; pygame tidak menggambar tanah di kastil)
 	draw_circle(Vector2.ZERO, radius * 1.55, Color(0.22, 0.21, 0.2, 0.85))
 	draw_arc(Vector2.ZERO, radius * 1.55, 0.0, TAU, 44,
 		Color(team_col.r, team_col.g, team_col.b, 0.45), 2.0)
+	# ── Fase 7: badan kastil dari bake renderer pygame (seni asli) ──
+	# pygame menggambar kastil lewat _render_castle_full (5 level, ~1.600
+	# baris: tembok, gerbang, menara, obor, aura). Turret/gerigi/kristal
+	# geometris di bawah HANYA dipakai kalau bake tidak tersedia.
+	if _baked.is_empty():
+		_baked = BakedPropDB.nexus_entry(team)
+	if not _baked.is_empty() and _draw_baked_castle(team_col):
+		_draw_overlays(team_col, cfg)
+		return
+	_draw_geometric_castle(team_col)
+	_draw_overlays(team_col, cfg)
+
+
+## Gambar badan kastil dari strip bake. False = tekstur/frame tidak ada.
+func _draw_baked_castle(_team_col: Color) -> bool:
+	var tex: Texture2D = BakedPropDB.texture(str(_baked.get("png", "")))
+	if tex == null:
+		return false
+	var region := BakedPropDB.frame_region(
+		_baked, BakedPropDB.nexus_frame(_baked, level))
+	if region.size.x <= 0.0:
+		return false
+	var a := BakedPropDB.anchor(_baked)
+	draw_texture_rect_region(tex, Rect2(-a, region.size), region)
+	return true
+
+
+## Badan kastil geometris (jalur lama, kalau bake tidak tersedia).
+func _draw_geometric_castle(team_col: Color) -> void:
 	# 4 turret penjuru (paritas ArenaMap._draw_base)
 	for i in range(4):
 		var a := TAU * float(i) / 4.0 + PI * 0.25
@@ -294,6 +326,12 @@ func _draw() -> void:
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(0, -16), Vector2(6, -4), Vector2(0, 8), Vector2(-6, -4)]),
 		Color(color_accent.r, color_accent.g, color_accent.b, glow))
+
+
+## Lapisan di atas badan kastil: gelembung shield, bar HP, pip level,
+## ring seleksi, overlay mati. pygame menggambar semua ini di luar
+## _render_castle_full(), jadi tidak ikut bake di kedua jalur.
+func _draw_overlays(team_col: Color, cfg: Dictionary) -> void:
 	# shield bubble
 	if shield_active and shield > 0.0:
 		var ratio := clampf(shield / maxf(1.0, shield_max), 0.0, 1.0)

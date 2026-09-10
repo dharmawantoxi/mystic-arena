@@ -740,6 +740,36 @@ jobs:
           # boss-tower-minion, Wind Wall/Windrun, resolve context.
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_damage_school.py
 
+      # ── 6. Audit paritas visual terpadu ──
+      # Dulu "apa yang beda antara tampilan Godot dan pygame?" harus
+      # dijawab dengan membuka ratusan berkas satu-satu. Alat ini
+      # menjalankan SEMUA pemeriksaan yang bisa diotomatiskan dalam satu
+      # perintah dan gagalkan CI kalau ada yang divergen:
+      #   PALET     konstanta warna ui_theme.py vs UiTheme.gd
+      #   ENCODER   bake harus deterministik (dulu berubah tergantung
+      #             ada/tidaknya Pillow -> ratusan berkas berubah)
+      #   FRESH-*   re-bake 222 unit + 54 map + 20 props, bandingkan byte
+      #   COVERAGE  tiap subsistem punya jalur setia (bake) atau masih
+      #             placeholder geometris
+      #   SMOKE     semua renderer pygame dipanggil, tangkap exception
+      #   HARDCODE  warna UiTheme yang ditulis ulang sebagai literal
+      # --full = re-bake SEMUA (bukan sampel); ~4 menit, sepadan karena
+      # inilah satu-satunya penjaga keusangan bake di CI.
+      - name: Audit paritas visual (pygame ↔ Godot)
+        run: |
+          python -m pip install --quiet pygame-ce pillow
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
+            python3 tools/visual_parity_audit.py --full --report md
+
+      - name: Simpan laporan audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-audit
+          path: docs/PARITY_AUDIT.md
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Simpan log kalau gagal
         if: failure()
         uses: actions/upload-artifact@v4
