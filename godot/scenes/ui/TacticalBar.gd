@@ -45,6 +45,9 @@ var _btn_base: Dictionary = {}
 ## claimed-touch pygame (hold_end nama salah = no-op di manajer).
 var _held: Dictionary = {}
 var _timer: float = 0.0
+## True hanya kalau layar menyisakan rail untuk kotak command (lihat
+## _layout). Tanpa rail kotak TIDAK digambar — peta tidak boleh tertutup.
+var _has_slot: bool = false
 
 func _ready() -> void:
 	name = "TacticalBar"
@@ -62,19 +65,40 @@ func _ready() -> void:
 	GameManager.tower_destroyed.connect(func(_t, _k): _refresh())
 	_refresh()
 
-## Tempatkan kotak command di dasar panel kanan (paritas _gambar_tactical),
-## atau di tepi kanan-bawah arena saat panel kanan tidak ada (layar kecil).
+## Tempatkan kotak command di dasar panel kanan (paritas _gambar_tactical).
+##
+## TANPA RAIL = TANPA KOTAK. Layar 16:9 atau lebih sempit tidak menyisakan
+## ruang di luar arena (x < 1280 semua milik peta), dan pygame memang tidak
+## menggambar tombol command sama sekali di sana (SidePanel tidak aktif ->
+## `draw`/`hit_test` keluar lebih awal). Versi lama kotak ini "jatuh" ke
+## sudut kanan-bawah ARENA — menutupi peta persis saat pemain perlu
+## melihatnya. Sekarang kotak disembunyikan; perintah taktis tetap bisa
+## dipakai lewat hotkey G/F/T/C/B/D (Main._tactical_hotkey), sama seperti
+## pygame di 16:9.
 func _layout() -> void:
 	if _box == null:
 		return
 	var rect := MobileLayout.tactical_rect()
-	if rect.size.x <= 0.0:
-		var vp := MobileLayout.viewport_size
-		var w := minf(220.0, vp.x - 16.0)
-		var h := minf(MobileLayout.TACTICAL_HEIGHT, vp.y - 32.0)
-		rect = Rect2(vp.x - w - 8.0, maxf(8.0, vp.y - h - 78.0), w, h)
+	# Invariant keras: kotak command tidak pernah menyentuh peta. Cek
+	# intersects juga menolak rect kosong (Rect2() = 0x0) sehingga satu
+	# kondisi ini sekaligus menangani "rail tidak ada".
+	_has_slot = rect.size.x > 0.0 and rect.size.y > 0.0 \
+		and not rect.intersects(MobileLayout.arena_rect())
+	_box.mouse_filter = Control.MOUSE_FILTER_STOP if _has_slot \
+		else Control.MOUSE_FILTER_IGNORE
+	if not _has_slot:
+		_box.visible = false
+		return
 	_box.position = rect.position
 	_box.size = rect.size
+	_refresh()
+
+## Rect efektif kotak command (Rect2() kosong saat tidak ada rail).
+## Dipakai harness paritas: inilah yang dijamin tidak menutupi peta.
+func command_rect() -> Rect2:
+	if not _has_slot or _box == null:
+		return Rect2()
+	return Rect2(_box.position, _box.size)
 
 
 func _process(delta: float) -> void:
@@ -187,8 +211,10 @@ static func _tooltip(action: String) -> String:
 ## dan oleh harness (production code yang sama, dipicu sinkron).
 func _refresh() -> void:
 	var playing := GameManager.state == "playing" and not GameManager.in_menu
-	_box.visible = playing
-	if not playing:
+	# Kotak hanya tampil saat match berjalan DAN layar punya rail (x >= 1280).
+	# Tanpa rail tidak ada tempat di luar peta, jadi kotak tidak digambar.
+	_box.visible = playing and _has_slot
+	if not playing or not _has_slot:
 		# pygame _tactical_sembunyikan: tombol tanpa gambar frame ini mati.
 		for action in _buttons:
 			(_buttons[action] as Button).visible = false

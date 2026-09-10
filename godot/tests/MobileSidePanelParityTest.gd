@@ -2,13 +2,21 @@
 #   * layar LEBIH LEBAR dari 16:9 (1624x720 = HP 2436x1080): rail dinding
 #     batu 344 px menempel di tepi arena (x=1280) berisi pause/STATUS/
 #     HEROES/SHOP + TACTICAL COMMANDS di dasarnya, tidak keluar frame,
-#   * z-order: rail < tactical < shop (popup toko paling atas),
+#   * INVARIANT: tidak ada UI panel yang menyentuh arena (0,0,1280,720) —
+#     tactical commands & popup hero hidup di x >= 1280 (koreksi 2026-09-10:
+#     dulu kotak tactical "jatuh" ke sudut kanan-bawah ARENA di 16:9 dan
+#     menutupi peta; popup hero nangkring kiri-bawah sepanjang match),
+#   * popup HERO (upgrade) = slot tetap rail pygame (ZONA_POPUP_Y 430) dan
+#     hanya tampil saat ada hero hidup terpilih,
+#   * z-order: rail < tactical < skillbar(popup hero) < shop (popup toko
+#     paling atas),
 #   * TOWER/CASTLE shop = popup panel kanan; HERO/ITEM = modal tengah,
 #   * 16:9 PERSIS (1280x720): TANPA rail (paritas "di layar 16:9 panelnya
-#     tidak ada") — arena penuh, tactical jatuh ke sudut kanan-bawah arena,
-#     SEMUA tab toko memakai modal tengah,
-#   * tombol tactical tak pernah hilang: yang syaratnya tak terpenuhi tampil
-#     ABU tak-bisa-ditekan (paritas kotak abu _gambar_tactical pygame),
+#     tidak ada") — arena penuh, tactical TIDAK digambar (hotkey G/T/C/B/D
+#     tetap jalan), SEMUA tab toko memakai modal tengah,
+#   * tombol tactical tak pernah hilang selama ada rail: yang syaratnya tak
+#     terpenuhi tampil ABU tak-bisa-ditekan (paritas kotak abu
+#     _gambar_tactical pygame),
 #   * layar kecil/potret kembali ke tata letak tengah (rail disembunyikan).
 extends Node
 
@@ -53,12 +61,16 @@ func _run() -> void:
 	var rail := hud.find_child("SidePanel", true, false)
 	var tactical := hud.find_child("TacticalBar", true, false)
 	var shop := hud.find_child("ShopPanel", true, false)
+	var skillbar := hud.find_child("SkillBar", true, false)
 	_expect(rail != null, "SidePanel ada")
 	_expect(tactical != null, "TacticalBar ada")
 	_expect(shop != null, "ShopPanel ada")
-	if rail == null or tactical == null or shop == null:
+	_expect(skillbar != null, "SkillBar (popup hero) ada")
+	if rail == null or tactical == null or shop == null or skillbar == null:
 		_finish()
 		return
+	var hero_popup: Control = skillbar.find_child("BarRoot", true, false)
+	_expect(hero_popup != null, "popup hero punya BarRoot")
 
 	# Headless tidak punya jendela nyata: ukuran viewport dipatok eksplisit
 	# supaya asersi deterministik di CI maupun di desktop.
@@ -74,8 +86,15 @@ func _run() -> void:
 	# ── z-order: urutan anak HUD = urutan gambar (belakang -> depan) ──
 	_expect(rail.get_index() < tactical.get_index(),
 		"rail di BAWAH tactical (%d < %d)" % [rail.get_index(), tactical.get_index()])
-	_expect(tactical.get_index() < shop.get_index(),
-		"tactical di BAWAH shop popup")
+	# Popup hero harus DI ATAS tactical: pygame menempatkan popup upgrade di
+	# ZONA_POPUP_Y yang menimpa sebagian kotak command, dan hit_test pygame
+	# hanya meloloskan tombol JEDA selama popup terbuka. Di Godot itu berarti
+	# popup digambar + menerima klik lebih dulu daripada tombol command.
+	_expect(tactical.get_index() < skillbar.get_index(),
+		"tactical di BAWAH popup hero (%d < %d)"
+		% [tactical.get_index(), skillbar.get_index()])
+	_expect(skillbar.get_index() < shop.get_index(),
+		"popup hero di BAWAH shop popup")
 
 	_step("isi rail")
 	# ── isi panel kanan ──
@@ -108,6 +127,23 @@ func _run() -> void:
 		"tactical tidak melewati bawah layar")
 	_expect(tac_rect.position.y >= MobileLayout.SHOP_TOP + MobileLayout.SHOP_HEIGHT,
 		"tactical di bawah kotak shop rail")
+	# INVARIANT utama koreksi 2026-09-10: kotak command tidak menutupi peta.
+	_expect(not tac_rect.intersects(MobileLayout.arena_rect()),
+		"tactical TIDAK menyentuh arena (got %s)" % tac_rect)
+
+	# ── popup HERO (upgrade): slot rail pygame (panel_pos_bawah) ──
+	var hp_rect: Rect2 = MobileLayout.hero_popup_rect()
+	# pygame panel_pos_bawah: x = rail.x + (rail.w - 280)//2 = 1312;
+	# y = ZONA_POPUP_Y 430, LALU didorong ke atas karena popup 276 px
+	# menabrak zona bawah 120 px: y = 720 - 120 - 276 = 324.
+	_expect(hp_rect == Rect2(1280.0 + floorf((344.0 - 280.0) * 0.5), 324.0,
+		280.0, 276.0),
+		"popup hero di slot rail (1312,324) 280x276 (got %s)" % hp_rect)
+	_expect(not hp_rect.intersects(MobileLayout.arena_rect()),
+		"popup hero TIDAK menyentuh arena (got %s)" % hp_rect)
+	_expect(hp_rect.position.y + hp_rect.size.y
+		<= rail_rect.position.y + rail_rect.size.y - MobileLayout.POPUP_BOTTOM_RESERVED + 0.5,
+		"popup hero di atas zona bawah panel (got %s)" % hp_rect)
 
 	# Popup panel kanan & modal tengah selalu di dalam viewport.
 	var popup: Rect2 = MobileLayout.rail_popup_rect()
@@ -117,6 +153,68 @@ func _run() -> void:
 	_expect(modal.position.x >= 0.0 and modal.position.y >= 0.0
 		and modal.position.x + modal.size.x <= vp.x + 0.5
 		and modal.position.y + modal.size.y <= vp.y + 0.5, "modal masuk frame")
+
+	_step("tactical + popup hero di rail")
+	# ── selama match: kotak command HIDUP di rail, popup hero di slot 430 ──
+	GameManager.state = "playing"
+	GameManager.in_menu = false
+	tactical._layout()
+	tactical._refresh()
+	var tac_box := tactical.find_child("TacticalBox", true, false) as Control
+	_expect(tac_box != null and tac_box.visible, "TacticalBox terlihat di rail")
+	var live: Rect2 = tactical.command_rect()
+	_expect(live.size.x > 0.0 and not live.intersects(MobileLayout.arena_rect()),
+		"command_rect() di luar arena (got %s)" % live)
+	if tac_box != null:
+		var tr: Rect2 = tac_box.get_global_rect()
+		_expect(tr.position.x >= rail_rect.position.x - 0.5,
+			"kotak command di rail, bukan di peta (got %s)" % tr)
+	# Roster kosong (tanpa hero/boss): kelima tombol tampil ABU (tak hilang)
+	# dan tak-bisa-ditekan — paritas kotak abu _gambar_tactical pygame.
+	var avail_rail: Dictionary = tactical.panel_available()
+	for action_r in ["gather", "protect_tower", "protect_castle", "attack_boss",
+			"attack_damage_dealer"]:
+		var cb := tactical.find_child("Cmd_" + action_r, true, false) as Button
+		_expect(cb != null, "tombol Cmd_%s ada" % action_r)
+		if cb == null:
+			continue
+		_expect(cb.visible, "Cmd_%s tampil (abu, bukan hilang)" % action_r)
+		_expect(cb.disabled, "Cmd_%s disabled tanpa syarat" % action_r)
+		_expect(not bool(avail_rail.get(action_r, true)),
+			"panel_available[%s] == false" % action_r)
+
+	# Popup hero: TANPA hero terpilih popup tidak digambar (paritas
+	# HeroPanel.draw yang return lebih awal) -> peta kiri-bawah bebas.
+	_expect(hero_popup != null and not hero_popup.visible,
+		"popup hero tersembunyi tanpa hero terpilih")
+	# Spawn 1 hero biru lalu pilih: popup muncul DI DALAM rail (upgrade hero
+	# bisa diklik) dan tidak menutupi peta.
+	var hero = GameManager.spawn_hero("kaizen", "blue", Vector2(340.0, 540.0))
+	GameManager.select_hero(hero)
+	await get_tree().process_frame
+	skillbar._layout()
+	skillbar._refresh_static()
+	_expect(hero_popup.visible, "popup hero tampil saat hero dipilih")
+	if hero_popup != null:
+		var pr: Rect2 = hero_popup.get_global_rect()
+		_expect(absf(pr.position.x - hp_rect.position.x) < 1.0
+			and absf(pr.position.y - hp_rect.position.y) < 1.0,
+			"popup hero di slot rail (got %s want %s)" % [pr, hp_rect])
+		_expect(not pr.intersects(MobileLayout.arena_rect()),
+			"popup hero tidak menutupi peta (got %s)" % pr)
+		_expect(pr.position.x + pr.size.x <= vp.x + 1.0
+			and pr.position.y + pr.size.y <= vp.y + 1.0,
+			"popup hero masuk frame (got %s)" % pr)
+	var up_btn := skillbar.find_child("UpgradeButton", true, false) as Button
+	if up_btn == null:
+		up_btn = skillbar._upgrade_btn
+	_expect(up_btn != null and up_btn.visible
+		and "UPGRADE HERO" in up_btn.text,
+		"tombol UPGRADE HERO ada di popup (got '%s')"
+		% (up_btn.text if up_btn != null else "?"))
+	GameManager.clear_selection()
+	if is_instance_valid(hero):
+		hero.queue_free()
 
 	_step("presentasi toko")
 	# ── presentasi toko: rail popup vs modal ──
@@ -159,34 +257,59 @@ func _run() -> void:
 	var stone := rail.find_child("StoneRail", true, false) as Control
 	_expect(stone != null and not stone.visible, "StoneRail disembunyikan di 16:9")
 
-	_step("tactical fallback 16:9")
-	# Tactical jatuh ke sudut kanan-bawah ARENA (tetap terlihat + di frame).
+	_step("tactical 16:9 tanpa rail")
+	# 16:9 TIDAK menyisakan ruang di luar arena. Paritas pygame: SidePanel
+	# tidak aktif -> tombol command tidak digambar sama sekali (draw/hit_test
+	# keluar lebih awal). Kotak DISSEMBUNYIKAN, bukan ditumpuk di sudut
+	# kanan-bawah peta (itu yang membuat peta tertutup).
+	tactical._layout()
 	tactical._refresh()
-	var tac_box := tactical.find_child("TacticalBox", true, false) as Control
-	_expect(tac_box != null and tac_box.visible, "TacticalBox terlihat di 16:9")
-	if tac_box != null:
-		var tr: Rect2 = tac_box.get_global_rect()
-		_expect(tr.position.x >= 0.0 and tr.position.y >= 0.0
-			and tr.position.x + tr.size.x <= 1280.5
-			and tr.position.y + tr.size.y <= 720.5,
-			"tactical fallback masuk frame (got %s)" % tr)
-		_expect(tr.position.x >= 900.0 and tr.position.y >= 300.0,
-			"tactical fallback di kanan-bawah arena (got %s)" % tr.position)
-	# Roster kosong (tanpa hero/boss): kelima tombol tampil ABU (tak hilang)
-	# dan tak-bisa-ditekan — paritas kotak abu _gambar_tactical pygame.
+	var tac_box169 := tactical.find_child("TacticalBox", true, false) as Control
+	_expect(tac_box169 != null and not tac_box169.visible,
+		"TacticalBox disembunyikan di 16:9 (peta tidak tertutup)")
+	if tac_box169 != null:
+		_expect(tac_box169.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"TacticalBox tak menelan klik saat disembunyikan")
+	var gone: Rect2 = tactical.command_rect()
+	_expect(gone.size == Vector2.ZERO, "command_rect() kosong di 16:9 (got %s)" % gone)
+	_expect(not gone.intersects(MobileLayout.arena_rect()),
+		"command_rect() tidak menyentuh arena di 16:9")
+	# Semua tombol ikut mati (tak ada yang bisa "tembus" ke command).
 	var avail: Dictionary = tactical.panel_available()
 	for action in ["gather", "protect_tower", "protect_castle", "attack_boss",
 			"attack_damage_dealer"]:
-		var cb := tactical.find_child("Cmd_" + action, true, false) as Button
-		_expect(cb != null, "tombol Cmd_%s ada" % action)
-		if cb == null:
+		var cb169 := tactical.find_child("Cmd_" + action, true, false) as Button
+		_expect(cb169 != null, "tombol Cmd_%s ada" % action)
+		if cb169 == null:
 			continue
-		_expect(cb.visible, "Cmd_%s tampil (abu, bukan hilang)" % action)
-		_expect(cb.disabled, "Cmd_%s disabled tanpa syarat" % action)
-		_expect(cb.mouse_filter == Control.MOUSE_FILTER_IGNORE,
-			"Cmd_%s tak menelan klik saat abu" % action)
+		_expect(not cb169.visible, "Cmd_%s tak digambar tanpa rail" % action)
 		_expect(not bool(avail.get(action, true)),
-			"panel_available[%s] == false" % action)
+			"panel_available[%s] == false tanpa rail" % action)
+
+	_step("popup hero 16:9")
+	# Tanpa rail, popup hero jatuh ke posisi pygame lama (kiri-bawah) dan
+	# TETAP hanya tampil saat ada hero terpilih.
+	_expect(MobileLayout.hero_popup_rect().size == Vector2.ZERO,
+		"hero_popup_rect() kosong tanpa rail")
+	skillbar._layout()
+	skillbar._refresh_static()
+	_expect(not hero_popup.visible, "popup hero tetap tersembunyi tanpa hero")
+	var hero169 = GameManager.spawn_hero("kaizen", "blue", Vector2(340.0, 540.0))
+	GameManager.select_hero(hero169)
+	await get_tree().process_frame
+	skillbar._refresh_static()
+	_expect(hero_popup.visible, "popup hero tampil di 16:9 saat hero dipilih")
+	if hero_popup != null:
+		var pr169: Rect2 = hero_popup.get_global_rect()
+		_expect(absf(pr169.position.x - 20.0) < 1.0
+			and absf(pr169.position.y - (720.0 - 276.0 - 20.0)) < 1.0,
+			"popup hero fallback kiri-bawah pygame (got %s)" % pr169)
+		_expect(pr169.position.x + pr169.size.x <= 1280.5
+			and pr169.position.y + pr169.size.y <= 720.5,
+			"popup hero fallback masuk frame (got %s)" % pr169)
+	GameManager.clear_selection()
+	if is_instance_valid(hero169):
+		hero169.queue_free()
 
 	_step("toko modal 16:9")
 	# Tanpa rail, SEMUA tab (termasuk tower) memakai modal tengah.
