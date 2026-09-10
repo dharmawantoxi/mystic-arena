@@ -9268,6 +9268,14 @@ class _JoystickPatch:
         return False
 
 
+# Nama aksi yang dipetakan ke TOMBOL (bukan axis) — dipakai saat merekam
+# frame: tombol dinyatakan per nama karena nomor mentah beda mesin.
+_CONTROLLER_ACTION_NAMES = frozenset((
+    "confirm", "cancel", "skill_q", "skill_w", "skill_e", "skill_r",
+    "start", "back", "stick_left", "stick_right", "shop",
+))
+
+
 def _device_state(name, guid, buttons, axes, hats=1):
     return {
         "name": name,
@@ -9307,6 +9315,15 @@ def _frame(cursor_before, manager, state, frame):
         "frame": {
             "buttons": {str(k): bool(v)
                         for k, v in frame.get("buttons", {}).items()},
+            # Nomor tombol mentah BEDA mesin: pygame/XInput memakai urutan
+            # A,B,X,Y,LB,RB,BACK,START,L3,R3 sedangkan SDL (Godot) memakai
+            # A,B,X,Y,BACK,GUIDE,START,L3,R3,LB,RB. Karena itu tombol
+            # dinyatakan dengan NAMA aksinya; replay menekan indeks miliknya
+            # sendiri untuk nama yang sama (deviasi terdokumentasi).
+            "button_actions": sorted(
+                name for name, idx in manager.button_map.items()
+                if name in _CONTROLLER_ACTION_NAMES
+                and state["pressed"].get(str(idx), False)),
             "axes": {str(k): float(v)
                      for k, v in frame.get("axes", {}).items()},
             "hat": list(frame.get("hat", [0, 0])),

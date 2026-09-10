@@ -520,7 +520,7 @@ func _route_case(router, controller, menu, scenario: Dictionary) -> void:
 	GameManager.clear_selection()
 	GameManager.state = "playing"
 	router.state_override = ""
-	router.ui_buttons_override = {}
+	router.ui_buttons_override = null
 
 
 ## Node pembungkus cinematic palsu — lihat class FakeCinematicHost.
@@ -599,8 +599,15 @@ func _mode_manager(mode: String, ctype):
 func _apply_frame(device: Dictionary, step: Dictionary) -> void:
 	var frame: Dictionary = step.get("frame", {})
 	var buttons: Dictionary = {}
-	for key in frame.get("buttons", {}):
-		buttons[int(key)] = bool(frame["buttons"][key])
+	if frame.has("button_actions"):
+		# Tombol dinyatakan per NAMA aksi (indeks mentah beda mesin:
+		# XInput vs SDL) — tekan indeks milik BUTTON_MAP Godot.
+		for action_name in frame["button_actions"]:
+			if ControllerScript.BUTTON_MAP.has(action_name):
+				buttons[int(ControllerScript.BUTTON_MAP[action_name])] = true
+	else:
+		for key in frame.get("buttons", {}):
+			buttons[int(key)] = bool(frame["buttons"][key])
 	device["buttons"] = {0: buttons}
 	var axes: Dictionary = {}
 	for key in frame.get("axes", {}):

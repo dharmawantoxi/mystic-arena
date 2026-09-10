@@ -61,8 +61,9 @@ const SCREEN_H := 720
 var controller = null
 
 ## Harness paritas: rect tombol UI ter-script (pygame game.ui_buttons /
-## menu.buttons). Kosong = baca dari tree UI produksi.
-var ui_buttons_override: Dictionary = {}
+## menu.buttons). `null` = baca dari tree UI produksi; dict KOSONG berarti
+## pygame memang tidak punya tombol (guard `if game.ui_buttons:` false).
+var ui_buttons_override = null
 
 ## Harness paritas: jejak panggilan produksi. Entri = [nama, args...].
 var trace_enabled := false
@@ -268,10 +269,12 @@ func _route_game(action: String) -> void:
 				_trace(["skip", kind])
 				m._cinematic_click()
 				return
-			# Victory: A = PLAY NEXT LEVEL (paritas :224-231) — HANYA kalau
-			# masih ada level berikutnya; kalau tidak, jatuh ke klik biasa
-			# (pygame: `if next_lvl:` baru `continue`).
+			# Victory: A = PLAY NEXT LEVEL (paritas :224-231) — pygame
+			# mensyaratkan DUA hal: tombol `play_next_level` ada di
+			# game.ui_buttons DAN masih ada level berikutnya. Kalau salah
+			# satu tidak ada, jatuh ke klik biasa (tanpa `continue`).
 			if GameManager.state == "victory" \
+					and _has_next_level_button() \
 					and GameManager.next_level_number() > 0:
 				_trace(["next_level"])
 				GameManager.next_level()
@@ -375,6 +378,37 @@ func _game_click(pos: Vector2, button: int) -> void:
 			_gui_scroll_at(pos, -1 if button == 4 else 1)
 
 
+## Paritas `'play_next_level' in game.ui_buttons`.
+func _has_next_level_button() -> bool:
+	if ui_buttons_override != null:
+		return (ui_buttons_override as Dictionary).has("play_next_level")
+	# Produksi: tombol nyata "PLAY NEXT LEVEL" (GameOverOverlay.gd:406).
+	return _find_button_labeled("PLAY NEXT LEVEL") != null
+
+
+func _find_button_labeled(label: String):
+	_hit = null
+	var tree = get_tree()
+	if tree != null:
+		_scan_labeled(tree.root, label)
+	return _hit
+
+
+func _scan_labeled(node, label: String) -> void:
+	if node == null or _hit != null:
+		return
+	for child in node.get_children():
+		if child is BaseButton and (child as BaseButton).visible:
+			var text := str((child as BaseButton).text)
+			var custom = child.get("label_text")
+			if custom != null:
+				text += "|" + str(custom)
+			if text.find(label) >= 0:
+				_hit = child
+				return
+		_scan_labeled(child, label)
+
+
 ## Cinematic mana yang sedang aktif — nama yang sama dengan oracle
 ## (level_intro / boss_intro / boss_death).
 func _cinematic_kind(m) -> String:
@@ -390,6 +424,11 @@ func _cinematic_kind(m) -> String:
 ## — dan cabang `cancel` tidak memanggil hold_end sama sekali.
 func _enter_pause(release_hold: bool) -> void:
 	var m = _main()
+	# pygame menulis `current_state = STATE_PAUSE` SEBELUM menu.show_pause();
+	# aksi berikutnya pada frame yang sama lalu dirutekan cabang PAUSE
+	# (mis. skenario multi-aksi game_rantai_batal).
+	if state_override != "":
+		state_override = STATE_PAUSE
 	_trace(["show_pause"])
 	if m != null and m.has_method("_toggle_pause"):
 		m._toggle_pause()
@@ -505,7 +544,7 @@ func _scroll_amount(direction: int) -> int:
 ## menu.buttons). Urutan Dictionary = urutan tree, sama seperti urutan
 ## pengisian dict pygame saat draw.
 func _menu_button_rects(menu) -> Dictionary:
-	if not ui_buttons_override.is_empty():
+	if ui_buttons_override != null:
 		return ui_buttons_override
 	var out: Dictionary = {}
 	if menu == null or not is_instance_valid(menu):
@@ -514,7 +553,7 @@ func _menu_button_rects(menu) -> Dictionary:
 
 
 func _game_button_rects() -> Dictionary:
-	if not ui_buttons_override.is_empty():
+	if ui_buttons_override != null:
 		return ui_buttons_override
 	var out: Dictionary = {}
 	var hud = get_tree().get_first_node_in_group("hud") \
