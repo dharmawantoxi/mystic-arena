@@ -392,7 +392,21 @@ jobs:
             exit 1
           fi
 
-      # ── 4i. MatchScoringParityTest: paritas KLASTER SKOR MATCH (FASE 13)
+      # ── 4i. MobileSidePanelParityTest: both landscape HUD surfaces exist.
+      - name: MobileSidePanelParityTest (right rail + shop)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/MobileSidePanelParityTest.tscn --quit-after 120 2>&1 | tee /tmp/mobile-sidepanel.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/mobile-sidepanel.log --label "MobileSidePanelParityTest" \
+              --require "[MobileSidePanelParityTest] PASS" > /tmp/mobile-sidepanel.gate 2>&1; then
+            cat /tmp/mobile-sidepanel.gate
+          else
+            cat /tmp/mobile-sidepanel.gate
+            echo "::error::MOBILE-SIDEPANEL-FAIL: $(tail -30 /tmp/mobile-sidepanel.log | tr '\\n' ' ' | cut -c1-4000)"
+            exit 1
+          fi
+
+      # ── 4j. MatchScoringParityTest: paritas KLASTER SKOR MATCH (FASE 13)
       # vs oracle pygame. Oracle menjalankan kode pygame ASLI headless:
       # ComboCounter murni per frame + data draw (label/warna/bar 80x4),
       # loop reward Game.update SUNGGUHAN (unit betulan mati lewat

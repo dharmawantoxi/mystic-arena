@@ -41,6 +41,8 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build()
+	MobileLayout.layout_changed.connect(_layout_panel)
+	_layout_panel()
 	GameManager.shop_changed.connect(_on_shop_changed)
 	GameManager.selection_changed.connect(_on_selection_changed)
 	GameManager.gold_changed.connect(_on_gold_changed)
@@ -68,6 +70,29 @@ func _build() -> void:
 	_panel.offset_bottom = 132.0
 	(_panel as PygamePanel).set_margins(14, 10, 14, 10)
 	add_child(_panel)
+
+func _layout_panel() -> void:
+	if _panel == null:
+		return
+	if MobileLayout.has_side_panel():
+		# Keep the shop in the arena portion; the command rail remains clickable.
+		_panel.anchor_left = 0.0
+		_panel.anchor_right = 0.0
+		_panel.anchor_top = 0.5
+		_panel.anchor_bottom = 0.5
+		_panel.offset_left = maxf(8.0, MobileLayout.content_width() - 700.0)
+		_panel.offset_right = MobileLayout.content_width() - 20.0
+		_panel.offset_top = -258.0
+		_panel.offset_bottom = 132.0
+	else:
+		_panel.anchor_left = 0.5
+		_panel.anchor_right = 0.5
+		_panel.anchor_top = 0.5
+		_panel.anchor_bottom = 0.5
+		_panel.offset_left = -345.0
+		_panel.offset_right = 345.0
+		_panel.offset_top = -258.0
+		_panel.offset_bottom = 132.0
 
 	var vbox := VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
