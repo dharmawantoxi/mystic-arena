@@ -12,11 +12,16 @@ const ComboBadgeScript = preload("res://scenes/ui/ComboBadge.gd")
 const AchievementPopupScript = preload("res://scenes/ui/AchievementPopup.gd")
 const TacticalBarScript = preload("res://scenes/ui/TacticalBar.gd")
 const SidePanelScript = preload("res://scenes/ui/SidePanel.gd")
+const WavePlateScript = preload("res://scenes/ui/widgets/WavePlate.gd")
 ## Seberapa sering bar nexus/disability disegarkan (5 Hz cukup, hemat draw call)
 const BAR_REFRESH := 0.2
 
 var _banner_tween: Tween
 var _wave_sub: Label = null
+## Dekorasi banner wave (port WaveAnnouncer): panel di belakang teks +
+## bayangan teks +2/+2 — keduanya ikut tween slide/alpha banner.
+var _wave_plate: Control = null
+var _wave_shadow: Label = null
 var _field_timer: float = 0.0
 var _bar_timer: float = 0.0
 ## team -> {panel, hp: ProgressBar, shield: ProgressBar, label: Label}
@@ -28,6 +33,8 @@ var _over_title: Label = null
 var _over_stats: Label = null
 var _over_body: Label = null
 var _next_button: Button = null
+## Baris HBoxContainer hint bar (isi digantikan _refresh_hints per konteks)
+var _hint_row: HBoxContainer = null
 var _combo_badge: Control = null
 var _achievement_popup: Control = null
 
@@ -50,6 +57,7 @@ func _ready():
 	GameManager.minion_died.connect(_on_minion_died)
 	GameManager.boss_spawned.connect(_on_boss_spawned)
 	GameManager.game_over.connect(_on_game_over)
+	GameManager.shop_changed.connect(_on_shop_changed)
 	GameManager.difficulty_changed.connect(_on_difficulty_changed)
 	GameManager.nexus_destroyed.connect(_on_nexus_destroyed)
 	_build_nexus_bars()
@@ -95,6 +103,10 @@ func _ready():
 ## Elemen HUD yang "di tengah layar" (bar nexus, banner wave, hint bar) harus
 ## berada di tengah AREA ARENA, bukan tengah viewport — kalau tidak, panel
 ## kanan menutupinya di layar landscape (paritas arena rata kiri pygame).
+## HintLabel SENGAJA tidak digeser: host-nya left-anchored di HUD.tscn
+## (offset 18..1262, bukan anchor 0.5), jadi shift tengah justru menggeser
+## host keluar pusat arena di layar lebar — PanelContainer di dalamnya sudah
+## menengahkan diri terhadap host.
 func _layout_hud() -> void:
 	var content := MobileLayout.content_width()
 	if content <= 0.0:
@@ -102,7 +114,7 @@ func _layout_hud() -> void:
 	var shift := -(MobileLayout.viewport_size.x - content) * 0.5
 	# WaveBanner/WaveSub SENGAJA tidak digeser: kurva slide-nya dikunci
 	# fixture paritas pygame (UiHudParityTest wave_slide_x).
-	for node_name in ["NexusBars", "HintLabel"]:
+	for node_name in ["NexusBars"]:
 		var n := find_child(node_name, true, false) as Control
 		if n == null:
 			continue
@@ -142,6 +154,7 @@ func _on_level_started(_level_num: int):
 	# Level baru (PLAY/ENTER-next/R) -> sembunyikan panel menang/kalah lama.
 	if _over_root != null:
 		_over_root.hide_overlay()
+	_refresh_hints()
 	refresh()
 	_refresh_field()
 
@@ -203,6 +216,60 @@ func _build_wave_sub() -> void:
 	_wave_sub.set_meta("base_l", _wave_sub.offset_left)
 	_wave_sub.set_meta("base_r", _wave_sub.offset_right)
 	add_child(_wave_sub)
+	_build_wave_decor()
+
+
+## Dekorasi banner wave (port WaveAnnouncer.draw _render.py:1022-1103):
+## panel 400x80 (gradasi + border emas + diagonal + corner ticks) di
+## belakang teks, pusatnya +8px di bawah pusat teks, dan bayangan teks
+## (8,8,14) offset +2/+2. Urutan gambar: plate -> shadow -> banner teks
+## (pygame: blit panel, lalu shadow, lalu teks gradasi). Warna teks banner
+## memakai puncak gradien pygame (255,242,175) — gradien per-glyph sendiri
+## masih milik bucket piksel (kebijakan gradasi-pendekatan).
+func _build_wave_decor() -> void:
+	# Paritas warna: pygame gradasi (255,242,175)->(196,138,40); Godot flat
+	# diambil puncaknya + outline dimatikan (pygame memakai shadow, bukan
+	# outline).
+	wave_banner.add_theme_color_override("font_color",
+		Color(1.0, 242.0 / 255.0, 175.0 / 255.0))
+	wave_banner.add_theme_constant_override("outline_size", 0)
+	_wave_plate = WavePlateScript.new()
+	_wave_plate.name = "WavePlate"
+	_wave_plate.offset_left = -200.0
+	_wave_plate.offset_right = 200.0
+	_wave_plate.offset_top = -112.0 # pusat panel = pusat teks + 8px
+	_wave_plate.offset_bottom = -32.0
+	_wave_plate.modulate.a = 0.0
+	add_child(_wave_plate)
+	_wave_shadow = Label.new()
+	_wave_shadow.name = "WaveShadow"
+	_wave_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_wave_shadow.anchor_left = 0.5
+	_wave_shadow.anchor_top = 0.5
+	_wave_shadow.anchor_right = 0.5
+	_wave_shadow.anchor_bottom = 0.5
+	_wave_shadow.offset_left = -298.0 # base banner +2/+2 (shadow pygame)
+	_wave_shadow.offset_right = 302.0
+	_wave_shadow.offset_top = -138.0
+	_wave_shadow.offset_bottom = -18.0
+	_wave_shadow.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_wave_shadow.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_wave_shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_wave_shadow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_wave_shadow.add_theme_font_override("font", UiTheme.title_font())
+	_wave_shadow.add_theme_font_size_override("font_size", 46)
+	_wave_shadow.add_theme_color_override("font_color",
+		Color(8.0 / 255.0, 8.0 / 255.0, 14.0 / 255.0, 200.0 / 255.0))
+	_wave_shadow.modulate.a = 0.0
+	add_child(_wave_shadow)
+	# Urutan gambar (bawah -> atas): plate, shadow, WaveBanner, WaveSub.
+	move_child(_wave_plate, wave_banner.get_index())
+	move_child(_wave_shadow, wave_banner.get_index())
+	# Meta base offset utk kurva slide tween announce_wave.
+	_wave_plate.set_meta("base_l", _wave_plate.offset_left)
+	_wave_plate.set_meta("base_r", _wave_plate.offset_right)
+	_wave_shadow.set_meta("base_l", _wave_shadow.offset_left)
+	_wave_shadow.set_meta("base_r", _wave_shadow.offset_right)
 
 
 ## Banner "WAVE N" — port gerak WaveAnnouncer: slide-in 0.4s (BACK OUT =
@@ -230,7 +297,7 @@ func announce_wave(wave_num: int):
 	_banner_tween.tween_interval(HudLayout.WAVE_TWEEN_HOLD)
 	_banner_tween.set_parallel(true)
 	_banner_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	for lab in [wave_banner, _wave_sub]:
+	for lab in [wave_banner, _wave_sub, _wave_shadow, _wave_plate]:
 		var base_l := float(lab.get_meta("base_l"))
 		var base_r := float(lab.get_meta("base_r"))
 		_banner_tween.tween_property(lab, "offset_left", base_l + 1280.0, HudLayout.WAVE_TWEEN_OUT)
@@ -412,6 +479,55 @@ func _on_nexus_destroyed(team: String, _killer_team: String) -> void:
 #  HINT BAR (port draw_hint_bar: keycap + label, tengah-bawah)
 # ══════════════════════════════════════════════════════════
 
+## Baris hint per konteks — port InputManager.get_hints (_core.py:10102)
+## dengan label keyboard port Godot (bukan tabel controller pygame) dan
+## bahasa Indonesia (kebijakan UI Godot). B/D TIDAK ada di daftar: sejak
+## FASE 18 keduanya hotkey perintah taktis (ATTACK BOSS / ATTACK TOP
+## DEALER), bukan toko/difficulty; toko = H, dan SPASI hanya melewati
+## intro (level/boss) — paritas _draw_input_hints yang mematikan hint
+## selama cinematic (_core.py:2720-2727).
+func _hint_rows(context: String) -> Array:
+	match context:
+		"victory":
+			return [["ENTER", "lanjut"], ["R", "ulangi"], ["ESC", "menu"]]
+		"defeat":
+			return [["R", "ulangi"], ["ESC", "menu"]]
+		"shop":
+			return [["klik", "beli"], ["H", "tutup"]]
+		_:
+			return [
+				["klik", "pilih"],
+				["QWER", "skill"],
+				["H", "toko"],
+				["klik kanan", "tutup"],
+				["P", "jeda"],
+			]
+
+
+## Konteks aktif dihitung ulang dari state GameManager — prioritas persis
+## _draw_input_hints (_core.py:2721-2731): victory > defeat > shop > game.
+## Dipanggil dari sinyal game_over / level_started / shop_changed.
+func _refresh_hints() -> void:
+	var ctx := "game"
+	if GameManager.state == "victory":
+		ctx = "victory"
+	elif GameManager.state == "defeat":
+		ctx = "defeat"
+	elif GameManager.shop_open:
+		ctx = "shop"
+	if _hint_row == null:
+		return
+	for c in _hint_row.get_children():
+		_hint_row.remove_child(c)
+		c.queue_free()
+	for h in _hint_rows(ctx):
+		_hint_row.add_child(_hint_item(str(h[0]), str(h[1])))
+
+
+func _on_shop_changed() -> void:
+	_refresh_hints()
+
+
 func _build_hint_bar() -> void:
 	var host: Label = $HintLabel
 	host.text = ""
@@ -434,18 +550,17 @@ func _build_hint_bar() -> void:
 	row.add_theme_constant_override("separation", 16)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.add_child(row)
-	var hints: Array = [
-		["klik", "pilih hero/menara/slot"],
-		["QWER", "skill"],
-		["B", "toko"],
-		["D", "difficulty"],
-		["ENTER", "lanjut"],
-		["R", "ulangi"],
-		["P", "pause"],
-		["SPASI", "beli hero"],
-	]
-	for h in hints:
-		row.add_child(_hint_item(str(h[0]), str(h[1])))
+	_hint_row = row
+	_refresh_hints()
+	# ── KEBIJAKAN TAMPIL (perfeksionis paritas) ──
+	# Pygame hanya menggambar hint bar di mode CONTROLLER legacy desktop
+	# (_draw_input_hints _core.py:2709-2714 — tanpa controller_mgr / mode
+	# keyboard = return tanpa menggambar). Build Android pygame (main.py:250)
+	# bahkan tidak memasang controller_mgr, dan pemain keyboard tidak pernah
+	# melihat bar ini. Godot belum punya lapisan input gamepad, jadi paritas
+	# yang jujur: TIDAK PERNAH tampil. Mesin konteks get_hints di atas tetap
+	# terpasang — cukup lepas baris ini kalau gamepad suatu saat diport.
+	host.visible = false
 
 
 func _hint_item(key: String, desc: String) -> HBoxContainer:

@@ -46,6 +46,44 @@ saat roster kosong). Replay headless (termasuk `TacticalInputParityTest` yang
 membaca `panel_available()`) diverifikasi CI — binary Godot tak tersedia di
 sandbox. Piksel rail (bata/font/komposit) tetap milik bucket piksel.
 
+## Koreksi hint bar + teks kontrol — 10 September 2026
+
+Audit lanjutan seksi panel kanan menemukan teks kontrol Godot yang masih
+mengklaim perilaku pra-FASE 18: hint bar bawah HUD memuat daftar statis
+salah ("B toko / D difficulty / SPASI beli hero"), padahal B/D kini hotkey
+perintah taktis (FASE 18), toko = H, dan SPASI hanya melewati intro.
+Semuanya diperbaiki tanpa menyentuh kode pygame:
+
+| Lokasi | Teks lama (salah) | Perbaikan (port pygame) |
+|---|---|---|
+| HUD hint bar | 8 item statis campur konteks — "B/toko", "D/difficulty", "SPASI/beli hero", dan "ENTER/lanjut" tampil bahkan saat masih bermain | Port `InputManager.get_hints` (`_core.py:10102`) per konteks, bahasa Indonesia: game = klik/pilih · QWER/skill · H/toko · klik kanan/tutup · P/jeda; victory = ENTER/lanjut · R/ulangi · ESC/menu; defeat = R/ulangi · ESC/menu; shop = klik/beli · H/tutup. Konteks berpindah lewat sinyal `game_over` / `level_started` / `shop_changed`, prioritas persis `_draw_input_hints` (`_core.py:2721-2731`): victory > defeat > shop > game |
+| `HUD._layout_hud` | `HintLabel` ikut daftar geser tengah-arena | Dikeluarkan dari daftar: host-nya left-anchored di HUD.tscn (offset 18..1262, bukan anchor 0.5) sehingga shift tengah justru menggesernya keluar pusat arena di layar lebar |
+| MainMenu HOW_TO_PLAY + SkillBar | "B → HERO" | "H → HERO" (judul seksi HOW_TO_PLAY "TOKO (B)" ikut menjadi "TOKO (H)") |
+| ShopPanel footer | "… · D ganti difficulty" | Klaim dihapus — D = hotkey taktis ATTACK TOP DEALER sejak FASE 18 (paritas HOW TO PLAY pygame: "D = ATTACK TOP DEALER (all)") |
+
+**Perfeksionis — kebijakan tampil (masih 10 September):** render pygame asli
+membuktikan hint bar HANYA digambar di mode controller legacy desktop
+(`_draw_input_hints` `_core.py:2709-2714`; build Android `main.py:250` tak
+memasang `controller_mgr`, dan pemain keyboard tidak pernah melihatnya).
+Karena Godot belum punya lapisan input gamepad, paritas yang jujur adalah
+TIDAK PERNAH menampilkan bar — `HintLabel` kini disembunyikan (node tetap
+ada untuk fixture struktur), mesin konteks `get_hints` tetap terpasang dan
+diaktifkan kembali begitu gamepad diport. Dikunci asersi baru di
+`UiHudParityTest` (`hint bar disembunyikan`).
+
+**Ditambahkan 10 September 2026 — dekorasi banner wave:** panel 400×80
+WaveAnnouncer pygame (`_render.py:1022-1103`) kini diport utuh sebagai
+`WavePlate.gd` (gradasi latar alpha lengkung 0.3, border emas 3px, garis
+dalam terang, diagonal tiap 10px, corner ticks 12/2/inset-5) + bayangan teks
+(8,8,14) offset +2/+2, urutan gambar plate → shadow → teks, semuanya ikut
+kurva slide/alpha tween yang terkunci fixture. Warna teks banner memakai
+puncak gradien pygame (255,242,175); gradien per-glyph sendiri tetap milik
+bucket piksel (kebijakan `gradasi-pendekatan` yang sama dengan ScreenTitle).
+
+**Validasi (hint bar + settings + banner):** `gdparse` + `tscn_lint` +
+`check_refs` lulus lokal — replay headless diverifikasi CI, binary Godot tak
+tersedia di sandbox.
+
 ## Koreksi permukaan UI — 9 September 2026 (FASE 22)
 
 Koreksi laporan visual/lapangan (bukan perilaku match yang sudah terkunci):
@@ -237,10 +275,22 @@ untuk hero terpilih; gate False hanya dipakai harness replay).
   menghapus save pengguna untuk menyamarkan selisih. Pilihan settings yang
   kini ADA + berfungsi (FASE 22): volume master/sfx/bgm (persist per slot,
   live ke `AudioManager`), Screen Shake (camera trauma, guard live), Damage
-  Numbers (live ke `world_popups`), hapus slot aktif + dialog. Yang TERBUKA
-  eksplisit: game speed, language (UI Godot memang Indonesia), FPS limit,
-  voice (tidak ada file voice di repo pygame), cloud save, difficulty-lock
-  pygame ("terkunci sampai semua level selesai" — Godot memilih difficulty
+  Numbers (live ke `world_popups`), hapus slot aktif + dialog. **Ditambahkan
+  10 September 2026 (port `GameSettings`):** slider **Volume Voice** (persist
+  `voice`; kategori `voice` pygame `_system.py:599-604` juga tanpa file voice
+  — di kedua engine slider tidak mengubah bunyi, hanya persist),
+  cycler **Game Speed** 0.5/1.0/1.5/2.0 (`game_speed`, berlaku boot + live ke
+  `Engine.time_scale` dengan quirk pygame `int(mult)-1` dipertahankan:
+  1.5x memang tidak berpengaruh di pygame — `_core.py:1966`; hit-stop kini
+  kembali ke basis speed, bukan 1.0), cycler **FPS Limit** 30/60/120/0
+  (`fps_limit` → `Engine.max_fps`, 0 = tanpa batas seperti `main.py:637`),
+  dan seksi **CLOUD SAVE** gaya PC pygame (`_draw_cloud_buttons`
+  `_core.py:6395-6455`: status `CLOUD: OFF (PC / belum diset)` + tombol
+  upload/download inert + baris status — plugin Play Games tetap BELUM
+  diport, di pygame PC pun tombolnya tanpa akses). Yang TERBUKA eksplisit:
+  language (UI Godot memang Indonesia), voice playback (tanpa aset di kedua
+  engine), cloud save fungsional (Play Games), difficulty-lock pygame
+  ("terkunci sampai semua level selesai" — Godot memilih difficulty
   bebas di PILIH LEVEL, deviasi terdokumentasi).
   Yang SUDAH setara + teruji dari blok ini termasuk **sumber jumlah unlock
   catch-up** (`hero_catchup_unlocks`/`HeroCatchupUnlockParityTest`: kunci

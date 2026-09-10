@@ -1629,24 +1629,37 @@ func _build_settings() -> void:
 	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	cols.add_child(left)
 	left.add_child(_settings_header("AUDIO", "speaker", UiTheme.CYAN))
-	# pygame: master/sfx/bgm/voice. Port Godot punya master + sfx + bgm
-	# (voice TIDAK ada — semua audio di repo pygame adalah SFX/BGM, tidak
-	# ada file voice, jadi slider-nya tidak akan berfungsi dan tidak
-	# dipasang).
+	# pygame: master/sfx/bgm/voice (_draw_settings). Slider VOICE dipasang
+	# paritas: kategori 'voice' ada di SoundManager pygame (_system.py:599-604)
+	# tapi repo tidak punya file voice — di KEDUA engine slider-nya tidak
+	# mengubah bunyi apa pun; yang diport adalah persist setting-nya.
 	left.add_child(_volume_slider("Volume Master", "master", 0.7))
 	left.add_child(_volume_slider("Volume SFX", "sfx", 0.6))
 	left.add_child(_volume_slider("Volume Musik (BGM)", "bgm", 0.35))
+	left.add_child(_volume_slider("Volume Voice", "voice", 0.5))
 
 	left.add_child(_settings_header("CLOUD SAVE", "cloud",
 		UiTheme.CYAN_SOFT))
-	var cloud := Label.new()
-	cloud.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UiTheme.style_label(cloud,
-		"Cloud save (Play Games) belum di-port ke Godot — progres " \
-		+ "disimpan di 3 SLOT LOKAL (layar PILIH SLOT). Upload/download " \
-		+ "manual tersedia di versi Pygame.",
-		UiTheme.body_medium(), 11, UiTheme.TEXT_DIM)
-	left.add_child(cloud)
+	# Paritas _draw_cloud_buttons (_core.py:6395-6455) dalam kondisi PC
+	# (cloud tidak tersedia): status OFF + tombol upload/download + baris
+	# status. Plugin Play Games belum di-port — tombol inert dengan umpan
+	# balik status, perilaku yang sama seperti PC pygame.
+	left.add_child(PygameButton.pill_button(
+		"CLOUD: OFF (PC / belum diset)", "locked", "cloud", 340, 32, 15))
+	var cloud_up := PygameButton.pill_button(
+		"UPLOAD SAVE KE CLOUD", "neutral", "upload", 340, 32, 15)
+	var cloud_down := PygameButton.pill_button(
+		"DOWNLOAD SAVE DARI CLOUD", "success", "download", 340, 32, 15)
+	left.add_child(cloud_up)
+	left.add_child(cloud_down)
+	var cloud_note := Label.new()
+	UiTheme.style_label(cloud_note,
+		"Cloud disinkronkan via akun Google (Android)",
+		UiTheme.body_medium(), 12, Color(0.55, 0.59, 0.69))
+	cloud_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	left.add_child(cloud_note)
+	cloud_up.pressed.connect(_cloud_unavailable.bind(cloud_note))
+	cloud_down.pressed.connect(_cloud_unavailable.bind(cloud_note))
 	var cloud_pad := Control.new()
 	cloud_pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	cloud_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1680,6 +1693,18 @@ func _build_settings() -> void:
 	# dikonsumsi WorldPopups (start_level), kini bisa diubah live.
 	right.add_child(_settings_toggle_row(
 		"Damage Numbers", "damage_numbers_enabled", 1.0))
+	# Game Speed — paritas cycler speed_prev/next (_core.py:7273-7293,
+	# opsi 0.5/1.0/1.5/2.0; quirk 1.5x pygame dipertahankan di
+	# GameManager.apply_game_speed).
+	right.add_child(_cycler_row("Game Speed", [0.5, 1.0, 1.5, 2.0],
+		"game_speed", 1.0))
+
+	# ── GRAPHICS (paritas seksi FPS LIMIT pygame) ──
+	right.add_child(_settings_header("GRAPHICS", "gear", UiTheme.EDGE_GOLD))
+	# FPS Limit — paritas cycler fps_prev/next (_core.py:7307-7330,
+	# opsi 30/60/120/0; 0 = tanpa batas, sama konvensi Engine.max_fps).
+	right.add_child(_cycler_row("FPS Limit", [30.0, 60.0, 120.0, 0.0],
+		"fps_limit", 60.0))
 
 	var gp_pad := Control.new()
 	gp_pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1744,6 +1769,68 @@ func _difficulty_row() -> HBoxContainer:
 		HudLayout.mode_color(GameManager.difficulty))
 	row.add_child(val)
 	return row
+
+
+## Baris cycler (paritas tombol speed_prev/next & fps_prev/next _core.py:
+## 7273-7330): label + "< nilai >" — nilai persist di SaveManager dan
+## langsung diterapkan (game_speed -> Engine.time_scale via GameManager,
+## fps_limit -> Engine.max_fps).
+func _cycler_row(label_text: String, options: Array, key: String,
+		default_val: float) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var lab := Label.new()
+	UiTheme.style_label(lab, label_text, UiTheme.body_medium(), 20,
+		UiTheme.TEXT_BODY)
+	lab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(lab)
+	var val_label := Label.new()
+	UiTheme.style_label(val_label, "", UiTheme.body_semibold(), 20,
+		UiTheme.GOLD_TEXT)
+	val_label.custom_minimum_size = Vector2(120, 0)
+	val_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var state := {"idx": options.find(
+		SaveManager.get_setting(key, default_val))}
+	if int(state["idx"]) < 0:
+		state["idx"] = options.find(default_val)
+	var apply_val := func(v: float) -> void:
+		SaveManager.set_setting(key, v, true)
+		val_label.text = _cycler_label(key, v)
+		if key == "game_speed":
+			GameManager.apply_game_speed(v)
+		elif key == "fps_limit":
+			GameManager.apply_fps_limit(v)
+	var prev := PygameButton.pill_button("<", "neutral", "", 28, 28)
+	prev.pressed.connect(func():
+		state["idx"] = (int(state["idx"]) - 1 + options.size()) \
+			% options.size()
+		apply_val.call(options[int(state["idx"])]))
+	var next := PygameButton.pill_button(">", "neutral", "", 28, 28)
+	next.pressed.connect(func():
+		state["idx"] = (int(state["idx"]) + 1) % options.size()
+		apply_val.call(options[int(state["idx"])]))
+	row.add_child(prev)
+	row.add_child(val_label)
+	row.add_child(next)
+	val_label.text = _cycler_label(key, options[int(state["idx"])])
+	return row
+
+
+## Teks nilai cycler: kecepatan "1.0x", FPS "60 FPS" / "TANPA BATAS" (0).
+func _cycler_label(key: String, v: float) -> String:
+	if key == "game_speed":
+		return "%.1fx" % v
+	if key == "fps_limit":
+		return "TANPA BATAS" if int(v) == 0 else "%d FPS" % int(v)
+	return str(v)
+
+
+## Umpan balik tombol cloud di PC pygame: status berubah, tanpa akses
+## (mobile/cloud_save.py hanya aktif dengan Play Games di Android).
+func _cloud_unavailable(note: Label) -> void:
+	note.text = "Cloud tidak tersedia di build ini " \
+		+ "(hanya Android + Play Games)"
 
 
 ## Baris toggle (paritas _draw_toggle_setting pygame): label + sakelar pil.
@@ -1874,7 +1961,7 @@ func _build_how_to_play() -> void:
 			"Klik lingkaran slot kosong (+) di lane lalu bangun menara (100 gold).",
 			"4 jalur: Archer / Cannon / Ice / Mage. Upgrade Lv1→Lv2 memilih jalur."]],
 		["HERO & SKILL", "crown", [
-			"Mulai tanpa hero. Buka B → HERO untuk membeli hero yang sudah di-unlock.",
+			"Mulai tanpa hero. Buka H → HERO untuk membeli hero yang sudah di-unlock.",
 			"Maksimal 5 hero unik. Hero mati respawn setelah 10 detik dengan level/item tetap.",
 			"Klik hero Radiant untuk memilihnya, lalu Q/W/E/R untuk skill (R = ultimate).",
 			"Hero yang tidak dipilih bertarung sendiri (auto-cast)."]],
