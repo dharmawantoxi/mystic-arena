@@ -6,6 +6,7 @@ extends Button
 class_name PygameToggle
 
 var is_on: bool = true
+var _hover: bool = false
 
 
 func _init(p_on: bool = true) -> void:
@@ -20,9 +21,14 @@ func _init(p_on: bool = true) -> void:
 	add_theme_stylebox_override("pressed", _empty)
 	add_theme_stylebox_override("disabled", _empty)
 	add_theme_stylebox_override("focus", _empty)
-	mouse_entered.connect(queue_redraw)
-	mouse_exited.connect(queue_redraw)
+	mouse_entered.connect(_set_hover.bind(true))
+	mouse_exited.connect(_set_hover.bind(false))
 	pressed.connect(_on_pressed_sfx)
+
+
+func _set_hover(v: bool) -> void:
+	_hover = v
+	queue_redraw()
 
 
 func _on_pressed_sfx() -> void:
@@ -41,7 +47,7 @@ func _notification(what: int) -> void:
 
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
-	var hover := is_hovered() and not disabled
+	var hover := _hover and not disabled
 	var top: Color
 	var bot: Color
 	var edge: Color

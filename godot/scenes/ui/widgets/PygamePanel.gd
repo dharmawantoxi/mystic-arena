@@ -23,6 +23,7 @@ var show_shadow: bool = true
 ## Kalau true, border diterangkan + glow radial saat mouse di atas kartu
 ## (paritas hover kartu pygame).
 var hoverable: bool = false
+var _hover: bool = false
 
 var margin_left: float = 14.0
 var margin_top: float = 10.0
@@ -37,11 +38,12 @@ func _init(p_border: Color = UiTheme.EDGE_GOLD,
 	corner_radius = p_radius
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_refresh_style()
-	mouse_entered.connect(_on_hover_changed)
-	mouse_exited.connect(_on_hover_changed)
+	mouse_entered.connect(_set_hover.bind(true))
+	mouse_exited.connect(_set_hover.bind(false))
 
 
-func _on_hover_changed() -> void:
+func _set_hover(v: bool) -> void:
+	_hover = v
 	if hoverable:
 		queue_redraw()
 
@@ -94,9 +96,9 @@ func _notification(what: int) -> void:
 
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
-	var hover := hoverable and is_hovered()
+	var hover := hoverable and _hover
 	if hover:
-		UiTheme.draw_glow(self, rect.grow(Vector2(13, 13)), border_color,
+		UiTheme.draw_glow(self, rect.grow_individual(13, 13, 13, 13), border_color,
 			60.0 / 255.0)
 	if show_shadow:
 		UiTheme.draw_shadow(self, rect, corner_radius)

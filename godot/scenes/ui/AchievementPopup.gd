@@ -90,7 +90,11 @@ func _draw() -> void:
 	gold.a *= alpha
 
 	# Panel gelap premium: gradasi + border emas + tick sudut.
-	UiTheme.draw_panel(self, rect, gold, alpha, 3.0, 10.0, 14)
+	UiTheme.draw_vgrad(self, rect,
+		Color(0.10, 0.11, 0.18, 0.94 * alpha),
+		Color(0.05, 0.05, 0.09, 0.94 * alpha), 10.0)
+	UiTheme.draw_rr_outline(self, rect, gold, 10.0, 3.0)
+	UiTheme.draw_corner_ticks(self, rect, gold)
 
 	# Header letterspaced + judul + deskripsi (posisi/teks/warna kanon).
 	var base := HudLayout.ACHIEVEMENT_HEADER_COLOR

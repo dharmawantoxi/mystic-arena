@@ -114,6 +114,10 @@ func show_result(p_victory: bool) -> void:
 	_title_fx.set_process(true)
 	_popup_frame = 0
 	_popup_shown = false
+	for t in _badge_tweens:
+		if is_instance_valid(t):
+			(t as Tween).kill()
+	_badge_tweens.clear()
 
 	# ── judul audit + visual ──
 	title_label.text = "%s LV.%d" % [
@@ -290,6 +294,7 @@ func _new_best_badge() -> Control:
 	tw.set_trans(Tween.TRANS_SINE)
 	tw.tween_property(badge, "modulate:a", 0.55, 0.4)
 	tw.tween_property(badge, "modulate:a", 1.0, 0.4)
+	_badge_tweens.append(tw)
 	return badge
 
 

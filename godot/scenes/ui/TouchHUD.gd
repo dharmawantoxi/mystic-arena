@@ -200,7 +200,7 @@ class _TouchView extends Control:
 		var radius := rect.size.y * 0.5
 		var col: Color = d["color"]
 		var ring := col if bool(d["enabled"]) else TouchHUD.BTN_GREY
-		UiTheme.draw_glow(self, rect.grow(Vector2(18, 14)), col,
+		UiTheme.draw_glow(self, rect.grow_individual(18, 14, 18, 14), col,
 			40.0 / 255.0, 8)
 		var base := TouchHUD.BG_ACTIVE if float(d["press_anim"]) > 0.0 \
 			else TouchHUD.BG

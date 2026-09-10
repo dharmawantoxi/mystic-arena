@@ -176,7 +176,7 @@ func _build_select(_cx: float) -> void:
 	var card_h := 92.0
 	var y0 := 112.0 + (430.0 - 112.0 - card_h) * 0.5
 	var pkg: Dictionary = PACKAGES[pkg_idx]
-	var card := _SelectCard.new(0, pkg, pkg_idx == 0, _price_str(pkg))
+	var card := _SelectCard.new(0, pkg, pkg_idx == 0, _price_str(int(pkg.get("price", 0))))
 	card.position = Vector2(col_x, y0)
 	card.size = Vector2(card_w, card_h)
 	card.chosen.connect(_on_pkg_chosen)
@@ -209,7 +209,7 @@ func _build_select(_cx: float) -> void:
 		Vector2(24, 448))
 	_lbl("+%s" % _grouped(total), UiTheme.body_medium(), 24,
 		UiTheme.GOLD, Vector2(170, 446))
-	var price := _lbl(_price_str(pkg), UiTheme.body_medium(), 24,
+	var price := _lbl(_price_str(int(pkg.get("price", 0))), UiTheme.body_medium(), 24,
 		Color.WHITE, Vector2(DW - 24 - 200, 446),
 		HORIZONTAL_ALIGNMENT_RIGHT, 200)
 	price.position = Vector2(DW - 24 - 200, 446)
@@ -223,7 +223,7 @@ func _build_select(_cx: float) -> void:
 	cancel.pressed.connect(_on_cancel)
 	_body.add_child(cancel)
 	var pay := PygameButton.pill_button(
-		"PAY NOW  •  %s" % _price_str(pkg), "success", "coin", 340, 52,
+		"PAY NOW  •  %s" % _price_str(int(pkg.get("price", 0))), "success", "coin", 340, 52,
 		24)
 	pay.position = Vector2(DW - 24 - 340, 496)
 	pay.size = Vector2(340, 52)
@@ -274,7 +274,7 @@ func _build_processing(cx: float) -> void:
 		Color("#f0f5fa"), Vector2(0, cy + 10),
 		HORIZONTAL_ALIGNMENT_CENTER, DW)
 	_lbl("via %s  •  %s" % [str(METHODS[method_idx]),
-		_price_str(pkg)], UiTheme.body_medium(), 24, Color("#aab4c8"),
+		_price_str(int(pkg.get("price", 0)))], UiTheme.body_medium(), 24, Color("#aab4c8"),
 		Vector2(0, cy + 42), HORIZONTAL_ALIGNMENT_CENTER, DW)
 	var bar := _ProgressView.new(progress)
 	bar.position = Vector2(cx - 180, cy + 72)
@@ -303,7 +303,7 @@ func _build_success(cx: float) -> void:
 		tx_line = "TX ID: %s   •   CODE %s" % [tx_id, redeem_code]
 	else:
 		tx_line = "TX ID: %s   •   %s   •   %s" % [tx_id,
-			str(METHODS[method_idx]), _price_str(pkg)]
+			str(METHODS[method_idx]), _price_str(int(pkg.get("price", 0)))]
 	_lbl(tx_line, UiTheme.body_regular(), 20, Color("#96a0b4"),
 		Vector2(0, cy + 68), HORIZONTAL_ALIGNMENT_CENTER, DW)
 	var back := PygameButton.pill_button("BACK", "cyan", "", 220, 48, 24)
@@ -507,6 +507,7 @@ class _SelectCard extends BaseButton:
 	var pkg: Dictionary = {}
 	var selected: bool = false
 	var price_str: String = ""
+	var _hover: bool = false
 
 	func _init(p_idx: int, p_pkg: Dictionary, p_sel: bool,
 			p_price: String) -> void:
@@ -515,13 +516,17 @@ class _SelectCard extends BaseButton:
 		selected = p_sel
 		price_str = p_price
 		focus_mode = Control.FOCUS_NONE
-		mouse_entered.connect(queue_redraw)
-		mouse_exited.connect(queue_redraw)
+		mouse_entered.connect(_set_hover.bind(true))
+		mouse_exited.connect(_set_hover.bind(false))
 		pressed.connect(func(): chosen.emit(idx))
+
+	func _set_hover(v: bool) -> void:
+		_hover = v
+		queue_redraw()
 
 	func _draw() -> void:
 		var rect := Rect2(Vector2.ZERO, size)
-		var hover := is_hovered()
+		var hover := _hover
 		var bg := Color("#16422c") if selected \
 			else (Color("#222c44") if hover else Color("#1c2236"))
 		var edge := Color("#78ffa0") if selected \
@@ -561,6 +566,7 @@ class _MethodRow extends BaseButton:
 	signal chosen(idx: int)
 	var idx: int = 0
 	var label_text: String = ""
+	var _hover: bool = false
 	var selected: bool = false
 
 	func _init(p_idx: int, p_label: String, p_sel: bool) -> void:
@@ -568,13 +574,17 @@ class _MethodRow extends BaseButton:
 		label_text = p_label
 		selected = p_sel
 		focus_mode = Control.FOCUS_NONE
-		mouse_entered.connect(queue_redraw)
-		mouse_exited.connect(queue_redraw)
+		mouse_entered.connect(_set_hover.bind(true))
+		mouse_exited.connect(_set_hover.bind(false))
 		pressed.connect(func(): chosen.emit(idx))
+
+	func _set_hover(v: bool) -> void:
+		_hover = v
+		queue_redraw()
 
 	func _draw() -> void:
 		var rect := Rect2(Vector2.ZERO, size)
-		var hover := is_hovered()
+		var hover := _hover
 		var bg := Color("#16422c") if selected \
 			else (Color("#222c44") if hover else Color("#1c2236"))
 		var edge := Color("#78ffa0") if selected \
@@ -597,15 +607,21 @@ class _MethodRow extends BaseButton:
 class _RedeemRow extends BaseButton:
 	signal chosen
 
+	var _hover: bool = false
+
 	func _init() -> void:
 		focus_mode = Control.FOCUS_NONE
-		mouse_entered.connect(queue_redraw)
-		mouse_exited.connect(queue_redraw)
+		mouse_entered.connect(_set_hover.bind(true))
+		mouse_exited.connect(_set_hover.bind(false))
 		pressed.connect(func(): chosen.emit())
+
+	func _set_hover(v: bool) -> void:
+		_hover = v
+		queue_redraw()
 
 	func _draw() -> void:
 		var rect := Rect2(Vector2.ZERO, size)
-		var hover := is_hovered()
+		var hover := _hover
 		UiTheme.draw_rr(self, rect,
 			Color("#383016") if hover else Color("#282414"), 8.0)
 		UiTheme.draw_rr_outline(self, rect,
@@ -701,17 +717,22 @@ class _InputBox extends Control:
 class _KeyButton extends BaseButton:
 	signal key_pressed(k: String)
 	var key_id: String = ""
+	var _hover: bool = false
 
 	func _init(k: String) -> void:
 		key_id = k
 		focus_mode = Control.FOCUS_NONE
-		mouse_entered.connect(queue_redraw)
-		mouse_exited.connect(queue_redraw)
+		mouse_entered.connect(_set_hover.bind(true))
+		mouse_exited.connect(_set_hover.bind(false))
 		pressed.connect(func(): key_pressed.emit(key_id))
+
+	func _set_hover(v: bool) -> void:
+		_hover = v
+		queue_redraw()
 
 	func _draw() -> void:
 		var rect := Rect2(Vector2.ZERO, size)
-		var hover := is_hovered()
+		var hover := _hover
 		var bg := Color("#212e4e")
 		var bd := Color("#505f87")
 		var fg := Color.WHITE

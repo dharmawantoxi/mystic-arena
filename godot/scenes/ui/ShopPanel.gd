@@ -55,7 +55,7 @@ func _ready() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build() -> void:
-	_panel = PanelContainer.new()
+	_panel = PygamePanel.new(COL_BORDER, 2.0, 12.0)
 	_panel.name = "Panel"
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.anchor_left = 0.5
@@ -66,18 +66,7 @@ func _build() -> void:
 	_panel.offset_right = 345.0
 	_panel.offset_top = -258.0
 	_panel.offset_bottom = 132.0
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COL_BG
-	sb.border_color = COL_BORDER
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(12)
-	sb.content_margin_left = 14.0
-	sb.content_margin_right = 14.0
-	sb.content_margin_top = 10.0
-	sb.content_margin_bottom = 10.0
-	sb.shadow_color = Color(0, 0, 0, 0.5)
-	sb.shadow_size = 12
-	_panel.add_theme_stylebox_override("panel", sb)
+	(_panel as PygamePanel).set_margins(14, 10, 14, 10)
 	add_child(_panel)
 
 	var vbox := VBoxContainer.new()
@@ -113,7 +102,7 @@ func _build() -> void:
 	vbox.add_child(_tab_box)
 	var group := ButtonGroup.new()
 	var tab_accents := {"tower": Color(1.0, 0.7, 0.4),
-		"item": UiTheme.VIOLET, "hero": COL_GREEN, "nexus": COL_GOLD}
+		"item": UiTheme.VIOLET, "hero": UiTheme.GREEN, "nexus": COL_GOLD}
 	for pair in TABS:
 		var tab_id := str(pair[0])
 		var b := PygameButton.tab_button(str(pair[1]),
@@ -139,8 +128,8 @@ func _build() -> void:
 	_context = Label.new()
 	_context.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_context.custom_minimum_size = Vector2(0, 30)
-	_context.add_theme_font_size_override("font_size", 11)
-	_context.add_theme_color_override("font_color", COL_DIM)
+	UiTheme.style_label(_context, "", UiTheme.body_regular(), 11,
+		COL_DIM)
 	vbox.add_child(_context)
 
 

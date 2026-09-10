@@ -225,7 +225,7 @@ static func draw_vgrad(cv: CanvasItem, rect: Rect2, top: Color,
 	var h := int(rect.size.y)
 	if h <= 0 or rect.size.x <= 0.0:
 		return
-	var r := minf(radius, rect.size.y * 0.5, rect.size.x * 0.5)
+	var r := minf(radius, minf(rect.size.y * 0.5, rect.size.x * 0.5))
 	for y in range(h):
 		var t := float(y) / float(maxi(1, h - 1))
 		var col := top.lerp(bottom, t)

@@ -235,20 +235,13 @@ func _build_nexus_bars() -> void:
 func _make_nexus_bar(_owner: Control, team: String) -> Control:
 	var is_blue := team == "blue"
 	var accent := Color(0.36, 0.62, 1.0) if is_blue else Color(0.95, 0.35, 0.35)
-	var panel := PanelContainer.new()
+	var panel := PygamePanel.new(
+		Color(accent.r, accent.g, accent.b, 0.85), 2.0, 9.0)
 	panel.name = "NexusBar_%s" % team
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.custom_minimum_size = Vector2(264, 0)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.045, 0.05, 0.085, 0.88)
-	sb.border_color = Color(accent.r, accent.g, accent.b, 0.85)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(9)
-	sb.content_margin_left = 9.0
-	sb.content_margin_right = 9.0
-	sb.content_margin_top = 5.0
-	sb.content_margin_bottom = 5.0
-	panel.add_theme_stylebox_override("panel", sb)
+	panel.show_ticks = false
+	panel.set_margins(9, 5, 9, 5)
 
 	var vbox := VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -327,8 +320,8 @@ func _build_difficulty_label() -> void:
 	_difficulty_label.offset_top = 112.0
 	_difficulty_label.offset_right = 420.0
 	_difficulty_label.offset_bottom = 132.0
-	_difficulty_label.add_theme_font_size_override("font_size", 12)
-	_difficulty_label.add_theme_color_override("font_color", Color(0.82, 0.86, 0.98, 0.9))
+	UiTheme.style_label(_difficulty_label, "", UiTheme.body_medium(), 12,
+		Color(0.82, 0.86, 0.98, 0.9))
 	_difficulty_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.08, 0.85))
 	_difficulty_label.add_theme_constant_override("outline_size", 3)
 	add_child(_difficulty_label)

@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 		_refresh()
 
 func _build() -> void:
-	_box = PanelContainer.new()
+	_box = PygamePanel.new(Color(0.32, 0.38, 0.55, 0.9), 2.0, 9.0)
 	_box.name = "TacticalBox"
 	_box.mouse_filter = Control.MOUSE_FILTER_STOP
 	_box.anchor_left = 1.0
@@ -70,16 +70,8 @@ func _build() -> void:
 	_box.offset_right = -8.0
 	_box.offset_top = 172.0
 	_box.offset_bottom = 452.0
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.035, 0.04, 0.07, 0.92)
-	sb.border_color = Color(0.32, 0.38, 0.55, 0.9)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(9)
-	sb.content_margin_left = 10.0
-	sb.content_margin_right = 10.0
-	sb.content_margin_top = 6.0
-	sb.content_margin_bottom = 8.0
-	_box.add_theme_stylebox_override("panel", sb)
+	(_box as PygamePanel).show_ticks = false
+	(_box as PygamePanel).set_margins(10, 6, 10, 8)
 	add_child(_box)
 
 	var col := VBoxContainer.new()

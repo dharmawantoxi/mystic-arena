@@ -29,6 +29,7 @@ var font_size: int = 20
 var font_weight: String = "body_bold"
 var use_letter_spacing: bool = false
 var icon_scale: float = 0.9
+var _hover: bool = false
 
 
 func _init(p_label: String = "", p_accent: Color = UiTheme.GOLD,
@@ -47,11 +48,16 @@ func _init(p_label: String = "", p_accent: Color = UiTheme.GOLD,
 	add_theme_stylebox_override("pressed", _empty)
 	add_theme_stylebox_override("disabled", _empty)
 	add_theme_stylebox_override("focus", _empty)
-	mouse_entered.connect(queue_redraw)
-	mouse_exited.connect(queue_redraw)
+	mouse_entered.connect(_set_hover.bind(true))
+	mouse_exited.connect(_set_hover.bind(false))
 	button_down.connect(queue_redraw)
 	button_up.connect(queue_redraw)
 	pressed.connect(_on_pressed_sfx)
+
+
+func _set_hover(v: bool) -> void:
+	_hover = v
+	queue_redraw()
 
 
 func _on_pressed_sfx() -> void:
@@ -135,11 +141,11 @@ func _text_color_menu() -> Color:
 
 func _draw_menu_mode() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
-	var hover := is_hovered() and not disabled
+	var hover := _hover and not disabled
 	var pressed_down := is_pressed()
 	# Glow hover (radial di belakang tombol).
 	if hover:
-		UiTheme.draw_glow(self, rect.grow(Vector2(22, 18)), accent,
+		UiTheme.draw_glow(self, rect.grow_individual(22, 18, 22, 18), accent,
 			74.0 / 255.0)
 	# Bayangan.
 	UiTheme.draw_shadow(self, rect, 12.0)
@@ -198,7 +204,7 @@ func _draw_menu_mode() -> void:
 
 func _draw_pill_mode() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
-	var hover := is_hovered() and not disabled
+	var hover := _hover and not disabled
 	var cols: Array = UiTheme.pill_colors(pill_kind)
 	var top: Color = cols[0]
 	var bot: Color = cols[1]
@@ -211,7 +217,7 @@ func _draw_pill_mode() -> void:
 		bot = Color(minf(1.0, bot.r + 14.0 / 255.0),
 			minf(1.0, bot.g + 14.0 / 255.0),
 			minf(1.0, bot.b + 14.0 / 255.0))
-		UiTheme.draw_glow(self, rect.grow(Vector2(15, 12)), edge,
+		UiTheme.draw_glow(self, rect.grow_individual(15, 12, 15, 12), edge,
 			66.0 / 255.0)
 	if is_pressed():
 		top = top.darkened(0.12)
@@ -236,7 +242,7 @@ func _draw_pill_mode() -> void:
 func _draw_tab_mode() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
 	var active := button_pressed
-	var hover := is_hovered() and not disabled
+	var hover := _hover and not disabled
 	var font := _font()
 	var text := _label()
 	var tcol := accent
