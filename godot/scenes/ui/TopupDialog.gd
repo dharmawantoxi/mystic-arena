@@ -20,6 +20,10 @@ const MAX_DIGITS := 6
 
 const DW := 920.0
 const DH := 580.0
+## Margin minimum panel terhadap tepi viewport saat di-fit (px).
+const FIT_MARGIN := 24.0
+## Skala minimum panel — di bawah ini dialog tidak lagi terbaca.
+const MIN_SCALE := 0.4
 
 var phase: String = "select"
 var pkg_idx: int = 0
@@ -49,6 +53,10 @@ func _ready() -> void:
 	_panel = PygamePanel.new(Color("#ffc850"), 3.0, 16.0)
 	_panel.configure(Color("#202642"), Color("#101426"), Color("#ffc850"),
 		3.0, 16.0, true, true)
+	# Margin konten NOL: seluruh isi dialog diposisikan absolut persis di
+	# ruang 920x580 (paritas koordinat pygame). Margin bawaan PygamePanel
+	# (14/10/14/10) menggeser _body sehingga sisi kanan jadi mepet.
+	_panel.set_margins(0, 0, 0, 0)
 	_panel.ticks_color = UiTheme.GOLD_BRIGHT
 	_panel.anchor_left = 0.5
 	_panel.anchor_top = 0.5
@@ -60,7 +68,33 @@ func _ready() -> void:
 	_panel.offset_bottom = DH * 0.5
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_panel)
+	_fit_to_viewport()
 	_rebuild()
+
+
+func _notification(what: int) -> void:
+	# Root full-rect ikut berubah saat viewport di-resize selagi dialog
+	# terbuka (resize jendela / rotasi) — panel di-fit ulang.
+	if what == NOTIFICATION_RESIZED:
+		_fit_to_viewport()
+
+
+## Panel 920x580 diskalakan seragam dari tengah supaya SELALU muat di
+## viewport (margin FIT_MARGIN). Di 1280x720 skala = 1 (persis desain
+## pygame); di jendela lebih kecil / portrait / tanpa stretch, dialog
+## mengecil proporsional alih-alih terpotong keluar frame. Input mouse
+## tetap akurat (engine memetakan klik ke kontrol yang diskalakan).
+func _fit_to_viewport() -> void:
+	if _panel == null:
+		return
+	var vp := get_viewport_rect().size
+	if vp.x <= 0.0 or vp.y <= 0.0:
+		return
+	var s := minf(1.0, minf((vp.x - FIT_MARGIN) / DW,
+		(vp.y - FIT_MARGIN) / DH))
+	s = clampf(s, MIN_SCALE, 1.0)
+	_panel.pivot_offset = Vector2(DW * 0.5, DH * 0.5)
+	_panel.scale = Vector2(s, s)
 
 
 func _process(delta: float) -> void:
