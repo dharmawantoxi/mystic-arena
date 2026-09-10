@@ -30,6 +30,14 @@ Tanpa rail (16:9/potret): TacticalBar jatuh ke sudut kanan-bawah arena
 (fallback yang sudah ada) dan SEMUA tab toko memakai modal tengah
 (paritas "posisi lama" popup pygame saat `panel_popup_pos` None).
 
+Bonus bug yang ditemukan asersi baru: `_panel` ShopPanel adalah
+PanelContainer sehingga minimum size-nya mengikuti tinggi KONTEN
+(isi tab menara >2000 px) — offset `_layout_panel` di-clamp engine dan
+popup/modal meluber jauh ke bawah frame (tertangkap: 900x2294, bukan
+900x560). Diperbaiki dengan wrapper `ShopClip` (Control polos memutus
+rantai minimum-size) sehingga panel pas rect dan ScrollContainer
+benar-benar menggulir.
+
 **Validasi:** `gdparse` + `tscn_lint` + `check_refs` + `particles_lint` +
 5 self-test log-gate + `gen_* --check` + scope-check lulus lokal;
 `MobileSidePanelParityTest` ditulis ulang (rail dikunci pada viewport lebar
