@@ -61,6 +61,16 @@ Semuanya diperbaiki tanpa menyentuh kode pygame:
 | MainMenu HOW_TO_PLAY + SkillBar | "B → HERO" | "H → HERO" (judul seksi HOW_TO_PLAY "TOKO (B)" ikut menjadi "TOKO (H)") |
 | ShopPanel footer | "… · D ganti difficulty" | Klaim dihapus — D = hotkey taktis ATTACK TOP DEALER sejak FASE 18 (paritas HOW TO PLAY pygame: "D = ATTACK TOP DEALER (all)") |
 
+**Perfeksionis — kebijakan tampil (masih 10 September):** render pygame asli
+membuktikan hint bar HANYA digambar di mode controller legacy desktop
+(`_draw_input_hints` `_core.py:2709-2714`; build Android `main.py:250` tak
+memasang `controller_mgr`, dan pemain keyboard tidak pernah melihatnya).
+Karena Godot belum punya lapisan input gamepad, paritas yang jujur adalah
+TIDAK PERNAH menampilkan bar — `HintLabel` kini disembunyikan (node tetap
+ada untuk fixture struktur), mesin konteks `get_hints` tetap terpasang dan
+diaktifkan kembali begitu gamepad diport. Dikunci asersi baru di
+`UiHudParityTest` (`hint bar disembunyikan`).
+
 **Validasi:** `gdparse` + `tscn_lint` + `check_refs` lulus lokal; struktur
 node HUD tidak berubah (fixture `UiHudParityTest` tak tersentuh) — replay
 headless diverifikasi CI, binary Godot tak tersedia di sandbox.

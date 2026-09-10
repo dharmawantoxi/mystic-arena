@@ -493,6 +493,15 @@ func _build_hint_bar() -> void:
 	bg.add_child(row)
 	_hint_row = row
 	_refresh_hints()
+	# ── KEBIJAKAN TAMPIL (perfeksionis paritas) ──
+	# Pygame hanya menggambar hint bar di mode CONTROLLER legacy desktop
+	# (_draw_input_hints _core.py:2709-2714 — tanpa controller_mgr / mode
+	# keyboard = return tanpa menggambar). Build Android pygame (main.py:250)
+	# bahkan tidak memasang controller_mgr, dan pemain keyboard tidak pernah
+	# melihat bar ini. Godot belum punya lapisan input gamepad, jadi paritas
+	# yang jujur: TIDAK PERNAH tampil. Mesin konteks get_hints di atas tetap
+	# terpasang — cukup lepas baris ini kalau gamepad suatu saat diport.
+	host.visible = false
 
 
 func _hint_item(key: String, desc: String) -> HBoxContainer:

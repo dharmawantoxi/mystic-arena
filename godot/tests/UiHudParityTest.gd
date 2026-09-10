@@ -261,6 +261,12 @@ func _test_structure() -> void:
 	for path in ["TopLeft", "GoldChip", "LevelBadge",
 			"WaveBanner", "HintLabel", "SkillBar", "ShopPanel"]:
 		_expect(_hud.find_child(path, true, false) != null, "HUD has %s" % path)
+	# Hint bar disembunyikan (paritas _draw_input_hints _core.py:2709-2714:
+	# pygame hanya menggambar di mode controller legacy — keyboard/Android
+	# tidak pernah melihatnya; Godot belum punya lapisan gamepad).
+	var hint_host := _hud.find_child("HintLabel", true, false) as Control
+	_expect(hint_host != null and not hint_host.visible,
+		"hint bar disembunyikan (parity pygame controller-only)")
 	_expect(_shop.find_child("Panel", true, false) != null, "ShopPanel has Panel")
 	_expect(_shop.find_child("Panel", true, false).mouse_filter == Control.MOUSE_FILTER_STOP,
 		"panel menelan klik (itemshop_empty_swallow)")
