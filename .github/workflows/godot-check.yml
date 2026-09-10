@@ -761,7 +761,7 @@ jobs:
       # terbaca di ringkasan run.
       - name: Audit paritas visual (pygame ↔ Godot)
         run: |
-          python -m pip install --quiet pygame-ce pillow
+          # numpy WAJIB: tanpa itu renderer minion tim merah memakai\n          # jalur BLEND_* yang menghasilkan piksel berbeda, dan bake\n          # jadi tidak reproducible antar mesin.\n          python -m pip install --quiet pygame-ce pillow numpy
           set +e
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
             python3 tools/visual_parity_audit.py --full --report md 2>&1 \

@@ -2192,8 +2192,36 @@ def export_prop_sprites(only=None):
     write_json("baked_props.json", out)
 
 
+def _require_numpy():
+    """numpy WAJIB untuk bake sprite — bukan opsional.
+
+    `minions/_bundle.py` mewarnai minion tim merah lewat DUA jalur:
+      * pakai numpy  : g/b dikali 0.55 lalu di-clip
+      * tanpa numpy  : fallback `BLEND_RGB_MULT` (255,168,158) lalu
+                       `BLEND_RGB_ADD` (62,10,8)
+    Keduanya menghasilkan PIKSEL YANG BERBEDA untuk sprite yang sama
+    (hijau: x0.55 vs x0.659 + 10/255). Karena `except ImportError` memilih
+    jalur berdasarkan mesin, bake tim merah pernah berbeda antara mesin
+    berkas komit dan CI — persis penyakit yang sama dengan encoder PNG
+    dulu. Sekarang bake gagal dengan pesan jelas kalau numpy tidak ada.
+    """
+    try:
+        import numpy  # noqa: F401
+    except ImportError as exc:  # pragma: no cover - tergantung environment
+        raise SystemExit(
+            "[convert] numpy WAJIB untuk bake sprite.\n"
+            "  Tanpa numpy, renderer minion tim merah memakai jalur\n"
+            "  fallback BLEND_RGB_MULT/BLEND_RGB_ADD yang menghasilkan\n"
+            "  piksel BERBEDA dari aset yang sudah ada di repo.\n"
+            "  Pasang dulu:\n"
+            "      python3 -m pip install numpy\n") from exc
+
+
 if __name__ == "__main__":
     _argv = sys.argv[1:]
+    # Semua mode bake butuh numpy; tanpa itu minion tim merah dibakar lewat
+    # jalur BLEND_* yang pikselnya beda (lihat _require_numpy).
+    _require_numpy()
     if "--props-png" in _argv:
         _only = None
         if "--only" in _argv:

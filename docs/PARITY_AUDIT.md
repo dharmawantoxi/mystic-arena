@@ -292,6 +292,8 @@ lingkungan: Python 3.11.2  |  Pillow 12.3.0  |  pygame 2.5.8  |  SDL_VIDEODRIVER
 ✅ PASS       ENCODER
       _save_strip deterministik
       _save_map_png deterministik
+      bake menuntut numpy (tanpa numpy: minion merah beda piksel)
+      numpy tersedia (2.4.6)
 
 ✅ PASS       FRESH-UNIT
       dibandingkan semua 222 unit

@@ -247,6 +247,24 @@ def check_encoder():
             ok = False
         else:
             lines.append("%s deterministik" % fname)
+
+    # Renderer minion tim merah punya dua jalur: numpy vs BLEND_*. Kalau
+    # numpy tidak ada di mesin yang menjalankan bake, minion merah dibakar
+    # dengan warna yang BERBEDA — penyebab CI pernah gagal FRESH-PROP
+    # sementara mesin lokal lulus. Bake kini menuntut numpy.
+    if "_require_numpy" in src:
+        lines.append("bake menuntut numpy (tanpa numpy: minion merah beda "
+                     "piksel)")
+    else:
+        lines.append("TIDAK ADA penjaga numpy -> jalur BLEND_* bisa aktif "
+                     "tanpa numpy")
+        ok = False
+    try:
+        import numpy
+        lines.append("numpy tersedia (%s)" % numpy.__version__)
+    except ImportError:
+        lines.append("numpy TIDAK ADA -> bake akan gagal sekarang")
+        ok = False
     return ok, lines
 
 
