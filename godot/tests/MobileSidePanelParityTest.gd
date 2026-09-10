@@ -22,7 +22,14 @@ func _expect(cond: bool, message: String) -> void:
 		print("[MobileSidePanelParityTest] FAIL: %s" % message)
 
 
+## Penanda langkah: kalau harness mati di tengah (crash/timeout), ekor log
+## menunjukkan langkah terakhir yang tercapai.
+func _step(label: String) -> void:
+	print("[MobileSidePanelParityTest] step: %s" % label)
+
+
 func _run() -> void:
+	_step("start")
 	if MobileLayout == null:
 		_expect(false, "MobileLayout autoload")
 		_finish()
@@ -31,6 +38,7 @@ func _run() -> void:
 	add_child(main)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	_step("main scene siap")
 	var hud := main.find_child("HUD", true, false)
 	_expect(hud != null, "HUD ada")
 	if hud == null:
@@ -46,12 +54,14 @@ func _run() -> void:
 		_finish()
 		return
 
+	_step("z-order")
 	# ── z-order: urutan anak HUD = urutan gambar (belakang -> depan) ──
 	_expect(rail.get_index() < tactical.get_index(),
 		"rail di BAWAH tactical (%d < %d)" % [rail.get_index(), tactical.get_index()])
 	_expect(tactical.get_index() < shop.get_index(),
 		"tactical di BAWAH shop popup")
 
+	_step("isi rail")
 	# ── isi panel kanan ──
 	for child_name in ["StoneRail", "RailPause", "StatusBox", "HeroesBox",
 			"ShopBox", "GoldValue", "WaveLabel", "ShieldLabel", "ModeLabel"]:
@@ -64,6 +74,7 @@ func _run() -> void:
 			_expect(b.mouse_filter == Control.MOUSE_FILTER_STOP,
 				"%s bisa diklik" % tab_button)
 
+	_step("geometri")
 	# ── geometri: semua di dalam frame & di dalam rail ──
 	var vp: Vector2 = MobileLayout.viewport_size
 	_expect(MobileLayout.has_side_panel(), "landscape 1280x720 punya rail")
@@ -88,6 +99,7 @@ func _run() -> void:
 		and modal.position.x + modal.size.x <= vp.x + 0.5
 		and modal.position.y + modal.size.y <= vp.y + 0.5, "modal masuk frame")
 
+	_step("presentasi toko")
 	# ── presentasi toko: rail popup vs modal ──
 	GameManager.state = "playing"
 	GameManager.in_menu = false
@@ -117,6 +129,7 @@ func _run() -> void:
 				"tombol tutup di dalam panel")
 	GameManager.close_shop()
 
+	_step("fallback potret")
 	# ── layar kecil / potret: rail hilang, tata letak tengah dipakai ──
 	MobileLayout.viewport_size = Vector2(720.0, 1280.0)
 	MobileLayout.layout_changed.emit()
