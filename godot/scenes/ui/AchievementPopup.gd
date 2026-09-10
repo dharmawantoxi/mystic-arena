@@ -86,44 +86,41 @@ func _draw() -> void:
 		return
 	var rect := HudLayout.achievement_panel_rect(timer)
 	var alpha := HudLayout.achievement_alpha(timer)
+	var gold := UiTheme.GOLD
+	gold.a *= alpha
 
-	# Panel gelap + border emas (aproximasi piksel; geometri kanon).
-	draw_rect(rect, Color(0.07, 0.07, 0.11, 0.92 * alpha))
-	draw_rect(rect, Color(1.0, 0.86, 0.2, alpha), false, 3.0)
+	# Panel gelap premium: gradasi + border emas + tick sudut.
+	UiTheme.draw_vgrad(self, rect,
+		Color(0.10, 0.11, 0.18, 0.94 * alpha),
+		Color(0.05, 0.05, 0.09, 0.94 * alpha), 10.0)
+	UiTheme.draw_rr_outline(self, rect, gold, 10.0, 3.0)
+	UiTheme.draw_corner_ticks(self, rect, gold)
 
 	# Header letterspaced + judul + deskripsi (posisi/teks/warna kanon).
-	var font := ThemeDB.fallback_font
-	var header_color := Color(HudLayout.ACHIEVEMENT_HEADER_COLOR, alpha)
-	var title_color := Color(HudLayout.ACHIEVEMENT_TITLE_COLOR, alpha)
-	var desc_color := Color(HudLayout.ACHIEVEMENT_DESC_COLOR, alpha)
-	var origin := rect.position + HudLayout.ACHIEVEMENT_TEXT_HEADER
-	draw_string(font, origin, HudLayout.letter("ACHIEVEMENT"),
+	var base := HudLayout.ACHIEVEMENT_HEADER_COLOR
+	var header_color := Color(base.r, base.g, base.b, base.a * alpha)
+	base = HudLayout.ACHIEVEMENT_TITLE_COLOR
+	var title_color := Color(base.r, base.g, base.b, base.a * alpha)
+	base = HudLayout.ACHIEVEMENT_DESC_COLOR
+	var desc_color := Color(base.r, base.g, base.b, base.a * alpha)
+	draw_string(UiTheme.body_bold(), rect.position
+		+ HudLayout.ACHIEVEMENT_TEXT_HEADER, UiTheme.letter("ACHIEVEMENT"),
 		HORIZONTAL_ALIGNMENT_LEFT, -1, 13, header_color)
-	draw_string(font, rect.position + HudLayout.ACHIEVEMENT_TEXT_TITLE,
-		str(current["title"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 17, title_color)
-	draw_string(font, rect.position + HudLayout.ACHIEVEMENT_TEXT_DESC,
-		str(current["description"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13,
-		desc_color)
+	draw_string(UiTheme.body_bold(), rect.position
+		+ HudLayout.ACHIEVEMENT_TEXT_TITLE, str(current["title"]),
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 17, title_color)
+	draw_string(UiTheme.body_medium(), rect.position
+		+ HudLayout.ACHIEVEMENT_TEXT_DESC, str(current["description"]),
+		HORIZONTAL_ALIGNMENT_LEFT, -1, 13, desc_color)
 
-	# Ikon lingkaran emas di kiri (aproximasi _draw_icon pygame).
+	# Ikon vektor emas di kiri (medali + glif UiTheme).
 	var icon_c := rect.position + HudLayout.ACHIEVEMENT_ICON_POS
 	draw_circle(icon_c, 16.0, Color(0.24, 0.16, 0.04, alpha))
-	draw_arc(icon_c, 16.0, 0.0, TAU, 24, Color(1.0, 0.86, 0.2, alpha), 2.0)
-	match str(current["icon"]):
-		"star":
-			_draw_star(icon_c, 8.0, Color(1.0, 0.86, 0.2, alpha))
-		"sword":
-			draw_line(icon_c + Vector2(0, -9), icon_c + Vector2(0, 7),
-				Color(0.85, 0.85, 0.95, alpha), 3.0)
-			draw_line(icon_c + Vector2(-5, 4), icon_c + Vector2(5, 4),
-				Color(0.5, 0.3, 0.15, alpha), 3.0)
-		"skull":
-			draw_circle(icon_c + Vector2(0, -2), 6.5,
-				Color(0.95, 0.95, 0.9, alpha))
-			draw_rect(Rect2(icon_c + Vector2(-4, 3), Vector2(8, 5)),
-				Color(0.95, 0.95, 0.9, alpha))
-		_:
-			draw_circle(icon_c, 6.0, Color(1.0, 0.86, 0.2, alpha))
+	draw_arc(icon_c, 16.0, 0.0, TAU, 24, gold, 2.0)
+	var glyph: String = str({"sword": "swords", "skull": "skull"}.get(
+		str(current["icon"]), "star"))
+	UiTheme.draw_icon(self, str(glyph), icon_c.x, icon_c.y,
+		Color(gold.r, gold.g, gold.b, alpha), 1.1)
 
 
 func _draw_star(c: Vector2, r: float, color: Color) -> void:

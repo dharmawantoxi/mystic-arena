@@ -1,11 +1,14 @@
-# SkillBar.gd — bar skill QWER + panel hero terpilih.
+# SkillBar.gd — panel hero kiri-bawah + 4 tombol skill (QWER).
 #
-# Port dari _core.Game._draw_skill_bar / _draw_hero_status / baris 6 slot item:
-# pygame menggambar semuanya manual di surface tiap frame; di sini semuanya
-# Control biasa yang dibangun dari kode (tanpa .tscn) supaya HUD.tscn tetap utuh.
+# Port HeroPanel pygame (ui_components: panel 280x276 @ (20, H-296),
+# gradasi + border warna tim + sudut emas): nama + chip Lv + tombol X,
+# HP bar premium, 4 slot skill 38px-rasa (di sini 54px agar muat nama),
+# toggle auto-cast, 6 slot item 30px, ITEM FORGE, upgrade.
 #
-# Sumber kebenaran = GameManager.selected_hero. Tombol skill dan keyboard QWER
-# memanggil jalur yang sama (hero.cast_q/w/e/r), jadi tidak ada duplikasi logika.
+# Sumber kebenaran = GameManager.selected_hero. Tombol skill dan keyboard
+# QWER memanggil jalur yang sama (hero.cast_q/w/e/r), jadi tidak ada
+# duplikasi logika. SEMUA teks + member + callback = 1:1 versi lama
+# (dikunci UiHudParityTest); yang berubah hanya visual & geometri.
 extends Control
 
 const SkillButtonScript = preload("res://scenes/ui/SkillButton.gd")
@@ -13,8 +16,10 @@ const SKILL_KEYS: Array = ["q", "w", "e", "r"]
 const ITEM_SLOTS: int = 6
 ## Seberapa sering angka HP/cooldown disinkronkan (20 Hz cukup halus, hemat)
 const REFRESH_INTERVAL := 0.05
+const PANEL_W := 280.0
+const PANEL_H := 276.0
 
-var _root: HBoxContainer = null
+var _root: PygamePanel = null
 var _info: VBoxContainer = null
 var _name_label: Label = null
 var _level_label: Label = null
@@ -44,42 +49,25 @@ func _ready() -> void:
 
 
 func _build() -> void:
-	_root = HBoxContainer.new()
+	# Panel 280x276 kiri-bawah (paritas HeroPanel pygame).
+	_root = PygamePanel.new(Color(0.35, 0.5, 0.95), 2.0, 10.0)
 	_root.name = "BarRoot"
-	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# tengah-bawah, di atas baris hint keyboard (HUD HintLabel y = -46..-18)
-	_root.anchor_left = 0.5
-	_root.anchor_right = 0.5
+	_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	_root.anchor_left = 0.0
+	_root.anchor_right = 0.0
 	_root.anchor_top = 1.0
 	_root.anchor_bottom = 1.0
-	_root.offset_left = -286.0
-	_root.offset_right = 286.0
-	_root.offset_top = -152.0
-	_root.offset_bottom = -52.0
-	_root.add_theme_constant_override("separation", 12)
+	_root.offset_left = 20.0
+	_root.offset_right = 20.0 + PANEL_W
+	_root.offset_top = -20.0 - PANEL_H
+	_root.offset_bottom = -20.0
+	_root.set_margins(12, 10, 12, 10)
 	add_child(_root)
-
-	# ── panel info hero ──
-	var panel := PanelContainer.new()
-	panel.name = "HeroPanel"
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.custom_minimum_size = Vector2(250, 0)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.05, 0.055, 0.09, 0.9)
-	sb.border_color = Color(0.35, 0.5, 0.95, 0.85)
-	sb.set_border_width_all(2)
-	sb.set_corner_radius_all(10)
-	sb.content_margin_left = 10.0
-	sb.content_margin_right = 10.0
-	sb.content_margin_top = 6.0
-	sb.content_margin_bottom = 6.0
-	panel.add_theme_stylebox_override("panel", sb)
-	_root.add_child(panel)
 
 	_info = VBoxContainer.new()
 	_info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_info.add_theme_constant_override("separation", 3)
-	panel.add_child(_info)
+	_root.add_child(_info)
 
 	# Baris nama: "Kaizen" + "Lv.1" + tombol tutup X (paritas teks panel).
 	var name_row := HBoxContainer.new()
@@ -87,50 +75,72 @@ func _build() -> void:
 	name_row.add_theme_constant_override("separation", 8)
 	_info.add_child(name_row)
 	_name_label = Label.new()
-	_name_label.add_theme_font_size_override("font_size", 15)
-	_name_label.add_theme_color_override("font_color", Color(0.85, 0.92, 1.0))
+	_name_label.add_theme_font_override("font", UiTheme.body_medium())
+	_name_label.add_theme_font_size_override("font_size", 22)
+	_name_label.add_theme_color_override("font_color", UiTheme.TEXT_WHITE)
 	_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_name_label.clip_text = true
 	_name_label.text = "tidak ada hero dipilih"
 	name_row.add_child(_name_label)
 	_level_label = Label.new()
-	_level_label.add_theme_font_size_override("font_size", 15)
-	_level_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.45))
+	_level_label.add_theme_font_override("font", UiTheme.body_bold())
+	_level_label.add_theme_font_size_override("font_size", 16)
+	_level_label.add_theme_color_override("font_color", UiTheme.GOLD_TEXT)
+	_level_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_level_label.text = ""
 	name_row.add_child(_level_label)
 	_close_btn = Button.new()
 	_close_btn.text = "X"
-	_close_btn.custom_minimum_size = Vector2(24, 22)
+	_close_btn.custom_minimum_size = Vector2(22, 22)
 	_close_btn.focus_mode = Control.FOCUS_NONE
 	_close_btn.tooltip_text = "Tutup panel (batal pilih hero)"
+	_close_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	UiTheme.apply_row_button(_close_btn, "danger", 13, false)
 	_close_btn.pressed.connect(_on_close_pressed)
 	name_row.add_child(_close_btn)
 
+	# HP bar premium (h=8) + teks HP di bawahnya.
 	_hp_bar = ProgressBar.new()
-	_hp_bar.custom_minimum_size = Vector2(0, 14)
-	_hp_bar.show_percentage = false
+	_hp_bar.custom_minimum_size = Vector2(0, 8)
 	_hp_bar.max_value = 100.0
 	_hp_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var hp_bg := StyleBoxFlat.new()
-	hp_bg.bg_color = Color(0.12, 0.05, 0.06, 0.95)
-	hp_bg.set_corner_radius_all(4)
-	var hp_fill := StyleBoxFlat.new()
-	hp_fill.bg_color = Color(0.32, 0.85, 0.42)
-	hp_fill.set_corner_radius_all(4)
-	_hp_bar.add_theme_stylebox_override("background", hp_bg)
-	_hp_bar.add_theme_stylebox_override("fill", hp_fill)
+	UiTheme.style_progress_bar(_hp_bar, Color(120.0 / 255.0, 220.0 / 255.0,
+		120.0 / 255.0), Color(16.0 / 255.0, 18.0 / 255.0, 30.0 / 255.0), 4)
 	_info.add_child(_hp_bar)
-
 	_hp_label = Label.new()
-	_hp_label.add_theme_font_size_override("font_size", 11)
-	_hp_label.add_theme_color_override("font_color", Color(0.75, 0.95, 0.78))
+	_hp_label.add_theme_font_override("font", UiTheme.body_regular())
+	_hp_label.add_theme_font_size_override("font_size", 14)
+	_hp_label.add_theme_color_override("font_color",
+		Color(200.0 / 255.0, 200.0 / 255.0, 200.0 / 255.0))
 	_info.add_child(_hp_label)
 
 	_stats_label = Label.new()
+	_stats_label.add_theme_font_override("font", UiTheme.body_medium())
 	_stats_label.add_theme_font_size_override("font_size", 11)
-	_stats_label.add_theme_color_override("font_color", Color(0.72, 0.78, 0.9))
+	_stats_label.add_theme_color_override("font_color",
+		Color(0.72, 0.78, 0.9))
 	_info.add_child(_stats_label)
 
+	# ── 4 tombol skill ──
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 10)
+	_info.add_child(row)
+	for k in SKILL_KEYS:
+		var btn = SkillButtonScript.new(str(k))
+		btn.skill_requested.connect(_on_skill_requested)
+		row.add_child(btn)
+		_buttons[str(k)] = btn
+
+	# ── baris aksi panel (paritas tombol HeroPanel; tinggi 22) ──
+	_autocast_btn = _make_action_button("AUTO-CAST ON")
+	_autocast_btn.tooltip_text = "Auto-cast selalu ON (paritas v29: toggle no-op)"
+	_autocast_btn.pressed.connect(_on_autocast_pressed)
+	_info.add_child(_autocast_btn)
+
 	_item_row = HBoxContainer.new()
+	_item_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_item_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_item_row.add_theme_constant_override("separation", 4)
 	_info.add_child(_item_row)
@@ -138,13 +148,13 @@ func _build() -> void:
 		# Chip = tombol: klik slot (kosong/isi) membuka ITEM FORGE, paritas
 		# panel_slot0_empty (itemshop_open=true).
 		var chip := Button.new()
-		chip.custom_minimum_size = Vector2(18, 18)
+		chip.custom_minimum_size = Vector2(30, 30)
 		chip.focus_mode = Control.FOCUS_NONE
 		var csb := StyleBoxFlat.new()
-		csb.bg_color = Color(0.1, 0.11, 0.16, 0.95)
-		csb.border_color = Color(0.3, 0.33, 0.42, 0.9)
+		csb.bg_color = Color(14.0 / 255.0, 17.0 / 255.0, 30.0 / 255.0)
+		csb.border_color = Color(66.0 / 255.0, 74.0 / 255.0, 104.0 / 255.0)
 		csb.set_border_width_all(1)
-		csb.set_corner_radius_all(4)
+		csb.set_corner_radius_all(5)
 		chip.add_theme_stylebox_override("normal", csb)
 		chip.add_theme_stylebox_override("hover", csb)
 		chip.add_theme_stylebox_override("pressed", csb)
@@ -154,11 +164,6 @@ func _build() -> void:
 		_item_row.add_child(chip)
 		_item_chips.append(chip)
 
-	# ── baris aksi panel (paritas tombol HeroPanel; tinggi 22) ──
-	_autocast_btn = _make_action_button("AUTO-CAST ON")
-	_autocast_btn.tooltip_text = "Auto-cast selalu ON (paritas v29: toggle no-op)"
-	_autocast_btn.pressed.connect(_on_autocast_pressed)
-	_info.add_child(_autocast_btn)
 	_forge_btn = _make_action_button("ITEM FORGE  (0/6)")
 	_forge_btn.tooltip_text = "Buka ITEM FORGE untuk hero ini"
 	_forge_btn.pressed.connect(_open_forge)
@@ -166,29 +171,6 @@ func _build() -> void:
 	_upgrade_btn = _make_action_button("")
 	_upgrade_btn.pressed.connect(_on_upgrade_pressed)
 	_info.add_child(_upgrade_btn)
-
-	# ── 4 tombol skill ──
-	var skill_box := VBoxContainer.new()
-	skill_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	skill_box.add_theme_constant_override("separation", 2)
-	_root.add_child(skill_box)
-
-	var row := HBoxContainer.new()
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 6)
-	skill_box.add_child(row)
-	for k in SKILL_KEYS:
-		var btn = SkillButtonScript.new(str(k))
-		btn.skill_requested.connect(_on_skill_requested)
-		row.add_child(btn)
-		_buttons[str(k)] = btn
-
-	var hint := Label.new()
-	hint.text = "klik hero untuk memilih · QWER / tombol = skill · H = toko · G/T/C/B/D = perintah taktis"
-	hint.add_theme_font_size_override("font_size", 10)
-	hint.add_theme_color_override("font_color", Color(0.7, 0.76, 0.9, 0.75))
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	skill_box.add_child(hint)
 
 
 func _process(delta: float) -> void:
@@ -263,6 +245,15 @@ func _refresh_static() -> void:
 	_autocast_btn.disabled = hero == null
 	_forge_btn.disabled = hero == null
 	_upgrade_btn.disabled = hero == null
+	# Border panel = warna hero +30 (paritas HeroPanel pygame).
+	if hero == null:
+		_root.border_color = Color(0.35, 0.5, 0.95)
+	else:
+		var hc := HeroDB.get_hero_color(str(hero.get("hero_type")))
+		_root.border_color = Color(minf(1.0, hc.r + 30.0 / 255.0),
+			minf(1.0, hc.g + 30.0 / 255.0),
+			minf(1.0, hc.b + 30.0 / 255.0))
+	_root.queue_redraw()
 	if hero == null:
 		_name_label.text = "tidak ada hero dipilih"
 		_level_label.text = ""
@@ -303,8 +294,12 @@ func _make_action_button(label_text: String) -> Button:
 	b.text = label_text
 	b.custom_minimum_size = Vector2(0, 22)
 	b.focus_mode = Control.FOCUS_NONE
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	b.add_theme_font_size_override("font_size", 11)
+	if label_text.begins_with("AUTO"):
+		UiTheme.apply_row_button(b, "success", 13, false)
+	elif label_text.begins_with("ITEM"):
+		UiTheme.apply_row_button(b, "violet", 13, false)
+	else:
+		UiTheme.apply_row_button(b, "gold", 13, false)
 	return b
 
 
@@ -321,8 +316,8 @@ func _sync_items(ids: Array) -> void:
 			chip.tooltip_text = "%s — %s" % [ItemDB.item_name(item_id), ItemDB.item_desc(item_id)]
 		else:
 			if sb != null:
-				sb.bg_color = Color(0.1, 0.11, 0.16, 0.95)
-				sb.border_color = Color(0.3, 0.33, 0.42, 0.9)
+				sb.bg_color = Color(14.0 / 255.0, 17.0 / 255.0, 30.0 / 255.0)
+				sb.border_color = Color(66.0 / 255.0, 74.0 / 255.0, 104.0 / 255.0)
 			chip.tooltip_text = "slot item %d kosong" % (i + 1)
 		# StyleBoxFlat yang di-mutate tidak otomatis memicu redraw Panel
 		chip.queue_redraw()
