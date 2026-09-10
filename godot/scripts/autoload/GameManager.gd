@@ -255,6 +255,9 @@ var _wave_timer: float = 0.0
 var _aura_timer: float = 0.0
 var _hit_stop_active: bool = false
 var _hit_stop_until_ms: int = 0
+## Basis Engine.time_scale dari setting Game Speed (apply_game_speed) —
+## hit-stop menumpuk di atasnya dan watchdog mengembalikan ke nilai ini.
+var game_speed_scale: float = 1.0
 
 
 func _ready():
@@ -1243,7 +1246,9 @@ func _watch_hit_stop() -> void:
 		return
 	if Time.get_ticks_msec() >= _hit_stop_until_ms:
 		_hit_stop_active = false
-		Engine.time_scale = 1.0
+		# Kembali ke BASIS game speed dari settings, bukan 1.0 keras
+		# (paritas Game.update pygame yang selalu membaca GameSettings).
+		Engine.time_scale = game_speed_scale
 
 
 ## Dipanggil Main.gd (P / ESC). Yang membekukan simulasi adalah SceneTree, jadi

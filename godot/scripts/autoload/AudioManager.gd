@@ -180,6 +180,7 @@ func _scan_sounds() -> void:
 func apply_settings() -> void:
 	master_volume = SaveManager.get_setting("master", MASTER_VOLUME_DEFAULT)
 	sfx_volume = SaveManager.get_setting("sfx", 0.6)
+	voice_volume = SaveManager.get_setting("voice", 0.5)
 	bgm_volume = SaveManager.get_setting("bgm", 0.35)
 	_apply_playing_volumes()
 

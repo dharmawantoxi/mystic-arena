@@ -266,10 +266,22 @@ untuk hero terpilih; gate False hanya dipakai harness replay).
   menghapus save pengguna untuk menyamarkan selisih. Pilihan settings yang
   kini ADA + berfungsi (FASE 22): volume master/sfx/bgm (persist per slot,
   live ke `AudioManager`), Screen Shake (camera trauma, guard live), Damage
-  Numbers (live ke `world_popups`), hapus slot aktif + dialog. Yang TERBUKA
-  eksplisit: game speed, language (UI Godot memang Indonesia), FPS limit,
-  voice (tidak ada file voice di repo pygame), cloud save, difficulty-lock
-  pygame ("terkunci sampai semua level selesai" — Godot memilih difficulty
+  Numbers (live ke `world_popups`), hapus slot aktif + dialog. **Ditambahkan
+  10 September 2026 (port `GameSettings`):** slider **Volume Voice** (persist
+  `voice`; kategori `voice` pygame `_system.py:599-604` juga tanpa file voice
+  — di kedua engine slider tidak mengubah bunyi, hanya persist),
+  cycler **Game Speed** 0.5/1.0/1.5/2.0 (`game_speed`, berlaku boot + live ke
+  `Engine.time_scale` dengan quirk pygame `int(mult)-1` dipertahankan:
+  1.5x memang tidak berpengaruh di pygame — `_core.py:1966`; hit-stop kini
+  kembali ke basis speed, bukan 1.0), cycler **FPS Limit** 30/60/120/0
+  (`fps_limit` → `Engine.max_fps`, 0 = tanpa batas seperti `main.py:637`),
+  dan seksi **CLOUD SAVE** gaya PC pygame (`_draw_cloud_buttons`
+  `_core.py:6395-6455`: status `CLOUD: OFF (PC / belum diset)` + tombol
+  upload/download inert + baris status — plugin Play Games tetap BELUM
+  diport, di pygame PC pun tombolnya tanpa akses). Yang TERBUKA eksplisit:
+  language (UI Godot memang Indonesia), voice playback (tanpa aset di kedua
+  engine), cloud save fungsional (Play Games), difficulty-lock pygame
+  ("terkunci sampai semua level selesai" — Godot memilih difficulty
   bebas di PILIH LEVEL, deviasi terdokumentasi).
   Yang SUDAH setara + teruji dari blok ini termasuk **sumber jumlah unlock
   catch-up** (`hero_catchup_unlocks`/`HeroCatchupUnlockParityTest`: kunci
