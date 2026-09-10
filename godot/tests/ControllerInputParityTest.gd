@@ -111,7 +111,7 @@ func _run() -> void:
 
 func _test_constants() -> void:
 	var c: Dictionary = _fx["constants"]
-	var mgr := _make_manager({})
+	var mgr = _make_manager({})
 	_compare(mgr.SCREEN_W, int(c["screen"][0]), "constants/screen_w")
 	_compare(mgr.SCREEN_H, int(c["screen"][1]), "constants/screen_h")
 	_compare(Vector2(mgr.cursor_x, mgr.cursor_y),
@@ -168,7 +168,7 @@ func _test_detection() -> void:
 			"axis_count": {0: int(case["axes"])},
 			"rumble": [], "stop_rumble": 0,
 		}
-		var mgr := _make_manager(device)
+		var mgr = _make_manager(device)
 		mgr.init_joystick()
 		var expect: Dictionary = case["expect"]
 		_compare(mgr.connected, bool(expect["connected"]), tag + "/connected")
@@ -182,21 +182,21 @@ func _test_detection() -> void:
 
 func _test_labels() -> void:
 	for case in _fx["button_labels"]:
-		var mgr := _mode_manager(str(case["mode"]), case["type"])
+		var mgr = _mode_manager(str(case["mode"]), case["type"])
 		_compare(mgr.get_button_label(str(case["action"])),
 			str(case["expect"]),
 			"button_label/%s/%s/%s" % [case["mode"], case["type"],
 				case["action"]])
 		mgr.free()
 	for case in _fx["action_labels"]:
-		var mgr := _mode_manager(str(case["mode"]), case["type"])
+		var mgr = _mode_manager(str(case["mode"]), case["type"])
 		_compare(mgr.get_action_label(str(case["action"])),
 			str(case["expect"]),
 			"action_label/%s/%s/%s" % [case["mode"], case["type"],
 				case["action"]])
 		mgr.free()
 	for case in _fx["hints"]:
-		var mgr := _mode_manager(str(case["mode"]), case["type"])
+		var mgr = _mode_manager(str(case["mode"]), case["type"])
 		var got: Array = []
 		for row in mgr.get_hints(str(case["context"])):
 			got.append([str(row[0]), str(row[1])])
@@ -207,7 +207,7 @@ func _test_labels() -> void:
 			"hints/%s/%s/%s" % [case["mode"], case["type"], case["context"]])
 		mgr.free()
 	for case in _fx["controller_info"]:
-		var mgr := _mode_manager(str(case["mode"]), case["type"])
+		var mgr = _mode_manager(str(case["mode"]), case["type"])
 		_compare(mgr.get_controller_info(), _dict(case["expect"]),
 			"info/%s/%s" % [case["mode"], case["type"]])
 		mgr.free()
@@ -221,7 +221,7 @@ func _test_cursor() -> void:
 	for scenario in _fx["cursor"]:
 		var tag := "cursor/" + str(scenario["name"])
 		var device := _xbox_device()
-		var mgr := _controller_mode(device)
+		var mgr = _controller_mode(device)
 		mgr.cursor_x = float(int(scenario["start"][0]))
 		mgr.cursor_y = float(int(scenario["start"][1]))
 		var index := 0
@@ -239,7 +239,7 @@ func _test_actions() -> void:
 	for scenario in _fx["actions"]:
 		var tag := "actions/" + str(scenario["name"])
 		var device := _xbox_device()
-		var mgr := _controller_mode(device)
+		var mgr = _controller_mode(device)
 		var index := 0
 		for step in scenario["steps"]:
 			_apply_frame(device, step)
@@ -267,7 +267,7 @@ func _test_rumble() -> void:
 	for case in _fx["rumble"]:
 		var tag := "rumble/%s_%s" % [case["intensity"], case["frames"]]
 		var device := _xbox_device()
-		var mgr := _controller_mode(device)
+		var mgr = _controller_mode(device)
 		if int(case["frames"]) == 30:
 			# Kasus terakhir oracle: mode KEYBOARD (rumble harus diam).
 			mgr.set_mode(ControllerScript.MODE_KEYBOARD)
@@ -297,7 +297,7 @@ func _test_ui_buttons() -> void:
 	for case in _fx["ui_buttons"]:
 		var tag := "ui_buttons/" + str(case["name"])
 		var device := _xbox_device()
-		var mgr := _controller_mode(device)
+		var mgr = _controller_mode(device)
 		mgr.cursor_x = float(int(case["cursor"][0]))
 		mgr.cursor_y = float(int(case["cursor"][1]))
 		var rects := _rects(case["rects"])
@@ -564,6 +564,9 @@ func _xbox_device() -> Dictionary:
 	}
 
 
+## Return TIDAK bertipe (dan pemanggil memakai `var mgr = `): objek dibuat
+## dari script hasil preload, jadi kalau diberi tipe Node, setiap panggilan
+## `mgr.update()` jadi parse error ("Cannot find member ... in base Node").
 func _make_manager(device: Dictionary):
 	var mgr = ControllerScript.new()
 	mgr.scripted_device = device
@@ -573,7 +576,7 @@ func _make_manager(device: Dictionary):
 
 ## Manajer dalam mode controller dengan perangkat Xbox ter-script.
 func _controller_mode(device: Dictionary):
-	var mgr := _make_manager(device)
+	var mgr = _make_manager(device)
 	mgr.init_joystick()
 	mgr.set_mode(ControllerScript.MODE_CONTROLLER)
 	return mgr
@@ -581,7 +584,7 @@ func _controller_mode(device: Dictionary):
 
 func _mode_manager(mode: String, ctype):
 	var device := _xbox_device()
-	var mgr := _make_manager(device)
+	var mgr = _make_manager(device)
 	mgr.init_joystick()
 	mgr.set_mode(mode)
 	mgr.controller_type = ctype
