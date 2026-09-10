@@ -56,20 +56,23 @@ func _ready():
 	_build_difficulty_label()
 	_build_game_over_panel()
 	_build_hint_bar()
-	# SkillBar + ShopPanel dibangun dari kode (lihat file masing-masing)
-	add_child(SkillBarScript.new())
-	add_child(ShopPanelScript.new())
+	# ── Z-ORDER HUD (bawah -> atas) ──
+	# 1. SidePanel  : dinding batu panel kanan (latar semua kontrol rail),
+	# 2. TacticalBar: 5 tombol command DI ATAS dinding (harus bisa diklik),
+	# 3. SkillBar   : bar skill hero,
+	# 4. ShopPanel  : popup/modal toko — PALING ATAS supaya klik popup tidak
+	#    tembus ke tombol rail di baliknya (paritas ada_popup_game pygame).
+	var side_panel = SidePanelScript.new()
+	side_panel.name = "SidePanel"
+	add_child(side_panel)
 	# FASE 18 — panel TACTICAL COMMANDS (HOLD): pemicu UI perintah taktis
 	# (port sidepanel _gambar_tactical + apply_hud_action; tekan/lepas =
 	# hold_start/hold_end di TacticalCommands.gd).
 	var tactical_bar = TacticalBarScript.new()
 	tactical_bar.name = "TacticalBar"
 	add_child(tactical_bar)
-	# Landscape/mobile command rail is deliberately added last so it stays above
-	# the arena and cannot be covered by gameplay nodes.
-	var side_panel = SidePanelScript.new()
-	side_panel.name = "SidePanel"
-	add_child(side_panel)
+	add_child(SkillBarScript.new())
+	add_child(ShopPanelScript.new())
 	# FASE 13 — klaster skor: badge combo kanan-atas (port ComboCounter.draw)
 	# + popup achievement di layar arena (port AchievementPopup; trigger
 	# GameManager.unlock_achievement, mis. NEW HERO UNLOCKED! saat menang).
@@ -82,9 +85,35 @@ func _ready():
 	GameManager.achievement_unlocked.connect(
 		_achievement_popup.unlock)
 	GameManager.boss_reward_effects_tick.connect(_achievement_popup.tick)
+	MobileLayout.layout_changed.connect(_layout_hud)
+	_layout_hud()
 	refresh()
 	_refresh_field()
 	_refresh_bars()
+
+
+## Elemen HUD yang "di tengah layar" (bar nexus, banner wave, hint bar) harus
+## berada di tengah AREA ARENA, bukan tengah viewport — kalau tidak, panel
+## kanan menutupinya di layar landscape (paritas arena rata kiri pygame).
+func _layout_hud() -> void:
+	var content := MobileLayout.content_width()
+	if content <= 0.0:
+		content = MobileLayout.viewport_size.x
+	var shift := -(MobileLayout.viewport_size.x - content) * 0.5
+	# WaveBanner/WaveSub SENGAJA tidak digeser: kurva slide-nya dikunci
+	# fixture paritas pygame (UiHudParityTest wave_slide_x).
+	for node_name in ["NexusBars", "HintLabel"]:
+		var n := find_child(node_name, true, false) as Control
+		if n == null:
+			continue
+		if not n.has_meta("center_shift"):
+			n.set_meta("base_center_l", n.offset_left)
+			n.set_meta("base_center_r", n.offset_right)
+			n.set_meta("center_shift", true)
+		var bl := float(n.get_meta("base_center_l"))
+		var br := float(n.get_meta("base_center_r"))
+		n.offset_left = bl + shift
+		n.offset_right = br + shift
 
 # Hitungan unit di medan — di-update ~3x/detik (bukan tiap frame) biar murah.
 func _process(delta: float) -> void:
