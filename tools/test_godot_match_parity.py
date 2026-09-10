@@ -9301,6 +9301,16 @@ def _frame(cursor_before, manager, state, frame):
     manager.update()
     actions = manager.get_pressed_actions()
     return {
+        # INPUT frame ikut direkam: replay Godot harus menyetel perangkat
+        # ter-script yang SAMA sebelum update()/get_pressed_actions(),
+        # kalau tidak kursor dan aksi selalu dihitung dari perangkat netral.
+        "frame": {
+            "buttons": {str(k): bool(v)
+                        for k, v in frame.get("buttons", {}).items()},
+            "axes": {str(k): float(v)
+                     for k, v in frame.get("axes", {}).items()},
+            "hat": list(frame.get("hat", [0, 0])),
+        },
         "actions": list(actions),
         "cursor": [round(manager.cursor_x, 4), round(manager.cursor_y, 4)],
         "scroll_accum": round(manager._scroll_accum, 6),

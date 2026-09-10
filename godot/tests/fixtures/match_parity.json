@@ -140949,6 +140949,16 @@
         ],
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               665.0,
@@ -140959,6 +140969,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               690.0,
@@ -140969,6 +140989,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               715.0,
@@ -140979,6 +141009,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               740.0,
@@ -140989,6 +141029,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               765.0,
@@ -140999,6 +141049,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               790.0,
@@ -141018,6 +141078,16 @@
         ],
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.5
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               648.2981,
@@ -141028,6 +141098,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.5
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               656.5962,
@@ -141038,6 +141118,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.5
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               664.8943,
@@ -141048,6 +141138,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.5
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               673.1924,
@@ -141058,6 +141158,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.5
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               681.4905,
@@ -141068,6 +141178,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.5
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               689.7886,
@@ -141087,6 +141207,17 @@
         ],
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.8,
+                "1": -0.6
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               660.0,
@@ -141097,6 +141228,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.8,
+                "1": -0.6
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               680.0,
@@ -141107,6 +141249,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.8,
+                "1": -0.6
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               700.0,
@@ -141117,6 +141270,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.8,
+                "1": -0.6
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               720.0,
@@ -141127,6 +141291,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.8,
+                "1": -0.6
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               740.0,
@@ -141137,6 +141312,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.8,
+                "1": -0.6
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               760.0,
@@ -141156,6 +141342,17 @@
         ],
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.2,
+                "1": -0.24
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -141166,6 +141363,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.2,
+                "1": -0.24
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -141176,6 +141384,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.2,
+                "1": -0.24
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -141186,6 +141405,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 0.2,
+                "1": -0.24
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -141205,6 +141435,17 @@
         ],
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               673.8633,
@@ -141215,6 +141456,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               707.7266,
@@ -141225,6 +141477,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               741.5899,
@@ -141235,6 +141498,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               775.4532,
@@ -141245,6 +141519,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               809.3165,
@@ -141255,6 +141540,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               843.1798,
@@ -141265,6 +141561,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               877.0431,
@@ -141275,6 +141582,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               910.9065,
@@ -141285,6 +141603,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               944.7698,
@@ -141295,6 +141624,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               978.6331,
@@ -141305,6 +141645,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1012.4964,
@@ -141315,6 +141666,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1046.3597,
@@ -141325,6 +141687,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1080.223,
@@ -141335,6 +141708,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1114.0863,
@@ -141345,6 +141729,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1147.9496,
@@ -141355,6 +141750,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1181.8129,
@@ -141365,6 +141771,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1215.6762,
@@ -141375,6 +141792,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1249.5395,
@@ -141385,6 +141813,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141395,6 +141834,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141405,6 +141855,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141415,6 +141876,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141425,6 +141897,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141435,6 +141918,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141445,6 +141939,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141455,6 +141960,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141465,6 +141981,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141475,6 +142002,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141485,6 +142023,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141495,6 +142044,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141505,6 +142065,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141515,6 +142086,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141525,6 +142107,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141535,6 +142128,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141545,6 +142149,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141555,6 +142170,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141565,6 +142191,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141575,6 +142212,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141585,6 +142233,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141595,6 +142254,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141605,6 +142275,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141615,6 +142296,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141625,6 +142317,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141635,6 +142338,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141645,6 +142359,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141655,6 +142380,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141665,6 +142401,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141675,6 +142422,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141685,6 +142443,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141695,6 +142464,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141705,6 +142485,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141715,6 +142506,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141725,6 +142527,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141735,6 +142548,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141745,6 +142569,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141755,6 +142590,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141765,6 +142611,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141775,6 +142632,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141785,6 +142653,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141795,6 +142674,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141805,6 +142695,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141815,6 +142716,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141825,6 +142737,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141835,6 +142758,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141845,6 +142779,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141855,6 +142800,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141865,6 +142821,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141875,6 +142842,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141885,6 +142863,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141895,6 +142884,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141905,6 +142905,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141915,6 +142926,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141925,6 +142947,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141935,6 +142968,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141945,6 +142989,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141955,6 +143010,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141965,6 +143031,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141975,6 +143052,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141985,6 +143073,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -141995,6 +143094,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142005,6 +143115,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142015,6 +143136,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142025,6 +143157,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142035,6 +143178,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142045,6 +143199,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142055,6 +143220,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142065,6 +143241,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142075,6 +143262,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142085,6 +143283,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142095,6 +143304,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0,
+                "1": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               1280,
@@ -142114,6 +143334,16 @@
         ],
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               665.0,
@@ -142124,6 +143354,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               690.0,
@@ -142134,6 +143374,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               715.0,
@@ -142144,6 +143394,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               690.0,
@@ -142154,6 +143414,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               665.0,
@@ -142164,6 +143434,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "0": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640.0,
@@ -142183,6 +143463,14 @@
         ],
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142193,6 +143481,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142203,6 +143499,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142220,6 +143524,16 @@
         "name": "edge_confirm",
         "steps": [
           {
+            "frame": {
+              "buttons": {
+                "0": true
+              },
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [
               "confirm"
             ],
@@ -142232,6 +143546,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {
+                "0": true
+              },
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142242,6 +143566,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {
+                "0": false
+              },
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142252,6 +143586,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {
+                "0": true
+              },
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [
               "confirm"
             ],
@@ -142269,6 +143613,25 @@
         "name": "semua_tombol",
         "steps": [
           {
+            "frame": {
+              "buttons": {
+                "0": true,
+                "1": true,
+                "2": true,
+                "3": true,
+                "4": true,
+                "5": true,
+                "6": true,
+                "7": true,
+                "8": true,
+                "9": true
+              },
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [
               "confirm",
               "cancel",
@@ -142290,6 +143653,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142305,6 +143676,14 @@
         "name": "dpad_tahan",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [
               "dpad_up"
             ],
@@ -142317,6 +143696,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142327,6 +143714,14 @@
             "hat_hold_frames": 1
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142337,6 +143732,14 @@
             "hat_hold_frames": 2
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142347,6 +143750,14 @@
             "hat_hold_frames": 3
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142357,6 +143768,14 @@
             "hat_hold_frames": 4
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142367,6 +143786,14 @@
             "hat_hold_frames": 5
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142377,6 +143804,14 @@
             "hat_hold_frames": 6
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142387,6 +143822,14 @@
             "hat_hold_frames": 7
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142397,6 +143840,14 @@
             "hat_hold_frames": 8
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142407,6 +143858,14 @@
             "hat_hold_frames": 9
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142417,6 +143876,14 @@
             "hat_hold_frames": 10
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142427,6 +143894,14 @@
             "hat_hold_frames": 11
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142437,6 +143912,14 @@
             "hat_hold_frames": 12
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142447,6 +143930,14 @@
             "hat_hold_frames": 13
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142457,6 +143948,14 @@
             "hat_hold_frames": 14
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142467,6 +143966,14 @@
             "hat_hold_frames": 15
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142477,6 +143984,14 @@
             "hat_hold_frames": 16
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142487,6 +144002,14 @@
             "hat_hold_frames": 17
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142497,6 +144020,14 @@
             "hat_hold_frames": 18
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142507,6 +144038,14 @@
             "hat_hold_frames": 19
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142517,6 +144056,14 @@
             "hat_hold_frames": 20
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142527,6 +144074,14 @@
             "hat_hold_frames": 21
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [
               "dpad_up"
             ],
@@ -142539,6 +144094,14 @@
             "hat_hold_frames": 22
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142549,6 +144112,14 @@
             "hat_hold_frames": 23
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142559,6 +144130,14 @@
             "hat_hold_frames": 24
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142569,6 +144148,14 @@
             "hat_hold_frames": 25
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142579,6 +144166,14 @@
             "hat_hold_frames": 26
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [
               "dpad_up"
             ],
@@ -142591,6 +144186,14 @@
             "hat_hold_frames": 27
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142601,6 +144204,14 @@
             "hat_hold_frames": 28
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142611,6 +144222,14 @@
             "hat_hold_frames": 29
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142621,6 +144240,14 @@
             "hat_hold_frames": 30
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142631,6 +144258,14 @@
             "hat_hold_frames": 31
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [
               "dpad_up"
             ],
@@ -142643,6 +144278,14 @@
             "hat_hold_frames": 32
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142653,6 +144296,14 @@
             "hat_hold_frames": 33
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142663,6 +144314,14 @@
             "hat_hold_frames": 34
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142673,6 +144332,14 @@
             "hat_hold_frames": 35
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142683,6 +144350,14 @@
             "hat_hold_frames": 36
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [
               "dpad_up"
             ],
@@ -142695,6 +144370,14 @@
             "hat_hold_frames": 37
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142705,6 +144388,14 @@
             "hat_hold_frames": 38
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142720,6 +144411,14 @@
         "name": "dpad_ganti",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [
               "dpad_up"
             ],
@@ -142732,6 +144431,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142742,6 +144449,14 @@
             "hat_hold_frames": 1
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142752,6 +144467,14 @@
             "hat_hold_frames": 2
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142762,6 +144485,14 @@
             "hat_hold_frames": 3
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142772,6 +144503,14 @@
             "hat_hold_frames": 4
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                -1
+              ]
+            },
             "actions": [
               "dpad_down"
             ],
@@ -142784,6 +144523,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                -1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142794,6 +144541,14 @@
             "hat_hold_frames": 1
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                -1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142804,6 +144559,14 @@
             "hat_hold_frames": 2
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                -1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142814,6 +144577,14 @@
             "hat_hold_frames": 3
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                -1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142824,6 +144595,14 @@
             "hat_hold_frames": 4
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                0
+              ]
+            },
             "actions": [
               "dpad_right"
             ],
@@ -142836,6 +144615,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142846,6 +144633,14 @@
             "hat_hold_frames": 1
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142856,6 +144651,14 @@
             "hat_hold_frames": 2
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142866,6 +144669,14 @@
             "hat_hold_frames": 3
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142876,6 +144687,14 @@
             "hat_hold_frames": 4
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                -1,
+                0
+              ]
+            },
             "actions": [
               "dpad_left"
             ],
@@ -142888,6 +144707,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                -1,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142898,6 +144725,14 @@
             "hat_hold_frames": 1
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                -1,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142908,6 +144743,14 @@
             "hat_hold_frames": 2
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                -1,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142918,6 +144761,14 @@
             "hat_hold_frames": 3
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                -1,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142928,6 +144779,14 @@
             "hat_hold_frames": 4
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142938,6 +144797,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142948,6 +144815,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142963,6 +144838,14 @@
         "name": "dpad_diagonal",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [
               "dpad_up",
               "dpad_right"
@@ -142976,6 +144859,14 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142986,6 +144877,14 @@
             "hat_hold_frames": 1
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -142996,6 +144895,14 @@
             "hat_hold_frames": 2
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143006,6 +144913,14 @@
             "hat_hold_frames": 3
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143016,6 +144931,14 @@
             "hat_hold_frames": 4
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143026,6 +144949,14 @@
             "hat_hold_frames": 5
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143036,6 +144967,14 @@
             "hat_hold_frames": 6
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143046,6 +144985,14 @@
             "hat_hold_frames": 7
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143056,6 +145003,14 @@
             "hat_hold_frames": 8
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143066,6 +145021,14 @@
             "hat_hold_frames": 9
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143076,6 +145039,14 @@
             "hat_hold_frames": 10
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143086,6 +145057,14 @@
             "hat_hold_frames": 11
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143096,6 +145075,14 @@
             "hat_hold_frames": 12
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143106,6 +145093,14 @@
             "hat_hold_frames": 13
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143116,6 +145111,14 @@
             "hat_hold_frames": 14
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143126,6 +145129,14 @@
             "hat_hold_frames": 15
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143136,6 +145147,14 @@
             "hat_hold_frames": 16
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143146,6 +145165,14 @@
             "hat_hold_frames": 17
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143156,6 +145183,14 @@
             "hat_hold_frames": 18
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143166,6 +145201,14 @@
             "hat_hold_frames": 19
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143176,6 +145219,14 @@
             "hat_hold_frames": 20
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143186,6 +145237,14 @@
             "hat_hold_frames": 21
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [
               "dpad_up",
               "dpad_right"
@@ -143199,6 +145258,14 @@
             "hat_hold_frames": 22
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143209,6 +145276,14 @@
             "hat_hold_frames": 23
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143219,6 +145294,14 @@
             "hat_hold_frames": 24
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143229,6 +145312,14 @@
             "hat_hold_frames": 25
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143239,6 +145330,14 @@
             "hat_hold_frames": 26
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [
               "dpad_up",
               "dpad_right"
@@ -143252,6 +145351,14 @@
             "hat_hold_frames": 27
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143262,6 +145369,14 @@
             "hat_hold_frames": 28
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143272,6 +145387,14 @@
             "hat_hold_frames": 29
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143282,6 +145405,14 @@
             "hat_hold_frames": 30
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {},
+              "hat": [
+                1,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143297,6 +145428,16 @@
         "name": "trigger_batas",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "4": 0.5
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143307,6 +145448,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "4": 0.51
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [
               "left_trigger"
             ],
@@ -143319,6 +145470,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "4": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [
               "scroll_down"
             ],
@@ -143331,6 +145492,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "4": 0.2
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143341,6 +145512,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "4": 0.9
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [
               "left_trigger"
             ],
@@ -143353,6 +145534,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "5": 0.6
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [
               "right_trigger"
             ],
@@ -143370,6 +145561,16 @@
         "name": "scroll_bawah",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143380,6 +145581,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143390,6 +145601,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143400,6 +145621,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143410,6 +145641,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143420,6 +145661,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143430,6 +145681,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143440,6 +145701,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143455,6 +145726,16 @@
         "name": "scroll_atas",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143465,6 +145746,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143475,6 +145766,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143485,6 +145786,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143495,6 +145806,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143505,6 +145826,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143515,6 +145846,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143525,6 +145866,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143540,6 +145891,16 @@
         "name": "scroll_deadzone",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 0.1
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143550,6 +145911,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 0.1
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143560,6 +145931,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 0.1
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143570,6 +145951,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 0.1
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143580,6 +145971,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 0.1
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143590,6 +145991,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 0.1
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143605,6 +146016,17 @@
         "name": "scroll_axis_mentok",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0,
+                "2": 0.7
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143615,6 +146037,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0,
+                "2": 0.7
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143625,6 +146058,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0,
+                "2": 0.7
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [
               "scroll_down"
             ],
@@ -143637,6 +146081,17 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": -1.0,
+                "2": 0.7
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143652,6 +146107,16 @@
         "name": "scroll_guard",
         "steps": [
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 20.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143662,6 +146127,16 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 20.0
+              },
+              "hat": [
+                0,
+                0
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143677,6 +146152,18 @@
         "name": "kombinasi",
         "steps": [
           {
+            "frame": {
+              "buttons": {
+                "0": true
+              },
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [
               "confirm",
               "dpad_up"
@@ -143690,6 +146177,18 @@
             "hat_hold_frames": 0
           },
           {
+            "frame": {
+              "buttons": {
+                "0": true
+              },
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,
@@ -143700,6 +146199,16 @@
             "hat_hold_frames": 1
           },
           {
+            "frame": {
+              "buttons": {},
+              "axes": {
+                "3": 1.0
+              },
+              "hat": [
+                0,
+                1
+              ]
+            },
             "actions": [],
             "cursor": [
               640,

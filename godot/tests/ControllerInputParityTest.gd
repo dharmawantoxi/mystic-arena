@@ -499,10 +499,13 @@ func _route_case(router, controller, menu, scenario: Dictionary) -> void:
 	for entry in expect["rumble"]:
 		rumble_want.append([float(entry[0]), float(entry[1]), int(entry[2])])
 	_compare(rumble_got, rumble_want, tag + "/rumble")
+	# pygame menulis `menu.action = "resume"` (assignment, BUKAN panggilan) —
+	# jadi field-nya dibandingkan terpisah dari jejak `calls`.
 	var menu_action_want = expect["menu_action"]
-	var has_resume := _has_call(got, "menu_action")
-	_compare(has_resume, menu_action_want != null and str(menu_action_want) \
-		== "resume", tag + "/menu_action")
+	var menu_action_got = null if router.menu_action == null \
+		else str(router.menu_action)
+	var want_txt = null if menu_action_want == null else str(menu_action_want)
+	_compare(str(menu_action_got), str(want_txt), tag + "/menu_action")
 	if fake_cine != null:
 		_expect(fake_cine.skipped.size() == 1,
 			tag + "/cinematic di-skip tepat sekali")
@@ -594,19 +597,18 @@ func _mode_manager(mode: String, ctype):
 ## Tuliskan satu frame perangkat ter-script (button/axis/hat). Field yang
 ## tidak ada di-step = kosong/netral, persis oracle (`frame.get(..., {})`).
 func _apply_frame(device: Dictionary, step: Dictionary) -> void:
+	var frame: Dictionary = step.get("frame", {})
 	var buttons: Dictionary = {}
-	if step.has("buttons"):
-		for key in step["buttons"]:
-			buttons[int(key)] = bool(step["buttons"][key])
+	for key in frame.get("buttons", {}):
+		buttons[int(key)] = bool(frame["buttons"][key])
 	device["buttons"] = {0: buttons}
 	var axes: Dictionary = {}
-	if step.has("axes"):
-		for key in step["axes"]:
-			axes[int(key)] = float(step["axes"][key])
+	for key in frame.get("axes", {}):
+		axes[int(key)] = float(frame["axes"][key])
 	device["axes"] = {0: axes}
 	var hat := [0, 0]
-	if step.has("hat"):
-		hat = [int(step["hat"][0]), int(step["hat"][1])]
+	if frame.has("hat"):
+		hat = [int(frame["hat"][0]), int(frame["hat"][1])]
 	device["hats"] = {0: hat}
 
 
@@ -640,11 +642,6 @@ func _find_button_by_text(root: Node, text: String):
 	return null
 
 
-func _has_call(calls: Array, name: String) -> bool:
-	for entry in calls:
-		if not (entry as Array).is_empty() and str(entry[0]) == name:
-			return true
-	return false
 
 
 ## Normalkan jejak: nama + argumen numerik sebagai int (posisi kursor pygame

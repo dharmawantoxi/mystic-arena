@@ -68,8 +68,15 @@ var ui_buttons_override: Dictionary = {}
 var trace_enabled := false
 var trace: Array = []
 
+## Paritas `menu.action = "resume"` di pygame: itu ASSIGNMENT, bukan
+## panggilan, jadi dicatat di field terpisah (bukan di `trace`).
+var menu_action = null
+
 ## Harness paritas: paksa state ("" = deteksi dari produksi).
 var state_override := ""
+
+## Hasil _find_control_at terakhir (Object tidak bisa di-pass by reference).
+var _hit = null
 
 
 func _ready() -> void:
@@ -95,6 +102,7 @@ func tick_frame() -> void:
 
 func reset_trace() -> void:
 	trace.clear()
+	menu_action = null
 
 
 func _trace(entry: Array) -> void:
@@ -236,9 +244,9 @@ func _route_pause(action: String) -> void:
 		"confirm":
 			_menu_click(_cursor(), 1)
 		"cancel", "start", "back":
-			# pygame menulis menu.action = "resume"; loop utama yang
-			# mengeksekusinya. Jejaknya = ["menu_action", "resume"].
-			_trace(["menu_action", "resume"])
+			# pygame menulis `menu.action = "resume"`; loop utama yang
+			# mengeksekusinya (assignment -> field, bukan jejak panggilan).
+			menu_action = "resume"
 			if menu != null and menu.has_method("_do_resume"):
 				menu._do_resume()
 		"stick_right":
@@ -425,10 +433,7 @@ func _toggle_fps_overlay() -> void:
 ## menguji rect tombol lalu memanggil handler-nya; Godot menekan
 ## BaseButton yang benar-benar ada di bawah titik itu.
 func _gui_click_at(pos: Vector2) -> void:
-	var vp = get_viewport()
-	if vp == null:
-		return
-	var node = vp.gui_find_control(pos)
+	var node = _find_control_at(pos)
 	while node != null:
 		if node is BaseButton:
 			var btn := node as BaseButton
@@ -445,10 +450,7 @@ func _gui_scroll_at(pos: Vector2, direction: int) -> void:
 	var amount := _scroll_amount(direction)
 	if amount == 0:
 		return
-	var vp = get_viewport()
-	if vp == null:
-		return
-	var node = vp.gui_find_control(pos)
+	var node = _find_control_at(pos)
 	while node != null:
 		if node is ScrollContainer:
 			var sc := node as ScrollContainer
@@ -458,6 +460,32 @@ func _gui_scroll_at(pos: Vector2, direction: int) -> void:
 					bar.min_value, bar.max_value)
 			return
 		node = node.get_parent()
+
+
+## Picking sendiri: Godot 4.3 tidak punya `Viewport.gui_find_control`.
+## Tree UI dipindai dalam urutan gambar (anak sebelum induk, saudara
+## belakangan menang) — sama seperti urutan pygame mengisi dict tombol.
+func _find_control_at(pos: Vector2):
+	_hit = null
+	var tree = get_tree()
+	if tree != null:
+		_scan_controls(tree.root, pos)
+	return _hit
+
+
+func _scan_controls(node, pos: Vector2) -> void:
+	if node == null:
+		return
+	for child in node.get_children():
+		if child is CanvasItem and not (child as CanvasItem).visible:
+			continue
+		_scan_controls(child, pos)
+		if child is Control:
+			var c := child as Control
+			if c.mouse_filter == Control.MOUSE_FILTER_IGNORE:
+				continue
+			if c.get_global_rect().has_point(pos):
+				_hit = c
 
 
 func _scroll_amount(direction: int) -> int:
