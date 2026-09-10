@@ -268,6 +268,30 @@ func _ready():
 	load_economy()
 	nexus_destroyed.connect(_on_nexus_destroyed)
 	hero_died.connect(_on_hero_died)
+	# Paritas GameSettings pygame (_system.py:9135/9138 + 9164/9166):
+	# game_speed & fps_limit persist di save dan berlaku sejak boot.
+	apply_game_speed(SaveManager.get_setting("game_speed", 1.0))
+	apply_fps_limit(SaveManager.get_setting("fps_limit", 60.0))
+
+
+## Game Speed — paritas Game.update (_core.py:1958-1977): pygame >1.0
+## menjalankan _update_gameplay() sebanyak int(mult)-1 kali EKSTRA, akibatnya
+## 1.5x TIDAK berpengaruh (int(1.5)-1 = 0) — hanya 0.5x/1.0x/2.0x yang beda.
+## Quirk itu dipertahankan: nilai >= 1.0 dipetakan lewat rumus yang sama.
+## Clamp 0.5..2.0 = set_game_speed (_system.py:9268-9269).
+func apply_game_speed(speed: float) -> void:
+	var eff := clampf(speed, 0.5, 2.0)
+	if eff >= 1.0:
+		eff = 1.0 + (int(eff) - 1)
+	game_speed_scale = eff
+	if not _hit_stop_active:
+		Engine.time_scale = game_speed_scale
+
+
+## FPS Limit — paritas main.py:637 (clock.tick(fps_limit)); 0 = tanpa batas,
+## persis konvensi Engine.max_fps Godot.
+func apply_fps_limit(fps: float) -> void:
+	Engine.max_fps = int(fps)
 
 
 func load_economy() -> void:

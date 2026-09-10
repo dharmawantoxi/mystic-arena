@@ -93,6 +93,11 @@ const COMBAT_BUDGET := 4
 const AMBIG_RANGED := 100.0
 
 var sfx_volume: float = 0.6
+## Paritas SoundManager.voice_volume (_system.py:495): kategori 'voice'
+## (_system.py:599-604) dikali master saat play. Repo tidak punya file
+## berkategori voice, jadi variabel ini (sengaja) tidak punya konsumen —
+## di pygame keadaannya sama; yang diport adalah persist setting-nya.
+var voice_volume: float = 0.5
 var bgm_volume: float = 0.35
 
 var _bgm_player: AudioStreamPlayer = null
