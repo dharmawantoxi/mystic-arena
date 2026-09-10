@@ -9131,6 +9131,818 @@ def make_save_slots_fixture(core, entity):
     return a
 
 
+# ====================================================================
+# FASE 24 — LAPISAN GAMEPAD (controller_manager.py + routing legacy)
+# ====================================================================
+# Oracle untuk port Godot `scripts/systems/ControllerManager.gd` +
+# `scripts/systems/ControllerRouter.gd`. Tiga lapis dikunci:
+#
+#   1. MANAJER  : ControllerManager pygame ASLI dijalankan headless dengan
+#                 joystick PALSU (pygame.joystick ditambal) yang membaca
+#                 perangkat ter-script. Yang direkam: deteksi tipe dari
+#                 nama/GUID, kursor (kurva akselerasi), urutan aksi per
+#                 frame (edge tombol, dpad fresh+repeat, trigger, scroll),
+#                 rumble (durasi_ms + stop otomatis), label/hint, dan
+#                 find/snap tombol UI.
+#   2. ROUTING  : blok routing controller di main_desktop_legacy.py
+#                 DI-EXEC APA ADANYA (bukan ditulis ulang) dengan
+#                 game/menu/fps_counter/splash palsu yang merekam panggilan.
+#                 Inilah bukti bahwa terjemahan Godot ke _on_key/_on_click/
+#                 pause/menu memakai cabang + argumen yang sama.
+#   3. KONSTANTA: nilai numerik yang dibaca langsung dari objek pygame
+#                 (deadzone, kecepatan kursor, delay/rate repeat, scroll,
+#                 durasi rumble) supaya drift konstanta ikut tertangkap.
+#
+# Direplay godot/tests/ControllerInputParityTest.gd lewat perangkat
+# ter-script (`ControllerManager.scripted_device`) — pola yang sama dengan
+# mouse_override (FASE 18) dan ParityRng (FASE 19).
+
+_CONTROLLER_DEVICES = (
+    # (nama, guid, jumlah tombol, jumlah axis, tipe harapan)
+    ("Xbox Wireless Controller", "030000005e040000fd02000000000000",
+     15, 6, "xbox"),
+    # 'wireless controller' = kata kunci PS, tetapi 'xbox' menang (pygame
+    # memeriksa PS lebih dulu HANYA kalau bukan xbox — _core.py:9483-9490).
+    ("Sony DualSense Wireless Controller",
+     "050000004c050000e60c000000000000", 17, 6, "ps"),
+    ("8BitDo Pro 2", "03000000022000000090000000000000", 16, 6, "xbox"),
+    ("ROG Ally Gamepad", "03000000050d00000000000000000000", 15, 6, "xbox"),
+    ("Steam Virtual Gamepad", "03000000de280000ff11000000000000",
+     15, 6, "xbox"),
+    # GUID XInput (78696e70) tanpa kata kunci nama.
+    ("Pad Misterius", "78696e70757401000000000000000000", 11, 5, "xbox"),
+    # Tanpa kata kunci & tanpa GUID XInput: fallback layout (>= 11 tombol
+    # & >= 4 axis -> xbox).
+    ("Generic Gamepad", "03000000102800000900000000000000", 12, 5, "xbox"),
+    ("Mini Pad", "03000000102800000900000000000000", 8, 2, "generic"),
+)
+
+_CONTROLLER_LABEL_ACTIONS = (
+    "confirm", "cancel", "skill_q", "skill_w", "skill_e", "skill_r",
+    "start", "back", "left_trigger", "right_trigger", "stick_left",
+    "stick_right", "dpad", "left_stick", "right_stick", "replay",
+    "next_level", "skip", "shop", "tidak_ada",
+)
+
+_CONTROLLER_GAMEPLAY_ACTIONS = (
+    "skip", "shop", "move_hero", "select", "back", "pause", "to_menu",
+    "replay", "next_level", "fps", "snap", "scroll", "cursor", "lainnya",
+)
+
+_CONTROLLER_HINT_CONTEXTS = (
+    "cinematic", "menu", "pause", "shop", "victory", "defeat", "game",
+)
+
+
+class _FakeJoystick:
+    """Joystick pygame palsu yang membaca perangkat ter-script."""
+
+    def __init__(self, state):
+        self._state = state
+
+    def init(self):
+        return None
+
+    def get_name(self):
+        return self._state["name"]
+
+    def get_guid(self):
+        return self._state["guid"]
+
+    def get_numbuttons(self):
+        return self._state["buttons"]
+
+    def get_numaxes(self):
+        return self._state["axes"]
+
+    def get_numhats(self):
+        return self._state["hats"]
+
+    def get_button(self, index):
+        return 1 if self._state["pressed"].get(str(index)) else 0
+
+    def get_axis(self, index):
+        return float(self._state["axis"].get(str(index), 0.0))
+
+    def get_hat(self, index):
+        return tuple(self._state["hat"])
+
+    def rumble(self, low, high, duration_ms):
+        self._state["rumble"].append(
+            [round(float(low), 6), round(float(high), 6), int(duration_ms)])
+        return True
+
+    def stop_rumble(self):
+        self._state["stop_rumble"] += 1
+        return True
+
+
+class _JoystickPatch:
+    """Tambal pygame.joystick agar ControllerManager memakai perangkat palsu."""
+
+    def __init__(self, state):
+        self._state = state
+        self._saved = {}
+
+    def __enter__(self):
+        import pygame.joystick as joy
+        self._mod = joy
+        for name in ("init", "quit", "get_count", "Joystick"):
+            self._saved[name] = getattr(joy, name, None)
+        joy.init = lambda: None
+        joy.quit = lambda: None
+        joy.get_count = lambda: 1
+        state = self._state
+        joy.Joystick = lambda index: _FakeJoystick(state)
+        return self
+
+    def __exit__(self, *exc):
+        for name, value in self._saved.items():
+            if value is None:
+                try:
+                    delattr(self._mod, name)
+                except AttributeError:
+                    pass
+            else:
+                setattr(self._mod, name, value)
+        return False
+
+
+def _device_state(name, guid, buttons, axes, hats=1):
+    return {
+        "name": name,
+        "guid": guid,
+        "buttons": buttons,
+        "axes": axes,
+        "hats": hats,
+        "pressed": {},
+        "axis": {},
+        "hat": [0, 0],
+        "rumble": [],
+        "stop_rumble": 0,
+    }
+
+
+def _controller_manager(core, state):
+    """ControllerManager pygame asli dalam mode controller (lazy init jalan)."""
+    manager = core.ControllerManager()
+    manager.init_joystick()
+    manager.set_mode("controller")
+    return manager
+
+
+def _frame(cursor_before, manager, state, frame):
+    """Satu frame: setel perangkat ter-script, update + kumpulkan aksi."""
+    state["pressed"] = {str(k): bool(v)
+                        for k, v in frame.get("buttons", {}).items()}
+    state["axis"] = {str(k): float(v)
+                     for k, v in frame.get("axes", {}).items()}
+    state["hat"] = list(frame.get("hat", [0, 0]))
+    manager.update()
+    actions = manager.get_pressed_actions()
+    return {
+        "actions": list(actions),
+        "cursor": [round(manager.cursor_x, 4), round(manager.cursor_y, 4)],
+        "scroll_accum": round(manager._scroll_accum, 6),
+        "scroll_axis": manager._scroll_axis,
+        "hat_hold_frames": manager._hat_hold_frames,
+    }
+
+
+# ── 1. MANAJER ────────────────────────────────────────────────────────
+
+def _controller_detection_fixture(core):
+    cases = []
+    for name, guid, buttons, axes, expect in _CONTROLLER_DEVICES:
+        state = _device_state(name, guid, buttons, axes)
+        with _JoystickPatch(state):
+            manager = core.ControllerManager()
+            manager.init_joystick()
+            cases.append({
+                "name": name,
+                "guid": guid,
+                "buttons": buttons,
+                "axes": axes,
+                "expect": {
+                    "connected": bool(manager.connected),
+                    "type": manager.controller_type,
+                    "prev_buttons": len(manager._prev_buttons),
+                    "info": manager.get_controller_info(),
+                },
+            })
+    # Tanpa perangkat sama sekali.
+    empty = _device_state("None", "", 0, 0)
+    with _JoystickPatch(empty):
+        import pygame.joystick as joy
+        saved = joy.get_count
+        joy.get_count = lambda: 0
+        try:
+            manager = core.ControllerManager()
+            connected = manager.init_joystick()
+        finally:
+            joy.get_count = saved
+        cases.append({
+            "name": "(tidak ada perangkat)",
+            "guid": "",
+            "buttons": 0,
+            "axes": 0,
+            "expect": {
+                "connected": bool(connected),
+                "type": manager.controller_type,
+                "prev_buttons": len(manager._prev_buttons),
+                "info": manager.get_controller_info(),
+            },
+        })
+    return cases
+
+
+def _controller_label_fixture(core):
+    buttons = []
+    action_labels = []
+    hints = []
+    infos = []
+    for mode, ctype in (("keyboard", None), ("controller", "xbox"),
+                        ("controller", "ps"), ("controller", "generic")):
+        state = _device_state("Xbox Wireless Controller",
+                              "030000005e040000fd02000000000000", 15, 6)
+        with _JoystickPatch(state):
+            manager = core.ControllerManager()
+            manager.init_joystick()
+            manager.set_mode(mode)
+            manager.controller_type = ctype
+            for action in _CONTROLLER_LABEL_ACTIONS:
+                buttons.append({
+                    "mode": mode, "type": ctype, "action": action,
+                    "expect": manager.get_button_label(action),
+                })
+            for action in _CONTROLLER_GAMEPLAY_ACTIONS:
+                action_labels.append({
+                    "mode": mode, "type": ctype, "action": action,
+                    "expect": manager.get_action_label(action),
+                })
+            for context in _CONTROLLER_HINT_CONTEXTS:
+                hints.append({
+                    "mode": mode, "type": ctype, "context": context,
+                    "expect": [[str(a), str(b)]
+                               for a, b in manager.get_hints(context)],
+                })
+            infos.append({
+                "mode": mode, "type": ctype,
+                "expect": manager.get_controller_info(),
+            })
+    return buttons, action_labels, hints, infos
+
+
+def _controller_cursor_fixture(core):
+    """Kurva akselerasi kursor: stick penuh, setengah, diagonal, deadzone."""
+    scenarios = []
+    scripts = {
+        "stick_kanan_penuh": [{"axes": {0: 1.0}}] * 6,
+        "stick_setengah": [{"axes": {0: 0.5}}] * 6,
+        "diagonal": [{"axes": {0: 0.8, 1: -0.6}}] * 6,
+        "deadzone": [{"axes": {0: 0.2, 1: -0.24}}] * 4,
+        "clamp_tepi": ([{"axes": {0: 1.0, 1: 1.0}}] * 90),
+        "balik_arah": ([{"axes": {0: 1.0}}] * 3 + [{"axes": {0: -1.0}}] * 3),
+        "diam": [{"axes": {}}] * 3,
+    }
+    for label, frames in scripts.items():
+        state = _device_state("Xbox Wireless Controller",
+                              "030000005e040000fd02000000000000", 15, 6)
+        with _JoystickPatch(state):
+            manager = _controller_manager(core, state)
+            steps = []
+            for frame in frames:
+                steps.append(_frame(None, manager, state, frame))
+            scenarios.append({
+                "name": label,
+                "start": [core.SCREEN_WIDTH // 2, core.SCREEN_HEIGHT // 2],
+                "steps": steps,
+            })
+    return scenarios
+
+
+def _controller_action_fixture(core):
+    """Urutan aksi per frame: edge tombol, dpad fresh+repeat, trigger, scroll."""
+    scripts = {
+        # tekan -> tahan -> lepas -> tekan lagi (edge detection).
+        "edge_confirm": [
+            {"buttons": {0: True}},
+            {"buttons": {0: True}},
+            {"buttons": {0: False}},
+            {"buttons": {0: True}},
+        ],
+        # Semua tombol aksi sekaligus dalam satu frame (urutan dict pygame).
+        "semua_tombol": [
+            {"buttons": {0: True, 1: True, 2: True, 3: True, 4: True,
+                         5: True, 6: True, 7: True, 8: True, 9: True}},
+            {"buttons": {}},
+        ],
+        # D-PAD: fresh sekali, lalu auto-repeat delay 22 / rate 5.
+        "dpad_tahan": ([{"hat": [0, 1]}] * 40),
+        "dpad_ganti": ([{"hat": [0, 1]}] * 5 + [{"hat": [0, -1]}] * 5
+                       + [{"hat": [1, 0]}] * 5 + [{"hat": [-1, 0]}] * 5
+                       + [{"hat": [0, 0]}] * 3),
+        "dpad_diagonal": ([{"hat": [1, 1]}] * 32),
+        # Trigger: 0.5 pas TIDAK menekan (strict >), 0.51 menekan.
+        "trigger_batas": [
+            {"axes": {4: 0.5}},
+            {"axes": {4: 0.51}},
+            {"axes": {4: 1.0}},
+            {"axes": {4: 0.2}},
+            {"axes": {4: 0.9}},
+            {"axes": {5: 0.6}},
+        ],
+        # Scroll: accum 0.55/frame (step 1.0) lalu reset saat stick netral.
+        "scroll_bawah": ([{"axes": {3: 1.0}}] * 8),
+        "scroll_atas": ([{"axes": {3: -1.0}}] * 8),
+        "scroll_deadzone": ([{"axes": {3: 0.1}}] * 6),
+        # Axis stick kanan "mentok" (ciri trigger idle) -> kandidat lain.
+        "scroll_axis_mentok": ([{"axes": {3: -1.0, 2: 0.7}}] * 4),
+        # Guard 8 tick per frame (axis ekstrem perangkat ter-script).
+        "scroll_guard": ([{"axes": {3: 20.0}}] * 2),
+        # Kombinasi: tombol + dpad + scroll dalam satu frame.
+        "kombinasi": [
+            {"buttons": {0: True}, "hat": [0, 1], "axes": {3: 1.0}},
+            {"buttons": {0: True}, "hat": [0, 1], "axes": {3: 1.0}},
+            {"buttons": {}, "hat": [0, 1], "axes": {3: 1.0}},
+        ],
+    }
+    scenarios = []
+    for label, frames in scripts.items():
+        state = _device_state("Xbox Wireless Controller",
+                              "030000005e040000fd02000000000000", 15, 6)
+        with _JoystickPatch(state):
+            manager = _controller_manager(core, state)
+            steps = [_frame(None, manager, state, f) for f in frames]
+            scenarios.append({"name": label, "steps": steps})
+    return scenarios
+
+
+def _controller_rumble_fixture(core):
+    cases = []
+    for intensity, frames in ((0.6, 15), (0.4, 10), (0.8, 20), (0.5, 1)):
+        state = _device_state("Xbox Wireless Controller",
+                              "030000005e040000fd02000000000000", 15, 6)
+        with _JoystickPatch(state):
+            manager = _controller_manager(core, state)
+            manager.rumble(intensity, frames)
+            calls = list(state["rumble"])
+            timer_after_call = manager._rumble_timer
+            extra = 0
+            while manager._rumble_timer > 0 and extra < frames + 2:
+                manager.update()
+                extra += 1
+            cases.append({
+                "intensity": intensity,
+                "frames": frames,
+                "expect": {
+                    "calls": calls,
+                    "timer": timer_after_call,
+                    "frames_until_stop": extra,
+                    "stop_calls": state["stop_rumble"],
+                },
+            })
+    # Mode keyboard: rumble tidak boleh menyentuh perangkat.
+    state = _device_state("Xbox Wireless Controller",
+                          "030000005e040000fd02000000000000", 15, 6)
+    with _JoystickPatch(state):
+        manager = core.ControllerManager()
+        manager.init_joystick()
+        manager.rumble(0.9, 30)
+        cases.append({
+            "intensity": 0.9,
+            "frames": 30,
+            "expect": {"calls": [], "timer": manager._rumble_timer,
+                       "frames_until_stop": 0, "stop_calls": 0},
+        })
+    return cases
+
+
+def _controller_ui_button_fixture(core):
+    cases = []
+    rects = {
+        "play": (460, 300, 360, 50),
+        "settings": (460, 400, 360, 50),
+        "credits": (460, 500, 360, 50),
+    }
+    import pygame
+    for label, cursor, moved in (
+            ("tengah_play", (640, 320), "play"),
+            ("tepi_kiri_atas", (460, 300), "play"),
+            ("tepi_kanan_bawah_keluar", (820, 350), None),
+            ("kosong", (10, 10), None),
+            ("jauh_dari_semua", (1200, 700), "credits")):
+        state = _device_state("Xbox Wireless Controller",
+                              "030000005e040000fd02000000000000", 15, 6)
+        with _JoystickPatch(state):
+            manager = _controller_manager(core, state)
+            manager.cursor_x, manager.cursor_y = cursor
+            ui = {k: pygame.Rect(*v) for k, v in rects.items()}
+            found = manager.find_ui_button_at_cursor(ui)
+            found_id = None
+            if found is not None:
+                for key, rect in ui.items():
+                    if rect == found:
+                        found_id = key
+                        break
+            manager.snap_to_nearest_button(ui)
+            cases.append({
+                "name": label,
+                "rects": {k: list(v) for k, v in rects.items()},
+                "cursor": list(cursor),
+                "expect": {
+                    "found": found_id,
+                    "snap": [int(manager.cursor_x), int(manager.cursor_y)],
+                },
+            })
+    # Tanpa button sama sekali: snap = no-op.
+    state = _device_state("Xbox Wireless Controller",
+                          "030000005e040000fd02000000000000", 15, 6)
+    with _JoystickPatch(state):
+        manager = _controller_manager(core, state)
+        manager.cursor_x, manager.cursor_y = (123, 456)
+        manager.snap_to_nearest_button({})
+        cases.append({
+            "name": "tanpa_button",
+            "rects": {},
+            "cursor": [123, 456],
+            "expect": {"found": None, "snap": [123, 456]},
+        })
+    return cases
+
+
+# ── 2. ROUTING (blok main_desktop_legacy.py DI-EXEC apa adanya) ───────
+
+def _key_name(key):
+    """Nama tombol pygame ('q'/'escape') — Godot memetakan ke KEY_* sendiri."""
+    import pygame
+    return pygame.key.name(int(key))
+
+
+class _FakeCinematic:
+    def __init__(self, active, calls, kind):
+        self._active = active
+        self._calls = calls
+        self._kind = kind
+
+    def is_active(self):
+        return self._active
+
+    @property
+    def celebration_active(self):
+        return self._active
+
+    def handle_skip(self, key=None):
+        self._calls.append(["skip", self._kind])
+        self._active = False
+        return True
+
+
+class _FakeGame:
+    """Game palsu untuk blok routing: merekam tiap panggilan produksi.
+
+    `shop_open` sengaja jadi property supaya penugasan
+    `game.shop_open = False` (cabang cancel pertama) ikut terekam.
+    """
+
+    def __init__(self, spec, calls):
+        self.state = spec.get("game_state", "playing")
+        self._shop_open = spec.get("shop_open", False)
+        self.build_popup_slot = spec.get("build_popup_slot", None)
+        self.popup_target = spec.get("popup_target", None)
+        self._calls = calls
+        hero = spec.get("selected_hero", None)
+        tower = spec.get("selected_tower", None)
+        self.selected_hero = SimpleNamespace(selected=True) if hero else None
+        self.selected_tower = SimpleNamespace(selected=True) if tower else None
+        self.level_number = spec.get("level_number", 1)
+        self.ui_buttons = dict(spec.get("ui_buttons", {}))
+        self._next_level_requested = False
+        self._return_to_menu_requested = False
+        self.tactical = SimpleNamespace(
+            hold_end=lambda: calls.append(["hold_end"]))
+        self.level_intro = _FakeCinematic(
+            spec.get("level_intro", False), calls, "level_intro")
+        self.boss_intro = _FakeCinematic(
+            spec.get("boss_intro", False), calls, "boss_intro")
+        self.boss_death = _FakeCinematic(
+            spec.get("boss_death", False), calls, "boss_death")
+
+    @property
+    def next_level_requested(self):
+        return self._next_level_requested
+
+    @next_level_requested.setter
+    def next_level_requested(self, value):
+        self._next_level_requested = value
+        if value:
+            self._calls.append(["next_level"])
+
+    @property
+    def return_to_menu_requested(self):
+        return self._return_to_menu_requested
+
+    @return_to_menu_requested.setter
+    def return_to_menu_requested(self, value):
+        self._return_to_menu_requested = value
+        if value:
+            self._calls.append(["return_to_menu"])
+
+    @property
+    def shop_open(self):
+        return self._shop_open
+
+    @shop_open.setter
+    def shop_open(self, value):
+        self._shop_open = value
+        if not value:
+            self._calls.append(["close_shop"])
+
+    def close_build_popup(self):
+        self.build_popup_slot = None
+        self._calls.append(["close_build_popup"])
+
+    def close_popup(self):
+        self.popup_target = None
+        self._calls.append(["close_popup"])
+
+    def handle_key(self, key):
+        self._calls.append(["key", _key_name(key)])
+
+    def handle_click(self, pos, button):
+        self._calls.append(["click", int(pos[0]), int(pos[1]), int(button)])
+
+
+class _FakeMenu:
+    def __init__(self, spec, calls):
+        self.state = spec.get("menu_state", "main")
+        self.action = None
+        self.buttons = dict(spec.get("menu_buttons", {}))
+        self._calls = calls
+
+    def handle_key(self, key):
+        self._calls.append(["menu_key", _key_name(key)])
+
+    def handle_click(self, pos, button):
+        self._calls.append(
+            ["menu_click", int(pos[0]), int(pos[1]), int(button)])
+
+    def show_pause(self):
+        self._calls.append(["show_pause"])
+
+
+def _legacy_controller_block(core):
+    """Ambil blok routing controller dari main_desktop_legacy.py apa adanya.
+
+    Blok ini SATU-SATUNYA konsumen ControllerManager pygame (build Android
+    main.py:250 memasang controller_mgr = None). Daripada menyalinnya
+    (rawan drift), source-nya dipotong dan di-exec dengan objek palsu.
+    """
+    sys.path.insert(0, str(ROOT))
+    import main_desktop_legacy as legacy
+    source = textwrap.dedent(inspect.getsource(legacy.main)).split("\n")
+    start = None
+    for i, line in enumerate(source):
+        if line.strip().startswith(
+                "if controller.is_controller_mode() and controller.connected:"):
+            start = i
+            break
+    assert start is not None, "blok routing controller tidak ditemukan"
+    end = len(source)
+    for i in range(start + 1, len(source)):
+        line = source[i]
+        if line.strip() == "":
+            continue
+        indent = len(line) - len(line.lstrip())
+        if indent <= 8:
+            end = i
+            break
+    block = "\n".join(source[start:end])
+    block = textwrap.dedent(block)
+    return compile(block, "<main_desktop_legacy:controller>", "exec"), legacy
+
+
+def _run_routing_case(core, block, legacy, spec):
+    import pygame
+    calls = []
+    state = _device_state(
+        "Xbox Wireless Controller",
+        "030000005e040000fd02000000000000", 15, 6)
+    with _JoystickPatch(state):
+        manager = _controller_manager(core, state)
+        manager.controller_type = "xbox"
+        cursor = spec.get("cursor", [640, 360])
+        manager.cursor_x, manager.cursor_y = cursor
+        # Aksi disuapkan langsung: MANAJER sudah dikunci di seksi
+        # `actions`/`cursor` — di sini yang diuji adalah KONSUMSINYA.
+        manager.get_pressed_actions = lambda: list(spec["actions"])
+        game = _FakeGame(spec, calls)
+        menu = _FakeMenu(spec, calls)
+        # pygame memakai Rect (centerx/collidepoint) — sama seperti oracle.
+        game.ui_buttons = {k: pygame.Rect(*v)
+                           for k, v in game.ui_buttons.items()}
+        menu.buttons = {k: pygame.Rect(*v) for k, v in menu.buttons.items()}
+        if spec.get("menu_state") is not None:
+            from menu import MenuState
+            menu.state = getattr(MenuState, spec["menu_state"])
+        # Spy snap: pygame memanggil snap lewat _snap_cursor_to_menu_button
+        # (menu) atau langsung dengan game.ui_buttons (game) — keduanya
+        # direkam supaya trace Godot bisa dibandingkan 1:1.
+        real_snap = manager.snap_to_nearest_button
+
+        def _spy_snap(ui_buttons, _real=real_snap):
+            kind = "game" if ui_buttons is game.ui_buttons else "menu"
+            calls.append(["snap", kind])
+            return _real(ui_buttons)
+
+        manager.snap_to_nearest_button = _spy_snap
+        fps = SimpleNamespace(toggle=lambda: calls.append(["fps_toggle"]))
+        splash = SimpleNamespace(skip=lambda: calls.append(["splash_skip"]))
+        namespace = {
+            "controller": manager,
+            "game": game,
+            "menu": menu,
+            "fps_counter": fps,
+            "splash": splash,
+            "pygame": pygame,
+            "SCREEN_WIDTH": core.SCREEN_WIDTH,
+            "SCREEN_HEIGHT": core.SCREEN_HEIGHT,
+            "STATE_SPLASH": "splash",
+            "STATE_MENU": "menu",
+            "STATE_GAME": "game",
+            "STATE_PAUSE": "pause",
+            "current_state": spec["state"],
+            "_snap_cursor_to_menu_button": legacy._snap_cursor_to_menu_button,
+            "_menu_is_scrollable": legacy._menu_is_scrollable,
+        }
+        exec(block, namespace)  # noqa: S102 — source repo sendiri
+        if spec.get("selected_hero") and game.selected_hero is None:
+            calls.append(["deselect_hero"])
+        if spec.get("selected_tower") and game.selected_tower is None:
+            calls.append(["deselect_tower"])
+        return {
+            "calls": calls,
+            "cursor": [int(manager.cursor_x), int(manager.cursor_y)],
+            "menu_action": menu.action,
+            "next_level_requested": bool(game.next_level_requested),
+            "return_to_menu_requested": bool(game.return_to_menu_requested),
+            "rumble": list(state["rumble"]),
+        }
+
+
+def _controller_routing_fixture(core):
+    block, legacy = _legacy_controller_block(core)
+    import pygame
+    specs = []
+
+    def case(name, **kw):
+        kw.setdefault("name", name)
+        specs.append(kw)
+
+    # ── STATE_GAME ──
+    for action in ("confirm", "cancel", "skill_q", "skill_w", "skill_e",
+                   "skill_r", "start", "back", "left_trigger",
+                   "right_trigger", "stick_left", "stick_right",
+                   "scroll_up", "scroll_down", "dpad_up", "dpad_down",
+                   "dpad_left", "dpad_right", "aksi_tak_dikenal"):
+        case("game_%s" % action, state="game", actions=[action])
+    case("game_confirm_level_intro", state="game", actions=["confirm"],
+         level_intro=True)
+    case("game_confirm_boss_intro", state="game", actions=["confirm"],
+         boss_intro=True)
+    case("game_confirm_celebration", state="game", actions=["confirm"],
+         boss_death=True)
+    case("game_confirm_victory_next", state="game", actions=["confirm"],
+         game_state="victory", ui_buttons={"play_next_level": (500, 400, 200, 50)})
+    case("game_confirm_victory_tanpa_tombol", state="game",
+         actions=["confirm"], game_state="victory", ui_buttons={})
+    case("game_confirm_level_terakhir", state="game", actions=["confirm"],
+         game_state="victory", level_number=54,
+         ui_buttons={"play_next_level": (500, 400, 200, 50)})
+    case("game_skill_q_victory", state="game", actions=["skill_q"],
+         game_state="victory")
+    case("game_skill_q_defeat", state="game", actions=["skill_q"],
+         game_state="defeat")
+    case("game_skill_r_victory", state="game", actions=["skill_r"],
+         game_state="victory")
+    case("game_cancel_shop", state="game", actions=["cancel"], shop_open=True)
+    case("game_cancel_build_popup", state="game", actions=["cancel"],
+         shop_open=True, build_popup_slot=3)
+    # CATATAN: `popup_target` TANPA `shop_open` sengaja tidak dikunci —
+    # toko Godot terpadu (build popup + popup menara/nexus = ShopPanel),
+    # jadi lapis itu tidak punya padanan state (deviasi terdokumentasi di
+    # header ControllerRouter.gd).
+    case("game_cancel_hero", state="game", actions=["cancel"],
+         selected_hero="kaizen")
+    case("game_cancel_tower", state="game", actions=["cancel"],
+         selected_tower="archer")
+    case("game_dpad_shop", state="game", actions=["dpad_up", "dpad_down"],
+         shop_open=True)
+    case("game_cursor_pojok", state="game", actions=["dpad_right"],
+         cursor=[1250, 360])
+    case("game_cursor_pojok_atas", state="game", actions=["dpad_up"],
+         cursor=[640, 20])
+    case("game_rantai_batal", state="game",
+         actions=["confirm", "cancel", "start", "back"])
+
+    # ── STATE_MENU ──
+    for action in ("confirm", "cancel", "back", "stick_left", "stick_right",
+                   "scroll_up", "scroll_down", "dpad_up", "dpad_down",
+                   "dpad_left", "dpad_right", "skill_q"):
+        case("menu_%s" % action, state="menu", actions=[action],
+             menu_state="MAIN",
+             menu_buttons={"play": (460, 300, 360, 50),
+                           "settings": (460, 400, 360, 50)})
+    case("menu_dpad_hero_shop", state="menu", actions=["dpad_up", "dpad_down"],
+         menu_state="HERO_SHOP", menu_buttons={"h1": (100, 100, 200, 60)})
+    case("menu_dpad_level_select", state="menu",
+         actions=["dpad_up", "dpad_down"], menu_state="LEVEL_SELECT",
+         menu_buttons={"level_1": (100, 100, 200, 60)})
+    case("menu_scroll_hero_shop", state="menu",
+         actions=["scroll_up", "scroll_down"], menu_state="HERO_SHOP",
+         menu_buttons={"h1": (100, 100, 200, 60)})
+    case("menu_kursor_pojok", state="menu", actions=["dpad_left"],
+         menu_state="MAIN", cursor=[10, 360],
+         menu_buttons={"play": (460, 300, 360, 50)})
+
+    # ── STATE_PAUSE ──
+    for action in ("confirm", "cancel", "start", "back", "stick_right",
+                   "dpad_up"):
+        case("pause_%s" % action, state="pause", actions=[action],
+             menu_state="PAUSE",
+             menu_buttons={"resume": (500, 300, 280, 50)})
+
+    # ── STATE_SPLASH ──
+    case("splash_tombol_apa_pun", state="splash", actions=["skill_w"])
+    case("splash_confirm", state="splash", actions=["confirm"])
+
+    scenarios = []
+    for spec in specs:
+        # Rect disimpan sebagai LIST (bukan tuple) supaya fixture JSON dan
+        # objek in-memory identik — kalau tidak, freshness check selalu
+        # gagal karena tuple != list.
+        serialized = {}
+        for key, value in spec.items():
+            if key == "name":
+                continue
+            if isinstance(value, dict):
+                serialized[key] = {k: list(v) for k, v in value.items()}
+            else:
+                serialized[key] = value
+        scenarios.append({
+            "name": spec["name"],
+            "spec": serialized,
+            "expect": _run_routing_case(core, block, legacy, spec),
+        })
+    # Kunci bahwa blok yang di-exec benar-benar milik file legacy (bukan
+    # salinan): jumlah cabang aksi yang ditanganinya ikut direkam.
+    source = inspect.getsource(legacy.main)
+    handled = sorted({
+        line.split("==", 1)[1].strip().strip("'\"")
+        for line in source.splitlines()
+        if "if action ==" in line or "elif action ==" in line
+    })
+    return {"scenarios": scenarios, "actions_handled": handled,
+            "key_esc": _key_name(pygame.K_ESCAPE)}
+
+
+def make_controller_input_fixture(core):
+    state = _device_state("Xbox Wireless Controller",
+                          "030000005e040000fd02000000000000", 15, 6)
+    with _JoystickPatch(state):
+        manager = core.ControllerManager()
+        labels, action_labels, hints, infos = _controller_label_fixture(core)
+        constants = {
+            "screen": [core.SCREEN_WIDTH, core.SCREEN_HEIGHT],
+            "cursor_start": [core.SCREEN_WIDTH // 2, core.SCREEN_HEIGHT // 2],
+            "cursor_speed": manager.cursor_speed,
+            "cursor_max_speed": manager.cursor_max_speed,
+            "cursor_acceleration": manager.cursor_acceleration,
+            "deadzone": manager.deadzone,
+            "hat_repeat_delay": manager.hat_repeat_delay,
+            "hat_repeat_rate": manager.hat_repeat_rate,
+            "scroll_step": manager.scroll_step,
+            "scroll_speed": manager.scroll_speed,
+            "scroll_deadzone": manager.scroll_deadzone,
+            "rumble_ms_per_frame": 16.67,
+            "mode_keyboard": core.InputMode.KEYBOARD,
+            "mode_controller": core.InputMode.CONTROLLER,
+        }
+    return {
+        "constants": constants,
+        "detection": _controller_detection_fixture(core),
+        "button_labels": labels,
+        "action_labels": action_labels,
+        "hints": hints,
+        "controller_info": infos,
+        "cursor": _controller_cursor_fixture(core),
+        "actions": _controller_action_fixture(core),
+        "rumble": _controller_rumble_fixture(core),
+        "ui_buttons": _controller_ui_button_fixture(core),
+        "routing": _controller_routing_fixture(core),
+    }
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -9254,6 +10066,12 @@ def make_fixture(core, entity, levels, paths):
         # sebagai OFFSET dari now), dan nilai DATA kartu slot. Direplay
         # SaveSlotParityTest.
         "save_slots": make_save_slots_fixture(core, entity),
+        # FASE 24 — LAPISAN GAMEPAD: ControllerManager pygame ASLI dengan
+        # joystick palsu ter-script (deteksi tipe, kursor, urutan aksi,
+        # rumble, label/hint, snap UI) + blok routing controller
+        # main_desktop_legacy.py yang DI-EXEC apa adanya dengan game/menu
+        # palsu. Direplay ControllerInputParityTest lewat scripted_device.
+        "controller_input": make_controller_input_fixture(core),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -9469,6 +10287,20 @@ def main():
               f"{len(mx['txn_cases'])} kasus transaksi ({mx_ok} sukses), "
               f"{len(mx['card_matrix'])} keputusan kartu "
               f"({len(mx['matrix_states'])} state save)")
+        ci = actual["controller_input"]
+        ci_steps = sum(len(sc["steps"]) for sc in ci["actions"])
+        ci_acts = sum(len(st["actions"]) for sc in ci["actions"]
+                      for st in sc["steps"])
+        print("             controller-input oracle: "
+              f"{len(ci['detection'])} kasus deteksi perangkat, "
+              f"{len(ci['cursor'])} skenario kursor, "
+              f"{len(ci['actions'])} skenario aksi ({ci_steps} frame, "
+              f"{ci_acts} aksi), {len(ci['rumble'])} kasus rumble, "
+              f"{len(ci['ui_buttons'])} kasus snap/find, "
+              f"{len(ci['button_labels']) + len(ci['action_labels'])} label, "
+              f"{len(ci['hints'])} konteks hint, "
+              f"{len(ci['routing']['scenarios'])} skenario routing "
+              f"({len(ci['routing']['actions_handled'])} cabang aksi legacy)")
         ss = actual["save_slots"]
         ss_migrated = sum(1 for c in ss["migration_cases"]
                           if c["migrated"])

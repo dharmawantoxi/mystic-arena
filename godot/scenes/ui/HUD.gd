@@ -57,6 +57,9 @@ func _ready():
 	GameManager.wave_started.connect(_on_wave_started)
 	GameManager.level_started.connect(_on_level_started)
 	GameManager.hero_died.connect(_on_field_changed)
+	# FASE 24 — ControllerRouter mencari HUD lewat grup ini untuk aksi
+	# stick_left/F8 (pygame: fps_counter.toggle()).
+	add_to_group("hud")
 	GameManager.minion_died.connect(_on_minion_died)
 	GameManager.boss_spawned.connect(_on_boss_spawned)
 	GameManager.game_over.connect(_on_game_over)
@@ -148,6 +151,27 @@ func _process(delta: float) -> void:
 		_refresh_bars()
 	if _debug_overlay != null and _debug_overlay.visible:
 		_refresh_debug_overlay()
+	_sync_hint_visibility()
+
+
+## Paritas _draw_input_hints (_core.py:2701-2736): bar digambar hanya saat
+## controller mode, dan TIDAK selama cinematic aktif (prompt skip digambar
+## sendiri oleh layar intro/banner/perayaan).
+func _sync_hint_visibility() -> void:
+	var host: Label = get_node_or_null(^"HintLabel")
+	if host == null:
+		return
+	var mgr = _controller_mgr()
+	var on := mgr != null and mgr.is_controller_mode()
+	if on:
+		var m = get_tree().get_first_node_in_group("main")
+		if m != null and is_instance_valid(m) and m.has_method("_cinematic_active") \
+				and m._cinematic_active():
+			on = false
+	if host.visible != on:
+		host.visible = on
+		if on:
+			_refresh_hints()
 
 
 # ══════════════════════════════════════════════════════════
@@ -561,7 +585,25 @@ func _on_nexus_destroyed(team: String, _killer_team: String) -> void:
 ## DEALER), bukan toko/difficulty; toko = H, dan SPASI hanya melewati
 ## intro (level/boss) — paritas _draw_input_hints yang mematikan hint
 ## selama cinematic (_core.py:2720-2727).
+## Mode controller = tabel label PERSIS pygame (get_hints bahasa Inggris);
+## keyboard = label Indonesia Godot (bar-nya toh tersembunyi di mode itu).
+func _controller_mgr():
+	var tree := get_tree()
+	if tree == null:
+		return null
+	var mgr = tree.get_first_node_in_group("controller")
+	if mgr == null or not is_instance_valid(mgr):
+		return null
+	return mgr
+
+
 func _hint_rows(context: String) -> Array:
+	var mgr = _controller_mgr()
+	if mgr != null and mgr.is_controller_mode():
+		var rows: Array = []
+		for h in mgr.get_hints(context):
+			rows.append([str(h[0]), str(h[1])])
+		return rows
 	match context:
 		"victory":
 			return [["ENTER", "lanjut"], ["R", "ulangi"], ["ESC", "menu"]]
@@ -627,15 +669,14 @@ func _build_hint_bar() -> void:
 	bg.add_child(row)
 	_hint_row = row
 	_refresh_hints()
-	# ── KEBIJAKAN TAMPIL (perfeksionis paritas) ──
-	# Pygame hanya menggambar hint bar di mode CONTROLLER legacy desktop
-	# (_draw_input_hints _core.py:2709-2714 — tanpa controller_mgr / mode
-	# keyboard = return tanpa menggambar). Build Android pygame (main.py:250)
-	# bahkan tidak memasang controller_mgr, dan pemain keyboard tidak pernah
-	# melihat bar ini. Godot belum punya lapisan input gamepad, jadi paritas
-	# yang jujur: TIDAK PERNAH tampil. Mesin konteks get_hints di atas tetap
-	# terpasang — cukup lepas baris ini kalau gamepad suatu saat diport.
-	host.visible = false
+	# ── KEBIJAKAN TAMPIL (paritas _draw_input_hints _core.py:2709-2714) ──
+	# Pygame menggambar hint bar HANYA di mode CONTROLLER (tanpa
+	# controller_mgr / mode keyboard = return tanpa menggambar); build
+	# Android pygame (main.py:250) bahkan tidak memasang controller_mgr.
+	# FASE 24 memport lapisan gamepad, jadi bar ini kini HIDUP saat mode
+	# controller dan tetap SEMBUNYI untuk keyboard/sentuh — diperiksa tiap
+	# frame di _process (mode bisa berganti lewat tombol INPUT di menu).
+	_sync_hint_visibility()
 
 
 func _hint_item(key: String, desc: String) -> HBoxContainer:
