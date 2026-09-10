@@ -54,6 +54,9 @@ var _ai = null
 ## Perintah taktis tim biru (port tactical_commands — dibuat di _ready,
 ## dikelola sendiri via _physics_process 60 Hz)
 var _tactical = null
+# FASE 24 — lapisan gamepad (dibuat di _ready, dipakai _process/UI).
+var _controller = null
+var _router = null
 ## Pemicu UI FASE 18 — port InputHandler pygame (_core.py):
 ## KEYDOWN G/F/T/C/B/D -> hold_start, KEYUP -> hold_end.
 ## G dan F dua tuts untuk perintah yang sama (gather).
@@ -163,6 +166,30 @@ func _ready():
 	_tactical.name = "TacticalCommands"
 	add_child(_tactical)
 	_tactical.process_mode = Node.PROCESS_MODE_PAUSABLE
+	# FASE 24 — LAPISAN GAMEPAD (port controller_manager.py + routing
+	# main_desktop_legacy.py). Keduanya ALWAYS: pygame merutekan pad di SEMUA
+	# state (splash/menu/game/pause), jadi kalau ikut PAUSABLE tombol pad
+	# tidak bisa membuka atau menutup pause. Aksi gameplay tetap beku karena
+	# router memeriksa state sendiri (branch STATE_GAME).
+	_controller = preload("res://scripts/systems/ControllerManager.gd").new()
+	_controller.name = "ControllerManager"
+	add_child(_controller)
+	_controller.process_mode = Node.PROCESS_MODE_ALWAYS
+	_router = preload("res://scripts/systems/ControllerRouter.gd").new()
+	_router.name = "ControllerRouter"
+	_router.controller = _controller
+	add_child(_router)
+	_router.process_mode = Node.PROCESS_MODE_ALWAYS
+	# Kursor virtual digambar paling atas CanvasLayer UI (paritas blit
+	# terakhir _render.py:1615) dan ikut membaca mode controller.
+	var ui_layer = get_node_or_null(^"UI")
+	if ui_layer != null:
+		var pad_cursor = preload("res://scenes/ui/VirtualCursor.gd").new()
+		pad_cursor.name = "VirtualCursor"
+		pad_cursor.manager = _controller
+		ui_layer.add_child(pad_cursor)
+	if menu != null:
+		menu.controller_mgr = _controller
 
 func _build_slot_layer() -> void:
 	_slot_layer = Node2D.new()
@@ -523,6 +550,38 @@ func _cinematic_click() -> bool:
 				and fx.cinematic_active():
 			return fx.skip_click()
 	return false
+
+## STATE_SPLASH pygame (main_desktop_legacy.py:154-157): selama layar
+## splash tampil, tombol pad APA PUN hanya melewatinya. Node splash
+## mendaftar ke grup "splash" (scenes/ui/SplashScreen.gd).
+func _splash_active() -> bool:
+	for node in get_tree().get_nodes_in_group("splash"):
+		if is_instance_valid(node) and node.has_method("is_done") \
+				and not node.is_done():
+			return true
+	return false
+
+
+func _skip_splash() -> void:
+	for node in get_tree().get_nodes_in_group("splash"):
+		if is_instance_valid(node) and node.has_method("skip"):
+			node.skip()
+
+
+## Cinematic mana yang aktif, dengan nama yang sama seperti pygame
+## (level_intro / boss_intro / boss_death) — dibaca ControllerRouter untuk
+## jejak paritas aksi `confirm` (main_desktop_legacy.py:210-221).
+func _cinematic_kind() -> String:
+	if is_instance_valid(_level_intro) and _level_intro.cinematic_active():
+		return "level_intro"
+	if is_instance_valid(_boss_banner) and _boss_banner.cinematic_active():
+		return "boss_intro"
+	for fx in get_tree().get_nodes_in_group("cinematic"):
+		if is_instance_valid(fx) and fx.has_method("cinematic_active") \
+				and fx.cinematic_active():
+			return "boss_death"
+	return ""
+
 
 ## Rantai yang SAMA dengan _cinematic_click/_cinematic_key, tanpa efek
 ## samping — dibaca TouchHUD tiap frame untuk tombol SKIP (paritas

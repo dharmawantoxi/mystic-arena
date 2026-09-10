@@ -8,6 +8,56 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Lapisan gamepad — 11 September 2026 (FASE 24)
+
+`_core.py` punya delapan modul gabungan; audit blok-per-blok-nya kini tertulis
+di [CORE_PY_COVERAGE.md](CORE_PY_COVERAGE.md). Blok terbesar yang **belum punya
+padanan sama sekali** adalah `controller_manager.py` (`_core.py:9299-10234`,
+±935 baris) — satu-satunya konsumennya `main_desktop_legacy.py` (build Android
+pygame memasang `menu.controller_mgr = None`, `main.py:250`). Karena lapisan
+ini tidak ada, hint bar pygame tidak mungkin diport (komentar lama
+`HUD._build_hint_bar`: "Godot belum punya lapisan input gamepad"). Kini diport:
+
+| Bagian pygame | Port Godot | Catatan |
+|---|---|---|
+| `ControllerManager` (deteksi tipe, kursor virtual, aksi, rumble, label/hint, snap UI) | `scripts/systems/ControllerManager.gd` | Nilai/urutan/aturan sama: kursor 12→25 kurva `magnitude^1.5` deadzone 0.25; D-PAD fresh + repeat delay 22/rate 5; trigger `> 0.5` strict; scroll accum 0.55/deadzone 0.18/step 1.0 guard 8 tick; `rumble` = `int(frames × 16.67)` ms + stop otomatis; tabel label xbox/ps/generic + 7 konteks hint |
+| Blok routing aksi (`main_desktop_legacy.py:146-320`) | `scripts/systems/ControllerRouter.gd` | Menerjemahkan aksi pad ke JALUR PRODUKSI keyboard/mouse: `Main._on_key/_on_click/_on_right_click`, `_cinematic_click`, `_toggle_pause`, `_tactical_release_all`, `MainMenu._handle_escape/_do_resume`, `GameManager.next_level`, `HUD.toggle_debug_overlay` |
+| `draw_cursor` (`:9837-9934`) | `scenes/ui/VirtualCursor.gd` | Geometri/warna 1:1 (pulse `sin(t·0.1)·0.3+0.7`, glow r12, crosshair ±3..±8, bracket 12 px offset 5); kotak beradius via StyleBoxFlat |
+| `Menu._toggle_input_mode` + tombol `input_select` (`:4774`, `:7025-7037`) | `MainMenu._toggle_input_mode` + tombol **INPUT** di menu utama + label `INPUT: …` kiri-bawah | Termasuk `rescan()` + `debug_print()` saat controller belum terdeteksi |
+| `Game._draw_input_hints`/`_input_label` (`:2701-2756`) | `HUD._hint_rows` + `ControllerManager.get_hints` | Bar kini **tampil hanya di mode controller** (persis `_core.py:2709-2714`) dan memakai tabel label pygame; keyboard/sentuh tetap tanpa bar (assertion lama `UiHudParityTest` tidak berubah) |
+| STATE_SPLASH (`main_desktop_legacy.py:154-157`) | `Main._splash_active/_skip_splash` + `SplashScreen` masuk grup `splash` | Node splash-nya sendiri masih belum dipasang di `main.tscn` (tercatat di CORE_PY_COVERAGE) |
+
+**Deviasi terdokumentasi (mesin, bukan perilaku):** (1) pygame membaca
+tombol/axis MENTAH per vendor (`XBOX_MAP`/`PS_MAP`/`GENERIC_MAP`), Godot
+menormalkan lewat SDL sehingga cukup satu `BUTTON_MAP` — ketiga tipe tetap ada
+karena LABEL-nya beda; (2) D-PAD pygame = `get_hat(0)`, Godot = 4 tombol
+`JOY_BUTTON_DPAD_*` yang disintesis jadi vektor hat; (3) pygame punya
+`get_numbuttons/get_numaxes`, Godot tidak — `_device_button_count/_axis_count`
+memakai `Input.is_joy_known()` (21/6 vs 0/0) sehingga aturan fallback
+"≥ 11 tombol & ≥ 4 axis → xbox" tetap dieksekusi apa adanya; (4) `rumble(low,
+high, ms)` → `start_joy_vibration(weak=high, strong=low, detik)`; (5) snap
+kursor membaca rect `BaseButton` hidup (pygame: dict `ui_buttons`/`buttons`);
+(6) cabang `popup_target` TANPA `shop_open` tidak punya padanan karena toko
+Godot terpadu.
+
+**Oracle-nya menjalankan kode pygame asli, bukan salinan:**
+`tools/test_godot_match_parity.py` menambal `pygame.joystick` dengan perangkat
+ter-script lalu menjalankan `ControllerManager` pygame sungguhan, dan
+**memotong + meng-`exec` blok routing `main_desktop_legacy.py` apa adanya**
+(dengan `game`/`menu`/`fps_counter`/`splash` palsu yang merekam panggilan) —
+jadi kalau routing legacy berubah, fixture ikut berubah dan CI menolaknya.
+`main_desktop_legacy.py` kini ikut filter `paths` di `godot-check.yml`.
+
+**Validasi:** `gdparse` seluruh `.gd` + `tscn_lint` 36 scene + `check_refs` +
+`particles_lint` + 5 self-test log-gate + `test_godot_match_parity.py`
+(freshness, dua run identik) lulus lokal. `ControllerInputParityTest` baru
+(9 deteksi perangkat, 7 skenario kursor, 12 skenario aksi/138 frame, 5 rumble,
+6 snap/find, 136 label, 28 konteks hint, 60 skenario routing + 1 kasus
+`tick_frame` jalur produksi penuh) dijalankan CI — **binary Godot tidak
+tersedia di sandbox**, jadi replay headless-nya diverifikasi di
+`godot-check.yml`. **Piksel** kursor (glow/bracket) dan **audio** belum teruji;
+perangkat fisik tidak diuji (hanya perangkat ter-script).
+
 ## Integrasi TouchHUD — 10 September 2026 (FASE 23)
 
 Temuan audit: `TouchHUD.gd` sudah ditulis lengkap tetapi **tidak dipakai di

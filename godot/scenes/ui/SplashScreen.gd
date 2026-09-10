@@ -30,6 +30,9 @@ var _view: Control = null
 func _ready() -> void:
 	layer = 100
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# FASE 24 — routing gamepad membaca STATE_SPLASH lewat grup ini
+	# (main_desktop_legacy.py:154-157: tombol pad apa pun = skip splash).
+	add_to_group("splash")
 	_logo = load("res://assets/logo.png") as Texture2D
 	if _logo == null:
 		_logo = load("res://assets/icon.png") as Texture2D
@@ -66,6 +69,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		if k.pressed and not k.echo:
 			skip()
 			get_viewport().set_input_as_handled()
+
+
+## Paritas splash.is_done() (splash_screen.py) — dipakai routing pad.
+func is_done() -> bool:
+	return _done
 
 
 func skip() -> void:

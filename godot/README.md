@@ -75,6 +75,21 @@ godot godot/project.godot
 | `P` / `ESC` | menu PAUSE (RESUME / PENGATURAN / MENU UTAMA / KELUAR — paritas `MenuState.PAUSE`); ESC setelah menang/kalah = menu utama |
 | `SPACE` / `ENTER` / klik | lewati layar intro level (gameplay beku sampai dilewati); SPACE/ESC/klik juga menutup banner nama boss & perayaan "BOSS DEFEATED!" |
 
+**Gamepad (FASE 24):** tekan tombol **INPUT** di MENU UTAMA untuk berpindah
+keyboard ⇄ controller (label kiri-bawah berubah jadi `INPUT: XBOX CONTROLLER`
+/ `PLAYSTATION CONTROLLER` / `GENERIC CONTROLLER`). Tombol pad mengikuti
+`main_desktop_legacy.py` pygame: **A** klik/konfirmasi (juga skip cinematic, dan
+NEXT LEVEL saat victory) · **B** tutup UI berurutan lalu pause · **X/Y/LB/RB**
+skill Q/W/E/R (X = REPLAY dan RB = NEXT LEVEL setelah match usai) · **START**
+pause · **VIEW/SELECT** menu utama setelah match usai · **LT** toko (H) ·
+**RT** klik kanan (perintah hero) · **L3** overlay FPS · **R3** snap kursor ke
+tombol UI terdekat · **D-PAD** lompat kursor (atau gulir list saat toko/level
+select/hero shop terbuka) · **stick kanan** gulir list. Kursor virtual
+(crosshair + kotak sorot) muncul hanya di mode controller, dan hint bar bawah
+ikut tampil dengan label tombol pad — persis `_draw_input_hints` pygame yang
+hanya menggambar bar itu di mode controller. Rumble ikut menyala saat cast
+skill. Dikunci `ControllerInputParityTest`.
+
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
 Di layar sentuh (dan klik mouse): tombol **II** jeda di kiri atas, **SKIP >>** saat cinematic, dan **REPLAY / NEXT LEVEL / MENU** setelah match usai — paritas `mobile/hud.py` (tombol FPS hanya dengan `MYSTIC_DEBUG=1`, dan jeda pindah ke panel kanan di layar lebar). Dikunci `TouchHudParityTest`.

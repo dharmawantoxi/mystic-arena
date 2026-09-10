@@ -42,6 +42,7 @@ on:
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
+      - 'main_desktop_legacy.py'
       - '.github/workflows/godot-check.yml'
   push:
     branches: [main]
@@ -64,6 +65,7 @@ on:
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
+      - 'main_desktop_legacy.py'
       - '.github/workflows/godot-check.yml'
   workflow_dispatch:
 
@@ -726,6 +728,29 @@ jobs:
             cat /tmp/touchhud.gate
             echo "::error::TOUCHHUD-FAIL-TAIL: $(tail -40 /tmp/touchhud.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::TOUCHHUD-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/touchhud.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4t. ControllerInputParityTest (FASE 24): LAPISAN GAMEPAD
+      # (controller_manager.py + blok routing main_desktop_legacy.py).
+      # Oracle menjalankan ControllerManager pygame ASLI dengan joystick
+      # palsu ter-script dan MENG-EXEC blok routing legacy apa adanya;
+      # replay Godot lewat ControllerManager.scripted_device +
+      # ControllerRouter.route/tick_frame (jalur produksi).
+      - name: ControllerInputParityTest (lapisan gamepad vs oracle pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/ControllerInputParityTest.tscn --quit-after 600 2>&1 | tee /tmp/controller.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/controller.log --label "ControllerInputParityTest" \
+              --require "[ControllerInputParityTest] PASS" > /tmp/controller.gate 2>&1; then
+            cat /tmp/controller.gate
+          else
+            cat /tmp/controller.gate
+            echo "::error::CONTROLLER-FAIL-TAIL: $(tail -40 /tmp/controller.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::CONTROLLER-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/controller.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 

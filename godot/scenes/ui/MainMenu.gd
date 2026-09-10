@@ -114,6 +114,13 @@ var _slot_delete_confirm: int = -1
 var _slot_delete_return: int = 1
 
 
+## FASE 24 — lapisan gamepad (paritas `menu.controller_mgr` pygame yang
+## dipasang main_desktop_legacy.py:59). Diisi Main._ready.
+var controller_mgr = null
+## Label INPUT kiri-bawah (paritas _input_label _core.py:3834-3843).
+var _input_label_node: Label = null
+
+
 func _ready() -> void:
 	name = "MainMenu"
 	add_to_group("main_menu")
@@ -408,6 +415,10 @@ func _build_main() -> void:
 	# ── tumpukan tombol 360x50 gap 53 (paritas buttons_data pygame) ──
 	var buttons: Array = [
 		["HERO SHOP", Color(1.0, 220.0 / 255.0, 100.0 / 255.0), _show.bind(State.HERO_SHOP), "coin"],
+		# Paritas tombol "input_select" (_core.py:4774 + :7025-7037): toggle
+		# keyboard <-> controller, rescan kalau belum terdeteksi.
+		["INPUT", Color(100.0 / 255.0, 200.0 / 255.0, 220.0 / 255.0),
+			_toggle_input_mode, "pad"],
 		["CARA MAIN (HOW TO PLAY)", Color(110.0 / 255.0, 180.0 / 255.0, 1.0), _show.bind(State.HOW_TO_PLAY), "help"],
 		["PENGATURAN (SETTINGS)", Color(205.0 / 255.0, 180.0 / 255.0, 105.0 / 255.0), _show.bind(State.SETTINGS), "gear"],
 		["KREDIT", Color(200.0 / 255.0, 130.0 / 255.0, 210.0 / 255.0), _show.bind(State.CREDITS), "star"],
@@ -442,8 +453,9 @@ func _build_main() -> void:
 	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(foot)
 	var input_lab := Label.new()
-	UiTheme.style_label(input_lab, "INPUT: KEYBOARD + MOUSE",
+	UiTheme.style_label(input_lab, _input_mode_text(),
 		UiTheme.body_regular(), 15, Color(110.0 / 255.0, 200.0 / 255.0, 210.0 / 255.0))
+	_input_label_node = input_lab
 	foot.add_child(input_lab)
 	var version := Label.new()
 	UiTheme.style_label(version, "v2.0  •  MOBA Tower Defense",
@@ -455,6 +467,34 @@ func _build_main() -> void:
 	pad.custom_minimum_size = Vector2(190, 0)
 	pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	foot.add_child(pad)
+
+
+## Paritas Menu._toggle_input_mode / cabang "input_select"
+## (_core.py:7025-7037, :7630-7647): mode controller -> keyboard; kalau
+## belum ada controller, rescan dulu (debug_print pygame = log [CONTROLLER]).
+func _toggle_input_mode() -> void:
+	if controller_mgr == null or not is_instance_valid(controller_mgr):
+		print("[INPUT] No controller layer")
+		return
+	if not controller_mgr.is_controller_mode() and not controller_mgr.connected:
+		controller_mgr.rescan()
+		if controller_mgr.connected:
+			controller_mgr.debug_print()
+	controller_mgr.toggle_input_mode()
+	_refresh_input_label()
+
+
+## Paritas Menu.draw _core.py:3834-3843 (build Android pygame menulis
+## "INPUT: TOUCHSCREEN" karena main.py tidak memasang controller_mgr).
+func _input_mode_text() -> String:
+	if controller_mgr != null and is_instance_valid(controller_mgr):
+		return controller_mgr.input_mode_label()
+	return "INPUT: KEYBOARD + MOUSE"
+
+
+func _refresh_input_label() -> void:
+	if _input_label_node != null and is_instance_valid(_input_label_node):
+		_input_label_node.text = _input_mode_text()
 
 
 ## Ganti tab Hero Shop (paritas shop_tab) lalu bangun ulang grid.
