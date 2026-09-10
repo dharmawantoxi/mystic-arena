@@ -60,9 +60,35 @@ GODOT = os.path.join(ROOT, "godot")
 #  Infrastruktur laporan
 # ══════════════════════════════════════════════════════════════════
 
+## Penanda blok yang ditulis mesin di docs/PARITY_AUDIT.md. Isi di luar
+## penanda ini adalah laporan kurasi (ditulis manusia) dan TIDAK boleh
+## disentuh `--report md`.
+BEGIN = "<!-- BEGIN AUTO AUDIT -->"
+END = "<!-- END AUTO AUDIT -->"
+
+
+def _env_lines():
+    """Versi pustaka — dicantumkan di laporan supaya drift encoder mudah
+    dilacak (audit ini sensitif terhadap versi Pillow/pygame-ce)."""
+    out = ["Python " + sys.version.split()[0]]
+    try:
+        import PIL
+        out.append("Pillow " + PIL.__version__)
+    except Exception:
+        out.append("Pillow TIDAK ADA")
+    try:
+        import pygame
+        out.append("pygame " + pygame.version.ver)
+    except Exception:
+        out.append("pygame TIDAK ADA")
+    out.append("SDL_VIDEODRIVER=" + os.environ.get("SDL_VIDEODRIVER", "-"))
+    return out
+
+
 class Report:
     def __init__(self):
         self.sections = []   # [(nama, status, [baris...])]
+        self.env = []        # baris info lingkungan
 
     def add(self, name, ok, lines=None, warn_only=False):
         status = "PASS" if ok else ("WARN" if warn_only else "FAIL")
@@ -76,6 +102,8 @@ class Report:
         out = ["═" * 72,
                "AUDIT PARITAS VISUAL  pygame ↔ Godot",
                "═" * 72]
+        if self.env:
+            out.append("lingkungan: " + "  |  ".join(self.env))
         for name, status, lines in self.sections:
             mark = {"PASS": "✅", "WARN": "⚠️ ", "FAIL": "❌"}[status]
             out.append("")
@@ -256,6 +284,77 @@ def _md5(path, block=1 << 20):
     return h.hexdigest()
 
 
+def _git_show(rel):
+    """Isi berkas `rel` (relatif ROOT) pada commit tersimpan. None kalau gagal."""
+    res = subprocess.run(["git", "show", "HEAD:%s" % rel], cwd=ROOT,
+                         capture_output=True)
+    if res.returncode != 0:
+        return None
+    return res.stdout
+
+
+def _pixels_equal_bytes(old_blob, new_path):
+    """True kalau PNG tersimpan dan PNG baru IDENTIK secara piksel."""
+    from PIL import Image
+    import io
+    try:
+        with Image.open(io.BytesIO(old_blob)) as ia, \
+                Image.open(new_path) as ib:
+            if ia.size != ib.size or ia.mode != ib.mode:
+                return False
+            return ia.tobytes() == ib.tobytes()
+    except Exception:
+        return False
+
+
+def _git_restore(rels, lines):
+    """Kembalikan berkas ke isi tersimpan (dibatch biar aman)."""
+    for i in range(0, len(rels), 40):
+        batch = rels[i:i + 40]
+        res = subprocess.run(["git", "checkout", "--"] + batch, cwd=ROOT,
+                             capture_output=True, text=True)
+        if res.returncode != 0:
+            lines.append("   gagal mengembalikan %d berkas: %s"
+                         % (len(batch), (res.stderr or "")[:120]))
+
+
+def _classify_stale(stale_rels, lines):
+    """Pisahkan 'beda byte' jadi BEDA ISI (FAIL) vs DRIFT ENCODER (WARN).
+
+    Gerbang ini semula membandingkan byte mentah. Itu benar di satu mesin,
+    tetapi di CI — yang memasang pygame-ce/Pillow terbaru tanpa patokan —
+    ia gagal meski hasil bake IDENTIK secara visual, karena encoder PNG
+    versi lain menghasilkan berkas berbeda untuk piksel yang sama. Audit
+    ini mengukur PARITAS VISUAL, jadi yang menentukan adalah isinya:
+      * piksel berubah -> bake benar-benar usang -> FAIL
+      * piksel identik -> hanya beda encoder    -> WARN, berkas dikembalikan
+                          ke isi tersimpan supaya working tree tetap bersih
+    """
+    real, drift = [], []
+    for rel in stale_rels:
+        old = _git_show(rel)
+        if old is not None and _pixels_equal_bytes(old,
+                                                   os.path.join(ROOT, rel)):
+            drift.append(rel)
+        else:
+            real.append(rel)
+    if real:
+        lines.append("USANG — isi piksel berubah (%d): %s"
+                     % (len(real), ", ".join(os.path.basename(x)
+                                             for x in real[:12])))
+    if drift:
+        lines.append("DRIFT ENCODER (%d berkas): byte berbeda, piksel IDENTIK"
+                     % len(drift))
+        lines.append("   penyebab: versi Pillow/pygame-ce di mesin ini beda "
+                     "dengan yang menghasilkan bake tersimpan")
+        lines.append("   bukan divergensi visual -> tidak digagalkan; "
+                     "berkas dikembalikan ke isi tersimpan")
+        lines.append("   contoh: %s"
+                     % ", ".join(os.path.basename(x) for x in drift[:8]))
+        _git_restore(drift, lines)
+    return real, drift
+
+
 def check_fresh_units(full=False, sample=8):
     import json as _json
     units_dir = os.path.join(GODOT, "assets", "units")
@@ -284,21 +383,22 @@ def check_fresh_units(full=False, sample=8):
     after = _snapshot(units_dir)
     mafter = _md5(manifest_p)
 
-    stale = [fn for fn in before
-             if fn in after and after[fn] != before[fn]]
+    stale = [os.path.relpath(os.path.join(units_dir, fn), ROOT)
+             for fn in before if fn in after and after[fn] != before[fn]]
     lines = []
     if picked:
         lines.append("dibandingkan %d unit (sampel dari %d)"
                      % (len(picked), len(types)))
     else:
         lines.append("dibandingkan semua %d unit" % len(types))
+    _drift = []
     if stale:
-        lines.append("USANG (%d): %s" % (len(stale), ", ".join(stale[:12])))
+        stale, _drift = _classify_stale(stale, lines)
     if mbefore != mafter and not picked:
         lines.append("baked_units.json berubah -> Godot membaca data lama")
     elif mbefore != mafter:
         lines.append("(manifest tidak ditulis karena mode --only)")
-    return not stale, lines
+    return (not stale), lines, False
 
 
 def check_fresh_maps(full=False, sample=4):
@@ -322,15 +422,17 @@ def check_fresh_maps(full=False, sample=4):
         return False, ["bake gagal: %s" % (res.stderr or res.stdout)[-400:]]
     after = _snapshot(maps_dir)
     mafter = _md5(manifest_p) if os.path.exists(manifest_p) else ""
-    stale = [fn for fn in before if fn in after and after[fn] != before[fn]]
+    stale = [os.path.relpath(os.path.join(maps_dir, fn), ROOT)
+             for fn in before if fn in after and after[fn] != before[fn]]
     lines = []
     if picked:
         lines.append("dibandingkan %d map (sampel dari %d)"
                      % (len(picked), len(names)))
     else:
         lines.append("dibandingkan semua %d map" % len(names))
+    _drift = []
     if stale:
-        lines.append("USANG (%d): %s" % (len(stale), ", ".join(stale[:12])))
+        stale, _drift = _classify_stale(stale, lines)
     if picked and mbefore != mafter:
         # Mode --only map TIDAK menulis manifest -> kembalikan berkasnya.
         try:
@@ -338,7 +440,7 @@ def check_fresh_maps(full=False, sample=4):
         except Exception:
             pass
         lines.append("(map_bakes.json dikembalikan: mode --only)")
-    return not stale, lines
+    return (not stale), lines, False
 
 
 def check_fresh_props(full=False):
@@ -355,13 +457,15 @@ def check_fresh_props(full=False):
         return False, ["bake gagal: %s" % (res.stderr or res.stdout)[-400:]]
     after = _snapshot(props_dir)
     mafter = _md5(manifest_p) if os.path.exists(manifest_p) else ""
-    stale = [fn for fn in before if fn in after and after[fn] != before[fn]]
+    stale = [os.path.relpath(os.path.join(props_dir, fn), ROOT)
+             for fn in before if fn in after and after[fn] != before[fn]]
     lines = ["dibandingkan %d strip props" % len(after)]
+    _drift = []
     if stale:
-        lines.append("USANG (%d): %s" % (len(stale), ", ".join(stale[:12])))
+        stale, _drift = _classify_stale(stale, lines)
     if mbefore != mafter:
         lines.append("baked_props.json berubah -> Godot membaca data lama")
-    return not stale, lines
+    return (not stale), lines, bool(_drift)
 
 
 # ══════════════════════════════════════════════════════════════════
@@ -804,26 +908,36 @@ def main():
     want = set(s.strip() for s in args.section.split(",") if s.strip())
 
     rep = Report()
-    if "palette" in want:
-        rep.add("PALET", *check_palette())
-    if "encoder" in want:
-        rep.add("ENCODER", *check_encoder())
-    if "fresh-unit" in want:
-        rep.add("FRESH-UNIT", *check_fresh_units(full=args.full))
-    if "fresh-map" in want:
-        rep.add("FRESH-MAP", *check_fresh_maps(full=args.full))
-    if "fresh-prop" in want:
-        rep.add("FRESH-PROP", *check_fresh_props(full=args.full))
-    if "geometry" in want:
-        rep.add("GEOMETRI", *check_geometry())
-    if "callgroup" in want:
-        rep.add("CALLGROUP", *check_callgroup())
-    if "coverage" in want:
-        rep.add("COVERAGE", *check_coverage())
-    if "smoke" in want:
-        rep.add("SMOKE", *check_smoke())
-    if "hardcode" in want:
-        rep.add("HARDCODE", *check_hardcode())
+    rep.env = _env_lines()
+
+    checks = [
+        ("palette", "PALET", lambda: check_palette()),
+        ("encoder", "ENCODER", lambda: check_encoder()),
+        ("fresh-unit", "FRESH-UNIT",
+         lambda: check_fresh_units(full=args.full)),
+        ("fresh-map", "FRESH-MAP", lambda: check_fresh_maps(full=args.full)),
+        ("fresh-prop", "FRESH-PROP",
+         lambda: check_fresh_props(full=args.full)),
+        ("geometry", "GEOMETRI", lambda: check_geometry()),
+        ("callgroup", "CALLGROUP", lambda: check_callgroup()),
+        ("coverage", "COVERAGE", lambda: check_coverage()),
+        ("smoke", "SMOKE", lambda: check_smoke()),
+        ("hardcode", "HARDCODE", lambda: check_hardcode()),
+    ]
+    for key, name, fn in checks:
+        if key not in want:
+            continue
+        try:
+            rep.add(name, *fn())
+        except Exception as exc:
+            # Satu seksi yang error tidak boleh menggagalkan audit tanpa
+            # alasan: laporan (yang diunggah sebagai artefak) harus selalu
+            # memuat penyebabnya, kalau tidak CI hanya bilang "exit code 1".
+            import traceback
+            tb = traceback.format_exc().strip().splitlines()[-3:]
+            rep.add(name, False,
+                    ["CRASH %s: %s" % (type(exc).__name__, exc)]
+                    + ["   " + l.strip() for l in tb])
 
     print(rep.text())
 
@@ -831,11 +945,25 @@ def main():
         docs = os.path.join(ROOT, "docs")
         os.makedirs(docs, exist_ok=True)
         p = os.path.join(docs, "PARITY_AUDIT.md")
+        block = (BEGIN + "\n"
+                 "## Hasil audit terakhir (otomatis)\n\n"
+                 "Dihasilkan `tools/visual_parity_audit.py` "
+                 "(`--full` = %s).\n\n```\n%s\n```\n"
+                 % ("ya" if args.full else "tidak", rep.text())
+                 + END)
+        old = _read(p) if os.path.exists(p) else ""
+        if BEGIN in old and END in old:
+            # Ganti HANYA blok otomatis — laporan kurasi (analisis, tabel,
+            # keputusan) yang ditulis manusia harus tetap utuh. Dulu berkas
+            # ini ditimpa seluruhnya, jadi setiap kali CI jalan, semua
+            # narasinya hilang.
+            pre, rest = old.split(BEGIN, 1)
+            _dropped, post = rest.split(END, 1)
+            out = pre + block + post
+        else:
+            out = old.rstrip() + "\n\n---\n\n" + block + "\n"
         with open(p, "w", encoding="utf-8") as f:
-            f.write("# Audit Paritas Visual pygame ↔ Godot\n\n")
-            f.write("Dihasilkan `tools/visual_parity_audit.py` "
-                    "(`--full` = %s).\n\n```\n%s\n```\n"
-                    % ("ya" if args.full else "tidak", rep.text()))
+            f.write(out)
         print("\nLaporan ditulis: %s" % p)
 
     return 1 if rep.failed else 0

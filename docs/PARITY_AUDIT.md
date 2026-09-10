@@ -272,3 +272,64 @@ tepat sama dengan `add_shake(25.0)` di pygame.
 
 Keduanya sudah masuk `ALL` dan otomatis ikut di `--full`, jadi CI
 (`.github/workflows/godot-check.yml`) menjalankannya setiap push.
+
+---
+
+<!-- BEGIN AUTO AUDIT -->
+## Hasil audit terakhir (otomatis)
+
+Dihasilkan `tools/visual_parity_audit.py` (`--full` = ya).
+
+```
+════════════════════════════════════════════════════════════════════════
+AUDIT PARITAS VISUAL  pygame ↔ Godot
+════════════════════════════════════════════════════════════════════════
+lingkungan: Python 3.11.2  |  Pillow 12.3.0  |  pygame 2.5.8  |  SDL_VIDEODRIVER=dummy
+
+✅ PASS       PALET
+      32 konstanta warna dibandingkan
+
+✅ PASS       ENCODER
+      _save_strip deterministik
+      _save_map_png deterministik
+
+✅ PASS       FRESH-UNIT
+      dibandingkan semua 222 unit
+
+✅ PASS       FRESH-MAP
+      dibandingkan semua 54 map
+
+✅ PASS       FRESH-PROP
+      dibandingkan 20 strip props
+
+✅ PASS       GEOMETRI
+      465 grup frame divalidasi (region + anchor)
+
+✅ PASS       CALLGROUP
+      1 metode call_group diperiksa
+
+✅ PASS       COVERAGE
+      hero/boss  bake 222 entri
+      map        bake 54 entri
+      minion     bake 10 entri
+      tower      bake 8 entri
+      nexus      bake 2 entri
+      tower      Godot Tower.gd                                    21 primitif  vs  pygame towers/_bundle.py       7274 baris
+      minion     Godot UnitSilhouette.gd                           56 primitif  vs  pygame minions/_bundle.py      9531 baris
+      nexus      Godot Nexus.gd                                    19 primitif  vs  pygame _entity.py              6536 baris
+
+✅ PASS       SMOKE
+      minion: bersih
+      tower: bersih
+      hero/boss: bersih
+
+✅ PASS       HARDCODE
+      1 pemakaian warna UiTheme yang ditulis ulang sebagai literal di .gd
+         godot/scenes/ui/TopupDialog.gd                       1
+      (ini bukan salah, tapi titik drift: ubah UiTheme.gd tidak menjangkau berkas ini)
+
+────────────────────────────────────────────────────────────────────────
+RINGKASAN: 10 PASS, 0 WARN, 0 FAIL
+════════════════════════════════════════════════════════════════════════
+```
+<!-- END AUTO AUDIT -->
