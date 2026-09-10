@@ -28,6 +28,8 @@ var _over_title: Label = null
 var _over_stats: Label = null
 var _over_body: Label = null
 var _next_button: Button = null
+## Baris HBoxContainer hint bar (isi digantikan _refresh_hints per konteks)
+var _hint_row: HBoxContainer = null
 var _combo_badge: Control = null
 var _achievement_popup: Control = null
 
