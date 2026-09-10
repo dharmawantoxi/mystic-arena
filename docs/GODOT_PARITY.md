@@ -71,9 +71,18 @@ ada untuk fixture struktur), mesin konteks `get_hints` tetap terpasang dan
 diaktifkan kembali begitu gamepad diport. Dikunci asersi baru di
 `UiHudParityTest` (`hint bar disembunyikan`).
 
-**Validasi:** `gdparse` + `tscn_lint` + `check_refs` lulus lokal; struktur
-node HUD tidak berubah (fixture `UiHudParityTest` tak tersentuh) — replay
-headless diverifikasi CI, binary Godot tak tersedia di sandbox.
+**Ditambahkan 10 September 2026 — dekorasi banner wave:** panel 400×80
+WaveAnnouncer pygame (`_render.py:1022-1103`) kini diport utuh sebagai
+`WavePlate.gd` (gradasi latar alpha lengkung 0.3, border emas 3px, garis
+dalam terang, diagonal tiap 10px, corner ticks 12/2/inset-5) + bayangan teks
+(8,8,14) offset +2/+2, urutan gambar plate → shadow → teks, semuanya ikut
+kurva slide/alpha tween yang terkunci fixture. Warna teks banner memakai
+puncak gradien pygame (255,242,175); gradien per-glyph sendiri tetap milik
+bucket piksel (kebijakan `gradasi-pendekatan` yang sama dengan ScreenTitle).
+
+**Validasi (hint bar + settings + banner):** `gdparse` + `tscn_lint` +
+`check_refs` lulus lokal — replay headless diverifikasi CI, binary Godot tak
+tersedia di sandbox.
 
 ## Koreksi permukaan UI — 9 September 2026 (FASE 22)
 

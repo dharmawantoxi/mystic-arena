@@ -17,6 +17,10 @@ const BAR_REFRESH := 0.2
 
 var _banner_tween: Tween
 var _wave_sub: Label = null
+## Dekorasi banner wave (port WaveAnnouncer): panel di belakang teks +
+## bayangan teks +2/+2 — keduanya ikut tween slide/alpha banner.
+var _wave_plate: Control = null
+var _wave_shadow: Label = null
 var _field_timer: float = 0.0
 var _bar_timer: float = 0.0
 ## team -> {panel, hp: ProgressBar, shield: ProgressBar, label: Label}
@@ -211,6 +215,60 @@ func _build_wave_sub() -> void:
 	_wave_sub.set_meta("base_l", _wave_sub.offset_left)
 	_wave_sub.set_meta("base_r", _wave_sub.offset_right)
 	add_child(_wave_sub)
+	_build_wave_decor()
+
+
+## Dekorasi banner wave (port WaveAnnouncer.draw _render.py:1022-1103):
+## panel 400x80 (gradasi + border emas + diagonal + corner ticks) di
+## belakang teks, pusatnya +8px di bawah pusat teks, dan bayangan teks
+## (8,8,14) offset +2/+2. Urutan gambar: plate -> shadow -> banner teks
+## (pygame: blit panel, lalu shadow, lalu teks gradasi). Warna teks banner
+## memakai puncak gradien pygame (255,242,175) — gradien per-glyph sendiri
+## masih milik bucket piksel (kebijakan gradasi-pendekatan).
+func _build_wave_decor() -> void:
+	# Paritas warna: pygame gradasi (255,242,175)->(196,138,40); Godot flat
+	# diambil puncaknya + outline dimatikan (pygame memakai shadow, bukan
+	# outline).
+	wave_banner.add_theme_color_override("font_color",
+		Color(1.0, 242.0 / 255.0, 175.0 / 255.0))
+	wave_banner.add_theme_constant_override("outline_size", 0)
+	_wave_plate = WavePlateScript.new()
+	_wave_plate.name = "WavePlate"
+	_wave_plate.offset_left = -200.0
+	_wave_plate.offset_right = 200.0
+	_wave_plate.offset_top = -112.0 # pusat panel = pusat teks + 8px
+	_wave_plate.offset_bottom = -32.0
+	_wave_plate.modulate.a = 0.0
+	add_child(_wave_plate)
+	_wave_shadow = Label.new()
+	_wave_shadow.name = "WaveShadow"
+	_wave_shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_wave_shadow.anchor_left = 0.5
+	_wave_shadow.anchor_top = 0.5
+	_wave_shadow.anchor_right = 0.5
+	_wave_shadow.anchor_bottom = 0.5
+	_wave_shadow.offset_left = -298.0 # base banner +2/+2 (shadow pygame)
+	_wave_shadow.offset_right = 302.0
+	_wave_shadow.offset_top = -138.0
+	_wave_shadow.offset_bottom = -18.0
+	_wave_shadow.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_wave_shadow.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_wave_shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_wave_shadow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_wave_shadow.add_theme_font_override("font", UiTheme.title_font())
+	_wave_shadow.add_theme_font_size_override("font_size", 46)
+	_wave_shadow.add_theme_color_override("font_color",
+		Color(8.0 / 255.0, 8.0 / 255.0, 14.0 / 255.0, 200.0 / 255.0))
+	_wave_shadow.modulate.a = 0.0
+	add_child(_wave_shadow)
+	# Urutan gambar (bawah -> atas): plate, shadow, WaveBanner, WaveSub.
+	move_child(_wave_plate, wave_banner.get_index())
+	move_child(_wave_shadow, wave_banner.get_index())
+	# Meta base offset utk kurva slide tween announce_wave.
+	_wave_plate.set_meta("base_l", _wave_plate.offset_left)
+	_wave_plate.set_meta("base_r", _wave_plate.offset_right)
+	_wave_shadow.set_meta("base_l", _wave_shadow.offset_left)
+	_wave_shadow.set_meta("base_r", _wave_shadow.offset_right)
 
 
 ## Banner "WAVE N" — port gerak WaveAnnouncer: slide-in 0.4s (BACK OUT =
@@ -238,7 +296,7 @@ func announce_wave(wave_num: int):
 	_banner_tween.tween_interval(HudLayout.WAVE_TWEEN_HOLD)
 	_banner_tween.set_parallel(true)
 	_banner_tween.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_IN)
-	for lab in [wave_banner, _wave_sub]:
+	for lab in [wave_banner, _wave_sub, _wave_shadow, _wave_plate]:
 		var base_l := float(lab.get_meta("base_l"))
 		var base_r := float(lab.get_meta("base_r"))
 		_banner_tween.tween_property(lab, "offset_left", base_l + 1280.0, HudLayout.WAVE_TWEEN_OUT)
