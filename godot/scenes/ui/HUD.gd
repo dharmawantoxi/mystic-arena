@@ -50,6 +50,7 @@ func _ready():
 	GameManager.minion_died.connect(_on_minion_died)
 	GameManager.boss_spawned.connect(_on_boss_spawned)
 	GameManager.game_over.connect(_on_game_over)
+	GameManager.shop_changed.connect(_on_shop_changed)
 	GameManager.difficulty_changed.connect(_on_difficulty_changed)
 	GameManager.nexus_destroyed.connect(_on_nexus_destroyed)
 	_build_nexus_bars()
@@ -95,6 +96,10 @@ func _ready():
 ## Elemen HUD yang "di tengah layar" (bar nexus, banner wave, hint bar) harus
 ## berada di tengah AREA ARENA, bukan tengah viewport — kalau tidak, panel
 ## kanan menutupinya di layar landscape (paritas arena rata kiri pygame).
+## HintLabel SENGAJA tidak digeser: host-nya left-anchored di HUD.tscn
+## (offset 18..1262, bukan anchor 0.5), jadi shift tengah justru menggeser
+## host keluar pusat arena di layar lebar — PanelContainer di dalamnya sudah
+## menengahkan diri terhadap host.
 func _layout_hud() -> void:
 	var content := MobileLayout.content_width()
 	if content <= 0.0:
@@ -102,7 +107,7 @@ func _layout_hud() -> void:
 	var shift := -(MobileLayout.viewport_size.x - content) * 0.5
 	# WaveBanner/WaveSub SENGAJA tidak digeser: kurva slide-nya dikunci
 	# fixture paritas pygame (UiHudParityTest wave_slide_x).
-	for node_name in ["NexusBars", "HintLabel"]:
+	for node_name in ["NexusBars"]:
 		var n := find_child(node_name, true, false) as Control
 		if n == null:
 			continue
@@ -142,6 +147,7 @@ func _on_level_started(_level_num: int):
 	# Level baru (PLAY/ENTER-next/R) -> sembunyikan panel menang/kalah lama.
 	if _over_root != null:
 		_over_root.hide_overlay()
+	_refresh_hints()
 	refresh()
 	_refresh_field()
 
@@ -412,6 +418,55 @@ func _on_nexus_destroyed(team: String, _killer_team: String) -> void:
 #  HINT BAR (port draw_hint_bar: keycap + label, tengah-bawah)
 # ══════════════════════════════════════════════════════════
 
+## Baris hint per konteks — port InputManager.get_hints (_core.py:10102)
+## dengan label keyboard port Godot (bukan tabel controller pygame) dan
+## bahasa Indonesia (kebijakan UI Godot). B/D TIDAK ada di daftar: sejak
+## FASE 18 keduanya hotkey perintah taktis (ATTACK BOSS / ATTACK TOP
+## DEALER), bukan toko/difficulty; toko = H, dan SPASI hanya melewati
+## intro (level/boss) — paritas _draw_input_hints yang mematikan hint
+## selama cinematic (_core.py:2720-2727).
+func _hint_rows(context: String) -> Array:
+	match context:
+		"victory":
+			return [["ENTER", "lanjut"], ["R", "ulangi"], ["ESC", "menu"]]
+		"defeat":
+			return [["R", "ulangi"], ["ESC", "menu"]]
+		"shop":
+			return [["klik", "beli"], ["H", "tutup"]]
+		_:
+			return [
+				["klik", "pilih"],
+				["QWER", "skill"],
+				["H", "toko"],
+				["klik kanan", "tutup"],
+				["P", "jeda"],
+			]
+
+
+## Konteks aktif dihitung ulang dari state GameManager — prioritas persis
+## _draw_input_hints (_core.py:2721-2731): victory > defeat > shop > game.
+## Dipanggil dari sinyal game_over / level_started / shop_changed.
+func _refresh_hints() -> void:
+	var ctx := "game"
+	if GameManager.state == "victory":
+		ctx = "victory"
+	elif GameManager.state == "defeat":
+		ctx = "defeat"
+	elif GameManager.shop_open:
+		ctx = "shop"
+	if _hint_row == null:
+		return
+	for c in _hint_row.get_children():
+		_hint_row.remove_child(c)
+		c.queue_free()
+	for h in _hint_rows(ctx):
+		_hint_row.add_child(_hint_item(str(h[0]), str(h[1])))
+
+
+func _on_shop_changed() -> void:
+	_refresh_hints()
+
+
 func _build_hint_bar() -> void:
 	var host: Label = $HintLabel
 	host.text = ""
@@ -434,18 +489,8 @@ func _build_hint_bar() -> void:
 	row.add_theme_constant_override("separation", 16)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.add_child(row)
-	var hints: Array = [
-		["klik", "pilih hero/menara/slot"],
-		["QWER", "skill"],
-		["B", "toko"],
-		["D", "difficulty"],
-		["ENTER", "lanjut"],
-		["R", "ulangi"],
-		["P", "pause"],
-		["SPASI", "beli hero"],
-	]
-	for h in hints:
-		row.add_child(_hint_item(str(h[0]), str(h[1])))
+	_hint_row = row
+	_refresh_hints()
 
 
 func _hint_item(key: String, desc: String) -> HBoxContainer:

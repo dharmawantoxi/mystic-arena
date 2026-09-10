@@ -46,6 +46,25 @@ saat roster kosong). Replay headless (termasuk `TacticalInputParityTest` yang
 membaca `panel_available()`) diverifikasi CI — binary Godot tak tersedia di
 sandbox. Piksel rail (bata/font/komposit) tetap milik bucket piksel.
 
+## Koreksi hint bar + teks kontrol — 10 September 2026
+
+Audit lanjutan seksi panel kanan menemukan teks kontrol Godot yang masih
+mengklaim perilaku pra-FASE 18: hint bar bawah HUD memuat daftar statis
+salah ("B toko / D difficulty / SPASI beli hero"), padahal B/D kini hotkey
+perintah taktis (FASE 18), toko = H, dan SPASI hanya melewati intro.
+Semuanya diperbaiki tanpa menyentuh kode pygame:
+
+| Lokasi | Teks lama (salah) | Perbaikan (port pygame) |
+|---|---|---|
+| HUD hint bar | 8 item statis campur konteks — "B/toko", "D/difficulty", "SPASI/beli hero", dan "ENTER/lanjut" tampil bahkan saat masih bermain | Port `InputManager.get_hints` (`_core.py:10102`) per konteks, bahasa Indonesia: game = klik/pilih · QWER/skill · H/toko · klik kanan/tutup · P/jeda; victory = ENTER/lanjut · R/ulangi · ESC/menu; defeat = R/ulangi · ESC/menu; shop = klik/beli · H/tutup. Konteks berpindah lewat sinyal `game_over` / `level_started` / `shop_changed`, prioritas persis `_draw_input_hints` (`_core.py:2721-2731`): victory > defeat > shop > game |
+| `HUD._layout_hud` | `HintLabel` ikut daftar geser tengah-arena | Dikeluarkan dari daftar: host-nya left-anchored di HUD.tscn (offset 18..1262, bukan anchor 0.5) sehingga shift tengah justru menggesernya keluar pusat arena di layar lebar |
+| MainMenu HOW_TO_PLAY + SkillBar | "B → HERO" | "H → HERO" (judul seksi HOW_TO_PLAY "TOKO (B)" ikut menjadi "TOKO (H)") |
+| ShopPanel footer | "… · D ganti difficulty" | Klaim dihapus — D = hotkey taktis ATTACK TOP DEALER sejak FASE 18 (paritas HOW TO PLAY pygame: "D = ATTACK TOP DEALER (all)") |
+
+**Validasi:** `gdparse` + `tscn_lint` + `check_refs` lulus lokal; struktur
+node HUD tidak berubah (fixture `UiHudParityTest` tak tersentuh) — replay
+headless diverifikasi CI, binary Godot tak tersedia di sandbox.
+
 ## Koreksi permukaan UI — 9 September 2026 (FASE 22)
 
 Koreksi laporan visual/lapangan (bukan perilaku match yang sudah terkunci):

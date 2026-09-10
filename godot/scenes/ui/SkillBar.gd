@@ -257,7 +257,7 @@ func _refresh_static() -> void:
 	if hero == null:
 		_name_label.text = "tidak ada hero dipilih"
 		_level_label.text = ""
-		_stats_label.text = "B → HERO: beli hero, lalu klik untuk memilih"
+		_stats_label.text = "H → HERO: beli hero, lalu klik untuk memilih"
 		_hp_bar.value = 0.0
 		_hp_label.text = ""
 		_forge_btn.text = "ITEM FORGE  (0/6)"

@@ -386,7 +386,7 @@ func _update_context() -> void:
 	var nx = GameManager.blue_nexus
 	if nx != null and is_instance_valid(nx):
 		parts.append("nexus: Lv.%d" % int(nx.get("level")))
-	_context.text = "[%s]  %s · gold %d · AI %d · difficulty %s · D ganti difficulty" % [
+	_context.text = "[%s]  %s · gold %d · AI %d · difficulty %s" % [
 		_tab.to_upper(), " | ".join(parts) if not parts.is_empty() else "tidak ada yang dipilih",
 		GameManager.gold, GameManager.ai_gold, GameManager.difficulty.to_upper()]
 

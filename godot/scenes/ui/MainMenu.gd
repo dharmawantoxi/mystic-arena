@@ -1874,7 +1874,7 @@ func _build_how_to_play() -> void:
 			"Klik lingkaran slot kosong (+) di lane lalu bangun menara (100 gold).",
 			"4 jalur: Archer / Cannon / Ice / Mage. Upgrade Lv1→Lv2 memilih jalur."]],
 		["HERO & SKILL", "crown", [
-			"Mulai tanpa hero. Buka B → HERO untuk membeli hero yang sudah di-unlock.",
+			"Mulai tanpa hero. Buka H → HERO untuk membeli hero yang sudah di-unlock.",
 			"Maksimal 5 hero unik. Hero mati respawn setelah 10 detik dengan level/item tetap.",
 			"Klik hero Radiant untuk memilihnya, lalu Q/W/E/R untuk skill (R = ultimate).",
 			"Hero yang tidak dipilih bertarung sendiri (auto-cast)."]],
