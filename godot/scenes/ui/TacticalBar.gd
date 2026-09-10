@@ -43,7 +43,10 @@ func _ready() -> void:
 	name = "TacticalBar"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_to_group("tactical_bar")
+	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build()
+	MobileLayout.layout_changed.connect(_layout)
+	_layout()
 	GameManager.selection_changed.connect(_refresh)
 	GameManager.shop_changed.connect(_refresh)
 	GameManager.game_over.connect(func(_v): _refresh())
@@ -51,6 +54,21 @@ func _ready() -> void:
 	GameManager.boss_spawned.connect(func(_b): _refresh())
 	GameManager.tower_destroyed.connect(func(_t, _k): _refresh())
 	_refresh()
+
+## Tempatkan kotak command di dasar panel kanan (paritas _gambar_tactical),
+## atau di tepi kanan-bawah arena saat panel kanan tidak ada (layar kecil).
+func _layout() -> void:
+	if _box == null:
+		return
+	var rect := MobileLayout.tactical_rect()
+	if rect.size.x <= 0.0:
+		var vp := MobileLayout.viewport_size
+		var w := minf(220.0, vp.x - 16.0)
+		var h := minf(MobileLayout.TACTICAL_HEIGHT, vp.y - 32.0)
+		rect = Rect2(vp.x - w - 8.0, maxf(8.0, vp.y - h - 78.0), w, h)
+	_box.position = rect.position
+	_box.size = rect.size
+
 
 func _process(delta: float) -> void:
 	# Visibilitas tombol mengikuti kondisi medan (hero hidup / boss aktif).
@@ -64,12 +82,13 @@ func _build() -> void:
 	_box = PygamePanel.new(Color(0.32, 0.38, 0.55, 0.9), 2.0, 9.0)
 	_box.name = "TacticalBox"
 	_box.mouse_filter = Control.MOUSE_FILTER_STOP
-	_box.anchor_left = 1.0
-	_box.anchor_right = 1.0
-	_box.offset_left = -190.0
-	_box.offset_right = -8.0
-	_box.offset_top = 172.0
-	_box.offset_bottom = 452.0
+	# Posisi diatur _layout() dari MobileLayout.tactical_rect() (jalur dasar
+	# panel kanan). Anchor kiri-atas + offset absolut = tidak pernah keluar
+	# frame walau viewport berubah.
+	_box.anchor_left = 0.0
+	_box.anchor_right = 0.0
+	_box.anchor_top = 0.0
+	_box.anchor_bottom = 0.0
 	(_box as PygamePanel).show_ticks = false
 	(_box as PygamePanel).set_margins(10, 6, 10, 8)
 	add_child(_box)
