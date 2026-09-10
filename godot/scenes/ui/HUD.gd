@@ -13,6 +13,7 @@ const AchievementPopupScript = preload("res://scenes/ui/AchievementPopup.gd")
 const TacticalBarScript = preload("res://scenes/ui/TacticalBar.gd")
 const SidePanelScript = preload("res://scenes/ui/SidePanel.gd")
 const WavePlateScript = preload("res://scenes/ui/widgets/WavePlate.gd")
+const TouchHUDScript = preload("res://scenes/ui/TouchHUD.gd")
 ## Seberapa sering bar nexus/disability disegarkan (5 Hz cukup, hemat draw call)
 const BAR_REFRESH := 0.2
 
@@ -37,6 +38,8 @@ var _next_button: Button = null
 var _hint_row: HBoxContainer = null
 var _combo_badge: Control = null
 var _achievement_popup: Control = null
+## Overlay FPS (target tombol debug TouchHUD) — dibuat malas, mati default.
+var _debug_overlay: Label = null
 
 @onready var gold_label: Label = $TopLeft/GoldChip/GoldRow/GoldValue
 @onready var income_label: Label = $TopLeft/GoldChip/GoldRow/IncomeValue
@@ -90,6 +93,12 @@ func _ready():
 	_achievement_popup = AchievementPopupScript.new()
 	_achievement_popup.name = "AchievementPopup"
 	add_child(_achievement_popup)
+	# FASE 23 — tombol sentuh (port mobile/hud.py TouchHUD): PALING ATAS —
+	# pygame menggambar hud.draw() TERAKHIR di STATE_GAME (main.py:560),
+	# di atas overlay game-over & popup. Main.gd menyambung hud_action.
+	var touch_hud = TouchHUDScript.new()
+	touch_hud.name = "TouchHUD"
+	add_child(touch_hud)
 	GameManager.achievement_unlocked.connect(
 		_achievement_popup.unlock)
 	GameManager.boss_reward_effects_tick.connect(_achievement_popup.tick)
@@ -137,6 +146,72 @@ func _process(delta: float) -> void:
 	if _bar_timer >= BAR_REFRESH:
 		_bar_timer = 0.0
 		_refresh_bars()
+	if _debug_overlay != null and _debug_overlay.visible:
+		_refresh_debug_overlay()
+
+
+# ══════════════════════════════════════════════════════════
+#  OVERLAY DEBUG (target tombol FPS TouchHUD)
+# ══════════════════════════════════════════════════════════
+
+## Overlay FPS (paritas esensi mobile/debug.py DebugOverlay — BUKAN port
+## penuh: pygame 450 baris dengan 4 mode + grafik frame + log periodik.
+## Yang dibawa hanya info baris [PERF]-nya: FPS + ms/frame + hitungan unit.
+## Mati default; tombol FPS-nya sendiri env-gated MYSTIC_DEBUG=1 di kedua
+## engine, jadi overlay ini tak pernah muncul di rilis tanpa sengaja.)
+func toggle_debug_overlay() -> void:
+	if _debug_overlay == null:
+		_build_debug_overlay()
+	_debug_overlay.visible = not _debug_overlay.visible
+	print("[HUD] overlay debug %s" % ("ON" if _debug_overlay.visible else "OFF"))
+
+
+func _build_debug_overlay() -> void:
+	var lab := Label.new()
+	lab.name = "DebugOverlay"
+	lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lab.anchor_left = 0.5
+	lab.anchor_right = 0.5
+	lab.offset_left = -320.0
+	lab.offset_right = 320.0
+	lab.offset_top = 78.0
+	lab.offset_bottom = 100.0
+	lab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	UiTheme.style_label(lab, "", UiTheme.body_bold(), 14,
+		Color("#78c8ff"))
+	lab.add_theme_color_override("font_outline_color",
+		Color(0.0, 0.0, 0.0, 0.9))
+	lab.add_theme_constant_override("outline_size", 4)
+	lab.visible = false
+	add_child(lab)
+	_debug_overlay = lab
+
+
+func _refresh_debug_overlay() -> void:
+	if _debug_overlay == null or not _debug_overlay.visible:
+		return
+	var tree := get_tree()
+	var heroes := 0
+	for h in tree.get_nodes_in_group("heroes"):
+		if is_instance_valid(h) and not bool(h.get("is_dead")):
+			heroes += 1
+	var minions := 0
+	for m in tree.get_nodes_in_group("minions"):
+		if is_instance_valid(m) and not bool(m.get("is_dead")):
+			minions += 1
+	var towers := 0
+	for t in tree.get_nodes_in_group("towers"):
+		if is_instance_valid(t) and not bool(t.get("is_dead")):
+			towers += 1
+	var bosses := 0
+	for b in tree.get_nodes_in_group("bosses"):
+		if is_instance_valid(b) and not bool(b.get("is_dead")):
+			bosses += 1
+	_debug_overlay.text = "%d FPS · %.1f ms · H%d M%d T%d B%d" % [
+		int(Engine.get_frames_per_second()),
+		# get_process_delta_time milik Node (bukan static Engine).
+		get_process_delta_time() * 1000.0,
+		heroes, minions, towers, bosses]
 
 # Sinkronkan seluruh HUD dari state GameManager (dipakai saat _ready + level_started)
 func refresh():

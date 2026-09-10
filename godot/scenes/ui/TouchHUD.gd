@@ -6,8 +6,18 @@
 # (TOUCH_BUTTONS / TOUCH_VISIBILITY) yang dikunci UiHudParityTest.
 #
 # Aksi diteruskan sebagai signal `hud_action(action)`; Main.gd
-# menerjemahkannya (paritas apply_hud_action): pause, debug, skip,
-# replay, next_level, menu, back.
+# menerjemahkannya lewat _apply_touch_action (paritas apply_hud_action):
+# pause, debug, skip, replay, next_level, menu, back.
+#
+# INPUT — hanya InputEventMouseButton. Di perangkat, sentuhan tiba sebagai
+# mouse lewat emulate_mouse_from_touch (project.godot, eksplisit true);
+# menangani InputEventScreenTouch juga = aksi GANDA (toggle debug 2x =
+# no-op, back = 2x ESC). Di desktop, mouse fisik memakai jalur yang sama —
+# paritas hit_test pygame yang juga dipakai klik mouse.
+#
+# SYNC — pygame memanggil hud.sync tiap frame dari main.py; di sini
+# sync_from_match() dipanggil tiap _process (ditulis ulang hanya kalau
+# kunci state / panel / menu berubah, supaya tidak redraw sia-sia).
 extends Control
 class_name TouchHUD
 
@@ -20,16 +30,35 @@ const BTN_WHITE := Color("#ebebf5")
 const BTN_GREY := Color("#787887")
 const BTN_GOLD := Color("#ffc846")
 const BTN_GOLD_DIM := Color("#967628")
+## Bentuk & ukuran font per tombol (mobile/hud.py _build_layout).
+## Geometri + label = kanon HudLayout.TOUCH_BUTTONS (sumber tunggal,
+## anti-drift dari data yang dikunci UiHudParityTest).
+const BTN_SHAPE := {
+	"pause": "round", "debug": "round", "skip": "capsule",
+	"replay": "capsule", "next_level": "capsule", "menu": "capsule",
+	"back": "capsule",
+}
+const BTN_FONT_SIZE := {
+	"pause": 22, "debug": 16, "skip": 20, "replay": 20,
+	"next_level": 18, "menu": 22, "back": 20,
+}
 
 var _buttons: Dictionary = {}
 var _state_key: String = "menu"
-var show_debug_button: bool = true
+## Paritas main.py:180 — tombol FPS mati default, nyala hanya dengan
+## MYSTIC_DEBUG=1 (di kedua engine tombolnya tak ada di rilis).
+var show_debug_button: bool = false
+## Stempel sync terakhir (kunci|panel|debug) — cegah tulis ulang tiap frame.
+var _last_sync: String = ""
 
 
 func _ready() -> void:
 	name = "TouchHUD"
+	add_to_group("touch_hud")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	show_debug_button = OS.has_environment("MYSTIC_DEBUG") \
+		and OS.get_environment("MYSTIC_DEBUG") == "1"
 	_build_layout()
 	# TouchHUD digambar manual (satu _draw) — bukan kumpulan Button,
 	# supaya glow + cincin ganda + capsule highlight identik pygame.
@@ -37,25 +66,28 @@ func _ready() -> void:
 	view.set_anchors_preset(Control.PRESET_FULL_RECT)
 	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(view)
-	_sync_visibility()
+	sync_from_match()
 
 
 func _build_layout() -> void:
-	# Geometri persis HudLayout.TOUCH_BUTTONS (+ warna & font pygame).
-	_add_button("pause", Rect2(22, 76, 52, 52), "II", "round", BTN_GOLD,
-		22)
-	_add_button("debug", Rect2(106, 76, 52, 52), "FPS", "round",
-		Color("#78c8ff"), 16)
-	_add_button("skip", Rect2(1110, 646, 160, 58), "SKIP  >>", "capsule",
-		BTN_GOLD, 20)
-	_add_button("replay", Rect2(330, 620, 165, 62), "REPLAY", "capsule",
-		BTN_GOLD, 20)
-	_add_button("next_level", Rect2(525, 620, 200, 62), "NEXT LEVEL",
-		"capsule", Color("#78e68c"), 18)
-	_add_button("menu", Rect2(755, 620, 165, 62), "MENU", "capsule",
-		BTN_GOLD, 22)
-	_add_button("back", Rect2(8, 6, 104, 58), "< BACK", "capsule",
-		BTN_GOLD, 20)
+	# Geometri + label persis HudLayout.TOUCH_BUTTONS (kanon fixture
+	# touchhud — urutan iterasi = urutan pygame: pause s/d back, sehingga
+	# prioritas hit_test terbalik juga sama).
+	_buttons.clear()
+	var colors := {
+		"pause": BTN_GOLD, "debug": Color("#78c8ff"), "skip": BTN_GOLD,
+		"replay": BTN_GOLD, "next_level": Color("#78e68c"),
+		"menu": BTN_GOLD, "back": BTN_GOLD,
+	}
+	for action in HudLayout.TOUCH_BUTTONS:
+		var spec: Dictionary = HudLayout.TOUCH_BUTTONS[action]
+		var r: Array = spec.get("rect", [0, 0, 0, 0])
+		var col: Color = colors.get(str(action), BTN_GOLD)
+		_add_button(str(action),
+			Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3])),
+			str(spec.get("label", "?")),
+			str(BTN_SHAPE.get(str(action), "capsule")), col,
+			int(BTN_FONT_SIZE.get(str(action), 20)))
 
 
 func _add_button(action: String, rect: Rect2, label: String, shape: String,
@@ -80,6 +112,61 @@ func set_state_key(state_key: String) -> void:
 	queue_redraw()
 
 
+## Port TouchHUD.sync per frame (main.py:399): node hanya tampil DI DALAM
+## match — pygame menggambar hud HANYA di STATE_GAME (cabang menu/pause/
+## splash main.py tidak memanggil hud.draw sama sekali). Tombol mengikuti
+## matriks TOUCH_VISIBILITY berdasar state + cinematic + level.
+func sync_from_match() -> void:
+	var menu_open := false
+	var menu = get_tree().get_first_node_in_group("main_menu")
+	if menu != null and menu.has_method("is_open"):
+		menu_open = bool(menu.call("is_open"))
+	var in_game := not GameManager.in_menu and not menu_open
+	if visible != in_game:
+		visible = in_game
+	if not in_game:
+		_last_sync = "hidden"
+		return
+	var key := "menu"
+	var cine := _cinematic_active()
+	match GameManager.state:
+		"playing":
+			key = "game_playing_cine" if cine else "game_playing"
+		"victory":
+			# next_level tampil hanya kalau ada level berikut (paritas
+			# cabang get_next_level hud.py sync).
+			key = "game_victory_L1" if GameManager.next_level_number() > 0 \
+				else "game_victory_L54"
+		"defeat":
+			key = "game_defeat"
+	var panel := MobileLayout.has_side_panel()
+	var stamp := "%s|%d|%d" % [key, int(panel), int(show_debug_button)]
+	if stamp == _last_sync:
+		return
+	_last_sync = stamp
+	_state_key = key
+	_sync_visibility()
+	if panel:
+		# Paritas _panel_ada (hud.py sync): pause pindah ke rail, tombol
+		# FPS DIHAPUS dari rail pygame (sidepanel.py:125-128) = sembunyi.
+		# Rail Godot (SidePanel RailPause) sudah menampung pause.
+		var pause_btn: Dictionary = _buttons["pause"]
+		pause_btn["visible"] = false
+		var debug_btn: Dictionary = _buttons["debug"]
+		debug_btn["visible"] = false
+	queue_redraw()
+
+
+## Cine aktif = intro level / banner boss / perayaan kematian (paritas
+## _cinematic_active main.py — fase kematian boss BUKAN cine, jadi pause
+## tetap tampil di sana seperti pygame).
+func _cinematic_active() -> bool:
+	var main = get_tree().get_first_node_in_group("main")
+	if main == null or not main.has_method("_cinematic_active"):
+		return false
+	return bool(main.call("_cinematic_active"))
+
+
 func _sync_visibility() -> void:
 	var vis: Dictionary = HudLayout.touch_visibility(_state_key)
 	for action in _buttons:
@@ -91,6 +178,7 @@ func _sync_visibility() -> void:
 
 
 func _process(delta: float) -> void:
+	sync_from_match()
 	var dirty := false
 	for action in _buttons:
 		var d: Dictionary = _buttons[action]
@@ -110,20 +198,12 @@ func _gui_input(event: InputEvent) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	# Mouse SAJA (lihat catatan INPUT di header): sentuhan perangkat
+	# sudah tiba sebagai mouse via emulate_mouse_from_touch.
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 			_tap_at(get_global_mouse_position())
-	elif event is InputEventScreenTouch:
-		var st := event as InputEventScreenTouch
-		if st.pressed:
-			_tap_at(st.position * _touch_scale())
-
-
-func _touch_scale() -> Vector2:
-	# Posisi sentuh dalam piksel viewport -> koordinat logis 1280x720.
-	var vp := get_viewport_rect().size
-	return Vector2(1280.0 / maxf(1.0, vp.x), 720.0 / maxf(1.0, vp.y))
 
 
 func _tap_at(logical_pos: Vector2) -> void:
@@ -160,8 +240,11 @@ class _TouchView extends Control:
 	func _draw() -> void:
 		if hud == null or size.x <= 0.0:
 			return
-		draw_set_transform(Vector2.ZERO, 0.0,
-			Vector2(size.x / 1280.0, size.y / 720.0))
+		# Gambar 1:1 koordinat logis — stretch canvas_items engine yang
+		# memetakan ke piksel fisik. JANGAN diskala manual size/1280:
+		# dengan aspect expand, size adalah ukuran logis yang MELAR
+		# (1624x720 di HP 18:9) sehingga skala manual menggelembungkan
+		# + menggeser tombol keluar geometri kanon (dan hit-test).
 		for action in hud._buttons:
 			var d: Dictionary = hud._buttons[action]
 			if not bool(d["visible"]):
@@ -170,7 +253,6 @@ class _TouchView extends Control:
 				_draw_round(d)
 			else:
 				_draw_capsule(d)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	func _draw_round(d: Dictionary) -> void:
 		var rect: Rect2 = d["rect"]
@@ -210,7 +292,7 @@ class _TouchView extends Control:
 		draw_line(Vector2(rect.position.x + rect.size.x * 0.25,
 			rect.position.y + 2),
 			Vector2(rect.position.x + rect.size.x * 0.75,
-				rect.position.y + 2), Color.WHITE, 1.0)
+			rect.position.y + 2), Color.WHITE, 1.0)
 		var font := UiTheme.body_bold()
 		var txt_col := TouchHUD.BTN_WHITE if bool(d["enabled"]) \
 			else Color("#aaaab4")
