@@ -53,6 +53,7 @@ func _ready():
 	_build_nexus_bars()
 	_build_difficulty_label()
 	_build_game_over_panel()
+	_build_hint_bar()
 	# SkillBar + ShopPanel dibangun dari kode (lihat file masing-masing)
 	add_child(SkillBarScript.new())
 	add_child(ShopPanelScript.new())
@@ -103,8 +104,8 @@ func _on_level_started(_level_num: int):
 	if _achievement_popup != null:
 		_achievement_popup.reset()
 	# Level baru (PLAY/ENTER-next/R) -> sembunyikan panel menang/kalah lama.
-	if _over_panel != null:
-		_over_panel.visible = false
+	if _over_root != null:
+		_over_root.hide_overlay()
 	refresh()
 	_refresh_field()
 
@@ -155,6 +156,7 @@ func _build_wave_sub() -> void:
 	_wave_sub.offset_bottom = -36.0
 	_wave_sub.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_wave_sub.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_wave_sub.add_theme_font_override("font", UiTheme.body_semibold())
 	_wave_sub.add_theme_font_size_override("font_size", 22)
 	_wave_sub.add_theme_color_override("font_color", Color(0.78, 0.78, 0.86))
 	_wave_sub.add_theme_color_override("font_outline_color", Color(0.03, 0.03, 0.05, 1))
@@ -254,38 +256,26 @@ func _make_nexus_bar(_owner: Control, team: String) -> Control:
 
 	var label := Label.new()
 	label.text = ("RADIANT NEXUS" if is_blue else "DIRE NEXUS") + "  Lv1"
+	label.add_theme_font_override("font", UiTheme.body_bold())
 	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", accent.lightened(0.35))
 	vbox.add_child(label)
 
 	var hp := ProgressBar.new()
 	hp.custom_minimum_size = Vector2(0, 11)
-	hp.show_percentage = false
 	hp.max_value = 100.0
 	hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var hp_bg := StyleBoxFlat.new()
-	hp_bg.bg_color = Color(0.13, 0.05, 0.06, 0.95)
-	hp_bg.set_corner_radius_all(3)
-	var hp_fill := StyleBoxFlat.new()
-	hp_fill.bg_color = Color(0.35, 0.87, 0.45) if is_blue else Color(0.9, 0.4, 0.35)
-	hp_fill.set_corner_radius_all(3)
-	hp.add_theme_stylebox_override("background", hp_bg)
-	hp.add_theme_stylebox_override("fill", hp_fill)
+	UiTheme.style_progress_bar(hp,
+		Color(0.35, 0.87, 0.45) if is_blue else Color(0.9, 0.4, 0.35),
+		Color(0.13, 0.05, 0.06, 0.95), 5)
 	vbox.add_child(hp)
 
 	var shield := ProgressBar.new()
 	shield.custom_minimum_size = Vector2(0, 6)
-	shield.show_percentage = false
 	shield.max_value = 100.0
 	shield.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var sh_bg := StyleBoxFlat.new()
-	sh_bg.bg_color = Color(0.07, 0.09, 0.14, 0.95)
-	sh_bg.set_corner_radius_all(3)
-	var sh_fill := StyleBoxFlat.new()
-	sh_fill.bg_color = Color(0.45, 0.78, 1.0, 0.95)
-	sh_fill.set_corner_radius_all(3)
-	shield.add_theme_stylebox_override("background", sh_bg)
-	shield.add_theme_stylebox_override("fill", sh_fill)
+	UiTheme.style_progress_bar(shield, Color(0.45, 0.78, 1.0, 0.95),
+		Color(0.07, 0.09, 0.14, 0.95), 3)
 	vbox.add_child(shield)
 
 	_nexus_bars[team] = {"panel": panel, "hp": hp, "shield": shield, "label": label}
@@ -352,99 +342,20 @@ func _on_difficulty_changed(d: String) -> void:
 
 
 func _build_game_over_panel() -> void:
-	_over_panel = PanelContainer.new()
-	_over_panel.name = "GameOverPanel"
-	_over_panel.visible = false
-	_over_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	_over_panel.anchor_left = 0.5
-	_over_panel.anchor_right = 0.5
-	_over_panel.anchor_top = 0.5
-	_over_panel.anchor_bottom = 0.5
-	_over_panel.offset_left = -260.0
-	_over_panel.offset_right = 260.0
-	_over_panel.offset_top = -186.0
-	_over_panel.offset_bottom = 186.0
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.04, 0.045, 0.08, 0.94)
-	sb.border_color = Color(1, 0.85, 0.4, 0.95)
-	sb.set_border_width_all(3)
-	sb.set_corner_radius_all(14)
-	sb.content_margin_left = 22.0
-	sb.content_margin_right = 22.0
-	sb.content_margin_top = 14.0
-	sb.content_margin_bottom = 14.0
-	sb.shadow_color = Color(0, 0, 0, 0.6)
-	sb.shadow_size = 18
-	_over_panel.add_theme_stylebox_override("panel", sb)
-	add_child(_over_panel)
-
-	var vbox := VBoxContainer.new()
-	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 8)
-	_over_panel.add_child(vbox)
-
-	_over_title = Label.new()
-	_over_title.text = "VICTORY"
-	_over_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_over_title.add_theme_font_size_override("font_size", 44)
-	_over_title.add_theme_color_override("font_color", Color(1, 0.9, 0.45))
-	_over_title.add_theme_color_override("font_outline_color", Color(0.12, 0.06, 0, 1))
-	_over_title.add_theme_constant_override("outline_size", 6)
-	vbox.add_child(_over_title)
-
-	# Baris stat paritas _draw_stats (label + nilai per baris).
-	_over_stats = Label.new()
-	_over_stats.text = ""
-	_over_stats.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_over_stats.add_theme_font_size_override("font_size", 15)
-	_over_stats.add_theme_color_override("font_color", Color(0.92, 0.95, 1.0))
-	vbox.add_child(_over_stats)
-
-	_over_body = Label.new()
-	_over_body.text = ""
-	_over_body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_over_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_over_body.add_theme_font_size_override("font_size", 13)
-	_over_body.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
-	vbox.add_child(_over_body)
-
-	# Tombol alur setelah match (paritas tombol pygame: play_next_level /
-	# replay / main menu — _core.py:7734-7743 + 8320-8336). Keyboard tetap
-	# jalan (ENTER/R/ESC di Main._on_key), tombol ini untuk mouse/touch.
-	var actions := HBoxContainer.new()
-	actions.alignment = BoxContainer.ALIGNMENT_CENTER
-	actions.add_theme_constant_override("separation", 10)
-	vbox.add_child(actions)
-	_next_button = Button.new()
-	_next_button.text = "LANJUT KE LEVEL 2  (ENTER)"
-	_next_button.custom_minimum_size = Vector2(210, 34)
-	_next_button.pressed.connect(func(): GameManager.next_level())
-	actions.add_child(_next_button)
-	var replay_btn := Button.new()
-	replay_btn.text = "ULANGI  (R)"
-	replay_btn.custom_minimum_size = Vector2(130, 34)
-	replay_btn.pressed.connect(func(): GameManager.restart_match())
-	actions.add_child(replay_btn)
-	var menu_btn := Button.new()
-	menu_btn.text = "MENU UTAMA  (ESC)"
-	menu_btn.custom_minimum_size = Vector2(160, 34)
-	menu_btn.pressed.connect(_goto_main_menu)
-	actions.add_child(menu_btn)
-
-	var hint := Label.new()
-	hint.text = "ENTER/N = lanjut level berikutnya  ·  R = ulangi  ·  ESC = menu utama"
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hint.add_theme_font_size_override("font_size", 12)
-	hint.add_theme_color_override("font_color", Color(0.7, 0.76, 0.9, 0.85))
-	vbox.add_child(hint)
-
-
-## Tombol MENU UTAMA pada panel game over: jalankan alur yang sama dengan
-## Main._on_menu_main_menu (unpause + buang match + tampilkan menu MAIN)
-## supaya klik mouse dan keyboard ESC identik.
+	# Overlay VICTORY/DEFEAT penuh (port Overlay.draw) — dibangun &
+	# dimiliki GameOverOverlay; member audit di-alias ke sana.
+	_over_root = GameOverOverlay.new()
+	add_child(_over_root)
+	_over_root.menu_requested.connect(_goto_main_menu)
+	# Panel stat dibuat saat show_result; alias awal null-aman di bawah.
+	_over_panel = null
+	_over_title = _over_root.title_label
+	_over_stats = _over_root.stats_label
+	_over_body = _over_root.body_label
+	_next_button = null
 func _goto_main_menu() -> void:
-	if _over_panel != null:
-		_over_panel.visible = false
+	if _over_root != null:
+		_over_root.hide_overlay()
 	var main = get_tree().get_first_node_in_group("main")
 	if main != null and is_instance_valid(main) and main.has_method("_on_menu_main_menu"):
 		main.call("_on_menu_main_menu")
@@ -457,82 +368,81 @@ func _goto_main_menu() -> void:
 
 
 func _on_game_over(victory: bool) -> void:
-	if _over_panel == null:
+	if _over_root == null:
 		return
-	_over_panel.visible = true
-	# Judul paritas overlay ("VICTORY! LV.1" / "DEFEAT LV.3").
-	_over_title.text = "%s LV.%d" % [
-		"VICTORY!" if victory else "DEFEAT", GameManager.level_number]
-	_over_title.add_theme_color_override("font_color",
-		Color(1, 0.9, 0.45) if victory else Color(1, 0.45, 0.45))
-	# Stat paritas _draw_stats (ui_components/_bundle.py:2976-3060): lima
-	# baris — Final Score (ribuan), Match Time (m:ss), Waves Survived,
-	# Total Kills, Max Combo (x{n}); baris skor/waktu mendapat penanda
-	# NEW BEST! saat flag _grant_meta_reward menyala (badge gradasi+ikon
-	# bintang pygame = piksel, tidak diaudit; data baris direplay dari
-	# fixture ui_hud overlay + match_scoring).
-	var rows: Array = [
-		["Final Score", HudLayout.format_thousands(GameManager.score),
-			GameManager.new_best_score],
-		["Match Time", HudLayout.format_match_time(
-			GameManager.match_time_seconds()), GameManager.new_best_time],
-		["Waves Survived", str(GameManager.wave_number), false],
-		["Total Kills", str(GameManager.total_kills), false],
-		["Max Combo", "x%d" % GameManager.max_combo, false],
-	]
-	var stat_lines: PackedStringArray = PackedStringArray()
-	for row in rows:
-		var line := "%s: %s" % [row[0], row[1]]
-		if row[2]:
-			line += "  NEW BEST!"
-		stat_lines.append(line)
-	_over_stats.text = "\n".join(stat_lines)
-	# Reward yang BENAR-BENAR diberikan (paritas _grant_meta_reward: menang
-	# pertama 3000 / replay 1500 sekali / 200 berikutnya / kalah 0), bukan
-	# lagi rumusan 3000 + level*100.
-	var reward: int = GameManager.meta_reward_earned
-	var replay_txt := ""
-	if victory:
-		if reward >= 3000:
-			replay_txt = "menang pertama"
-		elif reward >= 1500:
-			replay_txt = "replay pertama"
-		else:
-			replay_txt = "replay berulang"
-	var lines: Array = []
-	if victory:
-		lines.append("Meta reward: +%d gold (%s) tersimpan ke save." % [reward, replay_txt])
-	else:
-		lines.append("Nexus Radiant hancur — kalah tidak dibayar.")
-	# Paritas _get_newly_unlocked_level: menang + level berikut ADA + belum
-	# pernah ditamatkan (end_match sudah complete_level saat ini).
-	var nxt := GameManager.next_level_number()
-	if victory and nxt > 0 and not SaveManager.is_level_completed(nxt):
-		lines.append("NEW LEVEL UNLOCKED!")
-	# Baris NEW HERO: pygame MENGHITUNG subtitle ini tapi TIDAK me-render-nya
-	# (Overlay.draw mengabaikan param subtitle; satu-satunya jalur tampil =
-	# popup achievement). Godot menampilkannya — beda disengaja, data sama.
-	var new_heroes: Array = GameManager.heroes_unlocked_this_match
-	if victory and not new_heroes.is_empty():
-		var names: Array = []
-		for bt in new_heroes:
-			names.append(str(HeroDB.get_hero(str(bt)).get("name", str(bt))))
-		lines.append("NEW HERO: %s" % ", ".join(names))
-	_over_body.text = "\n".join(lines)
-	if _next_button != null:
-		_next_button.visible = victory and nxt > 0
-		if nxt > 0:
-			_next_button.text = "LANJUT KE LEVEL %d  (ENTER)" % nxt
-	_over_panel.pivot_offset = _over_panel.size / 2.0
-	_over_panel.scale = Vector2(0.85, 0.85)
-	_over_panel.modulate.a = 0.0
-	var tw := create_tween()
-	tw.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.set_parallel(true)
-	tw.tween_property(_over_panel, "modulate:a", 1.0, 0.3)
-	tw.tween_property(_over_panel, "scale", Vector2.ONE, 0.35)
-
-
+	_over_root.show_result(victory)
+	# Panel stat & tombol next dibuat ulang tiap result — alias ulang.
+	_over_panel = _over_root.stats_panel
+	_next_button = _over_root.next_button
 func _on_nexus_destroyed(team: String, _killer_team: String) -> void:
 	if field_label != null:
 		field_label.text = "nexus %s hancur" % ("Radiant" if team == "blue" else "Dire")
+
+
+# ══════════════════════════════════════════════════════════
+#  HINT BAR (port draw_hint_bar: keycap + label, tengah-bawah)
+# ══════════════════════════════════════════════════════════
+
+func _build_hint_bar() -> void:
+	var host: Label = $HintLabel
+	host.text = ""
+	var bg := PanelContainer.new()
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.set_anchors_preset(Control.PRESET_CENTER)
+	bg.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	bg.grow_vertical = Control.GROW_DIRECTION_BOTH
+	var bgsb := StyleBoxFlat.new()
+	bgsb.bg_color = Color(0, 0, 0, 140.0 / 255.0)
+	bgsb.set_corner_radius_all(6)
+	bgsb.content_margin_left = 7.0
+	bgsb.content_margin_right = 7.0
+	bgsb.content_margin_top = 4.0
+	bgsb.content_margin_bottom = 4.0
+	bg.add_theme_stylebox_override("panel", bgsb)
+	host.add_child(bg)
+	var row := HBoxContainer.new()
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 16)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.add_child(row)
+	var hints: Array = [
+		["klik", "pilih hero/menara/slot"],
+		["QWER", "skill"],
+		["B", "toko"],
+		["D", "difficulty"],
+		["ENTER", "lanjut"],
+		["R", "ulangi"],
+		["P", "pause"],
+		["SPASI", "beli hero"],
+	]
+	for h in hints:
+		row.add_child(_hint_item(str(h[0]), str(h[1])))
+
+
+func _hint_item(key: String, desc: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 5)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var cap := PanelContainer.new()
+	cap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(48.0 / 255.0, 52.0 / 255.0, 70.0 / 255.0)
+	sb.border_color = Color(120.0 / 255.0, 130.0 / 255.0, 165.0 / 255.0)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 5.0
+	sb.content_margin_right = 5.0
+	sb.content_margin_top = 1.0
+	sb.content_margin_bottom = 1.0
+	cap.add_theme_stylebox_override("panel", sb)
+	row.add_child(cap)
+	var k := Label.new()
+	UiTheme.style_label(k, key, UiTheme.body_bold(), 15,
+		Color(1.0, 235.0 / 255.0, 140.0 / 255.0))
+	cap.add_child(k)
+	var d := Label.new()
+	UiTheme.style_label(d, desc, UiTheme.body_medium(), 15,
+		Color(205.0 / 255.0, 210.0 / 255.0, 225.0 / 255.0))
+	d.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(d)
+	return row

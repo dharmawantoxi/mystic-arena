@@ -33,6 +33,7 @@ func _ready() -> void:
 	_count_label.size = Vector2(180.0, 68.0)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_count_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_count_label.add_theme_font_override("font", UiTheme.title_font())
 	_count_label.add_theme_font_size_override("font_size", 46)
 	_count_label.add_theme_color_override("font_outline_color",
 		Color(0, 0, 0, 0.9))
@@ -44,6 +45,7 @@ func _ready() -> void:
 	_tier_label.position = Vector2(0.0, 30.0) - Vector2(0.0, 11.0)
 	_tier_label.size = Vector2(180.0, 22.0)
 	_tier_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_tier_label.add_theme_font_override("font", UiTheme.body_bold())
 	_tier_label.add_theme_font_size_override("font_size", 19)
 	_tier_label.add_theme_color_override("font_outline_color",
 		Color(0, 0, 0, 0.9))

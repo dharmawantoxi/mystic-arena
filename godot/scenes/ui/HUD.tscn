@@ -1,13 +1,18 @@
-[gd_scene load_steps=5 format=3 uid="uid://hud01a07673"]
+[gd_scene load_steps=10 format=3 uid="uid://hud01a07673"]
 
 [ext_resource type="Script" path="res://scenes/ui/HUD.gd" id="1"]
+[ext_resource type="Font" path="res://assets/fonts/Barlow-Bold.ttf" id="2"]
+[ext_resource type="Font" path="res://assets/fonts/Barlow-Medium.ttf" id="3"]
+[ext_resource type="Font" path="res://assets/fonts/Barlow-SemiBold.ttf" id="4"]
+[ext_resource type="Font" path="res://assets/fonts/Cinzel.ttf" id="5"]
+[ext_resource type="Script" path="res://scenes/ui/widgets/VectorIcon.gd" id="6"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gold_chip"]
-content_margin_left = 16.0
-content_margin_top = 6.0
-content_margin_right = 18.0
-content_margin_bottom = 6.0
-bg_color = Color(0.101961, 0.0862745, 0.0392157, 0.92)
+content_margin_left = 14.0
+content_margin_top = 5.0
+content_margin_right = 16.0
+content_margin_bottom = 5.0
+bg_color = Color(0.172549, 0.14902, 0.0705882, 0.95)
 border_width_left = 2
 border_width_top = 2
 border_width_right = 2
@@ -18,28 +23,25 @@ corner_radius_top_right = 20
 corner_radius_bottom_right = 20
 corner_radius_bottom_left = 20
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_coin"]
-bg_color = Color(1, 0.803922, 0.333333, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
-
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_level_badge"]
-content_margin_left = 12.0
+content_margin_left = 10.0
 content_margin_top = 3.0
 content_margin_right = 12.0
 content_margin_bottom = 3.0
-bg_color = Color(0.0862745, 0.0941176, 0.141176, 0.88)
+bg_color = Color(0.0862745, 0.0941176, 0.141176, 0.9)
 border_width_left = 1
 border_width_top = 1
 border_width_right = 1
 border_width_bottom = 1
 border_color = Color(0.294118, 0.333333, 0.431373, 1)
-corner_radius_top_left = 8
-corner_radius_top_right = 8
-corner_radius_bottom_right = 8
-corner_radius_bottom_left = 8
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxLine" id="StyleBoxLine_hairline"]
+color = Color(0.54902, 0.431373, 0.196078, 1)
+thickness = 1
 
 [node name="HUD" type="Control"]
 layout_mode = 3
@@ -58,7 +60,7 @@ offset_top = 22.0
 offset_right = 418.0
 offset_bottom = 110.0
 mouse_filter = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 6
 
 [node name="GoldChip" type="PanelContainer" parent="TopLeft"]
 layout_mode = 2
@@ -68,29 +70,39 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_gold_chip")
 
 [node name="GoldRow" type="HBoxContainer" parent="TopLeft/GoldChip"]
 layout_mode = 2
-theme_override_constants/separation = 10
+mouse_filter = 2
+theme_override_constants/separation = 8
 
-[node name="CoinIcon" type="Panel" parent="TopLeft/GoldChip/GoldRow"]
-custom_minimum_size = Vector2(16, 16)
+[node name="CoinIcon" type="Control" parent="TopLeft/GoldChip/GoldRow"]
+custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_coin")
+script = ExtResource("6")
+icon_name = "coin"
+icon_color = Color(1, 0.803922, 0.333333, 1)
+icon_scale = 0.9
 
 [node name="GoldValue" type="Label" parent="TopLeft/GoldChip/GoldRow"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.92549, 0.627451, 1)
-theme_override_font_sizes/font_size = 22
+theme_override_fonts/font = ExtResource("2")
+theme_override_font_sizes/font_size = 24
 text = "1,000"
 vertical_alignment = 1
 
 [node name="Sep" type="VSeparator" parent="TopLeft/GoldChip/GoldRow"]
 layout_mode = 2
+mouse_filter = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_hairline")
 
 [node name="IncomeValue" type="Label" parent="TopLeft/GoldChip/GoldRow"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.768627, 0.945098, 0.658824, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_fonts/font = ExtResource("3")
+theme_override_font_sizes/font_size = 17
 text = "+2/s"
 vertical_alignment = 1
 
@@ -102,20 +114,37 @@ theme_override_styles/panel = SubResource("StyleBoxFlat_level_badge")
 
 [node name="LevelRow" type="HBoxContainer" parent="TopLeft/LevelBadge"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_constants/separation = 8
+
+[node name="ModeIcon" type="Control" parent="TopLeft/LevelBadge/LevelRow"]
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+script = ExtResource("6")
+icon_name = "swords"
+icon_color = Color(0.470588, 0.901961, 0.588235, 1)
+icon_scale = 0.55
 
 [node name="LevelValue" type="Label" parent="TopLeft/LevelBadge/LevelRow"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
+theme_override_fonts/font = ExtResource("4")
 theme_override_font_sizes/font_size = 13
 text = "LEVEL 1"
 
 [node name="Sep" type="VSeparator" parent="TopLeft/LevelBadge/LevelRow"]
 layout_mode = 2
+mouse_filter = 2
+theme_override_styles/separator = SubResource("StyleBoxLine_hairline")
 
 [node name="WaveValue" type="Label" parent="TopLeft/LevelBadge/LevelRow"]
 layout_mode = 2
+mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.92, 0.45, 1)
+theme_override_fonts/font = ExtResource("4")
 theme_override_font_sizes/font_size = 13
 text = "WAVE 1"
 
@@ -126,6 +155,7 @@ mouse_filter = 2
 theme_override_colors/font_color = Color(0.72, 0.78, 0.9, 1)
 theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.08, 0.85)
 theme_override_constants/outline_size = 3
+theme_override_fonts/font = ExtResource("3")
 theme_override_font_sizes/font_size = 12
 text = "arena: -"
 
@@ -140,11 +170,7 @@ offset_right = 1262.0
 offset_bottom = -16.0
 grow_vertical = 0
 mouse_filter = 2
-theme_override_colors/font_color = Color(0.85, 0.88, 1, 0.85)
-theme_override_colors/font_outline_color = Color(0.04, 0.03, 0.08, 0.9)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 13
-text = "klik = pilih hero/menara/slot   |   QWER skill   |   B/H toko   |   D difficulty   |   ENTER/N lanjut · R ulangi setelah menang/kalah   |   P/ESC pause   |   F1 respawn roster   |   T tema map   |   SPASI beli hero random"
+text = ""
 
 [node name="WaveBanner" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
@@ -165,6 +191,7 @@ mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.92, 0.45, 1)
 theme_override_colors/font_outline_color = Color(0.1, 0.05, 0, 1)
 theme_override_constants/outline_size = 6
+theme_override_fonts/font = ExtResource("5")
 theme_override_font_sizes/font_size = 46
 text = "WAVE 1"
 horizontal_alignment = 1

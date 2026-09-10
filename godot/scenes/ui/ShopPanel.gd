@@ -91,20 +91,18 @@ func _build() -> void:
 	vbox.add_child(header)
 
 	_title = Label.new()
-	_title.text = "TOKO"
-	_title.add_theme_font_size_override("font_size", 19)
-	_title.add_theme_color_override("font_color", COL_GOLD)
+	UiTheme.style_label(_title, "TOKO", UiTheme.title_font(), 24,
+		COL_GOLD)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(_title)
 
 	_gold_label = Label.new()
-	_gold_label.add_theme_font_size_override("font_size", 17)
-	_gold_label.add_theme_color_override("font_color", COL_GOLD)
+	UiTheme.style_label(_gold_label, "", UiTheme.body_bold(), 17,
+		COL_GOLD)
 	header.add_child(_gold_label)
 
-	var close_btn := Button.new()
-	close_btn.text = "TUTUP  (H)"
-	close_btn.custom_minimum_size = Vector2(104, 28)
+	var close_btn := PygameButton.pill_button("TUTUP  (H)", "neutral",
+		"", 104, 28, 13)
 	close_btn.set_meta("ui_key", "shop_close")
 	close_btn.pressed.connect(func(): GameManager.close_shop())
 	header.add_child(close_btn)
@@ -114,16 +112,17 @@ func _build() -> void:
 	_tab_box.add_theme_constant_override("separation", 6)
 	vbox.add_child(_tab_box)
 	var group := ButtonGroup.new()
+	var tab_accents := {"tower": Color(1.0, 0.7, 0.4),
+		"item": UiTheme.VIOLET, "hero": COL_GREEN, "nexus": COL_GOLD}
 	for pair in TABS:
-		var b := Button.new()
-		b.text = str(pair[1])
-		b.toggle_mode = true
+		var tab_id := str(pair[0])
+		var b := PygameButton.tab_button(str(pair[1]),
+			tab_accents.get(tab_id, COL_GOLD), 110, 30, 15)
 		b.button_group = group
-		b.custom_minimum_size = Vector2(110, 30)
-		b.set_meta("ui_key", "to_" + str(pair[0]))
-		b.pressed.connect(_on_tab_pressed.bind(str(pair[0])))
+		b.set_meta("ui_key", "to_" + tab_id)
+		b.pressed.connect(_on_tab_pressed.bind(tab_id))
 		_tab_box.add_child(b)
-		_tab_buttons[str(pair[0])] = b
+		_tab_buttons[tab_id] = b
 
 	# ── isi (bisa di-scroll: 33 item tidak muat sekali lihat) ──
 	_scroll = ScrollContainer.new()
@@ -326,7 +325,7 @@ func _build_tower_tab() -> void:
 				% [str(ti.get("desc", "")), str(ti.get("special", ""))]
 				+ "kekuatannya baru muncul setelah upgrade ke Lv2.",
 				_build_tower.bind(str(tt)), afford, "build_" + str(tt),
-				{"cost": cost, "blocked": "" if afford else "POOR"})
+				{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 			b.custom_minimum_size = Vector2(320, 34)
 			grid.add_child(b)
 		_add_label("Upgrade Lv1 -> Lv2 memilih jalur dan menaikkan HP x%.2f."
@@ -367,7 +366,7 @@ func _tower_detail(t) -> void:
 				var b := _make_button("%s — %d g" % [str(ti.get("name", tt)), cost],
 					"%s\n%s" % [str(ti.get("desc", "")), str(ti.get("special", ""))],
 					_pick_path.bind(t, str(tt)), afford, "repath_" + str(tt),
-					{"cost": cost, "blocked": "" if afford else "POOR"})
+					{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 				b.custom_minimum_size = Vector2(320, 34)
 				grid.add_child(b)
 		else:
@@ -378,7 +377,7 @@ func _tower_detail(t) -> void:
 				# ui_upgrade 0.5 — paritas _core.py:2481 / 7243 / 7341
 				func(): _run(func(): GameManager.try_upgrade_tower(""), "ui_upgrade", 0.5),
 				afford, "upgrade_tower",
-				{"cost": cost, "blocked": "" if afford else "POOR"})
+				{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 	else:
 		_add_label("Level maksimum (%d) tercapai." % TowerDB.max_level(), COL_DIM)
 
@@ -393,7 +392,7 @@ func _tower_detail(t) -> void:
 			# ui_upgrade 0.5 — paritas _try_activate_regen_shield _core.py:8240
 			func(): _run(func(): GameManager.try_buy_tower_regen_shield(), "ui_upgrade", 0.5),
 			afford, "tower_regen",
-			{"cost": rcost, "blocked": "" if afford else "POOR"})
+			{"cost": rcost, "blocked": "" if afford else "POOR"}, "cyan")
 	else:
 		_add_label("Regen Shield terbuka di Lv.%d+ (harga %d gold)" % [
 			TowerDB.regen_shield_min_level(), TowerDB.regen_shield_cost()], COL_DIM, 11)
@@ -405,7 +404,7 @@ func _tower_detail(t) -> void:
 			"Refund 50% dari total biaya upgrade yang sudah dibayar.",
 			# ui_sell 1.0 — paritas _try_sell_tower _core.py:8219
 			func(): _run(func(): GameManager.try_sell_tower(), "ui_sell"), true,
-			"sell_tower", {"refund": int(t.sell_value())})
+			"sell_tower", {"refund": int(t.sell_value())}, "danger")
 
 
 func _build_tower(tower_type: String) -> void:
@@ -520,7 +519,7 @@ func _build_hero_tab() -> void:
 				# ui_upgrade 0.6 — paritas upgrade hero _core.py:7243
 				func(): _run(func(): GameManager.try_upgrade_hero(), "ui_upgrade", 0.6),
 				afford, "upgrade_hero",
-				{"cost": cost, "blocked": "" if afford else "POOR"})
+				{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 		else:
 			_add_label("Level maksimum tercapai.", COL_DIM)
 	else:
@@ -559,7 +558,7 @@ func _build_hero_tab() -> void:
 				int(d.get("hp", 0)), int(d.get("damage", 0)), int(d.get("range", 0)),
 				str(d.get("dmg_type", "PHYSICAL"))],
 			_buy_hero.bind(htype), can, "buy_hero_" + htype,
-			{"cost": cost, "blocked": blocked})
+			{"cost": cost, "blocked": blocked}, "gold")
 		if blocked == "OWNED":
 			b.text += " · DIMILIKI"
 		elif blocked == "FULL":
@@ -601,7 +600,7 @@ func _build_nexus_tab() -> void:
 			# ui_upgrade 0.5 — paritas try_upgrade_nexus _core.py:2668
 			func(): _run(func(): GameManager.try_upgrade_nexus(), "ui_upgrade", 0.5),
 			afford, "upgrade_nexus",
-			{"cost": cost, "blocked": "" if afford else "POOR"})
+			{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 	else:
 		_add_label("Nexus sudah level maksimum.", COL_DIM)
 	if bool(nx.get("shield_active")) and bool(nx.get("free_shield_active")):
@@ -617,7 +616,7 @@ func _build_nexus_tab() -> void:
 			# ui_upgrade 0.5 — paritas try_activate_castle_shield _core.py:2652
 			func(): _run(func(): GameManager.try_buy_nexus_shield(), "ui_upgrade", 0.5),
 			afford, "nexus_shield",
-			{"cost": cost, "blocked": "" if afford else "POOR"})
+			{"cost": cost, "blocked": "" if afford else "POOR"}, "cyan")
 	elif bool(nx.get("castle_shield_purchased")):
 		_add_label("Castle Shield sudah dibeli.", Color(0.6, 0.95, 0.7))
 
@@ -675,25 +674,27 @@ func _run(action: Callable, sfx: String = "ui_buy", volume_mult: float = 1.0) ->
 
 func _add_label(text_val: String, col: Color = COL_TEXT, font_size: int = 12) -> Label:
 	var l := Label.new()
-	l.text = text_val
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.add_theme_font_size_override("font_size", font_size)
-	l.add_theme_color_override("font_color", col)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.style_label(l, text_val,
+		UiTheme.body_semibold() if font_size >= 13 else UiTheme.body_medium(),
+		font_size, col)
 	_body.add_child(l)
 	return l
 
 
 func _add_button(label: String, tooltip: String, cb: Callable, enabled: bool,
-		ui_key: String = "", ui_data: Dictionary = {}) -> Button:
-	var b := _make_button(label, tooltip, cb, enabled, ui_key, ui_data)
+		ui_key: String = "", ui_data: Dictionary = {},
+		kind: String = "neutral") -> Button:
+	var b := _make_button(label, tooltip, cb, enabled, ui_key, ui_data,
+		kind)
 	b.custom_minimum_size = Vector2(0, 32)
 	_body.add_child(b)
 	return b
 
 
 func _make_button(label: String, tooltip: String, cb: Callable, enabled: bool,
-		ui_key: String = "", ui_data: Dictionary = {}) -> Button:
+		ui_key: String = "", ui_data: Dictionary = {},
+		kind: String = "neutral") -> Button:
 	var b := Button.new()
 	b.text = label
 	b.tooltip_text = tooltip
@@ -704,32 +705,9 @@ func _make_button(label: String, tooltip: String, cb: Callable, enabled: bool,
 		b.set_meta("ui_key", ui_key)
 	if not ui_data.is_empty():
 		b.set_meta("ui_data", ui_data)
-	b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	b.focus_mode = Control.FOCUS_NONE
-	b.add_theme_font_size_override("font_size", 12)
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.11, 0.13, 0.2, 0.95) if enabled else Color(0.08, 0.09, 0.13, 0.9)
-	normal.border_color = Color(0.42, 0.5, 0.72, 0.85) if enabled else Color(0.22, 0.24, 0.3, 0.7)
-	normal.set_border_width_all(1)
-	normal.set_corner_radius_all(6)
-	normal.content_margin_left = 10.0
-	normal.content_margin_right = 10.0
-	normal.content_margin_top = 5.0
-	normal.content_margin_bottom = 5.0
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color(0.18, 0.22, 0.33, 1.0)
-	hover.border_color = COL_GOLD
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = Color(0.26, 0.22, 0.1, 1.0)
-	var disabled := normal.duplicate() as StyleBoxFlat
-	disabled.bg_color = Color(0.07, 0.075, 0.1, 0.9)
-	b.add_theme_stylebox_override("normal", normal)
-	b.add_theme_stylebox_override("hover", hover)
-	b.add_theme_stylebox_override("pressed", pressed)
-	b.add_theme_stylebox_override("focus", hover)
-	b.add_theme_stylebox_override("disabled", disabled)
-	b.add_theme_color_override("font_color", COL_TEXT if enabled else Color(0.45, 0.47, 0.55))
-	b.add_theme_color_override("font_hover_color", Color(1, 0.95, 0.7))
+	UiTheme.apply_row_button(b, "locked" if not enabled else kind, 12,
+		true)
 	if enabled and cb.is_valid():
 		b.pressed.connect(cb)
 	return b

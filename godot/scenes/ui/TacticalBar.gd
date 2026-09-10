@@ -89,9 +89,9 @@ func _build() -> void:
 	_box.add_child(col)
 
 	_title = Label.new()
-	_title.text = "TACTICAL COMMANDS (HOLD)"
-	_title.add_theme_font_size_override("font_size", 11)
-	_title.add_theme_color_override("font_color", Color(0.85, 0.88, 0.98))
+	UiTheme.style_label(_title, "TACTICAL COMMANDS (HOLD)",
+		UiTheme.body_bold(), 11, Color(0.85, 0.88, 0.98),
+		HORIZONTAL_ALIGNMENT_CENTER)
 	col.add_child(_title)
 
 	for spec in COMMANDS:
@@ -101,23 +101,9 @@ func _build() -> void:
 		btn.text = str(spec[1])
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.custom_minimum_size = Vector2(0, 30)
-		btn.add_theme_font_size_override("font_size", 11)
 		var c: Color = spec[2]
-		var normal := StyleBoxFlat.new()
-		normal.bg_color = Color(c.r * 0.25, c.g * 0.25, c.b * 0.25, 0.95)
-		normal.border_color = c
-		normal.set_border_width_all(1)
-		normal.set_corner_radius_all(6)
-		var pressed := StyleBoxFlat.new()
-		pressed.bg_color = Color(c.r * 0.55 + 0.1, c.g * 0.55 + 0.1,
-			c.b * 0.55 + 0.1, 0.98)
-		pressed.border_color = Color.WHITE
-		pressed.set_border_width_all(1)
-		pressed.set_corner_radius_all(6)
-		btn.add_theme_stylebox_override("normal", normal)
-		btn.add_theme_stylebox_override("hover", normal)
-		btn.add_theme_stylebox_override("pressed", pressed)
-		btn.add_theme_stylebox_override("disabled", normal)
+		UiTheme.apply_row_button(btn, "neutral", 11, false)
+		btn.add_theme_color_override("font_color", c.lightened(0.25))
 		btn.tooltip_text = _tooltip(action)
 		# Tekan = MULAI menahan (main.py: hit -> held_tac + apply_hud_action).
 		btn.button_down.connect(_on_button_down.bind(action))
