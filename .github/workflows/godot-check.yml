@@ -168,14 +168,11 @@ jobs:
             # Pantulkan baris error sebagai anotasi ::error:: supaya penyebab
             # kegagalan terbaca langsung di tab Checks / API check-run tanpa
             # harus mengunduh log artifact.
-            grep '|' /tmp/gate.out | sed 's/^[[:space:]]*[0-9]* |[[:space:]]*//' | head -8 | while read -r LINE; do
+            grep '|' /tmp/gate.out | sed 's/^[[:space:]]*[0-9]* |[[:space:]]*//' | head -5 | while read -r LINE; do
               [ -z "$LINE" ] && continue
               echo "::error::IMPORT-FAIL: $LINE"
             done
             echo "::error::IMPORT-FAIL-TAIL: $(tail -6 /tmp/import.log | tr '\n' ' | ' | cut -c1-400)"
-            # SEMENTARA-DEBUG-PR203: daftar SEMUA SCRIPT ERROR unik + lokasi
-            # file:baris (revert sebelum merge; batas anotasi 10/step).
-            echo "::error::IMPORT-ALL-ERRORS: $(grep -h -A 1 'SCRIPT ERROR' /tmp/import.log | sort -u | tr '\n' '|' | cut -c1-6000)"
             exit 1
           fi
 
