@@ -54,6 +54,14 @@ func _run() -> void:
 		_finish()
 		return
 
+	# Headless tidak punya jendela nyata: ukuran viewport dipatok eksplisit
+	# supaya asersi landscape deterministik di CI maupun di desktop.
+	print("[MobileSidePanelParityTest] viewport headless: %s"
+		% MobileLayout.viewport_size)
+	MobileLayout.viewport_size = Vector2(1280.0, 720.0)
+	MobileLayout.layout_changed.emit()
+	await get_tree().process_frame
+
 	_step("z-order")
 	# ── z-order: urutan anak HUD = urutan gambar (belakang -> depan) ──
 	_expect(rail.get_index() < tactical.get_index(),
