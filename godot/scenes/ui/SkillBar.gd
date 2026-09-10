@@ -1,9 +1,20 @@
-# SkillBar.gd — panel hero kiri-bawah + 4 tombol skill (QWER).
+# SkillBar.gd — POPUP hero terpilih + 4 tombol skill (QWER) + UPGRADE HERO.
 #
-# Port HeroPanel pygame (ui_components: panel 280x276 @ (20, H-296),
-# gradasi + border warna tim + sudut emas): nama + chip Lv + tombol X,
-# HP bar premium, 4 slot skill 38px-rasa (di sini 54px agar muat nama),
-# toggle auto-cast, 6 slot item 30px, ITEM FORGE, upgrade.
+# Port HeroPanel pygame (ui_components: panel 280x276, gradasi + border warna
+# tim + sudut emas): nama + chip Lv + tombol X, HP bar premium, 4 slot skill
+# 38px-rasa (di sini 54px agar muat nama), toggle auto-cast, 6 slot item
+# 30px, ITEM FORGE, upgrade.
+#
+# POSISI (koreksi 2026-09-10 — paritas platform_utils.panel_pos_bawah):
+#   * ada rail (layar lebih lebar dari 16:9) -> popup DI DALAM rail pada slot
+#     tetap ZONA_POPUP_Y=430 (MobileLayout.hero_popup_rect), jadi tidak
+#     menutupi peta dan muncul di tempat pygame menaruhnya;
+#   * rail tidak ada / terlalu sempit -> fallback pygame kiri-bawah
+#     (20, H-276-20).
+# VISIBILITAS: ini POPUP, bukan panel tetap — pygame `HeroPanel.draw()`
+# return lebih awal kalau tidak ada hero hidup terpilih, jadi panel hanya
+# ada selama pemain memilih hero (versi lama memajangnya sepanjang match,
+# menutupi peta kiri-bawah).
 #
 # Sumber kebenaran = GameManager.selected_hero. Tombol skill dan keyboard
 # QWER memanggil jalur yang sama (hero.cast_q/w/e/r), jadi tidak ada
@@ -42,25 +53,43 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build()
+	MobileLayout.layout_changed.connect(_layout)
+	_layout()
 	GameManager.selection_changed.connect(_on_selection_changed)
 	GameManager.hero_died.connect(_on_hero_died)
 	GameManager.shop_changed.connect(_refresh_static)
 	_on_selection_changed()
 
 
+## Letak popup hero: DI DALAM rail bila muat (paritas panel_pos_bawah),
+## kalau tidak -> kiri-bawah layar (fallback pygame px=20, py=H-276-20).
+## Anchor dinolkan: posisi absolut dari MobileLayout, sama seperti
+## TacticalBar, supaya satu sumber angka dan tidak pernah keluar frame.
+func _layout() -> void:
+	if _root == null:
+		return
+	var dock := MobileLayout.hero_popup_rect()
+	if dock.size.x <= 0.0:
+		var vp := MobileLayout.viewport_size
+		var w := minf(PANEL_W, maxf(160.0, vp.x - 40.0))
+		dock = Rect2(20.0, maxf(8.0, vp.y - PANEL_H - 20.0), w, PANEL_H)
+	_root.anchor_left = 0.0
+	_root.anchor_right = 0.0
+	_root.anchor_top = 0.0
+	_root.anchor_bottom = 0.0
+	_root.position = dock.position
+	_root.size = dock.size
+
+
 func _build() -> void:
-	# Panel 280x276 kiri-bawah (paritas HeroPanel pygame).
+	# Panel 280x276 (paritas HeroPanel pygame). Posisi/ukuran diatur
+	# _layout() dari MobileLayout (rail bila muat, kalau tidak kiri-bawah).
 	_root = PygamePanel.new(Color(0.35, 0.5, 0.95), 2.0, 10.0)
 	_root.name = "BarRoot"
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
-	_root.anchor_left = 0.0
-	_root.anchor_right = 0.0
-	_root.anchor_top = 1.0
-	_root.anchor_bottom = 1.0
-	_root.offset_left = 20.0
-	_root.offset_right = 20.0 + PANEL_W
-	_root.offset_top = -20.0 - PANEL_H
-	_root.offset_bottom = -20.0
+	# Popup: tidak tampil selama tidak ada hero terpilih (lihat
+	# _sync_visibility; paritas HeroPanel.draw yang return lebih awal).
+	_root.visible = false
 	_root.set_margins(12, 10, 12, 10)
 	add_child(_root)
 
@@ -169,6 +198,9 @@ func _build() -> void:
 	_forge_btn.pressed.connect(_open_forge)
 	_info.add_child(_forge_btn)
 	_upgrade_btn = _make_action_button("")
+	# Nama node = pegangan harness (MobileSidePanelParityTest memastikan
+	# tombol upgrade hero benar-benar ada di dalam popup).
+	_upgrade_btn.name = "UpgradeButton"
 	_upgrade_btn.pressed.connect(_on_upgrade_pressed)
 	_info.add_child(_upgrade_btn)
 
@@ -241,6 +273,7 @@ func _refresh_static() -> void:
 	else:
 		_hero = null
 	var hero = _hero
+	_sync_visibility()
 	_close_btn.disabled = hero == null
 	_autocast_btn.disabled = hero == null
 	_forge_btn.disabled = hero == null
@@ -323,8 +356,25 @@ func _sync_items(ids: Array) -> void:
 		chip.queue_redraw()
 
 
+## Popup hero hanya tampil saat match berjalan DAN ada hero hidup terpilih.
+## Paritas HeroPanel pygame: `if not h or not h.alive: return` (panel tidak
+## digambar sama sekali), dan UI pygame hanya digambar di STATE_GAME.
+## Versi lama memajang panel 280x276 sepanjang match sehingga menutupi peta
+## kiri-bawah walau tidak ada hero dipilih.
+func _sync_visibility() -> void:
+	if _root == null:
+		return
+	var alive: bool = _hero != null and is_instance_valid(_hero) \
+		and not bool(_hero.get("is_dead"))
+	_root.visible = alive and GameManager.state == "playing" \
+		and not GameManager.in_menu
+	_root.mouse_filter = Control.MOUSE_FILTER_STOP if _root.visible \
+		else Control.MOUSE_FILTER_IGNORE
+
+
 ## Bagian yang berubah terus: HP + cooldown
 func _refresh() -> void:
+	_sync_visibility()
 	var hero = _hero
 	if hero == null or not is_instance_valid(hero) or bool(hero.get("is_dead")):
 		if hero != null:

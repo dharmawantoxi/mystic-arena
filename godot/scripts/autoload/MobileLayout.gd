@@ -14,9 +14,15 @@
 #      396 .. 474   pintu masuk toko (TOWER/CASTLE/HERO/FORGE)
 #      H-236 .. H   TACTICAL COMMANDS (5 tombol)
 #
-# Popup tower/castle memakai jalur panel kanan (rail_popup_rect), sedangkan
-# HERO SHOP / ITEM FORGE memakai modal besar di tengah (modal_rect) —
-# persis pembagian di screenshot pygame.
+# Popup tower/castle memakai jalur panel kanan (rail_popup_rect), popup
+# HERO (panel upgrade) memakai slot tetap pygame (hero_popup_rect =
+# platform_utils.ZONA_POPUP_Y), sedangkan HERO SHOP / ITEM FORGE memakai
+# modal besar di tengah (modal_rect) — persis pembagian di screenshot pygame.
+#
+# ATURAN TERTINGGI (koreksi 2026-09-10): SEMUA UI panel hidup di x >= 1280.
+# Arena (peta) 1280x720 tidak boleh ditutupi panel; kalau layar tidak
+# menyisakan rail (16:9 atau lebih sempit), UI itu TIDAK DIGAMBAR — persis
+# pygame yang tidak punya side panel di 16:9.
 extends Node
 
 signal layout_changed
@@ -43,6 +49,22 @@ const HEROES_TOP := 188.0
 const HEROES_HEIGHT := 200.0
 const SHOP_TOP := 396.0
 const SHOP_HEIGHT := 78.0
+## ARENA = peta permainan (koordinat game 1280x720 rata kiri di 0,0 —
+## paritas platform_utils: area main rata kiri sehingga koordinat game dan
+## koordinat layar penuh sama). Tidak ada UI panel yang boleh menyentuh
+## rect ini; itulah invariant "panel tidak menghalangi map".
+const ARENA := Rect2(0.0, 0.0, 1280.0, 720.0)
+## Jalur popup panel kanan pygame — `platform_utils.ZONA_POPUP_Y = 430`
+## (di bawah daftar HEROES, di atas TACTICAL COMMANDS).
+const POPUP_ZONE_TOP := 430.0
+## Zona bawah panel yang tidak boleh ditimpa popup — paritas
+## `platform_utils.ZONA_BAWAH_H = 120`. Popup yang tidak muat di atas zona
+## ini DIDORONG KE ATAS (bukan dibiarkan menutupi dasar panel): untuk panel
+## 720 px dan popup hero 276 px, y jadi 720-120-276 = 324, bukan 430.
+const POPUP_BOTTOM_RESERVED := 120.0
+## Ukuran panel hero pygame (ui_components HeroPanel: panel_w 280,
+## panel_h 276) — popup upgrade hero.
+const HERO_POPUP_SIZE := Vector2(280.0, 276.0)
 
 var viewport_size := DESIGN_SIZE
 
@@ -75,6 +97,13 @@ func side_panel_rect() -> Rect2:
 func content_width() -> float:
 	return maxf(0.0, viewport_size.x - side_panel_width())
 
+## Rect PETA (arena 1280x720). Satu sumber untuk invariant "UI panel tidak
+## boleh menutupi peta": pemanggil (TacticalBar, SidePanel, popup hero)
+## memakai `rect.intersects(MobileLayout.arena_rect())` untuk menolak
+## penempatan yang menimpa permainan.
+func arena_rect() -> Rect2:
+	return ARENA
+
 ## Kotak TACTICAL COMMANDS di dasar panel kanan (koordinat layar penuh).
 func tactical_rect() -> Rect2:
 	var rail := side_panel_rect()
@@ -99,6 +128,36 @@ func rail_popup_rect() -> Rect2:
 		bottom = rail.position.y + rail.size.y - 12.0
 	return Rect2(rail.position.x + 8.0, top,
 		rail.size.x - 16.0, maxf(180.0, bottom - top))
+
+## Popup HERO (panel upgrade hero) DI DALAM panel kanan — port
+## `platform_utils.panel_pos_bawah(280, 276)`: x di tengah rail, y di slot
+## tetap `ZONA_POPUP_Y` (430). pygame mengembalikan None bila panel tak ada
+## ATAU terlalu sempit (`w > p.width - 8`); padanannya di sini Rect2()
+## kosong, dan pemanggil (SkillBar) jatuh ke posisi lama kiri-bawah layar.
+## Popup ini SENGAJA menimpa sebagian kotak TACTICAL COMMANDS (pygame
+## mencatat hal yang sama): hit-test Godot memberi prioritas ke popup
+## karena SkillBar ditambahkan SETELAH TacticalBar di HUD, dan
+## TacticalBar._popup_blocks() menolak hold baru selama hero terpilih.
+func hero_popup_rect() -> Rect2:
+	var rail := side_panel_rect()
+	if rail.size.x <= 0.0:
+		return Rect2()
+	if HERO_POPUP_SIZE.x > rail.size.x - 8.0:
+		return Rect2()
+	# pygame: x = p.x + (p.width - w) // 2
+	var x := rail.position.x + floorf((rail.size.x - HERO_POPUP_SIZE.x) * 0.5)
+	# pygame: y = p.y + ZONA_POPUP_Y, LALU didorong ke atas kalau popup
+	# menabrak zona bawah panel (ZONA_BAWAH_H = 120):
+	#   if y + h > p.bottom - 120: y = max(p.y + 8, p.bottom - 120 - h)
+	# Untuk rail 720 px + popup hero 276 px clamp ini AKTIF: 430+276=706 >
+	# 600, jadi y = 720-120-276 = 324. (Angka 430 hanya berlaku untuk popup
+	# pendek 165 px seperti popup upgrade tower.)
+	var y := rail.position.y + POPUP_ZONE_TOP
+	var bottom := rail.position.y + rail.size.y
+	if y + HERO_POPUP_SIZE.y > bottom - POPUP_BOTTOM_RESERVED:
+		y = maxf(rail.position.y + 8.0,
+			bottom - POPUP_BOTTOM_RESERVED - HERO_POPUP_SIZE.y)
+	return Rect2(x, y, HERO_POPUP_SIZE.x, HERO_POPUP_SIZE.y)
 
 ## Modal besar di tengah layar (HERO SHOP / ITEM FORGE). Selalu masuk frame:
 ## lebar/tinggi dibatasi ukuran viewport dikurangi margin.

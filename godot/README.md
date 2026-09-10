@@ -39,6 +39,50 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
   `python tools/test_godot_match_parity.py` dan
   `godot --headless --path godot res://tests/GameplayParityTest.tscn --quit-after 300`.
 
+## Koreksi tata letak HUD: panel tidak boleh menutupi peta (2026-09-10)
+
+Dua keluhan yang diperbaiki sekaligus, keduanya soal UI panel yang
+"nangkring" di atas arena 1280x720:
+
+1. **TACTICAL COMMANDS menutupi peta.** `TacticalBar` dulu punya fallback:
+   kalau layar tidak menyisakan rail kanan (16:9 atau lebih sempit, termasuk
+   jendela desktop default 1280x720), kotak 5 tombol itu "jatuh" ke sudut
+   kanan-bawah ARENA — menutupi lane bawah persis saat pemain perlu
+   melihatnya. Sekarang kotak hanya digambar di dalam rail
+   (`MobileLayout.tactical_rect()`, x >= 1280); tanpa rail kotak
+   **disembunyikan**, persis pygame yang memang tidak menggambar tombol
+   command di 16:9 (`mobile/sidepanel.py`: `SidePanel` tidak aktif ->
+   `draw`/`hit_test` keluar lebih awal). Perintah taktis tetap jalan lewat
+   hotkey **G/F/T/C/B/D** (`Main._tactical_hotkey`), dan lebarkan jendela
+   (>= ~1400 px) atau pakai HP 18:9+ untuk mendapatkan rail + tombolnya lagi.
+2. **Popup UPGRADE HERO tidak muncul di panel kanan.** Panel hero
+   (`SkillBar`) selalu digambar di kiri-bawah layar — menutupi peta
+   sepanjang match, dan tidak berada di tempat pygame menaruhnya. Sekarang:
+   * posisi mengikuti `platform_utils.panel_pos_bawah`: **di dalam rail**
+     pada slot pygame (`ZONA_POPUP_Y = 430`, lalu didorong ke atas bila
+     menabrak zona bawah 120 px — untuk popup hero 276 px di rail 720 px
+     hasilnya y = 324) bila rail cukup lebar
+     (`MobileLayout.hero_popup_rect()`), kalau tidak baru jatuh ke
+     kiri-bawah (fallback pygame `px=20, py=H-276-20`);
+   * visibilitas = **popup**, bukan panel tetap: tampil hanya saat match
+     berjalan dan ada hero hidup terpilih (paritas `HeroPanel.draw()` yang
+     `return` lebih awal tanpa hero). Klik hero -> popup muncul berisi nama,
+     Lv, HP, QWER, auto-cast, 6 slot item, ITEM FORGE, dan **UPGRADE HERO
+     (nG)**.
+
+Invariant yang kini dikunci `MobileSidePanelParityTest`: tidak ada UI panel
+yang berpotongan dengan `MobileLayout.arena_rect()` (0,0,1280,720) —
+`tactical_rect()`, `hero_popup_rect()`, dan rect node hidup
+(`TacticalBar.command_rect()`, `SkillBar/BarRoot`) semuanya diuji terhadap
+arena di layar lebar (1624x720) maupun 16:9 (1280x720). Popup hero sengaja
+menimpa sebagian kotak command di rail (pygame sama); z-order
+`rail < tactical < popup hero < shop` + `TacticalBar._popup_blocks()`
+memastikan klik popup tidak tembus ke tombol command di baliknya.
+
+`TacticalInputParityTest` kini mematok viewport 1624x720 sebelum mereplay
+fixture: skenario `panel_down`/`panel_up` oracle pygame direkam dengan side
+panel aktif, dan di 16:9 tombol command memang tidak ada.
+
 ## Quick Start
 
 ```bash

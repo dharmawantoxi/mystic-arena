@@ -58,6 +58,8 @@ var _save_file_before = null
 var _main = null
 var _bar = null
 var _units: Dictionary = {}
+## Viewport sebelum harness memaksa layar lebar (dipulihkan di _finish).
+var _viewport_before := Vector2(1280.0, 720.0)
 
 
 func _ready() -> void:
@@ -104,6 +106,18 @@ func _run() -> void:
 	var hud = _main.find_child("HUD", true, false)
 	_bar = hud.find_child("TacticalBar", true, false)
 	_expect(_bar != null, "TacticalBar ada di HUD")
+	# Panel command HANYA digambar kalau layar menyisakan rail (x >= 1280) —
+	# paritas pygame yang tidak menggambar tombol command sama sekali di 16:9
+	# (koreksi 2026-09-10: kotak tactical tidak lagi ditumpuk di atas peta).
+	# Fixture oracle merekam panel_down/panel_up dengan side panel AKTIF, jadi
+	# viewport dipatok lebar (1624x720 = HP uji pygame 2436x1080) supaya
+	# tombol produksi benar-benar ada dan bisa ditekan.
+	_viewport_before = MobileLayout.viewport_size
+	MobileLayout.viewport_size = Vector2(1624.0, 720.0)
+	MobileLayout.layout_changed.emit()
+	if _bar != null:
+		_bar._layout()
+		_bar._refresh()
 
 	for spec in _fx["scenarios"]:
 		_test_scenario(spec)
@@ -566,6 +580,10 @@ func _expect(condition: bool, message: String) -> void:
 
 func _finish() -> void:
 	_clear_case()
+	# Pulihkan viewport (harness sempat memaksa layar lebar supaya rail —
+	# dan tombol command di dalamnya — ada).
+	MobileLayout.viewport_size = _viewport_before
+	MobileLayout.layout_changed.emit()
 	if is_instance_valid(_main):
 		if is_instance_valid(_main._tactical):
 			_main._tactical.hold_trace_enabled = false
