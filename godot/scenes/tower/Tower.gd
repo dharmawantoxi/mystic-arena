@@ -12,6 +12,7 @@
 extends Node2D
 
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
+const BakedPropDB = preload("res://scripts/render/BakedPropDB.gd")
 const FPS := 60.0
 
 @export var team: String = "blue"
@@ -70,6 +71,10 @@ var color: Color = Color("#64dc78")
 var color_dark: Color = Color("#328c46")
 
 var _redraw_acc: float = 0.0
+## Fase nyala obor menara bake (4 fase) — cuma dipakai jalur bake.
+var _flame_t: float = 0.0
+## Cache entri manifest bake supaya tidak parse JSON tiap frame.
+var _baked: Dictionary = {}
 
 
 func _ready() -> void:
@@ -221,6 +226,7 @@ func _physics_process(delta: float) -> void:
 
 	# redraw 20 Hz (flash + sudut laras + bar HP), bukan tiap frame
 	_redraw_acc += delta
+	_flame_t += delta
 	if _redraw_acc >= 0.05:
 		_redraw_acc = 0.0
 		z_index = 60 + int(global_position.y) / 4
@@ -380,6 +386,47 @@ func _draw() -> void:
 	if is_dead:
 		return
 	var team_col := Color(0.35, 0.6, 1.0) if team == "blue" else Color(0.95, 0.35, 0.3)
+	var body_top := -30.0 - float(level) * 2.0
+	# ── Fase 7: badan menara dari bake renderer pygame (seni asli) ──
+	# Kalau manifest tidak punya entri (bake belum dijalankan), jatuh ke
+	# gambar geometris lama — perilaku pra-Fase 7 tetap utuh.
+	if _baked.is_empty():
+		_baked = BakedPropDB.tower_entry(tower_type, team)
+	if not _baked.is_empty() and _draw_baked_body():
+		_draw_overlays(team_col, body_top)
+		return
+	_draw_geometric_body(team_col, body_top)
+	_draw_overlays(team_col, body_top)
+
+
+## Gambar badan menara dari strip bake. Return false kalau tekstur/frame
+## tidak tersedia (pemanggil lalu memakai gambar geometris).
+func _draw_baked_body() -> bool:
+	var tex: Texture2D = BakedPropDB.texture(str(_baked.get("png", "")))
+	if tex == null:
+		return false
+	var shoot_frames := BakedPropDB.tower_shoot_frames(_baked, level)
+	var idle_frames := BakedPropDB.tower_idle_frames(_baked, level)
+	var frames: Array = idle_frames
+	var fps := float(_baked.get("fps_flame", 15.0))
+	if shoot_flash > 0.0 and not shoot_frames.is_empty():
+		# Pygame memilih pose tembak dari shoot_flash_timer (8 -> 4 -> 0).
+		# Godot menurunkan shoot_flash dari 1/6 dtk; petakan ke 2 frame.
+		frames = shoot_frames
+		fps = float(_baked.get("fps_shoot", 12.0))
+	if frames.is_empty():
+		return false
+	var idx := int(_flame_t * fps) % frames.size()
+	var region := BakedPropDB.frame_region(_baked, int(frames[idx]))
+	if region.size.x <= 0.0:
+		return false
+	var a := BakedPropDB.anchor(_baked)
+	draw_texture_rect_region(tex, Rect2(-a, region.size), region)
+	return true
+
+
+## Badan menara geometris (jalur lama, dipakai kalau bake tidak ada).
+func _draw_geometric_body(team_col: Color, body_top: float) -> void:
 	# bayangan
 	draw_circle(Vector2(0, 12), radius * 1.05, Color(0, 0, 0, 0.28))
 	# pondasi batu
@@ -392,7 +439,6 @@ func _draw() -> void:
 		Vector2(radius * 0.62, -26), Vector2(-radius * 0.62, -26)]),
 		Color(0.42, 0.4, 0.37, 1))
 	# badan menara sesuai jenis
-	var body_top := -30.0 - float(level) * 2.0
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(-radius * 0.62, -26), Vector2(radius * 0.62, -26),
 		Vector2(radius * 0.5, body_top), Vector2(-radius * 0.5, body_top)]),
@@ -423,6 +469,12 @@ func _draw() -> void:
 		"mage":
 			draw_circle(Vector2(0, body_top - 6), 5.0, Color(color.r, color.g, color.b, 0.55))
 			draw_circle(Vector2(0, body_top - 6), 2.6, Color(1, 1, 1, 0.9))
+
+
+## Lapisan yang digambar Godot di ATAS badan menara (bake maupun geometris):
+## pip level, gelembung shield, bar HP, kilau upgrade, ring seleksi.
+## pygame menggambar semua ini di luar render_tower(), jadi tidak ikut bake.
+func _draw_overlays(team_col: Color, body_top: float) -> void:
 	# pip level
 	for i in range(level):
 		draw_circle(Vector2(-radius * 0.5 + float(i) * 5.0, -12), 1.8,

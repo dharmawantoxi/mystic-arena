@@ -9,6 +9,7 @@ extends CharacterBody2D
 
 const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
 const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
+const BakedPropDB = preload("res://scripts/render/BakedPropDB.gd")
 const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
 const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
@@ -62,7 +63,11 @@ func _ready():
 	waypoint_index = 0 if team == "blue" else lane_path.size() - 1
 	status = StatusEffectsScript.new(self)
 	build_visual()
-	hurt_flash = HurtFlashScript.new(self, body) # setelah build_visual
+	# Target flash: sprite bake Fase 7 kalau ada, kalau tidak badan
+	# Polygon2D lama (jalur siluet). Pola HurtFlash: silhouette ->
+	# custom_visual -> _extra.
+	hurt_flash = HurtFlashScript.new(
+		self, baked_sprite if baked_sprite != null else body)
 	update_ui()
 	# Teriakan spawn khusus goblin (paritas Minion.__init__ _entity.py:5495-5496,
 	# volume_mult 0.7, throttle 200 ms). Jenis minion lain lahir tanpa suara —
@@ -130,6 +135,15 @@ func build_visual():
 		custom_visual.name = "CustomVisual"
 		visual.add_child(custom_visual)
 		return
+	# ── Fase 7: sprite minion dari bake renderer pygame (seni asli) ──
+	# Sebelumnya Godot menggambar minion sebagai lingkaran/elips
+	# (UnitSilhouette) padahal pygame punya 5 rig lengkap ~9.500 baris.
+	# Kalau manifest tidak ada (bake belum dijalankan), jatuh ke siluet.
+	var baked := BakedPropDB.minion_entry(minion_type, team)
+	if not baked.is_empty():
+		_build_baked(baked)
+		if baked_sprite != null:
+			return
 	var d: Dictionary = GameManager.minion_type_data(minion_type)
 	var fill := _parse_color(d.get("color", "#c8c8c8"), Color("#c8c8c8"))
 	silhouette = UnitSilhouetteScript.new()
@@ -141,8 +155,74 @@ func build_visual():
 		r, display_name, dmg_school, ranged)
 
 
+## Bangun Sprite2D dari strip bake minion. Satu sprite + region_rect sudah
+## cukup: pose idle/walk di-loop, pose serang dipaksa dari progress seperti
+## BakedSprite.gd (bukan playback).
+func _build_baked(e: Dictionary) -> void:
+	_baked = e
+	_baked_tex = BakedPropDB.texture(str(e.get("png", "")))
+	if _baked_tex == null:
+		return
+	var sp := Sprite2D.new()
+	sp.name = "BakedMinion"
+	sp.texture = _baked_tex
+	sp.centered = false
+	# Titik jangkar (telapak kaki) harus jatuh di origin $Visual, sama
+	# dengan kontrak UnitSilhouette.gd.
+	sp.offset = -BakedPropDB.anchor(e)
+	sp.region_enabled = true
+	visual.add_child(sp)
+	baked_sprite = sp
+	_set_baked_frame(_first_frame("idle"))
+
+
+func _anim_frames(act: String) -> Array:
+	var anims = _baked.get("anims", {})
+	var spec = anims.get(act, []) if anims is Dictionary else []
+	return spec if spec is Array else []
+
+
+func _first_frame(act: String) -> int:
+	var fr := _anim_frames(act)
+	return int(fr[0]) if not fr.is_empty() else 0
+
+
+func _set_baked_frame(index: int) -> void:
+	if baked_sprite == null or _baked_tex == null:
+		return
+	var region := BakedPropDB.frame_region(_baked, index)
+	if region.size.x <= 0.0:
+		return
+	baked_sprite.region_rect = region
+
+
+## act = "idle" | "walk" | "attack"; ap = 0..1 progress serang.
+func _drive_baked(act: String, ap: float, delta: float) -> void:
+	if baked_sprite == null:
+		return
+	var frames := _anim_frames(act)
+	if frames.is_empty():
+		return
+	if act == "attack":
+		# Pose serang di-drive countdown pygame (attack_anim_timer turun
+		# dari 24), bukan playback — index dipaksa dari progress.
+		var i := clampi(int(ap * float(frames.size())), 0, frames.size() - 1)
+		_set_baked_frame(int(frames[i]))
+		return
+	var fps_table = _baked.get("fps", {})
+	var fps := float((fps_table as Dictionary).get(act, 8.0)) if fps_table is Dictionary else 8.0
+	_baked_t += delta * fps
+	var j := int(_baked_t) % frames.size()
+	_set_baked_frame(int(frames[j]))
+
+
 var silhouette = null
 var custom_visual = null
+## Sprite bake Fase 7 (null = tidak ada bake, pakai siluet).
+var baked_sprite: Sprite2D = null
+var _baked: Dictionary = {}
+var _baked_tex: Texture2D = null
+var _baked_t: float = 0.0
 ## Flash putih hurt_flash_timer pygame (_entity.py:5545-5551) — lihat HurtFlash.gd
 var hurt_flash = null
 
@@ -177,7 +257,7 @@ func _physics_process(delta):
 	else:
 		is_moving = _follow_lane(eff_speed)
 	z_index = int(global_position.y)
-	_drive_visual(is_moving)
+	_drive_visual(is_moving, delta)
 
 
 ## _entity.Minion._move_forward: blue mengikuti path dari awal, red dari akhir.
@@ -263,7 +343,7 @@ func _eff_attack_cd() -> float:
 	return status.attack_cd(attack_cooldown) if status != null else attack_cooldown
 
 
-func _drive_visual(is_moving: bool) -> void:
+func _drive_visual(is_moving: bool, delta: float = 0.0) -> void:
 	var ap := 0.0
 	if attack_timer > 0.0:
 		ap = 1.0 - attack_timer / maxf(0.001, _eff_attack_cd())
@@ -272,6 +352,9 @@ func _drive_visual(is_moving: bool) -> void:
 		act = "attack"
 	elif is_moving:
 		act = "walk"
+	if baked_sprite != null and is_instance_valid(baked_sprite):
+		_drive_baked(act, ap, delta)
+		return
 	if silhouette != null and is_instance_valid(silhouette) and silhouette.has_method("drive"):
 		silhouette.drive(anim_phase, act, ap, facing)
 	elif custom_visual != null and is_instance_valid(custom_visual) and custom_visual.has_method("drive"):

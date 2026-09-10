@@ -681,20 +681,24 @@ MAP_BAKE_SEED = 20260907
 
 
 def _save_map_png(surface, png_path):
-    """Simpan surface map opaque -> PNG palet 256 warna (pola Fase 5).
+    """Simpan surface map opaque -> PNG RGB penuh (TIDAK dikuantisasi).
 
-    Pillow opsional: tanpa PIL fallback pygame.image.save (RGBA penuh,
-    file lebih besar tapi visual identik — bukan error).
+    ═══ PENTING: encoder ini HARUS deterministik dan HARUS identik di
+    semua mesin ═══
+    Dulu fungsi ini mengkuantisasi ke palet 256 warna kalau Pillow ada dan
+    jatuh ke RGB penuh kalau tidak ada — dua mesin menghasilkan 54 map
+    yang BERBEDA (terukur: 27-87% piksel beda, selisih kanal maks 30) dan
+    `git status` selalu kotor setelah bake. Map punya area gradasi luas
+    (kabut/speckle terrain) sehingga kuantisasi 256 warna memunculkan
+    banding; dan biayanya tidak sepadan — 54 map RGB penuh cuma ~1,6 MB.
+
+    Karena itu: map SELALU RGB penuh lewat pygame.image.save, tanpa
+    cabang opsional. Jangan tambahkan fallback berbasis Pillow di sini.
     """
     import pygame
-    try:
-        from PIL import Image
-        pil = Image.frombytes("RGBA", surface.get_size(),
-                              pygame.image.tobytes(surface, "RGBA"))
-        q = pil.quantize(colors=256, method=Image.FASTOCTREE)
-        q.save(png_path, optimize=True)
-    except ImportError:
-        pygame.image.save(surface, png_path)
+    # pygame.image.save menulis RGB (tanpa alpha) untuk surface opaque,
+    # dan JPEG/PNG dipilih dari ekstensi. Tidak ada dependensi opsional.
+    pygame.image.save(surface, png_path)
 
 
 def export_map_bakes(only=None):
@@ -1010,26 +1014,38 @@ def _compose_strip(hero_type, frames):
     sebesar itu. Indeks frame global (dipakai manifest) = urutan
     raster: baris * UNIT_FRAMES_PER_ROW + kolom.
     """
+    return _compose_strip_generic(frames, UNIT_CANVAS // 2,
+                                  UNIT_CANVAS // 2)
+
+
+def _compose_strip_generic(frames, anchor_x, anchor_y,
+                           frames_per_row=None, pad=None):
+    """Versi ber-parameter `_compose_strip` (dipakai juga bake props).
+
+    `frames` = [(label, rect, crop)] — rect dalam koordinat kanvas asal.
+    (anchor_x, anchor_y) = titik kanvas yang harus jatuh pada posisi yang
+    SAMA di semua sel (telapak kaki untuk unit, pusat alas untuk props).
+    """
     import pygame
-    c = UNIT_CANVAS // 2
-    left_pad = max(c - r.x for _, r, _ in frames)
-    right_pad = max(r.right - c for _, r, _ in frames)
-    top_pad = max(c - r.y for _, r, _ in frames)
-    bottom_pad = max(r.bottom - c for _, r, _ in frames)
-    cell_w = max(1, left_pad + right_pad) + UNIT_CELL_PAD * 2
-    cell_h = max(1, top_pad + bottom_pad) + UNIT_CELL_PAD * 2
-    rows = (len(frames) + UNIT_FRAMES_PER_ROW - 1) // UNIT_FRAMES_PER_ROW
-    strip = pygame.Surface((cell_w * UNIT_FRAMES_PER_ROW, cell_h * rows),
-                           pygame.SRCALPHA)
+    fpr = frames_per_row or UNIT_FRAMES_PER_ROW
+    pad = UNIT_CELL_PAD if pad is None else pad
+    c = anchor_x
+    left_pad = max(anchor_x - r.x for _, r, _ in frames)
+    right_pad = max(r.right - anchor_x for _, r, _ in frames)
+    top_pad = max(anchor_y - r.y for _, r, _ in frames)
+    bottom_pad = max(r.bottom - anchor_y for _, r, _ in frames)
+    cell_w = max(1, left_pad + right_pad) + pad * 2
+    cell_h = max(1, top_pad + bottom_pad) + pad * 2
+    rows = (len(frames) + fpr - 1) // fpr
+    strip = pygame.Surface((cell_w * fpr, cell_h * rows), pygame.SRCALPHA)
     for i, (_, rect, crop) in enumerate(frames):
-        col = i % UNIT_FRAMES_PER_ROW
-        row = i // UNIT_FRAMES_PER_ROW
-        ox = col * cell_w + UNIT_CELL_PAD + (left_pad - (c - rect.x))
-        oy = row * cell_h + UNIT_CELL_PAD + (top_pad - (c - rect.y))
+        col = i % fpr
+        row = i // fpr
+        ox = col * cell_w + pad + (left_pad - (anchor_x - rect.x))
+        oy = row * cell_h + pad + (top_pad - (anchor_y - rect.y))
         strip.blit(crop, (ox, oy))
-    # Anchor sel = kaki + padding (offset Godot dipakai untuk ini).
-    return strip, cell_w, cell_h, left_pad + UNIT_CELL_PAD, \
-        top_pad + UNIT_CELL_PAD
+    # Anchor sel = titik jangkar + padding (offset Godot memakai ini).
+    return strip, cell_w, cell_h, left_pad + pad, top_pad + pad
 
 
 def _frame_diff(a, b):
@@ -1107,31 +1123,43 @@ def _save_strip(strip, png_path):
     """Simpan strip PNG — 256 warna palet + alpha diperbaiki per entri.
 
     Kenapa palet (PNG8): strip RGBA penuh = 21 MB untuk 222 unit; palet
-    256 warna memangkasnya ~4-5x TANPA mengubah piksel RGB yang terlihat
-    (prosedural pygame per unit memakai jauh lebih sedikit dari 256
-    warna). Jebakannya: kuantisasi FASTOCTREE RGBA membocorkan alpha
-    samar (1..15) ke entri palet yang dipakai area pad transparan ->
-    halo kotak samar di arena. Perbaikannya: entri palet dengan alpha
-    < 16 dipaksa 0 (ambang sama dengan min_alpha=8 crop + guard, lihat
-    _render_unit_frame); alpha 16..255 (aura lembut) tetap utuh.
+    256 warna memangkasnya ~4-5x. Jebakannya: kuantisasi FASTOCTREE RGBA
+    membocorkan alpha samar (1..15) ke entri palet yang dipakai area pad
+    transparan -> halo kotak samar di arena. Perbaikannya: entri palet
+    dengan alpha < 16 dipaksa 0 (ambang sama dengan min_alpha=8 crop +
+    guard, lihat _render_unit_frame); alpha 16..255 (aura lembut) tetap
+    utuh.
 
-    Pillow opsional: kalau tidak ada, fallback pygame.image.save penuh
-    (file lebih besar tapi identik secara visual — bukan error).
+    ═══ PENTING: Pillow WAJIB, bukan opsional ═══
+    Dulu ada `except ImportError: pygame.image.save(...)`. Akibatnya bake
+    menghasilkan dua keluaran yang BERBEDA total hanya karena Pillow
+    ada/tidak di mesin: 445 strip di repo terbakе dengan Pillow (mode P,
+    rata-rata 30 KB) sedangkan 54 map tanpa Pillow (mode RGB). Setiap
+    re-bake di mesin berbeda mengubah ratusan berkas, jadi paritas visual
+    harus diperiksa satu-satu secara manual.
+
+    Sekarang: kalau Pillow tidak ada, bake GAGAL dengan pesan jelas
+    (daripada diam-diam menghasilkan aset yang berbeda).
     """
     import pygame
     try:
         from PIL import Image
-        pil = Image.frombytes("RGBA", strip.get_size(),
-                              pygame.image.tobytes(strip, "RGBA"))
-        q = pil.quantize(colors=256, method=Image.FASTOCTREE)
-        pal = bytearray(q.getpalette(rawmode="RGBA"))
-        for i in range(len(pal) // 4):
-            if pal[i * 4 + 3] < 16:
-                pal[i * 4 + 3] = 0
-        q.putpalette(bytes(pal), rawmode="RGBA")
-        q.save(png_path, optimize=True)
-    except ImportError:
-        pygame.image.save(strip, png_path)
+    except ImportError as exc:  # pragma: no cover - tergantung environment
+        raise SystemExit(
+            "[convert] Pillow (PIL) WAJIB untuk bake strip unit.\n"
+            "  Tanpa Pillow, strip disimpan RGBA penuh -> byte BERBEDA\n"
+            "  dengan aset yang sudah ada di repo dan paritas visual\n"
+            "  Godot<->pygame buyar. Pasang dulu:\n"
+            "      python3 -m pip install pillow\n") from exc
+    pil = Image.frombytes("RGBA", strip.get_size(),
+                          pygame.image.tobytes(strip, "RGBA"))
+    q = pil.quantize(colors=256, method=Image.FASTOCTREE)
+    pal = bytearray(q.getpalette(rawmode="RGBA"))
+    for i in range(len(pal) // 4):
+        if pal[i * 4 + 3] < 16:
+            pal[i * 4 + 3] = 0
+    q.putpalette(bytes(pal), rawmode="RGBA")
+    q.save(png_path, optimize=True)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -1738,9 +1766,469 @@ def _export_unit_sprites_frozen(types, stats_all, out_dir, cast_table,
     write_json("baked_units.json", out)
 
 
+# ═══════════════════════════════════════════════════════════════════
+# FASE 7 — BAKE PROPS: MINION, MENARA, NEXUS
+# ═══════════════════════════════════════════════════════════════════
+#
+# Latar belakang: Fase 5 (bake strip) hanya menutupi hero + boss. Menara,
+# minion, dan nexus TIDAK pernah ikut — Godot menggambarnya dengan
+# placeholder geometris:
+#
+#   Tower.gd::_draw()          20 primitif   vs towers/_bundle.py   7.274 baris
+#   UnitSilhouette.gd::_draw() 56 primitif   vs minions/_bundle.py  9.531 baris
+#   Nexus.gd::_draw()          18 primitif   vs Castle (_entity.py) 1.637 baris
+#
+# Itu sumber utama "tampilan Godot beda dengan pygame": di layar satu match
+# ada puluhan minion dan belasan menara, semuanya tampil sebagai segitiga
+# dan lingkaran abu-abu sementara pygame menampilkan sprite beranimasi
+# lengkap (batu bata, obor menyala, perisai, senjata, dll).
+#
+# Fase 7 menutupnya dengan POLA YANG SUDAH TERBUKTI di Fase 5: renderer
+# pygame ASLI yang dibake jadi strip PNG + manifest. Tidak ada seni yang
+# ditulis ulang di GDScript, jadi tidak bisa melenceng.
+#
+# Sumbu animasi yang dibake (sumber = kode pygame):
+#   MINION
+#     idle   : body_bob = sin(anim_time * 0.06)      -> periode 104,72 frame
+#              (minions/_bundle.py:616 goblin; pola sama di 5 namespace)
+#     walk   : body_bob = sin(walk_cycle * 1.5)      -> periode 4,189 satuan
+#              walk_cycle += 0,25/frame (_entity.py:5603) -> 16,8 frame/loop
+#     attack : attack_progress = 1 - timer/attack_anim_max (max = 24,
+#              _entity.py:5482) -> 24 frame, di-drive countdown seperti
+#              pose serang Fase 5.
+#   MENARA
+#     idle   : 4 fase nyala obor dari kunci cache `tower.timer % 4`
+#              (_entity.py:1351 / towers/_bundle.py:737)
+#     shoot  : shoot_flash_timer 8 dan 4 (dikuantisasi //3 di
+#              _draw_tower_body _entity.py:1351).
+#     level  : 1..6, ukuran badan = 18 + level (_entity.py:1345)
+#   NEXUS
+#     level  : 1..5 (NEXUS_LEVELS _core.py). Badan = _render_castle_full
+#              pada kanvas 180x160 di titik (90, 140) lalu diskalakan 0,85
+#              (_entity.py Castle.draw:1836-1878). Efek dinamis (obor
+#              lvl 4+, aura lvl 6) ikut dibake pada timer 0.
+#
+# Output:
+#   godot/assets/props/minion_<jenis>_<tim>.png
+#   godot/assets/props/tower_<jenis>_<tim>.png
+#   godot/assets/props/nexus_<tim>.png
+#   godot/data/baked_props.json      manifest (frame, anchor, fps)
+
+PROP_CANVAS = 320          # kanvas bake props; crop bbox yang dipakai
+PROP_FRAMES_PER_ROW = 8    # sama dengan unit: aman untuk batas tekstur mobile
+
+MINION_IDLE_FRAMES = 8
+MINION_WALK_FRAMES = 8
+MINION_ATTACK_FRAMES = 8
+MINION_IDLE_PERIOD = 104.72    # 2*pi / 0.06  (sin(anim_time * 0.06))
+MINION_WALK_PERIOD = 4.18879   # 2*pi / 1.5   (sin(walk_cycle * 1.5))
+MINION_ATTACK_GAME_FRAMES = 24  # attack_anim_max (_entity.py:5482)
+MINION_WALK_STEP = 0.25        # walk_cycle += 0.25/frame (_entity.py:5603)
+# Jarak titik jangkar minion (pusat badan, yang dipakai renderer) ke garis
+# TELAPAK KAKI = letak bayangan tanah. Bayangan digambar lebih dulu dan
+# berpusat di y = <pusat> + radius + dy (minions/_bundle.py):
+#   goblin +6 (:643), orc +7 (:2545), troll +7 (:4346),
+#   undead +6 (:6198), dark_rider +8 (:8054)
+# Godot menaruh origin node di telapak kaki (sama dengan UnitSilhouette.gd),
+# jadi sprite baked harus digeser naik sebesar ini.
+MINION_SHADOW_DY = {"goblin": 6, "orc": 7, "troll": 7,
+                    "undead": 6, "dark_rider": 8}
+MINION_SHADOW_DY_DEFAULT = 6
+# fps playback = jumlah frame strip / durasi loop detik (60 fps game).
+MINION_FPS_IDLE = round(MINION_IDLE_FRAMES
+                        / (MINION_IDLE_PERIOD / 60.0), 3)
+MINION_FPS_WALK = round(MINION_WALK_FRAMES
+                        / ((MINION_WALK_PERIOD / MINION_WALK_STEP) / 60.0), 3)
+MINION_FPS_ATTACK = round(MINION_ATTACK_FRAMES
+                          / (MINION_ATTACK_GAME_FRAMES / 60.0), 3)
+
+TOWER_FLAME_FRAMES = 4         # tower.timer % 4
+TOWER_SHOOT_FLASHES = (8, 4)   # nilai shoot_flash_timer yang dibake
+NEXUS_CANVAS = (180, 160)
+NEXUS_FOOT = (90, 140)         # titik (cw//2, ch-20) di kanvas castle
+NEXUS_SCALE = 0.85
+
+
+class _PropStub:
+    """Entitas tiruan untuk bake: atribut tak dikenal bernilai 0.
+
+    Dipakai supaya bake tidak perlu menginstansiasi Tower/Minion/Castle
+    sungguhan (yang butuh Game, pathfinding, audio, ...). Nilai 0 untuk
+    atribut yang tidak diset = kondisi netral (tidak ada efek aktif).
+    """
+
+    def __init__(self, **kw):
+        self.__dict__.update(kw)
+
+    def __getattr__(self, name):
+        return 0
+
+
+def _bake_minion_frames(mtype, team):
+    """Render (label, rect, crop) idle/walk/attack untuk satu minion."""
+    import pygame
+    import random
+    from minions import MINION_RENDERERS
+
+    renderer = MINION_RENDERERS[mtype]
+    c = PROP_CANVAS // 2
+    frames = []
+    import _core as _c
+    radius = int(_c.MINION_TYPES.get(mtype, {}).get("radius", 9))
+    dy = MINION_SHADOW_DY.get(mtype, MINION_SHADOW_DY_DEFAULT)
+    # Titik telapak kaki (garis bayangan) di koordinat kanvas bake.
+    foot_y = c + radius + dy
+
+    def _one(tag, **state):
+        random.seed(UNIT_SEED)
+        base = dict(minion_type=mtype, team=team, radius=radius,
+                    hp=1, max_hp=1, alive=True, facing=1, direction=1,
+                    nexus_level=1,
+                    attack_anim_max=MINION_ATTACK_GAME_FRAMES,
+                    walk_cycle=0.0, anim_time=0, is_moving=False,
+                    attack_anim_timer=0, spawn_anim=0,
+                    hurt_flash_timer=0, slow_timer=0,
+                    bleed_stacks=0, slash_effects=[])
+        base.update(state)
+        m = _PropStub(**base)
+        canvas = pygame.Surface((PROP_CANVAS, PROP_CANVAS), pygame.SRCALPHA)
+        renderer(canvas, m, c, c)
+        rect = canvas.get_bounding_rect(min_alpha=8)
+        if rect.width <= 0 or rect.height <= 0:
+            return None
+        return (tag, rect, canvas.subsurface(rect).copy())
+
+    # ── IDLE: satu periode penuh sin(anim_time * 0.06) ──
+    for k in range(MINION_IDLE_FRAMES):
+        t = MINION_IDLE_PERIOD * k / float(MINION_IDLE_FRAMES)
+        fr = _one("idle", anim_time=t, is_moving=False)
+        if fr:
+            frames.append(fr)
+
+    # ── WALK: satu periode penuh sin(walk_cycle * 1.5) ──
+    for k in range(MINION_WALK_FRAMES):
+        w = MINION_WALK_PERIOD * k / float(MINION_WALK_FRAMES)
+        fr = _one("walk", walk_cycle=w, is_moving=True)
+        if fr:
+            frames.append(fr)
+
+    # ── ATTACK: countdown attack_anim_timer 24 -> 1 ──
+    for k in range(MINION_ATTACK_FRAMES):
+        p = (k + 0.5) / float(MINION_ATTACK_FRAMES)
+        remaining = max(1, int(round(MINION_ATTACK_GAME_FRAMES
+                                     * (1.0 - p))))
+        fr = _one("attack", attack_anim_timer=remaining)
+        if fr:
+            frames.append(fr)
+    return frames, foot_y
+
+
+def _bake_tower_frames(ttype, team, levels):
+    """Render (label, rect, crop) untuk 6 level x (nyala obor + tembak)."""
+    import pygame
+    import random
+    from towers import render_tower
+
+    c = PROP_CANVAS // 2
+    frames = []
+
+    def _one(tag, level, **state):
+        random.seed(UNIT_SEED)
+        base = dict(tower_type=ttype, team=team, level=level,
+                    radius=18 + level, size=18 + level,
+                    attack_cooldown=35, timer=0, shoot_flash_timer=0,
+                    target=None, x=0, y=0, angle=0, alive=True,
+                    hp=1, max_hp=1, shield=0, shield_max=0,
+                    selected=False, upgrade_flash=0)
+        base.update(state)
+        t = _PropStub(**base)
+        canvas = pygame.Surface((PROP_CANVAS, PROP_CANVAS), pygame.SRCALPHA)
+        render_tower(ttype, canvas, t, c, c, 18 + level)
+        rect = canvas.get_bounding_rect(min_alpha=8)
+        if rect.width <= 0 or rect.height <= 0:
+            return None
+        return (tag, rect, canvas.subsurface(rect).copy())
+
+    for lvl in levels:
+        # Idle: 4 fase nyala obor. timer dipilih di bawah cooldown-8
+        # supaya tidak memicu recoil (jendela recoil _entity.py:963).
+        for f in range(TOWER_FLAME_FRAMES):
+            fr = _one("idle", lvl, timer=12 + f)
+            if fr:
+                frames.append(fr)
+        # Tembak: flash menyala, timer di ujung recoil.
+        for flash in TOWER_SHOOT_FLASHES:
+            fr = _one("shoot", lvl, timer=34, shoot_flash_timer=flash)
+            if fr:
+                frames.append(fr)
+    return frames
+
+
+def _bake_nexus_frames(team, levels):
+    """Render (label, rect, crop) castle per level (sudah diskalakan)."""
+    import pygame
+    import random
+    import _entity
+
+    frames = []
+    for lvl in levels:
+        random.seed(UNIT_SEED)
+        castle = _PropStub(team=team, level=lvl, timer=0, pulse=0,
+                           shield=0, shield_max=0, shield_active=False,
+                           free_shield_active=False,
+                           castle_shield_purchased=False,
+                           shield_regen_flash=0)
+        cw, ch = NEXUS_CANVAS
+        canvas = pygame.Surface((cw, ch), pygame.SRCALPHA)
+        palette = _entity._get_palette(team)
+        _entity._render_castle_full(canvas, castle, NEXUS_FOOT[0],
+                                    NEXUS_FOOT[1], palette)
+        # Efek dinamis (obor lvl 4+, aura lvl 6) — timer 0 = fase tetap.
+        _entity._render_dynamic_effects(canvas, castle, palette)
+        # Skala tampilan persis Castle.draw (0,85) supaya Godot tidak
+        # perlu menghitung ulang.
+        sw = int(cw * NEXUS_SCALE)
+        sh = int(ch * NEXUS_SCALE)
+        scaled = pygame.transform.smoothscale(canvas, (sw, sh))
+        # Titik jangkar = posisi (castle.x, castle.y) hasil Castle.draw:
+        #     final_x = x - new_w // 2   ->  ref_x = new_w // 2
+        #     final_y = y - new_h + 35   ->  ref_y = new_h - 35
+        # (_entity.py Castle.draw:1872-1874). Dipakai mentah-mentah supaya
+        # Godot cukup menaruh sprite di posisi nexus tanpa hitung ulang.
+        ref_x = sw // 2
+        ref_y = sh - 35
+        big = pygame.Surface((PROP_CANVAS, PROP_CANVAS), pygame.SRCALPHA)
+        # Posisikan supaya titik jangkar jatuh tepat di tengah kanvas.
+        big.blit(scaled, (PROP_CANVAS // 2 - ref_x,
+                          PROP_CANVAS // 2 - ref_y))
+        rect = big.get_bounding_rect(min_alpha=8)
+        if rect.width <= 0 or rect.height <= 0:
+            continue
+        frames.append(("nexus", rect, big.subsurface(rect).copy()))
+    return frames
+
+
+def export_prop_sprites(only=None):
+    """Bake strip props (minion/menara/nexus) + baked_props.json."""
+    os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
+    os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
+    import _core  # noqa: F401  (alias modul settings)
+    import pygame
+    pygame.init()
+    if pygame.display.get_surface() is None:
+        pygame.display.set_mode((1, 1))
+
+    from minions import MINION_RENDERERS
+    from towers import TOWER_RENDERERS
+    import _core as _c
+
+    minion_types = sorted(MINION_RENDERERS)
+    tower_types = sorted(TOWER_RENDERERS)
+    tower_levels = list(range(1, int(getattr(_c, "TOWER_MAX_LEVEL", 6)) + 1))
+    nexus_levels = sorted(int(k) for k in getattr(_c, "NEXUS_LEVELS", {}))
+    teams = ("blue", "red")
+
+    # HP bar minion digambar LIVE di pygame (cached_minion_draw memanggil
+    # draw_hp_bar SETELAH blit sprite). Kalau tidak dimatikan, bar HP ikut
+    # membeku di dalam strip.
+    import minions._bundle as _mb
+    _orig_hp_bar = _mb.draw_hp_bar
+    _mb.draw_hp_bar = lambda *a, **k: None
+
+    out_dir = os.path.join(ROOT, "godot", "assets", "props")
+    os.makedirs(out_dir, exist_ok=True)
+
+    out = {
+        "_generated_by": "tools/convert_to_godot.py export_prop_sprites()",
+        "_source": "renderer pygame ASLI: minions/_bundle.py, "
+                   "towers/_bundle.py, _entity.Castle",
+        "_note": "Fase 7 — menutup props yang sebelumnya placeholder "
+                 "geometris di Godot. anchor = titik yang harus jatuh di "
+                 "origin node (telapak kaki minion, pusat alas menara, "
+                 "telapak kaki nexus). Semua frame satu ukuran sel supaya "
+                 "AnimatedSprite2D/Sprite2D cukup satu offset.",
+        "schema": 1,
+        "minions": {},
+        "towers": {},
+        "nexus": {},
+    }
+    report = {"fail": [], "bytes": [], "frames": 0}
+
+    _freeze_clock()
+    try:
+        # ── MINION ──
+        for mtype in minion_types:
+            if only and mtype not in only:
+                continue
+            for team in teams:
+                key = "%s_%s" % (mtype, team)
+                try:
+                    frames, foot_y = _bake_minion_frames(mtype, team)
+                    if not frames:
+                        raise RuntimeError("0 frame")
+                    strip, cw, ch, ax, ay = _compose_strip_generic(
+                        frames, PROP_CANVAS // 2, foot_y, PROP_FRAMES_PER_ROW)
+                    png = os.path.join(out_dir, "minion_%s.png" % key)
+                    _save_strip(strip, png)
+                    n_idle = len([f for f in frames if f[0] == "idle"])
+                    n_walk = len([f for f in frames if f[0] == "walk"])
+                    n_atk = len([f for f in frames if f[0] == "attack"])
+                    out["minions"][key] = {
+                        "png": "res://assets/props/minion_%s.png" % key,
+                        "frame_w": cw, "frame_h": ch,
+                        "frames_per_row": PROP_FRAMES_PER_ROW,
+                        "anchor": [ax, ay],
+                        "anims": {
+                            "idle": [0, n_idle],
+                            "walk": [n_idle, n_walk],
+                            "attack": [n_idle + n_walk, n_atk],
+                        },
+                        "fps": {"idle": MINION_FPS_IDLE,
+                                "walk": MINION_FPS_WALK,
+                                "attack": MINION_FPS_ATTACK},
+                        # Jarak pusat badan -> telapak kaki (dipakai Godot
+                        # kalau ingin menempatkan dari pusat badan).
+                        "foot_offset_y": (foot_y - PROP_CANVAS // 2),
+                        "radius": int(_c.MINION_TYPES.get(
+                            mtype, {}).get("radius", 9)),
+                        "minion_type": mtype, "team": team,
+                    }
+                    report["bytes"].append(os.path.getsize(png))
+                    report["frames"] += len(frames)
+                except Exception as e:
+                    report["fail"].append(("minion/" + key,
+                                           "%s: %s" % (type(e).__name__, e)))
+
+        # ── MENARA ──
+        for ttype in tower_types:
+            if only and ttype not in only:
+                continue
+            for team in teams:
+                key = "%s_%s" % (ttype, team)
+                try:
+                    frames = _bake_tower_frames(ttype, team, tower_levels)
+                    if not frames:
+                        raise RuntimeError("0 frame")
+                    strip, cw, ch, ax, ay = _compose_strip_generic(
+                        frames, PROP_CANVAS // 2, PROP_CANVAS // 2,
+                        PROP_FRAMES_PER_ROW)
+                    png = os.path.join(out_dir, "tower_%s.png" % key)
+                    _save_strip(strip, png)
+                    per_level = TOWER_FLAME_FRAMES + len(TOWER_SHOOT_FLASHES)
+                    levels_map = {}
+                    for i, lvl in enumerate(tower_levels):
+                        base = i * per_level
+                        levels_map[str(lvl)] = {
+                            "idle": list(range(base,
+                                               base + TOWER_FLAME_FRAMES)),
+                            "shoot": list(range(base + TOWER_FLAME_FRAMES,
+                                               base + per_level)),
+                        }
+                    out["towers"][key] = {
+                        "png": "res://assets/props/tower_%s.png" % key,
+                        "frame_w": cw, "frame_h": ch,
+                        "frames_per_row": PROP_FRAMES_PER_ROW,
+                        "anchor": [ax, ay],
+                        "per_level": per_level,
+                        "levels": levels_map,
+                        # Nyala obor: timer berjalan 1/frame, fase baru
+                        # tiap 1 frame -> 60/4 = 15 loop/detik terlalu
+                        # cepat; pygame memang menganimasikannya per frame
+                        # tapi kuncinya cuma 4 fase, jadi 15 fps = loop
+                        # 0,267 dtk (cukup hidup tanpa kedip strobo).
+                        "fps_flame": 15.0,
+                        "fps_shoot": 12.0,
+                        "tower_type": ttype, "team": team,
+                    }
+                    report["bytes"].append(os.path.getsize(png))
+                    report["frames"] += len(frames)
+                except Exception as e:
+                    report["fail"].append(("tower/" + key,
+                                           "%s: %s" % (type(e).__name__, e)))
+
+        # ── NEXUS ──
+        for team in teams:
+            key = team
+            try:
+                frames = _bake_nexus_frames(team, nexus_levels)
+                if not frames:
+                    raise RuntimeError("0 frame")
+                strip, cw, ch, ax, ay = _compose_strip_generic(
+                    frames, PROP_CANVAS // 2, PROP_CANVAS // 2,
+                    PROP_FRAMES_PER_ROW)
+                png = os.path.join(out_dir, "nexus_%s.png" % key)
+                _save_strip(strip, png)
+                out["nexus"][key] = {
+                    "png": "res://assets/props/nexus_%s.png" % key,
+                    "frame_w": cw, "frame_h": ch,
+                    "frames_per_row": PROP_FRAMES_PER_ROW,
+                    "anchor": [ax, ay],
+                    "levels": {str(lvl): i
+                               for i, lvl in enumerate(nexus_levels)},
+                    "team": team,
+                }
+                report["bytes"].append(os.path.getsize(png))
+                report["frames"] += len(frames)
+            except Exception as e:
+                report["fail"].append(("nexus/" + key,
+                                       "%s: %s" % (type(e).__name__, e)))
+    finally:
+        _thaw_clock()
+        _mb.draw_hp_bar = _orig_hp_bar
+
+    total_kb = sum(report["bytes"]) / 1024.0
+    print("[convert] props: %d minion, %d menara, %d nexus | %d frame, "
+          "%.1f KB -> %s"
+          % (len(out["minions"]), len(out["towers"]), len(out["nexus"]),
+             report["frames"], total_kb, out_dir))
+    if report["fail"]:
+        print("[convert]   GAGAL: %s"
+              % ", ".join("%s(%s)" % f for f in report["fail"][:12]),
+              file=sys.stderr)
+    if only:
+        print("[convert] props: mode --only — baked_props.json TIDAK "
+              "ditulis ulang")
+        return
+    write_json("baked_props.json", out)
+
+
+def _require_numpy():
+    """numpy WAJIB untuk bake sprite — bukan opsional.
+
+    `minions/_bundle.py` mewarnai minion tim merah lewat DUA jalur:
+      * pakai numpy  : g/b dikali 0.55 lalu di-clip
+      * tanpa numpy  : fallback `BLEND_RGB_MULT` (255,168,158) lalu
+                       `BLEND_RGB_ADD` (62,10,8)
+    Keduanya menghasilkan PIKSEL YANG BERBEDA untuk sprite yang sama
+    (hijau: x0.55 vs x0.659 + 10/255). Karena `except ImportError` memilih
+    jalur berdasarkan mesin, bake tim merah pernah berbeda antara mesin
+    berkas komit dan CI — persis penyakit yang sama dengan encoder PNG
+    dulu. Sekarang bake gagal dengan pesan jelas kalau numpy tidak ada.
+    """
+    try:
+        import numpy  # noqa: F401
+    except ImportError as exc:  # pragma: no cover - tergantung environment
+        raise SystemExit(
+            "[convert] numpy WAJIB untuk bake sprite.\n"
+            "  Tanpa numpy, renderer minion tim merah memakai jalur\n"
+            "  fallback BLEND_RGB_MULT/BLEND_RGB_ADD yang menghasilkan\n"
+            "  piksel BERBEDA dari aset yang sudah ada di repo.\n"
+            "  Pasang dulu:\n"
+            "      python3 -m pip install numpy\n") from exc
+
+
 if __name__ == "__main__":
     _argv = sys.argv[1:]
-    if "--units-png" in _argv:
+    # Semua mode bake butuh numpy; tanpa itu minion tim merah dibakar lewat
+    # jalur BLEND_* yang pikselnya beda (lihat _require_numpy).
+    _require_numpy()
+    if "--props-png" in _argv:
+        _only = None
+        if "--only" in _argv:
+            _val = _argv[_argv.index("--only") + 1]
+            _only = [s.strip() for s in _val.split(",") if s.strip()]
+        export_prop_sprites(only=_only)
+    elif "--units-png" in _argv:
         # Fase 5 Opsi A: bake strip PNG saja (data JSON tidak disentuh).
         _only = None
         if "--only" in _argv:
