@@ -3361,7 +3361,10 @@ class ItemShopUI:
         hf = get_font(14, "body_medium")
         ht = hf.render(tr("item_card_detail_hint"), True,
                        ui_theme.TEXT_FAINT)
-        surface.blit(ht, (px + cls.PANEL_W - ht.get_width() - 24,
+        # BUGFIX: margin kanan diperbesar (24 -> 66) agar tidak menabrak
+        # tombol X yang kini dijaga tetap di dalam frame (tumpang di
+        # sudut kanan atas).
+        surface.blit(ht, (px + cls.PANEL_W - ht.get_width() - 66,
                           py + 32))
 
     @classmethod
@@ -3455,8 +3458,12 @@ class ItemShopUI:
     @classmethod
     def _draw_close(cls, surface, game, px, py):
         size = 44
+        # BUGFIX: X dulu digambar di py - 14; karena panel item forge
+        # menempel ke tepi atas layar (py=0), tombolnya keluar dari frame
+        # dan sulit/nihil bisa ditekan. Jaga minimum 2 px dari tepi atas
+        # supaya selalu utuh di dalam layar.
         rect = pygame.Rect(px + cls.PANEL_W - size - 12,
-                           py - 14, size, size)
+                           max(2, py - 14), size, size)
         mx, my = pygame.mouse.get_pos()
         hover = rect.collidepoint(mx, my)
         glow = (255, 90, 90) if hover else (180, 60, 60)

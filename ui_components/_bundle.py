@@ -714,6 +714,15 @@ class _NS_build_popup:
                     px = SCREEN_WIDTH - popup_w - 10
                 if py < 10:
                     py = int(slot['y']) + 30
+                # BUGFIX: popup tidak boleh keluar dari frame. Kalau slot
+                # berada di tengah/bawah peta, menempatkan popup "di
+                # bawah slot" bisa mendorong bawahnya keluar layar sehingga
+                # tombol tipe tower tak bisa ditekan. Kembalikan ke dalam
+                # batas layar.
+                if py + popup_h > SCREEN_HEIGHT - 10:
+                    py = SCREEN_HEIGHT - popup_h - 10
+                if py < 10:
+                    py = 10
 
                 pygame.draw.line(surface, GOLD,
                                  (px + popup_w // 2, py + popup_h),
@@ -1562,6 +1571,12 @@ class _NS_hero_shop:
             panel_h = 700
             panel_x = (SCREEN_WIDTH - panel_w) // 2
             panel_y = (SCREEN_HEIGHT - panel_h) // 2
+            # BUGFIX: tombol X dipasangkan menempel di sudut atas panel
+            # (posisinya panel_y - 15). Kalau panel hanya 10 px dari tepi
+            # atas layar, X ikut keluar dari frame dan tak bisa ditekan.
+            # Beri jarak minimum 16 px ke tepi atas supaya X selalu
+            # terlihat utuh di dalam layar.
+            panel_y = max(panel_y, 16)
 
             self._draw_panel(surface, panel_x, panel_y, panel_w, panel_h)
             header_h = 70
@@ -3578,6 +3593,16 @@ class _NS_popup_renderer:
                     px = SCREEN_WIDTH - popup_w - 10
                 if py < TOP_BAR_HEIGHT + 10:
                     py = int(target.y) + 40
+                # BUGFIX: popup tidak boleh keluar dari frame. Tower di
+                # lane tengah (y ± 300-450) tidak muat diletakkan di atas,
+                # jadi popup digeser ke bawah target - dan dulu bawahnya
+                # bisa menembus tepi bawah layar, membuat tombol
+                # upgrade/sell tak terlihat & tak bisa ditekan.
+                # Kembalikan ke dalam batas layar.
+                if py + popup_h > SCREEN_HEIGHT - 10:
+                    py = SCREEN_HEIGHT - popup_h - 10
+                if py < TOP_BAR_HEIGHT + 10:
+                    py = TOP_BAR_HEIGHT + 10
 
             if _pp is None:
                 pygame.draw.line(surface, GOLD,
