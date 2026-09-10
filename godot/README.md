@@ -69,7 +69,7 @@ godot godot/project.godot
 | **klik kiri** | pilih unit: bangunan toko (Radiant → tab ITEM / Dire → tab HERO) · hero Radiant (→ skill bar) · menara milikmu (→ tab MENARA) · nexus (→ tab NEXUS) · lingkaran slot di lane (→ bangun menara) |
 | `Q` `W` `E` `R` | cast skill hero yang sedang dipilih (bisa juga lewat tombol di skill bar) |
 | `H` | buka/tutup toko (MENARA · ITEM · HERO · NEXUS) — satu-satunya hotkey toko (paritas pygame; `B` kini milik perintah taktis) |
-| `G`/`F` `T` `C` `B` `D` (hold) | perintah taktis: GATHER (di posisi kursor) / PROTECT TOWER / PROTECT CASTLE / ATTACK BOSS / ATTACK DMG DEALER (panel-nya juga di HUD) |
+| `G`/`F` `T` `C` `B` `D` (hold) | perintah taktis: GATHER (di posisi kursor) / PROTECT TOWER / PROTECT CASTLE / ATTACK BOSS / ATTACK DMG DEALER. Panelnya di dasar **panel kanan** saat layar lebih lebar dari 16:9; di layar tanpa panel kanan (16:9/potret) panelnya **terlipat** jadi chip **TACTICAL** kecil di kanan-bawah arena (ketuk untuk membuka, panel menutup sendiri setelah perintah dilepas) supaya map tidak tertutup |
 | `ENTER` | setelah VICTORY: **lanjut level berikutnya** · setelah DEFEAT: ulangi level |
 | `R` | setelah menang/kalah: replay level yang sama (is_replay → reward 1500/200, bukan 3000) |
 | `P` / `ESC` | menu PAUSE (RESUME / PENGATURAN / MENU UTAMA / KELUAR — paritas `MenuState.PAUSE`); ESC setelah menang/kalah = menu utama |
@@ -78,6 +78,8 @@ godot godot/project.godot
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
 Di layar sentuh (dan klik mouse): tombol **II** jeda di kiri atas, **SKIP >>** saat cinematic, dan **REPLAY / NEXT LEVEL / MENU** setelah match usai — paritas `mobile/hud.py` (tombol FPS hanya dengan `MYSTIC_DEBUG=1`, dan jeda pindah ke panel kanan di layar lebar). Dikunci `TouchHudParityTest`.
+
+Panel hero (skill bar QWER + **UPGRADE HERO**) hanya muncul setelah hero Radiant dipilih — paritas `HeroPanel` pygame yang tidak digambar saat tak ada hero terpilih. Di layar lebih lebar dari 16:9 panelnya pindah KE DALAM panel kanan (`MobileLayout.hero_panel_rect`, paritas `platform_utils.panel_pos_bawah` + `ZONA_POPUP_Y`), jadi arena tidak pernah tertutup; tingginya ikut tinggi konten supaya tombol upgrade tak pernah keluar layar. Dikunci `MobileSidePanelParityTest`.
 
 Pilih difficulty di menu PILIH LEVEL sebelum match.
 

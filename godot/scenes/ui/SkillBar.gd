@@ -42,26 +42,52 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	_build()
+	MobileLayout.layout_changed.connect(_layout)
 	GameManager.selection_changed.connect(_on_selection_changed)
 	GameManager.hero_died.connect(_on_hero_died)
 	GameManager.shop_changed.connect(_refresh_static)
+	_layout()
 	_on_selection_changed()
 
 
+## Panel hero diletakkan mengikuti MobileLayout: DI DALAM rail kanan kalau
+## ada & cukup lebar (paritas HeroPanel pygame + platform_utils.panel_pos_bawah),
+## kalau tidak kiri-bawah arena (fallback pygame 20, H-276-20).
+##
+## Tingginya diambil dari ukuran MINIMAL konten, bukan 276 buta: tombol
+## UPGRADE HERO adalah anak TERAKHIR kolom, jadi kalau kontennya lebih tinggi
+## dari 276 (font HP/resolusi beda) tombol itu dulu terdorong ke luar panel
+## dan tak pernah kelihatan. Sekarang panelnya ikut memuai.
+func _layout() -> void:
+	if _root == null:
+		return
+	var h := maxf(PANEL_H, _root.get_combined_minimum_size().y)
+	var rect := MobileLayout.hero_panel_rect(PANEL_W, h)
+	_root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_root.position = rect.position
+	_root.size = rect.size
+
+
 func _build() -> void:
-	# Panel 280x276 kiri-bawah (paritas HeroPanel pygame).
+	# Panel 280x276 (paritas HeroPanel pygame). Anchor kiri-atas; posisinya
+	# ditentukan _layout() — rail kanan bila ada, kalau tidak kiri-bawah.
 	_root = PygamePanel.new(Color(0.35, 0.5, 0.95), 2.0, 10.0)
 	_root.name = "BarRoot"
 	_root.mouse_filter = Control.MOUSE_FILTER_STOP
-	_root.anchor_left = 0.0
-	_root.anchor_right = 0.0
-	_root.anchor_top = 1.0
-	_root.anchor_bottom = 1.0
+	_root.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	# Nilai awal = fallback pygame (20, H-296); _layout() menimpanya sebelum
+	# frame pertama (rail kanan kalau ada, kiri-bawah kalau tidak).
 	_root.offset_left = 20.0
 	_root.offset_right = 20.0 + PANEL_W
-	_root.offset_top = -20.0 - PANEL_H
-	_root.offset_bottom = -20.0
+	_root.offset_top = 720.0 - PANEL_H - 20.0
+	_root.offset_bottom = 720.0 - 20.0
 	_root.set_margins(12, 10, 12, 10)
+	# Panel hero pygame HANYA digambar saat ada hero terpilih (HeroPanel.draw
+	# `if not h or not h.alive: return`). Di Godot dulu panelnya SELALU ada
+	# dengan teks "tidak ada hero dipilih" + tombol upgrade kosong, menutupi
+	# map kiri-bawah (base Radiant) dan menelan ketukan hero di sana —
+	# hero jadi tak bisa diklik, popup upgrade-nya pun tak pernah muncul.
+	_root.visible = false
 	add_child(_root)
 
 	_info = VBoxContainer.new()
@@ -241,6 +267,12 @@ func _refresh_static() -> void:
 	else:
 		_hero = null
 	var hero = _hero
+	# Paritas HeroPanel pygame: panel HANYA tampil saat ada hero terpilih &
+	# hidup. Tanpa syarat ini panel 280x276 duduk permanen di atas map
+	# kiri-bawah dan menelan ketukan pemain ke hero di base Radiant.
+	if _root.visible != (hero != null):
+		_root.visible = hero != null
+		_layout()
 	_close_btn.disabled = hero == null
 	_autocast_btn.disabled = hero == null
 	_forge_btn.disabled = hero == null
