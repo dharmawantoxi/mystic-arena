@@ -209,7 +209,8 @@ func _refresh_debug_overlay() -> void:
 			bosses += 1
 	_debug_overlay.text = "%d FPS · %.1f ms · H%d M%d T%d B%d" % [
 		int(Engine.get_frames_per_second()),
-		Engine.get_process_delta_time() * 1000.0,
+		# get_process_delta_time milik Node (bukan static Engine).
+		get_process_delta_time() * 1000.0,
 		heroes, minions, towers, bosses]
 
 # Sinkronkan seluruh HUD dari state GameManager (dipakai saat _ready + level_started)
