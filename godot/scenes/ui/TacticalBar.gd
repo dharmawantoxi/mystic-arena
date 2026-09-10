@@ -3,9 +3,13 @@
 # Port pemicu UI pygame untuk perintah taktis (FASE 17 = TacticalCommands.gd):
 #   * mobile/sidepanel.py::_gambar_tactical — 5 tombol GATHER [G] /
 #     PROTECT TOWER [T] / PROTECT CASTLE [C] / ATTACK BOSS [B] /
-#     ATTACK DMG DEALER [D], hanya tampak saat state == "playing" dan
-#     tombol per-command disembunyikan saat syaratnya tidak terpenuhi
-#     (pygame: btn.visible = bool(enabled), bukan abu-abu).
+#     ATTACK DMG DEALER [D], hanya tampak saat state == "playing".
+#     Kelima kotak SELALU digambar; yang syaratnya tak terpenuhi tampil
+#     ABU tak-bisa-ditekan (pygame menggambar bg (45,45,50) + border
+#     (80,80,85) + teks (120,120,125) untuk not-enabled — btn.visible
+#     pygame HANYA mematikan hit-test, bukan gambar kotaknya).
+#     Perintah yang sedang DITAHAN menyala + chip "HOLD" (paritas sorot
+#     held_cmd pygame).
 #   * mobile/hud.py::apply_hud_action — tekan = hold_start (gather TANPA
 #     posisi mouse, protect_tower pakai selected_tower biru bila ada).
 #   * main.py cabang release/pause/APP_BG — lepas sentuhan = hold_end(nama),
@@ -32,6 +36,9 @@ const COMMANDS: Array = [
 var _box: PanelContainer = null
 var _title: Label = null
 var _buttons: Dictionary = {}
+## action -> {font: Color, bg: Color} — warna dasar tombol untuk
+## dipulihkan setelah sorot HOLD dilepas.
+var _btn_base: Dictionary = {}
 ## Perintah yang sedang ditahan lewat tombol panel (mirror held_tac main.py:
 ## sentuhan -> nama perintah). Pelepasan dirutekan berdasar SENTUHAN yang
 ## menekan — bukan tombol yang sedang aktif di manajer — paritas release
@@ -116,6 +123,41 @@ func _build() -> void:
 		UiTheme.apply_row_button(btn, "neutral", 11, false)
 		btn.add_theme_color_override("font_color", c.lightened(0.25))
 		btn.tooltip_text = _tooltip(action)
+		_btn_base[action] = {
+			"font": c.lightened(0.25),
+			"bg": (btn.get_theme_stylebox("normal") as StyleBoxFlat).bg_color,
+		}
+		# Chip "HOLD" (paritas kotak kecil kanan tombol pygame): panel
+		# gelap + border warna command, di kanan-tengah tombol.
+		var chip := PanelContainer.new()
+		chip.name = "HoldChip"
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var csb := StyleBoxFlat.new()
+		csb.bg_color = Color8(20, 18, 30)
+		csb.border_color = c
+		csb.set_border_width_all(1)
+		csb.set_corner_radius_all(4)
+		csb.content_margin_left = 4.0
+		csb.content_margin_right = 4.0
+		csb.content_margin_top = 1.0
+		csb.content_margin_bottom = 1.0
+		chip.add_theme_stylebox_override("panel", csb)
+		var chip_label := Label.new()
+		UiTheme.style_label(chip_label, "HOLD", UiTheme.body_regular(), 9,
+			Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER)
+		chip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		chip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		chip.add_child(chip_label)
+		chip.anchor_left = 1.0
+		chip.anchor_right = 1.0
+		chip.anchor_top = 0.5
+		chip.anchor_bottom = 0.5
+		chip.offset_left = -54.0
+		chip.offset_right = -8.0
+		chip.offset_top = -9.0
+		chip.offset_bottom = 9.0
+		chip.visible = false
+		btn.add_child(chip)
 		# Tekan = MULAI menahan (main.py: hit -> held_tac + apply_hud_action).
 		btn.button_down.connect(_on_button_down.bind(action))
 		# Lepas = berhenti menahan (main.py cabang release untuk claimed tid).
@@ -161,12 +203,18 @@ func _refresh() -> void:
 			alive_red += 1
 	var main = get_tree().get_first_node_in_group("main")
 	var has_boss := false
+	var held_cmd = null
 	if main != null and is_instance_valid(main):
 		var boss = main.get("active_boss")
 		has_boss = boss != null and is_instance_valid(boss) \
 			and not bool(boss.get("is_dead"))
+		var tac = main.get("_tactical")
+		if tac != null and is_instance_valid(tac):
+			held_cmd = tac.get("held_command")
 	# enabled persis _gambar_tactical: gather/castle > 0, tower >= 1,
-	# boss aktif, dealer ada hero merah hidup. hidden (bukan disabled).
+	# boss aktif, dealer ada hero merah hidup. Tombol TAK PERNAH hilang:
+	# yang tak memenuhi syarat tampil ABU + tak-bisa-ditekan (paritas
+	# kotak abu pygame; hit-test-nya mati seperti btn.visible pygame).
 	for action in _buttons:
 		var enabled := false
 		match str(action):
@@ -181,15 +229,34 @@ func _refresh() -> void:
 			"attack_damage_dealer":
 				enabled = alive_red > 0
 		var btn: Button = _buttons[action]
-		btn.visible = enabled
+		btn.visible = true
 		btn.disabled = not enabled
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP if enabled \
+			else Control.MOUSE_FILTER_IGNORE
+		# Sorot HOLD (paritas di_hold pygame): tombol menyala + chip.
+		var held := enabled and held_cmd != null \
+			and str(held_cmd) == str(action)
+		var chip: Control = btn.get_node("HoldChip")
+		chip.visible = held
+		var base: Dictionary = _btn_base.get(str(action), {})
+		var normal_sb := btn.get_theme_stylebox("normal") as StyleBoxFlat
+		if held:
+			btn.add_theme_color_override("font_color", Color.WHITE)
+			if normal_sb != null and base.has("bg"):
+				normal_sb.bg_color = (base["bg"] as Color).lightened(0.25)
+		else:
+			if base.has("font"):
+				btn.add_theme_color_override("font_color", base["font"])
+			if normal_sb != null and base.has("bg"):
+				normal_sb.bg_color = base["bg"]
 
-## Kamus visibilitas tombol (dipakai harness paritas; cermin
+## Kamus ketersediaan tombol (dipakai harness paritas; cermin
 ## panel_available oracle dari _gambar_tactical pygame asli).
 func panel_available() -> Dictionary:
 	var out := {}
 	for action in _buttons:
-		out[str(action)] = (_buttons[action] as Button).visible
+		var b := _buttons[action] as Button
+		out[str(action)] = b.visible and not b.disabled
 	return out
 
 ## Popup yang MENUTUPI panel perintah pygame (sidepanel.ada_popup_game):
@@ -213,6 +280,13 @@ func _popup_blocks() -> bool:
 # ══════════════════════════════════════════════════════════
 
 func _on_button_down(action: String) -> void:
+	var btn := _buttons.get(action) as Button
+	# Tombol abu (syarat tak terpenuhi) tak bisa ditekan — paritas hit_test
+	# pygame yang melewatkan tombol invisible. Button disabled Godot memang
+	# tak memancarkan button_down, tapi guard eksplisit menutup jalur
+	# pemanggilan langsung.
+	if btn != null and (not btn.visible or btn.disabled):
+		return
 	var main = get_tree().get_first_node_in_group("main")
 	if main == null or not is_instance_valid(main) \
 			or not main.has_method("_tactical_panel_press"):

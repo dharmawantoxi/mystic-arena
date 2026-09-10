@@ -3,8 +3,9 @@
 # Sumber SATU angka untuk tata letak landscape ala pygame
 # (mobile/sidepanel.py + mobile/platform_utils.py):
 #
-#   * arena mengisi sisi kiri (0 .. content_width),
-#   * panel kanan (command rail dinding batu) menempel di kanan,
+#   * arena 1280x720 rata kiri di (0, 0) — koordinat game = koordinat layar,
+#   * panel kanan (command rail dinding batu) menempel di tepi arena (x=1280)
+#     HANYA saat layar lebih lebar dari 16:9 (sisa >= 120 px), persis pygame,
 #   * jalur isi panel kanan TETAP supaya tidak pernah saling menimpa:
 #
 #        0 ..  76   tombol JEDA
@@ -21,13 +22,17 @@ extends Node
 signal layout_changed
 
 const DESIGN_SIZE := Vector2(1280.0, 720.0)
-## Lebar panel kanan pygame pada layar 2436x1080 = 344 px; di 1280x720 dipakai
-## 300 px supaya arena tetap lega. Nilai efektif dihitung side_panel_width().
-const SIDE_PANEL_WIDTH := 300.0
-const SIDE_PANEL_WIDTH_MAX := 344.0
-## Di bawah lebar ini panel kanan tidak muat -> HUD kembali ke tata letak
-## tengah (layar kecil / potret) seperti sebelum panel ada.
-const SIDE_PANEL_MIN_WIDTH := 960.0
+## Sisa minimum supaya panel kanan ada — paritas `sisa >= 120`
+## platform_utils.create_display (di bawah ini "terlalu sempit, tidak berguna").
+## Dengan stretch expand, viewport dinormalisasi ke tinggi 720, jadi ambang
+## ini setara rasio layar >= 1400/720 (~17,5:9): 16:9 persis TIDAK punya panel
+## (arena penuh, paritas "di layar 16:9 panelnya tidak ada"), HP 18:9 ke atas
+## punya panel selebar sisa layarnya (344 px pada 2436x1080).
+const SIDE_PANEL_MIN_LEFTOVER := 120.0
+## Lebar panel maksimum — paritas batas total pygame `min(2200, usul)`
+## (2200 - 1280 = 920). Panel selalu menempel di tepi arena (x = 1280),
+## bukan di tepi viewport, persis `Rect(LOGICAL_WIDTH, 0, sisa, H)` pygame.
+const SIDE_PANEL_MAX_WIDTH := 920.0
 const RAIL_PAD := 14.0
 ## Tinggi kotak TACTICAL COMMANDS: judul 26 + 5 x (32 + 6) - 6.
 const TACTICAL_HEIGHT := 210.0
@@ -50,23 +55,22 @@ func _on_viewport_changed() -> void:
 	layout_changed.emit()
 
 func has_side_panel() -> bool:
-	return viewport_size.x >= SIDE_PANEL_MIN_WIDTH and viewport_size.x > viewport_size.y
+	if viewport_size.x <= viewport_size.y:
+		return false
+	return (viewport_size.x - DESIGN_SIZE.x) >= SIDE_PANEL_MIN_LEFTOVER
 
-## Lebar panel kanan efektif: tumbuh sampai 344 px pada layar ultra-lebar
-## (2436x1080 pygame), tapi tidak pernah memakan lebih dari 30% layar.
+## Lebar panel kanan efektif = SELURUH sisa layar (paritas pygame: panel =
+## Rect(1280, 0, sisa, 720)), dibatasi 920 px (paritas batas total 2200).
 func side_panel_width() -> float:
 	if not has_side_panel():
 		return 0.0
-	var extra := maxf(0.0, viewport_size.x - DESIGN_SIZE.x)
-	var w := clampf(SIDE_PANEL_WIDTH + extra * 0.25,
-		SIDE_PANEL_WIDTH, SIDE_PANEL_WIDTH_MAX)
-	return minf(w, viewport_size.x * 0.3)
+	return minf(viewport_size.x - DESIGN_SIZE.x, SIDE_PANEL_MAX_WIDTH)
 
 func side_panel_rect() -> Rect2:
 	if not has_side_panel():
 		return Rect2()
 	var w := side_panel_width()
-	return Rect2(viewport_size.x - w, 0.0, w, viewport_size.y)
+	return Rect2(DESIGN_SIZE.x, 0.0, w, viewport_size.y)
 
 func content_width() -> float:
 	return maxf(0.0, viewport_size.x - side_panel_width())

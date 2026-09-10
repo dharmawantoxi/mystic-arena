@@ -85,11 +85,24 @@ func _build() -> void:
 	(_panel as PygamePanel).set_margins(14, 10, 14, 10)
 	add_child(_panel)
 
+	# PEMBATAS UKURAN: _panel adalah PanelContainer — minimum size-nya
+	# mengikuti konten (isi tab menara bisa >2000 px) sehingga offset
+	# _layout_panel di-clamp engine ke tinggi konten dan popup/modal
+	# meluber keluar frame. Control polos ini memutus rantai minimum-size
+	# (anak Control polos tidak menyumbang min-size): _panel mengepas clip
+	# ke rect-nya, vbox full-rect di dalam clip, dan ScrollContainer
+	# benar-benar menggulir isi panjang di ruang yang tersedia.
+	var clip := Control.new()
+	clip.name = "ShopClip"
+	clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(clip)
+
 	var vbox := VBoxContainer.new()
 	vbox.name = "ShopBox"
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	vbox.add_theme_constant_override("separation", 8)
-	_panel.add_child(vbox)
+	clip.add_child(vbox)
 
 	# ── header: judul + gold + tombol tutup ──
 	var header := HBoxContainer.new()

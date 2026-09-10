@@ -8,6 +8,44 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Koreksi panel kanan — 10 September 2026
+
+Laporan lapangan: "di Pygame ingame ada panel kanan, di Godot tidak ada".
+Audit kode + render panel pygame asli (`mobile/sidepanel.py` pada 1624x720)
+menemukan rail Godot sudah ada (`SidePanel.gd` + `TacticalBar.gd`) tetapi
+menyimpang dari pygame pada 6 titik — semuanya diperbaiki tanpa menyentuh
+kode pygame:
+
+| Bagian | Simpangan Godot | Perbaikan (paritas pygame) |
+|---|---|---|
+| Kapan rail ada | Rail MUNCUL di 1280x720 persis (`viewport.x >= 960`), menutupi + memblokir klik 300 px kanan arena (base Dire tak terlihat/tak bisa diklik — `_on_click` lewat `_unhandled_input` dimakan rail `MOUSE_FILTER_STOP`) | `has_side_panel()` = landscape DAN sisa layar `>= 120` (`sisa >= 120` `platform_utils`): 16:9 = TANPA rail, arena penuh; HP 18:9+ = rail selebar sisa layar |
+| Posisi/lebar rail | Lebar 300 px ditempel di TEPI VIEWPORT (kanan) | `Rect(1280, 0, sisa, 720)` menempel di TEPI ARENA; 344 px pada 1624x720, cap 920 (paritas batas total 2200) |
+| Tombol tactical tak memenuhi syarat | DISEMBUNYIKAN (`btn.visible = enabled`) | Tampil ABU tak-bisa-ditekan (`disabled` + `mouse_filter IGNORE`) — pygame SELALU menggambar kelima kotak (bg 45,45,50) dan `btn.visible` hanya mematikan hit-test. `panel_available()` kini `visible and not disabled` (nilai oracle tak berubah) |
+| Sorot HOLD | Tidak ada indikator perintah ditahan | Tombol yang ditahan menyala + chip "HOLD" (paritas `di_hold` + chip pygame) |
+| Baris hero | Tanpa titik skill | Titik q/w/e/r (ungu siap / gelap belum, pitch 14 px) via `Hero.is_skill_ready` |
+| Latar rail | Gradien datar | Bata batu port `_gambar_panel_samping` (bata 34 px selang-seling, gradasi kiri, garis emas) sebagai `StoneBG` |
+| STATUS + gate gameplay | Teks shield beda; isi hanya saat `playing` | `LV n [SHIELDED]` / `Wave n (Shield)` persis pygame; isi tampil saat playing/victory/defeat (paritas `dalam_gp`) |
+
+Tanpa rail (16:9/potret): TacticalBar jatuh ke sudut kanan-bawah arena
+(fallback yang sudah ada) dan SEMUA tab toko memakai modal tengah
+(paritas "posisi lama" popup pygame saat `panel_popup_pos` None).
+
+Bonus bug yang ditemukan asersi baru: `_panel` ShopPanel adalah
+PanelContainer sehingga minimum size-nya mengikuti tinggi KONTEN
+(isi tab menara >2000 px) — offset `_layout_panel` di-clamp engine dan
+popup/modal meluber jauh ke bawah frame (tertangkap: 900x2294, bukan
+900x560). Diperbaiki dengan wrapper `ShopClip` (Control polos memutus
+rantai minimum-size) sehingga panel pas rect dan ScrollContainer
+benar-benar menggulir.
+
+**Validasi:** `gdparse` + `tscn_lint` + `check_refs` + `particles_lint` +
+5 self-test log-gate + `gen_* --check` + scope-check lulus lokal;
+`MobileSidePanelParityTest` ditulis ulang (rail dikunci pada viewport lebar
+1624x720, TANPA rail di 16:9, fallback tactical + modal di 16:9, 5 tombol abu
+saat roster kosong). Replay headless (termasuk `TacticalInputParityTest` yang
+membaca `panel_available()`) diverifikasi CI — binary Godot tak tersedia di
+sandbox. Piksel rail (bata/font/komposit) tetap milik bucket piksel.
+
 ## Koreksi permukaan UI — 9 September 2026 (FASE 22)
 
 Koreksi laporan visual/lapangan (bukan perilaku match yang sudah terkunci):
