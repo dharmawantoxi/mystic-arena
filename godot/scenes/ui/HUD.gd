@@ -21,6 +21,7 @@ var _bar_timer: float = 0.0
 ## team -> {panel, hp: ProgressBar, shield: ProgressBar, label: Label}
 var _nexus_bars: Dictionary = {}
 var _difficulty_label: Label = null
+var _over_root: GameOverOverlay = null
 var _over_panel: PanelContainer = null
 var _over_title: Label = null
 var _over_stats: Label = null

@@ -113,8 +113,8 @@ func _draw() -> void:
 	var icon_c := rect.position + HudLayout.ACHIEVEMENT_ICON_POS
 	draw_circle(icon_c, 16.0, Color(0.24, 0.16, 0.04, alpha))
 	draw_arc(icon_c, 16.0, 0.0, TAU, 24, gold, 2.0)
-	var glyph := {"sword": "swords", "skull": "skull"}.get(
-		str(current["icon"]), "star")
+	var glyph: String = str({"sword": "swords", "skull": "skull"}.get(
+		str(current["icon"]), "star"))
 	UiTheme.draw_icon(self, str(glyph), icon_c.x, icon_c.y,
 		Color(gold.r, gold.g, gold.b, alpha), 1.1)
 

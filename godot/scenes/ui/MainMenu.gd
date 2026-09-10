@@ -1528,7 +1528,8 @@ func _school_info(d: Dictionary) -> Array:
 		else (Color(1.0, 178.0 / 255.0, 92.0 / 255.0)
 			if sch == "PHYSICAL"
 			else Color(150.0 / 255.0, 196.0 / 255.0, 1.0))
-	var label := {"PHYSICAL": "PHY", "MAGIC": "MAG"}.get(sch, "PHY")
+	var label: String = str({"PHYSICAL": "PHY", "MAGIC": "MAG"}.get(sch,
+		"PHY"))
 	if is_tank:
 		label += "·TNK"
 	var icon := "shield" if is_tank \
