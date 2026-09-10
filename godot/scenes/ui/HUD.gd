@@ -12,6 +12,7 @@ const ComboBadgeScript = preload("res://scenes/ui/ComboBadge.gd")
 const AchievementPopupScript = preload("res://scenes/ui/AchievementPopup.gd")
 const TacticalBarScript = preload("res://scenes/ui/TacticalBar.gd")
 const SidePanelScript = preload("res://scenes/ui/SidePanel.gd")
+const WavePlateScript = preload("res://scenes/ui/widgets/WavePlate.gd")
 ## Seberapa sering bar nexus/disability disegarkan (5 Hz cukup, hemat draw call)
 const BAR_REFRESH := 0.2
 
