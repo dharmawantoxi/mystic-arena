@@ -402,9 +402,9 @@ jobs:
             cat /tmp/mobile-sidepanel.gate
           else
             cat /tmp/mobile-sidepanel.gate
-            echo "::error::MOBILE-SIDEPANEL-HEAD: $(head -80 /tmp/mobile-sidepanel.log | tr '\\n' '|' | cut -c1-8000)"
-            echo "::error::MOBILE-SIDEPANEL-FAIL: $(tail -40 /tmp/mobile-sidepanel.log | tr '\\n' '|' | cut -c1-4000)"
-            echo "::error::MOBILE-SIDEPANEL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error\|step:' /tmp/mobile-sidepanel.log | tr '\\n' '|' | cut -c1-6000)"
+            echo "::error::MOBILE-SIDEPANEL-HEAD: $(head -c 6000 /tmp/mobile-sidepanel.log | tr '\n' '~')"
+            echo "::error::MOBILE-SIDEPANEL-FAIL: $(tail -c 3000 /tmp/mobile-sidepanel.log | tr '\n' '~')"
+            echo "::error::MOBILE-SIDEPANEL-LINES: $(grep -m40 -e FAIL -e 'SCRIPT ERROR' -e 'Parse Error' -e 'step:' /tmp/mobile-sidepanel.log | tr '\n' '~' | cut -c1-6000)"
             exit 1
           fi
 
