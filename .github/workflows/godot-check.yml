@@ -755,11 +755,25 @@ jobs:
       #   HARDCODE  warna UiTheme yang ditulis ulang sebagai literal
       # --full = re-bake SEMUA (bukan sampel); ~4 menit, sepadan karena
       # inilah satu-satunya penjaga keusangan bake di CI.
+      # Kalau audit gagal, jangan biarkan CI hanya berkata "Process completed
+      # with exit code 1" dengan alasan terkubur di dalam log — baris-baris
+      # bagian yang gagal diterbitkan sebagai ANOTASI GitHub supaya langsung
+      # terbaca di ringkasan run.
       - name: Audit paritas visual (pygame ↔ Godot)
         run: |
           python -m pip install --quiet pygame-ce pillow
+          set +e
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \
-            python3 tools/visual_parity_audit.py --full --report md
+            python3 tools/visual_parity_audit.py --full --report md 2>&1 \
+            | tee audit-run.log
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            echo "::error::Audit paritas visual GAGAL (exit ${code}) — rincian:"
+            tail -60 audit-run.log | while IFS= read -r baris; do
+              echo "::error::$baris"
+            done
+            exit "$code"
+          fi
 
       - name: Simpan laporan audit
         if: always()
