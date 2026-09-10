@@ -43,6 +43,15 @@ const HEROES_TOP := 188.0
 const HEROES_HEIGHT := 200.0
 const SHOP_TOP := 396.0
 const SHOP_HEIGHT := 78.0
+## ── PANEL HERO TERPILIH (popup upgrade) ──
+## Ukuran HeroPanel pygame (ui_components/_bundle.py 280x276) + jalur popup
+## panel kanan pygame (platform_utils.ZONA_POPUP_Y = 430). Di rail Godot
+## jalur itu jatuh PAS di dasar kotak TACTICAL (720 - 276 - 14 = 430), jadi
+## popup hero menutupi kotak command persis seperti pygame — dan TIDAK
+## menutupi tombol toko rail di atasnya (zona 396..474).
+const HERO_PANEL_W := 280.0
+const HERO_PANEL_H := 276.0
+const ZONA_POPUP_Y := 430.0
 
 var viewport_size := DESIGN_SIZE
 
@@ -86,6 +95,33 @@ func tactical_rect() -> Rect2:
 		rail.size.y - h - TACTICAL_MARGIN)
 	return Rect2(rail.position.x + RAIL_PAD, rail.position.y + y,
 		rail.size.x - RAIL_PAD * 2.0, h)
+
+## Rect panel hero terpilih (popup upgrade hero).
+##
+## Jalur pertama = DI DALAM rail kanan, paritas HeroPanel pygame yang memakai
+## platform_utils.panel_pos_bawah (ZONA_POPUP_Y = 430, digeser naik kalau
+## panelnya lebih tinggi dari sisa ruang). Ditambah syarat lebar: rail harus
+## memuat panel + margin, paritas `panel_popup_pos` pygame yang mengembalikan
+## None saat `w > p.width - 8`.
+##
+## Kalau rail tidak ada (16:9) atau terlalu sempit: fallback pygame
+## `px = 20, py = SCREEN_HEIGHT - panel_h - 20` = kiri-bawah arena.
+func hero_panel_rect(w: float = HERO_PANEL_W, h: float = HERO_PANEL_H) -> Rect2:
+	var rail := side_panel_rect()
+	if rail.size.x >= w + 16.0:
+		var x := rail.position.x + (rail.size.x - w) * 0.5
+		var y := rail.position.y + ZONA_POPUP_Y
+		var y_min := rail.position.y + STATUS_TOP
+		var y_max := rail.position.y + rail.size.y - h - TACTICAL_MARGIN
+		if y_max < y_min:
+			y_max = y_min
+		return Rect2(x, clampf(y, y_min, y_max), w, h)
+	var x2 := 20.0
+	if x2 + w > viewport_size.x - 8.0:
+		x2 = maxf(8.0, viewport_size.x - w - 8.0)
+	var y2 := maxf(8.0, viewport_size.y - h - 20.0)
+	return Rect2(x2, y2, w, h)
+
 
 ## Popup toko yang tampil DI DALAM panel kanan (TOWER SHOP / CASTLE SHOP),
 ## persis popup upgrade pygame (platform_utils.panel_popup_pos).

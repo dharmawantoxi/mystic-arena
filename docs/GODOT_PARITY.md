@@ -54,8 +54,9 @@ kode pygame:
 | Latar rail | Gradien datar | Bata batu port `_gambar_panel_samping` (bata 34 px selang-seling, gradasi kiri, garis emas) sebagai `StoneBG` |
 | STATUS + gate gameplay | Teks shield beda; isi hanya saat `playing` | `LV n [SHIELDED]` / `Wave n (Shield)` persis pygame; isi tampil saat playing/victory/defeat (paritas `dalam_gp`) |
 
-Tanpa rail (16:9/potret): TacticalBar jatuh ke sudut kanan-bawah arena
-(fallback yang sudah ada) dan SEMUA tab toko memakai modal tengah
+Tanpa rail (16:9/potret): TacticalBar dilipat jadi chip TACTICAL kecil di
+kanan-bawah arena (revisi 10 September — lihat seksi di bawah; dulu kotak
+220x210-nya mengambang menutupi map) dan SEMUA tab toko memakai modal tengah
 (paritas "posisi lama" popup pygame saat `panel_popup_pos` None).
 
 Bonus bug yang ditemukan asersi baru: `_panel` ShopPanel adalah
@@ -73,6 +74,25 @@ benar-benar menggulir.
 saat roster kosong). Replay headless (termasuk `TacticalInputParityTest` yang
 membaca `panel_available()`) diverifikasi CI — binary Godot tak tersedia di
 sandbox. Piksel rail (bata/font/komposit) tetap milik bucket piksel.
+
+## Koreksi panel HUD menutupi map + panel hero hilang — 10 September 2026
+
+Laporan lapangan: "tactical command pada Godot menghalangi map, dan popup
+upgrade hero juga tidak ada". Dua-duanya panel HUD yang salah tempat saat
+layar TIDAK punya rail kanan (project default 1280x720 = 16:9 persis):
+
+| Bagian | Simpangan Godot | Perbaikan (paritas pygame) |
+|---|---|---|
+| Kotak TACTICAL COMMANDS tanpa rail | Kotak 220x210 mengambang di kanan-bawah ARENA: map tertutup dan ketukan di sana dimakan `MOUSE_FILTER_STOP` (tak sampai ke unit) | Di pygame tanpa panel kanan tombol command memang **tidak digambar sama sekali** (pemain memakai hotkey G/F/T/C/B/D; `SidePanel.draw` early-return). Godot menyediakan chip **TACTICAL** kecil (148x32, di atas tombol SKIP) untuk HP tanpa keyboard; kotak command terlipat default, dibuka dengan ketukan chip, dan **menutup sendiri** begitu perintah dilepas atau klik di luar panel. Ada rail = perilaku lama (kotak di dasar rail) tak berubah |
+| Panel hero (popup upgrade) | Panel 280x276 SELALU tampil — dengan teks "tidak ada hero dipilih" + tombol upgrade kosong — di atas map kiri-bawah (base Radiant), dan menelan ketukan hero di sana; tinggi panel dipatok 276 sehingga konten yang lebih tinggi mendorong tombol UPGRADE keluar layar | Panel hanya tampil saat ada hero terpilih & hidup (`HeroPanel.draw` pygame `if not h or not h.alive: return`). Dengan rail, panelnya pindah KE DALAM rail di jalur popup pygame (`panel_pos_bawah`, `ZONA_POPUP_Y` = 430 pada 720 = dasar kotak tactical di rail Godot) sehingga arena tak tertutup; tanpa rail jatuh ke fallback pygame (20, H-296). Tinggi = `max(276, minimum konten)` lewat `MobileLayout.hero_panel_rect()` |
+
+Revisi ini TIDAK menyentuh kode pygame: nilai oracle (`panel_available()`,
+jejak `hold_start`/`hold_end`, teks/label panel hero) tetap sama — yang
+berubah hanya kapan & di mana panel digambar. Asersi yang ikut diperbarui:
+`MobileSidePanelParityTest` (16:9: chip tampil, kotak terlipat default,
+kotak terbuka di kanan-bawah arena saat chip ditekan; panel hero
+tersembunyi tanpa pilihan, kiri-bawah di 16:9, di dalam rail pada 1624x720,
+tombol UPGRADE tetap di dalam layar).
 
 ## Koreksi hint bar + teks kontrol — 10 September 2026
 

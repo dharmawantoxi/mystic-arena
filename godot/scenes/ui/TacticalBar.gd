@@ -33,7 +33,24 @@ const COMMANDS: Array = [
 	["attack_damage_dealer", "ATTACK DMG DEALER [D]", Color(0.72, 0.51, 1.0)],
 ]
 
+## ── LIPATAN PANEL (Godot-only, layar TANPA rail kanan) ──
+## Di pygame kotak TACTICAL COMMANDS hidup DI DALAM panel kanan; tanpa panel
+## (16:9 persis dan lebih sempit) pygame sama sekali tidak menggambar tombol
+## command — pemain memakai hotkey G/F/T/C/B/D. Godot dulu menaruh kotak
+## 220x210 mengambang di kanan-bawah ARENA saat rail tidak ada, jadi map
+## tertutup dan ketukan di sana tak sampai ke unit. Sekarang kotak itu
+## DILIPAT default menjadi chip kecil "TACTICAL" di kanan-bawah arena:
+## map bersih, tombol command tetap satu ketukan dari HP tanpa keyboard.
+const TOGGLE_W := 148.0
+const TOGGLE_H := 32.0
+const TOGGLE_GAP := 6.0
+## Jarak dasar dari sisi bawah (di atas tombol SKIP TouchHUD 646..704).
+const TOGGLE_BOTTOM_INSET := 78.0
+
 var _box: PanelContainer = null
+var _toggle: Button = null
+## Terbuka hanya relevan saat tidak ada rail (lihat _apply_visibility).
+var _expanded: bool = false
 var _title: Label = null
 var _buttons: Dictionary = {}
 ## action -> {font: Color, bg: Color} — warna dasar tombol untuk
@@ -63,18 +80,53 @@ func _ready() -> void:
 	_refresh()
 
 ## Tempatkan kotak command di dasar panel kanan (paritas _gambar_tactical),
-## atau di tepi kanan-bawah arena saat panel kanan tidak ada (layar kecil).
+## atau — kalau panel kanan tidak ada — lipat jadi chip kecil di kanan-bawah
+## arena dengan kotak command tepat di atasnya saat dibuka.
 func _layout() -> void:
-	if _box == null:
+	if _box == null or _toggle == null:
 		return
 	var rect := MobileLayout.tactical_rect()
-	if rect.size.x <= 0.0:
-		var vp := MobileLayout.viewport_size
-		var w := minf(220.0, vp.x - 16.0)
-		var h := minf(MobileLayout.TACTICAL_HEIGHT, vp.y - 32.0)
-		rect = Rect2(vp.x - w - 8.0, maxf(8.0, vp.y - h - 78.0), w, h)
-	_box.position = rect.position
-	_box.size = rect.size
+	if rect.size.x > 0.0:
+		# Ada rail: kotak command di dasar rail, chip tidak dipakai
+		# (paritas pygame — command selalu tampil selama panelnya ada).
+		_box.position = rect.position
+		_box.size = rect.size
+		_apply_visibility(true)
+		return
+	var vp := MobileLayout.viewport_size
+	var chip := Vector2(maxf(8.0, vp.x - TOGGLE_W - 8.0),
+		maxf(8.0, vp.y - TOGGLE_BOTTOM_INSET - TOGGLE_H))
+	_toggle.position = chip
+	_toggle.size = Vector2(TOGGLE_W, TOGGLE_H)
+	var w := minf(220.0, maxf(120.0, vp.x - 16.0))
+	var h := minf(MobileLayout.TACTICAL_HEIGHT, maxf(90.0, vp.y - 32.0))
+	_box.position = Vector2(chip.x + TOGGLE_W - w,
+		maxf(8.0, chip.y - TOGGLE_GAP - h))
+	_box.size = Vector2(w, h)
+	_apply_visibility(false)
+
+
+## Visibilitas kotak + chip. Pygame tidak punya padanan chip: ini lapisan
+## Godot supaya map tidak tertutup saat rail tidak ada.
+func _apply_visibility(has_rail: bool) -> void:
+	var playing := GameManager.state == "playing" and not GameManager.in_menu
+	if not playing:
+		# Keluar dari gameplay: panel kembali terlipat supaya match
+		# berikutnya mulai dengan map bersih.
+		_expanded = false
+	_toggle.visible = playing and not has_rail
+	_box.visible = playing and (has_rail or _expanded)
+
+
+## Buka/tutup panel command saat layar tidak punya rail (dipakai chip +
+## harness paritas).
+func set_expanded(value: bool) -> void:
+	_expanded = value
+	_refresh()
+
+
+func is_expanded() -> bool:
+	return _expanded
 
 
 func _process(delta: float) -> void:
@@ -165,6 +217,18 @@ func _build() -> void:
 		col.add_child(btn)
 		_buttons[action] = btn
 
+	# Chip pelipat — hanya dipakai saat rail kanan tidak ada (lihat _layout).
+	_toggle = Button.new()
+	_toggle.name = "TacticalToggle"
+	_toggle.text = "TACTICAL"
+	_toggle.focus_mode = Control.FOCUS_NONE
+	_toggle.custom_minimum_size = Vector2(TOGGLE_W, TOGGLE_H)
+	_toggle.tooltip_text = "Buka panel perintah taktis (hold tombol untuk menahan perintah)"
+	UiTheme.apply_row_button(_toggle, "neutral", 12, false)
+	_toggle.add_theme_color_override("font_color", Color(0.85, 0.88, 0.98))
+	_toggle.pressed.connect(_on_toggle_pressed)
+	add_child(_toggle)
+
 static func _tooltip(action: String) -> String:
 	match action:
 		"gather":
@@ -187,7 +251,11 @@ static func _tooltip(action: String) -> String:
 ## dan oleh harness (production code yang sama, dipicu sinkron).
 func _refresh() -> void:
 	var playing := GameManager.state == "playing" and not GameManager.in_menu
-	_box.visible = playing
+	var has_rail := MobileLayout.tactical_rect().size.x > 0.0
+	if not playing:
+		_expanded = false
+	_toggle.visible = playing and not has_rail
+	_box.visible = playing and (has_rail or _expanded)
 	if not playing:
 		# pygame _tactical_sembunyikan: tombol tanpa gambar frame ini mati.
 		for action in _buttons:
@@ -298,6 +366,29 @@ func _on_button_down(action: String) -> void:
 
 func _on_button_up(action: String) -> void:
 	_release_panel_hold(action)
+	# Tanpa rail: panel kembali terlipat begitu perintah dilepas supaya map
+	# tidak ditinggal tertutup kotak yang mengambang.
+	_collapse_if_floating()
+
+
+## Chip: buka/tutup panel command (hanya ada saat tidak ada rail).
+func _on_toggle_pressed() -> void:
+	set_expanded(not _expanded)
+
+
+## Lipat lagi panel mengambang (dipakai setelah hold lepas & klik di luar).
+func _collapse_if_floating() -> void:
+	if _expanded and MobileLayout.tactical_rect().size.x <= 0.0:
+		set_expanded(false)
+
+
+## Titik ini milik panel/chip command? (klik di luar = lipat, event tetap
+## diteruskan ke map oleh Main._unhandled_input.)
+func _hit_panel(pos: Vector2) -> bool:
+	if _box != null and _box.visible and _box.get_global_rect().has_point(pos):
+		return true
+	return _toggle != null and _toggle.visible \
+		and _toggle.get_global_rect().has_point(pos)
 
 ## Rute pelepasan "claimed touch" pygame: main.py melepas hold berdasar
 ## touch-id yang diklaim tombol, APA PUN yang kini ada di bawah kursor.
@@ -310,6 +401,13 @@ func _input(event: InputEvent) -> void:
 		if not mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
 			for action in _held.keys():
 				_release_panel_hold(str(action))
+			return
+		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT \
+				and _expanded and not _hit_panel(mb.position):
+			# Klik di map saat panel mengambang terbuka: lipat lagi
+			# (kebiasaan dropdown) — event TIDAK dikonsumsi, jadi kliknya
+			# tetap sampai ke map lewat Main._unhandled_input.
+			_collapse_if_floating()
 
 func _release_panel_hold(action: String) -> void:
 	if not _held.has(action):
