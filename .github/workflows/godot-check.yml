@@ -768,10 +768,16 @@ jobs:
             | tee audit-run.log
           code=${PIPESTATUS[0]}
           if [ "$code" -ne 0 ]; then
-            echo "::error::Audit paritas visual GAGAL (exit ${code}) — rincian:"
-            tail -60 audit-run.log | while IFS= read -r baris; do
-              echo "::error::$baris"
-            done
+            # GitHub hanya MENYIMPAN ~10 anotasi pertama per langkah, jadi
+            # urutkan dari yang paling penting: ringkasan dulu, baru bagian
+            # yang gagal. (Baris sisa laporan terbuang kalau dikirim utuh.)
+            echo "::error::Audit paritas visual GAGAL (exit ${code})"
+            grep -E "^(RINGKASAN|Gagal):" audit-run.log \
+              | while IFS= read -r b; do echo "::error::$b"; done
+            grep -E "^lingkungan:" audit-run.log \
+              | while IFS= read -r b; do echo "::error::$b"; done
+            grep -A 5 "^❌" audit-run.log | head -6 \
+              | while IFS= read -r b; do echo "::error::$b"; done
             exit "$code"
           fi
 
