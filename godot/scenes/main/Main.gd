@@ -54,6 +54,9 @@ var _ai = null
 ## Perintah taktis tim biru (port tactical_commands — dibuat di _ready,
 ## dikelola sendiri via _physics_process 60 Hz)
 var _tactical = null
+# FASE 24 — lapisan gamepad (dibuat di _ready, dipakai _process/UI).
+var _controller = null
+var _router = null
 ## Pemicu UI FASE 18 — port InputHandler pygame (_core.py):
 ## KEYDOWN G/F/T/C/B/D -> hold_start, KEYUP -> hold_end.
 ## G dan F dua tuts untuk perintah yang sama (gather).
@@ -164,10 +167,10 @@ func _ready():
 	add_child(_tactical)
 	_tactical.process_mode = Node.PROCESS_MODE_PAUSABLE
 	# FASE 24 — LAPISAN GAMEPAD (port controller_manager.py + routing
-	# main_desktop_legacy.py). PAUSABLE untuk router (aksi gameplay beku saat
-	# pause — pygame hanya merutekan STATE_GAME di branch-nya sendiri), tetapi
-	# ControllerManager tetap ALWAYS: timer rumble & kursor harus jalan terus,
-	# dan layar pause pygame tetap membaca pad (branch STATE_PAUSE).
+	# main_desktop_legacy.py). Keduanya ALWAYS: pygame merutekan pad di SEMUA
+	# state (splash/menu/game/pause), jadi kalau ikut PAUSABLE tombol pad
+	# tidak bisa membuka atau menutup pause. Aksi gameplay tetap beku karena
+	# router memeriksa state sendiri (branch STATE_GAME).
 	_controller = preload("res://scripts/systems/ControllerManager.gd").new()
 	_controller.name = "ControllerManager"
 	add_child(_controller)

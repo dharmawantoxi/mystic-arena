@@ -162,7 +162,7 @@ func _sync_hint_visibility() -> void:
 	if host == null:
 		return
 	var mgr = _controller_mgr()
-	var on := mgr != null and mgr.is_controller_mode()
+	var on: bool = mgr != null and bool(mgr.is_controller_mode())
 	if on:
 		var m = get_tree().get_first_node_in_group("main")
 		if m != null and is_instance_valid(m) and m.has_method("_cinematic_active") \
