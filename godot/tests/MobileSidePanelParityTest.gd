@@ -1,8 +1,14 @@
-# Regression test tata letak landscape ala pygame:
-#   * panel kanan (rail dinding batu) ada dengan pause/STATUS/HEROES/SHOP,
-#   * TACTICAL COMMANDS di DASAR panel kanan dan tidak keluar frame,
+# Regression test tata letak panel kanan ala pygame:
+#   * layar LEBIH LEBAR dari 16:9 (1624x720 = HP 2436x1080): rail dinding
+#     batu 344 px menempel di tepi arena (x=1280) berisi pause/STATUS/
+#     HEROES/SHOP + TACTICAL COMMANDS di dasarnya, tidak keluar frame,
 #   * z-order: rail < tactical < shop (popup toko paling atas),
 #   * TOWER/CASTLE shop = popup panel kanan; HERO/ITEM = modal tengah,
+#   * 16:9 PERSIS (1280x720): TANPA rail (paritas "di layar 16:9 panelnya
+#     tidak ada") — arena penuh, tactical jatuh ke sudut kanan-bawah arena,
+#     SEMUA tab toko memakai modal tengah,
+#   * tombol tactical tak pernah hilang: yang syaratnya tak terpenuhi tampil
+#     ABU tak-bisa-ditekan (paritas kotak abu _gambar_tactical pygame),
 #   * layar kecil/potret kembali ke tata letak tengah (rail disembunyikan).
 extends Node
 
@@ -55,11 +61,13 @@ func _run() -> void:
 		return
 
 	# Headless tidak punya jendela nyata: ukuran viewport dipatok eksplisit
-	# supaya asersi landscape deterministik di CI maupun di desktop.
+	# supaya asersi deterministik di CI maupun di desktop.
 	print("[MobileSidePanelParityTest] viewport headless: %s"
 		% MobileLayout.viewport_size)
-	MobileLayout.viewport_size = Vector2(1280.0, 720.0)
+	# ── viewport 1: LEBAR (1624x720 = HP uji pygame 2436x1080) ──
+	MobileLayout.viewport_size = Vector2(1624.0, 720.0)
 	MobileLayout.layout_changed.emit()
+
 	await get_tree().process_frame
 
 	_step("z-order")
@@ -71,8 +79,9 @@ func _run() -> void:
 
 	_step("isi rail")
 	# ── isi panel kanan ──
-	for child_name in ["StoneRail", "RailPause", "StatusBox", "HeroesBox",
-			"ShopBox", "GoldValue", "WaveLabel", "ShieldLabel", "ModeLabel"]:
+	for child_name in ["StoneRail", "StoneBG", "RailPause", "StatusBox",
+			"HeroesBox", "ShopBox", "GoldValue", "WaveLabel", "ShieldLabel",
+			"ModeLabel"]:
 		_expect(rail.find_child(child_name, true, false) != null,
 			"rail punya %s" % child_name)
 	for tab_button in ["Rail_tower", "Rail_nexus", "Rail_hero", "Rail_item"]:
@@ -85,11 +94,13 @@ func _run() -> void:
 	_step("geometri")
 	# ── geometri: semua di dalam frame & di dalam rail ──
 	var vp: Vector2 = MobileLayout.viewport_size
-	_expect(MobileLayout.has_side_panel(), "landscape 1280x720 punya rail")
+	_expect(MobileLayout.has_side_panel(), "layar lebar punya rail")
 	var rail_rect: Rect2 = MobileLayout.side_panel_rect()
+	# Paritas Rect(1280, 0, 344, 720) pygame pada HP 2436x1080: menempel di
+	# tepi arena (x=1280), BUKAN menutupi arena.
+	_expect(rail_rect == Rect2(1280.0, 0.0, 344.0, 720.0),
+		"rail @(1280,0) 344x720 (got %s)" % rail_rect)
 	var tac_rect: Rect2 = MobileLayout.tactical_rect()
-	_expect(rail_rect.position.x + rail_rect.size.x <= vp.x + 0.5,
-		"rail masuk frame")
 	_expect(tac_rect.position.x >= rail_rect.position.x
 		and tac_rect.position.x + tac_rect.size.x <= rail_rect.position.x + rail_rect.size.x + 0.5,
 		"tactical di dalam rail secara horizontal")
@@ -135,6 +146,58 @@ func _run() -> void:
 			var cr: Rect2 = close_btn.get_global_rect()
 			_expect(cr.position.x + cr.size.x <= r2.position.x + r2.size.x + 1.0,
 				"tombol tutup di dalam panel")
+	GameManager.close_shop()
+
+	_step("16:9 tanpa rail")
+	# ── 16:9 PERSIS: panel TIDAK ADA (paritas pygame), arena penuh ──
+	MobileLayout.viewport_size = Vector2(1280.0, 720.0)
+	MobileLayout.layout_changed.emit()
+	await get_tree().process_frame
+	_expect(not MobileLayout.has_side_panel(), "16:9 tanpa rail")
+	_expect(MobileLayout.side_panel_width() == 0.0, "lebar rail 0 di 16:9")
+	_expect(MobileLayout.content_width() == 1280.0, "arena 1280 penuh di 16:9")
+	var stone := rail.find_child("StoneRail", true, false) as Control
+	_expect(stone != null and not stone.visible, "StoneRail disembunyikan di 16:9")
+
+	_step("tactical fallback 16:9")
+	# Tactical jatuh ke sudut kanan-bawah ARENA (tetap terlihat + di frame).
+	tactical._refresh()
+	var tac_box := tactical.find_child("TacticalBox", true, false) as Control
+	_expect(tac_box != null and tac_box.visible, "TacticalBox terlihat di 16:9")
+	if tac_box != null:
+		var tr: Rect2 = tac_box.get_global_rect()
+		_expect(tr.position.x >= 0.0 and tr.position.y >= 0.0
+			and tr.position.x + tr.size.x <= 1280.5
+			and tr.position.y + tr.size.y <= 720.5,
+			"tactical fallback masuk frame (got %s)" % tr)
+		_expect(tr.position.x >= 900.0 and tr.position.y >= 300.0,
+			"tactical fallback di kanan-bawah arena (got %s)" % tr.position)
+	# Roster kosong (tanpa hero/boss): kelima tombol tampil ABU (tak hilang)
+	# dan tak-bisa-ditekan — paritas kotak abu _gambar_tactical pygame.
+	var avail: Dictionary = tactical.panel_available()
+	for action in ["gather", "protect_tower", "protect_castle", "attack_boss",
+			"attack_damage_dealer"]:
+		var cb := tactical.find_child("Cmd_" + action, true, false) as Button
+		_expect(cb != null, "tombol Cmd_%s ada" % action)
+		if cb == null:
+			continue
+		_expect(cb.visible, "Cmd_%s tampil (abu, bukan hilang)" % action)
+		_expect(cb.disabled, "Cmd_%s disabled tanpa syarat" % action)
+		_expect(cb.mouse_filter == Control.MOUSE_FILTER_IGNORE,
+			"Cmd_%s tak menelan klik saat abu" % action)
+		_expect(not bool(avail.get(action, true)),
+			"panel_available[%s] == false" % action)
+
+	_step("toko modal 16:9")
+	# Tanpa rail, SEMUA tab (termasuk tower) memakai modal tengah.
+	shop.open_tab("tower")
+	await get_tree().process_frame
+	if panel != null:
+		var rm: Rect2 = panel.get_global_rect()
+		_expect(absf(rm.position.x - 190.0) < 2.0
+			and absf(rm.size.x - 900.0) < 2.0
+			and absf(rm.size.y - 560.0) < 2.0,
+			"TOWER SHOP modal tengah 900x560 @(190,80) di 16:9 (got %s)" % rm)
 	GameManager.close_shop()
 
 	_step("fallback potret")
