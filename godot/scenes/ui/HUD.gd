@@ -11,6 +11,7 @@ const ShopPanelScript = preload("res://scenes/ui/ShopPanel.gd")
 const ComboBadgeScript = preload("res://scenes/ui/ComboBadge.gd")
 const AchievementPopupScript = preload("res://scenes/ui/AchievementPopup.gd")
 const TacticalBarScript = preload("res://scenes/ui/TacticalBar.gd")
+const SidePanelScript = preload("res://scenes/ui/SidePanel.gd")
 ## Seberapa sering bar nexus/disability disegarkan (5 Hz cukup, hemat draw call)
 const BAR_REFRESH := 0.2
 
@@ -64,6 +65,11 @@ func _ready():
 	var tactical_bar = TacticalBarScript.new()
 	tactical_bar.name = "TacticalBar"
 	add_child(tactical_bar)
+	# Landscape/mobile command rail is deliberately added last so it stays above
+	# the arena and cannot be covered by gameplay nodes.
+	var side_panel = SidePanelScript.new()
+	side_panel.name = "SidePanel"
+	add_child(side_panel)
 	# FASE 13 — klaster skor: badge combo kanan-atas (port ComboCounter.draw)
 	# + popup achievement di layar arena (port AchievementPopup; trigger
 	# GameManager.unlock_achievement, mis. NEW HERO UNLOCKED! saat menang).
