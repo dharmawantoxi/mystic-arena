@@ -8,6 +8,34 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Integrasi TouchHUD — 10 September 2026 (FASE 23)
+
+Temuan audit: `TouchHUD.gd` sudah ditulis lengkap tetapi **tidak dipakai di
+scene mana pun** — tombol pause/skip/replay/next/menu tidak muncul di game,
+sehingga versi Godot praktis tidak bisa dimainkan di HP. Kini dipasang penuh
+tanpa menyentuh kode pygame:
+
+| Bagian | Sebelum | Sesudah (paritas pygame) |
+|---|---|---|
+| Pemasangan | Node yatim, tanpa signal | Anak HUD paling atas (pygame `hud.draw` terakhir di `STATE_GAME`), `hud_action` tersambung ke `Main._apply_touch_action` |
+| Geometri | Rect hard-code duplikat | Dibangun dari kanon `HudLayout.TOUCH_BUTTONS` (sumber tunggal, anti-drift dari fixture `touchhud`) |
+| Gambar | Skala manual `size/1280` | Gambar 1:1 logis — skala manual menggelembung di aspect expand (size logis 1624x720 ikut diskala); stretch `canvas_items` yang memetakan ke fisik |
+| Input | Mouse + touch (aksi ganda) | Mouse SAJA — sentuhan tiba sebagai mouse via `emulate_mouse_from_touch` (kini eksplisit di `project.godot`); dua cabang = toggle debug 2x / back 2x ESC |
+| Sync | Kunci state manual | `sync_from_match()` tiap frame (paritas `hud.sync`): node hanya di match (pygame tak menggambar hud di menu/pause/splash), matriks 7 kunci + `next_level` dari `next_level_number()` |
+| Panel kanan | Diabaikan | Override `_panel_ada`: pause + FPS sembunyi saat rail ada (pause pindah ke `RailPause`, FPS dihapus dari rail pygame — `sidepanel.py:125-128`) |
+| Tombol FPS | Default nyala | Default mati + env `MYSTIC_DEBUG=1` (paritas `main.py:180`); targetnya overlay FPS minimal (esensi `DebugOverlay`, bukan port penuh 450 baris/4 mode) |
+| Router aksi | Tidak ada | `_apply_touch_action` = port `apply_hud_action`: pause (gate `STATE_GAME` + abaikan saat menu terbuka), debug, skip (rantai `_cinematic_click`), replay/next/menu (guard usai-match), back (`menu.handle_key(ESCAPE)` — tombolnya tetap tak-tampil seperti pygame) |
+
+**Validasi:** `gdparse` seluruh `.gd` + `tscn_lint` + `check_refs` +
+`particles_lint` + 5 self-test log-gate + `gen_* --check` + scope-check
+lulus lokal; `TouchHudParityTest` baru (z-order, geometri=kanon + hit
+MIN_TAP 80, matriks 7 kunci, sembunyi-di-menu/pause, tap→signal, guard +
+jalur positif replay/next/menu/pause/skip/debug/back, override panel) +
+langkah CI **4s** — replay headless diverifikasi CI, binary Godot tak
+tersedia di sandbox. Yang TETAP TERBUKA di jalur sentuh: long-press jeda
+→ overlay debug (`main.py` — butuh deteksi tahan), safe-area poni
+(geometri kanon = inset nol), dan 4 mode + grafik `DebugOverlay` penuh.
+
 ## Koreksi panel kanan — 10 September 2026
 
 Laporan lapangan: "di Pygame ingame ada panel kanan, di Godot tidak ada".
@@ -203,9 +231,12 @@ milik bucket piksel).
   dikunci oracle `tactical_input` + replay `TacticalInputParityTest`;
   B kini hotkey attack_boss, bukan toggle toko — paritas oracle pygame)
   + notifikasi tier combo sidepanel pygame
-  (`beri_tahu_global` — Godot tanpa sidepanel); (5) **kontrol sentuh
+  (`beri_tahu_global` — Godot tanpa sidepanel); (5) ~~**kontrol sentuh
   di layar** (data tombol+visibilitas diport di `HudLayout`, UI-nya
-  belum ada); (6) **teks intro level** (sudah diport visual, replay
+  belum ada)~~ (**DITUTUP FASE 23**: `TouchHUD` dipasang di HUD paling
+  atas + `Main._apply_touch_action` port `apply_hud_action`, dikunci
+  `TouchHudParityTest` — tersisa long-press jeda, safe-area poni, dan
+  `DebugOverlay` penuh); (6) **teks intro level** (sudah diport visual, replay
   teks belum ada — `CinematicTest` mengunci perilaku/skip);
   (7) **transaksi Hero Shop meta** di `MainMenu.gd` belum punya oracle
   sendiri; (8) beda kecil yang didokumentasikan di kode: hero mati +
@@ -402,6 +433,7 @@ godot --headless --path godot res://tests/BossDeathRewardParityTest.tscn --quit-
 godot --headless --path godot res://tests/MinionTowerRewardParityTest.tscn --quit-after 600
 godot --headless --path godot res://tests/DeathDispatchParityTest.tscn --quit-after 600
 godot --headless --path godot res://tests/SaveSlotParityTest.tscn --quit-after 300
+godot --headless --path godot res://tests/TouchHudParityTest.tscn --quit-after 300
 python3 godot/tools/test_godot_log_gate.py
 ```
 
@@ -775,6 +807,15 @@ argumen yang tepat. Regenerasi fixture HANYA bila `_core.py`
 (InputHandler), `tactical_commands.py`, `mobile/sidepanel.py`, atau
 `mobile/hud.py` berubah.
 
+`TouchHudParityTest` (FASE 23, bukan oracle — data tombolnya sudah dikunci
+`UiHudParityTest` vs fixture `touchhud`) menguji integrasi pada scene Main
+asli: `hud_action` tersambung ke router, TouchHUD di atas ShopPanel +
+AchievementPopup, geometri 7 tombol = kanon + hit ≥ 80 px, matriks 7 kunci
+visibilitas, sembunyi di menu/pause, tap → signal (tombol sembunyi dan tanah
+kosong diam), guard + jalur positif replay/next/menu/pause/skip/debug/back
+lewat `_apply_touch_action`, dan override panel kanan (pause + FPS sembunyi
+saat rail ada).
+
 CI `godot-check.yml` memeriksa freshness fixture dan log runtime. Sukses berarti
 ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
 `Compile Error`; exit code Godot saja tidak cukup.
@@ -1038,6 +1079,14 @@ ada penanda `PASS` **dan** tidak ada `SCRIPT ERROR`, `Parse Error`, atau
   byte-identik — sisi pygame TIDAK disentuh),
   `gdparse`/`tscn_lint`/`check_refs`/`particles_lint` +
   `gen_* --check` + scope-check lulus lokal. `format_gold_rate`
+  di-fuzz 200.000 nilai acak: 0 beda vs Python. Tidak ada Godot
+  headless lokal di lingkungan kerja — replay `UiHudParityTest`
+  (termasuk audit closed-world `ui_key` tiap layar toko)
+  diverifikasi lewat CI `godot-check.yml` pada PR (langkah baru
+  setelah `HeroCatchupUnlockParityTest`, `--quit-after 400`);
+  gate lulus = penanda `PASS` dan tanpa `SCRIPT ERROR`/
+  `Parse Error`/`Compile Error`.
+gen_* --check` + scope-check lulus lokal. `format_gold_rate`
   di-fuzz 200.000 nilai acak: 0 beda vs Python. Tidak ada Godot
   headless lokal di lingkungan kerja — replay `UiHudParityTest`
   (termasuk audit closed-world `ui_key` tiap layar toko)

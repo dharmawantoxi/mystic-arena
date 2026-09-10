@@ -703,6 +703,32 @@ jobs:
             exit 1
           fi
 
+      # ── 4s. TouchHudParityTest (FASE 23): INTEGRASI TouchHUD
+      # (mobile/hud.py) ke match — node terpasang di HUD paling atas,
+      # geometri = kanon HudLayout.TOUCH_BUTTONS + hit MIN_TAP 80,
+      # matriks visibilitas 7 kunci + override panel kanan + sembunyi
+      # di menu/pause (sync produksi), tap -> signal hud_action, dan
+      # router Main._apply_touch_action mencapai efeknya (pause/skip/
+      # replay/next/menu/debug/back) termasuk guard-nya. BUKAN oracle
+      # (data tombol sudah dikunci UiHudParityTest vs fixture touchhud).
+      # user:// terisolasi bahkan kalau harness berhenti di tengah.
+      - name: TouchHudParityTest (integrasi TouchHUD vs perilaku pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/TouchHudParityTest.tscn --quit-after 300 2>&1 | tee /tmp/touchhud.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/touchhud.log --label "TouchHudParityTest" \
+              --require "[TouchHudParityTest] PASS" > /tmp/touchhud.gate 2>&1; then
+            cat /tmp/touchhud.gate
+          else
+            cat /tmp/touchhud.gate
+            echo "::error::TOUCHHUD-FAIL-TAIL: $(tail -40 /tmp/touchhud.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::TOUCHHUD-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/touchhud.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

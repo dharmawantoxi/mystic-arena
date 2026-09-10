@@ -97,6 +97,11 @@ debug_respawn={
 [input_devices]
 
 pointing/emulate_touch_from_mouse=true
+; Kontrak TouchHUD (FASE 23): sentuhan perangkat TIBA sebagai mouse, jadi
+; TouchHUD._input hanya menangani InputEventMouseButton (menangani touch
+; juga = aksi ganda). Default engine memang true; ditulis eksplisit supaya
+; tak ada yang mematikan tanpa sadar lalu tombol sentuh mati di HP.
+pointing/emulate_mouse_from_touch=true
 
 [rendering]
 

@@ -134,6 +134,13 @@ func _ready():
 		# jadi sinkronkan state saat ini SEKARANG — kalau dilewatkan, boot
 		# menampilkan arena+HUD di belakang/sebelah layar menu (berantakan).
 		_apply_menu_coverage(menu.is_open(), menu.state == menu.State.PAUSE)
+	# FASE 23 — tombol sentuh (port mobile/hud.apply_hud_action): HUD._ready
+	# (anak) jalan SEBELUM Main._ready (induk), jadi TouchHUD sudah ada di
+	# grup saat koneksi ini dipasang.
+	var touch = get_tree().get_first_node_in_group("touch_hud")
+	if touch != null and touch.has_signal("hud_action") \
+			and not touch.is_connected("hud_action", _apply_touch_action):
+		touch.connect("hud_action", _apply_touch_action)
 	# Tetap dapat kunci walau SceneTree di-pause (P/ESC). Karena anak men-inherit,
 	# node yang mensimulasikan unit harus dipaksa PAUSABLE supaya get_tree().paused
 	# sungguh-sungguh membekukan hero/minion.
@@ -517,6 +524,20 @@ func _cinematic_click() -> bool:
 			return fx.skip_click()
 	return false
 
+## Rantai yang SAMA dengan _cinematic_click/_cinematic_key, tanpa efek
+## samping — dibaca TouchHUD tiap frame untuk tombol SKIP (paritas
+## _cinematic_active main.py: intro/boss_intro + celebration).
+func _cinematic_active() -> bool:
+	if is_instance_valid(_level_intro) and _level_intro.cinematic_active():
+		return true
+	if is_instance_valid(_boss_banner) and _boss_banner.cinematic_active():
+		return true
+	for fx in get_tree().get_nodes_in_group("cinematic"):
+		if is_instance_valid(fx) and fx.has_method("cinematic_active") \
+				and fx.cinematic_active():
+			return true
+	return false
+
 ## Skip cinematic lewat tombol; true = event dikonsumsi (jangan lanjut ke
 ## pause/gameplay). Tombol yang tidak diterima cinematic jatuh ke handler
 ## normal — paritas handle_skip pygame mengembalikan False untuk tombol lain.
@@ -726,6 +747,58 @@ func _notification(what: int) -> void:
 	# sentuhan tanpa event release -> lepas semua hold agar tidak nyangkut.
 	if what == NOTIFICATION_APPLICATION_PAUSED:
 		_tactical_release_all()
+
+# ══════════════════════════════════════════════════════════
+#  AKSI HUD SENTUH (FASE 23 — port mobile/hud.apply_hud_action)
+# ══════════════════════════════════════════════════════════
+
+## Terjemahkan tap tombol TouchHUD (signal hud_action, disambung di
+## _ready) — paritas apply_hud_action (mobile/hud.py:296-339). Tombol hanya
+## terlihat saat aksinya valid (matriks HudLayout.TOUCH_VISIBILITY), jadi
+## guard di bawah hanya pengaman jalur programatik, bukan perilaku UI.
+## (Perintah taktis TACTICAL_ACTIONS bukan urusan fungsi ini: di pygame
+## maupun Godot, tombolnya milik side panel / TacticalBar — FASE 18.)
+func _apply_touch_action(action: String) -> void:
+	match action:
+		"pause":
+			# request_pause dihormati hanya di STATE_GAME (main.py:477);
+			# saat menu pause SUDAH terbuka, abaikan (main.py:479).
+			if GameManager.in_menu:
+				return
+			var menu = _main_menu()
+			if menu != null and menu.is_open():
+				return
+			_toggle_pause()
+		"debug":
+			var hud = get_node_or_null(^"UI/HUD")
+			if hud != null and hud.has_method("toggle_debug_overlay"):
+				hud.toggle_debug_overlay()
+		"skip":
+			# handle_skip(SPACE) ke level_intro/boss_intro/boss_death —
+			# rantai prioritas yang sama dengan klik cinematic di atas.
+			if GameManager.in_menu:
+				return
+			_cinematic_click()
+		"replay":
+			if GameManager.in_menu or GameManager.state == "playing":
+				return
+			GameManager.restart_match()
+		"next_level":
+			if GameManager.state != "victory":
+				return
+			GameManager.next_level()
+		"menu":
+			if GameManager.in_menu or GameManager.state == "playing":
+				return
+			_on_menu_main_menu()
+		"back":
+			# Tombol back tak pernah tampil (sync pygame tak pernah
+			# menyalakannya), tapi aksinya tetap diterjemahkan penuh:
+			# menu.handle_key(ESCAPE).
+			var back_menu = _main_menu()
+			if back_menu != null and back_menu.is_open() \
+					and back_menu.has_method("_handle_escape"):
+				back_menu._handle_escape()
 
 func _on_click(pos: Vector2) -> void:
 	if GameManager.state != "playing" or get_tree().paused:

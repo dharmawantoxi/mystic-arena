@@ -77,6 +77,8 @@ godot godot/project.godot
 
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
+Di layar sentuh (dan klik mouse): tombol **II** jeda di kiri atas, **SKIP >>** saat cinematic, dan **REPLAY / NEXT LEVEL / MENU** setelah match usai — paritas `mobile/hud.py` (tombol FPS hanya dengan `MYSTIC_DEBUG=1`, dan jeda pindah ke panel kanan di layar lebar). Dikunci `TouchHudParityTest`.
+
 Pilih difficulty di menu PILIH LEVEL sebelum match.
 
 ### Perilaku layar menu
