@@ -50,8 +50,23 @@ const COL_LOCKED := Color(0.42, 0.45, 0.56)
 ## 3 kartu per baris — paritas layout LEVEL_SELECT pygame (max 4 kolom,
 ## 3 kalau lebih dari 4 level; kita punya 54).
 const LEVEL_COLUMNS := 3
-## 3 kartu per baris — paritas grid HERO SHOP pygame (380x145, gap 15/12).
+## 3 kartu per baris — paritas grid HERO SHOP pygame (gap 15/12; kartu
+## 380x145 di pygame, HERO_CARD_W x 145 di Godot — lihat catatan di bawah).
 const HERO_COLUMNS := 3
+## Lebar kartu hero shop: pygame 380px, di Godot 366px supaya 3 kolom +
+## 2 gap 15px + scrollbar vertikal 12px SELALU muat di konten panel 1148px
+## (3*366 + 2*15 = 1128 <= 1148 - 12). Dengan 380px (3*380 + 2*15 = 1170)
+## grid sudah 22px lebih lebar dari panel, dan tab MINI/TRUE yang panjang
+## selalu memunculkan scrollbar sehingga kolom kanan terpotong tepat di
+## kedua tab itu. Tinggi tetap 145 paritas pygame.
+const HERO_CARD_W := 366.0
+const HERO_CARD_H := 145.0
+## Lebar kolom info tengah kartu = kartu - margin(12+12) - potret(78) -
+## separasi row(10+10) - kolom tombol(104). SEMUA teks kartu (nama, judul,
+## chip role+sekolah, status) wajib di-fit ke lebar ini — paritas
+## max_info_w _core.py:5113. Role boss panjang ("TRUE BOSS/SPECTRAL CHAIN
+## WARDEN") kalau tidak di-fit meluber menabrak tombol kanan.
+const HERO_INFO_W := HERO_CARD_W - 226.0
 
 ## Geometri kartu SLOT_SELECT — paritas _draw_slot_select _core.py:3237-3244
 ## (3 kartu x 320px, gap 30). Konstanta pygame di-pin apa adanya walau
@@ -1253,6 +1268,11 @@ func _build_hero_shop() -> void:
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	# Lebar scrollbar vertikal di-pin 12px supaya cadangannya
+	# deterministik: grid 3*366 + 2*15 = 1128 selalu muat di 1148 - 12.
+	# Tab MINI (162 kartu) & TRUE (54 kartu) selalu memunculkan scrollbar;
+	# tanpa pin ini kolom kanan terpotong tepat di kedua tab itu.
+	scroll.get_v_scroll_bar().custom_minimum_size = Vector2(12, 0)
 	pbox.add_child(scroll)
 	var grid := GridContainer.new()
 	grid.columns = HERO_COLUMNS
@@ -1335,11 +1355,11 @@ func _open_topup() -> void:
 	dlg.closed.connect(_show.bind(State.HERO_SHOP))
 
 
-## Satu kartu hero kompak 380x145 — paritas _draw_meta_hero_card
-## (_core.py:5046-5295): potret + info + chip role/sekolah + tag kategori +
-## baris status + tombol kanan. Keputusan buka dihitung sekali (paritas
-## can_unlock _core.py:5050-5060); meta di akhir untuk replay
-## MetaShopTxnParityTest.
+## Satu kartu hero kompak (HERO_CARD_W x 145) — paritas
+## _draw_meta_hero_card (_core.py:5046-5295): potret + info + chip
+## role/sekolah + tag kategori + baris status + tombol kanan. Keputusan
+## buka dihitung sekali (paritas can_unlock _core.py:5050-5060); meta di
+## akhir untuk replay MetaShopTxnParityTest.
 func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	var owned: bool = SaveManager.is_unlocked(hero_type)
 	var cost := int(d.get("unlock_cost", 600))
@@ -1352,7 +1372,7 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	var hero_col := HeroDB.get_hero_color(hero_type)
 
 	var card := PygamePanel.new()
-	card.custom_minimum_size = Vector2(380, 145)
+	card.custom_minimum_size = Vector2(HERO_CARD_W, HERO_CARD_H)
 	card.mouse_filter = Control.MOUSE_FILTER_STOP
 	card.hoverable = true
 	if owned:
@@ -1399,26 +1419,45 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	var name_l := Label.new()
 	UiTheme.style_label(name_l,
 		UiTheme.fit_ellipsis(UiTheme.body_bold(), 22,
-			str(d.get("name", hero_type)), 190),
+			str(d.get("name", hero_type)), HERO_INFO_W),
 		UiTheme.body_bold(), 22, name_c)
 	info.add_child(name_l)
 	var title_l := Label.new()
 	UiTheme.style_label(title_l,
 		UiTheme.fit_ellipsis(UiTheme.body_medium(), 16,
-			str(d.get("title", "")), 190),
+			str(d.get("title", "")), HERO_INFO_W),
 		UiTheme.body_medium(), 16, UiTheme.TEXT_DIM)
 	info.add_child(title_l)
-	# Chip role + sekolah damage.
+	# Chip role + sekolah damage — paritas fit pygame (_core.py:5157-5182):
+	# role boss panjang ("TRUE BOSS/SPECTRAL CHAIN WARDEN") dipendekkan
+	# dengan elipsis sampai chip sekolah ikut muat dalam kolom info.
+	# Tanpa ini teks role meluber menabrak tombol kanan (mini/true boss
+	# "terpotong"); starter aman karena role-nya pendek.
 	var chips := HBoxContainer.new()
 	chips.add_theme_constant_override("separation", 8)
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info.add_child(chips)
-	chips.add_child(_mini_chip(str(d.get("role", "-")).to_upper(),
-		"", hero_col.lightened(0.25), UiTheme.body_bold(), 13))
 	var sch := _school_info(d)
+	var school_chip: Control = null
+	var school_w := 0.0
 	if str(sch[0]) != "":
-		chips.add_child(_mini_chip(str(sch[0]), str(sch[2]),
-			sch[1], UiTheme.body_bold(), 13))
+		school_chip = _mini_chip(str(sch[0]), str(sch[2]),
+			sch[1], UiTheme.body_bold(), 13)
+		school_w = school_chip.get_combined_minimum_size().x
+	# Lebar teks role = kolom info - gap(8) - chip sekolah - padding chip(18).
+	var role_avail := HERO_INFO_W - 8.0 - school_w - 18.0
+	if role_avail < 30.0 and school_chip != null:
+		# Kolom terlalu sempit untuk keduanya: chip sekolah
+		# disembunyikan (paritas _fit_school pygame), role dapat lebar penuh.
+		school_chip.queue_free()
+		school_chip = null
+		role_avail = HERO_INFO_W - 18.0
+	var role_text := UiTheme.fit_ellipsis(UiTheme.body_bold(), 13,
+		str(d.get("role", "-")).to_upper(), maxf(24.0, role_avail))
+	chips.add_child(_mini_chip(role_text,
+		"", hero_col.lightened(0.25), UiTheme.body_bold(), 13))
+	if school_chip != null:
+		chips.add_child(school_chip)
 	# Tag kategori.
 	var tag_row := HBoxContainer.new()
 	tag_row.add_theme_constant_override("separation", 6)
@@ -1465,7 +1504,7 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 		var st_l := Label.new()
 		UiTheme.style_label(st_l,
 			UiTheme.fit_ellipsis(UiTheme.body_medium(), 15,
-				"Kalahkan: %s" % boss_name, 200),
+				"Kalahkan: %s" % boss_name, HERO_INFO_W - 20.0),
 			UiTheme.body_medium(), 15,
 			Color(205.0 / 255.0, 150.0 / 255.0, 150.0 / 255.0))
 		st_row.add_child(st_l)
