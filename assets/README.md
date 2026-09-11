@@ -36,14 +36,22 @@ python3 tools/convert_to_godot.py --assets   # tanpa pygame/numpy
 
 | Di sini | Salinan Godot | Pembaca |
 |---|---|---|
-| `sounds/*.wav` (24) | `godot/assets/sounds/` | `AudioManager.gd` |
+| `sounds/*` (24 audio) | `godot/assets/sounds/` | `AudioManager.gd` |
 | `items/*.png` (33) | `godot/assets/items/` | `ItemIcons.gd` (port `hero_items.get_icon`) |
 | `presplash.png` | `godot/assets/presplash.png` | `application/boot_splash/image` |
 | `fonts/*.ttf`, `icon.png`, `logo.png` | `godot/assets/…` (**ikut repo**) | `UiTheme.gd`, `SplashScreen.gd`, ikon launcher |
 
+Nama `.wav` di `sounds/` **tidak selalu berkas WAV**: 7 di antaranya Ogg Vorbis
+dan 1 MP3 ber-tag ID3. pygame aman saja (SDL_mixer mengendus isi berkas), tapi
+Godot memilih importer dari **ekstensi** — jadi converter menyalinnya dengan
+ekstensi yang benar (`ui_click.wav` → `ui_click.ogg`, `ambient_forest.wav` →
+`ambient_forest.mp3`). **Jangan rename berkas di folder ini**:
+`_system.py:543-574` merujuk namanya secara literal.
+
 Tambah ikon item baru? Taruh PNG-nya di `items/`, daftarkan field `"icon"` di
 `hero_items.ITEM_CATALOG`, jalankan converter, lalu `python3
-tools/test_godot_asset_pipeline.py` (closed-world 33 ikon ↔ `items.json`).
+tools/test_godot_asset_pipeline.py` (closed-world 33 ikon ↔ `items.json`,
+kontainer audio ↔ ekstensi salinannya).
 
 ## Catatan penting
 

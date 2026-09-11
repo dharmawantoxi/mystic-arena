@@ -32,7 +32,13 @@ item jadi badge warna, atau boot splash bawaan Godot. Yang dikunci di sini:
      serta memeriksa ResourceLoader.exists() sebelum load() (load ke path
      yang hilang mencetak error yang menggagalkan godot_log_gate);
   6. daftar SFX AudioManager tidak menyebut suara yang berkasnya tidak ada
-     (kecuali bullet_hit yang memang dokumentasi — lihat ALLOWED_MISSING_WAV).
+     (kecuali bullet_hit yang memang dokumentasi — lihat ALLOWED_MISSING_AUDIO);
+  7. kontainer audio: nama ".wav" di assets/sounds/ TIDAK selalu RIFF — pygame
+     memutar apa saja lewat SDL_mixer, Godot memilih importer dari EKSTENSI.
+     7 Ogg Vorbis + 1 MP3 di repo ini harus disalin converter dengan ekstensi
+     yang benar (.ogg/.mp3), kalau tidak importer WAV menolaknya dan 8 SFX
+     (ui_click, ui_buy, ui_sell, ui_upgrade, ui_error, victory, minion_hit,
+     ambient_forest) senyap di AAB.
 """
 import json
 import re
@@ -65,15 +71,22 @@ DUPLICATES = {
     "godot/assets/presplash.png": "assets/presplash.png",
 }
 
-## Nama di AudioManager.SFX_NAMES yang memang tidak punya berkas .wav:
+## Nama di AudioManager.SFX_NAMES yang memang tidak punya berkas audio:
 ## 'bullet_hit' didaftarkan sebagai dokumentasi port (proyektil pygame tidak
 ## pernah memuatnya — _scan_sounds() memuat apa pun yang ada di folder), jadi
 ## ketiadaannya bukan regresi aset.
-ALLOWED_MISSING_WAV = {"bullet_hit"}
+ALLOWED_MISSING_AUDIO = {"bullet_hit"}
 
-## Jumlah .wav yang dimuat SoundManager.load_all (_system.py:543-574) +
-## combat_audio mobile — dipakai laporan, bukan angka mati yang dikunci.
-EXPECTED_WAV_MIN = 24
+## Jumlah berkas audio yang dimuat SoundManager.load_all (_system.py:543-574)
+## + combat_audio mobile — dipakai laporan, bukan angka mati yang dikunci.
+EXPECTED_AUDIO_MIN = 24
+
+## Kontainer -> ekstensi yang importer Godot 4.3 kenal: AudioStreamWAV,
+## AudioStreamOggVorbis, AudioStreamMP3. Kunci _streams AudioManager adalah
+## nama tanpa ekstensi, jadi kontainer mana pun tetap terpanggil sama.
+AUDIO_EXT = {"wav": ".wav", "ogg": ".ogg", "mp3": ".mp3"}
+## Berkas non-audio yang ikut disalin converter (atribusi aset).
+AUDIO_SIDE_FILES = {".txt"}
 
 ICON_COUNT = 33
 
@@ -82,6 +95,33 @@ def _read(path: Path) -> str:
     if not path.is_file():
         raise AssertionError("berkas tidak ada: %s" % path.relative_to(ROOT))
     return path.read_text(encoding="utf-8")
+
+
+def _audio_container(path: Path) -> str:
+    """Kontainer asli berkas audio dari magic bytes (bukan dari namanya).
+
+    Cermin audio_container_ext() di tools/convert_to_godot.py — kalau keduanya
+    beda, salinan Godot akan di-import dengan importer yang salah.
+    """
+    with path.open("rb") as fh:
+        head = fh.read(64)
+    if head[:4] == b"RIFF" and head[8:12] == b"WAVE":
+        return "wav"
+    if head[:4] == b"OggS":
+        # Ogg bisa Vorbis (didukung Godot 4.3) atau Opus/Speex/FLAC (tidak).
+        return "ogg" if b"\x01vorbis" in head else "ogg-unsupported"
+    if head[:3] == b"ID3":
+        size = ((head[6] & 0x7F) << 21 | (head[7] & 0x7F) << 14
+                | (head[8] & 0x7F) << 7 | (head[9] & 0x7F))
+        with path.open("rb") as fh:
+            fh.seek(10 + size)
+            nxt = fh.read(2)
+        if len(nxt) == 2 and nxt[0] == 0xFF and nxt[1] & 0xE0 == 0xE0:
+            return "mp3"
+        return "unknown"
+    if len(head) >= 2 and head[0] == 0xFF and head[1] & 0xE0 == 0xE0:
+        return "mp3"
+    return "unknown"
 
 
 # ══════════════════════════════════════════════════════════
@@ -287,37 +327,122 @@ def check_godot_side() -> None:
 # ══════════════════════════════════════════════════════════
 
 def check_sounds() -> None:
-    wavs = {p.stem for p in (ASSETS / "sounds").glob("*.wav")}
-    if len(wavs) < EXPECTED_WAV_MIN:
-        raise AssertionError("assets/sounds/ cuma %d .wav (diharapkan >= %d — "
-                             "SoundManager.load_all + combat_audio)"
-                             % (len(wavs), EXPECTED_WAV_MIN))
+    src_dir = ASSETS / "sounds"
+    if not src_dir.is_dir():
+        raise AssertionError("assets/sounds/ tidak ada — sumber audio hilang")
 
+    # stem -> (kontainer, ekstensi di nama berkas)
+    sources = {}
+    for path in sorted(src_dir.iterdir()):
+        if not path.is_file():
+            continue
+        ext = path.suffix.lower()
+        if ext in AUDIO_EXT.values():
+            sources[path.stem] = (_audio_container(path), ext)
+        elif ext not in AUDIO_SIDE_FILES:
+            raise AssertionError("assets/sounds/%s ekstensinya %s — bukan "
+                                 "audio yang dikenal Godot (%s) dan bukan "
+                                 "berkas pendamping (%s)"
+                                 % (path.name, ext,
+                                    "/".join(AUDIO_EXT.values()),
+                                    "/".join(sorted(AUDIO_SIDE_FILES))))
+    if len(sources) < EXPECTED_AUDIO_MIN:
+        raise AssertionError("assets/sounds/ cuma %d berkas audio (diharapkan "
+                             ">= %d — SoundManager.load_all + combat_audio)"
+                             % (len(sources), EXPECTED_AUDIO_MIN))
+
+    # 7a. Kontainernya harus yang importer Godot 4.3 dukung.
+    bad = sorted("%s=%s" % (s, c) for s, (c, _) in sources.items()
+                 if c not in AUDIO_EXT)
+    if bad:
+        raise AssertionError("kontainer audio tidak didukung Godot 4.3: %s — "
+                             "konversi ke WAV/Ogg Vorbis/MP3" % ", ".join(bad))
+
+    # 7b. Nama ".wav" yang isinya bukan RIFF harus diluruskan converter.
+    misnamed = sorted(s for s, (c, e) in sources.items() if AUDIO_EXT[c] != e)
+    conv = _read(CONVERTER)
+    for needle in ("def audio_container_ext(", 'b"RIFF"', 'b"OggS"', 'b"ID3"',
+                   'b"\\x01vorbis"', "AUDIO_EXTS"):
+        if needle not in conv:
+            raise AssertionError("convert_to_godot.py kehilangan %s — 8 berkas "
+                                 "audio yang namanya .wav tapi isinya Ogg/MP3 "
+                                 "akan gagal import di Godot" % needle)
     audio = _read(AUDIO_MANAGER_GD)
+    m = re.search(r"^const AUDIO_EXTS: Array = \[([^\]]+)\]", audio, re.M)
+    if not m:
+        raise AssertionError("AudioManager.gd kehilangan const AUDIO_EXTS")
+    listed = set(re.findall(r'"(\.[a-z0-9]+)"', m.group(1)))
+    if listed != set(AUDIO_EXT.values()):
+        raise AssertionError("AudioManager.AUDIO_EXTS %s != %s (ekstensi yang "
+                             "bisa dihasilkan converter)"
+                             % (sorted(listed), sorted(AUDIO_EXT.values())))
+    if "get_extension()" not in audio:
+        raise AssertionError("AudioManager._scan_sounds() harus menyaring "
+                             "lewat get_extension() supaya .ogg/.mp3 ikut "
+                             "termuat, bukan cuma .wav")
+
+    # 6. Daftar SFX vs berkas yang benar-benar ada (per stem, bukan per .wav).
     block = re.search(r"const SFX_NAMES: Array = \[(.*?)\n\]", audio, re.S)
     if not block:
         raise AssertionError("AudioManager.gd kehilangan const SFX_NAMES")
     names = set(re.findall(r'"([a-z_0-9]+)"', block.group(1)))
     if not names:
         raise AssertionError("SFX_NAMES kosong — pola baca daftar gagal")
-    missing = sorted(n for n in names - wavs if n not in ALLOWED_MISSING_WAV)
+    missing = sorted(n for n in names - set(sources) if n not in ALLOWED_MISSING_AUDIO)
     if missing:
-        raise AssertionError("AudioManager menyebut SFX tanpa berkas .wav di "
-                             "assets/sounds/: %s — tambah berkasnya atau "
-                             "hapus namanya dari SFX_NAMES" % ", ".join(missing))
-    unused = sorted(wavs - names - {"bgm_battle", "ambient_forest"})
-    print("[aset] suara: %d .wav di assets/sounds/ · %d nama SFX terdaftar · "
-          "di luar daftar: %s"
-          % (len(wavs), len(names), ", ".join(unused) or "-"))
+        raise AssertionError("AudioManager menyebut SFX tanpa berkas di "
+                             "assets/sounds/: %s — tambah berkasnya atau hapus "
+                             "namanya dari SFX_NAMES" % ", ".join(missing))
+    unused = sorted(set(sources) - names - {"bgm_battle", "ambient_forest"})
+    per_container = {}
+    for _, (c, _) in sources.items():
+        per_container[c] = per_container.get(c, 0) + 1
+    print("[aset] suara: %d berkas audio di assets/sounds/ (%s) · %d nama SFX "
+          "terdaftar · di luar daftar: %s"
+          % (len(sources),
+             " + ".join("%d %s" % (per_container[c], c)
+                        for c in sorted(per_container)),
+             len(names), ", ".join(unused) or "-"))
+    if misnamed:
+        print("[aset] suara: %d nama .wav yang kontainernya bukan RIFF "
+              "(converter meluruskannya jadi %s): %s"
+              % (len(misnamed),
+                 ", ".join(sorted({AUDIO_EXT[sources[s][0]] for s in misnamed})),
+                 ", ".join(misnamed)))
 
+    # 7c. Salinan di godot/assets/sounds/ (kalau ada) harus satu per stem,
+    # ekstensinya == kontainer, dan tidak ada sisa salinan basi.
     dst = GODOT_ASSETS / "sounds"
     if dst.is_dir():
-        copied = len(list(dst.glob("*.wav")))
-        if copied != len(wavs):
-            raise AssertionError("godot/assets/sounds/ punya %d .wav, sumbernya "
-                                 "%d — jalankan ulang converter --assets"
-                                 % (copied, len(wavs)))
-        print("[aset] godot/assets/sounds/: %d .wav tersalin" % copied)
+        copies = {}
+        for path in sorted(dst.iterdir()):
+            if not path.is_file() or path.suffix.lower() not in AUDIO_EXT.values():
+                continue
+            copies.setdefault(path.stem, []).append(path.suffix.lower())
+        if set(copies) != set(sources):
+            raise AssertionError("godot/assets/sounds/ tidak cocok dengan "
+                                 "assets/sounds/: kurang %s · lebih %s — "
+                                 "jalankan ulang converter --assets"
+                                 % (sorted(set(sources) - set(copies)) or "-",
+                                    sorted(set(copies) - set(sources)) or "-"))
+        dupes = sorted(s for s, e in copies.items() if len(e) > 1)
+        if dupes:
+            raise AssertionError("salinan audio dobel (sisa ekstensi lama akan "
+                                 "tetap di-import Godot dan error lagi): %s"
+                                 % ", ".join(dupes))
+        wrong = sorted("%s%s (harusnya %s)"
+                       % (s, copies[s][0], AUDIO_EXT[sources[s][0]])
+                       for s in copies if copies[s][0] != AUDIO_EXT[sources[s][0]])
+        if wrong:
+            raise AssertionError("ekstensi salinan != kontainernya: %s — "
+                                 "jalankan ulang converter --assets"
+                                 % ", ".join(wrong))
+        per_ext = {}
+        for exts in copies.values():
+            per_ext[exts[0]] = per_ext.get(exts[0], 0) + 1
+        print("[aset] godot/assets/sounds/: %d berkas tersalin (%s)"
+              % (len(copies),
+                 " + ".join("%d %s" % (per_ext[e], e) for e in sorted(per_ext))))
 
 
 def main() -> int:
