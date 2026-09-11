@@ -32,8 +32,10 @@
 extends Node2D
 
 const BakedUnitDB = preload("res://scripts/render/BakedUnitDB.gd")
+const Lighting = preload("res://scripts/render/Lighting.gd")
 
 @onready var sprite: AnimatedSprite2D = $Sprite
+var _lighting_mat: ShaderMaterial = null
 
 var unit_type := ""
 var kind := "hero" # "hero" | "boss" — menentukan skala + fps (manifest)
@@ -126,7 +128,12 @@ func configure_baked(p_type: String, p_kind: String, p_team: String) -> void:
 	# Pasca-pass pygame hanya berlaku di jalur HERO lane: outline gelap
 	# 1 px + rim cahaya (_finish_hd_sprite, heroes/__init__.py:1866+).
 	# Jalur boss native sengaja polos (heroes/__init__.py:2849-2878),
-	# maka material dimatikan untuk kind=boss.
+	# maka material dimatikan untuk kind=boss — KECUALI bila lighting
+	# shader aktif (port lighting.py -> godot++), maka boss juga dapat
+	# rim+terminator+gradient GPU (Fase Lighting).
+	var use_lighting: bool = bool(ProjectSettings.get_setting("mystic/rendering/use_lighting_shader", true))
+	var lighting_path: String = str(ProjectSettings.get_setting("mystic/rendering/lighting_shader_path", "res://assets/shaders/lighting_outline.gdshader"))
+
 	if kind == "hero" and sprite.material is ShaderMaterial:
 		# PENTING duplicate(): sub_resource .tscn DIKUNCI satu instance
 		# bersama seluruh spawn (kecuali local_to_scene). Tanpa ini,
@@ -134,16 +141,68 @@ func configure_baked(p_type: String, p_kind: String, p_team: String) -> void:
 		# semua hero lain — bug yang tidak kelihatan oleh gdparse/
 		# check_refs karena murni perilaku runtime resource sharing.
 		var mat: ShaderMaterial = (sprite.material as ShaderMaterial).duplicate()
+		# Jika lighting shader aktif, ganti dengan lighting_outline yang sudah
+		# mencakup outline + lighting.py (rim+terminator+gradient) dalam 1 pass
+		if use_lighting and ResourceLoader.exists(lighting_path):
+			var l_shader := load(lighting_path) as Shader
+			if l_shader != null:
+				var l_mat := ShaderMaterial.new()
+				l_mat.shader = l_shader
+				# Paritas lighting.py
+				var lp := Lighting.shader_params()
+				l_mat.set_shader_parameter("light_dir", lp["light_dir"])
+				l_mat.set_shader_parameter("rim_add", Vector3(lp["rim_add"].r, lp["rim_add"].g, lp["rim_add"].b))
+				l_mat.set_shader_parameter("shade_mul", lp["shade_mul"])
+				l_mat.set_shader_parameter("band2_ratio", lp["band2_ratio"])
+				l_mat.set_shader_parameter("grad_dark", lp["grad_dark"])
+				l_mat.set_shader_parameter("grad_light", lp["grad_light"])
+				l_mat.set_shader_parameter("grad_sheen", lp["grad_sheen"])
+				l_mat.set_shader_parameter("mask_alpha", lp["mask_alpha"])
+				# outline dari material lama tetap dipakai
+				l_mat.set_shader_parameter("outline_color", Color(0.05, 0.04, 0.08, 1.0))
+				l_mat.set_shader_parameter("outline_width", 1.0)
+				mat = l_mat
+				_lighting_mat = l_mat
 		sprite.material = mat
 		# Rim hangat/dingin per tim — paritas _HD_RIM_ADD vs
 		# _HD_RIM_ADD_RED (heroes/__init__.py:1880-1883).
-		var rim := Color("#222030") if p_team == "blue" \
-				else Color("#302018")
-		mat.set_shader_parameter("rim_color", Vector4(
-				rim.r, rim.g, rim.b, 1.0))
+		# Untuk lighting shader, rim_add sudah di-set dari Lighting.gd,
+		# tapi kita tetap adjust sedikit untuk team tint (biru/merah tipis
+		# seperti _finish_hd_sprite).
+		if _lighting_mat == null:
+			var rim := Color("#222030") if p_team == "blue" \
+					else Color("#302018")
+			mat.set_shader_parameter("rim_color", Vector4(
+					rim.r, rim.g, rim.b, 1.0))
+		else:
+			# Team tint ditambahkan ke rim_add base (30,26,44)
+			var base_rim: Color = Lighting.RIM_ADD
+			var team_tint := Color("#1a1a2e") if p_team == "blue" else Color("#2e1a1a")
+			var final_rim := base_rim + team_tint * 0.35
+			_lighting_mat.set_shader_parameter("rim_add", Vector3(final_rim.r, final_rim.g, final_rim.b))
 	elif kind == "boss":
-		# Boss pygame native tanpa outline/rim pass.
-		sprite.material = null
+		if use_lighting and ResourceLoader.exists(lighting_path):
+			# Boss juga dapat lighting (lebih subtle, tanpa outline tebal)
+			var l_shader := load(lighting_path) as Shader
+			if l_shader != null:
+				var l_mat := ShaderMaterial.new()
+				l_mat.shader = l_shader
+				var lp := Lighting.shader_params()
+				l_mat.set_shader_parameter("light_dir", lp["light_dir"])
+				l_mat.set_shader_parameter("rim_add", Vector3(lp["rim_add"].r, lp["rim_add"].g, lp["rim_add"].b))
+				l_mat.set_shader_parameter("shade_mul", lp["shade_mul"])
+				l_mat.set_shader_parameter("band2_ratio", lp["band2_ratio"])
+				l_mat.set_shader_parameter("grad_dark", lp["grad_dark"])
+				l_mat.set_shader_parameter("grad_light", lp["grad_light"])
+				l_mat.set_shader_parameter("grad_sheen", lp["grad_sheen"])
+				l_mat.set_shader_parameter("mask_alpha", lp["mask_alpha"])
+				l_mat.set_shader_parameter("outline_color", Color(0.05, 0.04, 0.08, 0.0))
+				l_mat.set_shader_parameter("outline_width", 0.0)
+				sprite.material = l_mat
+				_lighting_mat = l_mat
+		else:
+			# Boss pygame native tanpa outline/rim pass.
+			sprite.material = null
 
 	sprite.play(&"idle")
 	_built = true

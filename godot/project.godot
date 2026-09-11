@@ -139,3 +139,11 @@ common/max_physics_steps_per_frame=4
 
 ; Keep the normal arena faithful to Pygame; KaizenDemo still uses the rig.
 rendering/experimental_hero_rigs=false
+; Fase Lighting (port lighting.py -> godot++): shader GPU menggantikan 7 blit CPU pygame
+rendering/use_lighting_shader=true
+rendering/lighting_shader_path="res://assets/shaders/lighting_outline.gdshader"
+; GDExtension C++ (godot++) — true kalau sudah build lib di addons/mystic_lighting/bin/
+rendering/use_gdext_lighting=false
+; Arah cahaya paritas LIGHT_DIR = (-1,-1) kiri-atas
+rendering/light_dir_x=-1
+rendering/light_dir_y=-1
