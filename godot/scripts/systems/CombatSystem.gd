@@ -30,9 +30,16 @@
 #   6. on-hit penyerang : lifesteal (basis damage PRA-mitigasi; ranged
 #                         dibayar saat spawn di Hero.try_attack), cleave
 #                         netral, corroder shred
+#
+# Blok kedua yang diport ke sini: singleton `_grid` tingkat modul dari
+# `_system.py:145-200` (`SpatialGrid` + `update_spatial_grid` +
+# `query_enemies_in_range`). Di pygame grid itulah satu-satunya jalur
+# targeting per-unit (±100 kueri/frame), jadi padanannya ikut di/autoload
+# query unit ini — lihat bagian SPATIAL GRID di bawah.
 extends Node
 
 const DAMAGE_NUMBER_SCENE := preload("res://scenes/fx/DamageNumber.tscn")
+const SpatialGridScript := preload("res://scripts/systems/SpatialGrid.gd")
 
 ## Group yang dianggap "unit" saat mencari musuh (nexus = base yang bisa dihancurkan)
 const UNIT_GROUPS: Array = ["heroes", "bosses", "minions", "towers", "nexus"]
@@ -90,6 +97,127 @@ func enemies_in_radius(team: String, center: Vector2, radius: float) -> Array:
 	for e in enemies_of(team):
 		if (e as Node2D).global_position.distance_to(center) <= radius:
 			out.append(e)
+	return out
+
+
+## Paritas `_system.query_enemies_in_range(x, y, radius, team)` +
+## `Minion._get_enemies` (`_entity.py:5635-5679`): minion/hero/boss diambil dari
+## SpatialGrid (urutan bucket = urutan pygame), lalu tower & base diperiksa
+## LANGSUNG dan appended di belakang — keduanya memang sengaja tidak diindeks
+## grid (`_system.py:155-158`).
+##
+## Beda dengan `enemies_in_radius` di atas: fungsi itu tetap scan-grup dan
+## dipakai jalur AoE/splash/aura/item, yang di pygame juga membaca list biasa
+## (`game.minions + game.heroes`, bukan grid). Jadi kueri area besar TIDAK ikut
+## berubah urutan saat grid dinyalakan.
+##
+## Kalau grid belum berlaku (menu, pause, atau harness headless yang men-step
+## unit tanpa `Main._process`) -> fallback ke scan grup: himpunan hasilnya sama,
+## hanya urutannya yang mengikuti grup alih-alih bucket.
+func query_enemies_in_range(team: String, center: Vector2, radius: float) -> Array:
+	if not spatial_grid_fresh():
+		return enemies_in_radius(team, center, radius)
+	var out: Array = []
+	for e in _spatial_grid.query_enemies(center.x, center.y, radius, team):
+		# Penjaga Godot (tidak ada padanannya di pygame): unit yang sedang tidak
+		# bisa ditarget (mis. Shadow Realm) tetap tidak boleh jadi target.
+		if not _targetable(e):
+			continue
+		out.append(e)
+	var r2 := radius * radius
+	for group in ["towers", "nexus"]:
+		for n in get_tree().get_nodes_in_group(group):
+			if not is_instance_valid(n) or not (n is Node2D):
+				continue
+			if str(n.get("team")) == team or bool(n.get("is_dead")):
+				continue
+			if not _targetable(n):
+				continue
+			var d: Vector2 = (n as Node2D).global_position - center
+			if d.x * d.x + d.y * d.y <= r2:
+				out.append(n)
+	return out
+
+
+# ══════════════════════════════════════════════════════════
+#  SPATIAL GRID — singleton `_grid` tingkat modul (_system.py:145)
+# ══════════════════════════════════════════════════════════
+
+## Paritas `SpatialGrid(cell_size=60)` — _system.py:55/145
+const GRID_CELL_SIZE := 60.0
+## `_core.py:2009`: grid dibangun ulang hanya pada frame GENAP
+## (`if self.animation_time % 2 == 0`) — jadi hasil kueri boleh basi 1 frame.
+const GRID_REBUILD_EVERY := 2
+## Jendela "masih dipakai": 2 frame = maksimum 1 frame basi seperti pygame.
+## Lewat itu berarti yang membangun tidak jalan (menu/pause/harness) dan
+## pemanggil harus jatuh ke scan langsung.
+const GRID_STALE_FRAMES := 2
+## Urutan insert = urutan pygame: `game.minions` lalu `get_all_heroes()`,
+## dengan boss di-append paling akhir (_core.py:2010-2013).
+const GRID_GROUPS: Array = ["minions", "heroes", "bosses"]
+
+var _spatial_grid = SpatialGridScript.new()
+var _grid_build_frame: int = -1000000
+var _grid_ready: bool = false
+
+
+func _ready() -> void:
+	_spatial_grid.cell_size = GRID_CELL_SIZE
+
+
+## Hasil build grid masih berlaku? False sebelum build pertama.
+func spatial_grid_fresh() -> bool:
+	if not _grid_ready:
+		return false
+	return Engine.get_process_frames() - _grid_build_frame <= GRID_STALE_FRAMES
+
+
+## Jumlah entri terindeks (debug overlay + tes; pygame tidak punya padanan).
+func spatial_grid_count() -> int:
+	return _spatial_grid.count()
+
+
+## Buang grid (harness/tes; produksi memanggil `update_spatial_grid` lagi).
+func reset_spatial_grid() -> void:
+	_spatial_grid.clear()
+	_grid_ready = false
+	_grid_build_frame = -1000000
+
+
+## Padanan `update_spatial_grid(minions, heroes)` (_system.py:147-167): sekali
+## per frame (frame genap) dari `Main._process`. Hanya minion & hero/boss yang
+## diindeks; yang mati dilewati — persis seperti pygame.
+func update_spatial_grid(minions: Array, heroes: Array) -> void:
+	_spatial_grid.update_from(_alive_only(minions), _alive_only(heroes))
+	_grid_build_frame = Engine.get_process_frames()
+	_grid_ready = true
+
+
+## Guard umur node Godot: `is_instance_valid` diperlukan karena array pemanggil
+## bisa memegang node yang sudah di-free di tengah frame (pygame cukup membaca
+## `.alive`). Aturan "unit mati tidak diindeks" sendiri ada di SpatialGrid.
+static func _alive_only(units: Array) -> Array:
+	var out: Array = []
+	for u in units:
+		if u != null and is_instance_valid(u):
+			out.append(u)
+	return out
+
+
+## Varian produksi: daftar unit diambil dari grup scene tree dengan urutan
+## yang sama dengan pygame, lalu diteruskan ke `update_spatial_grid`.
+func update_spatial_grid_from_tree() -> void:
+	var minions := _group_nodes("minions")
+	var heroes := _group_nodes("heroes")
+	heroes.append_array(_group_nodes("bosses"))
+	update_spatial_grid(minions, heroes)
+
+
+func _group_nodes(group: String) -> Array:
+	var out: Array = []
+	for n in get_tree().get_nodes_in_group(group):
+		if is_instance_valid(n) and n is Node2D:
+			out.append(n)
 	return out
 
 

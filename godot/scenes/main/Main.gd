@@ -70,6 +70,13 @@ const TACTICAL_KEY_TO_COMMAND := {
 }
 var _slot_redraw_timer: float = 0.0
 var _slot_pulse: float = 0.0
+## Penghitung frame untuk jadwal bangun ulang SpatialGrid (paritas
+## `animation_time % 2 == 0` di `_core.py:2009`).
+var _grid_tick: int = 0
+## Overlay FPS (port `_system.FPSCounter`, F8) — CanvasLayer sendiri supaya
+## tampil di ATAS menu/pause, sama seperti pygame yang mem-blit-nya setelah
+## semua state di `main_desktop_legacy.py:455`.
+var _fps_counter = null
 
 ## Jadwal boss level ini (port Game.pending_mini_bosses / true_boss_spawned)
 var pending_mini_bosses: Array = []
@@ -125,6 +132,7 @@ func _ready():
 	var popups = preload("res://scenes/fx/WorldPopups.gd").new()
 	popups.name = "WorldPopups"
 	add_child(popups)
+	_build_fps_counter()
 	# Sambungkan sinyal menu utama (node UI/MainMenu siap lebih dulu karena
 	# anak diproses sebelum parent; koneksi di sini juga aman diulang).
 	var menu = _main_menu()
@@ -190,6 +198,34 @@ func _ready():
 		ui_layer.add_child(pad_cursor)
 	if menu != null:
 		menu.controller_mgr = _controller
+
+## Overlay FPS (port `_system.FPSCounter`). Dipasang di CanvasLayer SENDIRI,
+## bukan di dalam HUD: pygame mem-blit panel ini setelah semua state digambar
+## (`main_desktop_legacy.py:455-456`), jadi ia tetap tampil di atas menu,
+## splash, dan pause — tempat HUD justru disembunyikan.
+func _build_fps_counter() -> void:
+	if _fps_counter != null and is_instance_valid(_fps_counter):
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "DebugLayer"
+	# di atas CanvasLayer UI (HUD/toko) supaya tidak tertutup panel
+	layer.layer = 200
+	layer.process_mode = Node.PROCESS_MODE_ALWAYS
+	var counter := preload("res://scenes/ui/FpsCounter.gd").new()
+	counter.name = "FpsCounter"
+	layer.add_child(counter)
+	add_child(layer)
+	_fps_counter = counter
+
+
+## Dipakai tombol F8 dan (nanti) tombol debug TouchHUD. Return node-nya supaya
+## tes headless bisa membaca `display_fps`/`fps_history` tanpa cari nama node.
+func toggle_fps_counter():
+	if _fps_counter == null or not is_instance_valid(_fps_counter):
+		_build_fps_counter()
+	_fps_counter.toggle()
+	return _fps_counter
+
 
 func _build_slot_layer() -> void:
 	_slot_layer = Node2D.new()
@@ -471,6 +507,14 @@ func _process(delta: float) -> void:
 	if _slot_layer != null and _slot_redraw_timer >= 0.1:
 		_slot_redraw_timer = 0.0
 		_slot_layer.queue_redraw()
+	# ── SPATIAL GRID (port _system.py:147-167, dijadwalkan _core.py:2009-2013) ──
+	# pygame membangun ulang grid hanya pada frame GENAP, jadi hasil kueri boleh
+	# basi satu frame (bucket-nya saja; posisi yang dibandingkan tetap live
+	# karena grid menyimpan referensi unit). Frame gasal/luar-match sengaja tidak
+	# membangun: CombatSystem lalu jatuh ke scan langsung, bukan ke grid basi.
+	_grid_tick += 1
+	if _grid_tick % CombatSystem.GRID_REBUILD_EVERY == 0:
+		CombatSystem.update_spatial_grid_from_tree()
 	if camera_follows_action and not get_tree().paused:
 		_follow_action()
 
@@ -620,6 +664,11 @@ func _on_key(key: InputEventKey) -> void:
 		return
 	if key.echo:
 		return
+	# F8 = FPS COUNTER di SEMUA state (paritas `main_desktop_legacy.py:98-100`:
+	# ditangani SEBELUM dispatch state splash/menu/game/pause dan tombolnya
+	# sengaja TIDAK ditelan, jadi state di bawahnya tetap melihat F8).
+	if key.keycode == KEY_F8:
+		toggle_fps_counter()
 	# Cinematic dicek SEBELUM pause/gameplay (paritas Game.handle_key
 	# _core.py:2673-2686): ESC saat banner/perayaan = skip, bukan menu pause.
 	if _cinematic_key(key):

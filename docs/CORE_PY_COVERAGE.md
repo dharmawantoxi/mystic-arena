@@ -18,7 +18,9 @@ menebak dari nama berkas.
 
 Acuan audit lebih luas (bukan hanya `_core.py`):
 [GODOT_PARITY.md](GODOT_PARITY.md). Entitas `_entity.py`:
-[ENTITY_PY_COVERAGE.md](ENTITY_PY_COVERAGE.md). Roadmap komponen:
+[ENTITY_PY_COVERAGE.md](ENTITY_PY_COVERAGE.md). Sistem gabungan
+(`performance`/`fps`/`sound`/`save`) `_system.py`:
+[SYSTEM_PY_COVERAGE.md](SYSTEM_PY_COVERAGE.md). Roadmap komponen:
 [GODOT_MIGRATION.md](GODOT_MIGRATION.md).
 
 ---
