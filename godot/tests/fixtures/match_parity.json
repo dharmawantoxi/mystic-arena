@@ -163732,22 +163732,26 @@
       {
         "key": "hp_regen",
         "value": 3.0,
+        "float": true,
         "out": "3.0"
       },
       {
         "key": "hp_regen",
         "value": 3.0,
+        "float": true,
         "en": true,
         "out": "3.0"
       },
       {
         "key": "hp_regen",
         "value": 6.0,
+        "float": true,
         "out": "6.0"
       },
       {
         "key": "hp_regen",
         "value": 6.0,
+        "float": true,
         "en": true,
         "out": "6.0"
       },

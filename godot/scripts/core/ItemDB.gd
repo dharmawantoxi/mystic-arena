@@ -321,7 +321,7 @@ func item_class_label(item_id: String) -> String:
 ## Daftar (kind, text) mekanik detail item (popup ITEM FORGE) — delegasi
 ## HeroItems.build_item_mechanics (paritas hero_items._build_item_mechanics).
 func item_mechanics(item_id: String, en: bool = false) -> Array:
-	return HeroItems.build_item_mechanics(get_item(item_id), en)
+	return HeroItems.build_item_mechanics(get_item(item_id), en, item_id)
 
 
 ## Halaman toko SELARAS batas kelas — delegasi HeroItems.build_shop_pages

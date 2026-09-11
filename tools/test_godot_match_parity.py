@@ -10513,9 +10513,20 @@ def make_hero_items_fixture(core, entity):
     ]
     fmt_battery = []
     for key, value in fmt_cases:
-        fmt_battery.append({"key": key, "value": value,
+        # Godot JSON.parse_string mengubah SEMUA angka jadi float, jadi flag
+        # `float` menandai nilai yang di Pygame adalah float MURNI dan akan
+        # lewat str() (else-branch _fmt_mech_value) — perlu ".0" (3.0 -> "3.0").
+        was_float = (
+            isinstance(value, float)
+            and key != "crit_mult"
+            and key not in hero_items._PCT_KEYS
+            and key not in hero_items._FRAME_KEYS)
+        base = {"key": key, "value": value}
+        if was_float:
+            base["float"] = True
+        fmt_battery.append({**base,
                             "out": hero_items._fmt_mech_value(key, value)})
-        fmt_battery.append({"key": key, "value": value, "en": True,
+        fmt_battery.append({**base, "en": True,
                             "out": hero_items._fmt_mech_value(
                                 key, value, en=True)})
 

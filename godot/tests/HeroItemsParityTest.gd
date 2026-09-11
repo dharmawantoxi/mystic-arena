@@ -120,10 +120,10 @@ func _test_mechanics() -> void:
 	_expect(exp.size() == 33 and exp_en.size() == 33, "mechanics 33+33")
 	for sid in exp:
 		var data: Dictionary = _items.get(str(sid), {})
-		_expect_deep(HeroItems.build_item_mechanics(data, false), exp[sid],
-			"mechanics.%s" % str(sid))
-		_expect_deep(HeroItems.build_item_mechanics(data, true), exp_en[sid],
-			"mechanics_en.%s" % str(sid))
+		_expect_deep(HeroItems.build_item_mechanics(data, false, str(sid)),
+			exp[sid], "mechanics.%s" % str(sid))
+		_expect_deep(HeroItems.build_item_mechanics(data, true, str(sid)),
+			exp_en[sid], "mechanics_en.%s" % str(sid))
 
 
 # ── 4) baterai format nilai ────────────────────────────────────────────
@@ -131,8 +131,9 @@ func _test_fmt_battery() -> void:
 	for c in (_hi["fmt_battery"] as Array):
 		var key := str(c["key"])
 		var v: Variant = c["value"]
-		var en := bool(c.get("en", false))
-		var out: String = HeroItems.fmt_mech_value(key, v, en)
+		var en := (c.get("en", false) == true)
+		var was_float := (c.get("float", false) == true)
+		var out: String = HeroItems.fmt_mech_value(key, v, en, was_float)
 		_expect(out == str(c["out"]),
 			"fmt %s %s -> %s (ekspektasi %s)" % [key, str(v), out,
 				str(c["out"])])
@@ -144,7 +145,7 @@ func _test_resolve() -> void:
 		var alive: Array = c["alive"]
 		var heroes: Array = []
 		for i in range(alive.size()):
-			heroes.append({"alive": bool(alive[i]), "idx": i})
+			heroes.append({"alive": (alive[i] == true), "idx": i})
 		var game := {"itemshop_target_hero": null, "selected_hero": null}
 		var saved = c["saved"]
 		var selected = c["selected"]

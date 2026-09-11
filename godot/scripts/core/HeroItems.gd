@@ -92,7 +92,7 @@ static func get_item_class(items: Dictionary, item_id: String) -> String:
 	var d: Dictionary = data
 	if _ITEM_CLASS_OVERRIDES.has(item_id):
 		return str(_ITEM_CLASS_OVERRIDES[item_id])
-	if bool(d.get("magic_only")):
+	if d.get("magic_only", false) == true:
 		return CLASS_MAGIC
 	return str(_MAP_CATEGORY_TO_CLASS.get(str(d.get("category")),
 		CLASS_PHYSICAL))
@@ -257,12 +257,25 @@ const _FRAME_KEYS := [
 	"burn_duration", "root_duration",
 ]
 
+# Nilai mekanik yang di Pygame adalah FLOAT murni (bukan int): str(float)
+# Python mempertahankan ".0" untuk bilangan bulat (6.0 -> "6.0"), sedangkan
+# int -> "6". JSON.parse_string Godot mengubah SEMUA angka jadi float, jadi
+# pemisahan int vs float ini dipulihkan lewat daftar ini (dikunci paritas
+# oleh HeroItemsParityTest + fixture mechanics).
+const _FLOAT_MECH_FIELDS := {
+	"leviathan_heart": {"stats": ["hp_regen"]},
+	"cleave_axe": {"stats": ["hp_regen"]},
+	"octarine_core": {"stats": ["hp_regen"]},
+}
 
-## str(float) Python: bilangan bulat float TETAP diberi ".0" (3.0 -> "3.0").
-## Godot str() membuang ".0", jadi ditambahkan kembali bila tak ada tanda
-## desimal/eksponen.
-static func _py_str(v: Variant) -> String:
-	if v is float:
+
+## str(float) Python: bilangan bulat float TETAP diberi ".0" (3.0 -> "3.0"),
+## bilangan bulat int TIDAK (3 -> "3"). JSON.parse_string Godot mengubah
+## SEMUA angka jadi float, jadi `was_float` (asal nilai: float murni vs int)
+## disuntik pemanggil — dari _FLOAT_MECH_FIELDS (mechanics) / flag fixture
+## `float` (fmt_battery).
+static func _py_str(v: Variant, was_float: bool = false) -> String:
+	if was_float and v is float:
 		var s := str(v)
 		if not (s.contains(".") or s.contains("e") or s.contains("E")):
 			return s + ".0"
@@ -298,8 +311,9 @@ static func _py_g(x: float) -> String:
 
 ## Format nilai mekanik item supaya mudah dibaca manusia.
 ##   crit_mult -> "x2" / "x1.5"; persen -> "25%"; frame -> "5 dtk"/"5s";
-##   sisanya -> str(value) gaya Python.
-static func fmt_mech_value(key: String, value: Variant, en: bool = false) -> String:
+##   sisanya -> str(value) gaya Python (was_float menandai float murni).
+static func fmt_mech_value(key: String, value: Variant, en: bool = false,
+		was_float: bool = false) -> String:
 	if key == "crit_mult":
 		return "x" + _py_g(float(value))
 	if _PCT_KEYS.has(key):
@@ -307,13 +321,17 @@ static func fmt_mech_value(key: String, value: Variant, en: bool = false) -> Str
 	if _FRAME_KEYS.has(key):
 		var secs: float = float(value) / 60.0
 		return _py_g(secs) + ("s" if en else " dtk")
-	return _py_str(value)
+	return _py_str(value, was_float)
 
 
 ## Susun daftar [kind, text] mekanik item dari katalog.
 ## kind = "header" (nama grup: [AKTIF] Blood Frenzy) atau "bullet"
-## ("• label: nilai"). `en` memilih label bahasa English.
-static func build_item_mechanics(data: Dictionary, en: bool = false) -> Array:
+## ("• label: nilai"). `en` memilih label bahasa English. `item_id`
+## dipakai untuk memulihkan field float murni (_FLOAT_MECH_FIELDS) yang
+## hilang akibat JSON.parse_string (semua angka jadi float).
+static func build_item_mechanics(data: Dictionary, en: bool = false,
+		item_id: String = "") -> Array:
+	var float_fields: Dictionary = _FLOAT_MECH_FIELDS.get(item_id, {})
 	var items: Array = []
 	for gkey in _MECH_GROUPS:
 		var g: Variant = data.get(gkey)
@@ -331,6 +349,9 @@ static func build_item_mechanics(data: Dictionary, en: bool = false) -> Array:
 		for key in gd:
 			if key == "name":
 				continue
+			var was_float := false
+			if float_fields.has(gkey):
+				was_float = (float_fields[gkey] as Array).has(key)
 			var label = _FIELD_LABELS.get(key, key)
 			var lab: String
 			if label is Array:
@@ -338,7 +359,7 @@ static func build_item_mechanics(data: Dictionary, en: bool = false) -> Array:
 			else:
 				lab = str(label)
 			items.append(["bullet",
-				"• " + lab + ": " + fmt_mech_value(str(key), gd[key], en)])
+				"• " + lab + ": " + fmt_mech_value(str(key), gd[key], en, was_float)])
 	return items
 
 
@@ -388,8 +409,8 @@ static func resolve_shop_target(game, heroes: Array):
 		var alive = h.get("alive")
 		if alive == null:
 			# Adaptasi Godot: Hero.gd memakai is_dead (pygame: alive).
-			alive = not bool(h.get("is_dead"))
-		if bool(alive):
+			alive = not (h.get("is_dead", false) == true)
+		if alive == true:
 			return h
 	return heroes[0]
 
