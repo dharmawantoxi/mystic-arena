@@ -20,9 +20,13 @@
 #   33 ikon × 256² RGBA = ±8,6 MB VRAM hanya untuk ikon toko, padahal yang
 #   benar-benar tampil 20-26 px (chip slot SkillBar 30 px, baris ShopPanel
 #   30 px). pygame juga men-scale di CPU lalu men-cache hasilnya
-#   (_ICON_CACHE hero_items.py:1659), jadi ini sekaligus paritas. Strip unit
-#   menyelesaikan masalah sejenis lewat cache FIFO (BakedUnitDB); ikon item
-#   cukup kecil untuk di-cache permanen per (item, ukuran).
+#   (_ICON_CACHE hero_items.py:1659), jadi ini sekaligus paritas, dan LANCZOS
+#   turun 10:1 jauh lebih bersih daripada minifikasi bilinear engine tanpa
+#   mipmap (import 2D bawaan tidak membuat mipmap). Strip unit menyelesaikan
+#   masalah sejenis lewat cache FIFO (BakedUnitDB); ikon item cukup kecil
+#   untuk di-cache permanen per (item, ukuran). Kalau sumbernya ternyata
+#   VRAM-compressed mobile (ETC2/ASTC — tidak bisa diurai CPU di 4.3),
+#   scaled_art() mundur teratur: tekstur sumber dipakai dan GPU yang scale.
 #
 # SATU deviasi sadar dari pygame: badge fallback-nya tanpa label 5 huruf nama
 # item (`f.render(data["name"][:5], ...)` hero_items.py:1692). Konsumen port
@@ -67,8 +71,10 @@ static var _icons: Dictionary = {}
 static var _badges: Dictionary = {}
 ## Peringatan "aset belum disalin" cukup sekali per sesi (pola AudioManager).
 static var _warned := false
-## Berapa PNG asli yang berhasil di-scale (laporan/tes, bukan jumlah di disk).
-static var _loaded := 0
+## Himpunan item yang PNG aslinya berhasil dipakai (laporan/tes, bukan jumlah
+## berkas di disk). Dictionary sebagai set: satu item bisa diminta di dua
+## ukuran (chip 26 px + baris toko 20 px) tanpa ikut terhitung dua kali.
+static var _loaded_ids: Dictionary = {}
 
 
 # ══════════════════════════════════════════════════════════
@@ -91,9 +97,9 @@ static func has_art(item_id: String) -> bool:
 	return not path.is_empty() and ResourceLoader.exists(path)
 
 
-## Jumlah PNG asli yang pernah di-scale (bukan jumlah berkas di disk).
+## Berapa item yang ikon PNG aslinya terpakai (bukan jumlah berkas di disk).
 static func loaded_count() -> int:
-	return _loaded
+	return _loaded_ids.size()
 
 
 # ══════════════════════════════════════════════════════════
@@ -119,7 +125,12 @@ static func texture(item_id: String, size: int = DEFAULT_SIZE) -> Texture2D:
 
 ## PNG asli yang diperkecil ke `size` px — paritas smoothscale pygame
 ## (hero_items.py:1678). Null kalau item tak dikenal atau aset belum disalin.
-static func scaled_art(item_id: String, size: int) -> ImageTexture:
+##
+## Tipe kembaliannya Texture2D, bukan ImageTexture: satu-satunya kasus ikon
+## asli TIDAK bisa di-scale di CPU adalah tekstur VRAM-compressed ETC1/ETC2/
+## ASTC (Image.decompress() 4.3 hanya mendukung DXT/RGTC/BPTC) — di situ
+## tekstur sumber dikembalikan apa adanya dan engine yang men-scale-nya.
+static func scaled_art(item_id: String, size: int) -> Texture2D:
 	var path := path_for(item_id)
 	if path.is_empty():
 		return null
@@ -135,9 +146,10 @@ static func scaled_art(item_id: String, size: int) -> ImageTexture:
 	var src := load(path) as Texture2D
 	if src == null:
 		return null
+	_loaded_ids[item_id] = true
 	var base := src.get_image()
 	if base == null:
-		return null
+		return src
 	# Salinan milik sendiri: get_image() tekstur hasil import bisa mengembalikan
 	# Image yang masih dipegang cache ResourceLoader, sedangkan resize()
 	# mengubah in-place — tanpa salinan, permintaan ukuran lain untuk item yang
@@ -146,17 +158,18 @@ static func scaled_art(item_id: String, size: int) -> ImageTexture:
 	var img := Image.create(base.get_width(), base.get_height(), false,
 		base.get_format())
 	img.copy_from(base)
-	# Export Android preset Godot menyalakan kompresi VRAM (ETC2/ASTC) secara
-	# default, jadi di AAB tekstur ini terkompres dan resize() menolaknya —
-	# urai dulu. Di project (headless/editor) formatnya RGBA8 mentah, jadi
-	# kedua cabang ini no-op.
-	if img.is_compressed():
-		img.decompress()
+	if img.is_compressed() and (img.decompress() != OK or img.is_compressed()):
+		# Kompresi VRAM mobile (ETC1/ETC2/ASTC) tidak bisa diurai di CPU:
+		# resize() menolak data terkompres, jadi serahkan ke GPU. Import 2D
+		# bawaan project ini Lossless, jadi cabang ini tidak kena di build normal.
+		return src
 	if img.has_mipmaps():
 		img.clear_mipmaps()
 	if img.get_width() != size or img.get_height() != size:
-		img.resize(Vector2i(size, size), Image.INTERPOLATE_LANCZOS)
-	_loaded += 1
+		# Signature Godot 4.3: resize(width, height, interpolation). Bentuk
+		# resize(dst_size: Vector2i, ...) baru ada di 4.4+ dan di 4.3 langsung
+		# Parse Error saat import ("argument 1 should be int but is Vector2i").
+		img.resize(size, size, Image.INTERPOLATE_LANCZOS)
 	return ImageTexture.create_from_image(img)
 
 
@@ -199,7 +212,7 @@ static func fallback(item_id: String, size: int = DEFAULT_SIZE) -> ImageTexture:
 static func clear_cache() -> void:
 	_icons.clear()
 	_badges.clear()
-	_loaded = 0
+	_loaded_ids.clear()
 	_warned = false
 
 
