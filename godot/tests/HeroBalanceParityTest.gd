@@ -296,7 +296,15 @@ func _test_fallback() -> void:
 			and int(v.get("damage", -1)) == int(e["damage"])
 			and int(v.get("skill_damage", -1)) == int(e["skill_damage"]),
 			"fb %s final" % ht)
-		_deep_near(v.get("__bal", null), fbal[ht], "fb.bal.%s" % ht, 1e-9)
+		# Oracle fallback minimal (hp/dmg/skill saja, tanpa dbg).
+		var fbv: Dictionary = v.get("__bal", {})
+		var fbe2: Dictionary = fbal[ht]
+		_near(float(fbv.get("hp", -1.0)), float(fbe2["hp"]),
+			"fb.bal.%s hp" % ht, 1e-9)
+		_near(float(fbv.get("dmg", -1.0)), float(fbe2["dmg"]),
+			"fb.bal.%s dmg" % ht, 1e-9)
+		_near(float(fbv.get("skill", -1.0)), float(fbe2["skill"]),
+			"fb.bal.%s skill" % ht, 1e-9)
 	var fl: Dictionary = fb["last"]
 	var last: Dictionary = HeroBalance.last
 	_deep_near(last.get("parity", null), fl["parity"], "fb.parity", 1e-9)
