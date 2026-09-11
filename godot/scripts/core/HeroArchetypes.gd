@@ -272,10 +272,24 @@ const DEFAULT_DMG_TYPE: String = "PHYSICAL"
 static func get_archetype(hero_type: String, stats: Dictionary = {}) -> Dictionary:
 	if not stats.is_empty():
 		var forced_v = stats.get("dmg_type")
-		# Truthiness ala Python `if forced:` untuk nilai skalar (string
-		# kosong / 0 / false / null semuanya tidak memicu override).
-		if forced_v != null and forced_v != false and forced_v != 0 \
-				and str(forced_v) != "":
+		# Truthiness ala Python `if forced:` — Nil/false/0/"" tidak memicu
+		# override. HARUS per-tipe: GDScript melempar SCRIPT ERROR untuk
+		# perbandingan lintas tipe (String != bool) pada runtime.
+		var _has_override := false
+		match typeof(forced_v):
+			TYPE_NIL:
+				_has_override = false
+			TYPE_BOOL:
+				_has_override = forced_v
+			TYPE_INT, TYPE_FLOAT:
+				_has_override = forced_v != 0
+			TYPE_STRING:
+				_has_override = forced_v != ""
+			TYPE_ARRAY, TYPE_DICTIONARY:
+				_has_override = not forced_v.is_empty()
+			_:
+				_has_override = true
+		if _has_override:
 			var forced := str(forced_v).to_upper()
 			var entry: Dictionary = ARCHETYPES.get(hero_type, {}).duplicate()
 			entry["dmg_type"] = forced if forced in ["PHYSICAL", "MAGIC"] \
