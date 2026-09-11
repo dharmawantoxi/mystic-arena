@@ -126,6 +126,7 @@ LITERAL_PENTING = {
     "chip_top": (32, 38, 64),
     "chip_bottom": (18, 22, 40),
     "chip_solid": (22, 26, 46),
+    "pill_owned_text": (190, 250, 200),
     "slider_track": (34, 38, 58),
     "slider_border": (120, 110, 86),
     "knob_shadow": (12, 14, 24),
@@ -500,6 +501,7 @@ def oracle_pill(pygame, ui_theme):
     r = ui_theme.pill(s, btns, "mati", "TEST", (120, 90, 170, 40), "gold",
                       font, enabled=False)
     out["disabled"] = {"rect": _rect(r), "btns": list(btns),
+                       "input": [120, 90, 170, 40],
                        "border_px": _px(s, r.centerx, r.y)}
     return out
 
@@ -603,18 +605,41 @@ def oracle_button(pygame, ui_theme):
         font = FakeFont()
         measured = font.size(ui_theme.letter(text) if gap else text)[0]
         btns = {}
-        r = ui_theme.button(s, btns, "b", text, 350, 170, ui_theme.GOLD, font,
-                            w=bw, h=50, icon="play" if has_icon else None,
-                            letter_gap=gap)
+        # Pusat label dibaca dari argumen `center=` yang DITERIMA draw_text,
+        # bukan dari tengah blok piksel: teks yang lebih lebar dari permukaan
+        # (700px) terpotong saat blit, jadi tengah pikselnya bukan tengah teks
+        # (dulu menghasilkan 416.5 = text_w/2 untuk teks 60 karakter).
+        captured = {}
+        asli = ui_theme.draw_text
+
+        def _spy(screen, font_, text_, color_, center=None, topleft=None,
+                 shadow=True, offset=(2, 2)):
+            captured["center"] = center
+            return asli(screen, font_, text_, color_, center=center,
+                        topleft=topleft, shadow=shadow, offset=offset)
+
+        ui_theme.draw_text = _spy
+        try:
+            r = ui_theme.button(s, btns, "b", text, 350, 170, ui_theme.GOLD,
+                                font, w=bw, h=50,
+                                icon="play" if has_icon else None,
+                                letter_gap=gap)
+        finally:
+            ui_theme.draw_text = asli
+        if captured.get("center") is None:
+            raise AssertionError("draw_text tidak menerima center= "
+                                 "(chars=%d)" % chars)
         xs = [x for y in range(s.get_height()) for x in range(s.get_width())
               if _px(s, x, y) == target]
         if not xs:
             raise AssertionError("Teks tombol tidak ditemukan di permukaan "
                                  "(chars=%d icon=%s)" % (chars, has_icon))
+        x0, x1 = min(xs), max(xs) + 1
         labels.append({"chars": chars, "text_w": measured, "w": bw,
                        "has_icon": has_icon, "letter_gap": gap,
-                       "rect": _rect(r), "block": [min(xs), max(xs) + 1],
-                       "center": min(xs) + measured / 2.0})
+                       "rect": _rect(r), "block": [x0, x1],
+                       "clipped": bool(x0 <= 0 or x1 >= s.get_width()),
+                       "center": float(captured["center"][0])})
     return {"cases": cases, "labels": labels, "char_w": 7}
 
 

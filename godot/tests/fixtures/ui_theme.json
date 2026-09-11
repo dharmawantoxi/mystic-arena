@@ -458,8 +458,9 @@
           284,
           417
         ],
-        "center": 350.5,
+        "center": 350.0,
         "chars": 10,
+        "clipped": false,
         "has_icon": false,
         "letter_gap": true,
         "rect": [
@@ -476,8 +477,9 @@
           298,
           431
         ],
-        "center": 364.5,
+        "center": 364.0,
         "chars": 10,
+        "clipped": false,
         "has_icon": true,
         "letter_gap": true,
         "rect": [
@@ -494,8 +496,9 @@
           167,
           580
         ],
-        "center": 373.5,
+        "center": 373.0,
         "chars": 30,
+        "clipped": false,
         "has_icon": true,
         "letter_gap": true,
         "rect": [
@@ -512,8 +515,9 @@
           0,
           700
         ],
-        "center": 416.5,
+        "center": 373.0,
         "chars": 60,
+        "clipped": true,
         "has_icon": true,
         "letter_gap": true,
         "rect": [
@@ -530,8 +534,9 @@
           0,
           700
         ],
-        "center": 906.5,
+        "center": 373.0,
         "chars": 130,
+        "clipped": true,
         "has_icon": true,
         "letter_gap": true,
         "rect": [
@@ -548,8 +553,9 @@
           74,
           627
         ],
-        "center": 350.5,
+        "center": 350.0,
         "chars": 40,
+        "clipped": false,
         "has_icon": false,
         "letter_gap": true,
         "rect": [
@@ -568,6 +574,7 @@
         ],
         "center": 364.0,
         "chars": 30,
+        "clipped": false,
         "has_icon": true,
         "letter_gap": false,
         "rect": [
@@ -586,6 +593,7 @@
         ],
         "center": 364.0,
         "chars": 10,
+        "clipped": false,
         "has_icon": true,
         "letter_gap": false,
         "rect": [
@@ -604,6 +612,7 @@
         ],
         "center": 370.5,
         "chars": 4,
+        "clipped": false,
         "has_icon": true,
         "letter_gap": true,
         "rect": [
@@ -620,8 +629,9 @@
           307,
           440
         ],
-        "center": 373.5,
+        "center": 373.0,
         "chars": 10,
+        "clipped": false,
         "has_icon": true,
         "letter_gap": true,
         "rect": [
@@ -638,8 +648,9 @@
           237,
           510
         ],
-        "center": 373.5,
+        "center": 373.0,
         "chars": 20,
+        "clipped": false,
         "has_icon": true,
         "letter_gap": true,
         "rect": [
@@ -656,8 +667,9 @@
           326,
           375
         ],
-        "center": 350.5,
+        "center": 350.0,
         "chars": 4,
+        "clipped": false,
         "has_icon": false,
         "letter_gap": true,
         "rect": [
@@ -3241,6 +3253,12 @@
         85
       ],
       "btns": [],
+      "input": [
+        120,
+        90,
+        170,
+        40
+      ],
       "rect": [
         120,
         90,

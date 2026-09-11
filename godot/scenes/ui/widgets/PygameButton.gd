@@ -75,6 +75,9 @@ static func menu_button(p_label: String, p_accent: Color,
 	var b := PygameButton.new(p_label, p_accent, Mode.MENU)
 	b.icon_name = p_icon
 	b.font_size = p_font_size
+	# ui_theme.button(..., letter_gap=True) — default pygame: label menu
+	# digambar lewat letter() (spasi antar huruf).
+	b.use_letter_spacing = true
 	b.custom_minimum_size = Vector2(w, h)
 	return b
 
@@ -88,6 +91,8 @@ static func pill_button(p_label: String, p_kind: String,
 	b.icon_name = p_icon
 	b.font_size = p_font_size
 	b.icon_scale = 0.8
+	# ui_theme.pill(..., letter_gap=True) — sama seperti button().
+	b.use_letter_spacing = true
 	if w > 0.0:
 		b.custom_minimum_size = Vector2(w, h)
 	else:

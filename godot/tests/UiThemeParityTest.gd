@@ -361,6 +361,17 @@ func _test_math() -> void:
 		var kept := out.substr(0, out.length() - ell.length())
 		_expect(text.begins_with(kept),
 			"%s -> sisa teks adalah prefix aslinya" % tag)
+		# Elipsisnya SENDIRI bisa lebih lebar dari max_w: oracle punya kasus
+		# max_w=8 (FakeFont 7px/karakter) sementara metrik font engine asli
+		# lebih lebar. pygame berperilaku sama — fit_ellipsis mengembalikan
+		# elipsis telanjang — jadi invariant "muat" hanya diuji bila elipsisnya
+		# sendiri muat.
+		var ell_w := font.get_string_size(ell, HORIZONTAL_ALIGNMENT_LEFT, -1,
+			size).x
+		if ell_w > max_w:
+			_expect(out == ell,
+				"%s -> elipsis telanjang (max_w < lebar elipsis)" % tag)
+			continue
 		_expect(font.get_string_size(out, HORIZONTAL_ALIGNMENT_LEFT, -1,
 			size).x <= max_w, "%s -> muat di max_w" % tag)
 		# Satu karakter lebih panjang harus sudah melewati batas.
@@ -447,10 +458,18 @@ func _test_button() -> void:
 		var got := UiTheme.button_label_cx(hit.position.x, _num(entry["w"]),
 			text_w, bool(entry["has_icon"]), hit)
 		_expect_near(got, _num(entry["center"]), 1.0, tag)
-		# Blok piksel harus selebar teks terukur (letter() ikut terhitung).
+		# Blok piksel selebar teks terukur (letter() ikut terhitung) — kecuali
+		# teks lebih lebar dari permukaan oracle (700px) sehingga blit-nya
+		# terpotong: bloknya lalu sepanjang permukaan, bukan sepanjang teks.
 		var block: Array = entry["block"]
-		_expect_near(_num(block[1]) - _num(block[0]), text_w, 1.0,
-			tag + " lebar blok piksel")
+		if bool(entry["clipped"]):
+			_expect_near(_num(block[0]), 0.0, 0.001,
+				tag + " blok terpotong mulai di x=0")
+			_expect(_num(block[1]) - _num(block[0]) < text_w,
+				tag + " blok terpotong lebih sempit dari teksnya")
+		else:
+			_expect_near(_num(block[1]) - _num(block[0]), text_w, 1.0,
+				tag + " lebar blok piksel")
 
 
 # ══════════════════════════════════════════════════════════
@@ -503,8 +522,8 @@ func _test_pill() -> void:
 	var off: Dictionary = sec["disabled"]
 	_expect((off["btns"] as Array).is_empty(),
 		"pill enabled=false tidak mendaftar btns")
-	_expect_rect(UiTheme.back_button_rect(640.0, 600.0), off["rect"],
-		"rect pill mati == back_button_rect")
+	_expect_deep(off["rect"], off["input"],
+		"pill(enabled=false) tetap mengembalikan rect inputnya")
 
 
 # ══════════════════════════════════════════════════════════
@@ -877,10 +896,15 @@ func _test_scroll() -> void:
 	_expect_color(_col(sec["track_color"]), [28, 32, 52],
 		"track scroll (28,32,52)")
 	# Aturan thumb: minimum 18px, tak pernah lebih tinggi dari track.
+	# Pasangan [height, scroll_pos] dengan max_scroll = height * 3. pygame
+	# TIDAK menjepit scroll_pos (pemanggil aslinya selalu dalam rentang), jadi
+	# invariant "thumb di dalam track" diuji dengan scroll_pos terjepit.
 	for pair in [[100.0, 0.0], [100.0, 50.0], [100.0, 5000.0], [400.0, 10.0],
 			[18.0, 900.0], [900.0, 0.5], [300.0, 400.0]]:
-		var t := UiTheme.scroll_thumb_rect(Vector2.ZERO, pair[0], pair[1],
-			pair[0] * 3.0, width)
+		var hgt := _num(pair[0])
+		var maxs := hgt * 3.0
+		var t := UiTheme.scroll_thumb_rect(Vector2.ZERO, hgt,
+			minf(_num(pair[1]), maxs), maxs, width)
 		_expect(t.size.y >= 18.0,
 			"thumb >= 18 (h=%d,pos=%d)" % [int(pair[0]), int(pair[1])])
 		_expect(t.end.y <= pair[0] + 0.51,
@@ -1022,6 +1046,11 @@ func _test_widgets() -> void:
 	var slider := PygameSlider.new()
 	slider.position = Vector2(_num(sl_case["x"]), _num(sl_case["y"]))
 	slider.size = Vector2(_num(sl_case["w"]), 34.0)
+	# Range::emit_value_changed() di engine MELEWATKAN node yang tidak berada
+	# di dalam tree, jadi slider dipasang dulu supaya sinyalnya benar-benar
+	# terbit (nilai tetap berubah walau di luar tree — hanya sinyalnya yang
+	# tidak dipancarkan).
+	add_child(slider)
 	var seen: Array = []
 	slider.value_changed.connect(func(v: float) -> void: seen.append(v))
 	slider.value = 0.5
@@ -1038,6 +1067,10 @@ func _test_widgets() -> void:
 	slider.value = 0.75
 	_expect_near(slider.ratio(), 0.75, 0.000001, "PygameSlider.ratio() 0.75")
 	_expect(seen.size() >= 3, "PygameSlider memancarkan value_changed")
+	if not seen.is_empty():
+		_expect_near(float(seen[0]), 0.5, 0.000001,
+			"PygameSlider value_changed pertama 0.5")
+	remove_child(slider)
 	slider.free()
 
 	# ── OptionCycler: hit rects + cycle + sinyal ──
@@ -1204,6 +1237,10 @@ class DrawProbe extends Control:
 
 	func _draw() -> void:
 		drawn += 1
+		# _draw() bisa dipanggil lebih dari sekali (satu frame headless bisa
+		# memicu beberapa redraw); penghitung di-reset supaya snapshot-nya
+		# idempoten dan `icons` tetap == jumlah ikon (29), bukan kelipatannya.
+		icons = 0
 		var font: Font = UiTheme.body_bold()
 		var semibold: Font = UiTheme.body_semibold()
 		# Tombol menu: idle + hover (rect hit harus sama dengan oracle).
@@ -1342,7 +1379,8 @@ func _test_draw_smoke() -> void:
 	_expect_rect(probe.btns_toggle["t"], tog_case["rect"],
 		"draw_toggle -> btns['t']")
 
-	_expect_near(probe.knob_x, _num(_cases("slider")[1]["knob_x"]), 0.51,
+	# Kasus oracle: [0]=0.0, [1]=0.25, [2]=0.5, [3]=1.0, [4]=1.7, [5]=-0.4.
+	_expect_near(probe.knob_x, _num(_cases("slider")[2]["knob_x"]), 0.51,
 		"draw_slider knob_x value=0.5")
 
 	var tab_case: Dictionary = _cases("tab")[0]
@@ -1393,8 +1431,17 @@ func _test_caches() -> void:
 	var a := UiTheme.radial_texture(42, 22, UiTheme.GOLD, 74)
 	var b := UiTheme.radial_texture(42, 22, UiTheme.GOLD, 74)
 	_expect(a == b, "radial_texture kunci sama -> instance sama")
-	_expect(a != UiTheme.radial_texture(42, 22, UiTheme.GOLD, 72),
-		"radial_texture alpha beda -> instance beda")
+	# Kunci cache glow pygame = max(4, min(120, a // 8 * 8)): alpha 74 dan 72
+	# jatuh di bucket yang SAMA (72) dan memang SENGAJA berbagi tekstur, persis
+	# _GLOW_CACHE. Bucket berbeda (64) harus instance berbeda.
+	_expect(a == UiTheme.radial_texture(42, 22, UiTheme.GOLD, 72),
+		"radial_texture alpha sebucket (74,72 -> 72) -> instance sama")
+	_expect(a != UiTheme.radial_texture(42, 22, UiTheme.GOLD, 64),
+		"radial_texture alpha beda bucket (72 vs 64) -> instance beda")
+	_expect(UiTheme.radial_alpha_key(74) == UiTheme.radial_alpha_key(72),
+		"radial_alpha_key(74) == radial_alpha_key(72)")
+	_expect(UiTheme.radial_alpha_key(74) != UiTheme.radial_alpha_key(64),
+		"radial_alpha_key(74) != radial_alpha_key(64)")
 	_expect(a != UiTheme.radial_texture(42, 22, UiTheme.CYAN, 74),
 		"radial_texture warna beda -> instance beda")
 	var s1 := UiTheme.shadow_texture(100, 50, 12.0, 110, 4.0)

@@ -388,7 +388,7 @@ static func pill_colors(kind: String) -> Array:
 			return [Color("#303242"), Color("#1e202c"), SLATE, TEXT_DIM]
 		"owned":
 			return [Color("#226030"), Color("#14381e"), GREEN,
-				Color("#befaca")]
+				Color("#befac8")]
 		"violet":
 			return [Color("#4a3076"), Color("#2c1c4e"), Color("#c496ff"),
 				Color("#e2cdff")]

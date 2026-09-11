@@ -11,21 +11,65 @@
 extends Control
 class_name PygameChip
 
-var label_text: String = ""
+## Semua properti punya setter: mengubah isi chip lewat assignment langsung
+## (`chip.label_text = "GOLD"`) menghitung ulang `custom_minimum_size` dan
+## menggambar ulang — lebar chip selalu mengikuti teks, seperti pygame.
+var label_text: String = "":
+	set(v):
+		label_text = v
+		_changed(true)
 ## Kosong = chip tanpa nilai (pygame `value=None`).
-var value_text: String = ""
-var accent: Color = UiTheme.GOLD
-var icon_name: String = ""
+var value_text: String = "":
+	set(v):
+		value_text = v
+		_changed(true)
+var accent: Color = UiTheme.GOLD:
+	set(v):
+		accent = v
+		_changed(false)
+var icon_name: String = "":
+	set(v):
+		icon_name = v
+		_changed(true)
 ## Warna ikon/nilai opsional; kalau `use_*_color` false, ikut `accent`
 ## (pygame `icon_color or accent` / `value_color or accent`).
-var icon_color: Color = UiTheme.GOLD
-var use_icon_color: bool = false
-var value_color: Color = UiTheme.GOLD
-var use_value_color: bool = false
-var font_size: int = 18
-var font_weight: String = "body_semibold"
+var icon_color: Color = UiTheme.GOLD:
+	set(v):
+		icon_color = v
+		_changed(false)
+var use_icon_color: bool = false:
+	set(v):
+		use_icon_color = v
+		_changed(false)
+var value_color: Color = UiTheme.GOLD:
+	set(v):
+		value_color = v
+		_changed(false)
+var use_value_color: bool = false:
+	set(v):
+		use_value_color = v
+		_changed(false)
+var font_size: int = 18:
+	set(v):
+		font_size = v
+		_changed(true)
+var font_weight: String = "body_semibold":
+	set(v):
+		font_weight = v
+		_changed(true)
 ## pygame `align="right"`: `pos` adalah sudut KANAN-atas chip.
-var align_right: bool = false
+var align_right: bool = false:
+	set(v):
+		align_right = v
+		_changed(false)
+
+
+## `remeasure` = properti yang memengaruhi lebar/tinggi chip.
+func _changed(remeasure: bool) -> void:
+	if remeasure:
+		_refresh_min_size()
+	if is_inside_tree():
+		queue_redraw()
 
 
 func _init(p_label: String = "", p_value: String = "",
@@ -65,7 +109,10 @@ func _font() -> Font:
 
 
 func _refresh_min_size() -> void:
-	custom_minimum_size = UiTheme.chip_size(label_text, _font(), font_size,
+	var f := _font()
+	if f == null:
+		return   # font belum tersedia: ukuran dihitung ulang saat dipakai
+	custom_minimum_size = UiTheme.chip_size(label_text, f, font_size,
 		icon_name, value_text)
 
 
