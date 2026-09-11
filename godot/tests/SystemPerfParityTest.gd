@@ -171,9 +171,14 @@ func _test_culler() -> void:
 	_expect(FrustumCuller.is_visible(0, 0)
 			== FrustumCuller.is_visible(0, 0, float(c["default_radius"]), screen),
 		"radius default harus 30 seperti pygame")
-	# layar Godot = viewport, bukan konstanta beku: ukuran lain harus ikut
-	var small := FrustumCuller.is_visible(700, 400, 30.0, Vector2(640, 480))
-	_expect(not small, "culling harus menghormati ukuran layar yang dikirim")
+	# Layar Godot = viewport yang DIKIRIM, bukan konstanta beku. Angka di bawah
+	# dipilih dengan margin yang benar: titik (900,400) dengan radius 30 punya
+	# batas x = 640 + (80+30) = 750 di layar 640x480 -> ter-cull; di 1280x720
+	# batasnya 1390 -> terlihat. Jadi yang berubah hanya ukuran layarnya.
+	_expect(not FrustumCuller.is_visible(900, 400, 30.0, Vector2(640, 480)),
+		"x=900 harus ter-cull di layar 640 (batas 640 + margin 80 + radius 30)")
+	_expect(FrustumCuller.is_visible(900, 400, 30.0, Vector2(1280, 720)),
+		"titik yang sama harus TERLIHAT di layar 1280 — ukuran layar dihormati")
 
 
 # ══════════════════════════════════════════════════════════
