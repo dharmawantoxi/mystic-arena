@@ -403,7 +403,7 @@ static func pill_colors(kind: String) -> Array:
 static func draw_hp_bar(cv: CanvasItem, pos: Vector2, w: float, h: float,
 		ratio: float, color: Color = GREEN) -> void:
 	var r := pyrect(Rect2(pos, Vector2(w, h)))
-	var rad := floor(r.size.y / 2.0)
+	var rad := floorf(r.size.y / 2.0)
 	draw_rr(cv, r, Color("#10121e"), rad)
 	var fw := bar_fill_w(r.size.x, ratio)
 	if fw > 3:
@@ -417,7 +417,7 @@ static func draw_hp_bar(cv: CanvasItem, pos: Vector2, w: float, h: float,
 static func draw_progress_bar(cv: CanvasItem, pos: Vector2, w: float,
 		frac: float, color: Color = GOLD, h: float = 8.0) -> void:
 	var r := pyrect(Rect2(pos, Vector2(w, h)))
-	var rad := floor(r.size.y / 2.0)
+	var rad := floorf(r.size.y / 2.0)
 	draw_rr(cv, r, Color("#1e2236"), rad)
 	var fw := bar_fill_w(r.size.x, frac)
 	if fw > 3:
@@ -932,7 +932,7 @@ static func shadow_texture(w: float, h: float, radius: float = 12.0,
 		Color(0, 0, 0, float(alpha) / 255.0),
 		maxf(1.0, floor(float(radius) / 8.0)))
 	# pygame.transform.smoothscale -> resize halus (Lanczos).
-	img.resize(full.x, full.y, Image.INTERPOLATION_LANCZOS)
+	img.resize(full.x, full.y, Image.INTERPOLATE_LANCZOS)
 	var tex := ImageTexture.create_from_image(img)
 	_shadow_cache[key] = tex
 	return tex
@@ -991,7 +991,7 @@ static func button_label_cx(base_x: float, w: float, text_w: float,
 		return hit.get_center().x
 	var left_min := hit.position.x + 56.0
 	var right_max := hit.end.x - 10.0
-	var text_cx := base_x + floor(w / 2.0) + 14.0
+	var text_cx := base_x + floorf(w / 2.0) + 14.0
 	if text_cx - text_w * 0.5 < left_min:
 		text_cx = left_min + text_w * 0.5
 	if text_cx + text_w * 0.5 > right_max:
@@ -1422,8 +1422,8 @@ static func draw_toggle_visual(cv: CanvasItem, rect: Rect2, is_on: bool,
 	cv.draw_circle(Vector2(kx, ky), knob * 0.5, Color8(245, 248, 255))
 	cv.draw_arc(Vector2(kx, ky), knob * 0.5, 0, TAU, 24, edge, 1.0)
 	# Label di sisi berlawanan knob.
-	var lx := r.position.x + floor(r.size.x / 2.0) - 8.0 if is_on \
-		else r.position.x + floor(r.size.x / 2.0) + 8.0
+	var lx := r.position.x + floorf(r.size.x / 2.0) - 8.0 if is_on \
+		else r.position.x + floorf(r.size.x / 2.0) + 8.0
 	draw_text_centered(cv, font, "ON" if is_on else "OFF", font_size,
 		Color8(210, 255, 220) if is_on else TEXT_BODY, Vector2(lx, ky), false)
 
