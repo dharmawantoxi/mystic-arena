@@ -46,33 +46,7 @@ func _notification(what: int) -> void:
 
 
 func _draw() -> void:
-	var r := Rect2(Vector2.ZERO, size)
-	var hover := _hover and not disabled
-	var top: Color
-	var bot: Color
-	var edge: Color
-	if is_on:
-		top = Color8(92, 214, 118) if hover else Color8(70, 190, 96)
-		bot = Color8(46, 138, 70) if hover else Color8(34, 116, 58)
-		edge = Color8(160, 255, 180) if hover else Color8(120, 235, 145)
-	else:
-		top = Color8(92, 96, 118) if hover else Color8(74, 78, 100)
-		bot = Color8(56, 60, 80) if hover else Color8(44, 48, 68)
-		edge = Color8(150, 156, 180) if hover else Color8(120, 126, 150)
-	UiTheme.draw_vgrad(self, r, top, bot, r.size.y * 0.5)
-	UiTheme.draw_rr_outline(self, r, edge, r.size.y * 0.5, 2.0)
-	# Knob.
-	var knob := 18.0
-	var kx := r.end.x - knob - 6.0 if is_on else r.position.x + 6.0
-	var ky := r.get_center().y
-	draw_circle(Vector2(kx + 1, ky + 2), knob * 0.5, Color(0.05, 0.06, 0.09))
-	draw_circle(Vector2(kx, ky), knob * 0.5, Color(0.96, 0.97, 1.0))
-	draw_arc(Vector2(kx, ky), knob * 0.5, 0, TAU, 24, edge, 1.0)
-	# Label di sisi berlawanan knob.
-	var font := UiTheme.body_bold()
-	var lab := "ON" if is_on else "OFF"
-	var lx := r.position.x + r.size.x * 0.5 - 8.0 if is_on \
-		else r.position.x + r.size.x * 0.5 + 8.0
-	UiTheme.draw_text_centered(self, font, lab, 15,
-		Color(0.82, 1.0, 0.86) if is_on else UiTheme.TEXT_BODY,
-		Vector2(lx, ky), false)
+	# Satu sumber dengan jalur immediate-mode ui_theme.toggle: warna ON/OFF,
+	# knob 18px (bayangan + cincin), dan label di sisi berlawanan knob.
+	UiTheme.draw_toggle_visual(self, Rect2(Vector2.ZERO, size), is_on,
+		UiTheme.body_bold(), 15, _hover and not disabled)

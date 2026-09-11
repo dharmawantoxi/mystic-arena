@@ -46,6 +46,8 @@ on:
       - 'tools/test_system_perf_parity.py'
       - 'tools/test_render_parity.py'
       - 'tools/test_godot_localization_parity.py'
+      - 'ui_theme.py'
+      - 'tools/test_godot_ui_theme_parity.py'
       - 'main_desktop_legacy.py'
       - 'main.py'
       - '.github/workflows/godot-check.yml'
@@ -74,6 +76,8 @@ on:
       - 'tools/test_system_perf_parity.py'
       - 'tools/test_render_parity.py'
       - 'tools/test_godot_localization_parity.py'
+      - 'ui_theme.py'
+      - 'tools/test_godot_ui_theme_parity.py'
       - 'main_desktop_legacy.py'
       - 'main.py'
       - '.github/workflows/godot-check.yml'
@@ -960,6 +964,36 @@ jobs:
             cat /tmp/l10n.gate
             echo "::error::L10N-FAIL-TAIL: $(tail -40 /tmp/l10n.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::L10N-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/l10n.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4y. UiThemeParityTest (FASE 31): design system ui_theme.py ──
+      # Oracle-nya dua lapis seperti lokalisasi: (1) tools/
+      # test_godot_ui_theme_parity.py membandingkan 32 konstanta palet, 29 nama
+      # ikon, dan 31 def ui_theme.py -> 617 simbol Godot (closed-world: def
+      # pygame baru yang belum diport = gagal), plus 29 warna literal komponen;
+      # (2) ia MENJALANKAN fungsi pygame ASLI (SDL dummy + font palsu 7px/karakter)
+      # untuk merekam fixture: warna per baris _vgrad/gradient_text, alpha per
+      # blok _radial, kunci _GRAD_CACHE/_GLOW_CACHE tiap komponen, rect hit-test,
+      # pusat label hasil clamp (dibaca dari piksel TEXT_WHITE), rentang garis
+      # section_header, thumb scroll. Scene ini memutar ulang fixture itu di
+      # engine betulan terhadap fungsi murni UiTheme.gd + 9 widget Control.
+      - name: "UiThemeParityTest (ui_theme.py ↔ UiTheme.gd + widget)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          python -m pip install --quiet pygame-ce
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_ui_theme_parity.py
+          godot --headless --path godot res://tests/UiThemeParityTest.tscn --quit-after 200 2>&1 | tee /tmp/uitheme.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/uitheme.log --label "UiThemeParityTest" \
+              --require "[UiThemeParityTest] PASS" > /tmp/uitheme.gate 2>&1; then
+            cat /tmp/uitheme.gate
+          else
+            cat /tmp/uitheme.gate
+            echo "::error::UITHEME-FAIL-TAIL: $(tail -40 /tmp/uitheme.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::UITHEME-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/uitheme.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 

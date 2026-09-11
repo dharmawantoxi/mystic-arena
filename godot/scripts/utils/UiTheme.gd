@@ -59,6 +59,11 @@ const OPEN_EDGE := Color("#6098d6")
 
 const SHADOW_COLOR := Color(0, 0, 0, 110.0 / 255.0)
 const TEXT_SHADOW := Color("#05060c")
+const OUTLINE_DARK := Color("#080912")   # (8, 9, 18)
+#   Warna outline gradient_text/outline_text. ui_theme.py menulisnya
+#   inline di tiap pemanggil, jadi ini bukan konstanta BARU — hanya
+#   diberi nama supaya tidak ditulis ulang di GradientText/ScreenTitle
+#   (lihat tools/visual_parity_audit.py bagian HARDCODE).
 
 # Ukuran layar acuan (semua layout menu pygame 1280x720).
 const SCREEN_W := 1280.0
@@ -150,6 +155,14 @@ static func letter(text: String, gap: String = " ") -> String:
 	return HudLayout.letter(text, gap)
 
 
+## Port `_has_glyph(font, ch)`: pygame merender karakter lalu membandingkannya
+## dengan karakter yang pasti tidak ada; Godot bertanya langsung ke font.
+static func has_glyph(font: Font, ch: String) -> bool:
+	if font == null or ch.is_empty():
+		return false
+	return font.has_char(ch.unicode_at(0))
+
+
 ## Truncate dengan elipsis memakai metrik font Godot.
 static func fit_ellipsis(font: Font, font_size: int, text: String,
 		max_w: float) -> String:
@@ -157,7 +170,9 @@ static func fit_ellipsis(font: Font, font_size: int, text: String,
 	if font.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1,
 			font_size).x <= max_w:
 		return s
-	var ell := "…"
+	# Paritas ui_theme.fit_ellipsis: "…" hanya kalau font punya glifnya,
+	# kalau tidak jatuh ke "..." (font tanpa U+2026 menggambar kotak).
+	var ell := "…" if has_glyph(font, "…") else "..."
 	while s.length() > 1:
 		var cand := s.substr(0, s.length() - 1)
 		if font.get_string_size(cand + ell, HORIZONTAL_ALIGNMENT_LEFT, -1,
@@ -202,7 +217,7 @@ static func draw_text_centered(cv: CanvasItem, font: Font, text: String,
 ## Godot tidak bisa masking gradasi ke glif tanpa render target).
 static func draw_outline_text(cv: CanvasItem, font: Font, text: String,
 		size: int, center: Vector2, body_color: Color = GOLD_BRIGHT,
-		outline_color: Color = Color("#080912"),
+		outline_color: Color = OUTLINE_DARK,
 		outline_size: int = 2) -> void:
 	var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1,
 		size).x + outline_size * 2.0 + 4.0
@@ -227,8 +242,8 @@ static func draw_vgrad(cv: CanvasItem, rect: Rect2, top: Color,
 		return
 	var r := minf(radius, minf(rect.size.y * 0.5, rect.size.x * 0.5))
 	for y in range(h):
-		var t := float(y) / float(maxi(1, h - 1))
-		var col := top.lerp(bottom, t)
+		# Warna baris = port PERSIS loop `_vgrad` (kuantisasi 8-bit int()).
+		var col := vgrad_row_color(top, bottom, y, h)
 		var yy := rect.position.y + float(y) + 0.5
 		var x0 := rect.position.x
 		var x1 := rect.position.x + rect.size.x
@@ -242,41 +257,41 @@ static func draw_vgrad(cv: CanvasItem, rect: Rect2, top: Color,
 			cv.draw_line(Vector2(x0, yy), Vector2(x1, yy), col, 1.0)
 
 
-## Glow radial elips di tengah rect (port _radial — pendekatan lingkaran
-## konsentris; dipanggil dari _draw() saja).
+## Glow radial elips (port `_radial` 1:1 — tekstur di-cache persis seperti
+## permukaan cache pygame, lalu satu blit). `rect` = rect tujuan blit
+## (pemanggil pygame sudah membesarkannya, mis. `_radial(w+44, h+36)` di
+## blit `(x-22, y-18)`).
+##
+## `_steps` dipertahankan hanya supaya pemanggil lama tidak berubah;
+## glow sekarang eksak (bukan lagi pendekatan lingkaran konsentris).
 static func draw_glow(cv: CanvasItem, rect: Rect2, color: Color,
-		alpha: float, steps: int = 14) -> void:
-	var c := rect.get_center()
-	var max_r := minf(rect.size.x, rect.size.y) * 0.5
-	if max_r <= 0.0:
+		alpha: float, _steps: int = 14) -> void:
+	if rect.size.x < 1.0 or rect.size.y < 1.0:
 		return
-	var sx := rect.size.x / maxf(1.0, rect.size.y)
-	for i in range(steps, 0, -1):
-		var f := float(i) / float(steps)
-		var a := alpha * (1.0 - f) * (1.0 - f)
-		if a <= 0.004:
-			continue
-		var col := Color(color.r, color.g, color.b, a)
-		# Elips via poligon (Godot tidak punya draw_ellipse).
-		var pts := PackedVector2Array()
-		var n := 28
-		for k in range(n):
-			var ang := TAU * float(k) / float(n)
-			pts.append(c + Vector2(cos(ang) * max_r * f * sx,
-				sin(ang) * max_r * f))
-		cv.draw_colored_polygon(pts, col)
+	var tex := radial_texture(rect.size.x, rect.size.y, color,
+		roundi(alpha * 255.0))
+	if tex == null:
+		return
+	cv.draw_texture_rect(tex, Rect2(rect.position,
+		Vector2(tex.get_width(), tex.get_height())), false)
 
 
-## Bayangan lembut: persegi membulat berlapis (port _shadow).
+## Bayangan lembut (port `_shadow` 1:1 — persegi membulat 1/8 ukuran yang
+## di-scale halus, di-cache seperti permukaan pygame).
+##
+## `offset` = posisi blit relatif terhadap rect: `panel()` pygame memakai
+## `(r.x - 4, r.y - 4)` (= -spread, bayangan simetris) sedangkan `button()`
+## memakai `(rect.x - 2, rect.y - 2)` (bayangan turun-kanan 2px).
 static func draw_shadow(cv: CanvasItem, rect: Rect2, radius: float = 12.0,
-		alpha: float = 110.0 / 255.0, spread: float = 4.0) -> void:
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0, 0, 0, 0)
-	sb.shadow_color = Color(0, 0, 0, alpha)
-	sb.shadow_size = int(spread * 3.0)
-	sb.shadow_offset = Vector2(2, 3)
-	sb.set_corner_radius_all(int(radius))
-	cv.draw_style_box(sb, rect)
+		alpha: float = 110.0 / 255.0, spread: float = 4.0,
+		offset: Vector2 = Vector2.INF) -> void:
+	var tex := shadow_texture(rect.size.x, rect.size.y, radius,
+		roundi(alpha * 255.0), spread)
+	if tex == null:
+		return
+	var off := Vector2(-spread, -spread) if offset == Vector2.INF else offset
+	cv.draw_texture_rect(tex, Rect2(rect.position + off,
+		Vector2(tex.get_width(), tex.get_height())), false)
 
 
 ## Persegi membulat isi solid (helper ikon & badge).
@@ -387,29 +402,28 @@ static func pill_colors(kind: String) -> Array:
 ## Bar HP/mana premium (port ui_theme.hp_bar).
 static func draw_hp_bar(cv: CanvasItem, pos: Vector2, w: float, h: float,
 		ratio: float, color: Color = GREEN) -> void:
-	var r := Rect2(pos, Vector2(w, h))
-	draw_rr(cv, r, Color("#10121e"), h * 0.5)
-	var fw := w * clampf(ratio, 0.0, 1.0)
-	if fw > 3.0:
-		var light := Color(minf(1.0, color.r + 50.0 / 255.0),
-			minf(1.0, color.g + 50.0 / 255.0),
-			minf(1.0, color.b + 50.0 / 255.0))
-		draw_vgrad(cv, Rect2(pos, Vector2(fw, h)), light, color, h * 0.5)
-	draw_rr_outline(cv, r, Color("#565c78"), h * 0.5, 1.0)
+	var r := pyrect(Rect2(pos, Vector2(w, h)))
+	var rad := floor(r.size.y / 2.0)
+	draw_rr(cv, r, Color("#10121e"), rad)
+	var fw := bar_fill_w(r.size.x, ratio)
+	if fw > 3:
+		# pygame: `tuple(min(255, c + 50) for c in color)` (ruang 8-bit).
+		draw_vgrad(cv, Rect2(r.position, Vector2(fw, r.size.y)),
+			add_rgb(color, 50), color, rad)
+	draw_rr_outline(cv, r, Color("#565c78"), rad, 1.0)
 
 
 ## Bar progres emas (port ui_theme.progress_bar).
 static func draw_progress_bar(cv: CanvasItem, pos: Vector2, w: float,
 		frac: float, color: Color = GOLD, h: float = 8.0) -> void:
-	var r := Rect2(pos, Vector2(w, h))
-	draw_rr(cv, r, Color("#1e2236"), h * 0.5)
-	var fw := w * clampf(frac, 0.0, 1.0)
-	if fw > 3.0:
-		var light := Color(minf(1.0, color.r + 40.0 / 255.0),
-			minf(1.0, color.g + 40.0 / 255.0),
-			minf(1.0, color.b + 40.0 / 255.0))
-		draw_vgrad(cv, Rect2(pos, Vector2(fw, h)), light, color, h * 0.5)
-	draw_rr_outline(cv, r, Color("#60607e"), h * 0.5, 1.0)
+	var r := pyrect(Rect2(pos, Vector2(w, h)))
+	var rad := floor(r.size.y / 2.0)
+	draw_rr(cv, r, Color("#1e2236"), rad)
+	var fw := bar_fill_w(r.size.x, frac)
+	if fw > 3:
+		draw_vgrad(cv, Rect2(r.position, Vector2(fw, r.size.y)),
+			add_rgb(color, 40), color, rad)
+	draw_rr_outline(cv, r, Color("#60607e"), rad, 1.0)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -739,3 +753,902 @@ static func style_separator(sep: Separator, color: Color = EDGE_GOLD) -> void:
 	sb.color = color
 	sb.thickness = 1
 	sep.add_theme_stylebox_override("separator", sb)
+
+
+# ═══════════════════════════════════════════════════════════
+# KUALITAS & CACHE (port cheap_alpha / clear_caches / math_hyp)
+# ═══════════════════════════════════════════════════════════
+
+## Override jalur alpha: -1 = auto, 0 = paksa HEMAT (bentuk solid murah),
+## 1 = paksa penuh (glow/bayangan/gradasi). Padanan `Quality.cheap_alpha`
+## yang di-set `mobile/perf.py:746/755/797`.
+static var cheap_alpha_override: int = -1
+
+
+## Port `ui_theme.cheap_alpha()`.
+##
+## Di pygame ini PROPERTI PERANGKAT yang diukur sekali oleh
+## `perf.apply_device_profile()`: False kalau satu blit alpha layar penuh
+## lebih mahal dari 5 ms (`mobile/perf.py:796-797`) sehingga glow, bayangan
+## lembut, dan gradasi diganti bentuk solid murah. Di Godot komposisi alpha
+## terjadi di GPU (tidak ada biaya per piksel di CPU), jadi jalur "mahal"
+## selalu terjangkau -> auto = True. Kedua cabang TETAP diport 1:1 supaya
+## bentuk visual mode hemat bisa dipakai/diuji lewat `cheap_alpha_override`.
+static func cheap_alpha() -> bool:
+	if cheap_alpha_override != -1:
+		return cheap_alpha_override == 1
+	return true
+
+
+## Port `ui_theme.clear_caches()` — buang semua permukaan/tekstur cache.
+## Dipanggil saat memori menipis atau saat tes butuh keadaan bersih.
+static func clear_caches() -> void:
+	_glow_cache.clear()
+	_shadow_cache.clear()
+	_font_cache.clear()
+	_knob_cache.clear()
+
+
+## Port `ui_theme.math_hyp(x, y)`.
+static func hyp(x: float, y: float) -> float:
+	return sqrt(x * x + y * y)
+
+
+## pygame.Rect memotong (bukan membulatkan) koordinat float ke int. Semua
+## komponen di bawah melewati rect ini supaya geometrinya identik.
+static func pyrect(r: Rect2) -> Rect2:
+	return Rect2(Vector2(float(int(r.position.x)), float(int(r.position.y))),
+		Vector2(float(int(r.size.x)), float(int(r.size.y))))
+
+
+# ═══════════════════════════════════════════════════════════
+# MATEMATIKA WARNA & GRADASI (fungsi murni — dikunci oracle
+# tools/test_godot_ui_theme_parity.py terhadap ui_theme.py ASLI)
+# ═══════════════════════════════════════════════════════════
+
+## Port `_dim(color, f=0.55)` — `int(c * f)` Python = truncation ke nol.
+static func dim(color: Color, f: float = 0.55) -> Color:
+	return Color8(int(float(color.r8) * f), int(float(color.g8) * f),
+		int(float(color.b8) * f))
+
+
+## Port `tuple(min(255, c + n) for c in color)` — dipakai hover pill (+18/+14),
+## isi `hp_bar` (+50), dan `progress_bar` (+40).
+static func add_rgb(color: Color, amount: int) -> Color:
+	return Color8(mini(255, color.r8 + amount),
+		mini(255, color.g8 + amount), mini(255, color.b8 + amount))
+
+
+## Warna baris gradasi ke-`y` dari `h` baris — port PERSIS loop `_vgrad`:
+## `t = y / max(1, h - 1)` lalu `int(top + (bottom - top) * t)` per kanal.
+static func vgrad_row_color(top: Color, bottom: Color, y: int, h: int) -> Color:
+	var rows := maxi(2, h)
+	var t := float(y) / float(maxi(1, rows - 1))
+	return Color8(
+		int(float(top.r8) + float(bottom.r8 - top.r8) * t),
+		int(float(top.g8) + float(bottom.g8 - top.g8) * t),
+		int(float(top.b8) + float(bottom.b8 - top.b8) * t))
+
+
+## Kuantisasi alpha glow — port `a = max(4, min(120, int(alpha) // 8 * 8))`
+## di `_radial` (kunci cache dibulatkan ke kelipatan 8).
+static func radial_alpha_key(alpha: int) -> int:
+	return maxi(4, mini(120, int(floor(float(alpha) / 8.0)) * 8))
+
+
+## Alpha satu blok glow — port `aa = int(a * (1 - d) ** 2)` di `_radial`,
+## dengan `d` = jarak titik ke pusat dibagi jarak pusat-ke-sudut.
+static func glow_alpha_at(alpha_key: int, d: float) -> int:
+	if d >= 1.0:
+		return 0
+	var f := 1.0 - d
+	return int(float(alpha_key) * f * f)
+
+
+## Lebar isi bar/ slider — port `int(w * max(0.0, min(1.0, ratio)))`
+## (`hp_bar`, `progress_bar`, `slider`).
+static func bar_fill_w(w: float, frac: float) -> int:
+	return int(w * clampf(frac, 0.0, 1.0))
+
+
+## Ukuran permukaan bayangan — port `_shadow`: `max(2, int(w) + spread * 2)`.
+static func shadow_surface_size(w: float, h: float,
+		spread: float = 4.0) -> Vector2i:
+	return Vector2i(maxi(2, int(w) + int(spread) * 2),
+		maxi(2, int(h) + int(spread) * 2))
+
+
+## Ukuran sel kecil bayangan sebelum di-scale — port `max(4, w // 8)`.
+static func shadow_small_size(w: float, h: float,
+		spread: float = 4.0) -> Vector2i:
+	var s := shadow_surface_size(w, h, spread)
+	return Vector2i(maxi(4, int(floor(float(s.x) / 8.0))),
+		maxi(4, int(floor(float(s.y) / 8.0))))
+
+
+## Warna per pita gradasi teks — port loop `y` di `gradient_text()`
+## (`int(top + (bottom - top) * t)`, t = y / (h - 1)) yang di sini
+## dievaluasi di tengah pita supaya `n` pita mewakili seluruh tinggi glif.
+static func gradient_bands(top: Color, bottom: Color, n: int) -> Array:
+	var out: Array = []
+	var bands := maxi(1, n)
+	for i in range(bands):
+		var t := (float(i) + 0.5) / float(bands)
+		out.append(Color8(
+			int(float(top.r8) + float(bottom.r8 - top.r8) * t),
+			int(float(top.g8) + float(bottom.g8 - top.g8) * t),
+			int(float(top.b8) + float(bottom.b8 - top.b8) * t)))
+	return out
+
+
+# ═══════════════════════════════════════════════════════════
+# CACHE TEKSTUR (padanan _GLOW_CACHE / _SHADOW_CACHE pygame)
+# ═══════════════════════════════════════════════════════════
+
+static var _glow_cache: Dictionary = {}
+static var _shadow_cache: Dictionary = {}
+
+
+## Glow radial elips sebagai tekstur (port `_radial` baris demi baris,
+## termasuk langkah 2px dan kuantisasi alpha kelipatan 8).
+static func radial_texture(w: float, h: float, color: Color,
+		alpha: int) -> ImageTexture:
+	var ww := maxi(8, int(w))
+	var hh := maxi(8, int(h))
+	var a := radial_alpha_key(alpha)
+	var key := "%d,%d,%s,%d" % [ww, hh, color.to_html(false), a]
+	if _glow_cache.has(key):
+		return _glow_cache[key] as ImageTexture
+	var img := Image.create(ww, hh, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var cx := float(ww) / 2.0
+	var cy := float(hh) / 2.0
+	var maxd := hyp(cx, cy)
+	for y in range(0, hh, 2):
+		for x in range(0, ww, 2):
+			var d := hyp(float(x) - cx, float(y) - cy) / maxd
+			if d < 1.0:
+				var aa := glow_alpha_at(a, d)
+				if aa > 0:
+					img.fill_rect(Rect2i(x, y, 2, 2),
+						Color(color.r, color.g, color.b, float(aa) / 255.0))
+	var tex := ImageTexture.create_from_image(img)
+	_glow_cache[key] = tex
+	return tex
+
+
+## Bayangan lembut sebagai tekstur (port `_shadow`: persegi membulat di sel
+## 1/8 ukuran lalu `smoothscale` ke ukuran penuh).
+static func shadow_texture(w: float, h: float, radius: float = 12.0,
+		alpha: int = 110, spread: float = 4.0) -> ImageTexture:
+	var full := shadow_surface_size(w, h, spread)
+	var key := "%d,%d,%d,%d" % [full.x, full.y, int(radius), alpha]
+	if _shadow_cache.has(key):
+		return _shadow_cache[key] as ImageTexture
+	var small := shadow_small_size(w, h, spread)
+	var img := Image.create(small.x, small.y, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	_fill_rounded(img, Rect2i(0, 0, small.x, small.y),
+		Color(0, 0, 0, float(alpha) / 255.0),
+		maxf(1.0, floor(float(radius) / 8.0)))
+	# pygame.transform.smoothscale -> resize halus (Lanczos).
+	img.resize(full.x, full.y, Image.INTERPOLATION_LANCZOS)
+	var tex := ImageTexture.create_from_image(img)
+	_shadow_cache[key] = tex
+	return tex
+
+
+## Isi persegi membulat ke Image (uji SDF per piksel; dipakai sel kecil
+## bayangan — hanya puluhan piksel, jadi murah).
+static func _fill_rounded(img: Image, rect: Rect2i, color: Color,
+		radius: float) -> void:
+	var r := minf(maxf(radius, 0.0),
+		minf(float(rect.size.x), float(rect.size.y)) * 0.5)
+	for y in range(rect.position.y, rect.end.y):
+		var py := float(y) + 0.5
+		var cy := clampf(py, float(rect.position.y) + r,
+			float(rect.end.y) - r)
+		for x in range(rect.position.x, rect.end.x):
+			var px := float(x) + 0.5
+			var cx := clampf(px, float(rect.position.x) + r,
+				float(rect.end.x) - r)
+			if Vector2(px, py).distance_to(Vector2(cx, cy)) <= r:
+				img.set_pixel(x, y, color)
+
+
+# ═══════════════════════════════════════════════════════════
+# GEOMETRI & WARNA KOMPONEN (fungsi murni — satu sumber untuk
+# jalur immediate-mode DI BAWAH dan widget Control di
+# scenes/ui/widgets/; semuanya dikunci oracle pygame)
+# ═══════════════════════════════════════════════════════════
+
+## Rect hit-test tombol menu — port `button()`: `base.inflate(18, 8)` saat
+## hover (quirk pygame dipertahankan: rect interaktif MELEBAR 9px x 4px).
+static func button_hit_rect(cx: float, cy: float, w: float, h: float,
+		hover: bool) -> Rect2:
+	var base := Rect2(float(int(cx - floor(w / 2.0))),
+		float(int(cy - floor(h / 2.0))), w, h)
+	if hover:
+		return Rect2(base.position - Vector2(9, 4),
+			base.size + Vector2(18, 8))
+	return base
+
+
+## Gradasi tombol menu — port `button()`: hover (44,52,86)->(24,29,52),
+## idle (34,41,70)->(17,21,38).
+static func menu_button_colors(hover: bool) -> Array:
+	if hover:
+		return [Color8(44, 52, 86), Color8(24, 29, 52)]
+	return [Color8(34, 41, 70), Color8(17, 21, 38)]
+
+
+## Pusat label tombol menu — port clamp di `button()`: label digeser +14px
+## (ruang badge ikon) lalu dijepit agar tidak menimpa badge (kiri) atau
+## keluar tepi kanan; kalau tetap tidak muat, dipusatkan di antaranya.
+static func button_label_cx(base_x: float, w: float, text_w: float,
+		has_icon: bool, hit: Rect2) -> float:
+	if not has_icon:
+		return hit.get_center().x
+	var left_min := hit.position.x + 56.0
+	var right_max := hit.end.x - 10.0
+	var text_cx := base_x + floor(w / 2.0) + 14.0
+	if text_cx - text_w * 0.5 < left_min:
+		text_cx = left_min + text_w * 0.5
+	if text_cx + text_w * 0.5 > right_max:
+		text_cx = right_max - text_w * 0.5
+	if text_cx - text_w * 0.5 < left_min:
+		text_cx = (left_min + right_max) * 0.5
+	return text_cx
+
+
+## Diameter knob toggle — port `knob = 18` di `toggle()` (satu sumber supaya
+## widget PygameToggle dan jalur immediate-mode tidak bisa menyimpang).
+static func toggle_knob_size() -> float:
+	return 18.0
+
+
+## Warna toggle — port `toggle()`: [top, bottom, edge] per (is_on, hover).
+static func toggle_colors(is_on: bool, hover: bool) -> Array:
+	if is_on:
+		if hover:
+			return [Color8(92, 214, 118), Color8(46, 138, 70),
+				Color8(160, 255, 180)]
+		return [Color8(70, 190, 96), Color8(34, 116, 58), Color8(120, 235, 145)]
+	if hover:
+		return [Color8(92, 96, 118), Color8(56, 60, 80), Color8(150, 156, 180)]
+	return [Color8(74, 78, 100), Color8(44, 48, 68), Color8(120, 126, 150)]
+
+
+## Warna tab — port `tab()`: [top, bottom, edge, text] per (active, hover).
+## `accent` dipakai sebagai edge+text saat aktif.
+static func tab_colors(active: bool, hover: bool, accent: Color) -> Array:
+	if active:
+		return [Color8(46, 56, 92), Color8(26, 32, 58), accent, accent]
+	if hover:
+		return [Color8(34, 39, 62), Color8(20, 24, 42), Color8(120, 130, 160),
+			TEXT_BODY]
+	return [Color8(22, 26, 44), Color8(15, 18, 32), Color8(72, 80, 106),
+		TEXT_DIM]
+
+
+## Gradasi chip status — port `chip()`: (32,38,64)->(18,22,40),
+## fallback hemat (22,26,46).
+static func chip_colors() -> Array:
+	return [Color8(32, 38, 64), Color8(18, 22, 40), Color8(22, 26, 46)]
+
+
+## Rect chip auto-size — port `chip()`: 26 + (22 kalau ada ikon) + lebar
+## teks letter-spaced + (10 + lebar nilai kalau ada nilai), tinggi 30;
+## `align == "right"` -> `pos` adalah sudut KANAN-atas.
+static func chip_rect(pos: Vector2, text_w: float, value_w: float,
+		has_icon: bool, has_value: bool, align: String = "left") -> Rect2:
+	var total_w := 26.0
+	if has_icon:
+		total_w += 22.0
+	total_w += text_w
+	if has_value:
+		total_w += 10.0 + value_w
+	var h := 30.0
+	var x := pos.x - total_w if align == "right" else pos.x
+	return Rect2(x, pos.y, total_w, h)
+
+
+## Ukuran chip untuk `custom_minimum_size` widget — mengukur teks dengan
+## metrik font Godot lalu memakai rumus `chip_rect()` yang sama.
+static func chip_size(text: String, font: Font, font_size: int,
+		icon: String = "", value: String = "") -> Vector2:
+	var spaced := letter(text)
+	var text_w := font.get_string_size(spaced, HORIZONTAL_ALIGNMENT_LEFT, -1,
+		font_size).x
+	var value_w := 0.0
+	if not value.is_empty():
+		value_w = font.get_string_size(value, HORIZONTAL_ALIGNMENT_LEFT, -1,
+			font_size).x
+	return chip_rect(Vector2.ZERO, text_w, value_w, not icon.is_empty(),
+		not value.is_empty()).size
+
+
+## Ukuran header section untuk `custom_minimum_size` widget — port
+## `section_header()`: lebar = ikon(28) + judul + 14 + garis, tinggi 34.
+static func section_header_size(title: String, font: Font, font_size: int,
+		rule_w: float = 240.0) -> Vector2:
+	var title_w := font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1,
+		font_size).x
+	return Vector2(title_w + 28.0 + 14.0 + rule_w, 34.0)
+
+
+## Geometri header section — port `section_header()`. `title_w` = lebar
+## JUDUL TANPA letter-spacing (pygame mengukur `title`, bukan `letter(title)`).
+## Keluaran: ikon, teks, garis hairline aksen, garis redup, dan y berikutnya.
+static func section_header_geom(pos: Vector2, title_w: float,
+		rule_w: float = 240.0) -> Dictionary:
+	var x := pos.x
+	var y := pos.y
+	var tw := title_w + 28.0
+	return {
+		"icon": Vector2(x + 10.0, y + 11.0),
+		"text": Vector2(x + 28.0, y),
+		"rule_from": Vector2(x + tw + 14.0, y + 14.0),
+		"rule_to": Vector2(x + tw + 14.0 + rule_w, y + 14.0),
+		"dim_from": Vector2(x + 28.0, y + 26.0),
+		"dim_to": Vector2(x + tw + 14.0, y + 26.0),
+		"next_y": y + 34.0,
+	}
+
+
+## Geometri slider — port `slider()`: track 8px, isi emas, knob di x+fill.
+static func slider_geom(pos: Vector2, w: float, value: float) -> Dictionary:
+	var track_h := 8.0
+	var fill_w := float(bar_fill_w(w, value))
+	return {
+		"track": Rect2(pos, Vector2(w, track_h)),
+		"fill_w": fill_w,
+		"knob": Vector2(pos.x + fill_w, pos.y + floor(track_h / 2.0)),
+	}
+
+
+## Geometri cycler opsi — port `option_cycler()`: lebar kotak nilai mengikuti
+## teks (`max(110, vw + 26)` lalu dibatasi `width - 66`), tombol chevron 24px
+## di kiri/kanan kotak dengan jarak 6px.
+static func cycler_geom(pos: Vector2, width: float,
+		value_w: float) -> Dictionary:
+	var vw := maxf(110.0, value_w + 26.0)
+	vw = minf(vw, width - 66.0)
+	var vh := 30.0
+	var vx := pos.x + width - vw - 56.0
+	var vy := pos.y + 7.0
+	var box := Rect2(vx, vy, vw, vh)
+	var bw := 24.0
+	return {
+		"label": Vector2(pos.x, pos.y + 10.0),
+		"box": box,
+		"prev": Rect2(box.position.x - bw - 6.0, vy, bw, vh),
+		"next": Rect2(box.end.x + 6.0, vy, bw, vh),
+		"next_y": vy + vh,
+	}
+
+
+## Rect thumb indikator scroll — port `scroll_indicator()`:
+## `ratio = height / (height + max_scroll)`, `thumb_h = max(18, int(h*ratio))`,
+## `thumb_y = y + int((height - thumb_h) * (scroll_pos / max_scroll))`.
+static func scroll_thumb_rect(pos: Vector2, height: float, scroll_pos: float,
+		max_scroll: float, width: float = 6.0) -> Rect2:
+	var track := Rect2(pos, Vector2(width, height))
+	if max_scroll <= 0.0:
+		return Rect2(track.position, Vector2(width, 0))
+	var ratio := height / (height + max_scroll)
+	var thumb_h := float(maxi(18, int(height * ratio)))
+	var thumb_y := pos.y + float(int((height - thumb_h)
+		* (scroll_pos / max_scroll)))
+	return Rect2(pos.x, thumb_y, width, thumb_h)
+
+
+## Lebar tab auto — port `tab_width()`: `max(min_w, lebar(letter(label)) + 36)`.
+## `measured_w` = lebar teks letter-spaced TERUKUR (metrik font milik engine
+## masing-masing, jadi oracle memasukkan angka, bukan mengukur sendiri).
+static func tab_width_for(measured_w: float, min_w: float = 150.0) -> float:
+	return maxf(min_w, measured_w + 36.0)
+
+
+## Rect tombol BACK — port `back_button()`: 200x42 di pusat (cx, y).
+static func back_button_rect(cx: float, y: float) -> Rect2:
+	return Rect2(cx - 100.0, y - 21.0, 200.0, 42.0)
+
+
+## Geometri judul layar — port `screen_title()`: glow 620x150, ornamen di
+## y+52 (garis ±220/±18, wajik, dot ±230), plate subtitle di fy+12 tinggi 44
+## dengan lebar = teks + 56.
+static func screen_title_geom(cx: float, y: float,
+		sub_w: float = 0.0) -> Dictionary:
+	var fy := y + 52.0
+	# pygame: `cx - (lebar_sub + 56) // 2` -> pembagian bulat, bukan 0.5.
+	var plate_w := sub_w + 56.0
+	var plate := Rect2(cx - floor(plate_w / 2.0), fy + 12.0, plate_w, 44.0)
+	return {
+		"glow": Rect2(cx - 310.0, y - 62.0, 620.0, 150.0),
+		"ornament_y": fy,
+		"line_l": [Vector2(cx - 220.0, fy), Vector2(cx - 18.0, fy)],
+		"line_r": [Vector2(cx + 18.0, fy), Vector2(cx + 220.0, fy)],
+		"gem": [Vector2(cx - 8.0, fy), Vector2(cx, fy - 7.0),
+			Vector2(cx + 8.0, fy), Vector2(cx, fy + 7.0)],
+		"dot_l": Vector2(cx - 230.0, fy),
+		"dot_r": Vector2(cx + 230.0, fy),
+		"sub_plate": plate,
+	}
+
+
+# ═══════════════════════════════════════════════════════════
+# KOMPONEN — JALUR IMMEDIATE-MODE (port 1:1 fungsi gambar
+# ui_theme.py; `btns` = Dictionary id -> Rect2 supaya hit-test
+# tetap satu jalur seperti Menu.handle_click pygame)
+#
+# Widget Control di scenes/ui/widgets/ memanggil *_visual() di
+# bawah, jadi geometri/warna hanya punya SATU sumber.
+# ═══════════════════════════════════════════════════════════
+
+## Port `panel()` — panel kaca gelap: bayangan + gradasi + border + sudut emas.
+static func draw_panel(cv: CanvasItem, rect: Rect2, border: Color = EDGE_GOLD,
+		fill_top: Color = PANEL_TOP, fill_bottom: Color = PANEL_BOTTOM,
+		ticks: bool = true, shadow: bool = true,
+		border_w: float = 1.0) -> void:
+	var r := pyrect(rect)
+	if shadow and cheap_alpha():
+		draw_shadow(cv, r, 12.0)
+	elif shadow:
+		draw_rr(cv, Rect2(r.position + Vector2(3, 4), r.size),
+			Color8(6, 7, 14), 12.0)
+	if cheap_alpha():
+		draw_vgrad(cv, r, fill_top, fill_bottom, 12.0)
+	else:
+		draw_rr(cv, r, PANEL_FILL, 12.0)
+	draw_rr_outline(cv, r, border, 12.0, border_w)
+	if ticks:
+		draw_corner_ticks(cv, r, GOLD)
+
+
+## Port `panel_solid()` — panel tanpa alpha sama sekali (jalur hemat).
+static func draw_panel_solid(cv: CanvasItem, rect: Rect2,
+		border: Color = EDGE_GOLD) -> void:
+	var r := pyrect(rect)
+	draw_rr(cv, r, PANEL_FILL, 12.0)
+	draw_rr_outline(cv, r, border, 12.0, 1.0)
+	draw_corner_ticks(cv, r, GOLD)
+
+
+## Visual tombol menu (tanpa registrasi hit-test) — port badan `button()`.
+static func draw_button_visual(cv: CanvasItem, rect: Rect2, base: Rect2,
+		label: String, accent: Color, font: Font, font_size: int,
+		icon: String = "", hover: bool = false, letter_gap: bool = true,
+		pressed: bool = false, enabled: bool = true,
+		icon_scale: float = 0.9) -> void:
+	var r := pyrect(rect)
+	# Glow hover (radial di sekitar tombol).
+	if hover and enabled:
+		if cheap_alpha():
+			draw_glow(cv, Rect2(r.position - Vector2(22, 18),
+				r.size + Vector2(44, 36)), accent, 74.0 / 255.0)
+		else:
+			draw_rr_outline(cv, Rect2(r.position - Vector2(5, 5),
+				r.size + Vector2(10, 10)), accent, 14.0, 2.0)
+	# Bayangan (blit (x-2, y-2) — beda 2px dari panel, lihat draw_shadow).
+	if cheap_alpha():
+		draw_shadow(cv, r, 12.0, 110.0 / 255.0, 4.0, Vector2(-2, -2))
+	# Panel tombol.
+	var cols: Array = menu_button_colors(hover and enabled)
+	var top: Color = cols[0]
+	var bot: Color = cols[1]
+	if pressed:
+		top = top.darkened(0.12)
+		bot = bot.darkened(0.12)
+	if cheap_alpha():
+		draw_vgrad(cv, r, top, bot, 12.0)
+	else:
+		draw_rr(cv, r, top, 12.0)
+	# Sorot tepi atas.
+	cv.draw_line(Vector2(r.position.x + 12, r.position.y + 1),
+		Vector2(r.end.x - 12, r.position.y + 1), Color.WHITE, 1.0)
+	# Aksen kiri (warna identitas) + glow lembutnya.
+	draw_rr(cv, Rect2(r.position.x + 6, r.position.y + 10, 4,
+		r.size.y - 20), accent, 2.0)
+	if cheap_alpha():
+		# pygame menulis `(*accent, 70)` ke permukaan display TANPA SRCALPHA,
+		# jadi komponen alpha-nya DIABAIKAN dan strip 8px ini keluar opaque
+		# (terverifikasi oracle: tools/test_godot_ui_theme_parity.py). Port
+		# setia = opaque, bukan alpha 70/255.
+		draw_rr(cv, Rect2(r.position.x + 4, r.position.y + 8, 8,
+			r.size.y - 16), accent, 3.0)
+	# Border.
+	var bcol := accent if (hover and enabled) else EDGE_GOLD
+	draw_rr_outline(cv, r, bcol, 12.0, 2.0 if (hover and enabled) else 1.0)
+	# Sudut emas.
+	draw_corner_ticks(cv, r, GOLD)
+	# Badge ikon.
+	var has_icon := not icon.is_empty()
+	if has_icon:
+		var ic := Vector2(r.position.x + 34, r.get_center().y)
+		cv.draw_circle(ic, 17.0, Color8(12, 14, 26))
+		cv.draw_arc(ic, 17.0, 0, TAU, 40, accent, 2.0)
+		draw_icon(cv, icon, ic.x, ic.y, accent, icon_scale)
+	# Label (clamp terhadap badge & tepi kanan).
+	var text := letter(label) if letter_gap else label
+	var tw := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1,
+		font_size).x
+	var text_cx := button_label_cx(base.position.x, base.size.x, tw,
+		has_icon, r)
+	var tcol := TEXT_WHITE if enabled else TEXT_FAINT
+	draw_text_centered(cv, font, text, font_size, tcol,
+		Vector2(text_cx, r.get_center().y))
+
+
+## Port `button()` — tombol menu utama premium; kembalikan rect hit-test.
+static func draw_button(cv: CanvasItem, btns: Dictionary, bid: String,
+		label: String, center: Vector2, accent: Color, font: Font,
+		font_size: int, w: float = 300.0, h: float = 50.0, icon: String = "",
+		hover: bool = false, letter_gap: bool = true) -> Rect2:
+	var base := Rect2(float(int(center.x - floor(w / 2.0))),
+		float(int(center.y - floor(h / 2.0))), w, h)
+	var hit := button_hit_rect(center.x, center.y, w, h, hover)
+	draw_button_visual(cv, hit, base, label, accent, font, font_size, icon,
+		hover, letter_gap)
+	btns[bid] = hit
+	return hit
+
+
+## Visual pill (tanpa registrasi hit-test) — port badan `pill()`.
+static func draw_pill_visual(cv: CanvasItem, rect: Rect2, kind: String,
+		font: Font, font_size: int, label: String, hover: bool = false,
+		enabled: bool = true, icon: String = "", letter_gap: bool = true,
+		pressed: bool = false, icon_scale: float = 0.8) -> void:
+	var r := pyrect(rect)
+	var cols: Array = pill_colors(kind)
+	var top: Color = cols[0]
+	var bot: Color = cols[1]
+	var edge: Color = cols[2]
+	var tcol: Color = cols[3]
+	if hover and enabled:
+		top = add_rgb(top, 18)
+		bot = add_rgb(bot, 14)
+	if pressed:
+		top = top.darkened(0.12)
+		bot = bot.darkened(0.12)
+	if cheap_alpha():
+		draw_vgrad(cv, r, top, bot, 7.0)
+	else:
+		draw_rr(cv, r, top, 7.0)
+	draw_rr_outline(cv, r, edge, 7.0, 2.0 if enabled else 1.0)
+	if hover and enabled and cheap_alpha():
+		draw_glow(cv, Rect2(r.position - Vector2(15, 12),
+			r.size + Vector2(30, 24)), edge, 66.0 / 255.0)
+	var cx := r.get_center().x
+	if not icon.is_empty():
+		draw_icon(cv, icon, r.position.x + 22, r.get_center().y, edge,
+			icon_scale)
+		cx = r.position.x + 22.0 + floor((r.size.x - 22.0) / 2.0)
+	draw_text_centered(cv, font, letter(label) if letter_gap else label,
+		font_size, tcol if enabled else TEXT_FAINT,
+		Vector2(cx, r.get_center().y))
+
+
+## Port `pill()` — tombol aksi kecil; hanya didaftarkan ke `btns` bila enabled
+## (persis pygame: tombol mati tidak bisa diklik).
+static func draw_pill(cv: CanvasItem, btns: Dictionary, bid: String,
+		label: String, rect: Rect2, kind: String, font: Font, font_size: int,
+		hover: bool = false, enabled: bool = true, icon: String = "",
+		letter_gap: bool = true) -> Rect2:
+	var r := pyrect(rect)
+	draw_pill_visual(cv, r, kind, font, font_size, label, hover, enabled,
+		icon, letter_gap)
+	if enabled:
+		btns[bid] = r
+	return r
+
+
+## Port `chip()` — chip status auto-size (ikon + label + nilai opsional).
+static func draw_chip(cv: CanvasItem, pos: Vector2, text: String,
+		accent: Color, font: Font, font_size: int, icon: String = "",
+		icon_color = null, value = null, value_color = null,
+		align: String = "left") -> Rect2:
+	var spaced := letter(text)
+	var text_w := font.get_string_size(spaced, HORIZONTAL_ALIGNMENT_LEFT, -1,
+		font_size).x
+	var has_value := value != null
+	var value_text := "" if value == null else str(value)
+	var value_w := 0.0
+	if has_value:
+		value_w = font.get_string_size(value_text,
+			HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	var r := pyrect(chip_rect(pos, text_w, value_w, not icon.is_empty(),
+		has_value, align))
+	var h := r.size.y
+	if cheap_alpha():
+		var cc: Array = chip_colors()
+		draw_vgrad(cv, r, cc[0], cc[1], floor(h / 2.0))
+	else:
+		draw_rr(cv, r, Color8(22, 26, 46), floor(h / 2.0))
+	draw_rr_outline(cv, r, accent, floor(h / 2.0), 1.0)
+	var ix := r.position.x + 14.0
+	var iy := r.get_center().y
+	if not icon.is_empty():
+		var icol: Color = accent if icon_color == null else Color(icon_color)
+		draw_icon(cv, icon, ix, iy, icol, 0.75)
+		ix += 22.0
+	draw_text(cv, font, spaced, font_size, TEXT_BODY, Vector2(ix,
+		r.position.y + 7.0), false)
+	ix += text_w
+	if has_value:
+		ix += 10.0
+		var vcol: Color = accent if value_color == null else Color(value_color)
+		draw_text(cv, font, value_text, font_size, vcol,
+			Vector2(ix, r.position.y + 7.0), false)
+	return r
+
+
+## Port `section_header()` — ikon + judul letter-spaced + dua garis hairline.
+## Mengembalikan y berikutnya (y + 34).
+static func draw_section_header(cv: CanvasItem, pos: Vector2, title: String,
+		icon_name: String, color: Color, font: Font, font_size: int,
+		rule_w: float = 240.0) -> float:
+	var title_w := font.get_string_size(title, HORIZONTAL_ALIGNMENT_LEFT, -1,
+		font_size).x
+	var g := section_header_geom(pos, title_w, rule_w)
+	draw_icon(cv, icon_name, (g["icon"] as Vector2).x, (g["icon"] as Vector2).y,
+		color, 0.9)
+	draw_text(cv, font, letter(title), font_size, color, g["text"] as Vector2,
+		false)
+	cv.draw_line(g["rule_from"] as Vector2, g["rule_to"] as Vector2, color, 1.0)
+	cv.draw_line(g["dim_from"] as Vector2, g["dim_to"] as Vector2,
+		dim(color), 1.0)
+	return float(g["next_y"])
+
+
+## Visual toggle (tanpa registrasi hit-test) — port badan `toggle()`.
+static func draw_toggle_visual(cv: CanvasItem, rect: Rect2, is_on: bool,
+		font: Font, font_size: int, hover: bool = false) -> void:
+	var r := pyrect(rect)
+	var cols: Array = toggle_colors(is_on, hover)
+	var top: Color = cols[0]
+	var bot: Color = cols[1]
+	var edge: Color = cols[2]
+	if cheap_alpha():
+		draw_vgrad(cv, r, top, bot, floor(r.size.y / 2.0))
+	else:
+		draw_rr(cv, r, top, floor(r.size.y / 2.0))
+	draw_rr_outline(cv, r, edge, floor(r.size.y / 2.0), 2.0)
+	# Knob (bayangan gelap 1px, cincin warna tepi).
+	var knob := toggle_knob_size()
+	var kx := r.end.x - knob - 6.0 if is_on else r.position.x + 6.0
+	var ky := r.get_center().y
+	cv.draw_circle(Vector2(kx + 1, ky + 2), knob * 0.5, Color8(12, 14, 24))
+	cv.draw_circle(Vector2(kx, ky), knob * 0.5, Color8(245, 248, 255))
+	cv.draw_arc(Vector2(kx, ky), knob * 0.5, 0, TAU, 24, edge, 1.0)
+	# Label di sisi berlawanan knob.
+	var lx := r.position.x + floor(r.size.x / 2.0) - 8.0 if is_on \
+		else r.position.x + floor(r.size.x / 2.0) + 8.0
+	draw_text_centered(cv, font, "ON" if is_on else "OFF", font_size,
+		Color8(210, 255, 220) if is_on else TEXT_BODY, Vector2(lx, ky), false)
+
+
+## Port `toggle()` — sakelar pill ON/OFF.
+static func draw_toggle(cv: CanvasItem, btns: Dictionary, bid: String,
+		rect: Rect2, is_on: bool, font: Font, font_size: int,
+		hover: bool = false) -> Rect2:
+	var r := pyrect(rect)
+	draw_toggle_visual(cv, r, is_on, font, font_size, hover)
+	btns[bid] = r
+	return r
+
+
+## Port `slider()` — track + isi emas + knob cincin; kembalikan x knob
+## (dipakai pemanggil pygame untuk menaruh tombol -/+).
+static func draw_slider(cv: CanvasItem, pos: Vector2, w: float, value: float,
+		knob_hover: bool = false) -> float:
+	var g := slider_geom(pos, w, value)
+	var track: Rect2 = g["track"]
+	var fill_w: float = g["fill_w"]
+	var knob: Vector2 = g["knob"]
+	draw_rr(cv, track, Color8(34, 38, 58), 4.0)
+	if fill_w > 4.0:
+		if cheap_alpha():
+			draw_vgrad(cv, Rect2(track.position, Vector2(fill_w,
+				track.size.y)), GOLD_BRIGHT, Color8(196, 138, 40), 4.0)
+		else:
+			draw_rr(cv, Rect2(track.position, Vector2(fill_w, track.size.y)),
+				GOLD, 4.0)
+	draw_rr_outline(cv, track, Color8(120, 110, 86), 4.0, 1.0)
+	if knob_hover and cheap_alpha():
+		draw_glow(cv, Rect2(knob - Vector2(18, 18), Vector2(36, 36)), GOLD,
+			80.0 / 255.0)
+	cv.draw_circle(knob, 11.0, Color8(12, 14, 24))
+	cv.draw_circle(knob, 8.0, Color8(245, 248, 255))
+	cv.draw_arc(knob, 8.0, 0, TAU, 28, GOLD, 2.0)
+	return knob.x
+
+
+## Port `option_cycler()` — label + kotak nilai auto-width + chevron < >.
+## Mengembalikan y berikutnya (vy + 30). `hover` = id tombol yang sedang
+## disorot ("" kalau tidak ada) — pygame membandingkan dengan `id_base +
+## "_prev"/"_next"`.
+static func draw_option_cycler(cv: CanvasItem, btns: Dictionary,
+		id_base: String, label_text: String, value_text: String, pos: Vector2,
+		width: float, label_font: Font, label_size: int, value_font: Font,
+		value_size: int, hover: String = "") -> float:
+	draw_text(cv, label_font, label_text, label_size, TEXT_BODY,
+		Vector2(pos.x, pos.y + 10.0), false)
+	var value_w := value_font.get_string_size(value_text,
+		HORIZONTAL_ALIGNMENT_LEFT, -1, value_size).x
+	var g := cycler_geom(pos, width, value_w)
+	var box: Rect2 = pyrect(g["box"])
+	var prev_rect: Rect2 = pyrect(g["prev"])
+	var next_rect: Rect2 = pyrect(g["next"])
+	var box_hover := hover == id_base + "_prev" or hover == id_base + "_next"
+	if cheap_alpha():
+		draw_vgrad(cv, box, Color8(40, 48, 80), Color8(20, 24, 44), 6.0)
+	else:
+		draw_rr(cv, box, Color8(28, 34, 58), 6.0)
+	draw_rr_outline(cv, box, EDGE_GOLD if box_hover else Color8(96, 106, 138),
+		6.0, 1.0)
+	draw_text_centered(cv, value_font, value_text, value_size, GOLD_TEXT,
+		box.get_center(), false)
+	var sides: Array = [
+		[prev_rect, id_base + "_prev", "chevron_l"],
+		[next_rect, id_base + "_next", "chevron_r"],
+	]
+	for side in sides:
+		var b: Rect2 = side[0]
+		var bid: String = side[1]
+		var icon: String = side[2]
+		var bh := hover == bid
+		var top := Color8(64, 74, 110) if bh else Color8(42, 48, 74)
+		if cheap_alpha():
+			draw_vgrad(cv, b, top, Color8(26, 30, 52), 6.0)
+		else:
+			draw_rr(cv, b, top, 6.0)
+		draw_rr_outline(cv, b,
+			Color8(150, 160, 196) if bh else Color8(96, 106, 138), 6.0, 1.0)
+		draw_icon(cv, icon, b.get_center().x, b.get_center().y,
+			Color8(200, 210, 240), 0.6)
+		btns[bid] = b
+	return float(g["next_y"])
+
+
+## Visual tab (tanpa registrasi hit-test) — port badan `tab()`.
+static func draw_tab_visual(cv: CanvasItem, rect: Rect2, label_text: String,
+		accent: Color, font: Font, font_size: int, active: bool,
+		hover: bool = false) -> void:
+	var r := pyrect(rect)
+	var cols: Array = tab_colors(active, hover, accent)
+	var top: Color = cols[0]
+	var bot: Color = cols[1]
+	var edge: Color = cols[2]
+	var tcol: Color = cols[3]
+	if cheap_alpha():
+		draw_vgrad(cv, r, top, bot, 8.0)
+	else:
+		draw_rr(cv, r, top, 8.0)
+	draw_rr_outline(cv, r, edge, 8.0, 2.0 if active else 1.0)
+	if active:
+		# Underline aksen 3px di dasar tab.
+		draw_rr(cv, Rect2(r.position.x + 8, r.end.y - 4, r.size.x - 16, 3),
+			accent, 1.0)
+	draw_text_centered(cv, font, letter(label_text), font_size, tcol,
+		r.get_center(), false)
+
+
+## Port `tab()` — tab kategori (hero shop / toko item).
+static func draw_tab(cv: CanvasItem, btns: Dictionary, bid: String,
+		rect: Rect2, label_text: String, accent: Color, font: Font,
+		font_size: int, active: bool, hover: bool = false) -> Rect2:
+	var r := pyrect(rect)
+	draw_tab_visual(cv, r, label_text, accent, font, font_size, active, hover)
+	btns[bid] = r
+	return r
+
+
+## Port `tab_width()` — lebar tab mengikuti teks letter-spaced TERUKUR.
+static func tab_width(font: Font, font_size: int, label_text: String,
+		min_w: float = 150.0) -> float:
+	var measured := font.get_string_size(letter(label_text),
+		HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
+	return tab_width_for(measured, min_w)
+
+
+## Port `screen_title()` — glow + judul outline + ornamen + plate subtitle.
+static func draw_screen_title(cv: CanvasItem, text: String, cx: float,
+		y: float, glow: bool = true, sub: String = "",
+		sub_color: Color = CYAN_SOFT, ornament: bool = true,
+		title_size: int = 64, sub_size: int = 30) -> void:
+	var sub_w := 0.0
+	if not sub.is_empty():
+		sub_w = body_semibold().get_string_size(letter(sub),
+			HORIZONTAL_ALIGNMENT_LEFT, -1, sub_size).x
+	var g := screen_title_geom(cx, y, sub_w)
+	if glow and cheap_alpha():
+		draw_glow(cv, g["glow"] as Rect2, Color8(255, 205, 90),
+			46.0 / 255.0)
+	draw_outline_text(cv, title_font(), text, title_size, Vector2(cx, y))
+	if ornament:
+		draw_title_ornament(cv, g)
+	if not sub.is_empty():
+		draw_title_sub(cv, g, sub, sub_color, sub_size)
+
+
+## Ornamen judul layar "garis - wajik - garis" (bagian dari `screen_title()`;
+## juga dipakai widget Flourish/ScreenTitle supaya geometrinya satu sumber).
+static func draw_title_ornament(cv: CanvasItem, geom: Dictionary) -> void:
+	var ll: Array = geom["line_l"]
+	var lr: Array = geom["line_r"]
+	var gem: Array = geom["gem"]
+	cv.draw_line(ll[0] as Vector2, ll[1] as Vector2, EDGE_GOLD, 2.0)
+	cv.draw_line(lr[0] as Vector2, lr[1] as Vector2, EDGE_GOLD, 2.0)
+	_poly(cv, [gem[0] as Vector2, gem[1] as Vector2,
+		gem[2] as Vector2, gem[3] as Vector2], GOLD)
+	cv.draw_circle(geom["dot_l"] as Vector2, 3.0, GOLD_BRIGHT)
+	cv.draw_circle(geom["dot_r"] as Vector2, 3.0, GOLD_BRIGHT)
+
+
+## Plate subtitle judul layar (bagian dari `screen_title()`): plate 44px
+## gradasi (26,32,58)->(14,18,34) + border emas + sudut emas 8px + teks
+## letter-spaced Barlow-SemiBold.
+static func draw_title_sub(cv: CanvasItem, geom: Dictionary, sub: String,
+		sub_color: Color = CYAN_SOFT, sub_size: int = 30) -> void:
+	var plate: Rect2 = geom["sub_plate"]
+	if cheap_alpha():
+		draw_vgrad(cv, plate, Color8(26, 32, 58), Color8(14, 18, 34), 10.0)
+	else:
+		draw_rr(cv, plate, Color8(16, 20, 38), 10.0)
+	draw_rr_outline(cv, plate, EDGE_GOLD, 10.0, 1.0)
+	draw_corner_ticks(cv, plate, GOLD, 8.0, 1.0, 3.0)
+	draw_text_centered(cv, body_semibold(), letter(sub), sub_size, sub_color,
+		plate.get_center(), false)
+
+
+## Port `back_button()` — tombol BACK seragam (200x42, netral, ikon panah).
+static func draw_back_button(cv: CanvasItem, btns: Dictionary, bid: String,
+		cx: float, y: float, hover: bool = false, label_text: String = "BACK",
+		font_size: int = 26) -> Rect2:
+	var r := back_button_rect(cx, y)
+	return draw_pill(cv, btns, bid, label_text, r, "neutral", body_semibold(),
+		font_size, hover, true, "back")
+
+
+## Port `scroll_indicator()` — indikator scroll ramping; kembalikan track.
+static func draw_scroll_indicator(cv: CanvasItem, pos: Vector2, height: float,
+		scroll_pos: float, max_scroll: float,
+		width: float = 6.0) -> Rect2:
+	var track := Rect2(pos, Vector2(width, height))
+	draw_rr(cv, track, Color8(28, 32, 52), 3.0)
+	if max_scroll > 0.0:
+		var thumb := scroll_thumb_rect(pos, height, scroll_pos, max_scroll,
+			width)
+		if thumb.size.y > 0.0:
+			if cheap_alpha():
+				draw_vgrad(cv, thumb, GOLD_BRIGHT, Color8(196, 138, 40), 3.0)
+			else:
+				draw_rr(cv, thumb, GOLD, 3.0)
+	return track
+
+
+# ═══════════════════════════════════════════════════════════
+# IKON VEKTOR — daftar tertutup (closed world)
+# ═══════════════════════════════════════════════════════════
+
+## 29 nama ikon yang dikenali `draw_icon()` — sama persis dengan cabang
+## `if name == ...` di `ui_theme.draw_icon`. Oracle
+## tools/test_godot_ui_theme_parity.py membandingkan daftar ini dengan nama
+## yang diparse dari ui_theme.py, jadi ikon baru di pygame yang belum diport
+## langsung gagal di CI.
+const ICON_NAMES := ["back", "bolt", "check", "chevron_l", "chevron_r",
+	"cloud", "coin", "continue", "crown", "download", "gear", "gem", "heart",
+	"help", "lock", "minus", "monitor", "pad", "play", "plus", "quit",
+	"shield", "skull", "speaker", "star", "swords", "trophy", "upload", "warn"]
+
+
+## Daftar nama ikon (lihat ICON_NAMES).
+static func icon_names() -> Array:
+	return Array(ICON_NAMES)
+
+
+## True kalau nama ikon dikenali `draw_icon()` (pygame: cabang if/elif tidak
+## menggambar apa pun untuk nama tak dikenal).
+static func has_icon(icon_name: String) -> bool:
+	return ICON_NAMES.has(icon_name)
