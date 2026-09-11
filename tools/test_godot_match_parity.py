@@ -10434,6 +10434,173 @@ def make_hero_balance_fixture(core, entity):
     return section
 
 
+# FASE 29 — PORT hero_items.py -> HeroItems.gd: oracle logika murni item.
+# ====================================================================
+# Semua nilai di bawah dievaluasi dari hero_items.py ASLI (bukan salinan):
+# get_item_class, _build_shop_pages/SHOP_PAGES/ITEM_SHOP_ORDER,
+# _build_item_mechanics/_fmt_mech_value (bahasa id DAN en),
+# pending_forge_items/deliver_pending_forge_items, _resolve_shop_target,
+# _hero_level_mult. Direplay HeroItemsParityTest. Objek (bukan string
+# kompak) — kecil dan enak di-review.
+
+
+class _HiHero:
+    """Dummy hero untuk oracle (punya .alive/.items/.range/.level)."""
+
+    def __init__(self, alive=True, slots=None):
+        import hero_items
+        self.alive = alive
+        self.range = 60
+        self.role = "tank"
+        self.base_hp = 800
+        self.hp = 800
+        self.max_hp = 800
+        self.level = 1
+        self.items = hero_items.HeroItemInventory(self)
+        if slots is not None:
+            self.items.slots = list(slots)
+
+
+def make_hero_items_fixture(core, entity):
+    import hero_items
+    import localization
+
+    item_class = {sid: hero_items.get_item_class(sid)
+                  for sid in hero_items.ITEM_CATALOG}
+    pages, meta = hero_items._build_shop_pages()
+    shop_pages = {
+        "pages": [[str(sid) for sid in page] for page in pages],
+        "meta": [[cls, p, n] for cls, p, n in meta],
+        "order": [str(sid) for sid in hero_items.ITEM_SHOP_ORDER],
+    }
+
+    mechanics = {sid: [[k, t] for k, t in
+                       hero_items._build_item_mechanics(d)]
+                 for sid, d in hero_items.ITEM_CATALOG.items()}
+    old_lang = localization.get_language()
+    localization.set_language("en")
+    try:
+        mechanics_en = {sid: [[k, t] for k, t in
+                              hero_items._build_item_mechanics(d)]
+                        for sid, d in hero_items.ITEM_CATALOG.items()}
+    finally:
+        localization.set_language(old_lang)
+
+    # Baterai format nilai (termasuk kasus "kotor" float *100 / float /60).
+    fmt_cases = [
+        ("crit_mult", 2.0), ("crit_mult", 1.5),
+        ("crit_chance", 0.25), ("lifesteal", 0.2),
+        ("max_hp_pct_per_tick", 0.022), ("out_of_combat_regen_pct", 0.015),
+        ("evasion", 0.28), ("blind", 0.18), ("chance", 0.55),
+        ("enemy_atk_slow", 0.3), ("anti_heal", 0.45), ("slow", 0.28),
+        ("skill_amp", 0.1), ("spell_vamp", 0.12), ("move_speed_pct", 0.12),
+        ("damage_pct", 0.7), ("heal_pct", 0.25),
+        ("duration", 300), ("duration", 150), ("cooldown", 540),
+        ("cooldown", 2700), ("stun", 72), ("silence", 150),
+        ("tick", 30), ("charge_time", 540), ("combat_timeout", 300),
+        ("slow_duration", 210), ("burn_duration", 180),
+        ("root_duration", 60), ("root_duration", 72),
+        ("damage", 52), ("damage", 150), ("hp", 200), ("hp", 320),
+        ("armor", 6), ("armor", 10), ("attack_speed", 65),
+        ("ally_radius", 320), ("targets", 4), ("trigger_enemies", 2),
+        ("radius", 260), ("dash_distance", 130), ("range_bonus", 90),
+        ("as_bonus", 55), ("base_block", 35), ("melee_block", 25),
+        ("ranged_block", 14), ("armor_shred", 6),
+        ("enemy_armor_reduction", 2), ("burn_dps", 28), ("burn_dps", 6),
+        ("cap_damage", 60), ("ally_armor", 2), ("ally_attack_speed", 10),
+        ("hp_regen", 3.0), ("hp_regen", 6.0), ("hp_regen", 4),
+        ("hp_regen", 8),
+    ]
+    fmt_battery = []
+    for key, value in fmt_cases:
+        # Godot JSON.parse_string mengubah SEMUA angka jadi float, jadi flag
+        # `float` menandai nilai yang di Pygame adalah float MURNI dan akan
+        # lewat str() (else-branch _fmt_mech_value) — perlu ".0" (3.0 -> "3.0").
+        was_float = (
+            isinstance(value, float)
+            and key != "crit_mult"
+            and key not in hero_items._PCT_KEYS
+            and key not in hero_items._FRAME_KEYS)
+        base = {"key": key, "value": value}
+        if was_float:
+            base["float"] = True
+        fmt_battery.append({**base,
+                            "out": hero_items._fmt_mech_value(key, value)})
+        fmt_battery.append({**base, "en": True,
+                            "out": hero_items._fmt_mech_value(
+                                key, value, en=True)})
+
+    # resolve_shop_target: prioritas tersimpan > terseleksi > hidup pertama
+    # > mati pertama (identitas hero direkam sebagai INDEX).
+    resolve_cases = []
+    for saved in (None, 0, 2):
+        for selected in (None, 0, 1, 3):
+            alive = [False, True, False, True]
+            game = SimpleNamespace(itemshop_target_hero=None,
+                                   selected_hero=None)
+            heroes = [_HiHero(alive=alive[i]) for i in range(4)]
+            if saved is not None:
+                game.itemshop_target_hero = heroes[saved]
+            if selected is not None:
+                game.selected_hero = heroes[selected]
+            chosen = hero_items._resolve_shop_target(game, heroes)
+            expect = heroes.index(chosen) if chosen in heroes else None
+            resolve_cases.append({
+                "alive": alive, "saved": saved, "selected": selected,
+                "expect": expect,
+            })
+    resolve_cases.append({"alive": [], "saved": None, "selected": None,
+                          "expect": None})
+
+    # deliver_pending_forge_items: kapasitas slot + item tak dikenal.
+    deliver_cases = []
+    for pending, free_slots in [
+        (["dead_edge"], 6),
+        (["dead_edge", "moon_shard"], 6),
+        (["dead_edge", "steel_aegis", "moon_shard"], 1),
+        ([], 6),
+        (["nonexistent_item", "dead_edge"], 6),
+        (["dead_edge", "steel_aegis"], 0),
+    ]:
+        hero = _HiHero(alive=False)
+        fill = 6 - free_slots
+        hero.items.slots = ["moon_shard"] * fill + [None] * (6 - fill)
+        hero._pending_forge_items = list(pending)
+        delivered = hero_items.deliver_pending_forge_items(hero)
+        deliver_cases.append({
+            "pending": list(pending), "free_slots": free_slots,
+            "delivered": delivered,
+            "remaining": list(hero_items.pending_forge_items(hero)),
+        })
+
+    hero_level_mult_cases = []
+    for lv in list(range(0, 17)) + [20]:
+        h = SimpleNamespace(level=lv)
+        hero_level_mult_cases.append(
+            {"level": lv, "out": hero_items._hero_level_mult(h)})
+
+    section = {
+        "counts": {"catalog": len(hero_items.ITEM_CATALOG),
+                   "pages": len(pages), "order": len(shop_pages["order"]),
+                   "mechanics": len(mechanics),
+                   "fmt_battery": len(fmt_battery),
+                   "resolve_cases": len(resolve_cases),
+                   "deliver_cases": len(deliver_cases)},
+        "item_class": item_class,
+        "shop_pages": shop_pages,
+        "mechanics": mechanics,
+        "mechanics_en": mechanics_en,
+        "fmt_battery": fmt_battery,
+        "resolve_cases": resolve_cases,
+        "deliver_cases": deliver_cases,
+        "hero_level_mult": hero_level_mult_cases,
+        "note": "oracle port hero_items.py -> HeroItems.gd (FASE 29): "
+                "kelas item + halaman toko + mekanik detail (id/en) + "
+                "pesanan forge tertunda + target toko + pengali level.",
+    }
+    return section
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -10568,6 +10735,11 @@ def make_fixture(core, entity, levels, paths):
         # catch-up starter + helper numerik). Direplay
         # HeroBalanceParityTest. Blob besar = string kompak, grid = objek.
         "hero_balance": make_hero_balance_fixture(core, entity),
+        # FASE 29 — PORT hero_items.py -> HeroItems.gd: oracle logika murni
+        # item (kelas item, halaman toko, mekanik detail id/en, pesanan forge
+        # tertunda, target toko, pengali level). Direplay
+        # HeroItemsParityTest. Objek (kecil, enak di-review).
+        "hero_items": make_hero_items_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -10819,6 +10991,15 @@ def main():
               f"{hb['counts']['calibrate_rows']} baris kalibrasi, "
               f"{len(hb['helpers']['py_round'])} round + "
               f"{len(hb['helpers']['py_round_n'])} round_n baterai")
+        hi = actual["hero_items"]
+        print("             hero-items oracle: "
+              f"{hi['counts']['catalog']} item ({len(hi['item_class'])} kelas), "
+              f"{hi['counts']['pages']} halaman toko, "
+              f"{hi['counts']['mechanics']} mekanik (id+en), "
+              f"{hi['counts']['fmt_battery']} fmt baterai, "
+              f"{hi['counts']['resolve_cases']} target toko, "
+              f"{hi['counts']['deliver_cases']} kirim forge, "
+              f"{len(hi['hero_level_mult'])} pengali level")
 
 
 if __name__ == "__main__":
