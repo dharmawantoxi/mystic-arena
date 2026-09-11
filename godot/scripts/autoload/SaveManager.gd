@@ -590,3 +590,25 @@ func set_setting(key: String, value: float, persist: bool = true) -> void:
 	data["settings"][key] = value
 	if persist:
 		save()
+
+
+## Pasangan get_setting/set_setting untuk nilai STRING. Pasangan di atas
+## bertipe float (volume/toggle/kecepatan), sedangkan bahasa antarmuka
+## adalah kode string "id"/"en" — paritas `GameSettings.language`
+## (_core.py:9141 default, :9167-9169 validasi saat load, :9193 disimpan).
+## Deviasi yang tercatat: pygame menyimpan setting di settings.json GLOBAL
+## (storage_paths.SAVE_DIR, bukan per slot); port Godot menyimpan semua
+## setting di `data["settings"]` per slot, jadi bahasa ikut per slot.
+func get_setting_str(key: String, default: String = "") -> String:
+	var s = data.get("settings", {})
+	if s is Dictionary and s.has(key):
+		return str(s[key])
+	return default
+
+
+func set_setting_str(key: String, value: String, persist: bool = true) -> void:
+	if not (data.get("settings") is Dictionary):
+		data["settings"] = {}
+	data["settings"][key] = value
+	if persist:
+		save()

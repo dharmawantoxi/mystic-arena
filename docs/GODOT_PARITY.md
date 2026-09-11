@@ -8,6 +8,66 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Lokalisasi UI `localization.py` (teks id/en + pilihan bahasa) — 11 September 2026 (FASE 30)
+
+`localization.py` (100 baris) adalah satu-satunya kamus teks UI dwibahasa
+pygame: **24 kunci × 2 bahasa**, bahasa aktif `_LANGUAGE`, dan
+`tr(key, **values)` dengan fallback berlapis (bahasa aktif → tabel `id` →
+kunci mentah; nilai placeholder hilang → **template mentah**, bukan crash dan
+bukan string kosong). Bahasa aktif disinkronkan `GameSettings` dan disimpan di
+`settings.json` GLOBAL. Rincian migrasi + peta pemanggil pygame:
+[LOCALIZATION_GODOTPP.md](LOCALIZATION_GODOTPP.md).
+
+| Bagian pygame | Sebelum (Godot) | Sesudah (FASE 30) |
+|---|---|---|
+| Modul `localization.py`: `_TEXT`, `LANGUAGES`, `LANGUAGE_LABELS`, `set_language`/`get_language`/`get_language_label`/`tr` (`:7-100`) | Tidak ada padanan sama sekali — setiap Control menulis teks Indonesia-nya sendiri, dan dokumen ini mencatat "UI Godot memang Indonesia" sebagai deviasi yang diterima | `scripts/utils/Localization.gd` (`class_name MysticLocalization`, semua `static`, `static var _language`): tabel 24 kunci × 2 bahasa disalin **persis** (tanda baca, spasi ganda, `—`, `•`), fallback identik, plus `_py_format`/`_py_str` yang menjaga semantik `str.format` + `str()` Python (float bulat `3.0` → `"3.0"`, `0.0` → `"0.0"`, `True`/`False`, `None`) — selisih `str()` Godot yang sama sudah ditangani `HeroItems._py_str` |
+| `tr(key, **values)` (`:92-100`) | — | `MysticLocalization.tr_text(key, values: Dictionary)`. **Deviasi nama yang dikunci oracle:** `Object.tr()` adalah method NATIVE engine (pintu masuk `TranslationServer`), jadi nama `tr` dihindari — oracle GAGAL kalau `static func tr(` muncul di port. `**values` Python menjadi Dictionary karena GDScript tidak punya keyword args |
+| Baris "Interface language" di PENGATURAN (`_core.py:6321-6329`) + tombol `language_prev`/`language_next` (`:7295-7303`) | Tidak ada; baris FASE 22 di bawah malah mencatat language sebagai "opsi pygame tanpa padanan kerja yang sengaja tidak dipalsukan" | `MainMenu._language_row()` + `_cycle_language()` — label barisnya SENDIRI terlokalisasi (`tr("language")` = "Bahasa"/"Language"), nilainya `get_language_label` ("Bahasa Indonesia"/"English"), posisi persis pygame (setelah Game Speed, sebelum seksi GRAPHICS), cycler membungkus ke dua arah seperti `(idx + delta) % len(languages)` Python, dan layar dibangun ulang setelah berubah (pygame menggambar ulang tiap frame) |
+| Sinkron bahasa aktif saat boot/load (`GameSettings.__new__` `:9116`, `_load` `:9170`) | Tidak ada — tidak ada yang membaca setelan bahasa | `AppShell._apply_interface_language()` di `_ready` autoload PALING AKHIR (jadi `SaveManager.load_save()` sudah selesai; `GameManager._ready` jalan lebih awal dan hanya melihat default), `GameManager.apply_language()` + sinkron ulang di `_load_gameplay_settings()` (boot + tiap `start_level`), kolom `bahasa` di banner boot, dan `lang=` di baris `SESSION START` `crash_log.txt` (bug laporan pemain bisa direproduksi bahasanya) |
+| `GameSettings.set_language` (`_core.py:9272-9278`): hanya `("id","en")`, lalu simpan + terapkan | Tidak ada | `GameManager.set_language()` (validasi → `Localization` → simpan → `signal language_changed`) + `var language` sebagai cermin; bahasa invalid **diabaikan** tanpa menyimpan dan tanpa sinyal. `language_changed` adalah pengganti "gambar ulang tiap frame" pygame |
+| Penyimpanan `language` di `settings.json` GLOBAL (`_core.py:9193`, `storage_paths.SAVE_DIR`) | `SaveManager.get_setting`/`set_setting` hanya float | `SaveManager.get_setting_str()`/`set_setting_str()` untuk kunci `settings.language`. **Deviasi tercatat:** port Godot menyimpan semua setting per slot (precedent `game_speed`/`fps_limit`), jadi bahasa ikut per slot — pygame global |
+| `en = get_language() == "en"` untuk mekanik/flavor item (`hero_items.py:1632`, `:3894`) | `HeroItems.build_item_mechanics(data, en, ...)` menerima flag dari pemanggil; tidak ada yang memberinya bahasa aktif (`ItemDB.item_mechanics` default `false`) | `MysticLocalization.is_english()` + `ItemDB.item_mechanics_localized(item_id)`. Signature `build_item_mechanics`/`item_mechanics` TIDAK diubah karena dikunci `HeroItemsParityTest` (33 item × id + en) |
+| Konsumen teks lain: notifikasi `ui.add_notification` (beli/antre/kirim/lepas item, `_core.py:2185`/`:8005`, `hero_items.py:4052-4097`), `ItemShopUI` (chip hero "MATI" + antrean, banner tanpa hero, label halaman), popup detail item Forge (7 kunci `item_detail_*`/hint) | — | **23 kunci diport sebagai DATA tanpa pemakai**, dan oracle mencetak daftarnya tiap run supaya tidak diam-diam diklaim "sudah": kanal notifikasi UI belum ada di port, `_update_hero_respawns` belum memanggil `deliver_pending_forge_items` (celah runtime yang sudah tercatat di baris FASE 29), `ShopPanel` tab ITEM adalah Control satu-scroll tanpa halaman/chip hero mati, dan popup detail item belum dibangun. Alasan per kelompok + syarat memakainya: `LOCALIZATION_GODOTPP.md` |
+
+**Validasi:** dua lapis. (1) `python3 tools/test_godot_localization_parity.py`
+— oracle TANPA pygame dan TANPA Godot: membaca tabel `Localization.gd` dari
+berkasnya (parser sadar-string + continuasi `\`), membandingkan **isi dan
+urutan** 24 kunci × 2 bahasa dengan `localization._TEXT`, `LANGUAGES`,
+`LANGUAGE_LABELS`, dan bahasa bawaan; mengaudit setiap template supaya hanya
+memakai `{nama}` polos (kontrak subset `_py_format`); memeriksa closed-world
+kunci `tr_text()` di `godot/**/*.gd`; dan menjaga `localization.json` tetap
+segar. (2) `godot --headless --path godot
+res://tests/LocalizationParityTest.tscn --quit-after 120` — replay fixture di
+engine: 48 kasus `tr` (setiap kunci × bahasa), 8 kasus tepi, 21 kasus
+`str.format`, 13 kasus `str()`, 7 `set_language`, 7 label, placeholder 48
+template, plus plumbing (`GameManager.set_language`/`apply_language` + sinyal,
+`SaveManager` setting string, `ItemDB.item_mechanics_localized`, baris BAHASA
++ cycler di layar PENGATURAN yang dibangun `MainMenu` produksi). Harness
+men-snapshot `SaveManager.data` + berkas slot dan memulihkannya; CI
+menjalankannya dengan `XDG_DATA_HOME` sementara. Kedua lapis masuk
+`godot-check.yml` (oracle di langkah **Linter statis**, scene sebagai langkah
+headless sendiri), dan `localization.py` + oracle-nya masuk filter `paths`.
+
+**Deviasi terdokumentasi:** (1) `tr` → `tr_text` (native `Object.tr()`),
+(2) `**values` → `Dictionary`, (3) `get_language_label(None)` → argumen `""`
+(string kosong juga jatuh ke bahasa aktif, sama seperti `language or
+_LANGUAGE` Python), (4) subset `str.format` — format spec/konversi/posisional
+tidak diimplementasi dan **diaudit agar tidak pernah dipakai** tabel ini,
+(5) setting bahasa per slot, bukan `settings.json` global, (6) tanpa
+`TranslationServer`/`.po`/`.csv` dan locale engine tidak disentuh — tabel
+inline supaya diff terhadap `localization.py` tetap terbaca mesin,
+(7) `signal language_changed` sebagai pengganti redraw-per-frame pygame.
+Binary Godot tidak tersedia di sandbox saat migrasi dibuat, jadi scene
+dijalankan CI; sebagai ganti, algoritma `_py_format`/`_py_str`/`tr_text`
+diterjemahkan 1:1 ke Python dan dijalankan terhadap SELURUH kasus fixture
+oracle (159 cek, 0 selisih) — sisa risikonya hal spesifik engine, bukan logika.
+
+**Yang tetap terbuka:** 23 kunci tanpa pemakai (butuh kanal notifikasi UI,
+pengiriman pesanan forge saat respawn, chip hero mati/antrean + halaman di
+toko item, dan popup detail item). Selama permukaan itu belum ada, teksnya
+sengaja TIDAK dipasang di UI mana pun supaya tidak ada string yang mengambang
+tanpa perilaku.
+
 ## Entry point `main.py` (boot, loop, siklus hidup) — 11 September 2026 (FASE 27)
 
 `main.py` (652 baris) adalah satu-satunya berkas pygame yang belum punya
@@ -390,7 +450,7 @@ Koreksi laporan visual/lapangan (bukan perilaku match yang sudah terkunci):
 | Layar menu | Menu hanya menutupi sebagian layar sehingga arena + HUD (bar nexus fallback `Lv0 · 0/1 HP`, footer hotkey) kelihatan di sampingnya — "tampilan berantakan" | `MainMenu` sekarang LAYAR PENUH eksplisit (anchors + offsets, bukan `set_anchors_preset` saja), backdrop **opak** (alpha 1.0) untuk semua state non-PAUSE, dan `menu_coverage_changed` membuat `Main` MENYEMBUNYIKAN `ArenaMap`/`Containers`/`FX`/slot layer/HUD selama menu non-PAUSE — arena tak mungkin lagi terlihat di belakang/sebelah menu. PAUSE = arena BEKU tetap kelihatan di belakang backdrop dim (0.62) — paritas pygame pause (frame terakhir + overlay). Sinkronisasi awal dipanggil `Main._ready` karena emit pertama `MainMenu._ready` mendahului koneksi. |
 | Bangunan toko di map | Gedung ITEM FORGE/HERO SHOP (gambar bake) tidak bisa diklik — toko hanya via H | `Main._on_click` prioritas #1 (paritas `_handle_left_click` item 1 `_core.py:7814-7826`): `ArenaMap.get_clicked_shop` (radius 60 = `shop_size` `_render.py:109`) — Radiant → tab ITEM, Dire → tab HERO, SFX `ui_click` 0.5. Beda disengaja yang tetap: pygame membuka item shop full-screen (`item_shop_open`), Godot memakai tab ITEM panel terpadu (sudah tercatat sebagai deviasi desain). |
 | Bar nexus HUD | Fallback `DIRE NEXUS Lv0 · 0/1 HP` menyesatkan saat nexus belum ada (menu/sebelum match) | Bar DISEMBUYIKAN sampai nexus eksis (`_refresh_bars`); nilai label kini dibaca dari node nexus (Lv1+ saat match mulai). |
-| PENGATURAN | Hanya 2 slider + hapus save — "tidak lengkap" | Dua kolom paritas struktur `_draw_settings` pygame: AUDIO (Master/SFX/BGM — master kini `var` + settings key `master` di `AudioManager.apply_settings`), GAMEPLAY (info difficulty [dipilih di PILIH LEVEL], **Screen Shake** [hidup: `Camera2D` kini masuk grup `camera` yang dibaca `Boss._shake` + guard `GameManager.screen_shake_enabled`], **Damage Numbers** [live ke `world_popups`]), PROGRESI (hapus slot aktif + dialog), catatan jujur CLOUD SAVE belum di-port. Opsi pygame tanpa padanan kerja (voice, game speed, language, FPS limit) sengaja tidak dipalsukan. |
+| PENGATURAN | Hanya 2 slider + hapus save — "tidak lengkap" | Dua kolom paritas struktur `_draw_settings` pygame: AUDIO (Master/SFX/BGM — master kini `var` + settings key `master` di `AudioManager.apply_settings`), GAMEPLAY (info difficulty [dipilih di PILIH LEVEL], **Screen Shake** [hidup: `Camera2D` kini masuk grup `camera` yang dibaca `Boss._shake` + guard `GameManager.screen_shake_enabled`], **Damage Numbers** [live ke `world_popups`]), PROGRESI (hapus slot aktif + dialog), catatan jujur CLOUD SAVE belum di-port. Opsi pygame tanpa padanan kerja (voice, game speed, language, FPS limit) sengaja tidak dipalsukan — game speed/FPS limit menyusul di FASE 25 dan **language di FASE 30** (`Localization.gd` + `MainMenu._language_row`), menyisakan voice playback. |
 | Hero shop / level select "kosong" | Katalog gagal muat tidak terlihat (layar hening) | Guard eksplisit: jika `HeroDB.heroes`/`BossDB.levels` kosong, layar menampilkan pesan merah + perintah `python tools/convert_to_godot.py`, bukan "tidak ada hero" generik. |
 | Dialog hapus slot | ESC membatalkan dialog tapi kartu slot tidak disegarkan | (dijaga) flag `_slot_delete_confirm` di-reset sebelum dialog disembunyikan. |
 | Screen shake | `Boss._shake` memanggil `call_group("camera", ...)` padahal Camera2D tidak terdaftar di grup `camera` → semua guncangan pygame (enrage, frenzy, ability) no-op | `Main._ready` mendaftarkan `Camera2D` ke grup `camera`. |
@@ -613,8 +673,10 @@ untuk hero terpilih; gate False hanya dipakai harness replay).
   dan seksi **CLOUD SAVE** gaya PC pygame (`_draw_cloud_buttons`
   `_core.py:6395-6455`: status `CLOUD: OFF (PC / belum diset)` + tombol
   upload/download inert + baris status — plugin Play Games tetap BELUM
-  diport, di pygame PC pun tombolnya tanpa akses). Yang TERBUKA eksplisit:
-  language (UI Godot memang Indonesia), voice playback (tanpa aset di kedua
+  diport, di pygame PC pun tombolnya tanpa akses). ~~language~~ **sudah
+  diport FASE 30** (`localization.py` → `Localization.gd` + baris BAHASA di
+  PENGATURAN, lihat seksi "Lokalisasi UI" di atas). Yang TERBUKA eksplisit:
+  voice playback (tanpa aset di kedua
   engine), cloud save fungsional (Play Games), difficulty-lock pygame
   ("terkunci sampai semua level selesai" — Godot memilih difficulty
   bebas di PILIH LEVEL, deviasi terdokumentasi).
@@ -734,6 +796,9 @@ godot --headless --path godot res://tests/TouchHudParityTest.tscn --quit-after 3
 godot --headless --path godot res://tests/SystemPerfParityTest.tscn --quit-after 300
 # Blok `performance.py` + `fps_counter.py` _system.py (oracle pygame + fixture):
 python3 tools/test_system_perf_parity.py
+# Lokalisasi `localization.py` -> Localization.gd (oracle TANPA pygame/Godot):
+python3 tools/test_godot_localization_parity.py
+godot --headless --path godot res://tests/LocalizationParityTest.tscn --quit-after 120
 python3 godot/tools/test_godot_log_gate.py
 ```
 
@@ -882,6 +947,24 @@ dikenal tetap diantrikan), `_resolve_shop_target` (tersimpan > terseleksi
 (level 0..20). Sisi Godot memakai `HeroItems.gd` dengan katalog
 `items.json` disuntik + `HeroDB.hero_levels_int()` untuk pengali level.
 Regenerasi fixture HANYA bila `hero_items.py` berubah.
+
+`LocalizationParityTest` memutar ulang **seluruh** `localization.json` (objek
+JSON) pada `Localization.gd` + jalur produksi `GameManager`/`SaveManager`/
+`ItemDB`/`MainMenu`. Oracle-nya `localization.py` yang dijalankan apa adanya:
+tabel 24 kunci × 2 bahasa, 48 hasil `tr()` (setiap kunci × bahasa dengan nilai
+contoh), 8 kasus tepi (kunci tak dikenal → kunci mentah, nilai hilang →
+template mentah), 21 kasus `str.format` (escape `{{`, kurung tunggal →
+`ValueError` → mentah, float `3.0` → `"3.0"`), 13 kasus `str()`, 7
+`set_language` (termasuk `""`/`"ID"`/`"en-US"`/`null` → `id`), 7 label, dan
+daftar placeholder per kunci. Yang di sisi Godot juga dikunci: bahasa aktif
+setelah boot == setting tersimpan, `set_language` menolak bahasa invalid tanpa
+menyimpan/memancarkan sinyal, cycler `<`/`>` membungkus ke dua arah, dan layar
+PENGATURAN produksi benar-benar memuat label `Bahasa` + `Bahasa Indonesia`.
+Fixture-nya dijaga **dua lapis**: `tools/test_godot_localization_parity.py`
+membandingkan tabel di `Localization.gd` dengan `localization.py` baris demi
+baris tanpa engine (jalan di langkah Linter statis CI), dan scene ini
+menjalankan ulang hasilnya di dalam Godot. Regenerasi fixture HANYA bila
+`localization.py` berubah.
 
 `BossDeathRewardParityTest` memutar ulang **seluruh** seksi
 `boss_death_rewards` (objek JSON, bukan pembacaan string kode). Oracle

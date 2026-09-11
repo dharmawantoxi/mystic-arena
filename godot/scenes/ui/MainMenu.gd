@@ -1679,9 +1679,11 @@ func _try_unlock_hero(hero_type: String) -> void:
 
 ## Layout 2 kolom — paritas struktur _draw_settings pygame
 ## (_core.py:6221-6390): KOLOM KIRI = AUDIO + CLOUD SAVE, KOLOM KANAN =
-## GAMEPLAY + DANGER ZONE. Opsi yang tidak punya padanan kerja di port
-## Godot (voice, game speed, language, FPS limit) sengaja TIDAK
-## dipalsukan — ditulis sebagai catatan apa adanya.
+## GAMEPLAY + DANGER ZONE. Opsi pygame yang tidak punya padanan kerja di
+## port Godot sengaja TIDAK dipalsukan — ditulis sebagai catatan apa
+## adanya (voice: tidak ada aset voice di kedua engine). Baris BAHASA
+## (_core.py:6321-6329) hidup lewat port localization.py — lihat
+## _language_row() + docs/LOCALIZATION_GODOTPP.md.
 func _build_settings() -> void:
 	_screen_header("PENGATURAN")
 
@@ -1777,6 +1779,10 @@ func _build_settings() -> void:
 	# GameManager.apply_game_speed).
 	right.add_child(_cycler_row("Game Speed", [0.5, 1.0, 1.5, 2.0],
 		"game_speed", 1.0))
+	# Bahasa antarmuka — paritas baris "Interface language" pygame
+	# (_core.py:6321-6329), posisinya persis: SETELAH Game Speed, SEBELUM
+	# seksi GRAPHICS. Label + nilainya berasal dari port localization.py.
+	right.add_child(_language_row())
 
 	# ── GRAPHICS (paritas seksi FPS LIMIT pygame) ──
 	right.add_child(_settings_header("GRAPHICS", "gear", UiTheme.EDGE_GOLD))
@@ -1803,7 +1809,7 @@ func _build_settings() -> void:
 	var note := Label.new()
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UiTheme.style_label(note,
-		"Volume & toggle disimpan di SaveManager.data[\"settings\"] " \
+		"Volume, toggle & bahasa disimpan di SaveManager.data[\"settings\"] " \
 		+ "per slot dan langsung berlaku.",
 		UiTheme.body_medium(), 11, UiTheme.TEXT_DIM)
 	right.add_child(note)
@@ -1903,6 +1909,61 @@ func _cycler_label(key: String, v: float) -> String:
 	if key == "fps_limit":
 		return "TANPA BATAS" if int(v) == 0 else "%d FPS" % int(v)
 	return str(v)
+
+
+## Baris BAHASA — paritas `_draw_option_setting(col2_x, y, 340,
+## tr("language"), get_language_label(settings.language), "language")`
+## (_core.py:6321-6329). Bentuk barisnya mengikuti _cycler_row (label +
+## `<` nilai `>`) karena pygame juga memakai tombol language_prev/
+## language_next (_core.py:7295-7303).
+##
+## Label baris ini SENDIRI terlokalisasi ("Bahasa" / "Language") dan
+## nilainya adalah label manusia ("Bahasa Indonesia" / "English") — jadi
+## setelah bahasa berubah layar dibangun ulang (pygame menggambar ulang
+## seluruh menu tiap frame; Godot sekali per _show()).
+func _language_row() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var lab := Label.new()
+	UiTheme.style_label(lab, MysticLocalization.tr_text("language"),
+		UiTheme.body_medium(), 20, UiTheme.TEXT_BODY)
+	lab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(lab)
+	# Nilai = label bahasa AKTIF. pygame membaca `settings.language`
+	# (_core.py:6327) yang selalu sinkron dengan localization karena
+	# set_language menulis keduanya; padanan Godot-nya adalah cermin
+	# GameManager.language (diisi AppShell saat boot dari save).
+	var val_label := Label.new()
+	UiTheme.style_label(val_label,
+		MysticLocalization.get_language_label(GameManager.language),
+		UiTheme.body_semibold(), 20, UiTheme.GOLD_TEXT)
+	val_label.custom_minimum_size = Vector2(170, 0)
+	val_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var prev := PygameButton.pill_button("<", "neutral", "", 28, 28)
+	prev.pressed.connect(_cycle_language.bind(-1))
+	var next := PygameButton.pill_button(">", "neutral", "", 28, 28)
+	next.pressed.connect(_cycle_language.bind(1))
+	row.add_child(prev)
+	row.add_child(val_label)
+	row.add_child(next)
+	return row
+
+
+## Putar bahasa — paritas handler language_prev/language_next
+## (_core.py:7295-7303): `languages = ["id", "en"]`, index bahasa aktif
+## (tidak dikenal -> 0), delta -1/+1, membungkus modulo, lalu
+## `settings.set_language(...)` (validasi + simpan + sinkron localization).
+func _cycle_language(direction: int) -> void:
+	var options: Array = MysticLocalization.languages()
+	if options.is_empty():
+		return
+	var idx := options.find(GameManager.language)
+	if idx < 0:
+		idx = 0
+	idx = (idx + direction + options.size()) % options.size()
+	GameManager.set_language(str(options[idx]))
+	_show(State.SETTINGS)
 
 
 ## Umpan balik tombol cloud di PC pygame: status berubah, tanpa akses

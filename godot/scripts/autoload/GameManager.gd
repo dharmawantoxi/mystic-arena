@@ -51,6 +51,11 @@ signal nexus_destroyed(team: String, killer_team: String)
 signal nexus_upgraded(team: String, level: int)
 signal game_over(victory: bool)
 signal difficulty_changed(difficulty: String)
+## Bahasa antarmuka berubah (paritas GameSettings.set_language
+## _core.py:9272-9278 yang memanggil localization.set_language). Layar yang
+## teksnya terlokalisasi menyegarkan diri lewat sinyal ini — pygame tidak
+## butuh sinyal karena seluruh UI digambar ulang tiap frame.
+signal language_changed(language: String)
 signal selection_changed
 signal shop_changed
 signal tower_built(tower: Node)
@@ -386,14 +391,41 @@ static func format_gold_rate(rate: float) -> String:
 var screen_shake_enabled: bool = true
 ## Damage numbers (GameSettings.damage_numbers_enabled).
 var damage_numbers_enabled: bool = true
+## Bahasa antarmuka (GameSettings.language, _core.py:9141). Cermin dari
+## MysticLocalization supaya pemanggil tidak perlu membaca dua sumber.
+var language: String = MysticLocalization.DEFAULT_LANGUAGE
 
 
-## Sinkronkan kedua flag dari save (dipanggil boot + tiap start_level).
+## Sinkronkan flag gameplay + bahasa antarmuka dari save (dipanggil boot +
+## tiap start_level).
 func _load_gameplay_settings() -> void:
 	screen_shake_enabled = SaveManager.get_setting("screen_shake", 1.0) > 0.5
 	damage_numbers_enabled = SaveManager.get_setting(
 		"damage_numbers_enabled", 1.0) > 0.5
 	world_popups.damage_numbers_enabled = damage_numbers_enabled
+	apply_language(SaveManager.get_setting_str("language",
+		MysticLocalization.DEFAULT_LANGUAGE))
+
+
+## Terapkan bahasa dari save TANPA menulis apa pun — padanan pemanggilan
+## `localization.set_language` saat GameSettings dibuat (_core.py:9116) dan
+## saat settings.json dibaca (_core.py:9170). Nilai tak dikenal jatuh ke
+## "id" di dalam MysticLocalization.set_language, persis Python-nya.
+func apply_language(lang: String) -> void:
+	var previous := language
+	language = MysticLocalization.set_language(lang)
+	if language != previous:
+		language_changed.emit(language)
+
+
+## Pilihan pemain di layar PENGATURAN — paritas GameSettings.set_language
+## (_core.py:9272-9278): bahasa di luar ("id","en") DIABAIKAN (tidak
+## disimpan, tidak diterapkan), yang valid langsung berlaku + tersimpan.
+func set_language(lang: String) -> void:
+	if not MysticLocalization.LANGUAGES.has(lang):
+		return
+	apply_language(lang)
+	SaveManager.set_setting_str("language", lang, true)
 
 
 func set_screen_shake(enabled: bool) -> void:

@@ -124,8 +124,10 @@ Pilih difficulty di menu PILIH LEVEL sebelum match.
   pygame FASE 21); **LANJUTKAN** langsung mulai level berikutnya.
 - PENGATURAN berisi: Volume Master/SFX/BGM, Screen Shake (hidup — camera
   trauma), Damage Numbers (live), info difficulty (dipilih di PILIH LEVEL),
-  HAPUS SAVE slot aktif (dialog konfirmasi), dan catatan jujur bahwa
-  cloud save Play Games belum di-port.
+  cycler Game Speed + FPS Limit, **baris BAHASA** (`< Bahasa Indonesia >` —
+  port `localization.py`, lihat "Lokalisasi teks UI" di bawah), HAPUS SAVE
+  slot aktif (dialog konfirmasi), dan catatan jujur bahwa cloud save Play
+  Games belum di-port.
 
 ### Tombol debug
 
@@ -522,6 +524,40 @@ Uji regresinya: `tests/RenderFxParityTest.tscn` — fixture
 `tests/fixtures/render_fx.json` (419 KB; 73 frame percikan, 32 frame/792 op
 ledakan, 4 skenario `add_hit_particles` + batas 500/80, 130 frame + 490 polygon
 panah lane, wiring `spark_fx`).
+
+## Lokalisasi teks UI (Fase 30 — port `localization.py`)
+
+```
+godot/scripts/utils/Localization.gd   — class_name MysticLocalization (semua static): TEXT 24 kunci × 2 bahasa, LANGUAGES, LANGUAGE_LABELS, set_language/get_language/get_language_label/tr_text/is_english, _py_format/_py_str (semantik str.format + str() Python)
+godot/tests/LocalizationParityTest.gd — replay fixture di engine + plumbing (GameManager/SaveManager/ItemDB/MainMenu)
+godot/tests/fixtures/localization.json — oracle: dihasilkan localization.py ASLI
+tools/test_godot_localization_parity.py — oracle TANPA pygame/Godot: tabel GDScript == localization.py, audit placeholder, fixture segar
+```
+
+Pakai `MysticLocalization.tr_text("kunci", {"nama": nilai})` untuk teks UI
+baru — **jangan** menulis kalimat dua kali. Namanya `tr_text`, bukan `tr`,
+karena `Object.tr()` adalah method native engine (TranslationServer); oracle
+menggagalkan `static func tr(` di port.
+
+Bahasa aktif disinkronkan saat boot oleh `AppShell._apply_interface_language()`
+(autoload paling akhir, jadi save sudah terbaca), dicerminkan
+`GameManager.language`, dan diubah pemain lewat baris BAHASA di PENGATURAN
+(`GameManager.set_language()` → validasi `("id","en")` → simpan →
+`signal language_changed`). `ItemDB.item_mechanics_localized(item_id)`
+mengembalikan mekanik item dalam bahasa aktif (padanan
+`en = get_language() == "en"` di `hero_items.py:1632`).
+
+Catatan jujur: baru kunci `language` yang punya pemakai UI. 23 kunci lain
+(notifikasi forge, chip hero MATI/antrean, banner + halaman toko item, popup
+detail item) diport sebagai DATA dan menunggu permukaan UI-nya — oracle
+mencetak daftarnya setiap run, dan alasan per kelompok ada di
+[`../docs/LOCALIZATION_GODOTPP.md`](../docs/LOCALIZATION_GODOTPP.md).
+
+```bash
+python3 tools/test_godot_localization_parity.py                 # oracle tanpa engine
+python3 tools/test_godot_localization_parity.py --write-fixture # regenerasi (hanya bila localization.py berubah)
+XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/LocalizationParityTest.tscn --quit-after 120
+```
 
 ## Kaizen Skeleton2D (showcase / opt-in)
 

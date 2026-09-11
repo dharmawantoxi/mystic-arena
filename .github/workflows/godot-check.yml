@@ -30,6 +30,7 @@ on:
       - '_render.py'
       - 'hero_items.py'
       - 'hero_balance.py'
+      - 'localization.py'
       - '_system.py'
       - 'tools/test_damage_school.py'
       - 'levels/**'
@@ -44,6 +45,7 @@ on:
       - 'tools/test_basic_attack_no_impact_fx.py'
       - 'tools/test_system_perf_parity.py'
       - 'tools/test_render_parity.py'
+      - 'tools/test_godot_localization_parity.py'
       - 'main_desktop_legacy.py'
       - 'main.py'
       - '.github/workflows/godot-check.yml'
@@ -56,6 +58,7 @@ on:
       - '_render.py'
       - 'hero_items.py'
       - 'hero_balance.py'
+      - 'localization.py'
       - '_system.py'
       - 'tools/test_damage_school.py'
       - 'levels/**'
@@ -70,6 +73,7 @@ on:
       - 'tools/test_basic_attack_no_impact_fx.py'
       - 'tools/test_system_perf_parity.py'
       - 'tools/test_render_parity.py'
+      - 'tools/test_godot_localization_parity.py'
       - 'main_desktop_legacy.py'
       - 'main.py'
       - '.github/workflows/godot-check.yml'
@@ -111,6 +115,12 @@ jobs:
           python3 godot/tools/check_refs.py godot
           python3 godot/tools/particles_lint.py godot
           python3 godot/tools/test_godot_log_gate.py
+          # localization.py -> Localization.gd: tabel teks id/en (24 kunci x 2
+          # bahasa) dibandingkan baris demi baris dengan modul pygame ASLI,
+          # placeholder diaudit, dan fixture LocalizationParityTest diperiksa
+          # segar. Tidak butuh pygame maupun Godot — drift satu tanda baca pun
+          # gagal di sini, sebelum engine diunduh.
+          python3 tools/test_godot_localization_parity.py
           # BossKit.gd adalah HASIL GENERATE dari bosses/base_boss.py —
           # gagal di sini berarti ada perubahan smart-AI pygame yang belum
           # ditranspile (regenerasi: python3 tools/gen_boss_smart_ai.py).
@@ -923,6 +933,33 @@ jobs:
             cat /tmp/mainentry.gate
             echo "::error::MAINENTRY-FAIL-TAIL: $(tail -40 /tmp/mainentry.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::MAINENTRY-FAIL-LINES: $(grep -m40 'FAIL\\|SCRIPT ERROR\\|Parse Error' /tmp/mainentry.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4x. LocalizationParityTest: port localization.py -> Localization.gd ──
+      # Oracle-nya dua lapis: (1) tools/test_godot_localization_parity.py di
+      # langkah statis membandingkan tabel teks GDScript dengan localization.py
+      # baris demi baris (tanpa engine), (2) scene ini memutar ulang fixture
+      # yang dihasilkan modul pygame ASLI di dalam engine betulan — termasuk
+      # fallback tr() (kunci tak dikenal -> kunci mentah, nilai hilang ->
+      # template mentah), set_language invalid -> "id", dan plumbing
+      # GameManager.set_language / SaveManager / baris BAHASA di PENGATURAN.
+      # user:// terisolasi: harness menulis setting bahasa lalu memulihkan
+      # berkas slot seperti semula.
+      - name: "LocalizationParityTest (localization.py ↔ Localization.gd)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/LocalizationParityTest.tscn --quit-after 120 2>&1 | tee /tmp/l10n.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/l10n.log --label "LocalizationParityTest" \
+              --require "[LocalizationParityTest] PASS" > /tmp/l10n.gate 2>&1; then
+            cat /tmp/l10n.gate
+          else
+            cat /tmp/l10n.gate
+            echo "::error::L10N-FAIL-TAIL: $(tail -40 /tmp/l10n.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::L10N-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/l10n.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 
