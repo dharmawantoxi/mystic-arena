@@ -131,8 +131,8 @@ func _test_fmt_battery() -> void:
 	for c in (_hi["fmt_battery"] as Array):
 		var key := str(c["key"])
 		var v: Variant = c["value"]
-		var en := (c.get("en", false) == true)
-		var was_float := (c.get("float", false) == true)
+		var en: bool = (c.get("en", false) == true)
+		var was_float: bool = (c.get("float", false) == true)
 		var out: String = HeroItems.fmt_mech_value(key, v, en, was_float)
 		_expect(out == str(c["out"]),
 			"fmt %s %s -> %s (ekspektasi %s)" % [key, str(v), out,
