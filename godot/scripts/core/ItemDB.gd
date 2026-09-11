@@ -324,6 +324,14 @@ func item_mechanics(item_id: String, en: bool = false) -> Array:
 	return HeroItems.build_item_mechanics(get_item(item_id), en, item_id)
 
 
+## Mekanik detail item dalam BAHASA ANTARMUKA AKTIF — paritas
+## `en = get_language() == "en"` di hero_items.py:1632 (dan :3894 untuk
+## flavor text). Pemakai UI memanggil ini, bukan `item_mechanics`, supaya
+## popup detail item ikut bahasa yang dipilih pemain di PENGATURAN.
+func item_mechanics_localized(item_id: String) -> Array:
+	return item_mechanics(item_id, MysticLocalization.is_english())
+
+
 ## Halaman toko SELARAS batas kelas — delegasi HeroItems.build_shop_pages
 ## (paritas hero_items.SHOP_PAGES/SHOP_PAGE_META/ITEM_SHOP_ORDER).
 func shop_pages() -> Dictionary:

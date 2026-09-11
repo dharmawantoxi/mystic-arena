@@ -1,0 +1,1080 @@
+{
+  "default_language": "id",
+  "edge_cases": [
+    {
+      "key": "kunci_tak_ada",
+      "lang": "id",
+      "note": "kunci tak dikenal -> kunci mentah",
+      "out": "kunci_tak_ada",
+      "values": []
+    },
+    {
+      "key": "kunci_tak_ada",
+      "lang": "en",
+      "note": "kunci tak dikenal -> kunci mentah",
+      "out": "kunci_tak_ada",
+      "values": []
+    },
+    {
+      "key": "queued",
+      "lang": "id",
+      "note": "nilai hilang (KeyError) -> template mentah",
+      "out": "+{count} antrean",
+      "values": []
+    },
+    {
+      "key": "forge_delivered",
+      "lang": "en",
+      "note": "sebagian nilai hilang -> template mentah",
+      "out": "Forge items delivered to {hero}: {items}!",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "key": "dead",
+      "lang": "id",
+      "note": "nilai berlebih diabaikan",
+      "out": "MATI",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "key": "language",
+      "lang": "en",
+      "note": "tanpa placeholder",
+      "out": "Language",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ],
+        [
+          "page",
+          "int",
+          9
+        ]
+      ]
+    },
+    {
+      "key": "queued_item_count",
+      "lang": "id",
+      "note": "count 0 tetap disisipkan",
+      "out": "(0 item diantrikan)",
+      "values": [
+        [
+          "count",
+          "int",
+          0
+        ]
+      ]
+    },
+    {
+      "key": "shop_page_label",
+      "lang": "en",
+      "note": "page dua digit",
+      "out": "PAGE 12",
+      "values": [
+        [
+          "page",
+          "int",
+          12
+        ]
+      ]
+    }
+  ],
+  "fallback_cases": [],
+  "format_cases": [
+    {
+      "note": "dua placeholder berurutan",
+      "out": "Kaizen membeli Moon Shard!",
+      "template": "{hero} membeli {item}!",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ],
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ]
+      ]
+    },
+    {
+      "note": "satu placeholder int",
+      "out": "+3 antrean",
+      "template": "+{count} antrean",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ]
+      ]
+    },
+    {
+      "note": "nol tetap disisipkan",
+      "out": "+0 antrean",
+      "template": "+{count} antrean",
+      "values": [
+        [
+          "count",
+          "int",
+          0
+        ]
+      ]
+    },
+    {
+      "note": "page dua digit",
+      "out": "HAL 12",
+      "template": "HAL {page}",
+      "values": [
+        [
+          "page",
+          "int",
+          12
+        ]
+      ]
+    },
+    {
+      "note": "nilai berlebih diabaikan",
+      "out": "DIMILIKI: 3",
+      "template": "DIMILIKI: {count}",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ],
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "note": "tanpa placeholder",
+      "out": "MATI",
+      "template": "MATI",
+      "values": []
+    },
+    {
+      "note": "template kosong",
+      "out": "",
+      "template": "",
+      "values": []
+    },
+    {
+      "note": "spasi ganda + bullet",
+      "out": "(ketuk: info  •  tahan/kanan: drop)",
+      "template": "(ketuk: info  •  tahan/kanan: drop)",
+      "values": []
+    },
+    {
+      "note": "em dash",
+      "out": "MATI — pembelian baru dikirim setelah respawn",
+      "template": "MATI — pembelian baru dikirim setelah respawn",
+      "values": []
+    },
+    {
+      "note": "nilai hilang -> KeyError -> template mentah",
+      "out": "{hero} membeli {item}!",
+      "template": "{hero} membeli {item}!",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "note": "placeholder tunggal tanpa nilai",
+      "out": "{count}",
+      "template": "{count}",
+      "values": []
+    },
+    {
+      "note": "placeholder berulang",
+      "out": "x-y-x",
+      "template": "{a}-{b}-{a}",
+      "values": [
+        [
+          "a",
+          "str",
+          "x"
+        ],
+        [
+          "b",
+          "str",
+          "y"
+        ]
+      ]
+    },
+    {
+      "note": "escape kurung -> {literal}",
+      "out": "{literal}",
+      "template": "{{literal}}",
+      "values": []
+    },
+    {
+      "note": "persen bukan placeholder",
+      "out": "100% Kaizen",
+      "template": "100% {hero}",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "note": "kurung buka tak tertutup -> ValueError -> mentah",
+      "out": "{x",
+      "template": "{x",
+      "values": [
+        [
+          "x",
+          "int",
+          1
+        ]
+      ]
+    },
+    {
+      "note": "kurung tutup tunggal -> ValueError -> mentah",
+      "out": "a}b",
+      "template": "a}b",
+      "values": []
+    },
+    {
+      "note": "format spec tidak dipakai tabel ini",
+      "out": "{hero:>}x",
+      "template": "{hero:>}x",
+      "values": []
+    },
+    {
+      "note": "float desimal",
+      "out": "1.5",
+      "template": "{count}",
+      "values": [
+        [
+          "count",
+          "float",
+          1.5
+        ]
+      ]
+    },
+    {
+      "note": "float bulat -> 3.0 (bukan 3)",
+      "out": "3.0",
+      "template": "{count}",
+      "values": [
+        [
+          "count",
+          "float",
+          3.0
+        ]
+      ]
+    },
+    {
+      "note": "bool Python -> True",
+      "out": "True",
+      "template": "{flag}",
+      "values": [
+        [
+          "flag",
+          "bool",
+          true
+        ]
+      ]
+    },
+    {
+      "note": "None -> None",
+      "out": "None",
+      "template": "{v}",
+      "values": [
+        [
+          "v",
+          "null",
+          null
+        ]
+      ]
+    }
+  ],
+  "generated_from": "localization.py (oracle) — jangan edit tangan",
+  "initial_language": "id",
+  "key_order": {
+    "en": [
+      "language",
+      "dead",
+      "queued",
+      "delivery_after_respawn",
+      "dead_delivery_hint",
+      "queued_item_count",
+      "no_hero",
+      "inventory_full",
+      "magic_only_denied",
+      "forge_purchase",
+      "forge_queued",
+      "forge_delivered",
+      "shop_no_hero_yet",
+      "shop_no_hero_banner",
+      "shop_page_label",
+      "item_dropped",
+      "item_dropped_short",
+      "item_card_detail_hint",
+      "item_detail_description",
+      "item_detail_stats",
+      "item_detail_flavor",
+      "item_detail_owned",
+      "item_detail_close_hint",
+      "item_inventory_hint"
+    ],
+    "id": [
+      "language",
+      "dead",
+      "queued",
+      "delivery_after_respawn",
+      "dead_delivery_hint",
+      "queued_item_count",
+      "no_hero",
+      "inventory_full",
+      "magic_only_denied",
+      "forge_purchase",
+      "forge_queued",
+      "forge_delivered",
+      "shop_no_hero_yet",
+      "shop_no_hero_banner",
+      "shop_page_label",
+      "item_dropped",
+      "item_dropped_short",
+      "item_card_detail_hint",
+      "item_detail_description",
+      "item_detail_stats",
+      "item_detail_flavor",
+      "item_detail_owned",
+      "item_detail_close_hint",
+      "item_inventory_hint"
+    ]
+  },
+  "label_cases": [
+    {
+      "active": "id",
+      "lang": null,
+      "out": "Bahasa Indonesia"
+    },
+    {
+      "active": "id",
+      "lang": "id",
+      "out": "Bahasa Indonesia"
+    },
+    {
+      "active": "en",
+      "lang": null,
+      "out": "English"
+    },
+    {
+      "active": "en",
+      "lang": "en",
+      "out": "English"
+    },
+    {
+      "active": "id",
+      "lang": "invalid",
+      "out": "Bahasa Indonesia"
+    },
+    {
+      "active": "id",
+      "lang": "fr",
+      "out": "Bahasa Indonesia"
+    },
+    {
+      "active": "id",
+      "lang": "",
+      "out": "Bahasa Indonesia"
+    }
+  ],
+  "labels": {
+    "en": "English",
+    "id": "Bahasa Indonesia"
+  },
+  "languages": [
+    "id",
+    "en"
+  ],
+  "placeholders": {
+    "dead": [],
+    "dead_delivery_hint": [],
+    "delivery_after_respawn": [],
+    "forge_delivered": [
+      "hero",
+      "items"
+    ],
+    "forge_purchase": [
+      "hero",
+      "item"
+    ],
+    "forge_queued": [
+      "item",
+      "hero"
+    ],
+    "inventory_full": [
+      "hero"
+    ],
+    "item_card_detail_hint": [],
+    "item_detail_close_hint": [],
+    "item_detail_description": [],
+    "item_detail_flavor": [],
+    "item_detail_owned": [
+      "count"
+    ],
+    "item_detail_stats": [],
+    "item_dropped": [
+      "item"
+    ],
+    "item_dropped_short": [
+      "item"
+    ],
+    "item_inventory_hint": [],
+    "language": [],
+    "magic_only_denied": [
+      "hero"
+    ],
+    "no_hero": [],
+    "queued": [
+      "count"
+    ],
+    "queued_item_count": [
+      "count"
+    ],
+    "shop_no_hero_banner": [],
+    "shop_no_hero_yet": [],
+    "shop_page_label": [
+      "page"
+    ]
+  },
+  "py_str_cases": [
+    {
+      "in": 3,
+      "kind": "int",
+      "out": "3"
+    },
+    {
+      "in": 0,
+      "kind": "int",
+      "out": "0"
+    },
+    {
+      "in": -7,
+      "kind": "int",
+      "out": "-7"
+    },
+    {
+      "in": 3.0,
+      "kind": "float",
+      "out": "3.0"
+    },
+    {
+      "in": 1.5,
+      "kind": "float",
+      "out": "1.5"
+    },
+    {
+      "in": 0.0,
+      "kind": "float",
+      "out": "0.0"
+    },
+    {
+      "in": -2.25,
+      "kind": "float",
+      "out": "-2.25"
+    },
+    {
+      "in": true,
+      "kind": "bool",
+      "out": "True"
+    },
+    {
+      "in": false,
+      "kind": "bool",
+      "out": "False"
+    },
+    {
+      "in": null,
+      "kind": "null",
+      "out": "None"
+    },
+    {
+      "in": "Kaizen",
+      "kind": "str",
+      "out": "Kaizen"
+    },
+    {
+      "in": "",
+      "kind": "str",
+      "out": ""
+    },
+    {
+      "in": "MATI — pembelian",
+      "kind": "str",
+      "out": "MATI — pembelian"
+    }
+  ],
+  "set_language_cases": [
+    {
+      "active": "id",
+      "in": "id",
+      "out": "id"
+    },
+    {
+      "active": "en",
+      "in": "en",
+      "out": "en"
+    },
+    {
+      "active": "id",
+      "in": "invalid",
+      "out": "id"
+    },
+    {
+      "active": "id",
+      "in": "",
+      "out": "id"
+    },
+    {
+      "active": "id",
+      "in": "ID",
+      "out": "id"
+    },
+    {
+      "active": "id",
+      "in": "en-US",
+      "out": "id"
+    },
+    {
+      "active": "id",
+      "in": null,
+      "out": "id"
+    }
+  ],
+  "text": {
+    "en": {
+      "dead": "DEAD",
+      "dead_delivery_hint": "DEAD — new purchases are delivered after respawn",
+      "delivery_after_respawn": "(delivered after respawn)",
+      "forge_delivered": "Forge items delivered to {hero}: {items}!",
+      "forge_purchase": "{hero} purchased {item}!",
+      "forge_queued": "{item} for {hero} will be delivered after respawn!",
+      "inventory_full": "{hero}'s inventory is full.",
+      "item_card_detail_hint": "TAP AN ITEM CARD = FULL INFO",
+      "item_detail_close_hint": "Tap outside the box to close details",
+      "item_detail_description": "DESCRIPTION",
+      "item_detail_flavor": "LORE",
+      "item_detail_owned": "OWNED: {count}",
+      "item_detail_stats": "STATS & EFFECTS",
+      "item_dropped": "Dropped {item} (no refund)",
+      "item_dropped_short": "Dropped {item}",
+      "item_inventory_hint": "(tap: info  •  hold/right-click: drop)",
+      "language": "Language",
+      "magic_only_denied": "{hero} is not a Magic-attribute hero - this item cannot be equipped.",
+      "no_hero": "There is no hero to receive this item.",
+      "queued": "+{count} queued",
+      "queued_item_count": "({count} item(s) queued)",
+      "shop_no_hero_banner": "NO HEROES ALIVE - summon a hero at HERO SHOP first; items below can still be browsed.",
+      "shop_no_hero_yet": "(no heroes yet - summon one at HERO SHOP first)",
+      "shop_page_label": "PAGE {page}"
+    },
+    "id": {
+      "dead": "MATI",
+      "dead_delivery_hint": "MATI — pembelian baru dikirim setelah respawn",
+      "delivery_after_respawn": "(dikirim setelah respawn)",
+      "forge_delivered": "Item Forge dikirim ke {hero}: {items}!",
+      "forge_purchase": "{hero} membeli {item}!",
+      "forge_queued": "{item} untuk {hero} dikirim setelah respawn!",
+      "inventory_full": "Inventory {hero} penuh.",
+      "item_card_detail_hint": "TAP KARTU ITEM = INFO LENGKAP",
+      "item_detail_close_hint": "Ketuk di luar kotak untuk menutup detail",
+      "item_detail_description": "DESKRIPSI",
+      "item_detail_flavor": "RIWAYAT",
+      "item_detail_owned": "DIMILIKI: {count}",
+      "item_detail_stats": "STAT & EFEK",
+      "item_dropped": "Melepas {item} (tanpa refund)",
+      "item_dropped_short": "Melepas {item}",
+      "item_inventory_hint": "(ketuk: info  •  tahan/kanan: drop)",
+      "language": "Bahasa",
+      "magic_only_denied": "{hero} bukan hero beratribut Magic - item ini tidak bisa dipakai.",
+      "no_hero": "Tidak ada hero untuk menerima item.",
+      "queued": "+{count} antrean",
+      "queued_item_count": "({count} item diantrikan)",
+      "shop_no_hero_banner": "TIDAK ADA HERO HIDUP - summon hero di HERO SHOP dulu; item di bawah tetap bisa dilihat.",
+      "shop_no_hero_yet": "(belum ada hero - summon dulu di HERO SHOP)",
+      "shop_page_label": "HAL {page}"
+    }
+  },
+  "tr_cases": [
+    {
+      "key": "language",
+      "lang": "id",
+      "out": "Bahasa",
+      "values": []
+    },
+    {
+      "key": "dead",
+      "lang": "id",
+      "out": "MATI",
+      "values": []
+    },
+    {
+      "key": "queued",
+      "lang": "id",
+      "out": "+3 antrean",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "delivery_after_respawn",
+      "lang": "id",
+      "out": "(dikirim setelah respawn)",
+      "values": []
+    },
+    {
+      "key": "dead_delivery_hint",
+      "lang": "id",
+      "out": "MATI — pembelian baru dikirim setelah respawn",
+      "values": []
+    },
+    {
+      "key": "queued_item_count",
+      "lang": "id",
+      "out": "(3 item diantrikan)",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "no_hero",
+      "lang": "id",
+      "out": "Tidak ada hero untuk menerima item.",
+      "values": []
+    },
+    {
+      "key": "inventory_full",
+      "lang": "id",
+      "out": "Inventory Kaizen penuh.",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "key": "magic_only_denied",
+      "lang": "id",
+      "out": "Kaizen bukan hero beratribut Magic - item ini tidak bisa dipakai.",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "key": "forge_purchase",
+      "lang": "id",
+      "out": "Kaizen membeli Moon Shard!",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ],
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ]
+      ]
+    },
+    {
+      "key": "forge_queued",
+      "lang": "id",
+      "out": "Moon Shard untuk Kaizen dikirim setelah respawn!",
+      "values": [
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ],
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "key": "forge_delivered",
+      "lang": "id",
+      "out": "Item Forge dikirim ke Kaizen: Moon Shard, Dead Edge!",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ],
+        [
+          "items",
+          "str",
+          "Moon Shard, Dead Edge"
+        ]
+      ]
+    },
+    {
+      "key": "shop_no_hero_yet",
+      "lang": "id",
+      "out": "(belum ada hero - summon dulu di HERO SHOP)",
+      "values": []
+    },
+    {
+      "key": "shop_no_hero_banner",
+      "lang": "id",
+      "out": "TIDAK ADA HERO HIDUP - summon hero di HERO SHOP dulu; item di bawah tetap bisa dilihat.",
+      "values": []
+    },
+    {
+      "key": "shop_page_label",
+      "lang": "id",
+      "out": "HAL 2",
+      "values": [
+        [
+          "page",
+          "int",
+          2
+        ]
+      ]
+    },
+    {
+      "key": "item_dropped",
+      "lang": "id",
+      "out": "Melepas Moon Shard (tanpa refund)",
+      "values": [
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ]
+      ]
+    },
+    {
+      "key": "item_dropped_short",
+      "lang": "id",
+      "out": "Melepas Moon Shard",
+      "values": [
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ]
+      ]
+    },
+    {
+      "key": "item_card_detail_hint",
+      "lang": "id",
+      "out": "TAP KARTU ITEM = INFO LENGKAP",
+      "values": []
+    },
+    {
+      "key": "item_detail_description",
+      "lang": "id",
+      "out": "DESKRIPSI",
+      "values": []
+    },
+    {
+      "key": "item_detail_stats",
+      "lang": "id",
+      "out": "STAT & EFEK",
+      "values": []
+    },
+    {
+      "key": "item_detail_flavor",
+      "lang": "id",
+      "out": "RIWAYAT",
+      "values": []
+    },
+    {
+      "key": "item_detail_owned",
+      "lang": "id",
+      "out": "DIMILIKI: 3",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "item_detail_close_hint",
+      "lang": "id",
+      "out": "Ketuk di luar kotak untuk menutup detail",
+      "values": []
+    },
+    {
+      "key": "item_inventory_hint",
+      "lang": "id",
+      "out": "(ketuk: info  •  tahan/kanan: drop)",
+      "values": []
+    },
+    {
+      "key": "language",
+      "lang": "en",
+      "out": "Language",
+      "values": []
+    },
+    {
+      "key": "dead",
+      "lang": "en",
+      "out": "DEAD",
+      "values": []
+    },
+    {
+      "key": "queued",
+      "lang": "en",
+      "out": "+3 queued",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "delivery_after_respawn",
+      "lang": "en",
+      "out": "(delivered after respawn)",
+      "values": []
+    },
+    {
+      "key": "dead_delivery_hint",
+      "lang": "en",
+      "out": "DEAD — new purchases are delivered after respawn",
+      "values": []
+    },
+    {
+      "key": "queued_item_count",
+      "lang": "en",
+      "out": "(3 item(s) queued)",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "no_hero",
+      "lang": "en",
+      "out": "There is no hero to receive this item.",
+      "values": []
+    },
+    {
+      "key": "inventory_full",
+      "lang": "en",
+      "out": "Kaizen's inventory is full.",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "key": "magic_only_denied",
+      "lang": "en",
+      "out": "Kaizen is not a Magic-attribute hero - this item cannot be equipped.",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "key": "forge_purchase",
+      "lang": "en",
+      "out": "Kaizen purchased Moon Shard!",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ],
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ]
+      ]
+    },
+    {
+      "key": "forge_queued",
+      "lang": "en",
+      "out": "Moon Shard for Kaizen will be delivered after respawn!",
+      "values": [
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ],
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ]
+      ]
+    },
+    {
+      "key": "forge_delivered",
+      "lang": "en",
+      "out": "Forge items delivered to Kaizen: Moon Shard, Dead Edge!",
+      "values": [
+        [
+          "hero",
+          "str",
+          "Kaizen"
+        ],
+        [
+          "items",
+          "str",
+          "Moon Shard, Dead Edge"
+        ]
+      ]
+    },
+    {
+      "key": "shop_no_hero_yet",
+      "lang": "en",
+      "out": "(no heroes yet - summon one at HERO SHOP first)",
+      "values": []
+    },
+    {
+      "key": "shop_no_hero_banner",
+      "lang": "en",
+      "out": "NO HEROES ALIVE - summon a hero at HERO SHOP first; items below can still be browsed.",
+      "values": []
+    },
+    {
+      "key": "shop_page_label",
+      "lang": "en",
+      "out": "PAGE 2",
+      "values": [
+        [
+          "page",
+          "int",
+          2
+        ]
+      ]
+    },
+    {
+      "key": "item_dropped",
+      "lang": "en",
+      "out": "Dropped Moon Shard (no refund)",
+      "values": [
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ]
+      ]
+    },
+    {
+      "key": "item_dropped_short",
+      "lang": "en",
+      "out": "Dropped Moon Shard",
+      "values": [
+        [
+          "item",
+          "str",
+          "Moon Shard"
+        ]
+      ]
+    },
+    {
+      "key": "item_card_detail_hint",
+      "lang": "en",
+      "out": "TAP AN ITEM CARD = FULL INFO",
+      "values": []
+    },
+    {
+      "key": "item_detail_description",
+      "lang": "en",
+      "out": "DESCRIPTION",
+      "values": []
+    },
+    {
+      "key": "item_detail_stats",
+      "lang": "en",
+      "out": "STATS & EFFECTS",
+      "values": []
+    },
+    {
+      "key": "item_detail_flavor",
+      "lang": "en",
+      "out": "LORE",
+      "values": []
+    },
+    {
+      "key": "item_detail_owned",
+      "lang": "en",
+      "out": "OWNED: 3",
+      "values": [
+        [
+          "count",
+          "int",
+          3
+        ]
+      ]
+    },
+    {
+      "key": "item_detail_close_hint",
+      "lang": "en",
+      "out": "Tap outside the box to close details",
+      "values": []
+    },
+    {
+      "key": "item_inventory_hint",
+      "lang": "en",
+      "out": "(tap: info  •  hold/right-click: drop)",
+      "values": []
+    }
+  ]
+}

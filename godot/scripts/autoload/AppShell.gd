@@ -112,9 +112,24 @@ func _ready() -> void:
 	if not headless():
 		_apply_fps_limit()
 	_start_boot_audio()
+	_apply_interface_language()
 	_write_session_log()
 	_print_boot_banner()
 	_boot_done = true
+
+
+## ══ BAHASA ANTARMUKA (paritas localization.py + GameSettings) ══
+## pygame menyinkronkan bahasa aktif saat singleton GameSettings dibuat
+## (_core.py:9116) dan setiap kali settings.json dibaca (_core.py:9170),
+## jadi teks UI sudah benar sebelum menu pertama digambar.
+##
+## Di Godot langkah ini milik AppShell karena autoload ini dipasang PALING
+## AKHIR (project.godot): saat `_ready()`-nya jalan, `SaveManager._ready()`
+## sudah selesai membaca berkas slot, sedangkan `GameManager._ready()` jalan
+## SEBELUM itu (urutan autoload) dan hanya melihat nilai default.
+func _apply_interface_language() -> void:
+	GameManager.apply_language(SaveManager.get_setting_str("language",
+		MysticLocalization.DEFAULT_LANGUAGE))
 
 
 ## true untuk `godot --headless` / server tanpa layar. Nama server tampilan
@@ -309,6 +324,8 @@ func _print_boot_banner() -> void:
 	print("  quality : %s (target %d FPS · adaptive %s)"
 			% [quality_level, target_fps(),
 			"ON" if adaptive_enabled else "OFF"])
+	print("  bahasa  : %s (%s)" % [GameManager.language,
+		MysticLocalization.get_language_label()])
 	print("  layar   : %s" % ("HEADLESS" if headless() else "JENDELA"))
 	print("  loop    : fixed %d Hz · catch-up %d langkah"
 			% [int(ProjectSettings.get_setting(
@@ -325,9 +342,11 @@ func _print_boot_banner() -> void:
 ## untuk kode lain lewat write_crash_log().
 func _write_session_log() -> void:
 	var info: Dictionary = Engine.get_version_info()
-	write_crash_log("SESSION START · %s · %s · %s · quality=%s"
-			% [str(info.get("string", "?")), OS.get_name(),
-			OS.get_model_name(), quality_level])
+	# `lang=` ikut tercatat: bug UI dari laporan pemain sering hanya bisa
+	# direproduksi kalau bahasa antarmukanya diketahui (localization.py).
+	write_crash_log("SESSION START · %s · %s · %s · quality=%s · lang=%s"
+		% [str(info.get("string", "?")), OS.get_name(),
+		OS.get_model_name(), quality_level, GameManager.language])
 
 
 func write_crash_log(text: String) -> void:
