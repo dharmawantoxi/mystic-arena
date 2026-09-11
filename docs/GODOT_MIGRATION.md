@@ -64,6 +64,9 @@ godot/
     core/HeroArchetypes.gd # Port hero_archetypes.py: arketipe 222 hero (dmg_type/playstyle/tier/power)
                            # + resistansi 216 boss (armor vs magic_resist per tema) + kurva mitigasi;
                            # blok AUTO-GENERATED di-refresh tools/analyze_hero_archetypes.py --emit-gdscript
+    core/HeroBalance.gd    # Port hero_balance.py: kalkulator balance (metrics, re-budget, paritas
+                           # sel/sekolah, jangkar pool, fixpoint, catch-up starter, kalibrasi resist;
+                           # FASE 28 — hitung-ulang == bake heroes.json via HeroBalanceParityTest)
     core/GameManagerConnector.gd # Jembatan Main.tscn → autoload (container + start_level)
     items/ItemInventory.gd # Port HeroItemInventory: 6 slot, cap stat, pasif, aura, crit
     skills/SkillBook.gd  # Port hero_skills/_bundle.py (6 hero starter + fallback generik)
@@ -252,6 +255,7 @@ ini salah satu celah visual yang belum ditutup.
 - `godot/scripts/autoload/GameManager.gd` — ekonomi, state menang/kalah, seleksi, gold AI, meta reward (`_grant_meta_reward`), `next_level()`/`is_replay`, enemy scaling
 - `godot/assets/shaders/outline.gdshader` — tweak outline_width/color
 - `hero_archetypes.py` → `godot/scripts/core/HeroArchetypes.gd` via `tools/analyze_hero_archetypes.py --emit-gdscript` (tabel hero juga tersedia sebagai `godot/data/hero_archetypes.json` via convert script)
+- `hero_balance.py` → `godot/scripts/core/HeroBalance.gd` port 1:1 (FASE 28): angka final tetap di-bake `heroes.json` oleh converter; logikanya (pristine/resolve/apply/calibrate/fixpoint/catch-up) dihitung ulang Godot dan dikunci seksi fixture `hero_balance` + `HeroBalanceParityTest` (termasuk hitung-ulang == bake untuk 216 hero). `HeroDB`/`GameManager` mendelegasikan rumus catch-up/hitung unlock ke modul ini.
 
 ### Verifikasi tanpa binary Godot
 
