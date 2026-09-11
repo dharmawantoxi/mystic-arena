@@ -115,12 +115,21 @@ template targetSdk 36; lihat Fase 6.)
 
 ### Langkah 1 — Convert data pygame → Godot
 ```bash
-# Butuh pygame (export_themes membaca map_components/themes.py) + SDL dummy
-# supaya tidak butuh display/perangkat audio:
+# 1a. Aset biner dulu (TANPA pygame/numpy/venv — os+shutil saja):
+python3 tools/convert_to_godot.py --assets
+# Output: godot/assets/sounds/*.wav (24)   -> AudioManager.gd
+#         godot/assets/items/*.png (33)    -> ItemIcons.gd (ikon ITEM FORGE)
+#         godot/assets/presplash.png       -> application/boot_splash/image
+# Ketiganya DI-GITIGNORE (duplikat ±19 MB dari assets/ pygame) jadi wajib
+# disalin ulang setiap clone. Belum disalin pun game tetap jalan: sunyi,
+# ikon item jadi badge prosedural, splash bawaan Godot.
+
+# 1b. Data JSON. Butuh pygame (export_themes membaca map_components/themes.py)
+# + SDL dummy supaya tidak butuh display/perangkat audio:
 python3 -m venv ~/.venv-mystic && ~/.venv-mystic/bin/pip install "pygame-ce==2.5.*"  # sekali saja
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ~/.venv-mystic/bin/python tools/convert_to_godot.py
 # Output: godot/data/heroes.json (222 hero), bosses.json, levels.json, themes.json (54 tema)
-#         + salin assets/sounds/*.wav -> godot/assets/sounds/ (di-gitignore)
+#         + menyalin ulang aset biner 1a di akhir
 # File ini dibaca HeroDB/BossDB/ArenaMap saat _ready()
 ```
 
@@ -236,6 +245,8 @@ Build time: Pygame 8-12 menit (p4a clone + compile) → **Godot 45 detik**.
 
 | **Fase 7** | Entry point `main.py` — boot, kebijakan loop, siklus hidup app (FASE 27) | ✅ DONE (2026-09-11): `scripts/autoload/AppShell.gd` (autoload terakhir — butuh AudioManager + SaveManager siap) = port lapisan APLIKASI `main.py` yang tidak punya pemilik lain: banner boot + `crash_log.txt` di direktori writable (`main.py:279-291`, `mobile/debug.py:427-450`), BGM `bgm_battle.wav` fade 3 dtk + ambient 0,8 SEBELUM menu (`main.py:160-164` — sebelumnya menu utama diam karena Godot baru memutar musik di `start_level`), preset kualitas (`auto_detect_quality`: Android/iOS = LOW 30 FPS, desktop = HIGH 60 FPS) + adaptive quality jendela 90 frame/26-52 FPS/cooldown 180-300 (`mobile/perf.py:861-911`), batas FPS `min(setting, target)` di perangkat sentuh (`main.py:620-641` — kini `GameManager.apply_fps_limit` mendelegasikannya supaya slider SETTINGS tidak melangkahi pembatas 30 FPS), dan siklus hidup: app ke latar membekukan BGM+ambient, kembali tidak menghidupkannya kalau pemain sedang di menu PAUSE (`_handle_background` `main.py:128-155`). Kebijakan loop ikut: `physics/common/max_physics_steps_per_frame=4` (paritas `MAX_CATCHUP` `main.py:332`; bawaan engine = 8) + pemeriksaan `AppShell._check_loop_policy()`. **Splash boot akhirnya tampil**: `SplashScreen.gd` tadinya node yatim (tidak ada di `main.tscn`, tidak pernah di-preload) sehingga Godot melompat langsung ke menu — kini `Main._maybe_show_splash()` memasangnya di atas menu sampai `finished` (dilewati di headless supaya input sintetis tes tidak tertelan). Peta blok lengkap: [MAIN_PY_COVERAGE.md](MAIN_PY_COVERAGE.md); uji: `godot --headless --path godot res://tests/MainEntryParityTest.tscn --quit-after 240` (langkah CI baru). Yang **sengaja tidak diport**: layar bootcheck/diagnostics (mengukur jalur blit SDL), getar haptik, 4 mode overlay debug, multi-sentuh penuh, dan cloud save poll (plugin Play Games). |
 
+| **Fase 8** | Migrasi aset biner pygame → project Godot (ikon item, presplash, suara) | ✅ DONE (2026-09-12): `assets/` pygame tidak terbaca `res://` (path engine tidak boleh keluar root project), jadi tiga kelompok berkas **diduplikasi** ke `godot/assets/` oleh `tools/convert_to_godot.py` — mode baru `--assets` (cuma os+shutil: tanpa pygame/numpy, aman dijalankan CI tepat setelah checkout): `sounds/` 24 .wav (sudah sejak Fase 4e), `items/` 33 PNG ikon ITEM FORGE, dan `presplash.png` 1280×720 → `application/boot_splash/image` (+`bg_color` #0B0A12 = `android.presplash_color` `buildozer.spec:78`). Ketiganya **di-gitignore** (±19 MB duplikat; sumber kebenaran tetap `assets/`) dan **disalin CI sebelum engine jalan** (`godot-check.yml` langkah 0 sebelum `--import`; `build-android-godot.yml` sebelum export — `EditorExportPlatform::get_forced_export_files` hanya memaksa presplash mentah ikut PCK kalau berkasnya ada di disk saat export). Sisi runtime: `scripts/utils/ItemIcons.gd` = port `hero_items.get_icon` (`:1661-1699`) — PNG di-scale CPU ke ukuran tampilan lalu di-cache per (item, ukuran) (paritas `smoothscale` `:1678` + `_ICON_CACHE` `:1659`, hemat VRAM di Android), mundur ke badge prosedural warna katalog kalau aset belum disalin; dipakai chip slot item `SkillBar` (26 px = `SLOT_SIZE-4`) + baris toko `ShopPanel` (`Button.icon` + `expand_icon` + `clip_text`), dan `ItemDB.item_icon()` membaca field `icon` `items.json`. Dikunci `tools/test_godot_asset_pipeline.py` (oracle tanpa engine, langkah CI baru: closed world 33 ikon ↔ `items.json`, `.gitignore`, urutan salin di kedua workflow, path `res://` == tujuan converter, `SFX_NAMES` ↔ .wav) + `HeroItemsParityTest._test_icons` + assertion ikon `UiHudParityTest`. Deviasi terdokumentasi: badge fallback tanpa label 5 huruf nama item (Godot tidak punya API raster font→Image) dan glow halo item aktif belum diport |
+
 **Baseline arena (audit 2026-09-07):** hero/boss memakai strip bake renderer
 Pygame, termasuk Kaizen. Rig `RendererRegistry.HERO["kaizen"]` kini **opt-in**
 (`mystic/rendering/experimental_hero_rigs=true`) atau jalankan
@@ -259,18 +270,26 @@ ini salah satu celah visual yang belum ditutup.
 - `godot/assets/shaders/outline.gdshader` — tweak outline_width/color
 - `hero_archetypes.py` → `godot/scripts/core/HeroArchetypes.gd` via `tools/analyze_hero_archetypes.py --emit-gdscript` (tabel hero juga tersedia sebagai `godot/data/hero_archetypes.json` via convert script)
 - `hero_balance.py` → `godot/scripts/core/HeroBalance.gd` port 1:1 (FASE 28): angka final tetap di-bake `heroes.json` oleh converter; logikanya (pristine/resolve/apply/calibrate/fixpoint/catch-up) dihitung ulang Godot dan dikunci seksi fixture `hero_balance` + `HeroBalanceParityTest` (termasuk hitung-ulang == bake untuk 216 hero). `HeroDB`/`GameManager` mendelegasikan rumus catch-up/hitung unlock ke modul ini.
-- `hero_items.py` → `godot/scripts/core/HeroItems.gd` port 1:1 (FASE 29): logika murni item yang belum punya pembaca Godot (kelas item `get_item_class`, halaman toko `build_shop_pages`, mekanik detail popup `build_item_mechanics`/`fmt_mech_value`, pesanan forge tertunda `pending_forge_items`/`deliver_pending_forge_items`, target toko `resolve_shop_target`, pengali level `hero_level_mult`). `ItemDB` mendelegasikan `item_class`/`item_class_label`/`item_mechanics`/`shop_pages` (badge kelas kartu toko tampil di ShopPanel). Dikunci seksi fixture `hero_items` + `HeroItemsParityTest`.
+- `hero_items.py` → `godot/scripts/core/HeroItems.gd` port 1:1 (FASE 29): logika murni item yang belum punya pembaca Godot (kelas item `get_item_class`, halaman toko `build_shop_pages`, mekanik detail popup `build_item_mechanics`/`fmt_mech_value`, pesanan forge tertunda `pending_forge_items`/`deliver_pending_forge_items`, target toko `resolve_shop_target`, pengali level `hero_level_mult`). `ItemDB` mendelegasikan `item_class`/`item_class_label`/`item_mechanics`/`shop_pages` (badge kelas kartu toko tampil di ShopPanel). Dikunci seksi fixture `hero_items` + `HeroItemsParityTest`. **Ikon item (`get_icon` + `_ICON_CACHE`, `hero_items.py:1661-1699`) → `scripts/utils/ItemIcons.gd` + `ItemDB.item_icon()`**: 33 PNG `assets/items/` disalin `tools/convert_to_godot.py --assets` ke `godot/assets/items/` (di-gitignore), dimuat dengan penjaga `ResourceLoader.exists()` lalu di-scale CPU ke ukuran tampilan (paritas `smoothscale`, cache per (item, ukuran) — hemat VRAM di Android), dan tanpa berkasnya mundur ke badge prosedural warna katalog — dipakai chip slot item `SkillBar` (30 px, ikon 26 px) serta baris toko `ShopPanel` tab ITEM. Dikunci `HeroItemsParityTest._test_icons` + `tools/test_godot_asset_pipeline.py`.
 - `localization.py` → `godot/scripts/utils/Localization.gd` port 1:1 (FASE 30): tabel teks 24 kunci × 2 bahasa, bahasa aktif `static var`, `set_language`/`get_language`/`get_language_label`, dan `tr()` → `tr_text(key, Dictionary)` (nama `tr` dihindari karena `Object.tr()` native engine). Semantik fallback Python dipertahankan lewat `_py_format`/`_py_str` (kunci tak dikenal → kunci mentah, nilai placeholder hilang → template mentah, `3.0` → `"3.0"`). Pemakai: baris BAHASA di `MainMenu` PENGATURAN (+cycler), `GameManager.language`/`set_language`/`apply_language`/`language_changed`, `SaveManager.get_setting_str`/`set_setting_str`, boot sync `AppShell._apply_interface_language`, dan `ItemDB.item_mechanics_localized`. Dikunci `tools/test_godot_localization_parity.py` (oracle tanpa engine) + fixture `localization.json` + `LocalizationParityTest`. Rincian: `docs/LOCALIZATION_GODOTPP.md`.
 
 ### Verifikasi tanpa binary Godot
 
-Sandbox/CI tidak selalu punya Godot, jadi empat pemeriksa statis tersedia:
+Sandbox/CI tidak selalu punya Godot, jadi lima pemeriksa statis tersedia:
 
 ```bash
 python3 godot/tools/tscn_lint.py $(find godot -name "*.tscn")   # grammar .tscn/.tres
 python3 godot/tools/check_refs.py godot                          # path resource/preload/node
 python3 godot/tools/particles_lint.py godot                      # CPUParticles2D vs GPUParticles2D
+python3 tools/test_godot_asset_pipeline.py                       # rantai aset biner (sounds/items/presplash)
 gdparse godot/**/*.gd   # pip install gdtoolkit==4.*  -> parser GDScript 4 asli
 ```
+
+`test_godot_asset_pipeline.py` yang menjaga migrasi aset tidak putus dalam
+diam: closed-world 33 ikon `items.json` ↔ `assets/items/`, converter punya
+`export_sounds/items_png/presplash` + mode `--assets` yang tidak menuntut
+numpy, `.gitignore` menutup ketiga salinan, kedua workflow menyalin aset
+sebelum engine dijalankan/di-export, dan path `res://` di
+`project.godot`/`ItemIcons.gd`/`AudioManager.gd` sama dengan tujuan converter.
 
 Pertanyaan? Buka `godot/project.godot` dan tanya.

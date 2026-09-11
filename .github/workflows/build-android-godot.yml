@@ -168,14 +168,17 @@ jobs:
           cat "$F"
 
       # ── 4. Aset yang di-gitignore tapi WAJIB masuk AAB ──
-      # godot/assets/sounds/ hasil salinan converter (sumber: assets/sounds/
-      # yang ikut repo). Tanpa langkah ini AAB jalan tapi SUNGGUHAN sunyi.
-      - name: Salin file suara (gitignored)
+      # Salinan assets/ pygame (sumber kebenaran tetap di sana): sounds/ 24
+      # .wav, items/ 33 ikon, presplash.png. Tanpa langkah ini AAB jalan tapi
+      # SUNGGUHAN sunyi, ikon item mundur ke badge prosedural, dan boot splash
+      # pakai bawaan Godot — exporter hanya memaksa presplash.png ikut PCK
+      # kalau berkasnya ADA di disk saat export
+      # (EditorExportPlatform::get_forced_export_files).
+      - name: Salin aset biner (gitignored)
         run: |
           set -euo pipefail
-          mkdir -p godot/assets/sounds
-          cp -n assets/sounds/*.wav godot/assets/sounds/
-          echo "$(ls godot/assets/sounds | wc -l) file suara -> godot/assets/sounds/"
+          python3 tools/convert_to_godot.py --assets
+          echo "suara $(ls godot/assets/sounds | wc -l) · ikon item $(ls godot/assets/items | wc -l) · presplash $(stat -c %s godot/assets/presplash.png) byte"
 
       # ── 5. Versi + format export (tambal export_presets.cfg) ──
       # version/name & code dari tag vX.Y.Z (code = major*10000+minor*100+patch).

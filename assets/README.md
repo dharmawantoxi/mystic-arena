@@ -24,6 +24,27 @@ assets/
 Castle dan Hero menggunakan rendering prosedural murni berbasis kode (code base)
 sehingga ringan, konsisten, dan tidak bergantung pada sprite gambar eksternal.
 
+## Folder ini juga sumber aset project Godot
+
+Port Godot (`godot/`) tidak bisa membaca `res://` di luar root project-nya,
+jadi `sounds/`, `items/`, dan `presplash.png` **diduplikasi** ke `godot/assets/`
+oleh converter (hasilnya di-gitignore — sumber kebenaran tetap di sini):
+
+```bash
+python3 tools/convert_to_godot.py --assets   # tanpa pygame/numpy
+```
+
+| Di sini | Salinan Godot | Pembaca |
+|---|---|---|
+| `sounds/*.wav` (24) | `godot/assets/sounds/` | `AudioManager.gd` |
+| `items/*.png` (33) | `godot/assets/items/` | `ItemIcons.gd` (port `hero_items.get_icon`) |
+| `presplash.png` | `godot/assets/presplash.png` | `application/boot_splash/image` |
+| `fonts/*.ttf`, `icon.png`, `logo.png` | `godot/assets/…` (**ikut repo**) | `UiTheme.gd`, `SplashScreen.gd`, ikon launcher |
+
+Tambah ikon item baru? Taruh PNG-nya di `items/`, daftarkan field `"icon"` di
+`hero_items.ITEM_CATALOG`, jalankan converter, lalu `python3
+tools/test_godot_asset_pipeline.py` (closed-world 33 ikon ↔ `items.json`).
+
 ## Catatan penting
 
 **Game tetap jalan tanpa berkas ini** — font otomatis mundur ke SysFont,

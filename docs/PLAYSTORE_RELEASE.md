@@ -16,6 +16,8 @@ Panduan dari commit → AAB → Play Console. Pipeline build sudah jadi:
 | Renderer Android | ✅ | `project.godot`: `renderer/rendering_method.mobile="mobile"` (override platform). Forward+ **tidak didukung Android**; Mobile mendukung semua fitur 2D yang dipakai (lighting/CanvasModulate, glow, shader canvas_item, 2D HDR) dan otomatis jatuh ke OpenGL ES 3.0 di perangkat tanpa Vulkan (`fallback_to_opengl3` default true) → minSdk 24, jangkauan HP sama seperti versi pygame (minapi 24) |
 | Ikon | ✅ | `godot/assets/android/` — launcher 192px + adaptive 432px (foreground dari `assets/icon.png` master dalam safe zone 264px, background solid #1A1030). Ikon store 512×512 = `assets/icon.png` (sudah ukuran resmi Play) |
 | Suara | ✅ | `godot/assets/sounds/` di-gitignore (duplikat 15 MB); CI menyalin dari `assets/sounds/` **sebelum** export — kalau build lokal, jalankan converter dulu (lihat `godot/README.md`) |
+| Ikon item | ✅ | `godot/assets/items/` di-gitignore (duplikat ±3 MB dari `assets/items/`, 33 PNG); CI menyalinnya sebelum export. Tanpa salinan AAB tetap jalan — ikon ITEM FORGE & slot item mundur ke badge warna prosedural (`ItemIcons.gd`) |
+| Presplash (boot splash) | ✅ | `assets/presplash.png` (1280×720) disalin ke `godot/assets/presplash.png` (di-gitignore) dan dipakai `application/boot_splash/image`; `boot_splash/bg_color` #0B0A12 = `android.presplash_color` buildozer. Exporter Godot memaksa berkas mentahnya ikut PCK **hanya kalau ada saat export** (`get_forced_export_files`) — langkah "Salin aset biner (gitignored)" di CI yang menjaminnya |
 | Keystore | ✅ | Reuse secret lama (`KEYSTORE_BASE64` dkk) — **jangan pernah ganti keystore** setelah Play App Signing aktif (app tidak bisa di-update lagi dengan kunci lain) |
 
 ## 2. Build AAB
@@ -109,6 +111,8 @@ AAB dari Actions  →  Play Console → Production → Create new release
 | CI: `targetSdkVersion=34 < 36` | Godot yang dipakai bukan 4.7.2 (template lama); cek `GODOT_VERSION` — jangan turunkan |
 | CI: `package salah` | `package/unique_name` di `export_presets.cfg` berubah — kembalikan `io.github.dharmawantoxi.mysticarena` |
 | AAB di HP: layar hitam | cek `godot/README.md` bagian "F5 cuma layar hitam" (6 penyebab sudah pernah terjadi) |
-| AAB di HP: game sunyi | langkah "Salin file suara" tidak jalan / build lokal tanpa converter; cek isi `assets/sounds/` di dalam AAB (`unzip -l MysticArena.aab | grep sounds`) |
+| AAB di HP: game sunyi | langkah "Salin aset biner (gitignored)" tidak jalan / build lokal tanpa converter; cek isi `assets/sounds/` di dalam AAB (`unzip -l MysticArena.aab | grep sounds`) |
+| AAB: ikon item cuma kotak warna | sama — `godot/assets/items/` kosong saat export (`unzip -l MysticArena.aab | grep items`); jalankan `python3 tools/convert_to_godot.py --assets` untuk build lokal |
+| AAB: splash pembuka bawaan Godot | `godot/assets/presplash.png` tidak ada saat export, jadi tidak ikut PCK; log runtime memuat "Non-existing or invalid boot splash" |
 | Play: "app targets API level too low" | AAB dibangun dari template lama (< 4.7) — build ulang dengan CI terbaru |
 | Play: "signature mismatch" | keystore di CI bukan keystore yang di-register di Play Console; pastikan secret `KEYSTORE_BASE64` tidak pernah berganti |

@@ -135,6 +135,14 @@ func item_glow(item_id: String) -> Color:
 	return _rgb_array(get_item(item_id).get("glow"), item_color(item_id).lightened(0.3))
 
 
+## Nama BERKAS ikon item — field "icon" ITEM_CATALOG yang ikut ter-ekspor ke
+## items.json (hero_items.py:248 dst.). Hanya nama berkas ("dead_edge.png");
+## yang menyusun path res:// + memuat teksturnya ItemIcons.gd (port
+## hero_items.get_icon, hero_items.py:1661-1699).
+func item_icon(item_id: String) -> String:
+	return str(get_item(item_id).get("icon", ""))
+
+
 func is_melee_only(item_id: String) -> bool:
 	return bool(get_item(item_id).get("melee_only", false))
 

@@ -6,7 +6,9 @@ Menjalankan ini menghasilkan res://data/*.json yang dibaca HeroDB/BossDB Godot.
 Tanpa ini, Godot pakai fallback hardcode 6 hero.
 
 Usage:
-    python tools/convert_to_godot.py
+    python tools/convert_to_godot.py            # data JSON + salin aset biner
+    python tools/convert_to_godot.py --assets   # HANYA salin aset biner
+                                                # (tanpa pygame/numpy)
 
 Output:
     godot/data/heroes.json            (+ field skill_* untuk SkillBook.gd)
@@ -20,6 +22,19 @@ Output:
     godot/data/nexus.json             (NEXUS_LEVELS + castle shield)
     godot/data/economy.json           (gold/s, bonus level, multiplier difficulty, wave)
     godot/data/themes.json            (54 palet tema map + dekor; dibaca ArenaMap.gd)
+
+Aset biner yang ikut tersalin (semuanya DI-GITIGNORE — duplikat dari assets/
+pygame, sumber kebenaran tetap di sana; res:// tidak bisa keluar dari root
+project Godot jadi memang harus ada salinan di dalam godot/):
+
+    godot/assets/sounds/*.wav         24 suara -> AudioManager.gd
+    godot/assets/items/*.png          33 ikon item -> ItemIcons.gd (port
+                                      hero_items.get_icon, hero_items.py:1661)
+    godot/assets/presplash.png        boot splash Android -> project.godot
+                                      application/boot_splash/image
+
+Tanpa aset itu game TETAP JALAN: AudioManager no-op + log sekali, ikon item
+mundur ke badge prosedural warna katalog, boot splash pakai bawaan Godot.
 
 Butuh pygame (THEMES/HERO_TYPES hidup di modul yang meng-import pygame).
 Jalankan tanpa display/audio:
@@ -636,7 +651,7 @@ def export_sounds():
     dst_dir = os.path.join(ROOT, "godot", "assets", "sounds")
     if not os.path.isdir(src_dir):
         print("[convert] sounds: assets/sounds/ tidak ada — dilewati", file=sys.stderr)
-        return
+        return 0
     os.makedirs(dst_dir, exist_ok=True)
     copied = 0
     for fname in sorted(os.listdir(src_dir)):
@@ -646,6 +661,85 @@ def export_sounds():
             shutil.copy2(src, dst)
             copied += 1
     print(f"[convert] sounds: {copied} file -> {dst_dir}")
+    return copied
+
+
+def export_items_png():
+    """Salin 33 ikon item assets/items/ -> godot/assets/items/.
+
+    Padanan `hero_items.get_icon()` (hero_items.py:1661-1699) membaca
+    `assets/items/<icon>` — nama file-nya field "icon" di ITEM_CATALOG,
+    ikut ter-ekspor ke godot/data/items.json. `res://` tidak bisa keluar
+    dari root project Godot, jadi PNG-nya harus diduplikasi ke
+    `godot/assets/items/` (dibaca ItemIcons.gd lewat ItemDB.item_icon).
+
+    Folder tujuan di-gitignore seperti sounds: ±3 MB duplikat, sumber
+    kebenaran tetap assets/items/ pygame. TANPA ikon ini Godot tidak error —
+    ItemIcons.gd menggambar badge prosedural (warna + glow katalog), persis
+    cabang fallback `get_icon()` saat PNG-nya tidak ada.
+    """
+    import shutil
+    src_dir = os.path.join(ROOT, "assets", "items")
+    dst_dir = os.path.join(ROOT, "godot", "assets", "items")
+    if not os.path.isdir(src_dir):
+        print("[convert] items: assets/items/ tidak ada — dilewati", file=sys.stderr)
+        return 0
+    os.makedirs(dst_dir, exist_ok=True)
+    copied = 0
+    total_kb = 0.0
+    for fname in sorted(os.listdir(src_dir)):
+        src = os.path.join(src_dir, fname)
+        if not (os.path.isfile(src) and fname.lower().endswith(".png")):
+            continue
+        shutil.copy2(src, os.path.join(dst_dir, fname))
+        copied += 1
+        total_kb += os.path.getsize(src) / 1024.0
+    print(f"[convert] items: {copied} ikon ({total_kb / 1024.0:.1f} MB) -> {dst_dir}")
+    return copied
+
+
+def export_presplash():
+    """Salin assets/presplash.png -> godot/assets/presplash.png.
+
+    Di pygame/buildozer berkas ini layar pembuka Android
+    (`presplash.filename` buildozer.spec:79, warna latar
+    `android.presplash_color = #0B0A12` :78). Padanan Godot-nya boot splash:
+    `application/boot_splash/image` + `boot_splash/bg_color` (sudah #0B0A12
+    di project.godot) — dipakai engine saat inisialisasi, sebelum scene
+    pertama tampil.
+
+    Ikut di-gitignore (±1,1 MB duplikat). Kalau belum disalin, Godot
+    mencetak "Non-existing or invalid boot splash ... Loading default
+    splash." sekali lalu memakai splash bawaan — tidak fatal.
+    """
+    import shutil
+    src = os.path.join(ROOT, "assets", "presplash.png")
+    dst_dir = os.path.join(ROOT, "godot", "assets")
+    dst = os.path.join(dst_dir, "presplash.png")
+    if not os.path.isfile(src):
+        print("[convert] presplash: assets/presplash.png tidak ada — dilewati",
+              file=sys.stderr)
+        return 0
+    os.makedirs(dst_dir, exist_ok=True)
+    shutil.copy2(src, dst)
+    print(f"[convert] presplash: {os.path.getsize(src) / 1024.0:.0f} KB -> {dst}")
+    return 1
+
+
+def export_bin_assets():
+    """Salin SEMUA aset biner duplikat pygame -> project Godot.
+
+    Tiga-tiganya (suara, ikon item, presplash) di-gitignore karena cuma
+    salinan: sumber kebenaran tetap `assets/` pygame. Mode ini SENGAJA
+    tidak menyentuh pygame/numpy — hanya os+shutil — jadi bisa dijalankan
+    langsung setelah clone (atau di CI sebelum `godot --import`) tanpa
+    venv maupun dependensi apa pun:
+
+        python3 tools/convert_to_godot.py --assets
+    """
+    n = export_sounds() + export_items_png() + export_presplash()
+    print(f"[convert] assets: {n} berkas biner siap di godot/assets/")
+    return n
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -2219,6 +2313,12 @@ def _require_numpy():
 
 if __name__ == "__main__":
     _argv = sys.argv[1:]
+    # --assets: salin aset biner duplikat (suara + ikon item + presplash) saja.
+    # Dicek SEBELUM _require_numpy() karena mode ini tidak butuh numpy maupun
+    # pygame — CI menjalankannya tepat setelah checkout, sebelum Godot diimpor.
+    if "--assets" in _argv:
+        export_bin_assets()
+        sys.exit(0)
     # Semua mode bake butuh numpy; tanpa itu minion tim merah dibakar lewat
     # jalur BLEND_* yang pikselnya beda (lihat _require_numpy).
     _require_numpy()
@@ -2257,4 +2357,6 @@ if __name__ == "__main__":
         export_themes()
         export_map_bakes()
         export_sounds()
+        export_items_png()
+        export_presplash()
         print("[convert] Done. Copy godot/data/*.json ke Godot res://data/")

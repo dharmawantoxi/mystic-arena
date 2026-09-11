@@ -13,6 +13,12 @@ extends Control
 const TABS: Array = [["tower", "MENARA"], ["item", "ITEM"],
 	["hero", "HERO"], ["nexus", "NEXUS"]]
 const ITEM_COLUMNS := 3
+## Ukuran ikon item di baris toko (px). Barisnya 30 px dengan margin isi 2x5
+## (UiTheme.apply_row_button) jadi engine menggambar ikonnya ±18-20 px;
+## ItemIcons men-scale PNG 256 px ke angka ini di CPU (paritas smoothscale
+## pygame), Button.expand_icon tinggal memasangkannya ke kotak isi.
+## Acuan pygame: ikon 56 px di kartu ±76 px (hero_items.py:3808-3812).
+const ITEM_ROW_ICON := 20
 ## Seberapa sering panel menyegarkan angka yang bergerak (HP nexus / gold)
 const REFRESH_INTERVAL := 0.25
 
@@ -571,6 +577,20 @@ func _build_item_tab() -> void:
 			b.custom_minimum_size = Vector2(_row_width(_grid_columns()), 30)
 			b.add_theme_color_override("font_color",
 				ItemDB.item_color(iid) if (can and not have) else COL_DIM)
+			# Ikon item di kiri label — padanan kartu ITEM FORGE pygame yang
+			# memblit ikon 56 px di pojok kiri kartu (hero_items.py:3808-3812).
+			# Baris Godot cuma 30 px: ItemIcons menyerahkan tekstur seukuran
+			# tampilan, expand_icon memasangkannya ke kotak isi baris.
+			b.icon = ItemIcons.texture(iid, ITEM_ROW_ICON)
+			b.expand_icon = true
+			# WAJIB dipasangkan dengan ikon: Button menghitung minimum size
+			# dengan teks KOSONG (Button::get_minimum_size ->
+			# get_minimum_size_for_text_and_icon("", icon)), jadi lebar teks
+			# tidak pernah membesarkan tombol. Tanpa clip_text, label panjang
+			# ("[PHYSICAL] Sundering Cudgel — 4500 g") yang terdorong ikon
+			# meluber keluar kotak; dengan ini label dipangkas + elipsis.
+			b.clip_text = true
+			b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			grid.add_child(b)
 
 

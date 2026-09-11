@@ -42,9 +42,16 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
 ## Quick Start
 
 ```bash
+# 0. Salin aset biner (suara + 33 ikon item + presplash) -> godot/assets/.
+#    Ketiganya DI-GITIGNORE (duplikat ±19 MB dari assets/ pygame), jadi harus
+#    disalin ulang setiap clone. Tanpa pygame/numpy/venv — os+shutil saja:
+python3 tools/convert_to_godot.py --assets
+#    Tanpa langkah ini game tetap jalan: AudioManager no-op, ikon item jadi
+#    badge prosedural, boot splash pakai bawaan Godot.
+
 # 1. Convert data pygame -> Godot JSON (222 hero, 216 boss, 54 level, 54 tema map)
-#    Sekaligus menyalin assets/sounds/*.wav -> godot/assets/sounds/ (untuk AudioManager;
-#    folder itu di-gitignore, jalankan ulang converter setelah clone).
+#    Sekaligus menyalin aset biner yang sama seperti langkah 0 (suara, ikon
+#    item, presplash — semuanya di-gitignore).
 #    Butuh pygame + SDL dummy (export_themes membaca map_components/themes.py):
 python3 -m venv ~/.venv-mystic && ~/.venv-mystic/bin/pip install "pygame-ce==2.5.*"   # sekali saja
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ~/.venv-mystic/bin/python tools/convert_to_godot.py
@@ -285,6 +292,7 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 | `Game._generate_build_slots_from_lanes` | `Main._generate_build_slots()` | 3 slot × 3 lane × 2 tim, fraksi persis pygame (top/bot 0.15/0.30/0.45, mid 0.10/0.25/0.40, Dire dicerminkan) |
 | `hero_skills/_bundle.py` (6 kelas skill) | `scripts/skills/SkillBook.gd` | Q = `skill_cooldown` hero (Kaizen 300f, Grimjaw 420f, Sylara 360f), W 4s, E 7s, R 15s + CDR item. Hero tanpa tabel memakai skill generik |
 | `hero_items.py` (33 item, 6 slot) | `scripts/items/ItemDB.gd` + `ItemInventory.gd` + `data/items*.json` | Harga flat 4500g, cap atk speed 0.2-2.5 / lifesteal 1.75 / CDR 0.5 / skill amp 0.5 / evasion 0.5 / move speed 0.4, pasif Cleave + Corroder, 4 aura (Steel Aegis, Everfrost, Solar Brand, Searbrand) |
+| `hero_items.get_icon` + `_ICON_CACHE` (`hero_items.py:1661-1699`) | `scripts/utils/ItemIcons.gd` + `ItemDB.item_icon()` | **Aset ikon item ikut termigrasi**: 33 PNG `assets/items/` disalin converter (`--assets`) ke `godot/assets/items/` (di-gitignore) dan dimuat lewat penjaga `ResourceLoader.exists()` → `load()`, lalu **di-scale CPU ke ukuran tampilan** (paritas `smoothscale` `hero_items.py:1678`) dan di-cache per (item, ukuran) — paritas `_ICON_CACHE`, sekaligus hemat VRAM: 33 ikon 256 px mentah ≈ 8,6 MB jadi ±150 KB untuk tampilan 20-26 px. PNG tidak ada → badge prosedural `ImageTexture` (kotak `color` radius 6 + border `glow` 2 px = geometri fallback pygame; deviasi: tanpa label 5 huruf karena `Button.icon` hanya menerima `Texture2D` dan Godot tidak punya raster font→Image). Pemakai: 6 chip slot item `SkillBar` (30 px, ikon 26 px = `SLOT_SIZE-4`, bg gelap + border warna katalog 2 px — paritas `_draw_slots` `:3026-3095`) dan baris toko `ShopPanel` tab ITEM (`Button.icon` + `expand_icon` + `clip_text`). Dikunci `HeroItemsParityTest._test_icons` + `tools/test_godot_asset_pipeline.py` |
 | `HERO_LEVELS` (Lv1-15) | `data/hero_levels.json` + `HeroDB.level_data()` | hp/damage/skill multiplier per level, biaya upgrade 300 → 8000, boss hero ×1.6 |
 | ekonomi `_core.py` | `GameManager._process()` | `(3 + 0.3×(level−1)) × pengali_difficulty` gold/s, gold awal `(350 + 100×(level−1)) × pengali`, pecahan disimpan sebagai milli-gold (persis loop 60-frame pygame), AI tim Dire menabung dengan laju sama |
 | `AIPlayer` (6000+ baris) | `scripts/systems/AIPlayer.gd` + `Hero.gd` | Port penuh: `_ai_brain`/`_ai_elite` (`_entity.py:6027-6051`), `_ai_reserve` (tabungan draft hero), `think_timer` + beberapa aksi per tick, `_ai_step` 6 prioritas (build menara → beli hero → upgrade hero → beli item → upgrade menara → Regen Shield → Castle Shield → nexus). Gold dipakai dari `GameManager.ai_gold` (pygame `AIPlayer.gold`). Item dibeli pakai `ItemDB.suggest_item()` = paritas `hero_items.suggest_item_for_hero` (`hero_items.py:2936`); kontrol hero per-frame `_control_heroes()` + `_assign_hero_lane()`; **retreat HP <20% → base → heal → keluar di 80%** ada di `Hero.gd` (paritas `_entity.py:3983-4028`); **kombo auto-cast R→E(2+)→W(<40%)→Q** paritas `_try_auto_cast` (`_entity.py:4149-4240`); Kaizen Q Steel Wind↔Dash Strike bergantian di `SkillBook` (paritas `_bundle.py:3969`) |
@@ -326,6 +334,22 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 - `godot/assets/sounds/*.wav` — **di-gitignore** (duplikat 15 MB dari `assets/sounds/`, sumber
   kebenaran tetap di sana). Jalankan converter setelah clone, kalau belum `AudioManager`
   no-op + log sekali dan game tetap jalan tanpa suara.
+- `godot/assets/items/*.png` — 33 ikon item ITEM FORGE, **di-gitignore** (duplikat ±3 MB dari
+  `assets/items/`; nama berkasnya field `icon` di `items.json`). Dibaca `scripts/utils/ItemIcons.gd`
+  (port `hero_items.get_icon`, `hero_items.py:1661-1699`) dan dipakai `SkillBar` (6 chip slot item
+  30 px, ikon 26 px = `SLOT_SIZE - 4`) + `ShopPanel` tab ITEM (`Button.icon` per baris). Kalau
+  belum disalin, `ItemIcons` menggambar badge prosedural (kotak warna katalog radius 6 + border
+  glow 2 px = cabang fallback `get_icon`) — toko tetap terbaca, hanya tanpa artwork.
+- `godot/assets/presplash.png` — **di-gitignore** (duplikat 1,1 MB). Padanan `presplash.filename`
+  buildozer (`buildozer.spec:79`): dipakai `application/boot_splash/image` di `project.godot`,
+  dengan `boot_splash/bg_color` #0B0A12 = `android.presplash_color` (`:78`). Exporter Godot
+  memaksa berkas mentah ini ikut PCK/AAB **hanya kalau ada di disk saat export**
+  (`EditorExportPlatform::get_forced_export_files`) — karena itu CI menyalinnya sebelum export.
+  Tanpa salinan: splash bawaan Godot + satu baris error "Non-existing or invalid boot splash".
+- Ketiga salinan di-gitignore itu disalin satu perintah tanpa pygame/numpy:
+  `python3 tools/convert_to_godot.py --assets` (CI: langkah "Salin aset biner (gitignored)" di
+  `godot-check.yml` sebelum `--import`, dan di `build-android-godot.yml` sebelum export).
+  Rantainya dikunci `tools/test_godot_asset_pipeline.py` (statis, tanpa engine).
 - `godot/assets/shaders/outline.gdshader` — outline 1-pass + hit flash + rim light (ganti 5 blit manual pygame).
 - `godot/shaders/hamon.gdshader` — hamon temper katana Kaizen (wave + temper cloud + attack pulse).
 

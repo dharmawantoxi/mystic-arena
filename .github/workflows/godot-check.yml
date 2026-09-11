@@ -37,6 +37,7 @@ on:
       - 'map_components/**'
       - 'bosses/**'
       - 'tools/convert_to_godot.py'
+      - 'tools/test_godot_asset_pipeline.py'
       - 'tools/test_godot_match_parity.py'
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/gen_hero_skill_kit.py'
@@ -67,6 +68,7 @@ on:
       - 'map_components/**'
       - 'bosses/**'
       - 'tools/convert_to_godot.py'
+      - 'tools/test_godot_asset_pipeline.py'
       - 'tools/test_godot_match_parity.py'
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/gen_hero_skill_kit.py'
@@ -108,6 +110,19 @@ jobs:
         with:
           python-version: '3.11'
 
+      # ── 0. Aset biner duplikat (di-gitignore, sumber: assets/ pygame) ──
+      # sounds/ (AudioManager), items/ (33 ikon ItemIcons) dan presplash.png
+      # (application/boot_splash/image). Disalin SEBELUM Godot dijalankan:
+      #   * tanpa presplash, boot engine mencetak "Error opening file
+      #     'res://assets/presplash.png'" + "Non-existing or invalid boot
+      #     splash" ke log headless (tidak fatal untuk godot_log_gate, tapi
+      #     noise yang menutupi error sungguhan);
+      #   * tanpa items/, ikon item yang teruji adalah badge prosedural
+      #     fallback, bukan PNG asli yang dikirim ke pemain.
+      # --assets hanya os+shutil: tidak butuh pygame, numpy, maupun venv.
+      - name: Salin aset biner (gitignored)
+        run: python3 tools/convert_to_godot.py --assets
+
       # ── 1. Cek statis (tidak butuh engine, hitungan detik) ──
       - name: Linter statis
         run: |
@@ -125,6 +140,14 @@ jobs:
           # segar. Tidak butuh pygame maupun Godot — drift satu tanda baca pun
           # gagal di sini, sebelum engine diunduh.
           python3 tools/test_godot_localization_parity.py
+          # Aset biner project Godot adalah SALINAN yang di-gitignore
+          # (sounds/ items/ presplash.png). Cek ini mengunci seluruh rantainya
+          # tanpa pygame maupun engine: items.json <-> assets/items/ (closed
+          # world 33 ikon), converter punya export_* + mode --assets yang
+          # tidak menuntut numpy, .gitignore menutup ketiganya, kedua
+          # workflow menyalin sebelum Godot jalan, dan path res:// di
+          # project.godot/ItemIcons.gd/AudioManager.gd == tujuan converter.
+          python3 tools/test_godot_asset_pipeline.py
           # BossKit.gd adalah HASIL GENERATE dari bosses/base_boss.py —
           # gagal di sini berarti ada perubahan smart-AI pygame yang belum
           # ditranspile (regenerasi: python3 tools/gen_boss_smart_ai.py).
