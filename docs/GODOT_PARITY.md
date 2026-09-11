@@ -8,6 +8,64 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Blok performa & overlay FPS `_system.py` — 11 September 2026 (FASE 25)
+
+`_system.py` adalah modul gabungan 5 berkas lama (docstring `:1-9`); audit
+blok-per-bloknya kini tertulis di
+[SYSTEM_PY_COVERAGE.md](SYSTEM_PY_COVERAGE.md). Yang **belum punya padanan sama
+sekali** adalah blok `performance.py` (`:29-185`) dan `fps_counter.py`
+(`:189-387`): grid spasial, culling layar, dan panel FPS. `SoundManager`
+(`:450-731`) dan `SaveManager` (`:732-1125`) sudah selesai di Fase 4e/21 — di
+sini hanya diaudit ulang (hasil: tidak ada metode berperilaku lain yang hilang,
+`play_positional` dan cloud save Play Games tetap tercatat sebagai yang tidak
+diport).
+
+| Bagian pygame | Port Godot | Catatan |
+|---|---|---|
+| `FrustumCuller` (`_system.py:40-50`, `MARGIN 80`, `is_visible(x, y, radius=30)`) | `scripts/systems/FrustumCuller.gd` | Batas inklusif `−m ≤ x ≤ W+m` dengan `m = 80 + radius` diambil apa adanya; layar dibaca dari viewport (`is_visible_world` memproyeksi titik dunia lewat transform canvas). fixture `culler` = 17 kasus, termasuk `x == −margin − radius` |
+| Konsumen culler pygame: skip blit unit/partikel (`_core.py:2875-2910`) | `scenes/fx/WorldPopups.gd._draw` (`POPUP_RADIUS 24`) | Di Godot CanvasItem di-cull GPU, jadi padanan yang setia bukan "jangan gambar unit" (sudah gratis) tapi "jangan bangun `draw_string` per frame" — antrean 300 teks rusak |
+| `SpatialGrid` (`:52-142`): `cell_size=60`, `query_range` bbox→jarak², loop cy luar / cx dalam, satu bucket per sel | `scripts/systems/SpatialGrid.gd` | `insert`/`clear`/`update_from`/`query_range`/`query_enemies`. `int(x/cell)` Godot memotong ke nol → `_cell()` memakai `floor` (koordinat negatif!). `query_range` = cabang `team=None` pygame yang **tidak memfilter apa pun**; `query_enemies` = cabang `team` yang buang sekutu **dan** bangkai |
+| `_grid` global + `update_spatial_grid` + `query_enemies_in_range` (`:144-185`), dijadwalkan `_core.py:2007-2013` (frame GENAP saja) | `CombatSystem._spatial_grid` + `update_spatial_grid(_from_tree)` + `Main._process` (`_grid_tick % GRID_REBUILD_EVERY == 0`, `GRID_REBUILD_EVERY := 2`) + `query_enemies_in_range` | Urutan kandidat = urutan bucket (minion → hero+boss), lalu menara/nexus **appended** (memang tidak diindeks grid pygame). Kesegaran grid 2 frame (`GRID_STALE_FRAMES`); grid basi → fallback `enemies_in_radius`, jadi menu/pause/harness lama tidak pernah melihat hasil kosong |
+| Konsumen grid pygame: `Minion._get_enemies` (`_entity.py:5635-5680`) | `Minion._find_target_smart` (`CombatSystem.query_enemies_in_range(team, global_position, attack_range + 30.0)`) | HANYA jalur targeting minion yang dialihkan. Mage-chain, archer-volley, splash, AoE, aura, item tetap scan grup — urutan kandidatnya sudah dikunci tes lain dan pygame juga tidak lewat grid di sana |
+| `FPSCounter` (`:202-386`): `deque(maxlen=120)`, refresh angka tiap 10 frame, jendela statistik 30, panel 200×95 @(10,45) | `scenes/ui/FpsCounter.gd` | `update(current_fps)` murni aturan riwayat; `_draw()` mengeksekusi `build_ops(state, measurer)` — daftar perintah gambar sebagai fungsi murni supaya bisa dibandingkan dengan jejak `pygame.draw.rect/line` + `font.render` sungguhan (32 op) tanpa GPU |
+| F8 (`main_desktop_legacy.py:98-100`) | `Main._on_key` → `toggle_fps_counter()` | Ditangani SEBELUM dispatch state splash/menu/game/pause dan tombolnya tidak ditelan — persis legacy. `DebugLayer` memakai `PROCESS_MODE_ALWAYS` karena pygame men-update counter di luar dispatch state |
+| `AdaptiveQuality` / `fps_limiter.py` (`:400-448`) | — (cap FPS tetap `Engine.max_fps` via `GameManager.apply_fps_limit`) | **Sengaja tidak diport**: `tools/test_system_perf_parity.py` membuktikan nol call site di luar `_system.py` (fixture `dead.adaptive_quality.sites == []`); tool gagal kalau suatu hari ada call site muncul, supaya "tidak diport" tidak diam-diam basi |
+
+**Deviasi terdokumentasi (mesin, bukan pilihan gaya):** (1) pygame membekukan
+`death_anim` unit di luar layar (`_entity.py:5871-5878`) — Godot mengurangi
+`death_anim` di `_process`, jadi animasi kematian di luar kamera tetap selesai;
+memindahkan penurunan itu ke sisi-draw akan MENAMBAH perilaku (unit membeku
+selamanya kalau kamera tidak pernah lewat), jadi culling Godot murni draw-side;
+(2) `main_desktop_legacy.py` memanggil `fps_counter.update/draw` DUA kali per
+frame (`:455-456` dan `:461-462`, sisa penggabungan berkas) — Godot menyampel
+sekali per frame; (3) `FPSCounter.draw()` pygame ternyata mati (`NameError: get_font`,
+`from _core import *` dieksekusi saat `_core` parsial karena import melingkar):
+panel itu tidak pernah tampil di legacy build. Tool oracle menambal
+`_system.get_font` untuk bisa mengambil jejak render-nya dan menyimpan faktanya
+di fixture (`fps.py_draw_needs_shim`); port justru memperbaiki jalur render itu;
+(4) lebar teks yang dipakai untuk meratakan label `FPS`, status, dan petunjuk
+`[F8] toggle` mengikuti metrik font Godot (TTF pygame + `font.render` tidak bisa
+direproduksi) — yang identik adalah ATURAN letaknya (semua konstanta posisi
+di-pin), bukan raster-nya; headless Godot juga tidak bisa screenshot, jadi yang
+dikunci adalah daftar perintah gambar, bukan piksel; (5) bucket grid boleh basi
+satu frame — unit yang baru MELANGKAH MASUK radius baru terlihat setelah rebuild
+(persis pygame), sedangkan jarak yang dibandingkan selalu posisi HIDUP karena
+bucket menyimpan referensi node.
+
+**Validasi:** `tools/test_system_perf_parity.py` (158 pemeriksaan: fixture
+determinis 2× run, drift vs `godot/tests/fixtures/system_perf.json`, dan kunci
+statis `CELL_SIZE/MARGIN/HISTORY_SIZE/GRID_REBUILD_EVERY` + geometri/warna
+overlay + `for group in ["towers", "nexus"]` + fallback dibaca langsung dari `.gd`)
+lulus lokal; `gdparse` `.gd` yang disentuh + `tscn_lint` + `check_refs` +
+`particles_lint` + `tools/test_godot_match_parity.py` lulus.
+`SystemPerfParityTest` (9 skenario grid / 19 kueri berurutan, 17 kasus culler,
+150 sampel FPS + 32 op render + 8 band tangga warna + wiring grid di scene
+sungguhan) dijalankan CI `godot-check.yml` langkah 4u — **binary Godot tidak
+tersedia di sandbox**, jadi replay headless-nya diverifikasi di sana. Yang TETAP
+TERBUKA di jalur ini: **piksel** panel FPS (raster/alpha blend `SRCRECT`-nya
+pygame), dan tie-break target menara yang beda di KEDUA sisi (lihat
+"Belum setara").
+
 ## Lapisan gamepad — 11 September 2026 (FASE 24)
 
 `_core.py` punya delapan modul gabungan; audit blok-per-blok-nya kini tertulis
@@ -247,6 +305,25 @@ milik bucket piksel).
 | **Multi-slot save + migrasi legacy (FASE 21)** | Satu berkas `user://mystic_save.json`; tanpa konsep slot, tanpa `get_slot_info`/`delete_slot`/`format_playtime`/`format_last_played`, dan layar `SLOT_SELECT` pygame dilewati | `NUM_SLOTS = 3` + `slot_1.json`..`slot_3.json`, slot aktif (`set_current_slot`; nomor di luar 1..3 diabaikan), metadata `slot_created`/`slot_last_played`/`slot_playtime_seconds`, `migrate_legacy_save()` (jalan hanya kalau berkas legacy ada **dan** slot 1 kosong; legacy di-rename ke backup, TIDAK dihapus; berkas rusak → gagal tanpa efek; idempoten), `save`/`load_slot` (backfill `setdefault` persis `SaveManager.load`), `get_empty_save`, `delete_slot`, `get_slot_info`/`get_all_slot_info` (slot korup → `null`), `format_playtime`/`format_last_played` (UTC) — dikunci oracle `save_slots` + replay `SaveSlotParityTest`. Layar `SLOT_SELECT` Godot (`MainMenu._slot_card`: level tertinggi + nama level, gold ber-grouping, jumlah hero/boss, string terakhir dimainkan, tombol LANJUTKAN/MULAI BARU/HAPUS SAVE + dialog konfirmasi) dipakai produksi; MULAI GAME kini lewat layar slot (paritas `btn_id == "play"`), LANJUTKAN tetap mem-bypass. Tombol HAPUS SAVE di pengaturan menghapus slot aktif (paritas `reset_save`). `SAVE_PATH` menjadi **var** yang mengikuti slot aktif (10 harness lama membacanya untuk snapshot/restore). **Cloud save tidak diport** (luar scope, tercatat terbuka di bawah). |
 
 ## Belum setara — jangan ditandai selesai
+
+- **Performa (`_system.py:29-185` + `:189-387`, FASE 25):** grid spasial,
+  culling draw-side, dan panel FPS sudah diport + dikunci fixture. Yang belum:
+  (1) **piksel** panel FPS — headless Godot tidak bisa screenshot, jadi yang
+  direplay adalah daftar perintah gambar (`build_ops`) + konstanta letak/warna,
+  bukan raster-nya; posisi yang bergantung lebar teks ikut metrik font Godot;
+  (2) `AdaptiveQuality` (`_system.py:400-448`) sengaja TIDAK diport karena
+  dead code di pygame — kalau nanti diaktifkan di sisi pygame, fixture harus
+  diregenerasi dan port-nya ditinjau ulang; (3) `mobile/perf.py`
+  `auto_detect_quality` (preset Android) belum punya padanan Godot — preset
+  kualitas Godot hanya membaca `settings.quality` untuk anggaran popup
+  (`GameManager`), belum untuk jumlah partikel/kabut seperti pygame Android;
+  (4) **tie-break target menara**: pygame `Tower._find_target` memakai
+  `dist <= best_dist` (musuh TERAKHIR pada jarak sama menang,
+  `_entity.py:808-860`) sementara `CombatSystem.nearest_enemy` memakai `<`
+  (yang pertama). Selisih ini ada SEBELUM FASE 25 dan tidak disentuh (jalur
+  menara tidak dialihkan ke grid), tapi nyata dan belum diputuskan;
+  (5) tombol FPS 4-mode `mobile/debug.py` (entry `main.py`) belum diport —
+  yang diport adalah `_system.FPSCounter` jalur desktop legacy.
 
 - ~~**Reward kematian boss belum membayar gold/skor, tracking unlock langsung,
   popup SLAYER mini/true, dan data/antrean `+nG` belum diport.**~~
@@ -510,6 +587,9 @@ godot --headless --path godot res://tests/MinionTowerRewardParityTest.tscn --qui
 godot --headless --path godot res://tests/DeathDispatchParityTest.tscn --quit-after 600
 godot --headless --path godot res://tests/SaveSlotParityTest.tscn --quit-after 300
 godot --headless --path godot res://tests/TouchHudParityTest.tscn --quit-after 300
+godot --headless --path godot res://tests/SystemPerfParityTest.tscn --quit-after 300
+# Blok `performance.py` + `fps_counter.py` _system.py (oracle pygame + fixture):
+python3 tools/test_system_perf_parity.py
 python3 godot/tools/test_godot_log_gate.py
 ```
 

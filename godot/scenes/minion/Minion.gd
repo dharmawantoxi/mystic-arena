@@ -282,8 +282,12 @@ func _follow_lane(speed: float) -> bool:
 
 
 ## Radius aggro = range + 30; prioritas naik bersama level nexus.
+## Kuerinya lewat SpatialGrid (paritas `Minion._get_enemies` _entity.py:5635:
+## grid minion/hero/boss + scan langsung untuk tower & base), bukan scan
+## semua grup — di jalur inilah pygame menghemat O(n²) jadi O(n).
 func _find_target_smart() -> Node2D:
-	var nearby: Array = CombatSystem.enemies_in_radius(team, global_position, attack_range + 30.0)
+	var nearby: Array = CombatSystem.query_enemies_in_range(
+		team, global_position, attack_range + 30.0)
 	if nearby.is_empty():
 		return null
 	var in_range: Array = []

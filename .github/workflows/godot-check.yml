@@ -42,6 +42,7 @@ on:
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
+      - 'tools/test_system_perf_parity.py'
       - 'main_desktop_legacy.py'
       - '.github/workflows/godot-check.yml'
   push:
@@ -65,6 +66,7 @@ on:
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
+      - 'tools/test_system_perf_parity.py'
       - 'main_desktop_legacy.py'
       - '.github/workflows/godot-check.yml'
   workflow_dispatch:
@@ -771,6 +773,37 @@ jobs:
             exit 1
           fi
 
+      # ── 4u. SystemPerfParityTest (FASE 25): BLOK `performance.py` +
+      # `fps_counter.py` _system.py. Oracle = kelas SUNGGUHAN di _system.py
+      # (SpatialGrid 52-135, `_grid`/update_spatial_grid/query_enemies_in_range
+      # 145-194, FrustumCuller 40-50, FPSCounter 202-398) yang menulis fixture
+      # `godot/tests/fixtures/system_perf.json`; jejak `pygame.draw.rect/line`
+      # + `font.render` diambil dengan penambalan fungsi gambar, dan konstanta
+      # LETAK overlay di-PIN dari teks sumber (regex hilang = tool gagal).
+      # Godot mereplay lewat kelas produksinya (SpatialGrid.gd, FrustumCuller.gd,
+      # FpsCounter.gd, CombatSystem.query_enemies_in_range + Minion/WorldPopups).
+      # AdaptiveQuality TIDAK diport (dead code — dikunci seksi `dead` fixture).
+      - name: SystemPerfParityTest (grid spasial + culling + overlay FPS vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          # Fixture harus tetap SAMA dengan yang di-commit (perilaku pygame
+          # berubah tanpa port ikut = gagal di sini, bukan diam-diam).
+          python -m pip install --quiet pygame-ce
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_system_perf_parity.py
+          godot --headless --path godot res://tests/SystemPerfParityTest.tscn --quit-after 300 2>&1 | tee /tmp/sysperf.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/sysperf.log --label "SystemPerfParityTest" \
+              --require "[SystemPerfParityTest] PASS" > /tmp/sysperf.gate 2>&1; then
+            cat /tmp/sysperf.gate
+          else
+            cat /tmp/sysperf.gate
+            echo "::error::SYSPERF-FAIL-TAIL: $(tail -40 /tmp/sysperf.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::SYSPERF-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/sysperf.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
@@ -781,6 +814,8 @@ jobs:
           # basic hero): armor item hero utk semua non-fire, armor/MR
           # boss-tower-minion, Wind Wall/Windrun, resolve context.
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_damage_school.py
+          # Grid spasial + frustum culler + aturan overlay FPS (_system.py).
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_system_perf_parity.py
 
       # ── 6. Audit paritas visual terpadu ──
       # Dulu "apa yang beda antara tampilan Godot dan pygame?" harus

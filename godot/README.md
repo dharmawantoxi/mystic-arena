@@ -72,6 +72,7 @@ godot godot/project.godot
 | `G`/`F` `T` `C` `B` `D` (hold) | perintah taktis: GATHER (di posisi kursor) / PROTECT TOWER / PROTECT CASTLE / ATTACK BOSS / ATTACK DMG DEALER. Panelnya di dasar **panel kanan** saat layar lebih lebar dari 16:9; di layar tanpa panel kanan (16:9/potret) panelnya **terlipat** jadi chip **TACTICAL** kecil di kanan-bawah arena (ketuk untuk membuka, panel menutup sendiri setelah perintah dilepas) supaya map tidak tertutup |
 | `ENTER` | setelah VICTORY: **lanjut level berikutnya** · setelah DEFEAT: ulangi level |
 | `R` | setelah menang/kalah: replay level yang sama (is_replay → reward 1500/200, bukan 3000) |
+| `F8` | panel **FPS** (angka + grafik 60/30 fps + AVG/MIN/MAX) — paritas `_system.FPSCounter` jalur desktop legacy, ditangani SEBELUM dispatch state sehingga tetap jalan di splash/menu/pause; L3 & tombol FPS TouchHUD tetap mengarah ke overlay debug `HUD.toggle_debug_overlay` (padanan `mobile/debug.py`, 4 mode) |
 | `P` / `ESC` | menu PAUSE (RESUME / PENGATURAN / MENU UTAMA / KELUAR — paritas `MenuState.PAUSE`); ESC setelah menang/kalah = menu utama |
 | `SPACE` / `ENTER` / klik | lewati layar intro level (gameplay beku sampai dilewati); SPACE/ESC/klik juga menutup banner nama boss & perayaan "BOSS DEFEATED!" |
 
@@ -89,6 +90,21 @@ select/hero shop terbuka) · **stick kanan** gulir list. Kursor virtual
 ikut tampil dengan label tombol pad — persis `_draw_input_hints` pygame yang
 hanya menggambar bar itu di mode controller. Rumble ikut menyala saat cast
 skill. Dikunci `ControllerInputParityTest`.
+
+**Performa & overlay FPS (FASE 25):** targeting minion membaca `SpatialGrid`
+(`scripts/systems/SpatialGrid.gd`, padanan `performance.py` `_system.py:29-185`:
+`cell_size` 60, satu grid global, dibangun ulang tiap 2 frame seperti
+`animation_time % 2 == 0` di `_core.py:2007-2013`) — urutan kandidatnya adalah
+urutan bucket, dan itu yang menentukan target mana yang diprioritaskan. Menara
+dan nexus **tidak** diindeks grid (persis pygame) sehingga selalu hasil scan
+langsung dan appended terakhir; jalur AoE/splash/rantai mage/voly pemanah juga
+sengaja tidak dialihkan karena urutan kandidatnya sudah dikunci tes lain. Kalau
+grid belum berlaku (menu, pause, harness), `query_enemies_in_range` jatuh ke
+scan grup — himpunan sama, urutan ikut grup. `WorldPopups._draw` memakai
+`FrustumCuller` (margin 80 + radius) untuk tidak membangun `draw_string` popup
+yang berada di luar layar. Dikunci `SystemPerfParityTest` terhadap fixture
+oracle pygame (`tools/test_system_perf_parity.py`); peta blok lengkapnya ada di
+`../docs/SYSTEM_PY_COVERAGE.md`.
 
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
