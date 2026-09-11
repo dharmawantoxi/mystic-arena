@@ -157,6 +157,14 @@ static func _clamp(v: float, lo_hi: Array) -> float:
 	return maxf(float(lo_hi[0]), minf(float(lo_hi[1]), v))
 
 
+## d.get(key) or default — None/""/hilang -> default (persis `or` Python).
+static func _str_or(d: Dictionary, key: String, default: String) -> String:
+	var v: Variant = d.get(key, default)
+	if v is String and v != "":
+		return v
+	return default
+
+
 ## statistics.median (hero_balance.py:124 + pemakaian langsung st.median):
 ## sort, ganjil -> tengah, genap -> (a+b)/2 POLOS (bukan fsum); kosong
 ## -> 0.0 (helper _median; pemanggil langsung tak pernah kosong).
