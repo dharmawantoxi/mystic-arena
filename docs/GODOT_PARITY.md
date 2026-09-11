@@ -8,6 +8,71 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Blok FX `_render.py` (percikan, ledakan, panah lane) — 11 September 2026 (FASE 26)
+
+`_render.py` adalah modul gabungan 7 berkas lama (docstring `:1-11`); audit
+blok-per-bloknya kini tertulis di
+[RENDER_PY_COVERAGE.md](RENDER_PY_COVERAGE.md). Layar cinematic (intro level,
+banner boss, kematian boss), wave announcer, combo, achievement, floating text,
+dan screen shake sudah diport di fase-fase sebelumnya. Yang **belum punya
+padanan sama sekali** adalah tiga blok `effects.py`: `HitParticle`
+(`_render.py:418-493`), `DeathExplosion` (`:494-571`), dan `PathPreview`
+(`:1275-1370`) — yang terakhir adalah fitur yang benar-benar hilang dari layar
+(`PARITY_AUDIT.md` butir 4: "Di Godot tidak ada satu pun berkas `PathPreview`").
+
+| Bagian pygame | Port Godot | Catatan |
+|---|---|---|
+| `HitParticle` (`:418-493`) — gravitasi 0.15, gesekan 0.95, sprite pra-render 3·base px di-scale per frame, alpha `int(255·sisa)`, ukuran `max(1, int(size·sisa))` | `scripts/render/HitSpark.gd` | Gerak + aturan alpha/ukuran apa adanya. Pusat lingkaran = `posisi_blit + pusat_kanvas × faktor_skala` (pygame mem-blit di `int(x) − ukuran*3//2`; base genap + ukuran gasal = offset 0,5 px) — jejak fixture yang mengunci, bukan `int(x)` polos |
+| `DeathExplosion` (`:494-571`) — 8/15/25 partikel per preset, palet 3 warna per tim, kilat pusat 8 frame (`int(20·intensity)` + `//2`) | `scripts/render/DeathBurst.gd` | Urutan konsumsi RNG direkam oracle: angle → speed → `choice(warna)` → `randint(spark)` → `randint(20,35)`. Replay Godot memakai nilai yang sama lewat `rng` ter-script, jadi jumlah/urutan/rentang roll ikut terkunci |
+| `EffectManager.particles`/`explosions` + `MAX_PARTICLES 500` / `MAX_EXPLOSIONS 80` + `add_hit_particles` + `add_death_explosion` + bagian keduanya di `update()`/`draw()` (`:601-800`) | `scripts/render/SparkField.gd` (data, dimiliki `GameManager.spark_fx`) + `scenes/fx/SparkLayer.gd` (draw, z 800) | Satu lapangan global seperti satu `EffectManager` pygame. Trim membuang yang TERTUA (`del [0:…]` / `del [0]`); di-tick `GameManager._process` dengan akumulator 60 Hz |
+| Situs pemanggil pygame: `Minion.take_damage` count 4 (`_entity.py:5842`), `Boss.take_damage` count 6 (`base_boss.py:6057`), `Castle.take_damage` count 10 (`_entity.py:1816`), kematian minion `'medium'` (`:5863`) / boss `'large'` (`base_boss.py:6076`), taktik GATHER + PROTECT CASTLE `'small'` (`tactical_commands.py:389/537`, hanya cabang `not silent`) | `CombatSystem._hit_spark_count` + `Minion.die` + `Boss.die` + `TacticalCommands` | Pygame memanggilnya di `take_damage` tiap unit; Godot memusatkan damage di `CombatSystem.apply_damage`, jadi percikannya ditaruh tepat di samping `_spawn_damage_number`. **Hero & menara = 0** (tidak ada call site pygame) sehingga kontrak "serangan dasar tanpa impact FX" tidak tersentuh |
+| `PathPreview` (`:1275-1370`) + `EffectManager.path_preview`/`show_path_preview` (`:623/784/789/797`) + pemicu `_core.py:1756-1762` | `scenes/fx/PathPreview.gd` + `Main._show_path_preview()` dari `_on_wave_started` | 120 frame, fade in 20 / out 40, `alpha = int(200·ratio)`, `offset = int(t·2) % 20`, satu panah tiap 8 titik, arah dari titik `i+4`, pulse `(i//8 + offset//5) % 4`, panah 8 px (pulse) / 5 px (redup, alpha//2). Lane dibaca dari `ArenaMap.get_lane_path` dengan urutan `top, mid, bot` persis `_core.py:1757` |
+| `KillFeed` (`:1103-1201`), `PopupAnimation` (`:1202-1239`) | — (**sengaja tidak diport**) | Dead code di pygame: `kill_feed.add_kill/draw` nol call site; `popup_anim.get_scale/get_offset_y` nol call site (yang dipanggil `_core.py` hanya `show/hide/update`). `build_dead_claims()` di tool oracle mengunci `sites == []` supaya klaim ini tidak diam-diam basi |
+
+**Deviasi terdokumentasi (mesin/lapisan lain, bukan pilihan gaya):** (1)
+`add_hit_particles` pygame dikalikan `mobile.perf.Quality.particle_ratio`
+yang di preset HIGH desktop = **0.70**, jadi pygame sebenarnya memunculkan
+3/4/7 percikan untuk minion/boss/castle; Godot memakai **1.0** karena lapisan
+adaptive quality belum diport (SYSTEM_PY_COVERAGE §3). Knob
+`SparkField.particle_ratio`/`particles_enabled` tersedia, faktanya direkam
+fixture (`py_quality`) dan dikunci `_test_wiring`; (2) pygame memakai `random`
+global, Godot memakai RNG ter-script di harness dan RNG global di produksi —
+yang dikunci adalah NILAI dan URUTAN roll, bukan algoritmanya; (3) raster
+tidak dibandingkan (`draw_circle`/`draw_colored_polygon` Godot vs sprite hasil
+`transform.scale` pygame) — yang dikunci geometri, warna, alpha, dan urutan
+perintah gambar; headless Godot tidak bisa screenshot; (4) `_fx_chain`
+(`hero_items.py:2728-2745`, 8 call site) belum ikut — rantai damage item sudah
+diport, FX kilatnya belum; (5) z-index: effects Godot di z 790/800 (di atas
+unit yang bersistem `z = y` ≤ 720) karena pygame menggambar effects SETELAH
+semua entitas (`_core.py:2917`), dengan urutan internal path preview → ledakan
+→ percikan → floating text.
+
+**Oracle-nya menjalankan kode pygame asli, bukan salinan:**
+`tools/test_render_parity.py` mengganti `pygame.Surface` dengan subclass
+perekam, lalu merekam `pygame.draw.circle`/`polygon` + `transform.scale` +
+`Surface.blit` + `set_alpha` yang benar-benar terjadi, dan MENURUNKAN op dari
+jejak itu (pusat = posisi blit + pusat sprite × faktor skala; radius ikut
+skala; alpha = alpha lingkaran × alpha sprite). Jalur lane yang dipakai adalah
+keluaran `map_components.generators.PathGenerator` sungguhan (111/65/101
+titik), dan jumlah percikan per situs (4/6/10) serta ukuran ledakan
+(`small`/`medium`/`large`) di-PIN dari teks sumber `_entity.py`,
+`bosses/base_boss.py`, `tactical_commands.py`.
+
+**Validasi:** `tools/test_render_parity.py` (203 pemeriksaan: fixture
+determinis 2× run, drift vs `godot/tests/fixtures/render_fx.json`, dan kunci
+statis konstanta + ekspresi `.gd`) lulus lokal; `gdparse` seluruh `.gd` +
+`tscn_lint` 39 scene + `check_refs` + `particles_lint` + 5 self-test log-gate +
+`test_system_perf_parity.py` (158) + `test_godot_match_parity.py` +
+`test_basic_attack_no_impact_fx.py` lulus lokal. `RenderFxParityTest`
+(73 frame percikan, 32 frame/792 op ledakan, 4 skenario `add_hit_particles` +
+batas 500/80, 130 frame + 490 polygon panah lane, wiring `GameManager.spark_fx`)
+dijalankan CI `godot-check.yml` langkah **4v** — **binary Godot tidak tersedia
+di sandbox**, jadi replay headless-nya diverifikasi di sana. Aritmetika port
+dihitung silang terhadap jejak pygame di fixture (73 + 32 + 16 frame, 0 selisih)
+sebelum CI dijalankan. Yang TETAP TERBUKA di jalur ini: **piksel** (raster
+lingkaran/segitiga), `_fx_chain`, dan label prompt/skip yang belum ikut mode
+input (`_begin_prompt_text`/`_skip_button_label`).
+
 ## Blok performa & overlay FPS `_system.py` — 11 September 2026 (FASE 25)
 
 `_system.py` adalah modul gabungan 5 berkas lama (docstring `:1-9`); audit

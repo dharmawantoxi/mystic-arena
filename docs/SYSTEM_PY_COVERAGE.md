@@ -20,7 +20,8 @@ Oracle + fixture: `tools/test_system_perf_parity.py` →
 `godot/tests/fixtures/system_perf.json`; replay headless:
 `godot/tests/SystemPerfParityTest.tscn`. Peta cakupan `_core.py`:
 [CORE_PY_COVERAGE.md](CORE_PY_COVERAGE.md); `_entity.py`:
-[ENTITY_PY_COVERAGE.md](ENTITY_PY_COVERAGE.md); status paritas umum:
+[ENTITY_PY_COVERAGE.md](ENTITY_PY_COVERAGE.md); `_render.py`:
+[RENDER_PY_COVERAGE.md](RENDER_PY_COVERAGE.md); status paritas umum:
 [GODOT_PARITY.md](GODOT_PARITY.md).
 
 ---

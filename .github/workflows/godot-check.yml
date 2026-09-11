@@ -43,6 +43,7 @@ on:
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
       - 'tools/test_system_perf_parity.py'
+      - 'tools/test_render_parity.py'
       - 'main_desktop_legacy.py'
       - '.github/workflows/godot-check.yml'
   push:
@@ -67,6 +68,7 @@ on:
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
       - 'tools/test_system_perf_parity.py'
+      - 'tools/test_render_parity.py'
       - 'main_desktop_legacy.py'
       - '.github/workflows/godot-check.yml'
   workflow_dispatch:
@@ -804,6 +806,39 @@ jobs:
             exit 1
           fi
 
+      # ── 4v. RenderFxParityTest (FASE 26): blok `effects.py` _render.py —
+      # percikan pukulan (`HitParticle` 418-493), ledakan kematian
+      # (`DeathExplosion` 494-571), daftar/batas EffectManager (500/80), dan
+      # `PathPreview` (1275-1370) yang dulu tidak ada padanannya sama sekali.
+      # Oracle menjalankan kelas pygame SUNGGUHAN: jejak `pygame.draw.circle`
+      # /`polygon` + `transform.scale` + `Surface.blit` + `set_alpha` direkam
+      # lewat Surface turunan lalu DITURUNKAN jadi op; urutan konsumsi
+      # `random.uniform/choice/randint` ikut direkam. Godot mereplay lewat
+      # kelas produksinya (HitSpark/DeathBurst/SparkField/PathPreview).
+      # KillFeed + PopupAnimation TIDAK diport (dead code di pygame —
+      # dikunci seksi `dead` fixture). Rasio partikel adaptive quality
+      # (0.70 di preset HIGH) belum diport — direkam di `py_quality`.
+      - name: RenderFxParityTest (percikan + ledakan + panah lane vs oracle Pygame)
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          # Fixture harus tetap SAMA dengan yang di-commit (perilaku pygame
+          # berubah tanpa port ikut = gagal di sini, bukan diam-diam).
+          python -m pip install --quiet pygame-ce
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_render_parity.py
+          godot --headless --path godot res://tests/RenderFxParityTest.tscn --quit-after 300 2>&1 | tee /tmp/renderfx.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/renderfx.log --label "RenderFxParityTest" \
+              --require "[RenderFxParityTest] PASS" > /tmp/renderfx.gate 2>&1; then
+            cat /tmp/renderfx.gate
+          else
+            cat /tmp/renderfx.gate
+            echo "::error::RENDERFX-FAIL-TAIL: $(tail -40 /tmp/renderfx.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::RENDERFX-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/renderfx.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |
@@ -816,6 +851,8 @@ jobs:
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_damage_school.py
           # Grid spasial + frustum culler + aturan overlay FPS (_system.py).
           SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_system_perf_parity.py
+          # Percikan/ledakan/panah lane + klaim dead code (_render.py).
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_render_parity.py
 
       # ── 6. Audit paritas visual terpadu ──
       # Dulu "apa yang beda antara tampilan Godot dan pygame?" harus

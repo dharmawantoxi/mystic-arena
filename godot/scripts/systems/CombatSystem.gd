@@ -566,6 +566,10 @@ func apply_damage(target, amount: float, from_team: String = "",
 	var dealt := dmg
 	var shown := dealt + absorbed
 	_spawn_damage_number(target, shown, shown > float(target.get("max_hp")) * 0.12)
+	# Percikan pukulan (port `add_hit_particles` `_render.py:712`). Pygame
+	# memanggilnya di take_damage TIAP jenis unit, tepat di samping damage
+	# number; Godot memusatkan damage number di sini, jadi percikannya ikut.
+	_hit_sparks(target)
 	# credit_hero_damage (_entity.py:26-45): integer HP yang mendarat
 	# (sisa setelah shield), sebelum Bristleback. kit_hit TIDAK boleh
 	# menambah lagi — kalau tidak skill terhitung dua kali.
@@ -895,6 +899,29 @@ func _apply_aura(_caster, aura: Dictionary, pos: Vector2, team: String, all: Arr
 # ══════════════════════════════════════════════════════════
 #  FX TEKS
 # ══════════════════════════════════════════════════════════
+
+## Jumlah percikan per jenis target = angka persis situs pemanggil pygame:
+## minion 4 (`_entity.py:5842`), boss 6 (`base_boss.py:6057`), castle 10
+## (`_entity.py:1816`). Hero & menara TIDAK punya call site di pygame (FX
+## mereka sendiri: Hero = HitParticles CPUParticles2D), jadi 0.
+func _hit_spark_count(target) -> int:
+	if _is_minion(target):
+		return 4
+	if "boss_type" in target:
+		return 6
+	if "no_damage_timer" in target and not ("tower_type" in target):
+		return 10 # Castle/Nexus
+	return 0
+
+
+func _hit_sparks(target) -> void:
+	var count := _hit_spark_count(target)
+	if count <= 0 or not (target is Node2D):
+		return
+	var at := (target as Node2D).global_position
+	GameManager.spark_fx.add_hit_particles(at.x, at.y,
+		str(target.get("team")), count)
+
 
 func _spawn_damage_number(target, amount: float, big: bool) -> void:
 	if amount < 1.0:

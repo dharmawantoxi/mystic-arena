@@ -73,6 +73,11 @@ var _slot_pulse: float = 0.0
 ## Penghitung frame untuk jadwal bangun ulang SpatialGrid (paritas
 ## `animation_time % 2 == 0` di `_core.py:2009`).
 var _grid_tick: int = 0
+## FX world-space FASE 26 (port `_render.EffectManager`): percikan/ledakan +
+## panah jalur lane saat wave dimulai. Dibuat di `_ready`, data percikannya
+## milik `GameManager.spark_fx` (satu EffectManager global seperti pygame).
+var _spark_layer = null
+var _path_preview = null
 ## Overlay FPS (port `_system.FPSCounter`, F8) — CanvasLayer sendiri supaya
 ## tampil di ATAS menu/pause, sama seperti pygame yang mem-blit-nya setelah
 ## semua state di `main_desktop_legacy.py:455`.
@@ -132,6 +137,7 @@ func _ready():
 	var popups = preload("res://scenes/fx/WorldPopups.gd").new()
 	popups.name = "WorldPopups"
 	add_child(popups)
+	_build_fx_layers()
 	_build_fps_counter()
 	# Sambungkan sinyal menu utama (node UI/MainMenu siap lebih dulu karena
 	# anak diproses sebelum parent; koneksi di sini juga aman diulang).
@@ -359,9 +365,39 @@ func _generate_build_slots() -> void:
 				var idx := clampi(int(path.size() * float(pct)), 0, path.size() - 1)
 				GameManager.add_build_slot(path[idx], str(team), str(lane))
 
+## Dua lapisan FX world-space (port `_render.py:622-623` + `:788-789`).
+## SparkLayer membaca `GameManager.spark_fx`; PathPreview memegang state-nya
+## sendiri karena jalur lane dibaca dari ArenaMap milik scene ini.
+func _build_fx_layers() -> void:
+	_spark_layer = preload("res://scenes/fx/SparkLayer.gd").new()
+	_spark_layer.name = "SparkLayer"
+	add_child(_spark_layer)
+	_path_preview = preload("res://scenes/fx/PathPreview.gd").new()
+	_path_preview.name = "PathPreview"
+	add_child(_path_preview)
+
+
+## Urutan lane persis `_core.py:1756-1762`: top, mid, bot.
+const PREVIEW_LANES: Array = ["top", "mid", "bot"]
+
+
+func _show_path_preview() -> void:
+	if _path_preview == null or _arena_map == null \
+			or not _arena_map.has_method("get_lane_path"):
+		return
+	var lanes: Array = []
+	for lane in PREVIEW_LANES:
+		lanes.append(_arena_map.get_lane_path(str(lane)))
+	_path_preview.show_paths(lanes)
+
+
 func _on_wave_started(wave_num: int) -> void:
 	# GameManager menguras antrean minion setiap 20 frame, bukan sekaligus.
 	_queue_mini_boss(wave_num)
+	# Panah merah di sepanjang lane selama 2 detik (paritas
+	# `effects.show_path_preview(lane_paths)` `_core.py:1762`, dipanggil tepat
+	# setelah announce_wave di blok wave-start pygame).
+	_show_path_preview()
 
 
 ## Game._roll_mini_boss_schedule: tipe/urutan boss tetap, wave unik diacak.

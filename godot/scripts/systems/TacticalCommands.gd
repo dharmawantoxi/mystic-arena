@@ -381,6 +381,10 @@ func command_gather(gather_x: float = INF, gather_y: float = INF,
 		_set_feedback("GATHER! %d heroes regrouping!" % n,
 			Color(100.0 / 255.0, 220.0 / 255.0, 1.0))
 		print("[TACTICAL] GATHER at (%d, %d) - %d heroes" % [int(gx), int(gy), n])
+		# Efek visual di titik kumpul (paritas `add_death_explosion(gather_x,
+		# gather_y, team="blue", size='small')` `tactical_commands.py:389`,
+		# hanya di cabang `not silent`).
+		GameManager.spark_fx.add_death_explosion(gx, gy, "blue", "small")
 	return true
 
 
@@ -514,6 +518,9 @@ func command_protect_castle(silent: bool = false) -> bool:
 		_set_feedback("PROTECT CASTLE! %d heroes defending base!" % n,
 			Color(1.0, 220.0 / 255.0, 50.0 / 255.0))
 		print("[TACTICAL] PROTECT CASTLE at (%d, %d) - %d heroes" % [int(cp.x), int(cp.y), n])
+		# Paritas `add_death_explosion(castle.x, castle.y, "blue", 'small')`
+		# `tactical_commands.py:537` (juga hanya di cabang `not silent`).
+		GameManager.spark_fx.add_death_explosion(cp.x, cp.y, "blue", "small")
 	return true
 
 
