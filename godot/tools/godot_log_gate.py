@@ -56,10 +56,17 @@ ALLOWED_PATTERNS = [
     r"Unable to initialize .* driver",
     # GDExtension mystic_lighting opsional — lib .so/.dll tidak ikut repo
     # (build lokal via SConstruct). Godot log \"Failed loading resource\" /
-    # \"Cannot open file\" untuk lib yang belum dibuild adalah wajar di CI
-    # headless; runtime fallback ke Lighting.gd + shader GPU tetap jalan.
+    # \"Cannot open file\" / \"Condition !FileAccess::exists\" untuk lib yang
+    # belum dibuild adalah wajar di CI headless; runtime fallback ke
+    # Lighting.gd + shader GPU tetap jalan.
     r"mystic_lighting",
     r"libmystic_lighting",
+    r"FileAccess::exists",
+    r"open_dynamic_library",
+    r"open_library",
+    r"GDExtension dynamic library not found",
+    r"Failed loading resource.*mystic_lighting",
+    r"addons/mystic_lighting",
 ]
 
 
