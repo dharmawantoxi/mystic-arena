@@ -69,7 +69,7 @@ func _setup_materials() -> void:
 		mat.shader = sh1
 		var p := Lighting.shader_params()
 		mat.set_shader_parameter("light_dir", p["light_dir"])
-		mat.set_shader_parameter("rim_add", Vector3(p["rim_add"].r, p["rim_add"].g, p["rim_add"].b))
+		mat.set_shader_parameter("rim_add", p["rim_add"] as Color)
 		mat.set_shader_parameter("shade_mul", p["shade_mul"])
 		mat.set_shader_parameter("band2_ratio", p["band2_ratio"])
 		mat.set_shader_parameter("grad_dark", p["grad_dark"])
@@ -87,7 +87,7 @@ func _setup_materials() -> void:
 		mat2.shader = sh2
 		var p := Lighting.shader_params()
 		mat2.set_shader_parameter("light_dir", p["light_dir"])
-		mat2.set_shader_parameter("rim_add", Vector3(p["rim_add"].r, p["rim_add"].g, p["rim_add"].b))
+		mat2.set_shader_parameter("rim_add", p["rim_add"] as Color)
 		mat2.set_shader_parameter("shade_mul", p["shade_mul"])
 		mat2.set_shader_parameter("band2_ratio", p["band2_ratio"])
 		mat2.set_shader_parameter("grad_dark", p["grad_dark"])

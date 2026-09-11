@@ -148,10 +148,10 @@ func configure_baked(p_type: String, p_kind: String, p_team: String) -> void:
 			if l_shader != null:
 				var l_mat := ShaderMaterial.new()
 				l_mat.shader = l_shader
-				# Paritas lighting.py
+				# Paritas lighting.py — shader sekarang vec4 rim_add (source_color)
 				var lp := Lighting.shader_params()
 				l_mat.set_shader_parameter("light_dir", lp["light_dir"])
-				l_mat.set_shader_parameter("rim_add", Vector3(lp["rim_add"].r, lp["rim_add"].g, lp["rim_add"].b))
+				l_mat.set_shader_parameter("rim_add", lp["rim_add"] as Color)
 				l_mat.set_shader_parameter("shade_mul", lp["shade_mul"])
 				l_mat.set_shader_parameter("band2_ratio", lp["band2_ratio"])
 				l_mat.set_shader_parameter("grad_dark", lp["grad_dark"])
@@ -179,7 +179,7 @@ func configure_baked(p_type: String, p_kind: String, p_team: String) -> void:
 			var base_rim: Color = Lighting.RIM_ADD
 			var team_tint := Color("#1a1a2e") if p_team == "blue" else Color("#2e1a1a")
 			var final_rim := base_rim + team_tint * 0.35
-			_lighting_mat.set_shader_parameter("rim_add", Vector3(final_rim.r, final_rim.g, final_rim.b))
+			_lighting_mat.set_shader_parameter("rim_add", final_rim)
 	elif kind == "boss":
 		if use_lighting and ResourceLoader.exists(lighting_path):
 			# Boss juga dapat lighting (lebih subtle, tanpa outline tebal)
@@ -189,7 +189,7 @@ func configure_baked(p_type: String, p_kind: String, p_team: String) -> void:
 				l_mat.shader = l_shader
 				var lp := Lighting.shader_params()
 				l_mat.set_shader_parameter("light_dir", lp["light_dir"])
-				l_mat.set_shader_parameter("rim_add", Vector3(lp["rim_add"].r, lp["rim_add"].g, lp["rim_add"].b))
+				l_mat.set_shader_parameter("rim_add", lp["rim_add"] as Color)
 				l_mat.set_shader_parameter("shade_mul", lp["shade_mul"])
 				l_mat.set_shader_parameter("band2_ratio", lp["band2_ratio"])
 				l_mat.set_shader_parameter("grad_dark", lp["grad_dark"])

@@ -18,7 +18,7 @@
 shader_type canvas_item;
 
 uniform vec2 light_dir = vec2(-1.0, -1.0); // paritas LIGHT_DIR
-uniform vec3 rim_add : source_color = vec3(0.1176, 0.102, 0.1725); // (30,26,44)/255
+uniform vec4 rim_add : source_color = vec4(0.1176, 0.102, 0.1725, 1.0); // (30,26,44)/255
 uniform float shade_mul : hint_range(0.0, 1.0) = 0.6588; // 168/255
 uniform float band2_ratio : hint_range(0.0, 1.0) = 0.42;
 uniform float grad_dark : hint_range(0.0, 1.0) = 0.8039; // 205/255
@@ -29,7 +29,7 @@ uniform float rim_width : hint_range(0.0, 4.0) = 1.0;
 uniform float shade_width : hint_range(0.0, 4.0) = 1.0;
 uniform bool gradient_enabled = true;
 uniform bool two_band = true;
-uniform vec4 bbox : hint_default = vec4(0.0, 0.0, 1.0, 1.0); // x,y,w,h normalized untuk gradient box, default full
+uniform vec4 bbox = vec4(0.0, 0.0, 1.0, 1.0); // x,y,w,h normalized untuk gradient box, default full
 // bbox: jika ingin cahaya konstan per rig (anti-kedip saat pose berubah), isi dengan
 // Rect2 konstan rig dalam UV space. Jika (0,0,1,1) = pakai UV penuh (paritas box=None jalur hero).
 
@@ -127,7 +127,7 @@ void fragment() {
 
     // --- Rim light (ADD) ---
     if (is_rim) {
-        col += rim_add;
+        col += rim_add.rgb;
     }
 
     // Clamp
@@ -135,7 +135,3 @@ void fragment() {
 
     COLOR = vec4(col, a);
 }
-
-// Variasi untuk sprite yang sudah punya outline shader:
-// Kalau mau gabung outline + lighting, pakai lighting_outline.gdshader (dibuat di bawah)
-// atau chain: material pertama lighting, kedua outline via NextPass (Godot 4.3+).

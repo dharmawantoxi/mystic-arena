@@ -119,7 +119,7 @@ static func create_outline_material() -> ShaderMaterial:
 			mat.shader = sh
 			var p := LightingGD.shader_params()
 			mat.set_shader_parameter("light_dir", p["light_dir"])
-			mat.set_shader_parameter("rim_add", Vector3(p["rim_add"].r, p["rim_add"].g, p["rim_add"].b))
+			mat.set_shader_parameter("rim_add", p["rim_add"] as Color)
 			mat.set_shader_parameter("shade_mul", p["shade_mul"])
 			mat.set_shader_parameter("band2_ratio", p["band2_ratio"])
 			mat.set_shader_parameter("grad_dark", p["grad_dark"])

@@ -346,7 +346,7 @@ Ref<ShaderMaterial> MysticLighting::create_lighting_material() {
     Vector2 ld = p["light_dir"];
     Color rim = p["rim_add"];
     mat->set_shader_parameter("light_dir", ld);
-    mat->set_shader_parameter("rim_add", Vector3(rim.r, rim.g, rim.b));
+    mat->set_shader_parameter("rim_add", rim); // shader sekarang vec4 : source_color
     mat->set_shader_parameter("shade_mul", p["shade_mul"]);
     mat->set_shader_parameter("band2_ratio", p["band2_ratio"]);
     mat->set_shader_parameter("grad_dark", p["grad_dark"]);

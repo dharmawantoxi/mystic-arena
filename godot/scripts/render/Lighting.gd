@@ -393,7 +393,9 @@ static func create_lighting_material() -> ShaderMaterial:
 	mat.shader = shader
 	var p := shader_params()
 	mat.set_shader_parameter("light_dir", p["light_dir"])
-	mat.set_shader_parameter("rim_add", Vector3(p["rim_add"].r, p["rim_add"].g, p["rim_add"].b))
+	# rim_add sekarang vec4 di shader (source_color), jadi set sebagai Color/Vector4
+	var rim_col: Color = p["rim_add"]
+	mat.set_shader_parameter("rim_add", rim_col)
 	mat.set_shader_parameter("shade_mul", p["shade_mul"])
 	mat.set_shader_parameter("band2_ratio", p["band2_ratio"])
 	mat.set_shader_parameter("grad_dark", p["grad_dark"])

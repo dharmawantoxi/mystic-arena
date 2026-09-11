@@ -10,7 +10,7 @@ uniform vec4 flash_color : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 // lighting uniforms (paritas lighting.py)
 uniform vec2 light_dir = vec2(-1.0, -1.0);
-uniform vec3 rim_add : source_color = vec3(0.1176, 0.102, 0.1725);
+uniform vec4 rim_add : source_color = vec4(0.1176, 0.102, 0.1725, 1.0);
 uniform float shade_mul : hint_range(0.0, 1.0) = 0.6588;
 uniform float band2_ratio : hint_range(0.0, 1.0) = 0.42;
 uniform float grad_dark : hint_range(0.0, 1.0) = 0.8039;
@@ -20,7 +20,7 @@ uniform float mask_alpha : hint_range(0.0, 1.0) = 0.6667;
 uniform float rim_width_l : hint_range(0.0, 4.0) = 1.0;
 uniform bool gradient_enabled = true;
 uniform bool two_band = true;
-uniform vec4 bbox : hint_default = vec4(0.0, 0.0, 1.0, 1.0);
+uniform vec4 bbox = vec4(0.0, 0.0, 1.0, 1.0);
 
 float alpha_at(vec2 uv) {
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
@@ -98,7 +98,7 @@ void fragment() {
         rgb *= k2;
     }
     if (is_rim) {
-        rgb += rim_add;
+        rgb += rim_add.rgb;
     }
 
     // --- Flash (hit) ---
