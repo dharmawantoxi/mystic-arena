@@ -307,6 +307,25 @@ jobs:
             exit 1
           fi
 
+      # ── 4b4. HeroItemsParityTest (FASE 29): paritas port hero_items.py
+      # ↔ HeroItems.gd — kelas item (PHYSICAL/MAGIC/TANK), halaman toko
+      # SELARAS batas kelas, mekanik detail popup (id + en), format nilai
+      # %g/str(float), pesanan forge tertunda + target toko (termasuk hero
+      # mati), dan pengali level HERO_LEVELS.
+      - name: HeroItemsParityTest (port hero_items.py vs oracle Pygame)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/HeroItemsParityTest.tscn --quit-after 120 2>&1 | tee /tmp/hitems.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/hitems.log --label "HeroItemsParityTest" \
+              --require "[HeroItemsParityTest] PASS" > /tmp/hitems.gate 2>&1; then
+            cat /tmp/hitems.gate
+          else
+            cat /tmp/hitems.gate
+            echo "::error::HITEMS-FAIL-TAIL: $(tail -40 /tmp/hitems.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::HITEMS-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/hitems.log | tr '\n' ' | ' | cut -c1-2500)"
+            exit 1
+          fi
+
       # ── 4c. BossSmartAIParityTest: paritas smart-AI Q/W/E/R 79 boss
       # (summon, dash, transform, dot/debuff, buff, heal, knockback) vs
       # oracle Boss.update pygame asli — 3 skenario × 79 boss, jejak event

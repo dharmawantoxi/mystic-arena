@@ -299,6 +299,38 @@ func grouped() -> Dictionary:
 
 
 # ══════════════════════════════════════════════════════════
+#  KELAS ITEM + HALAMAN TOKO + MEKANIK DETAIL
+#  (delegasi HeroItems.gd — twin hero_items.py FASE 29)
+# ══════════════════════════════════════════════════════════
+
+## Kelas item PHYSICAL/MAGIC/TANK — delegasi HeroItems.get_item_class
+## (paritas hero_items.get_item_class, hero_items.py:1395-1417).
+func item_class(item_id: String) -> String:
+	return HeroItems.get_item_class(items, item_id)
+
+
+## Label badge kelas item ("PHYSICAL"/"MAGIC"/"TANK") — ITEM_CLASS_INFO[cls][0].
+func item_class_label(item_id: String) -> String:
+	var cls := item_class(item_id)
+	var info = HeroItems.ITEM_CLASS_INFO.get(cls)
+	if info is Array and info.size() >= 1:
+		return str(info[0])
+	return cls.to_upper()
+
+
+## Daftar (kind, text) mekanik detail item (popup ITEM FORGE) — delegasi
+## HeroItems.build_item_mechanics (paritas hero_items._build_item_mechanics).
+func item_mechanics(item_id: String, en: bool = false) -> Array:
+	return HeroItems.build_item_mechanics(get_item(item_id), en)
+
+
+## Halaman toko SELARAS batas kelas — delegasi HeroItems.build_shop_pages
+## (paritas hero_items.SHOP_PAGES/SHOP_PAGE_META/ITEM_SHOP_ORDER).
+func shop_pages() -> Dictionary:
+	return HeroItems.build_shop_pages()
+
+
+# ══════════════════════════════════════════════════════════
 static func _color_from(v, fallback: Color) -> Color:
 	if v is Color:
 		return v

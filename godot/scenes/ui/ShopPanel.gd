@@ -559,9 +559,11 @@ func _build_item_tab() -> void:
 				reason = items.equip_block_reason(iid)
 			if reason == "" and not afford:
 				reason = "POOR"
-			var label := "%s — %d g" % [ItemDB.item_name(iid), cost]
+			var label := "[%s] %s — %d g" % [ItemDB.item_class_label(iid),
+				ItemDB.item_name(iid), cost]
 			if have:
-				label = "%s — dimiliki" % ItemDB.item_name(iid)
+				label = "[%s] %s — dimiliki" % [ItemDB.item_class_label(iid),
+					ItemDB.item_name(iid)]
 			var tip := "%s\n%s" % [ItemDB.item_desc(iid), _item_reason_tip(reason)]
 			var b := _make_button(label, tip, _buy_item.bind(iid),
 				can and not have and afford, "item_buy_" + iid,
