@@ -185,14 +185,13 @@ func _test_fps_history() -> void:
 	var counter = FpsCounterScript.new()
 	add_child(counter)
 	counter.set_process(false)
-	_checks += 1
-	for pair in [["history_size", "HISTORY_SIZE"], ["display_window",
-			"DISPLAY_WINDOW"], ["display_every", "DISPLAY_EVERY"]]:
-		_checks += 1
-		var want := int(fps[pair[0]])
-		var got := int(FpsCounterScript[pair[1]])
-		if got != want:
-			_fail("FpsCounter.%s harus %d (pygame), dapat %d" % [pair[1], want, got])
+	_expect(int(counter.HISTORY_SIZE) == int(fps["history_size"]),
+		"HISTORY_SIZE harus %d (pygame `history_size = 120`), dapat %d" % [
+			int(fps["history_size"]), counter.HISTORY_SIZE])
+	_expect(int(counter.DISPLAY_WINDOW) == int(fps["display_window"]),
+		"jendela tampil harus %d" % int(fps["display_window"]))
+	_expect(int(counter.DISPLAY_EVERY) == int(fps["display_every"]),
+		"refresh angka harus tiap %d frame" % int(fps["display_every"]))
 	var prev := [0.0, 0.0, 0.0, 0.0]
 	var seen: Array = []
 	for i in range((fps["samples"] as Array).size()):
