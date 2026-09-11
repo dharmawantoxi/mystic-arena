@@ -8,6 +8,63 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Entry point `main.py` (boot, loop, siklus hidup) — 11 September 2026 (FASE 27)
+
+`main.py` (652 baris) adalah satu-satunya berkas pygame yang belum punya
+padanan di Godot: **bukan** gameplay, melainkan lapisan aplikasi — boot,
+kebijakan loop, preset kualitas, dan siklus hidup Android. Audit
+blok-per-bloknya ada di [MAIN_PY_COVERAGE.md](MAIN_PY_COVERAGE.md).
+
+> **Temuan audit:** `main.py` **tidak bisa dijalankan** di repo ini. Impor
+> `settings`, `game`, `menu`, `game_settings`, `sound_manager` (`:61-67`,
+> `:253-268`) mengarah ke modul yang sudah melebur ke `_core.py`/`_system.py`.
+> Karena itu port mengambil perilaku dari TEKS SUMBER (konstanta loop, urutan
+> boot, cabang siklus hidup), bukan dari menjalankannya, dan berkas pygame
+> tidak disentuh — sesuai aturan `MIGRASI_1_1.md`. README (`python main.py`)
+> usang.
+
+| Bagian pygame | Sebelum (Godot) | Sesudah (FASE 27) |
+|---|---|---|
+| BGM + ambient sejak boot (`main.py:160-164`: `play_bgm(..., fade_ms=3000)` + `play_ambient(..., 0.8)` **sebelum** menu dibuat) | Tidak ada — `AudioManager.play_bgm/play_ambient` hanya dipanggil `GameManager.start_level`, jadi menu utama dan layar pilih level diam | `AppShell._start_boot_audio()` di `_ready` autoload; panggilan `start_level` berikutnya no-op karena track sama |
+| Banner boot device/save/input/quality (`main.py:279-291`) + `crash_log.txt` (`mobile/debug.py:427-450`) | Tidak ada | `AppShell._print_boot_banner()` + `_write_session_log()` (`user://crash_log.txt`, rotasi ekor 256 KB) |
+| `MAX_CATCHUP = 4` — diturunkan dari 8 untuk mencegah "spiral kematian" (`main.py:332`) | Nilai bawaan engine **8** (`physics/common/max_physics_steps_per_frame` tidak pernah disetel) | `project.godot`: `max_physics_steps_per_frame=4`; `AppShell._check_loop_policy()` memperingatkan kalau diubah; dikunci tes |
+| Preset kualitas `auto_detect_quality` (Android/iOS = LOW → 30 FPS, desktop = HIGH → 60 FPS, `mobile/perf.py:861-871`) | Tidak ada; `settings.quality` hanya dipakai untuk `max_damage_numbers` | `AppShell._detect_quality()` + `target_fps()`; `touch_mode()` juga menghormati `MYSTIC_FORCE_TOUCH=1` (paritas `platform_utils.py:60`) |
+| Adaptive quality — jendela 90 frame, turun < 26 FPS, naik > 52 FPS, cooldown 180/300 frame (`mobile/perf.py:877-911`) | Tidak ada (dicatat sebagai celah di FASE 25/26) | `AppShell._update_adaptive_quality()` + tangga high↔medium↔low + cooldown; konsumen = batas FPS |
+| `clock.tick(limit)`: setting pemain hanya boleh MENURUNKAN di perangkat sentuh, selain itu `Quality.target_fps` (`main.py:620-641`) | `GameManager.apply_fps_limit` menulis `Engine.max_fps` mentah — slider SETTINGS bisa melangkahi pembatas 30 FPS preset LOW | `AppShell.resolve_fps_limit()`; `GameManager.apply_fps_limit` mendelegasikan (aman saat autoload belum terpasang) |
+| `_handle_background()` — app ke latar: `mixer.pause()` + `music.pause()`, lalu lanjut saat `APP_FG` (`main.py:128-155`) | Tidak ada padanan: musik terus berbunyi saat app di-minimize (hold taktis sudah dilepas `Main._notification`, FASE 18) | `AppShell._notification` PAUSED/RESUMED → `AudioManager.pause_bgm/pause_ambient` (statusnya disimpan di flag `bgm_paused`/`ambient_paused` karena `stream_paused` engine diabaikan saat tidak ada playback aktif); **tidak** dihidupkan kembali kalau pemain sedang di menu PAUSE |
+| Splash boot → menu (`main.py:492-501`) | `SplashScreen.gd` **node yatim** — tidak ada di `main.tscn` dan tidak pernah di-`preload`, jadi Godot melompat langsung ke menu (layar splash tidak pernah terlihat) | `Main._maybe_show_splash()` memasangnya di atas menu sampai signal `finished`; klik/tombol apa pun hanya melewatinya (`ControllerRouter._splash_active()` yang sudah ada dari FASE 24 kini benar-benar punya splash untuk dideteksi). View splash dibuat `MOUSE_FILTER_STOP` + `_gui_input` supaya klik tidak **tembus** ke tombol menu di baliknya — kalau tidak, klik "lewatkan splash" justru menekan MULAI GAME karena jalur GUI Control berjalan sebelum `_unhandled_input`. |
+
+**Validasi:** `godot --headless --path godot res://tests/MainEntryParityTest.tscn
+--quit-after 240` (langkah CI baru di `godot-check.yml`, gerbang log yang
+sama) — 40+ cek: kebijakan loop, `crash_log.txt` + `SESSION START`, track BGM
+boot, matriks batas FPS (desktop vs mode sentuh, setting 0/20/30/45/120),
+tangga adaptive quality + cooldown + jendela 90, idempotensi PAUSED, cabang
+"menu PAUSE menahan audio", dan boot yang mendarat di menu tanpa splash.
+`gdparse` + `tscn_lint` + `check_refs` + `particles_lint` + 5 self-test
+log-gate lulus lokal; binary Godot tidak tersedia di sandbox.
+
+**Deviasi terdokumentasi:** (1) **headless** (`godot --headless`, termasuk CI)
+mematikan adaptive quality dan membiarkan `Engine.max_fps = 0` — tanpa layar
+dan vsync, "FPS" tidak bermakna dan pembatas hanya memperlambat run yang
+waktunya dihitung dalam FRAME; splash juga dilewati karena ia akan menelan
+input sintetis tes. (2) Konsumen adaptive quality **hanya** batas FPS: rasio
+partikel/kabut preset pygame belum punya padanan, jadi
+`SparkField.particle_ratio` tetap 1.0 (dikunci `RenderFxParityTest`, dicatat
+sebagai deviasi FASE 26). (3) `sys.excepthook` tidak diport: Godot tidak punya
+exception hook global, dan satu error di `_process`/`_physics_process` memang
+hanya mencetak `SCRIPT ERROR` lalu engine melanjutkan frame berikutnya — jadi
+maksud `try/except` main.py sudah dipenuhi mesin; yang diport adalah arsip
+lognya. (4) Tidak dibuat aksesor state kanonik baru: mesin state
+SPLASH/MENU/GAME/PAUSE sudah hidup di `ControllerRouter.current_state()`
+(FASE 24) dan `TouchHUD.sync_from_match()`, dan menduplikasinya di `AppShell`
+hanya membuka peluang drift.
+
+**Yang tetap terbuka** (rinci di `MAIN_PY_COVERAGE.md`): layar bootcheck/
+diagnostics (mengukur jalur blit SDL yang tidak ada di Godot), getar haptik
+(`plat.vibrate`), 4 mode overlay debug `mobile/debug.py`, tahan-tombol-jeda →
+overlay debug, multi-sentuh penuh (`claimed`/gestur per id sentuhan), dan cloud
+save poll (plugin Play Games).
+
 ## Blok FX `_render.py` (percikan, ledakan, panah lane) — 11 September 2026 (FASE 26)
 
 `_render.py` adalah modul gabungan 7 berkas lama (docstring `:1-11`); audit

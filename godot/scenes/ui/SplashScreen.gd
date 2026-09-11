@@ -52,7 +52,11 @@ func _ready() -> void:
 		})
 	_view = _SplashView.new(self)
 	_view.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# STOP (bukan IGNORE): selama splash aktif, klik TIDAK boleh tembus ke
+	# tombol menu utama yang ada di baliknya — paritas STATE_SPLASH main.py
+	# (:461-464) yang tidak pernah meneruskan sentuhan ke menu. Kliknya
+	# ditangkap `_SplashView._gui_input` lalu melewati splash.
+	_view.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_view)
 
 
@@ -138,7 +142,21 @@ class _SplashView extends Control:
 
 	func _init(s: SplashScreen) -> void:
 		splash = s
-		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		# Lihat komentar di SplashScreen._ready: STOP supaya klik tidak
+		# tembus ke tombol menu di belakang splash.
+		mouse_filter = Control.MOUSE_FILTER_STOP
+
+	func _gui_input(event: InputEvent) -> void:
+		# Jalur GUI: klik mouse fisik maupun sentuhan (di-emulasi jadi mouse
+		# lewat emulate_mouse_from_touch). Tombol keyboard tetap ditangani
+		# `_unhandled_input` milik SplashScreen di luar kelas ini.
+		if splash == null or splash._done:
+			return
+		if event is InputEventMouseButton:
+			var mb := event as InputEventMouseButton
+			if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
+				splash.skip()
+				get_viewport().set_input_as_handled()
 
 	func _draw() -> void:
 		if splash == null or size.x <= 0.0:

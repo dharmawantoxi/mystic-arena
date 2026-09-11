@@ -45,6 +45,7 @@ on:
       - 'tools/test_system_perf_parity.py'
       - 'tools/test_render_parity.py'
       - 'main_desktop_legacy.py'
+      - 'main.py'
       - '.github/workflows/godot-check.yml'
   push:
     branches: [main]
@@ -70,6 +71,7 @@ on:
       - 'tools/test_system_perf_parity.py'
       - 'tools/test_render_parity.py'
       - 'main_desktop_legacy.py'
+      - 'main.py'
       - '.github/workflows/godot-check.yml'
   workflow_dispatch:
 
@@ -836,6 +838,30 @@ jobs:
             cat /tmp/renderfx.gate
             echo "::error::RENDERFX-FAIL-TAIL: $(tail -40 /tmp/renderfx.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::RENDERFX-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/renderfx.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4w. MainEntryParityTest (FASE 27): LAPISAN ENTRY POINT main.py ──
+      # Kebijakan loop (fixed 60 Hz + catch-up 4), boot (crash_log.txt +
+      # BGM/ambient), preset + adaptive quality, batas FPS dari settings,
+      # siklus hidup app (audio beku saat ke latar), dan boot yang mendarat
+      # di menu. Bukan oracle pygame: main.py mengimpor modul yang sudah
+      # melebur ke _core.py/_system.py, jadi yang dikunci adalah konstanta
+      # dan cabang keputusannya.
+      - name: "MainEntryParityTest (entry point main.py — loop, boot, lifecycle)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/MainEntryParityTest.tscn --quit-after 240 2>&1 | tee /tmp/mainentry.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/mainentry.log --label "MainEntryParityTest" \
+              --require "[MainEntryParityTest] PASS" > /tmp/mainentry.gate 2>&1; then
+            cat /tmp/mainentry.gate
+          else
+            cat /tmp/mainentry.gate
+            echo "::error::MAINENTRY-FAIL-TAIL: $(tail -40 /tmp/mainentry.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::MAINENTRY-FAIL-LINES: $(grep -m40 'FAIL\\|SCRIPT ERROR\\|Parse Error' /tmp/mainentry.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 

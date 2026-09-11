@@ -204,6 +204,39 @@ func _ready():
 		ui_layer.add_child(pad_cursor)
 	if menu != null:
 		menu.controller_mgr = _controller
+	# Splash boot (STATE_SPLASH main.py) — paling akhir supaya ia benar-benar
+	# menutupi menu utama yang sudah siap di belakangnya.
+	_maybe_show_splash()
+
+
+## Paritas STATE_SPLASH (main.py:130-131, 405-412): splash tampil PALING
+## AWAL saat aplikasi mulai; selama ia aktif, klik/tombol apa pun hanya
+## melewatinya dan tidak sampai ke menu — klik ditahan view splash
+## (`MOUSE_FILTER_STOP` + `_gui_input`), tombol ditandai handled oleh
+## `SplashScreen._unhandled_input`, persis cabang STATE_SPLASH pygame yang
+## tidak pernah memanggil dispatch_to_menu.
+##
+## DILEWATI di headless (`godot --headless`, termasuk CI): splash adalah
+## layar presentasi 3 detik tanpa efek gameplay, sementara harness tes
+## mengirim input sintetis beberapa frame setelah boot — kalau ikut tampil,
+## semua input itu tertelan. `MYSTIC_NO_SPLASH=1` meniadakannya tanpa
+## menyentuh kode (berguna saat debugging boot).
+func _maybe_show_splash() -> void:
+	if AppShell.headless():
+		return
+	if OS.has_environment("MYSTIC_NO_SPLASH") \
+			and OS.get_environment("MYSTIC_NO_SPLASH") == "1":
+		return
+	var splash = preload("res://scenes/ui/SplashScreen.gd").new()
+	splash.name = "SplashScreen"
+	add_child(splash)
+	if not splash.is_connected("finished", _on_splash_finished):
+		splash.connect("finished", _on_splash_finished)
+	print("[Main] SPLASH — klik / tombol apa pun untuk melewati")
+
+
+func _on_splash_finished() -> void:
+	print("[Main] SPLASH selesai — menu utama")
 
 ## Overlay FPS (port `_system.FPSCounter`). Dipasang di CanvasLayer SENDIRI,
 ## bukan di dalam HUD: pygame mem-blit panel ini setelah semua state digambar
