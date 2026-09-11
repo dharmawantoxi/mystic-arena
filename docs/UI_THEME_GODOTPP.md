@@ -67,7 +67,9 @@ dari pygame ASLI, bukan disalin tangan):
 godot/scripts/utils/UiTheme.gd            — 1654 baris: palet 32 konstanta, cache tekstur,
                                             fungsi murni geometri/warna, 29 ikon, jalur
                                             immediate-mode draw_* (btns: Dictionary), font
-godot/scenes/ui/widgets/PygameChip.gd     — BARU: chip status auto-size
+godot/scenes/ui/widgets/PygameChip.gd     — BARU: chip status auto-size (semua
+                                            properti ber-setter: assignment
+                                            langsung menghitung ulang ukuran)
 godot/scenes/ui/widgets/SectionHeader.gd  — BARU: ikon + judul letter-spaced + hairline
 godot/scenes/ui/widgets/PygameSlider.gd   — BARU: HSlider dengan visual pygame (visual native dikosongkan)
 godot/scenes/ui/widgets/OptionCycler.gd   — BARU: label + kotak nilai + chevron < > (signal value_changed)
@@ -76,9 +78,9 @@ godot/scenes/ui/widgets/GradientText.gd   — BARU: teks gradasi vertikal N pita
 godot/scenes/ui/widgets/PygameButton.gd   — DIARAHKAN ulang: 3 mode (MENU/PILL/TAB) mendelegasikan ke UiTheme.*_visual + back_button()
 godot/scenes/ui/widgets/PygameToggle.gd   — DIARAHKAN ulang: draw_toggle_visual
 godot/scenes/ui/widgets/ScreenTitle.gd    — DIARAHKAN ulang: badan gradasi (GradientText) + sub/ornamen opsional
-godot/tests/UiThemeParityTest.gd/.tscn    — replay fixture di engine (1425 baris)
-godot/tests/fixtures/ui_theme.json        — 66 KB, 18 seksi, direkam dari pygame ASLI
-tools/test_godot_ui_theme_parity.py       — oracle: 4 cek statik + 17 seksi oracle runtime (1116 baris)
+godot/tests/UiThemeParityTest.gd/.tscn    — replay fixture di engine (1472 baris)
+godot/tests/fixtures/ui_theme.json        — 67 KB, 18 seksi, direkam dari pygame ASLI
+tools/test_godot_ui_theme_parity.py       — oracle: 4 cek statik + 17 seksi oracle runtime (1141 baris)
 ```
 
 Arsitektur port-nya **tiga lapis** supaya geometri/warna hanya punya satu sumber:
@@ -116,7 +118,7 @@ memakai `vgrad_row_color()` yang rumusnya identik.
 | 2 | Strip aksen 8px di `button()` digambar **opaque**, bukan alpha 70/255 | pygame menulis `(*accent, 70)` ke permukaan display **tanpa SRCALPHA**, jadi komponen alpha-nya DIABAIKAN dan hasilnya opaque (terverifikasi: port lama yang memakai alpha 70/255 adalah deviasi, dikoreksi di FASE 31) | Komentar di `draw_button_visual` + smoke test jalur opaque |
 | 3 | `gradient_text()` → `GradientText` memakai **N pita `clip_contents`** (default 12), warna dievaluasi di tengah pita | pygame me-mask gradasi ke glif lewat `BLEND_RGBA_MULT` per baris piksel; Godot tidak bisa masking glif tanpa render target, dan pita clip adalah pendekatan yang tetap tajam di semua resolusi | Rumus per baris pygame (`t = y/max(1,h-1)` + truncation) dikunci persis: fixture merekam 20 baris warna `gradient_text()` ASLI dan tes membandingkannya dengan `vgrad_row_color()`; ujung pita + monotonitas diuji terpisah |
 | 4 | Font: `UiTheme._load_font()` + `title_font()`/`body_bold()`/`body_semibold()`/`body_medium()`/`body_regular()` + `font_for_weight()` | pygame menerima font sebagai parameter dan pemanggilnya memakai `_core.get_font(size, weight)`/`title_font(size)`; Godot butuh font + ukuran eksplisit di setiap `draw_string` | `fit_ellipsis`/`tab_width`/`chip_size`/`section_header_size` menerima `(font, font_size, ...)`; oracle memakai **font palsu 7px/karakter** sehingga geometri terkunci tanpa bergantung metrik font engine mana pun |
-| 5 | Nama API: `math_hyp` → `hyp`, `_dim` → `dim`, `_vgrad` → `draw_vgrad` + `vgrad_row_color`, `_shadow` → `draw_shadow` + `shadow_texture`/`shadow_surface_size`/`shadow_small_size`, `_radial` → `draw_glow` + `radial_texture`/`radial_alpha_key`/`glow_alpha_at`, `draw_text(center=)` → `draw_text_centered()`, `draw_text(topleft=)` → `draw_text()` | `_`-prefix Python = privat; GDScript memakai nama publik karena dipakai lintas berkas. `center=`/`topleft=` keyword-args Python tidak ada di GDScript | `PEMETAAN` di oracle: 31 def → 617 simbol Godot, **closed-world dua arah** (def pygame tanpa padanan = gagal; simbol Godot yatim = gagal) |
+| 5 | Nama API: `math_hyp` → `hyp`, `_dim` → `dim`, `_vgrad` → `draw_vgrad` + `vgrad_row_color`, `_shadow` → `draw_shadow` + `shadow_texture`/`shadow_surface_size`/`shadow_small_size`, `_radial` → `draw_glow` + `radial_texture`/`radial_alpha_key`/`glow_alpha_at`, `draw_text(center=)` → `draw_text_centered()`, `draw_text(topleft=)` → `draw_text()` | `_`-prefix Python = privat; GDScript memakai nama publik karena dipakai lintas berkas. `center=`/`topleft=` keyword-args Python tidak ada di GDScript | `PEMETAAN` di oracle: 31 def → 618 simbol Godot, **closed-world dua arah** (def pygame tanpa padanan = gagal; simbol Godot yatim = gagal) |
 | 6 | `*_visual()` punya parameter tambahan `pressed`, `enabled`, `icon_scale`, `max_width` | `Button` Godot punya state pressed; pemanggil Godot butuh mematikan ikon/skala tanpa cabang baru | Default-nya mereproduksi pygame persis (`pressed=false`, `enabled=true`, `icon_scale` = skala ikon pygame 0.9/0.8); tes membandingkan kunci gradasi/glow pada keadaan default |
 | 7 | `pyrect()` dipakai semua komponen | `pygame.Rect` **memotong** (bukan membulatkan) koordinat float ke int | `UiTheme.pyrect(Rect2(10.7,-2.3,30.9,4.1)) == Rect2(10,-2,30,4)` diuji; semua rect fixture bulat dan dibandingkan dengan toleransi 0,51px |
 | 8 | `ScrollIndicator.follow(ScrollContainer)` + `set_scroll()`, `OptionCycler.press()`, `PygameButton.back_button()` | Kenyamanan Godot: pygame tidak punya ScrollContainer, dan harness butuh memicu klik tanpa event mouse | Perhitungannya tetap lewat fungsi murni (`scroll_thumb_rect`, `cycler_geom`, `back_button_rect`) yang dibandingkan dengan fixture |
@@ -129,9 +131,10 @@ memakai `vgrad_row_color()` yang rumusnya identik.
 # 1. Oracle TANPA engine (detik) + menjalankan ui_theme.py ASLI (SDL dummy):
 #    PALET   32 konstanta identik dua arah (Godot boleh punya ekstra:
 #            TEXT_SHADOW, OUTLINE_DARK)
-#    COVERAGE 31 def -> 617 simbol Godot (closed-world; def baru = gagal)
+#    COVERAGE 31 def -> 618 simbol Godot (closed-world; def baru = gagal)
 #    IKON    29 nama identik + setiap nama punya lengan `match` di draw_icon
-#    LITERAL 29 warna literal komponen (chip/slider/knob/cycler/tab/title/bar/scroll)
+#    LITERAL 30 warna literal komponen (chip/slider/knob/cycler/tab/title/
+#            bar/scroll + teks pill "owned")
 #    WIRING  17 seksi fixture semuanya dipakai UiThemeParityTest.gd
 #    fixture segar (basi = gagal, sertakan daftar seksi yang berubah)
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_ui_theme_parity.py
@@ -151,7 +154,7 @@ XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot \
 #    wajib: "[UiThemeParityTest] PASS" tanpa SCRIPT ERROR / Parse Error
 ```
 
-Isi fixture `godot/tests/fixtures/ui_theme.json` (18 seksi, 66 KB):
+Isi fixture `godot/tests/fixtures/ui_theme.json` (18 seksi, 67 KB):
 
 | Seksi | Isi |
 |---|---|
@@ -161,8 +164,8 @@ Isi fixture `godot/tests/fixtures/ui_theme.json` (18 seksi, 66 KB):
 | `math.shadow` | 3 kasus: ukuran permukaan + ukuran sel kecil |
 | `math.dim/letter/hyp/ellipsis` | 4 + 5 + 3 + 5 kasus |
 | `panel` | kunci gradasi, warna jalur hemat, ukuran bayangan |
-| `button` | 4 kasus (idle/hover × ikon) + **12 kasus pusat label** (termasuk tombol sempit 120/160px yang memicu clamp "dorong kanan") |
-| `pill` | tabel 8 kind × 4 warna + 16 kasus (kind × hover) + kasus `enabled=false` |
+| `button` | 4 kasus (idle/hover × ikon) + **12 kasus pusat label** (termasuk tombol sempit 120/160px yang memicu clamp "dorong kanan"); `center` direkam dari argumen `center=` yang **diterima** `draw_text` (bukan dari tengah blok piksel) + flag `clipped` untuk teks yang lebih lebar dari permukaan oracle |
+| `pill` | tabel 8 kind × 4 warna + 16 kasus (kind × hover) + kasus `enabled=false` (rect kembalian + rect input + `btns` kosong) |
 | `chip` | 8 kasus (align × ikon × value) |
 | `section_header` | 2 warna: next_y, rentang piksel garis redup, ujung garis aksen |
 | `toggle` | 4 kasus (on × hover) + ukuran knob |
@@ -175,6 +178,46 @@ Isi fixture `godot/tests/fixtures/ui_theme.json` (18 seksi, 66 KB):
 | `bars` | 9 kasus (5 hp + 4 progres, rasio 0 → 2) |
 | `gradient_text` | 20 baris warna gradasi teks ASLI + warna body/outline `outline_text` |
 | `icons` | 29 nama |
+
+## Temuan run engine pertama (CI hijau)
+
+Cek statik + oracle di sandbox **tidak** bisa menjalankan Godot (binary tidak
+bisa diunduh di lingkungan itu), jadi run CI `godot-check` adalah run engine
+pertama untuk fase ini: **1463 cek, 19 gagal**. Ketigabelas sisanya lulus.
+Rinciannya berguna karena menunjukkan apa yang hanya bisa ditangkap engine:
+
+**Bug port sungguhan (3) — semuanya lolos gdparse & oracle statik:**
+
+| Bug | Kenapa cek statik melewatkannya |
+|---|---|
+| `pill_colors("owned")` teks `#befaca`, seharusnya `#befac8` = `(190,250,200)` | `LITERAL_PENTING` belum memuat warna itu → sekarang ditambah, jadi salah hex begini gagal **tanpa** engine |
+| `PygameButton.menu_button()`/`pill_button()` tidak menyalakan `use_letter_spacing` padahal `ui_theme.button()`/`pill()` default `letter_gap=True` | Factory tidak dibandingkan oracle (hanya `draw_*` yang diukur) → tes widget kini menguncinya |
+| `PygameChip`: properti polos, jadi `chip.label_text = "X"` tidak menghitung ulang `custom_minimum_size` (lebar tetap 26px) | Tes statik tidak menjalankan setter → semua properti kini ber-setter |
+
+**Jebakan engine yang layak diingat:**
+
+- `Range::emit_value_changed()` **melewati node yang tidak ada di dalam tree**
+  (`if (!r->is_inside_tree()) continue;`). Jadi `PygameSlider.value_changed`
+  hanya terbit setelah `add_child()`; di luar tree nilainya tetap berubah,
+  hanya sinyalnya yang diam. Widget turunan `Range` harus dipasang dulu.
+- `floor()`/`ceil()`/`round()`/`min()`/`max()` mengembalikan **Variant** di
+  GDScript → `var x := floor(...)` gagal parse ("Cannot infer the type") atau
+  jadi warning `INFERENCE_ON_VARIANT` yang diperlakukan CI sebagai error.
+  Pakai `floorf`/`ceilf`/`minf`/`maxf`/`mini`/`maxi`.
+- Nama enum Godot 4: `Image.INTERPOLATE_LANCZOS` (bukan `INTERPOLATION_*`).
+- `_draw()` bisa terpanggil lebih dari sekali per tes headless → probe yang
+  mengakumulasi penghitung harus me-reset di awal `_draw()` (dulu 58 = 2 × 29
+  ikon).
+- `radial_texture()` **sengaja** menyatukan alpha sebucket
+  (`max(4, min(120, a // 8 * 8))`, jadi 74 dan 72 → 72) persis `_GLOW_CACHE`
+  pygame; tes yang mengharapkan instance berbeda untuk 74 vs 72 salah paham.
+
+**Bug di sisi oracle (1):** `center` label tombol dulu dihitung dari tengah
+blok piksel `TEXT_WHITE`. Untuk teks 60/130 karakter (833px/1813px) blit-nya
+terpotong permukaan oracle 700px, sehingga "tengahnya" jadi `text_w / 2`
+(416.5 dan 906.5) — bukan `text_cx` pygame. Oracle kini menyadap argumen
+`center=` yang diterima `draw_text` dan merekam flag `clipped`; port
+`button_label_cx` sendiri sudah benar (ke-12 kasus cocok 0.00px).
 
 ## Menambah warna / ikon / komponen baru
 
