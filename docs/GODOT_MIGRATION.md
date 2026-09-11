@@ -61,6 +61,9 @@ godot/
     core/BossDB.gd       # Port bosses/boss_data.py + levels (mini boss/true boss schedule)
     core/TowerDB.gd      # Port TOWER_UPGRADE_PATHS + NEXUS_LEVELS + konstanta menara
     core/ItemDB.gd       # Port hero_items.ITEM_CATALOG + SHOP_PAGES/CATEGORY_INFO
+    core/HeroArchetypes.gd # Port hero_archetypes.py: arketipe 222 hero (dmg_type/playstyle/tier/power)
+                           # + resistansi 216 boss (armor vs magic_resist per tema) + kurva mitigasi;
+                           # blok AUTO-GENERATED di-refresh tools/analyze_hero_archetypes.py --emit-gdscript
     core/GameManagerConnector.gd # Jembatan Main.tscn → autoload (container + start_level)
     items/ItemInventory.gd # Port HeroItemInventory: 6 slot, cap stat, pasif, aura, crit
     skills/SkillBook.gd  # Port hero_skills/_bundle.py (6 hero starter + fallback generik)
@@ -248,7 +251,7 @@ ini salah satu celah visual yang belum ditutup.
 - `godot/scenes/ui/MainMenu.gd` — layar menu + level select + hero shop; satu file, tanpa .tscn
 - `godot/scripts/autoload/GameManager.gd` — ekonomi, state menang/kalah, seleksi, gold AI, meta reward (`_grant_meta_reward`), `next_level()`/`is_replay`, enemy scaling
 - `godot/assets/shaders/outline.gdshader` — tweak outline_width/color
-- `hero_archetypes.json` → `godot/data/hero_archetypes.json` via convert script
+- `hero_archetypes.py` → `godot/scripts/core/HeroArchetypes.gd` via `tools/analyze_hero_archetypes.py --emit-gdscript` (tabel hero juga tersedia sebagai `godot/data/hero_archetypes.json` via convert script)
 
 ### Verifikasi tanpa binary Godot
 

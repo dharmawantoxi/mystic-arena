@@ -194,12 +194,16 @@ func get_balanced_stats(hero_type: String) -> Dictionary:
 		s["range"] = clampf(float(s["range"]), 120.0, 220.0)
 	# Archetype dmg_type -> dmg_school (dipakai CombatSystem/DamageSchool dan
 	# ItemInventory.is_magic untuk item magic_only). heroes.json sendiri selalu
-	# "PHYSICAL"; sekolah sihir yang benar ada di hero_archetypes.json (120 MAGIC).
-	if hero_type in archetypes:
-		s["dmg_type"] = archetypes[hero_type].get("dmg_type", s.get("dmg_type","PHYSICAL"))
-	# Selalu isi dmg_school walau hero tidak ada di archetype (jangan biarkan
-	# pemanggil bergantung pada kunci yang bisa hilang).
-	s["dmg_school"] = str(s.get("dmg_type", "PHYSICAL")).to_lower()
+	# "PHYSICAL"; sekolah sihir yang benar ada di tabel arketipe (120 MAGIC).
+	# Port hero_archetypes.get_archetype(hero_type) TANPA stats: "dmg_type" di
+	# heroes.json hanyalah default converter, BUKAN override desain — kalau
+	# diteruskan sebagai `stats`, semua hero MAGIC terpaksa jadi PHYSICAL.
+	var _arch: Dictionary = HeroArchetypes.get_archetype(hero_type)
+	s["dmg_type"] = str(_arch.get("dmg_type", "PHYSICAL"))
+	# Selalu isi dmg_school walau hero tidak ada di archetype (entry default
+	# berisi PHYSICAL — jangan biarkan pemanggil bergantung pada kunci yang
+	# bisa hilang).
+	s["dmg_school"] = s["dmg_type"].to_lower()
 	return s
 
 func get_hero_color(hero_type: String) -> Color:

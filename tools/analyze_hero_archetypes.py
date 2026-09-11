@@ -686,6 +686,61 @@ def picks_md(rows):
     return out
 
 
+def _gd_replace_block(src, marker, lines):
+    """Tulis ulang blok `marker ... \\n}` di HeroArchetypes.gd.
+
+    Konvensinya sama dengan emit modul py: penutup blok = "}" di kolom 0
+    PERTAMA sesudah marker (baris entri selalu ber-indent tab, jadi tidak
+    pernah salah potong).
+    """
+    st = src.index(marker)
+    he = st + len(marker)
+    en = src.index("\n}", he) + 2
+    return src[:st] + marker + "\n" + "\n".join(lines) + "\n}" + src[en:]
+
+
+def emit_gdscript(gd_path, module_path):
+    """Mirror hero_archetypes.py -> blok data const di HeroArchetypes.gd.
+
+    Sumber kebenaran = modul py (segar di-import ulang, jadi hasil tulis
+    --emit-module/--emit-boss-res pada run yang sama ikut terbaca). Format
+    baris DIJAGA persis sama dengan hasil generate supaya run berikutnya
+    idempotent (diff kosong).
+    """
+    import importlib.util
+    if not os.path.isabs(gd_path):
+        gd_path = os.path.join(REPO, gd_path)
+    if not os.path.isabs(module_path):
+        module_path = os.path.join(REPO, module_path)
+    _spec = importlib.util.spec_from_file_location(
+        "_hero_archetypes_fresh", module_path)
+    ha = importlib.util.module_from_spec(_spec)
+    _spec.loader.exec_module(ha)
+
+    src = open(gd_path, encoding="utf-8").read()
+    src = _gd_replace_block(
+        src, "const ARCHETYPES: Dictionary = {",
+        ['\t"%s": {"dmg_type": "%s", "playstyle": "%s", "tier": "%s", '
+         '"power": %d},' % (k, v["dmg_type"], v["playstyle"], v["tier"],
+                            v["power"])
+         for k, v in ha.ARCHETYPES.items()])
+    src = _gd_replace_block(
+        src, "const BOSS_RESIST_SCALE: Dictionary = {",
+        ['\t"%s": {"armor": %.4f, "mr": %.4f},'
+         % (dc, ha.BOSS_RESIST_SCALE[dc]["armor"],
+            ha.BOSS_RESIST_SCALE[dc]["mr"])
+         for dc in ("mini", "true") if dc in ha.BOSS_RESIST_SCALE])
+    src = _gd_replace_block(
+        src, "const BOSS_RESISTANCES: Dictionary = {",
+        ['\t"%s": {"armor": %d, "magic_resist": %.3f, "profile": "%s", '
+         '"boss_class": "%s"},' % (k, v["armor"], v["magic_resist"],
+                                   v["profile"], v["boss_class"])
+         for k, v in ha.BOSS_RESISTANCES.items()])
+    open(gd_path, "w", encoding="utf-8", newline="\n").write(src)
+    print("GDSCRIPT -> %s (%d hero, %d boss)" % (
+        gd_path, len(ha.ARCHETYPES), len(ha.BOSS_RESISTANCES)))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--csv")
@@ -699,6 +754,12 @@ def main():
     ap.add_argument("--emit-boss-res", action="store_true",
                     help="kalibrasi armor/magic_resist tiap boss "
                          "(hero_archetypes.BOSS_RESISTANCES)")
+    ap.add_argument("--emit-gdscript",
+                    help="tulis ulang blok data AUTO-GENERATED di port "
+                         "Godot (godot/scripts/core/HeroArchetypes.gd); "
+                         "sumbernya modul py apa adanya (sesudah penulisan "
+                         "ulang --emit-module/--emit-boss-res), jadi .gd "
+                         "selalu mirror .py")
     args = ap.parse_args()
 
     rows = load_heroes()
@@ -868,6 +929,12 @@ def main():
         src = (src[:start] + "ARCHETYPES = {\n%s\n}" % body + src[end:])
         open(path, "w", encoding="utf-8").write(src)
         print("MODULE -> %s (%d hero)" % (path, len(rows)))
+
+    if args.emit_gdscript:
+        # Sesudah modul py ditulis ulang di atas supaya .gd mirror .py.
+        _gd_mod = (_mod_path if args.emit_boss_res
+                   else args.emit_module) or "hero_archetypes.py"
+        emit_gdscript(args.emit_gdscript, _gd_mod)
 
     if args.csv:
         with open(args.csv, "w", newline="", encoding="utf-8") as f:

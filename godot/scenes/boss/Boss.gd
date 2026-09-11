@@ -150,8 +150,17 @@ func _ready():
 		attack_range = float(s.get("range", 50))
 		attack_cooldown = float(s.get("attack_cooldown", 43)) / 60.0
 		dmg_school = "physical" # serangan dasar boss SELALU fisik (base_boss.py:707)
-		armor = float(s.get("armor", 0))
-		magic_resist = float(s.get("magic_resist", 0.0))
+		# Paritas base_boss.py:447-457: kalau bosses.json tidak membawa
+		# armor/magic_resist eksplisit, defaultnya profil tema boss dari
+		# hero_archetypes.get_boss_resistances (bukan 0 — boss baru yang
+		# belum di-bake converter tetap dapat mitigasi kelasnya), LALU
+		# di-clamp 0..ARMOR_MAX / 0..MR_MAX persis Boss.__init__ pygame.
+		var _res: Array = HeroArchetypes.get_boss_resistances(
+			boss_type, str(s.get("boss_class", "mini")))
+		armor = float(clampi(int(s.get("armor", _res[0])),
+			0, HeroArchetypes.ARMOR_MAX))
+		magic_resist = clampf(float(s.get("magic_resist", _res[1])),
+			0.0, HeroArchetypes.MR_MAX)
 	# Paritas Boss.__init__ base_boss.py:389: base_damage = damage mentah
 	# (sebelum enrage/buff kit; hanya apply_scaling yang memperbaruinya).
 	base_damage = damage
