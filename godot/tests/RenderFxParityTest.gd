@@ -341,11 +341,21 @@ func _test_path_preview() -> void:
 			_same_ops(ops, frame["ops"], "path frame %d" % step)
 	_expect(preview.paths.is_empty(),
 		"setelah 120 frame jalur lane harus dibuang (paritas PathPreview.update)")
-	# Fade in/out dibaca dari warna op: alpha penuh 200 hanya di tengah.
+	# Fade in/out dibaca dari warna op. Di tengah durasi alpha penuh = 200;
+	# panah yang TIDAK sedang pulse digambar redup (alpha // 2 = 100), dan
+	# panah pertama sebuah frame bisa saja yang redup — jadi yang dikunci
+	# adalah alpha TERBESAR (200) dan adanya panah redup (100), bukan op[0].
 	var mid: Dictionary = by_step[60]
-	var first_alpha := int(((mid["ops"] as Array)[0]["color"] as Array)[3])
-	_expect(first_alpha == 200,
-		"alpha penuh harus 200 di tengah durasi, dapat %d" % first_alpha)
+	var max_alpha := 0
+	var min_alpha := 255
+	for op in (mid["ops"] as Array):
+		var a := int(((op as Dictionary)["color"] as Array)[3])
+		max_alpha = maxi(max_alpha, a)
+		min_alpha = mini(min_alpha, a)
+	_expect(max_alpha == 200,
+		"alpha penuh harus 200 di tengah durasi, dapat %d" % max_alpha)
+	_expect(min_alpha == 100,
+		"panah non-pulse harus redup 200//2 = 100, dapat %d" % min_alpha)
 	preview.free()
 
 

@@ -341,6 +341,14 @@ def build_burst_scenarios(pygame, rend):
               % (case["size"], want_count, len(burst.particles)))
         check(burst.flash_timer == 8 and burst.flash_max == 8,
               "kilat pusat DeathExplosion = 8 frame")
+        # Baris partikel HARUS difoto sebelum loop frame: pygame membuang
+        # partikel yang mati di `DeathExplosion.update`, jadi setelah 40 frame
+        # `burst.particles` sudah kosong dan fixture mencatat 0 partikel
+        # (ketangkap replay Godot CI: "8 partikel != pygame 0").
+        rows = [_particle_row(p) for p in burst.particles]
+        check(len(rows) == want_count,
+              "baris partikel '%s' harus %d, dapat %d"
+              % (case["name"], want_count, len(rows)))
         frames = []
         for step in range(case["steps"]):
             if step in sample_frames:
@@ -354,7 +362,7 @@ def build_burst_scenarios(pygame, rend):
               % (case["steps"], case["name"]))
         out.append({"name": case["name"], "init": case,
                     "rng_calls": rec.calls,
-                    "particles": [_particle_row(p) for p in burst.particles],
+                    "particles": rows,
                     "frames": frames})
     return out
 

@@ -1317,7 +1317,136 @@
     "y": 240.0
    },
    "name": "small_blue",
-   "particles": [],
+   "particles": [
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 21,
+     "max_lifetime": 21,
+     "pbase": 2,
+     "size": 2,
+     "vx": 2.544249,
+     "vy": -0.544359,
+     "x": 320.0,
+     "y": 240.0
+    },
+    {
+     "alive": true,
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "lifetime": 20,
+     "max_lifetime": 20,
+     "pbase": 2,
+     "size": 2,
+     "vx": -0.808966,
+     "vy": -1.506369,
+     "x": 320.0,
+     "y": 240.0
+    },
+    {
+     "alive": true,
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "lifetime": 35,
+     "max_lifetime": 35,
+     "pbase": 4,
+     "size": 4,
+     "vx": 3.407062,
+     "vy": 0.66801,
+     "x": 320.0,
+     "y": 240.0
+    },
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 23,
+     "max_lifetime": 23,
+     "pbase": 4,
+     "size": 4,
+     "vx": -1.397387,
+     "vy": -1.244748,
+     "x": 320.0,
+     "y": 240.0
+    },
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 34,
+     "max_lifetime": 34,
+     "pbase": 2,
+     "size": 2,
+     "vx": 1.555053,
+     "vy": -2.277448,
+     "x": 320.0,
+     "y": 240.0
+    },
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 21,
+     "max_lifetime": 21,
+     "pbase": 4,
+     "size": 4,
+     "vx": 2.896508,
+     "vy": 1.331322,
+     "x": 320.0,
+     "y": 240.0
+    },
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 35,
+     "max_lifetime": 35,
+     "pbase": 3,
+     "size": 3,
+     "vx": -0.354877,
+     "vy": 2.869218,
+     "x": 320.0,
+     "y": 240.0
+    },
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 34,
+     "max_lifetime": 34,
+     "pbase": 2,
+     "size": 2,
+     "vx": 1.275186,
+     "vy": -1.751013,
+     "x": 320.0,
+     "y": 240.0
+    }
+   ],
    "rng_calls": [
     {
      "args": [
@@ -4061,7 +4190,248 @@
     "y": 360.5
    },
    "name": "medium_red",
-   "particles": [],
+   "particles": [
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 27,
+     "max_lifetime": 27,
+     "pbase": 3,
+     "size": 3,
+     "vx": -1.647064,
+     "vy": 1.134872,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 22,
+     "max_lifetime": 22,
+     "pbase": 4,
+     "size": 4,
+     "vx": 1.149239,
+     "vy": 1.274926,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 26,
+     "max_lifetime": 26,
+     "pbase": 5,
+     "size": 5,
+     "vx": 2.5216,
+     "vy": -1.028242,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 26,
+     "max_lifetime": 26,
+     "pbase": 5,
+     "size": 5,
+     "vx": 0.918246,
+     "vy": -3.34712,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 22,
+     "max_lifetime": 22,
+     "pbase": 4,
+     "size": 4,
+     "vx": 1.815701,
+     "vy": 2.575786,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 30,
+     "max_lifetime": 30,
+     "pbase": 4,
+     "size": 4,
+     "vx": 2.665952,
+     "vy": -0.924771,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 26,
+     "max_lifetime": 26,
+     "pbase": 4,
+     "size": 4,
+     "vx": -1.77921,
+     "vy": 1.248401,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 26,
+     "max_lifetime": 26,
+     "pbase": 4,
+     "size": 4,
+     "vx": -2.489805,
+     "vy": 2.914021,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 26,
+     "max_lifetime": 26,
+     "pbase": 3,
+     "size": 3,
+     "vx": -3.106873,
+     "vy": -2.425896,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 25,
+     "max_lifetime": 25,
+     "pbase": 4,
+     "size": 4,
+     "vx": 3.142061,
+     "vy": -0.968236,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 20,
+     "max_lifetime": 20,
+     "pbase": 3,
+     "size": 3,
+     "vx": 2.957104,
+     "vy": -1.087545,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 33,
+     "max_lifetime": 33,
+     "pbase": 3,
+     "size": 3,
+     "vx": 1.525242,
+     "vy": 2.824104,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 32,
+     "max_lifetime": 32,
+     "pbase": 3,
+     "size": 3,
+     "vx": -1.254155,
+     "vy": -1.369883,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 26,
+     "max_lifetime": 26,
+     "pbase": 3,
+     "size": 3,
+     "vx": -1.34833,
+     "vy": 2.463677,
+     "x": 640.5,
+     "y": 360.5
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 35,
+     "max_lifetime": 35,
+     "pbase": 4,
+     "size": 4,
+     "vx": -2.681805,
+     "vy": 1.004276,
+     "x": 640.5,
+     "y": 360.5
+    }
+   ],
    "rng_calls": [
     {
      "args": [
@@ -7189,7 +7559,248 @@
     "y": 120.0
    },
    "name": "medium_blue",
-   "particles": [],
+   "particles": [
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 22,
+     "max_lifetime": 22,
+     "pbase": 3,
+     "size": 3,
+     "vx": -0.839907,
+     "vy": 1.678734,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 26,
+     "max_lifetime": 26,
+     "pbase": 3,
+     "size": 3,
+     "vx": 0.751413,
+     "vy": -1.564203,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 22,
+     "max_lifetime": 22,
+     "pbase": 3,
+     "size": 3,
+     "vx": 2.512731,
+     "vy": 0.603181,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 27,
+     "max_lifetime": 27,
+     "pbase": 3,
+     "size": 3,
+     "vx": -1.563744,
+     "vy": -0.519492,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 32,
+     "max_lifetime": 32,
+     "pbase": 5,
+     "size": 5,
+     "vx": -2.016048,
+     "vy": -2.163864,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 29,
+     "max_lifetime": 29,
+     "pbase": 3,
+     "size": 3,
+     "vx": 1.953868,
+     "vy": 0.629281,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 25,
+     "max_lifetime": 25,
+     "pbase": 4,
+     "size": 4,
+     "vx": -2.491508,
+     "vy": 1.387322,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 23,
+     "max_lifetime": 23,
+     "pbase": 4,
+     "size": 4,
+     "vx": 2.335333,
+     "vy": 1.766202,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 26,
+     "max_lifetime": 26,
+     "pbase": 5,
+     "size": 5,
+     "vx": -1.582972,
+     "vy": -0.489649,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "lifetime": 34,
+     "max_lifetime": 34,
+     "pbase": 4,
+     "size": 4,
+     "vx": -2.828583,
+     "vy": 0.063734,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 27,
+     "max_lifetime": 27,
+     "pbase": 5,
+     "size": 5,
+     "vx": -1.3682,
+     "vy": 1.620787,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "lifetime": 34,
+     "max_lifetime": 34,
+     "pbase": 4,
+     "size": 4,
+     "vx": 1.959465,
+     "vy": 1.107159,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      100,
+      200,
+      255
+     ],
+     "lifetime": 33,
+     "max_lifetime": 33,
+     "pbase": 5,
+     "size": 5,
+     "vx": -0.932773,
+     "vy": 3.838735,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      150,
+      220,
+      255
+     ],
+     "lifetime": 21,
+     "max_lifetime": 21,
+     "pbase": 4,
+     "size": 4,
+     "vx": 1.199346,
+     "vy": 2.026882,
+     "x": 900.0,
+     "y": 120.0
+    },
+    {
+     "alive": true,
+     "color": [
+      200,
+      240,
+      255
+     ],
+     "lifetime": 30,
+     "max_lifetime": 30,
+     "pbase": 5,
+     "size": 5,
+     "vx": 1.646042,
+     "vy": -0.400444,
+     "x": 900.0,
+     "y": 120.0
+    }
+   ],
    "rng_calls": [
     {
      "args": [
@@ -11878,7 +12489,408 @@
     "y": 600.0
    },
    "name": "large_red",
-   "particles": [],
+   "particles": [
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 23,
+     "max_lifetime": 23,
+     "pbase": 6,
+     "size": 6,
+     "vx": 2.019652,
+     "vy": 1.87567,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 33,
+     "max_lifetime": 33,
+     "pbase": 6,
+     "size": 6,
+     "vx": 2.789468,
+     "vy": -2.486799,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 34,
+     "max_lifetime": 34,
+     "pbase": 5,
+     "size": 5,
+     "vx": 0.597315,
+     "vy": -2.806672,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 23,
+     "max_lifetime": 23,
+     "pbase": 5,
+     "size": 5,
+     "vx": 0.191856,
+     "vy": 3.029442,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 30,
+     "max_lifetime": 30,
+     "pbase": 5,
+     "size": 5,
+     "vx": -3.36142,
+     "vy": 1.100257,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 22,
+     "max_lifetime": 22,
+     "pbase": 5,
+     "size": 5,
+     "vx": 0.526496,
+     "vy": 2.062648,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 29,
+     "max_lifetime": 29,
+     "pbase": 5,
+     "size": 5,
+     "vx": -0.289901,
+     "vy": -1.699616,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 29,
+     "max_lifetime": 29,
+     "pbase": 6,
+     "size": 6,
+     "vx": -3.560042,
+     "vy": 0.975173,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 33,
+     "max_lifetime": 33,
+     "pbase": 5,
+     "size": 5,
+     "vx": 3.237644,
+     "vy": 0.507357,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 23,
+     "max_lifetime": 23,
+     "pbase": 5,
+     "size": 5,
+     "vx": 3.138551,
+     "vy": 2.010764,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 32,
+     "max_lifetime": 32,
+     "pbase": 5,
+     "size": 5,
+     "vx": -3.128623,
+     "vy": 1.583152,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 35,
+     "max_lifetime": 35,
+     "pbase": 6,
+     "size": 6,
+     "vx": 1.859611,
+     "vy": -1.072277,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 24,
+     "max_lifetime": 24,
+     "pbase": 4,
+     "size": 4,
+     "vx": -3.501311,
+     "vy": -0.28551,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 23,
+     "max_lifetime": 23,
+     "pbase": 6,
+     "size": 6,
+     "vx": 1.621841,
+     "vy": -3.554268,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 27,
+     "max_lifetime": 27,
+     "pbase": 5,
+     "size": 5,
+     "vx": -0.524925,
+     "vy": -2.51942,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 35,
+     "max_lifetime": 35,
+     "pbase": 5,
+     "size": 5,
+     "vx": 1.057563,
+     "vy": -1.462773,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 32,
+     "max_lifetime": 32,
+     "pbase": 5,
+     "size": 5,
+     "vx": -0.861946,
+     "vy": -3.802589,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 35,
+     "max_lifetime": 35,
+     "pbase": 6,
+     "size": 6,
+     "vx": -1.096205,
+     "vy": -1.986707,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 28,
+     "max_lifetime": 28,
+     "pbase": 5,
+     "size": 5,
+     "vx": 0.846929,
+     "vy": -2.357347,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 35,
+     "max_lifetime": 35,
+     "pbase": 5,
+     "size": 5,
+     "vx": 1.871426,
+     "vy": 0.109206,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      200,
+      100
+     ],
+     "lifetime": 34,
+     "max_lifetime": 34,
+     "pbase": 5,
+     "size": 5,
+     "vx": -1.273968,
+     "vy": 1.541227,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 21,
+     "max_lifetime": 21,
+     "pbase": 6,
+     "size": 6,
+     "vx": -3.556504,
+     "vy": -0.252191,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      100,
+      100
+     ],
+     "lifetime": 28,
+     "max_lifetime": 28,
+     "pbase": 5,
+     "size": 5,
+     "vx": 1.121666,
+     "vy": -1.998372,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 35,
+     "max_lifetime": 35,
+     "pbase": 6,
+     "size": 6,
+     "vx": -3.74321,
+     "vy": 1.140739,
+     "x": 1100.0,
+     "y": 600.0
+    },
+    {
+     "alive": true,
+     "color": [
+      255,
+      150,
+      100
+     ],
+     "lifetime": 23,
+     "max_lifetime": 23,
+     "pbase": 5,
+     "size": 5,
+     "vx": 2.903171,
+     "vy": -1.14654,
+     "x": 1100.0,
+     "y": 600.0
+    }
+   ],
    "rng_calls": [
     {
      "args": [

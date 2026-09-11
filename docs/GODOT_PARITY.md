@@ -58,7 +58,7 @@ titik), dan jumlah percikan per situs (4/6/10) serta ukuran ledakan
 (`small`/`medium`/`large`) di-PIN dari teks sumber `_entity.py`,
 `bosses/base_boss.py`, `tactical_commands.py`.
 
-**Validasi:** `tools/test_render_parity.py` (203 pemeriksaan: fixture
+**Validasi:** `tools/test_render_parity.py` (211 pemeriksaan: fixture
 determinis 2× run, drift vs `godot/tests/fixtures/render_fx.json`, dan kunci
 statis konstanta + ekspresi `.gd`) lulus lokal; `gdparse` seluruh `.gd` +
 `tscn_lint` 39 scene + `check_refs` + `particles_lint` + 5 self-test log-gate +

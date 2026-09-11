@@ -518,7 +518,7 @@ XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/RenderFxPar
 ```
 
 Uji regresinya: `tests/RenderFxParityTest.tscn` — fixture
-`tests/fixtures/render_fx.json` (403 KB; 73 frame percikan, 32 frame/792 op
+`tests/fixtures/render_fx.json` (419 KB; 73 frame percikan, 32 frame/792 op
 ledakan, 4 skenario `add_hit_particles` + batas 500/80, 130 frame + 490 polygon
 panah lane, wiring `spark_fx`).
 
