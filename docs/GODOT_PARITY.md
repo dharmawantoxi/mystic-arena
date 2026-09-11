@@ -315,9 +315,14 @@ milik bucket piksel).
   popup dari mana saja), baris stat + `MUNDUR` di panel hero adalah
   tambahan Godot.
 - **Visual unit:** bake menyamakan sumber pose hero/boss, bukan seluruh komposit
-  live FX. Minion, tower dan nexus masih memakai gambar prosedural pengganti.
-  Kuantisasi pose, lighting, cuaca dan efek skill juga belum lolos perbandingan
-  screenshot menyeluruh.
+  live FX. Overlay live dari `_entity.py` kini diport: armor crest shield
+  (Tower/Nexus), bintang level di papan nama hero, slash 7-titik + death dust
+  minion, torch L4+/aura L6 + `SHIELD n%` nexus, peluru HD archer, dan kind
+  SkillProjectile zephyr/morgath/ancient_apparition. Badan minion/tower/nexus
+  tetap bake+prosedural. Kuantisasi pose, lighting, cuaca dan efek skill juga
+  belum lolos perbandingan screenshot menyeluruh. Perilaku non-piksel
+  (`credit_hero_damage` int, archer L5=2/L6=3, kit_hit tanpa double-count,
+  tanpa hit-stop di `try_attack`) dikunci `EntityPyParityTest`.
 - **Skill hero:** koefisien/target/timing kini 1:1 dengan `hero_skills/_bundle.py`
   dan dikunci `HeroSkillParityTest` (222 hero × 4 skenario). Guard
   **windrun** (roll RNG 75% evade fisik) dan **shadow realm** (kebal total)
@@ -492,6 +497,7 @@ godot --headless --path godot res://tests/BossCoreParityTest.tscn --quit-after 4
 godot --headless --path godot res://tests/BossSmartAIParityTest.tscn --quit-after 2400
 godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 900
 godot --headless --path godot res://tests/HeroBasicAttackParityTest.tscn --quit-after 120
+godot --headless --path godot res://tests/EntityPyParityTest.tscn --quit-after 60
 godot --headless --path godot res://tests/HeroRngGuardParityTest.tscn --quit-after 120
 godot --headless --path godot res://tests/ItemProcParityTest.tscn --quit-after 600
 godot --headless --path godot res://tests/HeroCatchupUnlockParityTest.tscn --quit-after 120

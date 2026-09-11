@@ -112,14 +112,54 @@ func _draw() -> void:
 			draw_circle(Vector2.ZERO, radius * 1.2, Color(color.r, color.g, color.b, 0.5))
 			draw_circle(Vector2.ZERO, radius * 0.7, color)
 		_:
-			# panah archer: garis pendek searah gerak
-			var dir := Vector2.RIGHT
-			if target != null and is_instance_valid(target):
-				var d: Vector2 = target.global_position - global_position
-				if d.length_squared() > 0.01:
-					dir = d.normalized()
-			draw_line(-dir * 7.0, dir * 7.0, color, 2.0)
-			draw_circle(dir * 7.0, 1.8, Color(1, 1, 1, 0.9))
+			_draw_hd_arrow()
+
+
+## Port `Bullet._draw_hd_arrow` `_entity.py:345-430` (shaft + feather + head).
+func _draw_hd_arrow() -> void:
+	var dir := Vector2.RIGHT
+	if target != null and is_instance_valid(target):
+		var d: Vector2 = target.global_position - global_position
+		if d.length_squared() > 0.01:
+			dir = d.normalized()
+	var perp := dir.orthogonal()
+	var blue := team == "blue"
+	var shaft_dark := Color(85.0 / 255.0, 55.0 / 255.0, 25.0 / 255.0) if blue \
+		else Color(60.0 / 255.0, 30.0 / 255.0, 15.0 / 255.0)
+	var shaft_light := Color(155.0 / 255.0, 110.0 / 255.0, 60.0 / 255.0) if blue \
+		else Color(120.0 / 255.0, 75.0 / 255.0, 40.0 / 255.0)
+	var feather := Color(200.0 / 255.0, 60.0 / 255.0, 60.0 / 255.0) if blue \
+		else Color(140.0 / 255.0, 30.0 / 255.0, 30.0 / 255.0)
+	var head_mid := Color(140.0 / 255.0, 140.0 / 255.0, 155.0 / 255.0) if blue \
+		else Color(100.0 / 255.0, 80.0 / 255.0, 80.0 / 255.0)
+	var head_light := Color(210.0 / 255.0, 210.0 / 255.0, 225.0 / 255.0) if blue \
+		else Color(170.0 / 255.0, 145.0 / 255.0, 145.0 / 255.0)
+	var arrow_len := 14.0
+	var tail := -dir * (arrow_len * 0.5)
+	var head := dir * (arrow_len * 0.5)
+	for i in 4:
+		var a: float = (100.0 - float(i) * 25.0) / 255.0
+		if a > 0.0:
+			draw_circle(-dir * float(i + 1) * 3.0, 2.0,
+				Color(shaft_light.r, shaft_light.g, shaft_light.b, a))
+	var shaft_a := tail + dir * 2.0
+	var shaft_b := head - dir * 2.0
+	draw_line(shaft_a, shaft_b, Color(20.0 / 255.0, 15.0 / 255.0, 10.0 / 255.0), 3.0)
+	draw_line(shaft_a, shaft_b, shaft_dark, 2.0)
+	draw_line(shaft_a + perp * 0.5, shaft_b + perp * 0.5, shaft_light, 1.0)
+	var tip := head + dir * 3.0
+	var base := head - dir * 2.0
+	draw_colored_polygon(PackedVector2Array([
+		tip, base + perp * 3.5, base - perp * 3.5,
+	]), head_mid)
+	draw_colored_polygon(PackedVector2Array([
+		tip, base + perp * 1.6 + dir * 1.0, base + dir * 1.0,
+	]), head_light)
+	draw_circle(tip, 0.8, Color.WHITE)
+	for side in [-1.0, 1.0]:
+		draw_colored_polygon(PackedVector2Array([
+			tail, tail - dir * 3.0 + perp * 3.0 * side, tail - dir * 4.0,
+		]), feather)
 
 
 ## Paritas Bullet._on_hit: damage projectile + efek khusus per jenis menara

@@ -65,6 +65,15 @@ func setup(p_target: Node2D, p_hero_type: String, p_source) -> void:
 		"vex":
 			_kind = "orb"
 			_impact_color = Color(0.78, 0.5, 1.0)
+		"zephyr":
+			_kind = "bolt"
+			_impact_color = Color(0.9, 0.32, 0.78)
+		"morgath":
+			_kind = "lightning"
+			_impact_color = Color(0.55, 0.7, 1.0)
+		"ancient_apparition":
+			_kind = "ice"
+			_impact_color = Color(0.55, 0.82, 1.0)
 		_:
 			_kind = "generic"
 			_impact_color = _draw_color
@@ -229,6 +238,48 @@ func _draw_orb() -> void:
 	# Inti
 	draw_circle(Vector2.ZERO, 3.0, Color(220.0 / 255.0, 180.0 / 255.0, 255.0 / 255.0))
 	draw_circle(Vector2.ZERO, 1.0, Color.WHITE)
+
+
+## Bolt Zephyr — fallback `_draw_magic_bolt_projectile` `_entity.py:5172-5212`.
+func _draw_bolt() -> void:
+	var dir := Vector2(cos(_angle), sin(_angle))
+	for i in range(5):
+		var alpha: float = (130.0 - float(i) * 24.0) / 255.0
+		draw_circle(-dir * float(i + 1) * 3.0,
+			maxf(1.0, 3.0 - floor(float(i) / 2.0)),
+			Color(230.0 / 255.0, 80.0 / 255.0, 200.0 / 255.0, alpha))
+	draw_circle(Vector2.ZERO, 5.0, Color(230.0 / 255.0, 80.0 / 255.0, 200.0 / 255.0, 120.0 / 255.0))
+	draw_circle(Vector2.ZERO, 3.0, Color(1.0, 130.0 / 255.0, 230.0 / 255.0))
+	draw_circle(Vector2.ZERO, 1.0, Color.WHITE)
+
+
+## Kilat Morgath — `_draw_lightning_projectile` `_entity.py:5214-5248`.
+func _draw_lightning() -> void:
+	var dir := Vector2(cos(_angle), sin(_angle))
+	var perp := dir.orthogonal()
+	var pts := PackedVector2Array([Vector2.ZERO])
+	for i in 3:
+		var offset := sin(age * 36.0 + float(i) * 1.7) * 3.0
+		pts.append(dir * float(i + 1) * 5.0 + perp * offset)
+	for i in range(pts.size() - 1):
+		draw_line(pts[i], pts[i + 1], Color(100.0 / 255.0, 130.0 / 255.0, 240.0 / 255.0), 3.0)
+		draw_line(pts[i], pts[i + 1], Color(180.0 / 255.0, 210.0 / 255.0, 1.0), 1.0)
+	draw_circle(Vector2.ZERO, 5.0, Color(140.0 / 255.0, 180.0 / 255.0, 1.0, 120.0 / 255.0))
+
+
+## Shard es Ancient Apparition — fallback `_draw_ice_shard_projectile`.
+func _draw_ice() -> void:
+	var dir := Vector2(cos(_angle), sin(_angle))
+	var perp := dir.orthogonal()
+	var base := -dir * 10.0
+	draw_colored_polygon(PackedVector2Array([
+		Vector2.ZERO, base + perp * 3.0, base, base - perp * 3.0,
+	]), Color(100.0 / 255.0, 180.0 / 255.0, 240.0 / 255.0))
+	draw_colored_polygon(PackedVector2Array([
+		Vector2.ZERO, base + perp * 2.0 + dir * 4.0, base + dir * 4.0,
+	]), Color(200.0 / 255.0, 230.0 / 255.0, 1.0))
+	draw_circle(Vector2.ZERO, 5.0, Color(140.0 / 255.0, 210.0 / 255.0, 1.0, 100.0 / 255.0))
+	draw_circle(Vector2.ZERO, 0.8, Color.WHITE)
 
 
 ## Generic 200+ hero (fallback _entity.py:5039-5051): lingkaran warna hero

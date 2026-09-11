@@ -13,7 +13,10 @@ extends Node2D
 
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
 const BakedPropDB = preload("res://scripts/render/BakedPropDB.gd")
+const ArmorCrestScript = preload("res://scripts/render/ArmorCrest.gd")
 const FPS := 60.0
+const SHIELD_BLUE := Color(100.0 / 255.0, 180.0 / 255.0, 1.0)
+const SHIELD_RED := Color(1.0, 100.0 / 255.0, 100.0 / 255.0)
 
 @export var team: String = "blue"
 @export var tower_kind: String = "outer"   # outer | inner (menentukan gold reward)
@@ -66,6 +69,8 @@ var regen_shield_active: bool = false
 var selected: bool = false
 var upgrade_flash: float = 0.0
 var shoot_flash: float = 0.0
+## Frame flash saat shield regen (`_entity.py:860`, 3 frame) / aktifkan (6).
+var shield_regen_flash: float = 0.0
 var display_name: String = "Archer"
 var color: Color = Color("#64dc78")
 var color_dark: Color = Color("#328c46")
@@ -195,6 +200,7 @@ func activate_regen_shield() -> bool:
 	regen_shield_active = true
 	shield = shield_max
 	shield_active = shield_max > 0.0
+	shield_regen_flash = 6.0 / FPS
 	upgrade_flash = 0.5
 	print("[Tower] %s %s membeli Regen Shield" % [team, display_name])
 	return true
@@ -213,6 +219,8 @@ func _physics_process(delta: float) -> void:
 		upgrade_flash = maxf(0.0, upgrade_flash - delta)
 	if shoot_flash > 0.0:
 		shoot_flash = maxf(0.0, shoot_flash - delta)
+	if shield_regen_flash > 0.0:
+		shield_regen_flash = maxf(0.0, shield_regen_flash - delta)
 	_update_regen(delta)
 
 	var cs = _combat()
@@ -249,9 +257,12 @@ func _update_regen(delta: float) -> void:
 		var scfg: Dictionary = TowerDB.regen_shield_cfg()
 		var sdelay := float(scfg.get("delay_frames", 180)) / FPS
 		if no_damage_timer >= sdelay:
+			# pygame set flash=3 SETIAP tick regen (`_entity.py:860`)
+			# supaya crest tetap "bright" selama shield mengisi.
 			shield = minf(shield_max,
 				shield + float(scfg.get("rate_per_frame", 1.8)) * FPS * delta)
 			shield_active = true
+			shield_regen_flash = 3.0 / FPS
 
 
 # ══════════════════════════════════════════════════════════
@@ -299,22 +310,51 @@ func _shoot(cs) -> void:
 			for t in targets:
 				_spawn_bullet(t, damage, "mage", sp, speed, Color("#dca0ff"))
 		_:
-			_spawn_bullet(target, damage, "normal", {}, speed, Color("#ffe9a8"))
-			if double_shot:
-				# Archer L6: tembakan kedua ke musuh lain dalam range
-				var second = null
-				for e in cs.enemies_in_radius(team, global_position, attack_range):
-					if e == target:
-						continue
-					second = e
-					break
-				if second != null:
-					_spawn_bullet(second, damage, "normal", {}, speed,
-						Color("#ffe9a8"))
+			# Archer `_shoot_archer` `_entity.py:904-937`: L5=2 / L6=3
+			# panah (pad target yang sama); `double_shot` HANYA L<5.
+			if tower_type == "archer" and level >= 5:
+				_shoot_archer_volley(cs, speed)
+			else:
+				_spawn_bullet(target, damage, "normal", {}, speed, Color("#ffe9a8"))
+				if double_shot:
+					var second = null
+					for e in cs.enemies_in_radius(team, global_position, attack_range):
+						if e == target:
+							continue
+						second = e
+						break
+					if second != null:
+						_spawn_bullet(second, damage, "normal", {}, speed,
+							Color("#ffe9a8"))
+
+
+## Port `_shoot_archer` L5/L6: 2/3 peluru, offset × SCALE 0.7 lalu `int()`,
+## target ekstra dalam range, sisanya di-pad target utama.
+func _shoot_archer_volley(cs, speed: float) -> void:
+	var num_shots := 2 if level == 5 else 3
+	var offsets: Array = []
+	if num_shots == 2:
+		offsets = [Vector2(-8, 0), Vector2(8, 0)]
+	else:
+		offsets = [Vector2(-11, 3), Vector2(0, -2), Vector2(11, 3)]
+	var targets: Array = [target]
+	for e in cs.enemies_in_radius(team, global_position, attack_range):
+		if targets.size() >= num_shots:
+			break
+		if e == target:
+			continue
+		targets.append(e)
+	while targets.size() < num_shots:
+		targets.append(target)
+	var scale := 0.7
+	for i in num_shots:
+		var off: Vector2 = offsets[i]
+		_spawn_bullet(targets[i], damage, "normal", {}, speed, Color("#ffe9a8"),
+			Vector2(float(int(off.x * scale)), float(int(off.y * scale))))
 
 
 func _spawn_bullet(t: Node2D, dmg: float, btype: String, sp: Dictionary,
-		speed: float, col: Color) -> void:
+		speed: float, col: Color, spawn_offset: Vector2 = Vector2.ZERO) -> void:
 	var b = TowerBulletScript.new()
 	# Pygame Bullet._on_hit (_entity.py:246-248) memanggil
 	# take_damage(damage, team, damage_type='projectile') TANPA source —
@@ -324,7 +364,7 @@ func _spawn_bullet(t: Node2D, dmg: float, btype: String, sp: Dictionary,
 	# hero_items.py:2460-2468).
 	b.setup(t, dmg, team, btype, sp, speed, col, null)
 	b.global_position = global_position + Vector2(cos(angle), sin(angle)) * 12.0 \
-		+ Vector2(0, -22)
+		+ Vector2(0, -22) + spawn_offset
 	GameManager.attach_fx(b)
 
 
@@ -479,11 +519,12 @@ func _draw_overlays(team_col: Color, body_top: float) -> void:
 	for i in range(level):
 		draw_circle(Vector2(-radius * 0.5 + float(i) * 5.0, -12), 1.8,
 			Color(1, 0.85, 0.35, 0.9))
-	# shield bubble
-	if shield > 0.0 and shield_active:
-		var ratio := clampf(shield / maxf(1.0, shield_max), 0.0, 1.0)
-		draw_arc(Vector2(0, -8), radius * 1.5, 0.0, TAU, 28,
-			Color(team_col.r, team_col.g, team_col.b, 0.25 + 0.35 * ratio), 2.0)
+	# Armor crest (pengganti gelembung) — `_draw_shield_crest` `:1295-1317`
+	if shield > 0.0 and shield_max > 0.0:
+		var ratio := clampf(shield / shield_max, 0.0, 1.0)
+		var sc: Color = SHIELD_BLUE if team == "blue" else SHIELD_RED
+		ArmorCrestScript.draw(self, Vector2(26.0, -28.0 - float(level)), 14.0,
+			sc, ratio, shield_regen_flash > 0.0)
 	# bar HP + shield
 	var w := 34.0
 	var hp_ratio := clampf(hp / maxf(1.0, max_hp), 0.0, 1.0)
@@ -493,8 +534,13 @@ func _draw_overlays(team_col: Color, body_top: float) -> void:
 		team_col.lightened(0.1), true)
 	if shield_max > 0.0:
 		var sh_ratio := clampf(shield / shield_max, 0.0, 1.0)
+		var shc: Color = SHIELD_BLUE if team == "blue" else SHIELD_RED
+		if shield_regen_flash > 0.0:
+			shc = Color(minf(1.0, shc.r + 50.0 / 255.0),
+				minf(1.0, shc.g + 50.0 / 255.0),
+				minf(1.0, shc.b + 50.0 / 255.0))
 		draw_rect(Rect2(Vector2(-w * 0.5, body_top - 26), Vector2(w * sh_ratio, 2.5)),
-			Color(0.6, 0.85, 1, 0.85), true)
+			shc, true)
 	# upgrade flash
 	if upgrade_flash > 0.0:
 		draw_circle(Vector2(0, -10), radius * (1.6 + (0.5 - upgrade_flash)),

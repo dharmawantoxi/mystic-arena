@@ -13,6 +13,7 @@ extends Node2D
 
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
 const BakedPropDB = preload("res://scripts/render/BakedPropDB.gd")
+const ArmorCrestScript = preload("res://scripts/render/ArmorCrest.gd")
 const FPS := 60.0
 
 @export var team: String = "blue"
@@ -38,6 +39,8 @@ var shield_damage_reduction: float = 0.88
 var free_shield_active: bool = true
 var castle_shield_purchased: bool = false
 var no_damage_timer: float = 0.0
+## Flash crest saat shield regen (`_entity.py:1725`, 4 frame).
+var shield_regen_flash: float = 0.0
 
 # ── state ──
 var is_dead: bool = false
@@ -188,6 +191,8 @@ func _physics_process(delta: float) -> void:
 		return
 	pulse += delta * 3.0
 	attack_timer = maxf(0.0, attack_timer - delta)
+	if shield_regen_flash > 0.0:
+		shield_regen_flash = maxf(0.0, shield_regen_flash - delta)
 	_update_shield_regen(delta)
 
 	var cs = _combat()
@@ -332,14 +337,20 @@ func _draw_geometric_castle(team_col: Color) -> void:
 ## ring seleksi, overlay mati. pygame menggambar semua ini di luar
 ## _render_castle_full(), jadi tidak ikut bake di kedua jalur.
 func _draw_overlays(team_col: Color, cfg: Dictionary) -> void:
-	# shield bubble
-	if shield_active and shield > 0.0:
-		var ratio := clampf(shield / maxf(1.0, shield_max), 0.0, 1.0)
-		var sc: Color = cfg.get("color_blue", Color("#64c8ff")) if team == "blue" \
-			else cfg.get("color_red", Color("#ff7878"))
-		draw_arc(Vector2.ZERO, radius * 1.9, 0.0, TAU, 56,
-			Color(sc.r, sc.g, sc.b, 0.30 + 0.45 * ratio), 3.0)
-		draw_circle(Vector2.ZERO, radius * 1.9, Color(sc.r, sc.g, sc.b, 0.06 + 0.05 * ratio))
+	var sc: Color = cfg.get("color_blue", Color("#64c8ff")) if team == "blue" \
+		else cfg.get("color_red", Color("#ff7878"))
+	# Armor crest — `_draw_castle_shield` `_entity.py:1892-1916`
+	if shield_active and shield > 0.0 and shield_max > 0.0:
+		var ratio := clampf(shield / shield_max, 0.0, 1.0)
+		var bob := sin(pulse * 1.2) * 2.0
+		ArmorCrestScript.draw(self, Vector2(0.0, -62.0 + bob), 18.0,
+			sc, ratio, shield_regen_flash > 0.0)
+	# Obor gerbang L4+ + aura L6 — `_render_dynamic_effects` `:3063-3080`
+	if level >= 4:
+		_draw_gate_torch(Vector2(-16.0, 8.0), 0.0)
+		_draw_gate_torch(Vector2(16.0, 8.0), 5.0)
+	if level >= 6:
+		_draw_magic_aura()
 	# bar HP + shield di atas castle
 	var w := 84.0
 	var hp_ratio := clampf(hp / maxf(1.0, max_hp), 0.0, 1.0)
@@ -349,12 +360,57 @@ func _draw_overlays(team_col: Color, cfg: Dictionary) -> void:
 	if shield_max > 0.0 and shield_active:
 		var sh_ratio := clampf(shield / shield_max, 0.0, 1.0)
 		draw_rect(Rect2(Vector2(-w * 0.5, -62), Vector2(w * sh_ratio, 4)),
-			Color(0.55, 0.85, 1, 0.9), true)
+			sc, true)
+		var font: Font = ThemeDB.fallback_font
+		if font != null:
+			var pct := int(round(sh_ratio * 100.0))
+			draw_string(font, Vector2(-w * 0.5, -74.0),
+				"SHIELD %d%%" % pct, HORIZONTAL_ALIGNMENT_LEFT, w, 10,
+				Color(200.0 / 255.0, 220.0 / 255.0, 1.0))
 	# pip level castle
 	for i in range(level):
-		draw_circle(Vector2(-w * 0.5 + 6.0 + float(i) * 9.0, -68), 2.6,
+		draw_circle(Vector2(-w * 0.5 + 6.0 + float(i) * 9.0, -80), 2.6,
 			Color(1, 0.85, 0.35, 0.95))
 	if selected:
 		draw_arc(Vector2.ZERO, radius * 1.7, 0.0, TAU, 40, Color(1, 0.92, 0.5, 0.85), 2.0)
 	if is_dead:
 		draw_rect(Rect2(Vector2(-40, -40), Vector2(80, 80)), Color(0, 0, 0, 0.45), true)
+
+
+## Port `_draw_gate_torch` `_entity.py:3083-3170` (tanpa draw_ellipse).
+func _draw_gate_torch(p: Vector2, off: float) -> void:
+	draw_rect(Rect2(p + Vector2(-3, 0), Vector2(6, 8)), Color(0.28, 0.24, 0.22))
+	draw_rect(Rect2(p + Vector2(-4, -3), Vector2(8, 3)), Color(0.18, 0.12, 0.08))
+	var flicker := int(fmod(pulse * 4.0 + off, 5.0))
+	var fire_h := 12.0 + float(flicker)
+	draw_colored_polygon(PackedVector2Array([
+		p + Vector2(-5, -3), p + Vector2(-2, -fire_h + 2.0),
+		p + Vector2(0, -fire_h - 2.0), p + Vector2(2, -fire_h + 2.0),
+		p + Vector2(5, -3),
+	]), Color(0.75, 0.18, 0.05))
+	draw_colored_polygon(PackedVector2Array([
+		p + Vector2(-3, -4), p + Vector2(-1, -fire_h + 3.0),
+		p + Vector2(0, -fire_h - 1.0), p + Vector2(1, -fire_h + 3.0),
+		p + Vector2(3, -4),
+	]), Color(1.0, 0.55, 0.12))
+	draw_colored_polygon(PackedVector2Array([
+		p + Vector2(-2, -5), p + Vector2(0, -fire_h + 4.0), p + Vector2(2, -5),
+	]), Color(1.0, 0.9, 0.35))
+	draw_circle(p + Vector2(0, -6), 11.0, Color(1.0, 0.45, 0.1, 0.14))
+
+
+## Port `_draw_castle_magic_aura` `_entity.py:3172-3184` (elips → busur).
+func _draw_magic_aura() -> void:
+	var pul := sin(pulse * 0.8) * 0.3 + 0.7
+	var r := 90
+	while r > 30:
+		var a := float(90 - r) * 2.0 * pul / 255.0
+		if a > 0.0:
+			draw_arc(Vector2(0, -20), float(r) * 0.45, 0.0, TAU, 28,
+				Color(0.55, 0.75, 1.0, a), 2.0)
+		r -= 8
+	for i in 8:
+		var ang := pulse * 0.9 + float(i) * (PI / 4.0)
+		var rad := 28.0 + sin(pulse + float(i)) * 4.0
+		var pt := Vector2(cos(ang) * rad, sin(ang) * rad * 0.5 - 20.0)
+		draw_circle(pt, 1.4, Color(0.85, 0.95, 1.0, 0.8))
