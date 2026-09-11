@@ -29,10 +29,11 @@
 # Castle TIDAK punya .name; oracle mem-pin "Castle" supaya status
 # deterministik), sisanya display_name.
 #
-# Visual gather-point + teks feedback + suara BELUM TERUJI (piksel/audio):
-# yang di-parity-kan hanya state taktik. Suara ui_click/hero_skill tetap
-# diputar produksi via AudioManager (no-op aman bila berkas tak ada).
-extends Node
+# Visual gather-point dan feedback ikut dipasang di jalur produksi Godot.
+# State tetap menjadi sumber kebenaran yang diuji parity; rasterisasi overlay
+# bukan perbandingan piksel 1:1. Suara ui_click/hero_skill diputar produksi
+# via AudioManager (no-op aman bila berkas tak ada).
+extends Node2D
 
 const HOLD_TAP_MAX_FRAMES := 20
 const HOLD_RELEASE_TAIL := 30
@@ -88,6 +89,14 @@ var hold_trace_enabled := false
 var hold_trace: Array = []
 
 
+func _ready() -> void:
+	# Python menggambar world overlay setelah entitas + FX. Node2D ini
+	# memakai z global di atas unit, tetapi tetap di bawah CanvasLayer HUD.
+	z_as_relative = false
+	z_index = 850
+	queue_redraw()
+
+
 func _physics_process(_delta: float) -> void:
 	update()
 
@@ -114,6 +123,7 @@ func reset() -> void:
 	auto_check_timer = 0
 	mouse_override = Vector2.INF
 	hold_trace.clear()
+	queue_redraw()
 
 
 func _main():
@@ -780,6 +790,71 @@ func update() -> void:
 		if auto_check_timer >= AUTO_INTERVAL:
 			auto_check_timer = 0
 			_auto_evaluate_protect()
+
+	# _draw() memegang overlay world; queue_redraw() juga membersihkan
+	# lingkaran terakhir saat timer habis atau match pindah state.
+	queue_redraw()
+
+
+## Padanan `TacticalCommandManager.draw_world(surface)` pygame.
+## Godot menggambar langsung dari Node2D sehingga overlay otomatis mengikuti
+## kamera/screen shake dunia, sementara feedback layar ditangani TacticalBar.
+func draw_world(_surface = null) -> void:
+	queue_redraw()
+
+
+## Wrapper kompatibilitas untuk call site lama yang memisahkan world/UI.
+## Tidak ada surface pygame di Godot; TacticalBar menggambar feedback UI.
+func draw_ui(_surface = null) -> void:
+	pass
+
+
+func draw(_surface = null) -> void:
+	draw_world()
+
+
+func _draw() -> void:
+	if GameManager.in_menu or not _has_gather_point() \
+			or gather_point_timer <= 0:
+		return
+	var fade := clampf(float(gather_point_timer) /
+		float(GATHER_POINT_DURATION), 0.0, 1.0)
+	# pygame memakai get_ticks()*0.008; _time tidak diperlukan karena
+	# physics frame adalah sumber jam yang sama dengan manager.
+	var pulse := (sin(float(Time.get_ticks_msec()) * 0.008) * 0.3 + 0.7) * fade
+	var col := _get_command_color()
+	for radius in [50.0, 42.0, 34.0, 26.0]:
+		var alpha := clampf((50.0 - radius) * 4.0 * pulse / 255.0,
+			0.0, 1.0)
+		if alpha > 0.0:
+			draw_arc(gather_point, radius, 0.0, TAU, 32,
+				Color(col.r, col.g, col.b, alpha), 2.0, true)
+	draw_circle(gather_point, 6.0, col)
+	draw_circle(gather_point, 2.0, Color.WHITE)
+
+	# Sama dengan tactical_commands.py: garis hanya untuk perintah yang
+	# mempunyai titik posisi; ATTACK_DAMAGE_DEALER tidak menggambar garis.
+	var draws_routes := str(active_command) == CMD_GATHER \
+		or str(active_command) == CMD_PROTECT_CASTLE \
+		or str(active_command) == CMD_ATTACK_BOSS \
+		or str(active_command) == CMD_PROTECT_TOWER
+	if not draws_routes:
+		return
+	for hero in _get_alive_blue_heroes():
+		if not is_instance_valid(hero):
+			continue
+		var start := (hero as Node2D).global_position
+		var delta := gather_point - start
+		var distance := delta.length()
+		if distance <= 80.0:
+			continue
+		for segment in range(3):
+			var t1 := float(segment) * 0.33
+			var t2 := t1 + 0.18
+			var p1 := start + delta * t1
+			var p2 := start + delta * t2
+			draw_line(p1, p2, Color(col.r, col.g, col.b,
+				clampf(120.0 * pulse / 255.0, 0.0, 1.0)), 2.0, true)
 
 
 func _auto_evaluate_protect() -> void:
