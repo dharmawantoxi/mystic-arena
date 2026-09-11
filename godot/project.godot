@@ -27,6 +27,7 @@ ItemDB="*res://scripts/core/ItemDB.gd"
 CombatSystem="*res://scripts/systems/CombatSystem.gd"
 AudioManager="*res://scripts/autoload/AudioManager.gd"
 MobileLayout="*res://scripts/autoload/MobileLayout.gd"
+AppShell="*res://scripts/autoload/AppShell.gd"
 
 [display]
 
@@ -127,7 +128,12 @@ glow/hdr_threshold=0.9
 
 [physics]
 
+; 1 langkah = 1/60 detik (paritas FIXED_DT_MS main.py:335).
 common/physics_ticks_per_second=60
+; Pembatas kejaran = MAX_CATCHUP main.py:336 (4, bukan bawaan engine 8):
+; 8 langkah memakan seluruh anggaran frame berikutnya di HP ("spiral
+; kematian"), 4 langkah masih mengejar penuh sampai 15 FPS.
+common/max_physics_steps_per_frame=4
 
 [mystic]
 

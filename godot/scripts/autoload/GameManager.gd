@@ -276,7 +276,7 @@ func _ready():
 	# Paritas GameSettings pygame (_system.py:9135/9138 + 9164/9166):
 	# game_speed & fps_limit persist di save dan berlaku sejak boot.
 	apply_game_speed(SaveManager.get_setting("game_speed", 1.0))
-	apply_fps_limit(SaveManager.get_setting("fps_limit", 60.0))
+	apply_fps_limit(SaveManager.get_setting("fps_limit", 0.0))
 
 
 ## Game Speed — paritas Game.update (_core.py:1958-1977): pygame >1.0
@@ -295,7 +295,20 @@ func apply_game_speed(speed: float) -> void:
 
 ## FPS Limit — paritas main.py:637 (clock.tick(fps_limit)); 0 = tanpa batas,
 ## persis konvensi Engine.max_fps Godot.
+##
+## DITERUSKAN ke AppShell (port baris main.py:620-641, yang menghitung batas
+## TIAP frame dari setting + preset kualitas): di perangkat sentuh setting
+## pemain hanya boleh MENURUNKAN batas, dan 0 berarti "ikut target kualitas"
+## (30 FPS di LOW, 60 selainnya) — bukan tanpa batas. Tanpa penerusan ini,
+## slider SETTINGS bisa melangkahi pembatas 30 FPS yang menahan HP kentang.
 func apply_fps_limit(fps: float) -> void:
+	var shell := get_node_or_null("/root/AppShell")
+	if shell != null and shell.has_method("apply_fps_limit"):
+		shell.apply_fps_limit(fps)
+		return
+	# AppShell belum terpasang (boot: GameManager._ready jalan lebih dulu
+	# karena urutan autoload) — pakai nilai mentah, AppShell._ready akan
+	# menimpanya beberapa milidetik kemudian.
 	Engine.max_fps = int(fps)
 
 
