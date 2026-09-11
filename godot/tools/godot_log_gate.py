@@ -54,6 +54,12 @@ ALLOWED_PATTERNS = [
     r"Condition \"!driver\" is true",
     r"No audio driver",
     r"Unable to initialize .* driver",
+    # GDExtension mystic_lighting opsional — lib .so/.dll tidak ikut repo
+    # (build lokal via SConstruct). Godot log \"Failed loading resource\" /
+    # \"Cannot open file\" untuk lib yang belum dibuild adalah wajar di CI
+    # headless; runtime fallback ke Lighting.gd + shader GPU tetap jalan.
+    r"mystic_lighting",
+    r"libmystic_lighting",
 ]
 
 
