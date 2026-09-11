@@ -298,7 +298,7 @@ func _print_boot_banner() -> void:
 	var device := OS.get_model_name()
 	if device.is_empty():
 		device = OS.get_processor_name()
-	print("=" * 60)
+	print("=".repeat(60))
 	print("  MYSTIC ARENA - GODOT BUILD")
 	print("  engine  : %s" % str(engine_info.get("string", "?")))
 	print("  device  : %s" % device)
@@ -317,7 +317,7 @@ func _print_boot_banner() -> void:
 					"physics/common/max_physics_steps_per_frame", 8))])
 	print("  audio   : bgm %s + ambient %s (batas FPS %d)"
 			% [BOOT_BGM, BOOT_AMBIENT, Engine.max_fps])
-	print("=" * 60)
+	print("=".repeat(60))
 
 
 ## Tulis log permanen ke direktori writable (paritas crash_log.txt pygame
