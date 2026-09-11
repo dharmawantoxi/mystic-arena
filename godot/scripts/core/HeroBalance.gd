@@ -359,19 +359,21 @@ static func starter_level_factor(level: int) -> float:
 
 
 ## Multiplier (hp, dmg) hero starter (hero_balance.py:226-246). Urutan
-## operasi disalin PERSIS (validasi: bit-identik dengan Pygame).
+## operasi disalin PERSIS (validasi: bit-identik dengan Pygame). Return
+## Array [hp, dmg] float64 PENUH — Vector2 single-precision dan akan
+## memangsa 1e-7 (grid catch-up vs oracle hanya lolos dengan float64).
 static func starter_catchup(hero_type: String, boss_unlocks: int,
-		level: int) -> Vector2:
+		level: int) -> Array:
 	if not ENABLE_STARTER_CATCHUP or not (hero_type in STARTER_HEROES):
-		return Vector2.ONE
+		return [1.0, 1.0]
 	var t := clampf(float(maxi(0, boss_unlocks))
 		/ float(STARTER_CATCHUP_REF), 0.0, 1.0)
 	var k := 1.0 + (STARTER_CATCHUP_MAX - 1.0) * (1.0 - t) \
 		* starter_level_factor(level)
 	if k <= STARTER_CATCHUP_EPS:
-		return Vector2.ONE
-	return Vector2(1.0 + (k - 1.0) * STARTER_HP_SHARE,
-		1.0 + (k - 1.0) * STARTER_DMG_SHARE)
+		return [1.0, 1.0]
+	return [1.0 + (k - 1.0) * STARTER_HP_SHARE,
+		1.0 + (k - 1.0) * STARTER_DMG_SHARE]
 
 
 ## (hp, damage) starter SESUDAH catch-up (hero_balance.py:249-254).
@@ -379,8 +381,8 @@ static func starter_catchup_stats(hero_type: String, stats: Dictionary,
 		boss_unlocks: int, level: int) -> Vector2i:
 	var mult := starter_catchup(hero_type, boss_unlocks, level)
 	return Vector2i(
-		maxi(1, _py_round(_fnum(stats, "hp", 1.0) * mult.x)),
-		maxi(1, _py_round(_fnum(stats, "damage", 1.0) * mult.y)))
+		maxi(1, _py_round(_fnum(stats, "hp", 1.0) * float(mult[0]))),
+		maxi(1, _py_round(_fnum(stats, "damage", 1.0) * float(mult[1]))))
 
 
 ## Jumlah hero unlock (bukan starter) yang sudah dibeli
@@ -765,7 +767,8 @@ static func resolve_catalog(catalog: Dictionary, boss_unlocks: int = 0,
 			continue
 		var yc := starter_catchup(str(ht15), boss_unlocks, level)
 		out[ht15] = {
-			"hp": _py_round_n(yc.x, 4), "dmg": _py_round_n(yc.y, 4),
+			"hp": _py_round_n(float(yc[0]), 4),
+			"dmg": _py_round_n(float(yc[1]), 4),
 			"skill": 1.0,
 			"dbg": {"starter_unlocks": boss_unlocks, "playstyle": null,
 					"dmg_type": str(HeroArchetypes.get_archetype(

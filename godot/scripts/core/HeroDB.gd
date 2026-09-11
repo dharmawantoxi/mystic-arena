@@ -148,7 +148,11 @@ const STARTER_HEROES: Array = ["kaizen", "grimjaw", "sylara", "thorne",
 ## hp/damage; nilai final datang dari catchup_base().
 static func starter_catchup_mults(hero_type: String, boss_unlocks: int,
 		level: int) -> Vector2:
-	return HeroBalance.starter_catchup(hero_type, boss_unlocks, level)
+	# Vector2 = single-precision (kuantisasi runtime seperti implementasi
+	# lama); rumus float64 penuhnya milik HeroBalance.starter_catchup.
+	var m: Array = HeroBalance.starter_catchup(hero_type, boss_unlocks,
+		level)
+	return Vector2(float(m[0]), float(m[1]))
 
 
 ## (base_hp, base_damage) final ala starter_catchup_stats pygame — inputnya

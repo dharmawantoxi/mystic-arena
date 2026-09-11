@@ -242,11 +242,11 @@ func _test_resolve_variants() -> void:
 			src2[k] = (_pris[k] as Dictionary).duplicate(true)
 	var vt2: Dictionary = HeroBalance.resolve_catalog(src2, 5, 3)
 	for ht in (_hb["catchup"] as Dictionary)["starter_heroes"]:
-		var m: Vector2 = HeroBalance.starter_catchup(ht, 5, 3)
+		var m: Array = HeroBalance.starter_catchup(ht, 5, 3)
 		var row: Dictionary = vt2[ht]
-		_near(float(row["hp"]), HeroBalance._py_round_n(m.x, 4),
+		_near(float(row["hp"]), HeroBalance._py_round_n(float(m[0]), 4),
 			"thread level %s hp" % ht, 0.0)
-		_near(float(row["dmg"]), HeroBalance._py_round_n(m.y, 4),
+		_near(float(row["dmg"]), HeroBalance._py_round_n(float(m[1]), 4),
 			"thread level %s dmg" % ht, 0.0)
 
 
@@ -370,12 +370,12 @@ func _test_catchup_grid() -> void:
 	_expect((cu["starter_heroes"] as Array) == HeroBalance.STARTER_HEROES,
 		"STARTER_HEROES == oracle")
 	for c in (cu["mult_grid"] as Array):
-		var m: Vector2 = HeroBalance.starter_catchup(str(c["hero"]),
+		var m: Array = HeroBalance.starter_catchup(str(c["hero"]),
 			int(c["unlocks"]), int(c["level"]))
-		_near(m.x, float(c["hp"]),
+		_near(float(m[0]), float(c["hp"]),
 			"catchup %s u%d lv%d hp" % [str(c["hero"]), int(c["unlocks"]),
 				int(c["level"])], 1e-12)
-		_near(m.y, float(c["dmg"]),
+		_near(float(m[1]), float(c["dmg"]),
 			"catchup %s u%d lv%d dmg" % [str(c["hero"]), int(c["unlocks"]),
 				int(c["level"])], 1e-12)
 	for c in (cu["stat_cases"] as Array):
@@ -396,8 +396,10 @@ func _test_wiring() -> void:
 	_expect(HeroDB.STARTER_HEROES == HeroBalance.STARTER_HEROES,
 		"HeroDB.STARTER_HEROES == HeroBalance")
 	var m: Vector2 = HeroDB.starter_catchup_mults("kaizen", 5, 3)
-	var e: Vector2 = HeroBalance.starter_catchup("kaizen", 5, 3)
-	_expect(m == e, "HeroDB.starter_catchup_mults mendelegasikan")
+	var e: Array = HeroBalance.starter_catchup("kaizen", 5, 3)
+	# Delegasi + kuantisasi Vector2 single-precision (<= 6e-8).
+	_near(m.x, float(e[0]), "HeroDB.starter_catchup_mults hp", 1e-6)
+	_near(m.y, float(e[1]), "HeroDB.starter_catchup_mults dmg", 1e-6)
 	var cb: Vector2i = HeroDB.catchup_base("kaizen", 5, 3)
 	var ce: Vector2i = HeroBalance.starter_catchup_stats("kaizen",
 		HeroDB.get_hero("kaizen"), 5, 3)
