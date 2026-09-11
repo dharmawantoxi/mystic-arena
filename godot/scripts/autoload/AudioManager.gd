@@ -100,6 +100,15 @@ var sfx_volume: float = 0.6
 var voice_volume: float = 0.5
 var bgm_volume: float = 0.35
 
+## Status pause yang DIMINTA — paritas `mixer.pause()/unpause()` main.py.
+## Disimpan terpisah dari `stream_paused` engine karena AudioStreamPlayer
+## MENGABAIKAN `stream_paused` saat tidak ada playback aktif (mis. aset .wav
+## belum disalin converter, atau BGM belum pernah diputar): nilainya tidak
+## bisa dibaca balik dan pause jadi hilang begitu musik akhirnya mulai.
+## Flag ini selalu benar, dan diterapkan ulang tiap kali player di-play.
+var bgm_paused: bool = false
+var ambient_paused: bool = false
+
 var _bgm_player: AudioStreamPlayer = null
 ## Player ambient TERPISAH dari BGM — paritas pygame yang memakai
 ## ambient_channel sendiri (_system.py:504/701) supaya musik dan suara
@@ -228,6 +237,9 @@ func play_bgm(track_name: String, fade_sec: float = 1.5) -> void:
 	# pygame play_bgm: set_volume(master_volume * bgm_volume) — _system.py:632
 	_bgm_player.volume_db = _db(master_volume * bgm_volume)
 	_bgm_player.play()
+	# Terapkan status pause yang tertunda (mis. app ke latar sebelum track
+	# ini sempat diputar).
+	_bgm_player.stream_paused = bgm_paused
 	if fade_sec > 0.0:
 		# fade-in sederhana (pygame pakai fade_ms; di Godot tween volume)
 		var from_db := _bgm_player.volume_db
@@ -255,7 +267,11 @@ func pause_bgm(paused: bool) -> void:
 	# StreamPaused saat tree pause supaya musik tidak berhenti total lalu
 	# menyala ulang aneh — menu PAUSE tetap ingin musik pelan (pygame juga
 	# hanya mem-pause BGM saat menu pause, bukan mematikannya).
-	_bgm_player.stream_paused = paused
+	bgm_paused = paused
+	if _bgm_player.playing:
+		# Tanpa penjaga ini, `stream_paused` hilang (engine mengabaikannya
+		# saat tidak ada playback) dan musik menyala lagi begitu diputar.
+		_bgm_player.stream_paused = paused
 
 
 # ══════════════════════════════════════════════════════════
@@ -293,6 +309,7 @@ func play_ambient(track_name: String = AMBIENT_TRACK, volume_mult: float = AMBIE
 	# fade-in 2 detik (pygame fade_ms=2000): mulai pelan lalu naik.
 	_ambient_player.volume_db = target - 18.0
 	_ambient_player.play()
+	_ambient_player.stream_paused = ambient_paused
 	_ambient_tween = create_tween()
 	_ambient_tween.tween_property(_ambient_player, "volume_db", target, AMBIENT_FADE_IN)
 
@@ -302,6 +319,8 @@ func play_ambient(track_name: String = AMBIENT_TRACK, volume_mult: float = AMBIE
 func _on_ambient_finished() -> void:
 	if _ambient_player.stream != null:
 		_ambient_player.play()
+		# play() membuat playback baru: status pause harus diterapkan ulang.
+		_ambient_player.stream_paused = ambient_paused
 
 
 ## Paritas stop_ambient(fade_ms=1500) — dipanggil GameManager.end_match()
@@ -330,7 +349,9 @@ func _kill_ambient_tween() -> void:
 
 ## Ambient ikut senyap saat menu PAUSE (sama seperti pause_bgm).
 func pause_ambient(paused: bool) -> void:
-	_ambient_player.stream_paused = paused
+	ambient_paused = paused
+	if _ambient_player.playing:
+		_ambient_player.stream_paused = paused
 
 
 # ══════════════════════════════════════════════════════════

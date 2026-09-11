@@ -270,26 +270,34 @@ func _test_lifecycle() -> void:
 	AudioManager.pause_bgm(false)
 	AudioManager.pause_ambient(false)
 
+	# Status dibaca dari flag `bgm_paused`/`ambient_paused`, bukan
+	# `stream_paused` engine: AudioStreamPlayer mengabaikan properti itu saat
+	# tidak ada playback aktif (di CI aset .wav belum disalin converter),
+	# jadi `stream_paused` tak bisa dibaca balik. Kalau player memang
+	# berbunyi, keduanya harus sama.
 	AppShell._notification(NOTIFICATION_APPLICATION_PAUSED)
-	_expect(AudioManager._bgm_player.stream_paused,
+	_expect(AudioManager.bgm_paused,
 			"app ke latar -> BGM dibekukan (mixer.pause main.py:142)")
-	_expect(AudioManager._ambient_player.stream_paused,
+	_expect(AudioManager.ambient_paused,
 			"app ke latar -> ambient dibekukan (main.py:143)")
+	if AudioManager._bgm_player.playing:
+		_expect(AudioManager._bgm_player.stream_paused,
+				"BGM yang sedang berbunyi ikut di-stream_paused")
 	# PAUSED kedua tanpa RESUMED tidak boleh menggandakan apa pun.
 	AppShell._notification(NOTIFICATION_APPLICATION_PAUSED)
-	_expect(AudioManager._bgm_player.stream_paused,
+	_expect(AudioManager.bgm_paused,
 			"PAUSED ganda tetap membekukan (idempoten)")
 
 	AppShell._notification(NOTIFICATION_APPLICATION_RESUMED)
-	_expect(not AudioManager._bgm_player.stream_paused,
+	_expect(not AudioManager.bgm_paused,
 			"app kembali -> BGM dilanjutkan (main.py:157)")
-	_expect(not AudioManager._ambient_player.stream_paused,
+	_expect(not AudioManager.ambient_paused,
 			"app kembali -> ambient dilanjutkan")
 
 	# RESUMED tanpa PAUSED = no-op (jangan hidupkan audio yang tak dibekukan).
 	AudioManager.pause_bgm(true)
 	AppShell._notification(NOTIFICATION_APPLICATION_RESUMED)
-	_expect(AudioManager._bgm_player.stream_paused,
+	_expect(AudioManager.bgm_paused,
 			"RESUMED tanpa PAUSED tidak menyentuh audio")
 	AudioManager.pause_bgm(false)
 
@@ -300,7 +308,7 @@ func _test_lifecycle() -> void:
 	AudioManager.pause_bgm(true)
 	AudioManager.pause_ambient(true)
 	AppShell._notification(NOTIFICATION_APPLICATION_RESUMED)
-	_expect(AudioManager._bgm_player.stream_paused,
+	_expect(AudioManager.bgm_paused,
 			"menu PAUSE aktif: app kembali tidak menghidupkan BGM")
 	get_tree().paused = false
 	GameManager.set_paused(false)
