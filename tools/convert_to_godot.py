@@ -14,6 +14,7 @@ Output:
     godot/data/boss_stats_full.json  (stat mentah boss_data utk kit smart-AI)
     godot/data/levels.json
     godot/data/hero_archetypes.json
+    godot/data/boss_resistances.json
     godot/data/items.json
     godot/data/items_meta.json        (slot, harga flat, urutan toko)
     godot/data/towers.json            (ARCHER/CANNON/ICE/MAGE_LEVELS + konstanta)
@@ -67,6 +68,12 @@ def export_heroes():
                 "is_boss_hero": v.get("is_boss_hero", False),
                 "dmg_type": v.get("dmg_type", "PHYSICAL"),
                 "description": v.get("description", ""),
+                # Override eksplisit sekolah damage di hero_unlock (kunci
+                # "dmg_type" pygame). Hanya ditulis kalau desainer memang
+                # mengisinya — HeroDB.get_balanced_stats meneruskannya ke
+                # HeroArchetypes.get_archetype(hero_type, stats) persis
+                # seperti _entity.Hero.__init__ (override menang atas tabel).
+                **({"dmg_type_override": v["dmg_type"]} if v.get("dmg_type") else {}),
                 # ── Skill Q/W/E/R (dibaca SkillBook.gd) ──
                 # pygame: HERO_TYPES[*]["skill_*"] + hero_skills/_bundle.py
                 "skill_name": v.get("skill_name", ""),
@@ -244,10 +251,18 @@ def export_levels():
         write_json("levels.json", levels)
 
 def export_archetypes():
+    """hero_archetypes.py -> dua JSON yang dibaca HeroArchetypes.gd.
+
+    Blok DATA auto-generated (ARCHETYPES, BOSS_RESISTANCES) diekspor apa
+    adanya; konstanta desain + helper (get_archetype, get_boss_resistances,
+    physical_mitigation, ...) diport ke godot/scripts/core/HeroArchetypes.gd.
+    """
     try:
         import hero_archetypes
         arch = getattr(hero_archetypes, "ARCHETYPES", {})
         write_json("hero_archetypes.json", arch)
+        res = getattr(hero_archetypes, "BOSS_RESISTANCES", {})
+        write_json("boss_resistances.json", res)
     except Exception as e:
         print(f"[convert] archetypes failed: {e}", file=sys.stderr)
 

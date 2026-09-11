@@ -244,7 +244,7 @@ ini salah satu celah visual yang belum ditutup.
 - `godot/scenes/ui/MainMenu.gd` — layar menu + level select + hero shop; satu file, tanpa .tscn
 - `godot/scripts/autoload/GameManager.gd` — ekonomi, state menang/kalah, seleksi, gold AI, meta reward (`_grant_meta_reward`), `next_level()`/`is_replay`, enemy scaling
 - `godot/assets/shaders/outline.gdshader` — tweak outline_width/color
-- `hero_archetypes.json` → `godot/data/hero_archetypes.json` via convert script
+- `hero_archetypes.py` → `godot/scripts/core/HeroArchetypes.gd` (helper + konstanta desain) + `godot/data/hero_archetypes.json` & `godot/data/boss_resistances.json` (tabel auto-generated, via convert script). Paritas dikunci `godot/tests/HeroArchetypesParityTest.tscn` dengan fixture dari `tools/gen_hero_archetypes_fixture.py`
 
 ### Verifikasi tanpa binary Godot
 

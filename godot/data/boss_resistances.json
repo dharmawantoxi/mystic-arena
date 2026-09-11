@@ -1,0 +1,1298 @@
+{
+  "abaddon": {
+    "armor": 32,
+    "magic_resist": 0.095,
+    "profile": "armored",
+    "boss_class": "true"
+  },
+  "aelyrion": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "aeralith": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "akahime": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "akaroth": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "akashari": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "akirakumo": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "akiraze": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "alchemist": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "ancient_apparition": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "astraelion": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "aurelian": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "aurelion": {
+    "armor": 23,
+    "magic_resist": 0.203,
+    "profile": "brute",
+    "boss_class": "true"
+  },
+  "aurelix": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "aurelyssa": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "aurethzar": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "aurex": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "auroth": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "azkharion": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "azureth": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "bhorgathul": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "broggmar": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "brumhar": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "celwynn": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "cogsworth": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "cryssalia": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "deidara": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "dorakai": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "drakar": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "drav": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "emberwick": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "garumenshi": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "ghrakmaal": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "gorath": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "gornak": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "gravefang": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "gravewake": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "grimjack": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "grimkor": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "grimstalker": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "grondarthul": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "grondmauris": {
+    "armor": 23,
+    "magic_resist": 0.203,
+    "profile": "brute",
+    "boss_class": "true"
+  },
+  "hitokage": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "hollowbane": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "ignakhor": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "ignirus": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "ignis_drachorn": {
+    "armor": 23,
+    "magic_resist": 0.203,
+    "profile": "brute",
+    "boss_class": "true"
+  },
+  "infrakzaar": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "kaedrin": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "kaeldris": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "kaelthar": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "kaelthorn": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "kaelthys": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "kaelvyrn": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "kaerinya": {
+    "armor": 23,
+    "magic_resist": 0.203,
+    "profile": "brute",
+    "boss_class": "true"
+  },
+  "kaerissa": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "kaervosth": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "kagetsuka": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "kaineroth": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "kairenji": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "kaithros": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "kaizoku_raijin": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "kaoruken": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "karzhul": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "kassadin": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "kazreth": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "kazuren": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "kazureth": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "kenshiro": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "khalros": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "khalzaredh": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "khazan": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "korokai": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "krobellus": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "krognarr": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "kryvoxar": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "kunkka": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "kurogari": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "kyrenzai": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "kyumirra": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "leoric": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "luminar": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "lyrenya": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "lyrienne": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "lyssarethys": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "malzareth": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "malzeroth": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "molgravar": {
+    "armor": 32,
+    "magic_resist": 0.095,
+    "profile": "armored",
+    "boss_class": "true"
+  },
+  "morgath": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "morkhaera": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "morkhelvis": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "morthraxis": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "morthyrax": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "morvaenthir": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "morvaeth": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "morvaeth2": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "morvakhul": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "morvath": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "morvein": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "morvekhar": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "morvyssk": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "naraka": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "nazulmor": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "nexthyrius": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "nixweaver": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "nyrellieth": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "nyrethzalv": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "nyxallaria": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "nyxara": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "nyxarath": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "nyxareth": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "nyxareva": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "nyxariel": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "nyxaris": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "nyxaroth": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "nyxharr": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "nyxraal": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "nyxthrael": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "nyzrak": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "obanai": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "okeanora": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "pyraena": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "pyraethis": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "pyraklos": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "pyrenth": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "pyrhaan": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "rakzhan": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "ravokkar": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "raz": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "razak": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "rynvara": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "sanguire": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "sanguiveth": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "sasori": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "seiryukong": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "selunara": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "seraphienne": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "sethrakhar": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "shimorakh": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "shirotaka": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "sirakzan": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "solara": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "solareth": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "solvanth": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "solvarin": {
+    "armor": 32,
+    "magic_resist": 0.095,
+    "profile": "armored",
+    "boss_class": "true"
+  },
+  "sunakage": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "sylvantheros": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "syrentha": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "syrindra": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "thalakryon": {
+    "armor": 19,
+    "magic_resist": 0.167,
+    "profile": "balanced",
+    "boss_class": "true"
+  },
+  "thalgryn": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "thalryndel": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "thargoroth": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "thoraz": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "thorgaruk": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "thornvaegrim": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "thorvak": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "thorvin": {
+    "armor": 26,
+    "magic_resist": 0.007,
+    "profile": "armored",
+    "boss_class": "mini"
+  },
+  "tsukiyora": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "urgharun": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "ursath": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "vaelindra": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "vaelkorr": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "vaelmyrra": {
+    "armor": 23,
+    "magic_resist": 0.203,
+    "profile": "brute",
+    "boss_class": "true"
+  },
+  "vaerith": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "valekris": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "valthar": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "vardrok": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "vargrath": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "vargroth": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "varkul": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "varkuthar": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "velmyrth": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "verdanix": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "veshtrax": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "vessyra": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "vhaerinth": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "vhaerith": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "vhalzun": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "vhorethzir": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "vhyssarion": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "vokrahn": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "vorenmarr": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "vorgath": {
+    "armor": 17,
+    "magic_resist": 0.115,
+    "profile": "brute",
+    "boss_class": "mini"
+  },
+  "vorthakul": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "vraskhan": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "vulkareth": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "vyraeth": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "wiro": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "xaelmoran": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "xaerissa": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "xareth": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "xarnathul": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "xarnthuul": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "xelnarath": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "xerakhotep": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "xerakkuth": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "xerathis": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "xharokh": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "xirthalis": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "xyrael": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "yamako": {
+    "armor": 23,
+    "magic_resist": 0.203,
+    "profile": "brute",
+    "boss_class": "true"
+  },
+  "yhoranth": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "yomigetsu": {
+    "armor": 17,
+    "magic_resist": 0.131,
+    "profile": "soft",
+    "boss_class": "true"
+  },
+  "zahkareth": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "zarethyr": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "zhaeris": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "zharakzuul": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  },
+  "zharok": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "zhyrakaan": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "zhyvrek": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "zorashi": {
+    "armor": 10,
+    "magic_resist": 0.043,
+    "profile": "soft",
+    "boss_class": "mini"
+  },
+  "zorathiel": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "zorothrax": {
+    "armor": 8,
+    "magic_resist": 0.187,
+    "profile": "magic",
+    "boss_class": "mini"
+  },
+  "zulkhaven": {
+    "armor": 13,
+    "magic_resist": 0.079,
+    "profile": "balanced",
+    "boss_class": "mini"
+  },
+  "zyvareth": {
+    "armor": 14,
+    "magic_resist": 0.275,
+    "profile": "magic",
+    "boss_class": "true"
+  }
+}

@@ -30,6 +30,8 @@ on:
       - '_render.py'
       - 'hero_items.py'
       - 'hero_balance.py'
+      - 'hero_archetypes.py'
+      - 'tools/gen_hero_archetypes_fixture.py'
       - '_system.py'
       - 'tools/test_damage_school.py'
       - 'levels/**'
@@ -55,6 +57,8 @@ on:
       - '_render.py'
       - 'hero_items.py'
       - 'hero_balance.py'
+      - 'hero_archetypes.py'
+      - 'tools/gen_hero_archetypes_fixture.py'
       - '_system.py'
       - 'tools/test_damage_school.py'
       - 'levels/**'
@@ -121,6 +125,11 @@ jobs:
           # param/var lokal/bridge Hero.gd) — tangkap 'Identifier not
           # declared' sebelum engine.
           python3 tools/check_bosskit_scope.py godot/scenes/hero/HeroSkillKit.gd
+          # Fixture oracle hero_archetypes.py untuk HeroArchetypesParityTest —
+          # gagal di sini berarti tabel/helper pygame berubah tanpa regenerasi
+          # (python3 tools/gen_hero_archetypes_fixture.py; convert_to_godot.py
+          # untuk data JSON-nya).
+          python3 tools/gen_hero_archetypes_fixture.py --check
 
       # ── 2. Godot binary (di-cache) ──
       - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
@@ -336,6 +345,24 @@ jobs:
             cat /tmp/entitypy.gate
             echo "::error::ENTITYPY-FAIL-TAIL: $(tail -40 /tmp/entitypy.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::ENTITYPY-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/entitypy.log | tr '\n' ' | ' | cut -c1-2500)"
+            exit 1
+          fi
+
+      # ── 4e3. HeroArchetypesParityTest: port hero_archetypes.py
+      # (get_archetype/school_of override dmg_type, get_boss_resistances
+      # 216 boss x kelas, resist_from_profile, physical_mitigation) +
+      # integrasi HeroDB.dmg_school & BossDB armor/MR.
+      - name: HeroArchetypesParityTest (port hero_archetypes.py)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/HeroArchetypesParityTest.tscn --quit-after 60 2>&1 | tee /tmp/archetypes.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/archetypes.log --label "HeroArchetypesParityTest" \
+              --require "[HeroArchetypesParityTest] PASS" > /tmp/archetypes.gate 2>&1; then
+            cat /tmp/archetypes.gate
+          else
+            cat /tmp/archetypes.gate
+            echo "::error::ARCHETYPES-FAIL-TAIL: $(tail -40 /tmp/archetypes.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::ARCHETYPES-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/archetypes.log | tr '\n' ' | ' | cut -c1-2500)"
             exit 1
           fi
 

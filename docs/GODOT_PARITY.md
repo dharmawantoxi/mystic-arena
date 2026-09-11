@@ -8,6 +8,28 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Port `hero_archetypes.py` — 11 September 2026 (FASE 27)
+
+Sebelumnya Godot hanya membaca `hero_archetypes.json` mentah di `HeroDB` dan
+mengandalkan `bosses.json` untuk armor/MR boss; helper pygame-nya
+(`get_archetype` dengan override `dmg_type`, `school_of`,
+`get_boss_resistances`, `_resist_from_profile`, `physical_mitigation`) tidak
+punya padanan, dan kartu hero `MainMenu._school_info` memakai `role` katalog
+(bukan `playstyle` arketipe) untuk penanda TNK.
+
+| Bagian | Status | Bukti |
+| --- | --- | --- |
+| Helper & konstanta desain | `godot/scripts/core/HeroArchetypes.gd` (RefCounted statis, data JSON lazy) — `DEFAULT_DMG_TYPE`, `ARMOR_FACTOR/ARMOR_MAX/MR_MAX`, `BOSS_RESIST_BASE`, `BOSS_RESIST_PROFILE_MODS`, `BOSS_RESIST_SCALE`, `BOSS_RESIST_TARGET_RATIO`, `get_archetype`, `school_of`, `resist_from_profile` (pembulatan half-even ala Python), `physical_mitigation`, `get_boss_resistances`, `get_boss_profile` | `HeroArchetypesParityTest`: 222 hero × 7 kasus stats (override valid/invalid/falsy, hero tak dikenal → `derived`), 216 boss × {mini,true} + boss tak dikenal, semua profil × kelas, mitigasi |
+| Tabel data | `hero_archetypes.json` (sudah ada) + **baru** `boss_resistances.json` (`BOSS_RESISTANCES` pygame) — keduanya dari `tools/convert_to_godot.py export_archetypes` | jumlah entri dicek terhadap fixture oracle |
+| `HeroDB.get_balanced_stats` | `dmg_type/dmg_school/playstyle/tier/power` lewat `HeroArchetypes.get_archetype(hero_type, stats)`; override eksplisit hanya via `dmg_type_override` (kunci `dmg_type` di `hero_unlock` pygame, diekspor converter hanya jika diisi) — heroes.json yang selalu `PHYSICAL` tidak lagi dibaca sebagai override | integrasi di harness: `dmg_school` semua hero = `school_of` |
+| `Boss.gd` armor/MR | fallback ke `get_boss_resistances(boss_type, boss_class)` + clamp 0..40 / 0..0.45 + `resist_profile` (paritas `base_boss.py:447-464`) — bukan default 0 kalau `bosses.json` belum di-convert ulang | integrasi: `BossDB` armor/MR == helper untuk 216 boss |
+| Kartu hero & toko | `MainMenu._school_info(d, hero_type)` memakai `playstyle` arketipe untuk TNK dan sekolah dari `get_archetype` (paritas `_core.py:5149-5153`); `ShopPanel` label sekolah dari arketipe | — |
+
+Regenerasi: `python3 tools/analyze_hero_archetypes.py ...` → `python3
+tools/convert_to_godot.py` → `python3 tools/gen_hero_archetypes_fixture.py`.
+CI (`godot-check.yml`) menolak fixture usang (`--check`) dan menjalankan
+harness-nya headless.
+
 ## Blok FX `_render.py` (percikan, ledakan, panah lane) — 11 September 2026 (FASE 26)
 
 `_render.py` adalah modul gabungan 7 berkas lama (docstring `:1-11`); audit

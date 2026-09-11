@@ -1477,7 +1477,7 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	chips.add_theme_constant_override("separation", 8)
 	chips.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info.add_child(chips)
-	var sch := _school_info(d)
+	var sch := _school_info(d, hero_type)
 	var school_chip: Control = null
 	var school_w := 0.0
 	if str(sch[0]) != "":
@@ -1599,9 +1599,17 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 
 
 ## [label, warna, ikon] sekolah damage kartu (PHY/MAG + TNK).
-func _school_info(d: Dictionary) -> Array:
-	var sch := str(d.get("dmg_type", "PHYSICAL")).to_upper()
-	var is_tank := str(d.get("role", "")).to_upper() == "TANK"
+func _school_info(d: Dictionary, hero_type: String = "") -> Array:
+	# Paritas _core.py:5149-5153: sekolah + penanda TANK dari
+	# hero_archetypes.get_archetype(hero_type, stats) — PLAYSTYLE arketipe,
+	# bukan role katalog (heroes.json selalu dmg_type PHYSICAL).
+	var q: Dictionary = {}
+	if d.has("dmg_type_override"):
+		q["dmg_type"] = d["dmg_type_override"]
+	var arch: Dictionary = HeroArchetypes.get_archetype(hero_type, q) if hero_type != "" \
+		else {"dmg_type": d.get("dmg_type", "PHYSICAL"), "playstyle": d.get("playstyle", "")}
+	var sch := str(arch.get("dmg_type", "PHYSICAL")).to_upper()
+	var is_tank := str(arch.get("playstyle", "")).to_upper() == "TANK"
 	var col := Color(130.0 / 255.0, 226.0 / 255.0, 168.0 / 255.0) \
 		if is_tank \
 		else (Color(1.0, 178.0 / 255.0, 92.0 / 255.0)

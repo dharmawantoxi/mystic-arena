@@ -654,7 +654,7 @@ func _build_hero_tab() -> void:
 				str(d.get("name", htype)), str(d.get("role", "-")), cost],
 			"%s\nHP %d · DMG %d · RANGE %d · %s" % [str(d.get("description", "")),
 				int(d.get("hp", 0)), int(d.get("damage", 0)), int(d.get("range", 0)),
-				str(d.get("dmg_type", "PHYSICAL"))],
+				HeroArchetypes.get_archetype(htype)["dmg_type"]],
 			_buy_hero.bind(htype), can, "buy_hero_" + htype,
 			{"cost": cost, "blocked": blocked}, "gold")
 		if blocked == "OWNED":

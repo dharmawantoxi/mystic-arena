@@ -82,12 +82,10 @@ func load_heroes():
 	print("[HeroDB] Loaded %d heroes" % heroes.size())
 
 func load_archetypes():
-	var path = "res://data/hero_archetypes.json"
-	if FileAccess.file_exists(path):
-		var f = FileAccess.open(path, FileAccess.READ)
-		var parsed = JSON.parse_string(f.get_as_text())
-		archetypes = parsed if parsed is Dictionary else {}
-		print("[HeroDB] Loaded %d archetypes" % archetypes.size())
+	# Sumber tunggal: HeroArchetypes (port hero_archetypes.py). `archetypes`
+	# dipertahankan sebagai alias tabel untuk pemanggil lama.
+	archetypes = HeroArchetypes.archetypes()
+	print("[HeroDB] Loaded %d archetypes" % archetypes.size())
 
 func get_hero(hero_type: String) -> Dictionary:
 	return heroes.get(hero_type, {})
@@ -193,13 +191,22 @@ func get_balanced_stats(hero_type: String) -> Dictionary:
 	else:
 		s["range"] = clampf(float(s["range"]), 120.0, 220.0)
 	# Archetype dmg_type -> dmg_school (dipakai CombatSystem/DamageSchool dan
-	# ItemInventory.is_magic untuk item magic_only). heroes.json sendiri selalu
-	# "PHYSICAL"; sekolah sihir yang benar ada di hero_archetypes.json (120 MAGIC).
-	if hero_type in archetypes:
-		s["dmg_type"] = archetypes[hero_type].get("dmg_type", s.get("dmg_type","PHYSICAL"))
+	# ItemInventory.is_magic untuk item magic_only). Paritas _entity.py:3333
+	# `hero_archetypes.get_archetype(hero_type, stats)`: heroes.json selalu
+	# "PHYSICAL" (export _core tidak punya override), jadi tabel arketipe
+	# (120 MAGIC) yang menang. Override eksplisit hanya lewat `dmg_type_override`
+	# (setara kunci "dmg_type" di boss_data['hero_unlock'] pygame).
+	var q: Dictionary = {}
+	if s.has("dmg_type_override"):
+		q["dmg_type"] = s["dmg_type_override"]
+	var arch := HeroArchetypes.get_archetype(hero_type, q)
+	s["dmg_type"] = str(arch.get("dmg_type", "PHYSICAL"))
+	s["playstyle"] = str(arch.get("playstyle", "FIGHTER"))
+	s["tier"] = str(arch.get("tier", ""))
+	s["power"] = int(arch.get("power", 0))
 	# Selalu isi dmg_school walau hero tidak ada di archetype (jangan biarkan
 	# pemanggil bergantung pada kunci yang bisa hilang).
-	s["dmg_school"] = str(s.get("dmg_type", "PHYSICAL")).to_lower()
+	s["dmg_school"] = HeroArchetypes.school_of(hero_type, q)
 	return s
 
 func get_hero_color(hero_type: String) -> Color:

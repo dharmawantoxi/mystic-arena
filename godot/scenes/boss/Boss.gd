@@ -59,6 +59,7 @@ var _pulse: float = 0.0
 var status = null
 var armor: float = 0.0
 var magic_resist: float = 0.0
+var resist_profile: String = "balanced"  # tema mitigasi (base_boss.py:458)
 var combat_timer: float = 0.0
 var combat_reset: float = 5.0
 
@@ -150,8 +151,15 @@ func _ready():
 		attack_range = float(s.get("range", 50))
 		attack_cooldown = float(s.get("attack_cooldown", 43)) / 60.0
 		dmg_school = "physical" # serangan dasar boss SELALU fisik (base_boss.py:707)
-		armor = float(s.get("armor", 0))
-		magic_resist = float(s.get("magic_resist", 0.0))
+		# Paritas Boss.__init__ base_boss.py:447-457: override boss_data
+		# menang; kalau bosses.json tidak punya kunci itu (boss baru sebelum
+		# convert ulang) hitung dari profil tema lewat HeroArchetypes,
+		# lalu clamp armor 0..40 / MR 0..0.45.
+		var res := HeroArchetypes.get_boss_resistances(boss_type,
+			str(s.get("boss_class", "mini")))
+		armor = clampf(float(int(s.get("armor", res[0]))), 0.0, float(HeroArchetypes.ARMOR_MAX))
+		magic_resist = clampf(float(s.get("magic_resist", res[1])), 0.0, HeroArchetypes.MR_MAX)
+		resist_profile = str(s.get("resist_profile", HeroArchetypes.get_boss_profile(boss_type)))
 	# Paritas Boss.__init__ base_boss.py:389: base_damage = damage mentah
 	# (sebelum enrage/buff kit; hanya apply_scaling yang memperbaruinya).
 	base_damage = damage
