@@ -67,9 +67,28 @@ statis konstanta + ekspresi `.gd`) lulus lokal; `gdparse` seluruh `.gd` +
 (73 frame percikan, 32 frame/792 op ledakan, 4 skenario `add_hit_particles` +
 batas 500/80, 130 frame + 490 polygon panah lane, wiring `GameManager.spark_fx`)
 dijalankan CI `godot-check.yml` langkah **4v** — **binary Godot tidak tersedia
-di sandbox**, jadi replay headless-nya diverifikasi di sana. Aritmetika port
-dihitung silang terhadap jejak pygame di fixture (73 + 32 + 16 frame, 0 selisih)
-sebelum CI dijalankan. Yang TETAP TERBUKA di jalur ini: **piksel** (raster
+di sandbox**, jadi replay headless-nya hanya bisa dibuktikan di sana, dan memang
+baru di sanalah tiga bug ketangkap (run `34559683506` → `34560081693` →
+`34560657146`, langkah 4v akhirnya **success**):
+
+1. `PathPreview.gd` memakai `sqrtf()` — **tidak ada di Godot 4** (hanya
+   `sqrt()`), dan karena RHS jadi tanpa tipe, `var dist := ...` ikut
+   "Cannot infer the type". `gdparse` tidak menangkapnya (itu pemeriksaan
+   semantik, bukan sintaks) dan efeknya berantai: `Main.gd` gagal load karena
+   me-`preload` PathPreview. Sekarang `check_refs.py` punya aturan 7 yang
+   memflag `sqrtf/hypotf/expf/logf/sinf/cosf/tanf/atanf/atan2f/acosf/asinf`.
+2. Fixture `burst[*].particles` kosong — oracle memfoto baris partikel SETELAH
+   loop 40 frame, padahal pygame membuang partikel mati di
+   `DeathExplosion.update`. Godot benar (8/15/15/25); fixture yang bilang 0,
+   dan 63 × 5 assertion per-partikel membandingkan array kosong.
+3. Assertion "alpha penuh 200 di tengah durasi" membaca `ops[0]`, padahal panah
+   non-pulse memang digambar redup (`200 // 2 = 100`) dan panah pertama sebuah
+   frame bisa yang redup — perilaku pygame yang benar (alpha unik di step 60:
+   `{100, 200}`). Dikunci lewat alpha terbesar + terkecil.
+
+Aritmetika port juga dihitung silang terhadap jejak pygame di fixture
+(73 + 32 + 16 frame, 0 selisih; 63 partikel burst, 0 selisih, 315 roll terpakai
+semua) sebelum CI dijalankan. Yang TETAP TERBUKA di jalur ini: **piksel** (raster
 lingkaran/segitiga), `_fx_chain`, dan label prompt/skip yang belum ikut mode
 input (`_begin_prompt_text`/`_skip_button_label`).
 

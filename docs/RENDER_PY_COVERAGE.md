@@ -170,3 +170,8 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_render_parity.py 
 export XDG_DATA_HOME="$(mktemp -d)"
 godot --headless --path godot res://tests/RenderFxParityTest.tscn --quit-after 300
 ```
+
+Sandbox tempat port ini dikerjakan tidak punya binary Godot, jadi replay di atas
+hanya terbukti di CI: langkah 4v run `34560657146` **success** setelah dua run
+sebelumnya menangkap `sqrtf()` (tidak ada di Godot 4) dan dua bug harness —
+lihat `GODOT_PARITY.md` FASE 26 bagian Validasi.
