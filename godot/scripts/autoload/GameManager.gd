@@ -70,6 +70,7 @@ signal boss_reward_effects_tick
 const FPS := 60.0
 const ComboCounterScript = preload("res://scripts/utils/ComboCounter.gd")
 const FloatingTextQueueScript = preload("res://scripts/utils/FloatingTextQueue.gd")
+const SparkFieldScript = preload("res://scripts/render/SparkField.gd")
 
 # ═══ FALLBACK MINION_TYPES — port persis dari _core.py (dipakai kalau
 # data/economy.json belum di-generate; warna = GRASS/GOBLIN_COLOR dkk) ═══
@@ -156,6 +157,10 @@ var trueboss_kill_count: int = 0
 ## Set ID achievement in-match (Dictionary sebagai set GDScript).
 var achievements_unlocked: Dictionary = {}
 var world_popups = FloatingTextQueueScript.new()
+## Percikan pukulan + ledakan kematian (port `EffectManager.particles` /
+## `explosions` `_render.py:615-616`). Digambar `scenes/fx/SparkLayer.gd`;
+## di-tick `_process` di bawah (`spark_fx.advance`) persis seperti popup.
+var spark_fx = SparkFieldScript.new()
 ## Tipe hero yang BARU di-unlock gratis dari match ini (paritas
 ## heroes_unlocked_this_match _core.py:2347 — ditulis _auto_unlock..., DIBACA
 ## HUD untuk baris "NEW HERO" panel game-over).
@@ -451,6 +456,10 @@ func _process(delta):
 	_update_hero_respawns(delta)
 	_tick_combo(delta)
 	world_popups.advance(delta)
+	# Percikan/ledakan ikut kadens frame pygame (EffectManager.update dipanggil
+	# sekali per Game.update). Path preview di-tick node-nya sendiri karena
+	# state-nya milik scene (jalur lane dibaca dari ArenaMap).
+	spark_fx.advance(delta)
 	# Aura item (Steel Aegis / Everfrost / Solar Brand / Searbrand)
 	_aura_timer += delta
 	if _aura_timer >= 0.25:
@@ -488,6 +497,7 @@ func start_level(lv: int, replay: bool = false):
 	trueboss_kill_count = 0
 	achievements_unlocked.clear()
 	world_popups.reset()
+	spark_fx.reset()
 	_load_gameplay_settings()
 	var popup_settings: Dictionary = SaveManager.data.get("settings", {})
 	var quality := str(popup_settings.get("quality", "medium"))
@@ -596,6 +606,7 @@ func return_to_menu() -> void:
 	purchased_heroes = []
 	unlocked_bosses = []
 	world_popups.reset()
+	spark_fx.reset()
 	AudioManager.stop_bgm()
 	# Ambient ikut mati di menu — pygame memulainya sekali di main() dan
 	# hanya hidup selama sesi match; di sini pasangan stop-nya eksplisit.
@@ -1190,6 +1201,7 @@ func register_boss_death(boss) -> void:
 	# satu tick efek frame kematian, seperti ekor Game.update pygame.
 	_tick_combo(1.0 / FPS)
 	world_popups.tick()
+	spark_fx.tick()
 	boss_reward_effects_tick.emit()
 
 

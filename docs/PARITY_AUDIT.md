@@ -204,11 +204,19 @@ Perlu dicatat supaya tidak dicari lagi:
 3. **Bar HP minion tidak ikut bake** — sengaja, karena pygame menggambarnya
    *live* di luar cache sprite. Godot menggambar bar HP-nya sendiri.
 
-4. **`PathPreview` belum ada di Godot** — pygame menggambar panah merah
-   beranimasi di sepanjang jalur lane selama 2 detik (120 frame) setiap wave
-   dimulai (`_render.py:1275-1367`, dipicu `_core.py:1762`, digambar
-   `_render.py:789`). Di Godot tidak ada satu pun berkas `PathPreview`.
-   Ini fitur yang benar-benar hilang dari layar.
+4. **`PathPreview` belum ada di Godot — SUDAH DITUTUP (FASE 26, 11 September
+   2026).** Pygame menggambar panah merah beranimasi di sepanjang jalur lane
+   selama 2 detik (120 frame) setiap wave dimulai (`_render.py:1275-1367`,
+   dipicu `_core.py:1762`, digambar `_render.py:789`). Kini ada
+   `godot/scenes/fx/PathPreview.gd` (dipicu `Main._show_path_preview()` dari
+   `_on_wave_started`, lane dibaca dari `ArenaMap.get_lane_path` dengan urutan
+   `top, mid, bot` persis `_core.py:1757`); 130 frame state machine + 490
+   polygon dikunci fixture `render_fx.path_preview` dan di-replay
+   `RenderFxParityTest` (CI langkah 4v). Peta blok lainnya di
+   [RENDER_PY_COVERAGE.md](RENDER_PY_COVERAGE.md). Yang ikut ditutup di fase
+   yang sama: `HitParticle` (`:418-493`), `DeathExplosion` (`:494-571`), dan
+   lapangan `EffectManager.particles`/`explosions` + batas 500/80
+   (`:601-800`) — ketiganya juga belum pernah ada padanannya.
 
 5. **HUD/menu tidak diaudit piksel demi piksel** di sini — sudah dikunci
    `UiHudParityTest.gd` + `godot/tests/fixtures/match_parity.json`.
@@ -225,8 +233,14 @@ menyisir `_render.py` kelas demi kelas. Hasilnya:
 * **`KillFeed` BUKAN divergensi** — dibuat (`_render.py:622`) dan di-update
   (`:783`), tetapi `kill_feed.draw` dan `kill_feed.add` tidak pernah
   dipanggil di mana pun. Kode mati: pygame sendiri pun tidak menampilkannya.
+  Sejak FASE 26 klaim ini **dikunci mesin**: `tools/test_render_parity.py`
+  menulis `render_fx.dead.kill_feed_render.sites` dan gagal kalau suatu hari
+  ada call site render di pygame.
 * **`PopupAnimation` BUKAN divergensi** — pola yang sama persis
   (`_core.py:2584` membuat, `:2597` update, tanpa `.draw`). Kode mati.
+  Dikunci dengan cara yang sama (`render_fx.dead.popup_animation_render`),
+  dan `hero_items._fx_chain` (8 call site `add_hit_particles`, count 6 biru)
+  tercatat sebagai satu-satunya situs percikan yang **belum** diport.
 * **`ScreenShake` DULU divergensi terbesar, sudah diperbaiki** — lihat
   temuan 7.
 

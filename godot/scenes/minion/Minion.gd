@@ -462,6 +462,11 @@ func die(killer_team: String = ""):
 	# Suara kematian GLOBAL semua jenis minion (paritas Minion.take_damage
 	# _entity.py:5854-5856, volume_mult 0.7, throttle 120 ms).
 	AudioManager.play_sfx("minion_death", 0.7)
+	# Ledakan kematian radial 15 percikan + kilat 8 frame (paritas
+	# `add_death_explosion(self.x, self.y, team, size='medium')`
+	# `_entity.py:5863`).
+	GameManager.spark_fx.add_death_explosion(global_position.x,
+		global_position.y, team, "medium")
 	if status != null:
 		status.clear()
 	# Loop reward Game.update pygame (_core.py:2196-2216, cabang TIM KORBAN):

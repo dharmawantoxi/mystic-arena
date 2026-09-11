@@ -929,6 +929,11 @@ func die(killer = null):
 		AudioManager.play_sfx("victory", 0.7, true)
 	else:
 		AudioManager.play_sfx("explosion", 1.0, true)
+	# Ledakan kematian besar 25 percikan (paritas `add_death_explosion(...,
+	# size='large')` `base_boss.py:6076`, satu blok dengan shake 28/20 yang
+	# sudah diport `Boss._shake`).
+	GameManager.spark_fx.add_death_explosion(global_position.x,
+		global_position.y, team, "large")
 	# Cinematic kematian: ledakan + dissolve + pecahan + (true boss) perayaan
 	# "BOSS DEFEATED!" — port BossDeathAnimation (_render.py:1622, dipanggil
 	# _core.py:2124 saat boss terdeteksi mati). Fase kematian membekukan

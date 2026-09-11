@@ -286,6 +286,8 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 | ekonomi `_core.py` | `GameManager._process()` | `(3 + 0.3×(level−1)) × pengali_difficulty` gold/s, gold awal `(350 + 100×(level−1)) × pengali`, pecahan disimpan sebagai milli-gold (persis loop 60-frame pygame), AI tim Dire menabung dengan laju sama |
 | `AIPlayer` (6000+ baris) | `scripts/systems/AIPlayer.gd` + `Hero.gd` | Port penuh: `_ai_brain`/`_ai_elite` (`_entity.py:6027-6051`), `_ai_reserve` (tabungan draft hero), `think_timer` + beberapa aksi per tick, `_ai_step` 6 prioritas (build menara → beli hero → upgrade hero → beli item → upgrade menara → Regen Shield → Castle Shield → nexus). Gold dipakai dari `GameManager.ai_gold` (pygame `AIPlayer.gold`). Item dibeli pakai `ItemDB.suggest_item()` = paritas `hero_items.suggest_item_for_hero` (`hero_items.py:2936`); kontrol hero per-frame `_control_heroes()` + `_assign_hero_lane()`; **retreat HP <20% → base → heal → keluar di 80%** ada di `Hero.gd` (paritas `_entity.py:3983-4028`); **kombo auto-cast R→E(2+)→W(<40%)→Q** paritas `_try_auto_cast` (`_entity.py:4149-4240`); Kaizen Q Steel Wind↔Dash Strike bergantian di `SkillBook` (paritas `_bundle.py:3969`) |
 | mini boss / true boss | `Main._boss_tick()` | Mini boss dari `levels.json["mini_bosses"]` (satu aktif pada satu waktu), true boss setelah 6 menara Dire hancur (`_core.py` 2089) |
+| efek percikan/ledakan (`_render.py:418-571` + `EffectManager` `:601-800`) | `scripts/render/{HitSpark,DeathBurst,SparkField}.gd` + `scenes/fx/SparkLayer.gd` | **FASE 26.** Percikan kena pukulan (minion 4 / boss 6 / nexus 10, hero & menara 0) dan ledakan kematian (minion `medium`, boss `large`, taktik GATHER + PROTECT CASTLE `small` biru) — gravitasi 0.15, gesekan 0.95, alpha `int(255·sisa)`, palet per tim, kilat pusat 8 frame. Lapangan global 1 field = 1 `EffectManager` pygame: cap **500 partikel / 80 ledakan**, yang terbuang yang TERTUA. Data di `GameManager.spark_fx` (tick 60 Hz), gambar di z 800 |
+| `PathPreview` (`_render.py:1275-1370`) | `scenes/fx/PathPreview.gd` | **FASE 26.** Panah lane 120 frame tiap wave dimulai (dulu tidak ada padanannya sama sekali): fade in 20 / out 40, `alpha = int(200·ratio)`, `offset = int(t·2) % 20`, panah tiap 8 titik, arah dari titik `i+4`, pulse `(i//8 + offset//5) % 4`, panah 8 px (pulse) / 5 px (redup, alpha//2). z 790, di bawah percikan (pygame menggambar path preview paling awal) |
 
 ### Deviasi yang disengaja (dicatat, bukan bug)
 
@@ -301,6 +303,9 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 - **Aura TRUE BOSS sekarang digambar** (`Boss.gd::_draw`, paritas `_draw_true_boss_aura` `bosses/base_boss.py:6351-6375`): penanda kelas yang di pygame menyala setiap frame selama true boss hidup — `aura_r = radius + 15`, 8 langkah 2 px, alpha `(aura_r - r) * 5 * pulse`, denyut `sin(pulse) * 0.3 + 0.7` dengan `pulse += 0.1`/frame (= `PULSE_SPEED` 6 rad/detik). Mini boss tidak punya. **Jebakan yang perlu diingat:** `pygame.draw.circle` TIDAK mem-blend — ia menimpa piksel di surface SRCALPHA, jadi 8 lingkaran itu gradien BERPITA, bukan tumpukan. `draw_circle()` Godot mem-blend, sehingga port naif membuat pusat aura ~3x lebih pekat (144/255 vs 49/255 pada pulse 0,7). Implementasi Godot memakai 1 cakram inti + 6 cincin `draw_arc` yang tidak saling menimpa; profilnya diuji melawan surface pygame asli di `tools/test_boss_true_aura_parity.py` (46 cek, plus `tools/boss_true_aura_parity.png` lewat `--shot`). Aura `ability_active` dan `is_enraged` belum diport karena mekanik enrage/ability boss memang belum ada di Godot. Node `FX/Aura` (partikel) tetap mati — itu upgrade, bukan baseline pygame.
 - **Flash putih saat kena damage = `hurt_flash_timer` pygame, dideteksi dari `hp` yang turun.** `scripts/render/HurtFlash.gd` dipakai bersama Hero/Minion/Boss: 8 frame @60fps (`DURATION = 8.0/60.0`) turun linear, targetnya `silhouette.flash_amount` → `custom_visual.modulate` → fallback (`hit_flash_mat` hero / `body` minion / `sprite` boss). **Deteksinya menonton `hp`, bukan hook di `take_damage()`** — persis alasan pygame menaruhnya di `update()` (`_entity.py:5545-5551`, `bosses/base_boss.py:609-610`): damage masuk dari banyak pintu, dan di port Godot `take_damage()` hampir tidak pernah dipanggil karena `Hero._attack`, `TowerBullet`, `SkillBook`, item, dan reflect semuanya memanggil `CombatSystem.apply_damage()` langsung. Satu pengecualian yang disengaja: **hero** memakai `watch_hp = false` (flash hanya lewat `trigger()` dari `take_damage`/`play_hit_fx`), karena pygame tidak punya hurt flash hero dan menyalakannya tiap pukulan sama saja dengan memberi flash pada serangan dasar — dilarang kontrak di atas. Minion: pygame MENYIMPAN `hurt_flash_timer` tapi tidak pernah menggambarnya (tidak ada cabang di draw minion); di Godot digambar, sejalan dengan keputusan yang sama pada partikel cuaca `ash`/`spirit`/`mist`/`acid`.
 - **Impact FX korban = SKILL saja, serangan dasar NOL FX.** Kontrak pemilik game (dikunci `tools/test_basic_attack_no_impact_fx.py`; komentar sumber `_entity.py:4376-4384`): benturan serangan dasar tidak boleh memicu flash/spark/shockwave/hit-stop, karena di combat ramai tumpukannya menutupi sprite. Karena itu `Hero.play_hit_fx()` (burst `FX/HitParticles` + flash putih) di-hook dari `SkillBook._damage()` — BUKAN dari `Hero.take_damage()` atau `CombatSystem.apply_damage()` yang dilewati semua jalur damage termasuk basic attack, tower, dan minion. Warna burst mengikuti `fill_color` caster supaya terbaca siapa yang memukul; ada jeda 0,08 detik per hero (`HIT_FX_COOLDOWN`) supaya skill AoE + ticker DoT tidak saling membatalkan burst lewat `restart()`. Minion/boss belum punya node partikel korban, jadi `has_method("play_hit_fx")` melewatinya dengan aman.
+- **Efek `EffectManager` (percikan/ledakan/panah lane) memakai rasio partikel 1.0, bukan 0.70 pygame.** `add_hit_particles` pygame dikalikan `mobile.perf.Quality.particle_ratio`, dan preset HIGH desktop (`mobile/perf.py:499`) memberi **0.70**, jadi pygame sebenarnya memunculkan 3/4/7 percikan untuk minion/boss/nexus, bukan 4/6/10. Port Godot memakai 1.0 karena lapisan adaptive quality memang belum diport (lihat `docs/SYSTEM_PY_COVERAGE.md` §3) — `SparkField.particle_ratio` / `particles_enabled` tersedia sebagai knob supaya port perf nanti tidak perlu menyentuh berkas lain. Fakta pygame-nya direkam di fixture (`py_quality`) dan dikunci `RenderFxParityTest._test_wiring`.
+- **Percikan/ledakan memakai RNG global, bukan stream `ParityRng` yang dikunci.** Pygame memakai `random.uniform/randint/choice` global; yang dijaga paritas adalah NILAI dan URUTAN roll per partikel (angle → speed → warna → spark → lifetime), yang di harness di-replay lewat RNG ter-script dan di produksi dari RNG global. Hasilnya percikan tidak identik antar-build — sama seperti pygame.
+- **Raster efek tidak dibandingkan piksel demi piksel.** `draw_circle`/`draw_colored_polygon` Godot vs sprite hasil `transform.scale` + `blit` pygame; yang dikunci geometri (pusat, radius, titik), warna+alpha, dan urutan perintah gambar per frame. Headless Godot tidak bisa screenshot.
 - **Sekolah damage** diambil dari penyerang (`DamageSchool.resolve`), dot `fire`/`ice` netral — paritas `resolve_damage_school` pygame.
 
 ## Asset Pipeline
@@ -473,6 +478,49 @@ Uji regresinya: `tests/CinematicTest.tscn` (dijalankan godot-check CI);
 Deviasi terdokumentasi: ikon vektor `ui_theme.draw_icon` (segitiga/bintang)
 digambar langsung dengan draw API; bayangan teks multi-lapis pygame menjadi
 shadow Label bawaan Godot.
+
+## Efek percikan, ledakan, dan panah lane (Fase 26)
+
+Tiga blok `effects.py` di `_render.py` yang **belum pernah punya padanan** kini
+diport, semuanya sebagai data + satu view tipis per frame (pola
+`FloatingTextQueue`/`WorldPopups` yang sudah terbukti di headless):
+
+```
+scripts/render/HitSpark.gd     — 1 partikel (HitParticle :418-493): gravitasi 0.15 setelah posisi, gesekan 0.95,
+                                 alpha int(255*sisa), ukuran max(1, int(size*sisa)), 2 lingkaran konsentris
+scripts/render/DeathBurst.gd   — DeathExplosion (:494-571): 8/15/25 partikel per preset + kilat pusat 8 frame
+scripts/render/SparkField.gd   — lapangan global (EffectManager :601-800): cap 500 partikel / 80 ledakan,
+                                 trim yang TERTUA, add_hit_particles / add_death_explosion
+scenes/fx/SparkLayer.gd        — view: draw_circle per partikel, z_index 800 (di atas semua unit)
+scenes/fx/PathPreview.gd       — PathPreview (:1275-1370): panah lane 120 frame, z_index 790
+```
+
+Pemiliknya `GameManager.spark_fx` (dibuat di `_bootstrap`, di-tick
+`_process` dengan akumulator 60 Hz, dibersihkan di `return_to_menu`). View
+dibuat oleh `Main._fx_ready()` — **node langsung**, bukan `call_group` (lihat
+temuan 7 di `docs/PARITY_AUDIT.md`: call_group ke metode yang tidak ada diam
+saja). Situs pemanggil mengikuti pygame persis: percikan di
+`CombatSystem._hit_spark_count` (minion 4 `_entity.py:5842` · boss 6
+`base_boss.py:6057` · nexus 10 `_entity.py:1816` · **hero & menara 0**),
+ledakan di `Minion.die` (`medium`), `Boss.die` (`large`), dan dua cabang
+`not silent` di `TacticalCommands` (`small` biru). Panah lane dipicu
+`Main._show_path_preview()` dari `_on_wave_started` dengan urutan
+`top, mid, bot` (`_core.py:1757`).
+
+```bash
+# Oracle: menjalankan HitParticle / DeathExplosion / EffectManager / PathPreview
+# pygame ASLI + PathGenerator sungguhan, merekam jejak draw/scale/blit/set_alpha,
+# lalu mengunci konstanta & ekspresi .gd:
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_render_parity.py
+
+# Replay headless (CI godot-check langkah 4v):
+XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/RenderFxParityTest.tscn --quit-after 300
+```
+
+Uji regresinya: `tests/RenderFxParityTest.tscn` — fixture
+`tests/fixtures/render_fx.json` (419 KB; 73 frame percikan, 32 frame/792 op
+ledakan, 4 skenario `add_hit_particles` + batas 500/80, 130 frame + 490 polygon
+panah lane, wiring `spark_fx`).
 
 ## Kaizen Skeleton2D (showcase / opt-in)
 
