@@ -7,12 +7,17 @@ venv/
 
 # ═══ Buildozer / python-for-android ═══
 .buildozer/
-bin/
+/bin/
 *.apk
 *.aab
 *.keystore
 *.jks
 keystore.properties
+# GDExtension build output (jangan commit .so/.dll, tapi folder bin tetap ada)
+godot/addons/mystic_lighting/bin/*.so
+godot/addons/mystic_lighting/bin/*.dll
+godot/addons/mystic_lighting/bin/*.dylib
+godot/addons/mystic_lighting/bin/*.framework/
 
 # ═══ Save game & log (jangan ikut ke repo) ═══
 savegame*.json

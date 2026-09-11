@@ -1,0 +1,20 @@
+[configuration]
+entry_symbol = "mystic_lighting_library_init"
+compatibility_minimum = 4.3
+reloadable = true
+
+[libraries]
+linux.debug.x86_64 = "res://addons/mystic_lighting/bin/libmystic_lighting.linux.debug.x86_64.so"
+linux.release.x86_64 = "res://addons/mystic_lighting/bin/libmystic_lighting.linux.release.x86_64.so"
+linux.debug.arm64 = "res://addons/mystic_lighting/bin/libmystic_lighting.linux.debug.arm64.so"
+linux.release.arm64 = "res://addons/mystic_lighting/bin/libmystic_lighting.linux.release.arm64.so"
+windows.debug.x86_64 = "res://addons/mystic_lighting/bin/libmystic_lighting.windows.debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/mystic_lighting/bin/libmystic_lighting.windows.release.x86_64.dll"
+macos.debug = "res://addons/mystic_lighting/bin/libmystic_lighting.macos.debug.framework"
+macos.release = "res://addons/mystic_lighting/bin/libmystic_lighting.macos.release.framework"
+macos.debug.arm64 = "res://addons/mystic_lighting/bin/libmystic_lighting.macos.debug.arm64.framework"
+macos.release.arm64 = "res://addons/mystic_lighting/bin/libmystic_lighting.macos.release.arm64.framework"
+android.debug.arm64v8 = "res://addons/mystic_lighting/bin/libmystic_lighting.android.debug.arm64v8.so"
+android.release.arm64v8 = "res://addons/mystic_lighting/bin/libmystic_lighting.android.release.arm64v8.so"
+android.debug.armeabi-v7a = "res://addons/mystic_lighting/bin/libmystic_lighting.android.debug.armeabi-v7a.so"
+android.release.armeabi-v7a = "res://addons/mystic_lighting/bin/libmystic_lighting.android.release.armeabi-v7a.so"
