@@ -21,6 +21,10 @@
 #                         nexus   = tanpa mitigasi sekolah (hanya shield).
 #   4. hp berkurang     : shield tower/nexus menyerap dulu (castle:
 #                         int truncation 88%) + damage number
+#   4b. credit_hero     : source.damage_dealt += int(dealt) SETELAH HP
+#                         (bukan shield) — `_entity.py:26-45`. Nested
+#                         reflect memakai source=null jadi defender
+#                         tidak ter-kredit.
 #   5. reflect          : Bristleback 25% ("normal" netral → kena armor
 #                         penyerang) + Thornmail int(dmg*0.85) "magic"
 #   6. on-hit penyerang : lifesteal (basis damage PRA-mitigasi; ranged
@@ -434,6 +438,10 @@ func apply_damage(target, amount: float, from_team: String = "",
 	var dealt := dmg
 	var shown := dealt + absorbed
 	_spawn_damage_number(target, shown, shown > float(target.get("max_hp")) * 0.12)
+	# credit_hero_damage (_entity.py:26-45): integer HP yang mendarat
+	# (sisa setelah shield), sebelum Bristleback. kit_hit TIDAK boleh
+	# menambah lagi — kalau tidak skill terhitung dua kali.
+	_credit_hero_damage(source, dealt)
 
 	# ── 7. reset timer regen (tower/nexus: no_damage_timer, hero: combat_timer) ──
 	if "combat_timer" in target:
@@ -491,6 +499,17 @@ func apply_damage(target, amount: float, from_team: String = "",
 		_dispatch_death(target, source, from_team)
 
 	return dealt
+
+
+## Port `credit_hero_damage` `_entity.py:26-45`. `int(amount)` memotong
+## ke 0; source tanpa field `damage_dealt` diabaikan (bukan hero). Nested
+## reflect memakai source=null jadi defender tidak ter-kredit.
+func _credit_hero_damage(source, amount: float) -> void:
+	if source == null or not is_instance_valid(source) or amount <= 0.0:
+		return
+	if not ("damage_dealt" in source):
+		return
+	source.damage_dealt = float(source.get("damage_dealt")) + float(int(amount))
 
 
 ## Panggil die() unit dengan argumen sesuai jenisnya (pygame: take_damage

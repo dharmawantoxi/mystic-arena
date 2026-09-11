@@ -131,8 +131,9 @@ var follow_target: Node2D = null
 ## AIPlayer sebagai prioritas upgrade & beli item (sort by kills pygame).
 var kills: int = 0
 ## _entity.py:3425 — akumulasi damage milik hero (dipakai command taktis
-#  AI "ATTACK DAMAGE DEALER" di pygame). Jalur skill dikredit lewat
-#  kit_hit(); basic attack belum (Godot: pemakai masih kosong).
+#  AI "ATTACK DAMAGE DEALER" di pygame). Kredit HANYA lewat
+#  CombatSystem._credit_hero_damage (`int(dealt)` setelah HP, bukan
+#  shield) — kit_hit TIDAK menambah lagi (kalau tidak skill terhitung dua kali).
 var damage_dealt: float = 0.0
 
 # ── Sistem ──
@@ -687,11 +688,11 @@ func kit_hero_levels() -> Dictionary:
 func kit_hit(e, dmg, from_team, src = null, school = "") -> void:
 	if e == null or not is_instance_valid(e):
 		return
-	var dealt := CombatSystem.apply_damage(e, float(dmg), str(from_team),
+	# Kredit damage_dealt ada di CombatSystem.apply_damage (int, setelah
+	# HP). Jangan dijumlah di sini — pygame `credit_hero_damage` dipanggil
+	# sekali dari take_damage, bukan dari handler skill.
+	CombatSystem.apply_damage(e, float(dmg), str(from_team),
 		"normal", src, str(school) if school != null else "", false)
-	if src != null and is_instance_valid(src) and dealt > 0.0 \
-			and "damage_dealt" in src:
-		src.damage_dealt = float(src.get("damage_dealt")) + dealt
 
 
 ## e.apply_slow(amount, durasi_FRAME pygame).
@@ -923,10 +924,9 @@ func try_attack():
 		sprite.play("attack")
 		if not sprite.animation_finished.is_connected(func(): sprite.play("idle")):
 			sprite.animation_finished.connect(func(): sprite.play("idle"), CONNECT_ONE_SHOT)
-	# Hit-stop + screenshake (menggantikan combat_feel.hit_stop pygame)
-	GameManager.request_hit_stop(0.03)
-	if get_tree() and get_tree().has_group("camera"):
-		get_tree().call_group("camera", "add_trauma", 0.15)
+	# pygame Hero._do_attack TIDAK memanggil combat_feel.hit_stop /
+	# screenshake (itu milik FX skill / camera lain). Jangan request_hit_stop
+	# di sini — harness mengunci GameManager._hit_stop_active tetap false.
 
 	var dmg := CombatSystem.calc_damage(self, target, damage, dmg_school)
 	# Suara serangan dasar: tebasan (melee) atau lesatan (ranged). Paritas
@@ -1153,7 +1153,10 @@ func update_ui():
 		hp_bar.max_value = max_hp
 		hp_bar.value = hp
 	if name_label:
-		name_label.text = "%s Lv%d" % [name, level]
+		# pygame `_build_name_badge`: nama SAJA; bintang level digambar
+		# terpisah di `_draw_level_stars` (bukan teks "LvN").
+		name_label.text = display_name
+	queue_redraw()
 
 
 # ══════════════════════════════════════════════════════════
@@ -1266,7 +1269,34 @@ func set_selected(value: bool) -> void:
 	queue_redraw()
 
 
+## Bintang level di atas papan nama — port `_build_name_badge`
+## `_entity.py:4931-4970`. L<=5: satu bintang per level; L>5: 1 bintang + `xN`.
+func _draw_level_stars() -> void:
+	var y := -72.0
+	var col := Color(1.0, 0.85, 0.2, 0.95)
+	if level <= 5:
+		for i in level:
+			var sx := -float(level - 1) * 5.0 + float(i) * 10.0
+			_draw_star(Vector2(sx, y), col)
+	else:
+		_draw_star(Vector2(-10.0, y), col)
+		var font: Font = ThemeDB.fallback_font
+		if font != null:
+			draw_string(font, Vector2(-2.0, y + 4.0), "x%d" % level,
+				HORIZONTAL_ALIGNMENT_LEFT, -1, 10, col)
+
+
+func _draw_star(c: Vector2, col: Color) -> void:
+	draw_colored_polygon(PackedVector2Array([
+		c + Vector2(0, -3), c + Vector2(2, 0), c + Vector2(4, 0),
+		c + Vector2(2, 2), c + Vector2(3, 5), c + Vector2(0, 3),
+		c + Vector2(-3, 5), c + Vector2(-2, 2), c + Vector2(-4, 0),
+		c + Vector2(-2, 0),
+	]), col)
+
+
 func _draw() -> void:
+	_draw_level_stars()
 	# ring seleksi di tanah
 	if selected:
 		draw_arc(Vector2(0, 14), radius * 1.5, 0.0, TAU, 28,

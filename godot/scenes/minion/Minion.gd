@@ -50,6 +50,10 @@ var reward_processed: bool = false
 var facing: int = 1
 var anim_phase: float = 0.0
 var status = null
+## Slash visual melee (`_spawn_slash_effect` `_entity.py:5613-5626`).
+var _slashes: Array = []
+## 0..1 selama animasi mati (20 frame pygame).
+var _death_progress: float = 0.0
 
 @onready var visual: Node2D = $Visual
 @onready var body: Polygon2D = $Visual/Body
@@ -77,6 +81,7 @@ func _ready():
 	# Paritas Hero: layer per tim (blue=2, red=4) supaya barisan saling dorong
 	collision_layer = 2 if team == "blue" else 4
 	collision_mask = 4 if team == "blue" else 2
+	set_process(false)
 
 
 func apply_minion_data():
@@ -258,6 +263,9 @@ func _physics_process(delta):
 		is_moving = _follow_lane(eff_speed)
 	z_index = int(global_position.y)
 	_drive_visual(is_moving, delta)
+	if not _slashes.is_empty():
+		_tick_slashes(delta)
+		queue_redraw()
 
 
 ## _entity.Minion._move_forward: blue mengikuti path dari awal, red dari akhir.
@@ -405,6 +413,7 @@ func try_attack():
 		b.global_position = global_position + Vector2(0, -6)
 		GameManager.attach_fx(b)
 	else:
+		_spawn_slash()
 		CombatSystem.apply_damage(target, dmg, team, "normal", null, "")
 
 
@@ -460,10 +469,75 @@ func die(killer_team: String = ""):
 	# add_kill (quirk pygame).
 	GameManager.register_minion_death(self)
 	GameManager.minion_died.emit(self, killer_team)
+	_death_progress = 0.0
+	set_process(true)
 	var tw := create_tween()
-	tw.tween_property(self, "modulate:a", 0.0, 0.3)
+	tw.tween_property(self, "_death_progress", 1.0, 20.0 / FPS)
+	tw.parallel().tween_property(self, "modulate:a", 0.0, 0.3)
 	tw.parallel().tween_property(visual, "scale", Vector2(1.3, 0.25), 0.22)
 	tw.tween_callback(queue_free)
+
+
+func _process(_delta: float) -> void:
+	if is_dead:
+		queue_redraw()
+
+
+func _tick_slashes(delta: float) -> void:
+	var kept: Array = []
+	for s in _slashes:
+		s["life"] = float(s.get("life", 0.0)) - delta
+		if float(s["life"]) > 0.0:
+			kept.append(s)
+	_slashes = kept
+
+
+## Port `_spawn_slash_effect` `_entity.py:5613-5626` (12 frame, 7 titik).
+func _spawn_slash() -> void:
+	var ang := 0.0 if facing > 0 else PI
+	if target != null and is_instance_valid(target):
+		ang = (target.global_position - global_position).angle()
+	_slashes.append({
+		"life": 12.0 / FPS,
+		"max_life": 12.0 / FPS,
+		"angle": ang,
+		"distance": radius + 8.0,
+	})
+	queue_redraw()
+
+
+func _draw() -> void:
+	for slash in _slashes:
+		var life := float(slash.get("life", 0.0))
+		var max_life := maxf(0.001, float(slash.get("max_life", 12.0 / FPS)))
+		var progress := 1.0 - life / max_life
+		var alpha := (220.0 / 255.0) * (1.0 - progress)
+		if alpha <= 0.0:
+			continue
+		var angle := float(slash.get("angle", 0.0))
+		var dist := float(slash.get("distance", 18.0))
+		var span := 1.1
+		var steps := 7
+		var pts := PackedVector2Array()
+		for i in steps:
+			var a: float = angle - span * 0.5 + span * float(i) / float(steps - 1)
+			var r: float = dist + progress * 6.0
+			pts.append(Vector2(cos(a) * r, sin(a) * r))
+		draw_polyline(pts, Color(1, 1, 1, alpha), 3.0)
+		draw_polyline(pts, Color(1.0, 230.0 / 255.0, 180.0 / 255.0, alpha), 1.0)
+	if not is_dead:
+		return
+	# Dust 4 arah — `_draw_death_animation` `_entity.py:5916-5942`
+	var death_anim := 20.0 * (1.0 - _death_progress)
+	if death_anim <= 10.0:
+		return
+	var alpha_d := clampf(1.0 - _death_progress, 0.0, 1.0)
+	for i in 4:
+		var ang := float(i) * PI * 0.5
+		var spread := (20.0 - death_anim) * 2.0
+		var p := Vector2(cos(ang) * spread, -spread)
+		var r := maxf(1.0, death_anim / 5.0)
+		draw_circle(p, r, Color(150.0 / 255.0, 130.0 / 255.0, 100.0 / 255.0, alpha_d))
 
 
 func update_ui():

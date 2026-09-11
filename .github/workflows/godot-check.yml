@@ -318,6 +318,23 @@ jobs:
             exit 1
           fi
 
+      # ── 4e2. EntityPyParityTest: sisa celah `_entity.py` (credit_hero
+      # int(dealt), archer L5=2/L6=3 + double_shot hanya L<5, kit_hit
+      # tidak double-count, try_attack tanpa hit-stop).
+      - name: EntityPyParityTest (sisa celah _entity.py)
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/EntityPyParityTest.tscn --quit-after 60 2>&1 | tee /tmp/entitypy.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/entitypy.log --label "EntityPyParityTest" \
+              --require "[EntityPyParityTest] PASS" > /tmp/entitypy.gate 2>&1; then
+            cat /tmp/entitypy.gate
+          else
+            cat /tmp/entitypy.gate
+            echo "::error::ENTITYPY-FAIL-TAIL: $(tail -40 /tmp/entitypy.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::ENTITYPY-FAIL-LINES: $(grep -m10 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/entitypy.log | tr '\n' ' | ' | cut -c1-2500)"
+            exit 1
+          fi
+
       # ── 4f. HeroRngGuardParityTest: paritas ROLL RNG guard hero —
       # windrun (Sylara W, roll 75% evade fisik — netral tanpa source ikut
       # fisik, sihir/fire tidak me-roll) & shadow realm (Zephyr W, kebal

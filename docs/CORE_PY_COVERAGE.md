@@ -17,7 +17,8 @@ menebak dari nama berkas.
 | ⚪ N/A | Kode pygame-nya sendiri no-op / khusus renderer / tidak relevan di Godot |
 
 Acuan audit lebih luas (bukan hanya `_core.py`):
-[GODOT_PARITY.md](GODOT_PARITY.md). Roadmap komponen:
+[GODOT_PARITY.md](GODOT_PARITY.md). Entitas `_entity.py`:
+[ENTITY_PY_COVERAGE.md](ENTITY_PY_COVERAGE.md). Roadmap komponen:
 [GODOT_MIGRATION.md](GODOT_MIGRATION.md).
 
 ---
