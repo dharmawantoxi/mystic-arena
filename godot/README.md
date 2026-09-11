@@ -559,6 +559,95 @@ python3 tools/test_godot_localization_parity.py --write-fixture # regenerasi (ha
 XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/LocalizationParityTest.tscn --quit-after 120
 ```
 
+## Design system UI (Fase 31 — port `ui_theme.py`)
+
+```
+godot/scripts/utils/UiTheme.gd              — 32 warna palet, cache tekstur (glow radial langkah 2px + bayangan 1/8 ukuran), fungsi murni geometri/warna, 29 ikon vektor (ICON_NAMES), jalur immediate-mode draw_* (btns: Dictionary), font (title_font/body_bold/body_semibold/body_medium/body_regular + font_for_weight)
+godot/scenes/ui/widgets/PygameChip.gd       — chip status auto-size (ikon + label + nilai opsional, align kiri/kanan); semua properti ber-setter, jadi `chip.label_text = "GOLD"` langsung menghitung ulang ukuran
+godot/scenes/ui/widgets/SectionHeader.gd    — header seksi: ikon + judul letter-spaced + hairline aksen/redup (blok 34px)
+godot/scenes/ui/widgets/PygameSlider.gd     — HSlider dengan visual pygame (visual native dikosongkan; ratio()/track_rect()). Sinyal `value_changed` baru terbit setelah widget ada DI DALAM TREE
+godot/scenes/ui/widgets/OptionCycler.gd     — label + kotak nilai auto-width + chevron < > (signal value_changed, hit_rects(), press())
+godot/scenes/ui/widgets/ScrollIndicator.gd  — thumb scroll 6px (follow(ScrollContainer) / set_scroll(pos, max) / thumb_rect())
+godot/scenes/ui/widgets/GradientText.gd     — teks gradasi vertikal N pita clip (dipakai ScreenTitle)
+godot/scenes/ui/widgets/PygameButton.gd     — 3 mode (MENU/PILL/TAB) mendelegasikan ke UiTheme.*_visual + back_button()
+godot/tests/UiThemeParityTest.gd            — replay fixture di engine: fungsi murni + widget + smoke immediate-mode (dua cabang cheap_alpha); 1463 cek, hijau di CI
+godot/tests/fixtures/ui_theme.json          — oracle: 18 seksi direkam dari ui_theme.py ASLI (SDL dummy + font palsu 7px/karakter)
+tools/test_godot_ui_theme_parity.py         — oracle: 4 cek statik (palet/coverage/ikon/literal/wiring) + 17 seksi runtime
+```
+
+Port-nya **tiga lapis** supaya angka geometri/warna hanya punya satu sumber:
+
+1. fungsi murni (`chip_rect`, `cycler_geom`, `slider_geom`, `button_hit_rect`,
+   `button_label_cx`, `screen_title_geom`, `scroll_thumb_rect`, `tab_width_for`,
+   `toggle_colors`, `pill_colors`, `dim`, `add_rgb`, `vgrad_row_color`, ...) —
+   tidak menggambar apa pun, jadi bisa dibandingkan dengan angka oracle;
+2. jalur immediate-mode `UiTheme.draw_*(cv, ...)` — port 1:1 badan fungsi
+   pygame, dipanggil dari `_draw()`; komponen interaktif mengisi
+   `btns: Dictionary` (id → Rect2) seperti `btns` pygame;
+3. widget Control di `scenes/ui/widgets/` — memanggil lapis 2.
+
+```gdscript
+# Immediate-mode di dalam _draw() (paritas 1:1 dengan pemanggil pygame):
+var btns := {}
+UiTheme.draw_section_header(self, Vector2(40, 60), "AUDIO", "speaker",
+    UiTheme.CYAN, UiTheme.body_semibold(), 22, 240.0)      # -> y berikutnya 94
+UiTheme.draw_pill(self, btns, "play", "PLAY", Rect2(120, 90, 170, 40),
+    "gold", UiTheme.body_semibold(), 18, hover, true, "play")
+# btns["play"] hanya terisi bila enabled=true — tombol mati tidak bisa diklik.
+
+# Atau sebagai widget:
+var chip := PygameChip.new("HERO GOLD", "1.234", UiTheme.CYAN, "coin")
+var header := SectionHeader.new("AUDIO", "speaker", UiTheme.CYAN, 240.0)
+var cyc := OptionCycler.new("BAHASA")
+cyc.set_options(["id", "en"], ["Bahasa Indonesia", "English"])
+cyc.value_changed.connect(func(i: int, v: Variant) -> void: print(i, v))
+var back := PygameButton.back_button()   # 200x42, kind neutral, ikon "back"
+```
+
+`UiTheme.cheap_alpha()` selalu true di Godot (komposisi alpha terjadi di GPU),
+tetapi **kedua cabang** pygame tetap diport; pakai
+`UiTheme.cheap_alpha_override = 0` untuk memaksa bentuk hemat (mis. uji visual
+mode low-end), `1` untuk penuh, `-1` (default) untuk auto.
+
+Dua warna pygame yang di `ui_theme.py` hanya muncul sebagai literal di
+dalam badan fungsi diberi nama di sini supaya tidak ditulis ulang di tiap
+pemakai: `TEXT_SHADOW` `(5,6,12)` (bayangan `draw_text`) dan `OUTLINE_DARK`
+`(8,9,18)` (outline `gradient_text`/`outline_text`, dipakai `GradientText`
+dan `ScreenTitle`). Oracle menerimanya sebagai konstanta Godot ekstra dan
+`visual_parity_audit.py --section hardcode` memastikannya tidak bocor lagi
+menjadi literal di berkas lain.
+
+Tiga jebakan engine yang ketahuan saat run CI pertama (semuanya sudah
+diperbaiki + dikunci `UiThemeParityTest`):
+
+* `Range::emit_value_changed()` melewati node yang tidak ada di dalam tree,
+  jadi `PygameSlider` harus `add_child()` dulu sebelum mengandalkan sinyal
+  `value_changed` (nilainya tetap berubah di luar tree).
+* `floor()`/`min()`/`max()` GDScript mengembalikan **Variant** → `var x :=
+  floor(...)` gagal parse. Pakai `floorf`/`minf`/`maxf`/`mini`/`maxi`.
+* `radial_texture()` sengaja menyatukan alpha sebucket
+  (`max(4, min(120, a // 8 * 8))`: 74 dan 72 → 72) persis `_GLOW_CACHE`
+  pygame, jadi instance-nya SAMA untuk alpha sebucket.
+
+Catatan jujur: 6 widget baru di atas **belum dipasang** di layar mana pun —
+`MainMenu.gd` masih merakit `_shop_chip`/`_mini_chip`/`_settings_header`/
+`_volume_slider` sendiri, dan rewiring-nya ditahan karena
+`MetaShopTxnParityTest`/`LocalizationParityTest` mengunci struktur node layar
+itu. Rincian + semua deviasi (strip aksen opaque, pita gradasi teks, `pyrect`,
+nama API): [`../docs/UI_THEME_GODOTPP.md`](../docs/UI_THEME_GODOTPP.md).
+
+```bash
+# Oracle: cek statik (tanpa engine) + menjalankan ui_theme.py ASLI untuk fixture
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_ui_theme_parity.py
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_ui_theme_parity.py --write-fixture  # hanya bila ui_theme.py berubah
+
+# Replay headless (CI godot-check langkah 4y):
+XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/UiThemeParityTest.tscn --quit-after 200
+
+# Palet + literal warna tidak boleh ditulis ulang di luar UiTheme.gd
+SDL_VIDEODRIVER=dummy python3 tools/visual_parity_audit.py --section palette,hardcode
+```
+
 ## Kaizen Skeleton2D (showcase / opt-in)
 
 ```
