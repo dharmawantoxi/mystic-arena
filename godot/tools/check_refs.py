@@ -17,6 +17,9 @@ menyisakan clear color). Checks:
   6. draw_ellipse() tidak ada di Godot 4.3 (baru di 4.6 dengan signature
      (Vector2, float, float, Color)); project target 4.3 harus pakai
      draw_colored_polygon / draw_circle fallback
+  7. fungsi matematika bersuffiks "f" yang tidak ada di Godot 4 (sqrtf,
+     sinf, atan2f, ...) — Parser Error "Function not found in base self",
+     dan `var x := sqrtf(...)` ikut "Cannot infer the type of x"
 
 Usage: python3 godot/tools/check_refs.py godot
 Exit 0 = bersih, 1 = ada masalah.
@@ -49,6 +52,21 @@ SCENE_TREE_RE = [
     for m in SCENE_TREE_METHODS
 ]
 DRAW_ELLIPSE_RE = re.compile(r'(?<![A-Za-z0-9_\.])draw_ellipse\s*\(')
+# Fungsi matematika bersuffiks "f" yang TIDAK ADA di Godot 4. Godot hanya
+# punya bentuk tanpa suffiks untuk keluarga ini (sqrt/exp/log/sin/cos/tan/
+# atan/acos/asin) — memakai `sqrtf()` menghasilkan Parse Error dua kali
+# sekaligus: 'Function "sqrtf()" not found in base self.' LALU
+# 'Cannot infer the type of ... variable' karena nilai RHS jadi tanpa tipe.
+# (Yang ADA: absf ceilf floorf roundf fmodf powf signf snappedf wrapf
+#  lerpf maxf minf — jangan ikut diflag.)
+NO_F_SUFFIX_MATH = (
+    "sqrtf", "hypotf", "expf", "logf",
+    "sinf", "cosf", "tanf", "atanf", "atan2f", "acosf", "asinf",
+)
+NO_F_SUFFIX_MATH_RE = [
+    (fn, re.compile(r'(?<![A-Za-z0-9_\.])' + fn + r'\s*\('))
+    for fn in NO_F_SUFFIX_MATH
+]
 
 
 def res_to_fs(root, res_path):
@@ -205,6 +223,17 @@ def check(root):
                     f"{rel}:{idx}: SceneTree.{method}() dipanggil di self (tanpa get_tree()) — "
                     f"Parser Error 'Function \"{method}()\" not found in base self.' "
                     f"(Autoload extends Node, method ada di SceneTree -> pakai get_tree().{method}() atau var tree := get_tree(); if tree == null: return)"
+                )
+            # 7: fungsi matematika bersuffiks "f" yang tidak ada di Godot 4
+            for fn, pat in NO_F_SUFFIX_MATH_RE:
+                if not pat.search(code):
+                    continue
+                if re.search(r'\bfunc\s+' + re.escape(fn) + r'\b', code):
+                    continue
+                problems.append(
+                    f"{rel}:{idx}: {fn}() tidak ada di Godot 4 (hanya {fn[:-1]}() yang ada) "
+                    f"— Parser Error 'Function \"{fn}()\" not found in base self.' dan, kalau hasilnya "
+                    f"dipakai `var x := {fn}(...)`, ikut 'Cannot infer the type of \"x\" variable'"
                 )
             # 6: draw_ellipse() kompatibilitas Godot 4.3
             if DRAW_ELLIPSE_RE.search(code):

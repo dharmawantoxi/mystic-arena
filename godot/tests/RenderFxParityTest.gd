@@ -288,14 +288,14 @@ func _test_caps() -> void:
 		% [caps["particles_after"], field.particles.size()])
 	_expect(field.particles.size() > 0, "partikel harus tersisa setelah trim")
 	if field.particles.size() > 0:
-		_near((field.particles[0] as HitSparkScript).x,
+		_near(float(field.particles[0].get("x")),
 			float(caps["first_particle_x"]), "partikel tertua terbuang")
 	for i in range(int(caps["added_explosions"])):
 		field.add_death_explosion(float(i), 0.0, "red", "small")
 	_expect(field.explosions.size() == int(caps["explosions_after"]),
 		"ledakan harus terpangkas ke %s, dapat %d"
 		% [caps["explosions_after"], field.explosions.size()])
-	_near((field.explosions[0] as DeathBurstScript).x,
+	_near(float(field.explosions[0].get("x")),
 		float(caps["first_explosion_x"]), "ledakan tertua terbuang")
 	# `advance()` = kadens 60 Hz: 1 detik = 60 tick, bukan 1.
 	var ticked = SparkFieldScript.new()

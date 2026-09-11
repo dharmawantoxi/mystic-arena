@@ -132,7 +132,10 @@ static func build_ops(lane_paths: Array, animation_time: int,
 				var ahead = lane[i + DIR_AHEAD]
 				dx = float(ahead.x) - px
 				dy = float(ahead.y) - py
-				var dist := sqrtf(dx * dx + dy * dy)
+				# Godot 4 tidak punya `sqrtf()` (hanya `sqrt()`); tanpa itu
+				# baris ini Parse Error dua kali: "Function sqrtf() not found"
+				# + "Cannot infer the type of dist" (ditemukan CI langkah 4v).
+				var dist: float = sqrt(dx * dx + dy * dy)
 				if dist == 0.0:
 					dist = 1.0
 				dx /= dist
