@@ -669,17 +669,11 @@ func bind_unlocked_bosses() -> void:
 
 
 ## Jumlah hero NON-starter yang dimiliki pemain — input catch-up hero.
-## Paritas hero_balance.boss_unlocks_for_purchases: `len()` polos atas
-## daftar save (entri kembar ikut terhitung; SaveManager sendiri menolak
-## duplikat saat menulis), starter tidak pernah dihitung.
+## Mendelegasikan ke hero_balance.boss_unlocks_for_purchases: `len()` polos
+## atas daftar save (entri kembar ikut terhitung; SaveManager sendiri
+## menolak duplikat saat menulis), starter tidak pernah dihitung.
 func boss_unlocks_for_purchases(purchased) -> int:
-	if not (purchased is Array):
-		return 0
-	var n := 0
-	for hero_type in purchased:
-		if not (str(hero_type) in HeroDB.STARTER_HEROES):
-			n += 1
-	return maxi(0, n)
+	return HeroBalance.boss_unlocks_for_purchases(purchased)
 
 
 ## Dibaca `Hero._catchup_unlocks()` saat unit dibuat. Di luar match daftar

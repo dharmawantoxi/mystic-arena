@@ -9970,6 +9970,470 @@ def make_controller_input_fixture(core):
     }
 
 
+# ====================================================================
+# FASE 28 — PORT hero_balance.py -> HeroBalance.gd: oracle balance hero.
+# ====================================================================
+# Semua angka di bawah dievaluasi dari hero_balance.py ASLI (bukan salinan
+# logika): pristine/resolve/apply/calibrate/fixpoint dipanggil sungguhan.
+# Replay: HeroBalanceParityTest. Blob besar disimpan sebagai STRING JSON
+# kompak (pola hero_skills dkk); grid kecil sebagai objek agar diff-able.
+#
+# Katalog MENTAH (input) tidak bisa diminta ke _core — satu-satunya
+# konstruktor katalog (inner _original_get_all_hero_types_shop_prices)
+# langsung menjalankan balance pass di dalamnya. _hb_raw_catalog()
+# mereplika ~30 baris rakitan _core.get_all_hero_types (HERO_TYPES +
+# hero_unlock + _default_hero_unlock_cost + flag) TANPA balance pass, dan
+# kesetiaannya DIKUNCI assert: apply(deepcopy(raw)) harus == inner() penuh
+# (semua stat + __bal). Kalau rakitan _core berubah, --write-fixture GAGAL
+# keras alih-alih merekam oracle yang salah.
+
+_HB_CATCHUP_UNLOCKS = (0, 1, 5, 11, 12, 13, 24, 216)
+_HB_CATCHUP_LEVELS = (0, 1, 2, 3, 5, 8, 9, 20)
+_HB_RESOLVE_UNLOCK_VARIANTS = (5, 216)
+_HB_FIX_CELL_BAND = [1.0 / 1.1, 1.1]
+
+
+def _hb_jsonable(obj):
+    # json.dumps mengubah tuple -> array; samakan SISI ORACLE supaya assert
+    # round-trip di bawah bermakna (tuple != list di perbandingan Python).
+    if isinstance(obj, tuple):
+        return [_hb_jsonable(v) for v in obj]
+    if isinstance(obj, list):
+        return [_hb_jsonable(v) for v in obj]
+    if isinstance(obj, dict):
+        return {k: _hb_jsonable(v) for k, v in obj.items()}
+    return obj
+
+
+def _hb_assert_finite(obj, where):
+    # Godot JSON.parse_string menolak NaN/Infinity — pastikan tak ada.
+    if isinstance(obj, float):
+        assert obj == obj and obj not in (float("inf"), float("-inf")), \
+            "non-finite di %s: %r" % (where, obj)
+    elif isinstance(obj, (list, tuple)):
+        for v in obj:
+            _hb_assert_finite(v, where)
+    elif isinstance(obj, dict):
+        for v in obj.values():
+            _hb_assert_finite(v, where)
+
+
+def _hb_raw_catalog(core):
+    """Replika rakitan _core.get_all_hero_types TANPA balance pass."""
+    from bosses.boss_data import MINI_BOSS_TYPES, TRUE_BOSS_TYPES
+    all_heroes = {}
+    for hero_type, stats in core.HERO_TYPES.items():
+        data = dict(stats)
+        data.setdefault("unlock_cost",
+                        core._default_hero_unlock_cost(hero_type, data))
+        data.setdefault("unlock_require_boss", None)
+        data.setdefault("is_boss_hero", False)
+        all_heroes[hero_type] = data
+    for boss_class, table in (("mini", MINI_BOSS_TYPES),
+                              ("true", TRUE_BOSS_TYPES)):
+        for boss_type, boss_data in table.items():
+            hero_unlock = boss_data.get("hero_unlock")
+            if not hero_unlock:
+                continue
+            data = dict(hero_unlock)
+            data.setdefault("unlock_cost",
+                            core._default_hero_unlock_cost(
+                                boss_type, data, is_boss_hero=True,
+                                boss_class=boss_class))
+            data["unlock_require_boss"] = boss_type
+            data["is_boss_hero"] = True
+            data["boss_class"] = boss_class
+            data["source_boss_name"] = boss_data.get(
+                "name", boss_type.title())
+            all_heroes[boss_type] = data
+    return all_heroes
+
+
+def _hb_apply_with_base(catalog, base, hero_balance):
+    """Cermin apply_to_catalog dengan baseline yang disuntik.
+
+    Dipakai HANYA untuk jalur pristine kosong (Godot: baseline = entri
+    boss katalog itu sendiri). Semua potongan memakai fungsi py ASLI yang
+    sama (resolve/_pool_mean_rescale/_final_fixpoint/metrics); yang
+    direplika cuma komposisi ~25 baris apply_to_catalog — dan komposisi
+    itu dikunci silang oleh assert jalur utama (apply(replika) == inner).
+    """
+    import __main__ as main_mod
+    src = dict(catalog)
+    for k, v in base.items():
+        if k in src:
+            src[k] = v
+    table = hero_balance.resolve_catalog(src)
+    before = {}
+    for k, v in base.items():
+        mm = hero_balance.metrics(v)
+        if mm["dps"] > 0:
+            before[k] = mm
+    for ht, v in base.items():
+        if ht in table and table[ht] is not None:
+            table[ht]["dbg"]["raw"] = {
+                "hp": v.get("hp"), "damage": v.get("damage"),
+                "skill_damage": v.get("skill_damage"),
+                "attack_cooldown": v.get("attack_cooldown"),
+                "skill_cooldown": v.get("skill_cooldown")}
+    for ht, mult in table.items():
+        if not mult:
+            continue
+        stats = catalog.get(ht)
+        if stats is None or not stats.get("is_boss_hero"):
+            continue
+        raw = src.get(ht, stats)
+        stats["__bal"] = mult
+        stats["hp"] = max(1, int(round(raw.get("hp", 1) * mult["hp"])))
+        stats["damage"] = max(1, int(round(
+            raw.get("damage", 1) * mult["dmg"])))
+        stats["skill_damage"] = max(0, int(round(
+            raw.get("skill_damage", 0) * mult["skill"])))
+        for key in ("skill_q_damage", "skill_w_damage", "skill_e_damage",
+                    "skill_r_damage"):
+            if raw.get(key):
+                stats[key] = max(0, int(round(raw[key] * mult["skill"])))
+    import statistics as _st
+    pool_means = {
+        "dps": round(_st.fmean([m["dps"] for m in before.values()]), 1),
+        "ehp": round(_st.fmean([m["ehp"] for m in before.values()]), 1),
+        "n": len(before)}
+    anchor = {}
+    anchor["dps"] = hero_balance._pool_mean_rescale(catalog, before, "dps")
+    anchor["ehp"] = hero_balance._pool_mean_rescale(catalog, before, "ehp")
+    anchor = {k: v for k, v in anchor.items()
+              if v and abs(v - 1.0) >= 0.005}
+    fix = hero_balance._final_fixpoint(catalog)
+    return table, {"pool_means": pool_means, "pool_anchor": anchor,
+                   "fix": fix,
+                   "parity": dict(hero_balance.LAST.get("parity") or {})}
+
+
+def make_hero_balance_fixture(core, entity):
+    """Oracle port hero_balance.py -> HeroBalance.gd dari kode ASLI."""
+    import copy
+    import __main__ as main_mod
+    import statistics as _st
+    import hero_balance
+    import hero_archetypes
+    from bosses.boss_data import MINI_BOSS_TYPES, TRUE_BOSS_TYPES
+
+    raw = _hb_raw_catalog(core)
+    assert len(raw) == 222, len(raw)
+    # Kunci kesetiaan replika: balance(replika) == inner _core PENUH.
+    inner = core._original_get_all_hero_types_shop_prices()
+    probe = hero_balance.apply_to_catalog(copy.deepcopy(raw))
+    assert probe == inner, "replika katalog mentah menyimpang dari _core"
+
+    pristine = hero_balance.pristine_boss_stats()
+    assert len(pristine) == 216, len(pristine)
+    boss_tables = {
+        "mini": {bt: {"hero_unlock": dict(bd.get("hero_unlock") or {})}
+                 for bt, bd in MINI_BOSS_TYPES.items()
+                 if bd.get("hero_unlock")},
+        "true": {bt: {"hero_unlock": dict(bd.get("hero_unlock") or {})}
+                 for bt, bd in TRUE_BOSS_TYPES.items()
+                 if bd.get("hero_unlock")},
+    }
+    # Kunci cabang lewati (boss tanpa hero_unlock): sintetis, didokumentasi.
+    boss_tables["mini"]["_probe_tanpa_unlock"] = {}
+    boss_tables["true"]["_probe_unlock_none"] = {"hero_unlock": None}
+
+    def _no_game():
+        had = hasattr(main_mod, "game_instance")
+        old = getattr(main_mod, "game_instance", None)
+        main_mod.game_instance = None
+        return had, old
+
+    def _restore_game(had_old):
+        had, old = had_old
+        if had:
+            main_mod.game_instance = old
+        elif hasattr(main_mod, "game_instance"):
+            del main_mod.game_instance
+
+    # ── jalur game: apply penuh di atas katalog mentah (0 unlock, lv 1) ──
+    catalog = copy.deepcopy(raw)
+    st = _no_game()
+    try:
+        hero_balance.apply_to_catalog(catalog)
+        table = copy.deepcopy(hero_balance.LAST["table"])
+        last = {k: copy.deepcopy(v)
+                for k, v in hero_balance.LAST.items() if k != "table"}
+    finally:
+        _restore_game(st)
+    assert set(last) == {"pool", "parity", "pool_means", "pool_anchor",
+                         "fix"}, sorted(last)
+    assert last["pool"] == {}, last["pool"]
+
+    final_stats = {}
+    for ht, v in catalog.items():
+        if not v.get("is_boss_hero"):
+            continue
+        assert v["hp"] == int(v["hp"]) and v["damage"] == int(v["damage"])
+        final_stats[ht] = {
+            "hp": v["hp"], "damage": v["damage"],
+            "skill_damage": v["skill_damage"],
+            "skill_q_damage": v.get("skill_q_damage"),
+            "skill_w_damage": v.get("skill_w_damage"),
+            "skill_e_damage": v.get("skill_e_damage"),
+            "skill_r_damage": v.get("skill_r_damage"),
+        }
+    assert len(final_stats) == 216, len(final_stats)
+    # Starter SENGAJA tak tertulis (catch-up milik Hero saat unit dibuat).
+    for ht, v in catalog.items():
+        if not v.get("is_boss_hero"):
+            assert v == raw[ht], ht
+
+    metrics = {ht: hero_balance.metrics(s) for ht, s in raw.items()}
+
+    # ── grid catch-up starter + hitung unlock ──
+    starters = list(hero_balance.STARTER_HEROES)
+    assert len(starters) == 6
+    true_one = next(bt for bt in TRUE_BOSS_TYPES
+                    if TRUE_BOSS_TYPES[bt].get("hero_unlock"))
+    grid_heroes = starters + ["gornak", true_one]
+    mult_grid = []
+    for ht in grid_heroes:
+        for u in _HB_CATCHUP_UNLOCKS:
+            for lv in _HB_CATCHUP_LEVELS:
+                y, x = hero_balance.starter_catchup(ht, u, lv)
+                mult_grid.append({"hero": ht, "unlocks": u, "level": lv,
+                                  "hp": y, "dmg": x})
+    stat_cases = []
+    for ht in starters:
+        base = raw[ht]
+        for u, lv in [(0, 1), (5, 3), (11, 1), (12, 8), (24, 5), (216, 1)]:
+            hp, dmg = hero_balance.starter_catchup_stats(ht, base, u, lv)
+            stat_cases.append({"hero": ht, "unlocks": u, "level": lv,
+                               "base_hp": base["hp"],
+                               "base_damage": base["damage"],
+                               "hp": hp, "damage": dmg})
+    hp0, dmg0 = hero_balance.starter_catchup_stats(
+        true_one, raw[true_one], 0, 1)
+    stat_cases.append({"hero": true_one, "unlocks": 0, "level": 1,
+                       "base_hp": raw[true_one]["hp"],
+                       "base_damage": raw[true_one]["damage"],
+                       "hp": hp0, "damage": dmg0})
+    boss_keys = [bt for bt in list(MINI_BOSS_TYPES) + list(TRUE_BOSS_TYPES)
+                 if (MINI_BOSS_TYPES if bt in MINI_BOSS_TYPES
+                     else TRUE_BOSS_TYPES)[bt].get("hero_unlock")]
+    unlock_case_lists = [
+        ("nol", None), ("kosong", []), ("semua_starter", list(starters)),
+        ("starter_ganda", starters + starters[:3]),
+        ("satu_unlock", ["gornak"]),
+        ("campur", ["kaizen", "gornak", "vex", true_one]),
+        ("unlock_ganda", ["gornak", "gornak", true_one]),
+        ("penuh_216", list(boss_keys)),
+    ]
+    unlock_counts = [{"name": name, "purchased": purchased,
+                      "unlocks": hero_balance.boss_unlocks_for_purchases(
+                          purchased)}
+                     for name, purchased in unlock_case_lists]
+
+    # ── kalibrasi resistansi boss (bahan PRA = dps mentah) ──
+    rows = []
+    for bt in boss_keys:
+        bd = (MINI_BOSS_TYPES if bt in MINI_BOSS_TYPES
+              else TRUE_BOSS_TYPES)[bt]
+        assert bd.get("hero_unlock"), bt
+        m = hero_balance.metrics(pristine[bt])
+        e = hero_archetypes.BOSS_RESISTANCES[bt]
+        rows.append({"boss_type": bt, "boss_class": e["boss_class"],
+                     "profile": e["profile"], "dps": m["dps"],
+                     "dmg_type": hero_archetypes.get_archetype(
+                         bt)["dmg_type"]})
+    assert len(rows) == 216, len(rows)
+    res, report = hero_balance.calibrate_boss_resistances(rows)
+
+    # ── helper numerik ──
+    round_cases = [0.5, 1.5, 2.5, 7.5, 8.5, 12.5, 1733.5, 2026.5, 879.5,
+                   -0.5, -1.5, -2.5, -12.5, 0.0, 3.0, -3.0, 123456.789,
+                   -123456.789, 0.499999999999, 0.500000000001,
+                   2.499999999999, 2.500000000001, -2.499999999999,
+                   -2.500000000001]
+    round_n_cases = []
+    for n, vals in ((1, [12.2, 17.74074074074074, 0.05, 0.15, 2.25, -0.05,
+                          587.55, 486.1, 2495.4]),
+                    (3, [1.421, 1.2370430282389036, 0.187, 0.0005, 1.0005,
+                          -1.0005, 16.1065, -16.2925, 0.402356024]),
+                    (4, [1.4, 1.272, 1.0, 1.00005, 0.00005, -0.00005,
+                          2.00005, 1.46475, 1.32975, -1.55955, 0.39215,
+                          1.0937411506268484, 0.999890763, 1.000109263])):
+        for v in vals:
+            round_n_cases.append({"n": n, "in": v, "out": round(v, n)})
+    budgets_full = sorted(m["budget"] for m in
+                          (hero_balance.metrics(pristine[bt])
+                           for bt in boss_keys))
+    ratios_full = sorted(
+        m["ehp"] / m["dps"] for m in
+        (hero_balance.metrics(pristine[bt]) for bt in boss_keys))
+    median_cases = [
+        {"in": [], "out": 0.0},
+        {"in": [5.0], "out": 5.0},
+        {"in": [3.0, 1.0, 2.0], "out": 2.0},
+        {"in": [1.0, 2.0], "out": 1.5},
+        {"in": [2.0, 1.0], "out": 1.5},
+        {"in": [1.0, 1.0, 2.0, 2.0], "out": 1.5},
+        {"in": budgets_full, "out": _st.median(budgets_full)},
+        {"in": ratios_full, "out": _st.median(ratios_full)},
+    ]
+    fmean_cases = [
+        {"in": [], "out": 0.0},
+        {"in": [1.0, 2.0, 3.0], "out": 2.0},
+        {"in": budgets_full, "out": _st.fmean(budgets_full)},
+        {"in": budgets_full[:10], "out": _st.fmean(budgets_full[:10])},
+        {"in": [0.82, 1.27, 0.89, 1.33],
+         "out": _st.fmean([0.82, 1.27, 0.89, 1.33])},
+    ]
+    helpers = {
+        "py_round": [[v, round(v)] for v in round_cases],
+        "py_round_n": round_n_cases,
+        "median": median_cases,
+        "fmean": fmean_cases,
+        "school_mod": [[s, hero_balance.school_mod(s)] for s in
+                       ("physical", "PHYSICAL", "magic", "MAGIC", "")],
+        "tower_phys_factor": hero_balance.TOWER_PHYS_FACTOR,
+        "level_factor": [[lv, hero_balance.starter_level_factor(lv)]
+                         for lv in list(range(0, 11)) + [20]],
+    }
+    # _final_power & _eff_dps: 6 kasus nyata dari mult tabel oracle.
+    med_dps = _st.median([hero_balance.metrics(pristine[bt])["dps"]
+                          for bt in boss_keys])
+    med_ehp = _st.median([hero_balance.metrics(pristine[bt])["ehp"]
+                          for bt in boss_keys])
+    power_cases = []
+    eff_cases = []
+    for bt in boss_keys[:2] + boss_keys[162:164] + boss_keys[100:101] \
+            + boss_keys[200:201]:
+        m = hero_balance.metrics(pristine[bt])
+        t = table[bt]
+        power_cases.append({
+            "hero": bt, "dmg": m["dmg"], "skill": m["skill"], "cd": m["cd"],
+            "skcd": m["skcd"], "ehp": m["ehp"], "y": t["hp"],
+            "x_dmg": t["dmg"], "x_sk": t["skill"], "med_dps": med_dps,
+            "med_ehp": med_ehp,
+            "out": hero_balance._final_power(
+                m, t["hp"], t["dmg"], t["skill"], med_dps, med_ehp)})
+        dps = (m["dmg"] * t["dmg"]) * 60.0 / m["cd"] \
+            + (m["skill"] * t["skill"]) * 60.0 / m["skcd"]
+        eff_cases.append({
+            "hero": bt, "stats": dict(pristine[bt]), "dps": dps,
+            "out": hero_balance._eff_dps(
+                hero_archetypes, hero_archetypes.BOSS_RESISTANCES, bt,
+                dict(pristine[bt]), m, dps)})
+    helpers["final_power"] = power_cases
+    helpers["eff_dps"] = eff_cases
+
+    # ── fixpoint jalur sel (cell_band terisi; jalur game = None) ──
+    band_catalog = copy.deepcopy(catalog)
+    band_info = hero_balance._final_fixpoint(
+        band_catalog, cell_band=list(_HB_FIX_CELL_BAND))
+    band_damage = {
+        ht: {"damage": v["damage"], "skill_damage": v["skill_damage"]}
+        for ht, v in band_catalog.items() if v.get("is_boss_hero")}
+    assert len(band_damage) == 216, len(band_damage)
+
+    # ── jalur pristine kosong (baseline = entri katalog itu sendiri) ──
+    saved_last = copy.deepcopy(hero_balance.LAST)
+    st = _no_game()
+    try:
+        fb_catalog = copy.deepcopy(raw)
+        fb_base = {k: copy.deepcopy(v) for k, v in fb_catalog.items()
+                   if v.get("is_boss_hero")}
+        fb_table, fb_last = _hb_apply_with_base(
+            fb_catalog, fb_base, hero_balance)
+    finally:
+        _restore_game(st)
+        hero_balance.LAST.clear()
+        hero_balance.LAST.update(saved_last)
+    fb_final = {ht: {"hp": v["hp"], "damage": v["damage"],
+                     "skill_damage": v["skill_damage"]}
+                for ht, v in fb_catalog.items()
+                if v.get("is_boss_hero")}
+    fb_bal = {ht: {"hp": v["__bal"]["hp"], "dmg": v["__bal"]["dmg"],
+                   "skill": v["__bal"]["skill"]}
+              for ht, v in fb_catalog.items()
+              if v.get("is_boss_hero")}
+    assert len(fb_final) == 216 and len(fb_bal) == 216
+
+    # ── varian resolve (starter ikut unlock; level py selalu 1) ──
+    variant_src = copy.deepcopy(raw)
+    for k, v in pristine.items():
+        if k in variant_src:
+            variant_src[k] = copy.deepcopy(v)
+    variants = []
+    st = _no_game()
+    try:
+        base_vt = hero_balance.resolve_catalog(variant_src)
+        for u in _HB_RESOLVE_UNLOCK_VARIANTS:
+            purchased = starters[:2] + boss_keys[:u]
+            main_mod.game_instance = SimpleNamespace(
+                purchased_heroes=list(purchased),
+                save_data={"purchased_heroes": list(purchased)})
+            vt = hero_balance.resolve_catalog(variant_src)
+            got = hero_balance.boss_unlocks_for_purchases(purchased)
+            assert got == u, (got, u)
+            variants.append({
+                "unlocks": u, "level": 1,
+                "starters": {ht: vt[ht] for ht in starters},
+            })
+            assert set(vt) == set(base_vt), "varian kehilangan hero"
+            for ht in vt:
+                if ht not in starters:
+                    assert vt[ht] == base_vt[ht], \
+                        "unlock bocor ke baris boss %s" % ht
+    finally:
+        _restore_game(st)
+        hero_balance.LAST.clear()
+        hero_balance.LAST.update(saved_last)
+
+    section = {
+        "counts": {"catalog": len(raw), "boss": len(pristine),
+                   "starter": len(starters),
+                   "mult_grid": len(mult_grid),
+                   "stat_cases": len(stat_cases),
+                   "calibrate_rows": len(rows)},
+        "raw_catalog": json.dumps(_hb_jsonable(raw),
+                                  separators=(",", ":")),
+        "boss_tables": json.dumps(_hb_jsonable(boss_tables),
+                                  separators=(",", ":")),
+        "pristine": json.dumps(_hb_jsonable(pristine),
+                               separators=(",", ":")),
+        "table": json.dumps(_hb_jsonable(table), separators=(",", ":")),
+        "final_stats": json.dumps(_hb_jsonable(final_stats),
+                                  separators=(",", ":")),
+        "metrics": json.dumps(_hb_jsonable(metrics),
+                              separators=(",", ":")),
+        "last": _hb_jsonable(last),
+        "catchup": {"mult_grid": mult_grid, "stat_cases": stat_cases,
+                    "starter_heroes": starters,
+                    "unlock_counts": unlock_counts},
+        "calibrate": {"rows": rows, "res": res,
+                      "report": _hb_jsonable(report)},
+        "helpers": _hb_jsonable(helpers),
+        "fix_band": {"cell_band": list(_HB_FIX_CELL_BAND),
+                     "info": band_info, "damage": band_damage},
+        "pristine_fallback": {"final": fb_final, "bal": fb_bal,
+                              "last": _hb_jsonable(fb_last)},
+        "resolve_variants": _hb_jsonable(variants),
+        "note": "oracle port hero_balance.py -> HeroBalance.gd (FASE 28): "
+                "raw_catalog = replika rakitan _core pra-balance (assert "
+                "apply(replika)==inner); table/final_stats/last = apply "
+                "penuh (0 unlock, lv 1); calibrate = bahan PRA; fallback = "
+                "komposisi fungsi py asli dgn baseline katalog.",
+    }
+    _hb_assert_finite(_hb_jsonable(raw), "raw")
+    _hb_assert_finite(_hb_jsonable(table), "table")
+    _hb_assert_finite(_hb_jsonable(metrics), "metrics")
+    _hb_assert_finite(_hb_jsonable(report), "report")
+    for key in ("raw_catalog", "boss_tables", "pristine", "table",
+                "final_stats", "metrics"):
+        assert json.loads(section[key]) == json.loads(json.dumps(
+            json.loads(section[key]), separators=(",", ":"))), key
+    return section
+
+
 def make_fixture(core, entity, levels, paths):
     fps = 60
     result = {
@@ -10099,6 +10563,11 @@ def make_fixture(core, entity, levels, paths):
         # main_desktop_legacy.py yang DI-EXEC apa adanya dengan game/menu
         # palsu. Direplay ControllerInputParityTest lewat scripted_device.
         "controller_input": make_controller_input_fixture(core),
+        # FASE 28 — PORT hero_balance.py -> HeroBalance.gd: oracle kalkulator
+        # balance hero (pristine/resolve/apply/calibrate/fixpoint + grid
+        # catch-up starter + helper numerik). Direplay
+        # HeroBalanceParityTest. Blob besar = string kompak, grid = objek.
+        "hero_balance": make_hero_balance_fixture(core, entity),
     }
     for number in range(1, levels.get_level_count() + 1):
         cfg = levels.get_level_config(number)
@@ -10341,6 +10810,15 @@ def main():
               f"{len(ss['format_last_played_battery'])} format_last_played, "
               f"{len(ss['card_cases'])} layar kartu "
               f"({sum(len(c['cards']) for c in ss['card_cases'])} kartu)")
+        hb = actual["hero_balance"]
+        print("             hero-balance oracle: "
+              f"{hb['counts']['boss']} boss + {hb['counts']['starter']} starter, "
+              f"{len(json.loads(hb['table']))} mult tabel, "
+              f"{hb['counts']['mult_grid']} catchup, "
+              f"{len(hb['catchup']['unlock_counts'])} hitung unlock, "
+              f"{hb['counts']['calibrate_rows']} baris kalibrasi, "
+              f"{len(hb['helpers']['py_round'])} round + "
+              f"{len(hb['helpers']['py_round_n'])} round_n baterai")
 
 
 if __name__ == "__main__":

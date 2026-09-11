@@ -137,8 +137,9 @@ const STARTER_HEROES: Array = ["kaizen", "grimjaw", "sylara", "thorne",
 	"vex", "zephyr"]
 
 
-## Mirror hero_balance.starter_catchup (hero_balance.py 226-246):
-## pengali (hp, damage) — SATU-SATUNYA jalur base_hp/base_damage hero.
+## hero_balance.starter_catchup (hero_balance.py 226-246): pengali
+## (hp, damage) — SATU-SATUNYA jalur base_hp/base_damage hero. Mendelegasikan
+## ke HeroBalance (satu-satunya sumber kebenaran rumus balance).
 ## PENTING (temuan audit 2026-09): di _entity.py Hero.__init__, blok melee
 ## (x1.15 HP / x1.20 dmg) DITIMPA ulang oleh panggilan catchup yang membaca
 ## katalog MENTAH — jadi untuk semua hero non-starter hasilnya = angka mentah
@@ -147,29 +148,18 @@ const STARTER_HEROES: Array = ["kaizen", "grimjaw", "sylara", "thorne",
 ## hp/damage; nilai final datang dari catchup_base().
 static func starter_catchup_mults(hero_type: String, boss_unlocks: int,
 		level: int) -> Vector2:
-	if not (hero_type in STARTER_HEROES):
-		return Vector2.ONE
-	var t := clampf(float(maxi(0, boss_unlocks)) / 12.0, 0.0, 1.0)
-	var lv := maxi(1, level)
-	var tt := clampf(float(lv - 1) / float(maxi(1, 8 - 1)), 0.0, 1.0)
-	var lf := 1.0 - (1.0 - 0.20) * tt
-	var k := 1.0 + (1.32 - 1.0) * (1.0 - t) * lf
-	if k <= 1.001:
-		return Vector2.ONE
-	return Vector2(1.0 + (k - 1.0) * 1.25, 1.0 + (k - 1.0) * 0.85)
+	return HeroBalance.starter_catchup(hero_type, boss_unlocks, level)
 
 
 ## (base_hp, base_damage) final ala starter_catchup_stats pygame — inputnya
 ## katalog MENTAH heroes.json (bukan hasil buff melee). Instance method
-## karena membaca `heroes` autoload.
+## karena membaca `heroes` autoload. Mendelegasikan ke HeroBalance.
 func catchup_base(hero_type: String, boss_unlocks: int, level: int) -> Vector2i:
 	var raw: Dictionary = heroes.get(hero_type, {})
 	if raw.is_empty():
 		return Vector2i(1, 1)
-	var m := starter_catchup_mults(hero_type, boss_unlocks, level)
-	var hp := maxi(1, _py_round(float(int(raw.get("hp", 1))) * m.x))
-	var dmg := maxi(1, _py_round(float(int(raw.get("damage", 1))) * m.y))
-	return Vector2i(hp, dmg)
+	return HeroBalance.starter_catchup_stats(hero_type, raw, boss_unlocks,
+		level)
 
 
 # Balance pasif: melee buff (mirip _entity.py Hero.__init__)
