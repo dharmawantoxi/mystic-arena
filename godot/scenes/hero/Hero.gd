@@ -1346,8 +1346,3 @@ func _draw() -> void:
 		j += 1
 		if j > 4:
 			break
-_list():
-		draw_circle(Vector2(-14 + float(j) * 7, -52), 2.2, Color(1.0, 0.35, 0.35, 0.9))
-		j += 1
-		if j > 4:
-			break
