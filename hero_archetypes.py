@@ -11,6 +11,9 @@
 # Sumber data: tools/analyze_hero_archetypes.py
 # Regenerate:  python3 tools/analyze_hero_archetypes.py --emit-module \
 #                hero_archetypes.py --emit-json hero_archetypes.json
+# Port Godot:  godot/scripts/core/HeroArchetypes.gd (mirror 1:1; ikut
+#              di-refresh dengan menambah --emit-gdscript pada command
+#              regenerate di atas). Dikunci HeroArchetypesParityTest.
 # ================================
 
 # hero_type -> {dmg_type, playstyle, tier, power}
