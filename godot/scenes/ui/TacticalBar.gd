@@ -21,8 +21,9 @@
 # berakhir di TacticalCommands.gd yang sama, jadi tidak ada logika ganda.
 #
 # Yang dibandingkan harness TacticalInputParityTest: visibilitas tombol
-# (panel_available) + jejak hold_start/hold_end. PIKSEL (chip "HOLD",
-# sorot warna, font persis sidepanel) = aproksimasi, BELUM TERUJI.
+# (panel_available) + jejak hold_start/hold_end. Feedback command kini ikut
+# ditampilkan di layar seperti tactical_commands.py; raster font/panel tetap
+# aproksimasi, bukan assertion piksel.
 extends Control
 
 const COMMANDS: Array = [
@@ -62,6 +63,12 @@ var _btn_base: Dictionary = {}
 ## claimed-touch pygame (hold_end nama salah = no-op di manajer).
 var _held: Dictionary = {}
 var _timer: float = 0.0
+## Feedback command menggantikan TacticalCommandManager.draw_ui pygame.
+## Node ini full-rect dan mouse-transparent, jadi tetap tampil saat rail
+## dilipat tanpa mengganggu hit-test map/panel.
+var _feedback_panel: PanelContainer = null
+var _feedback_label: Label = null
+var _feedback_style: StyleBoxFlat = null
 
 func _ready() -> void:
 	name = "TacticalBar"
@@ -130,6 +137,9 @@ func is_expanded() -> bool:
 
 
 func _process(delta: float) -> void:
+	# Feedback harus disinkronkan tiap frame agar fade tidak tersendat
+	# walau visibilitas tombol cukup diperbarui 5 Hz.
+	_sync_feedback()
 	# Visibilitas tombol mengikuti kondisi medan (hero hidup / boss aktif).
 	# 5 Hz cukup (paritas draw per-frame pygame bukan target piksel).
 	_timer += delta
@@ -228,6 +238,74 @@ func _build() -> void:
 	_toggle.add_theme_color_override("font_color", Color(0.85, 0.88, 0.98))
 	_toggle.pressed.connect(_on_toggle_pressed)
 	add_child(_toggle)
+	_build_feedback()
+
+
+## Feedback UI dari `TacticalCommandManager.feedback_*`.
+## Pygame menaruhnya di (640, 90), fade-in 30 frame dan fade-out 30
+## frame; PanelContainer memberi padanan aman untuk bg/border rounded.
+func _build_feedback() -> void:
+	_feedback_panel = PanelContainer.new()
+	_feedback_panel.name = "TacticalFeedback"
+	_feedback_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_feedback_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	_feedback_panel.offset_left = -310.0
+	_feedback_panel.offset_right = 310.0
+	_feedback_panel.offset_top = 68.0
+	_feedback_panel.offset_bottom = 116.0
+	_feedback_style = StyleBoxFlat.new()
+	_feedback_style.bg_color = Color(0.02, 0.02, 0.05, 0.86)
+	_feedback_style.border_color = Color(1.0, 0.86, 0.4, 0.95)
+	_feedback_style.set_border_width_all(2)
+	_feedback_style.set_corner_radius_all(6)
+	_feedback_style.content_margin_left = 10.0
+	_feedback_style.content_margin_right = 10.0
+	_feedback_style.content_margin_top = 5.0
+	_feedback_style.content_margin_bottom = 5.0
+	_feedback_panel.add_theme_stylebox_override("panel", _feedback_style)
+	_feedback_label = Label.new()
+	UiTheme.style_label(_feedback_label, "", UiTheme.body_bold(), 20,
+		Color.WHITE, HORIZONTAL_ALIGNMENT_CENTER, true)
+	_feedback_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_feedback_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_feedback_panel.add_child(_feedback_label)
+	add_child(_feedback_panel)
+	_feedback_panel.visible = false
+
+
+## Ambil manajer dari Main, bukan membuat state taktik kedua di HUD.
+func _sync_feedback() -> void:
+	if _feedback_panel == null:
+		return
+	var main = get_tree().get_first_node_in_group("main")
+	var tac = main.get("_tactical") if main != null \
+			and is_instance_valid(main) else null
+	if tac == null or not is_instance_valid(tac) \
+			or GameManager.in_menu:
+		_feedback_panel.visible = false
+		return
+	var timer := int(tac.get("feedback_timer"))
+	var text := str(tac.get("feedback_text"))
+	if timer <= 0 or text.is_empty():
+		_feedback_panel.visible = false
+		return
+	_feedback_panel.visible = true
+	_feedback_label.text = text
+	var alpha := 1.0
+	var y_offset := 0.0
+	if timer < 30:
+		alpha = clampf(float(timer) / 30.0, 0.0, 1.0)
+	elif timer > 150:
+		var progress := clampf((180.0 - float(timer)) / 30.0,
+			0.0, 1.0)
+		alpha = progress
+		y_offset = (1.0 - progress) * 20.0
+	_feedback_panel.modulate = Color(1.0, 1.0, 1.0, alpha)
+	_feedback_panel.offset_top = 68.0 + y_offset
+	_feedback_panel.offset_bottom = 116.0 + y_offset
+	var c = tac.get("feedback_color")
+	if c is Color and _feedback_style != null:
+		_feedback_style.border_color = Color(c.r, c.g, c.b, 0.95)
 
 static func _tooltip(action: String) -> String:
 	match action:
