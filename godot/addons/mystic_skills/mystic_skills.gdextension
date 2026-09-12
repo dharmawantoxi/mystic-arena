@@ -1,0 +1,20 @@
+[configuration]
+entry_symbol = "mystic_skills_library_init"
+compatibility_minimum = 4.3
+reloadable = true
+
+[libraries]
+linux.debug.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.debug.x86_64.so"
+linux.release.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.release.x86_64.so"
+linux.debug.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.debug.arm64.so"
+linux.release.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.release.arm64.so"
+windows.debug.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.windows.debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.windows.release.x86_64.dll"
+macos.debug = "res://addons/mystic_skills/bin/libmystic_skills.macos.debug.framework"
+macos.release = "res://addons/mystic_skills/bin/libmystic_skills.macos.release.framework"
+macos.debug.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.macos.debug.arm64.framework"
+macos.release.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.macos.release.arm64.framework"
+android.debug.arm64v8 = "res://addons/mystic_skills/bin/libmystic_skills.android.debug.arm64v8.so"
+android.release.arm64v8 = "res://addons/mystic_skills/bin/libmystic_skills.android.release.arm64v8.so"
+android.debug.armeabi-v7a = "res://addons/mystic_skills/bin/libmystic_skills.android.debug.armeabi-v7a.so"
+android.release.armeabi-v7a = "res://addons/mystic_skills/bin/libmystic_skills.android.release.armeabi-v7a.so"

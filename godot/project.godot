@@ -157,3 +157,6 @@ rendering/use_gdext_lighting=false
 ; Arah cahaya paritas LIGHT_DIR = (-1,-1) kiri-atas
 rendering/light_dir_x=-1
 rendering/light_dir_y=-1
+; Fase Hero Skills (port hero_skills/_bundle.py -> godot++): C++ GDExtension menggantikan HeroSkillKit.gd transpiled
+; true kalau sudah build lib di addons/mystic_skills/bin/ (SConstruct di godot/gdext/mystic_skills/)
+skills/use_gdext_skills=false
