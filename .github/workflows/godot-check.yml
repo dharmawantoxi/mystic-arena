@@ -53,6 +53,10 @@ on:
       - 'tools/gen_mobile_cpp.py'
       - 'tools/test_mobile_cpp_selftest.py'
       - 'godot/addons/mystic_mobile/**'
+      - 'splash_screen.py'
+      - 'tools/gen_splash_cpp.py'
+      - 'tools/test_godot_splash_parity.py'
+      - 'tools/test_splash_cpp_selftest.py'
       - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
@@ -100,6 +104,10 @@ on:
       - 'tools/gen_mobile_cpp.py'
       - 'tools/test_mobile_cpp_selftest.py'
       - 'godot/addons/mystic_mobile/**'
+      - 'splash_screen.py'
+      - 'tools/gen_splash_cpp.py'
+      - 'tools/test_godot_splash_parity.py'
+      - 'tools/test_splash_cpp_selftest.py'
       - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
@@ -236,6 +244,25 @@ jobs:
           #       symbol .so yang benar).
           python3 tools/gen_ui_cpp.py --check
           python3 tools/test_ui_cpp_selftest.py
+          # splash_screen.py -> Godot C++ (FASE 38), TIGA lapis tanpa engine:
+          #   (a) --check = splash_processor.h/.cpp/splash_dispatch.inc
+          #       byte-identik dengan transpile AST splash_screen.py yang segar;
+          #   (b) test_splash_cpp_selftest.py = MENG-EXECUTE
+          #       splash_processor.cpp apa adanya lewat stub Variant
+          #       (godot/gdext/mystic_splash/selftest) — 1585 cek (1580 tanpa
+          #       checkout godot-cpp) / 6524 perintah vs fixture
+          #       splash_parity.json, closed-world (tabel
+          #       perintah == bind_static_method == deklarasi .h; setiap fungsi
+          #       ter-bind diuji). Butuh g++ saja (sudah ada di runner), dan
+          #       kalau checkout godot-cpp ada ia juga compile+link+strip .so
+          #       probe lalu mengulang cek langkah build godot-gdext.yml (entry
+          #       via `nm -D`, isi modul via string yang tahan strip).
+          # Lapisan (c) — tools/test_godot_splash_parity.py, yang MENJALANKAN
+          # SplashScreen pygame ASLI (SDL dummy + font palsu + TrackSurface)
+          # untuk merekam/menguji fixture — butuh pygame, jadi ikut langkah
+          # "SplashParityTest" di bawah (pola UiThemeParityTest).
+          python3 tools/gen_splash_cpp.py --check
+          python3 tools/test_splash_cpp_selftest.py
           # Scope-check hasil generate (identifier harus terdeklarasi di
           # param/var lokal/bridge Hero.gd) — tangkap 'Identifier not
           # declared' sebelum engine.
@@ -1162,6 +1189,41 @@ jobs:
             cat /tmp/uitheme.gate
             echo "::error::UITHEME-FAIL-TAIL: $(tail -40 /tmp/uitheme.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::UITHEME-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/uitheme.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4y2. SplashParityTest (FASE 38): splash_screen.py ↔ SplashModel.gd ──
+      # Oracle-nya dua lapis seperti UiTheme: (1) tools/
+      # test_godot_splash_parity.py MENJALANKAN SplashScreen pygame ASLI (SDL
+      # dummy + font palsu 7px/karakter + TrackSurface sebagai screen supaya
+      # blit tertangkap) lalu merekam fixture: timeline 4 skenario x 200 frame
+      # (title_alpha, _overall_alpha, done, DUA bendera skip), 46 partikel x
+      # 120 langkah + nilai respawn RNG (random.uniform di-spy) + triplet
+      # gambar, 48 batang gradien + 70 bingkai vignette + 9 probe PIKSEL
+      # (interior layar HITAM pekat: alpha vignette menjenuh 255 pada i <= 24),
+      # tabel grow logo + 64 cincin glow, 3 lapisan glow judul + 4 garis aksen,
+      # hint, dan urutan blit/draw 2 skenario; ia juga mengaudit wiring
+      # closed-world (SplashScreen.gd -> SplashBackend, project.godot default
+      # false, .gdextension, .gitignore, allowlist SEMPIT godot_log_gate,
+      # kedua workflow, arity tiap panggilan Backend.* di scene + test) dan
+      # kesegaran fixture + SplashModel.gd (62 fungsi, API_SIGNATURE).
+      # (2) Scene ini memutar ulang fixture itu di engine betulan dengan
+      # backend DIPAKSA "gdscript" (jalur default produksi, tanpa compiler),
+      # ditutup smoke test scene SplashScreen asli (fade in, skip -> finished).
+      # Jalur C++ (MysticSplash) diuji SplashGdextParityTest di godot-gdext.yml.
+      - name: "SplashParityTest (splash_screen.py ↔ SplashModel.gd)"
+        run: |
+          set -o pipefail
+          python -m pip install --quiet pygame-ce
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_splash_parity.py
+          godot --headless --path godot res://tests/SplashParityTest.tscn --quit-after 400 2>&1 | tee /tmp/splash.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/splash.log --label "SplashParityTest" \
+              --require "[SplashParityTest] PASS" > /tmp/splash.gate 2>&1; then
+            cat /tmp/splash.gate
+          else
+            cat /tmp/splash.gate
+            echo "::error::SPLASH-FAIL-TAIL: $(tail -40 /tmp/splash.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::SPLASH-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/splash.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 
