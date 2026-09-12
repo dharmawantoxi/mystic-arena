@@ -63,6 +63,10 @@ on:
       - 'tools/test_godot_map_data_parity.py'
       - 'tools/test_maps_cpp_selftest.py'
       - 'godot/addons/mystic_maps/**'
+      - 'ui_components/**'
+      - 'tools/gen_ui_cpp.py'
+      - 'tools/test_ui_cpp_selftest.py'
+      - 'godot/addons/mystic_ui/**'
       - 'godot/scripts/core/MapDB.gd'
       - 'godot/scripts/core/MapDBLoader.gd'
       - 'godot/scenes/map/ArenaMap.gd'
@@ -105,6 +109,10 @@ on:
       - 'tools/test_godot_map_data_parity.py'
       - 'tools/test_maps_cpp_selftest.py'
       - 'godot/addons/mystic_maps/**'
+      - 'ui_components/**'
+      - 'tools/gen_ui_cpp.py'
+      - 'tools/test_ui_cpp_selftest.py'
+      - 'godot/addons/mystic_ui/**'
       - 'godot/scripts/core/MapDB.gd'
       - 'godot/scripts/core/MapDBLoader.gd'
       - 'godot/scenes/map/ArenaMap.gd'
@@ -136,7 +144,7 @@ env:
 
 jobs:
   build:
-    name: Build mystic_skills + mystic_levels + mystic_maps + paritas C++ vs oracle
+    name: Build mystic_skills + mystic_levels + mystic_maps + mystic_ui + paritas C++ vs oracle
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -196,6 +204,17 @@ jobs:
           python3 tools/test_godot_map_data_parity.py
           python3 tools/test_maps_cpp_selftest.py
 
+      # ── 0d. Self-test C++ di luar engine (UI, FASE 36) ──
+      # test_ui_cpp_selftest.py: MENG-EXECUTE ui_processor.cpp apa adanya lewat
+      # stub Variant (godot/gdext/mystic_ui/selftest) — 181 cek: geometri popup
+      # build/panel hero/kartu toko vs fixture ui_hud (direkam draw pygame
+      # ASLI), kurva slide popup unlock, tombol popup menara/nexus, label, dan
+      # closed-world tabel perintah == bind == deklarasi .h. Butuh g++ saja.
+      - name: Self-test C++ tanpa engine (UI, FASE 36)
+        run: |
+          python3 tools/gen_ui_cpp.py --check
+          python3 tools/test_ui_cpp_selftest.py
+
       # ── 1. godot-cpp: sumber + objek build di-cache per commit SHA ──
       - name: Resolve commit godot-cpp
         id: cpp-ref
@@ -231,12 +250,13 @@ jobs:
       # SConstruct tiap ekstensi mengharapkan godot-cpp DI DALAM direktorinya
       # sendiri; symlink ke checkout bersama adalah jembatannya. Objek compile
       # godot-cpp (±950 berkas) hidup di dalam direktori itu, jadi mystic_skills,
-      # mystic_levels, dan mystic_maps memakai ulang hasil compile yang sama —
-      # satu compile godot-cpp untuk tiga lib. Semua symlink di-gitignore.
+      # mystic_levels, mystic_maps, dan mystic_ui memakai ulang hasil compile
+      # yang sama — satu compile godot-cpp untuk empat lib. Semua symlink
+      # di-gitignore.
       - name: Symlink godot-cpp ke tiap ekstensi
         run: |
           set -euo pipefail
-          for lib in mystic_skills mystic_levels mystic_maps; do
+          for lib in mystic_skills mystic_levels mystic_maps mystic_ui; do
             link="godot/gdext/$lib/godot-cpp"
             rm -rf "$link"
             ln -s ../godot-cpp "$link"
@@ -298,6 +318,24 @@ jobs:
           test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
           nm -D --defined-only "$SO" | grep -q " T mystic_maps_library_init" \
             || { echo "::error::symbol mystic_maps_library_init tidak diekspor"; exit 1; }
+          echo "[gdext] OK: $SO + symbol entry ada"
+
+      # ── 2d. Build mystic_ui (ui_components/_bundle.py -> godot++, FASE 36) ──
+      # Output: godot/addons/mystic_ui/bin/libmystic_ui.linux.template_debug.x86_64.so
+      # (suffix scons = nama berkas; kunci .gdextension-nya linux.debug.x86_64.)
+      - name: Build mystic_ui (linux x86_64)
+        working-directory: godot/gdext/mystic_ui
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          scons $SCONS_FLAGS -j"$(nproc)"
+          SO=../../addons/mystic_ui/bin/libmystic_ui.linux.template_debug.x86_64.so
+          ls -lh ../../addons/mystic_ui/bin/
+          test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
+          nm -D --defined-only "$SO" | grep -q " T mystic_ui_library_init" \
+            || { echo "::error::symbol mystic_ui_library_init tidak diekspor"; exit 1; }
+          nm -D --defined-only "$SO" | grep -q "_ZN6godot8MysticUI" \
+            || { echo "::error::MysticUI tidak ada di symbol table"; exit 1; }
           echo "[gdext] OK: $SO + symbol entry ada"
 
       # ── 3. Godot binary (di-cache; pola sama dengan godot-check.yml) ──

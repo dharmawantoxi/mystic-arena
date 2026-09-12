@@ -32,6 +32,11 @@ godot/addons/mystic_maps/bin/*.dll
 godot/addons/mystic_maps/bin/*.dylib
 godot/addons/mystic_maps/bin/*.framework/
 godot/addons/mystic_maps/bin/*.wasm
+godot/addons/mystic_ui/bin/*.so
+godot/addons/mystic_ui/bin/*.dll
+godot/addons/mystic_ui/bin/*.dylib
+godot/addons/mystic_ui/bin/*.framework/
+godot/addons/mystic_ui/bin/*.wasm
 godot/gdext/mystic_skills/godot-cpp/
 godot/gdext/mystic_skills/godot-cpp
 godot/gdext/mystic_levels/godot-cpp/

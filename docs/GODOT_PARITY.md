@@ -8,6 +8,25 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Komponen UI `ui_components/` — jalur native C++ (godot++) — 12 September 2026 (FASE 36) — **DALAM PROSES**
+
+`ui_components/_bundle.py` (11 submodul: base UI, portrait hero, popup build,
+slot build, panel hero, hero shop, indikator hover, notifikasi, overlay,
+popup renderer, hint toko) berisi **lapisan layout + state + label** dari UI
+in-match. Fase ini membangkitkan lapisan itu sebagai C++
+(`tools/gen_ui_cpp.py` → `godot/gdext/mystic_ui/src/ui_processor.{h,cpp}`,
+`MysticUI : RefCounted`, **80 method static**) plus tabel perintah self-test
+(`selftest/ui_dispatch.inc`) — **belum ada** saklar backend, jadi tidak ada
+perilaku pemain yang berubah.
+
+| Bagian | Sesudah (FASE 36, sejauh ini) |
+|---|---|
+| Sumber | Satu: AST `ui_components/_bundle.py` + `_core.py` (settings) + `ui_theme.py` (palet). Generator MENOLAK (bukan menebak) kalau literal/ekspresi hilang atau berubah bentuk; setiap fungsi menyebut baris sumber Python-nya |
+| Cakupan | Geometri (popup build 400x300 + clamp 4 posisi, panel hero 280x276, kartu toko 340x120 + grid/scroll, slot build 40x38), state tombol (`shop_card_state`, `castle_shield_section`, `regen_shield_section`, `build_button_style`), label (`ITEM FORGE  (n/6)`, `M A X   L E V E L`, `Lv4: DMG 55 HP 700`, `2/5 Heroes`, `x1.5`), predikat hover, kurva slide popup unlock |
+| Sengaja TIDAK diport | Piksel (`pygame.draw`, `Surface`, cache tekstur, RNG partikel) dan **metrik font** — lebar/tinggi teks dikirim sebagai parameter supaya kedua backend memakai angka identik tanpa bergantung font engine |
+| Verifikasi | (1) `gen_ui_cpp.py --check` di **kedua** workflow (3 berkas byte-identik); (2) `test_ui_cpp_selftest.py` — MENG-EXECUTE `ui_processor.cpp` apa adanya lewat stub Variant tanpa engine: **181 cek** vs fixture `ui_hud` (angka direkam dari draw pygame ASLI) + `_core.py`/`ui_theme.py` + built-in Python (`round()` half-to-even, `f"{v:,}"`), plus **closed-world** (tabel perintah == `bind_static_method` == deklarasi `.h`; setiap fungsi ter-bind wajib diuji); (3) build scons + `nm -D` (`mystic_ui_library_init` + symbol `MysticUI`) di `godot-gdext.yml` |
+| Belum | Oracle statis spy-pygame, backend GDScript + saklar (`mystic/ui/use_gdext_ui` default **false**), scene paritas engine, `docs/UI_COMPONENTS_GODOTPP.md`. Sampai itu ada, jalur produksi **hanya** pygame |
+
 ## Peta `map_components/` — jalur native C++ (godot++) — 12 September 2026 (FASE 35)
 
 `map_components/_bundle.py` (palet + 54 tema + `PathGenerator` +
