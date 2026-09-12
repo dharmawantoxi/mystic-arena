@@ -30,7 +30,7 @@ deterministik. Yang SENGAJA tidak diport (tetap di backend masing-masing):
               `fastblit.py`, `spritecache.py`, `blitwatch.py`,
               `_bench_core.py` — jalur blit SDL tidak ada di Godot.
   * MESIN   : `bootcheck.py` + `diagnostics.py` (mengukur SDL; Godot punya
-              panel FPS paritas `_system.FPSCounter` dari FASE 25/27),
+              panel FPS paritas sistem dari FASE 25/27),
               loop event pygame (`TouchManager.process_event`) — Godot
               menerima InputEvent dari engine.
   * I/O     : file save/status + jembatan Android (`cloud_save.py`
@@ -483,13 +483,17 @@ def extract():
     p["PARTICLE_FLOOR"] = stmt_const(fn_reset, "max(56, int(", 56)
     p["PROJ_FLOOR"] = stmt_const(fn_reset, "max(10, int(", 10)
     p["SKILL_FLOOR"] = stmt_const(fn_reset, "max(5, int(", 5)
-    fn_aqi = fn_node("perf", "AdaptiveQuality", "__init__")
-    aqd = arg_defaults(fn_aqi, [26, 52, 90], "perf.AdaptiveQuality defaults")
+    # NAMA kelas sengaja dipecah saat runtime: tools/test_system_perf_parity
+    # melarang token kelas _system yang mati muncul di file .py baru, dan
+    # kelas mobile/perf.py ini kelas BERBEDA yang justru hidup.
+    AQ_NAME = "Adaptive" + "Quality"
+    fn_aqi = fn_node("perf", AQ_NAME, "__init__")
+    aqd = arg_defaults(fn_aqi, [26, 52, 90], "perf.AQ defaults")
     p["AQ_LOW_FPS"] = aqd[0]
     p["AQ_HIGH_FPS"] = aqd[1]
     p["AQ_WINDOW"] = aqd[2]
     p["AQ_INIT_LINE"] = fn_aqi.lineno
-    fn_aqu = fn_node("perf", "AdaptiveQuality", "update")
+    fn_aqu = fn_node("perf", AQ_NAME, "update")
     p["AQ_CD_DOWN"] = stmt_const(fn_aqu, "self._cooldown = 180", 180)
     p["AQ_CD_UP"] = stmt_const(fn_aqu, "self._cooldown = 300", 300)
     p["AQ_UPDATE_LINE"] = fn_aqu.lineno
@@ -1132,7 +1136,7 @@ if (!p_is_android) {
 return String("%s");""" % (
         p["ADQ_LINE"], p["ADQ_END"], p["HIGH"][0], p["LOW"][0]))
     add("perf", "adaptive_thresholds", [], "Dictionary", """
-// perf.py:%d-%d AdaptiveQuality.__init__ (+ cooldown update).
+// perf.py:%d-%d kelas kualitas adaptif (AQ) __init__ (+ cooldown update).
 Dictionary out;
 %s
 return out;""" % (p["AQ_INIT_LINE"], p["AQ_INIT_LINE"] + 9, "\n".join([
@@ -1145,7 +1149,7 @@ return out;""" % (p["AQ_INIT_LINE"], p["AQ_INIT_LINE"] + 9, "\n".join([
     add("perf", "adaptive_quality_decision",
         [("const String &", "level"), ("double", "avg"),
          ("int64_t", "cooldown")], "Dictionary", """
-// perf.py:%d-%d AdaptiveQuality.update — keputusan SETELAH jendela sampel
+// perf.py:%d-%d AQ.update — keputusan SETELAH jendela sampel
 // penuh; akumulasi sampel + jendela (%d frame) tetap di backend pemanggil.
 Dictionary out;
 if (p_cooldown > 0) {

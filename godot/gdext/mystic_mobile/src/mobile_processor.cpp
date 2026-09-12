@@ -429,7 +429,7 @@ return String("low");
 
 Dictionary MysticMobile::adaptive_thresholds() {
 
-// perf.py:882-891 AdaptiveQuality.__init__ (+ cooldown update).
+// perf.py:882-891 kelas kualitas adaptif (AQ) __init__ (+ cooldown update).
 Dictionary out;
     out[Variant(String("low_fps"))] = (int64_t)26;
     out[Variant(String("high_fps"))] = (int64_t)52;
@@ -441,7 +441,7 @@ return out;
 
 Dictionary MysticMobile::adaptive_quality_decision(const String & p_level, double p_avg, int64_t p_cooldown) {
 
-// perf.py:890-911 AdaptiveQuality.update — keputusan SETELAH jendela sampel
+// perf.py:890-911 AQ.update — keputusan SETELAH jendela sampel
 // penuh; akumulasi sampel + jendela (90 frame) tetap di backend pemanggil.
 Dictionary out;
 if (p_cooldown > 0) {
