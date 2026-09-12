@@ -28,7 +28,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 475,
     "skill_r_cooldown": 540,
+    "label_top": 57,
+    "entrance_text": "GORNAK THE ANTI-MAGE APPROACHES!",
     "color": "#aa50d2",
+    "color_dark": "#5a2882",
     "entrance_color": "#aa50d2"
   },
   "morgath": {
@@ -60,7 +63,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 0,
     "skill_r_cooldown": 720,
+    "label_top": 51,
+    "entrance_text": "MORGATH THE TEMPORAL PROTECTOR EMERGES!",
     "color": "#8c64dc",
+    "color_dark": "#412882",
     "entrance_color": "#8c64dc"
   },
   "drakar": {
@@ -92,7 +98,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 562,
     "skill_r_cooldown": 480,
+    "label_top": 53,
+    "entrance_text": "DRAKAR THE RED MIST APPROACHES!",
     "color": "#dc3c3c",
+    "color_dark": "#821919",
     "entrance_color": "#dc3c3c"
   },
   "razak": {
@@ -124,7 +133,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 425,
     "skill_r_cooldown": 520,
+    "label_top": 73,
+    "entrance_text": "RAZAK THE FIRESTARTER DESCENDS!",
     "color": "#f58434",
+    "color_dark": "#8a3012",
     "entrance_color": "#ff9134"
   },
   "khalros": {
@@ -156,7 +168,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 475,
     "skill_r_cooldown": 560,
+    "label_top": 72,
+    "entrance_text": "KHALROS THE BEASTLORD ANSWERS THE CALL!",
     "color": "#be7a44",
+    "color_dark": "#5c3a1c",
     "entrance_color": "#e4a552"
   },
   "gorath": {
@@ -188,7 +203,10 @@
     "skill_e_cooldown": 260,
     "skill_r_damage": 525,
     "skill_r_cooldown": 560,
+    "label_top": 57,
+    "entrance_text": "GORATH THE BLOODWARDEN HUNGERS!",
     "color": "#d22a2a",
+    "color_dark": "#660c0c",
     "entrance_color": "#eb3a34"
   },
   "varkul": {
@@ -220,7 +238,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 475,
     "skill_r_cooldown": 540,
+    "label_top": 60,
+    "entrance_text": "VARKUL THE FROSTFANG RISES!",
     "color": "#80c6fc",
+    "color_dark": "#235caf",
     "entrance_color": "#a8e8ff"
   },
   "xerathis": {
@@ -252,7 +273,10 @@
     "skill_e_cooldown": 420,
     "skill_r_damage": 450,
     "skill_r_cooldown": 580,
+    "label_top": 59,
+    "entrance_text": "XERATHIS THE SHARDCALLER EMERGES!",
     "color": "#94c3fa",
+    "color_dark": "#193780",
     "entrance_color": "#bce8ff"
   },
   "nyzrak": {
@@ -284,7 +308,10 @@
     "skill_e_cooldown": 340,
     "skill_r_damage": 500,
     "skill_r_cooldown": 560,
+    "label_top": 77,
+    "entrance_text": "NYZRAK THE HOLLOW BLIZZARD DESCENDS!",
     "color": "#4494e8",
+    "color_dark": "#12306c",
     "entrance_color": "#a8deff"
   },
   "zharok": {
@@ -316,7 +343,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 500,
     "skill_r_cooldown": 600,
+    "label_top": 59,
+    "entrance_text": "ZHAROK THE EMBERBORN RISES FROM ASHES!",
     "color": "#c89650",
+    "color_dark": "#644628",
     "entrance_color": "#ffb450"
   },
   "pyrenth": {
@@ -348,7 +378,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 687,
     "skill_r_cooldown": 600,
+    "label_top": 79,
+    "entrance_text": "PYRENTH THE DEVOURER DESCENDS!",
     "color": "#dc3c1e",
+    "color_dark": "#64190a",
     "entrance_color": "#ff9632"
   },
   "vokrahn": {
@@ -380,7 +413,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 0,
     "skill_r_cooldown": 600,
+    "label_top": 84,
+    "entrance_text": "VOKRAHN THE HARBINGER OF CHAOS RIDES FORTH!",
     "color": "#b4281e",
+    "color_dark": "#50140f",
     "entrance_color": "#ff6432"
   },
   "nyxara": {
@@ -412,7 +448,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 400,
     "skill_r_cooldown": 560,
+    "label_top": 98,
+    "entrance_text": "NYXARA, THE NETHER MATRON, AWAKENS!",
     "color": "#7dcd18",
+    "color_dark": "#2a1837",
     "entrance_color": "#c8f53e"
   },
   "gravefang": {
@@ -444,7 +483,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 475,
     "skill_r_cooldown": 620,
+    "label_top": 106,
+    "entrance_text": "GRAVEFANG, THE BONE DEVOURER, SHAKES THE EARTH!",
     "color": "#91dc37",
+    "color_dark": "#303940",
     "entrance_color": "#96f541"
   },
   "vhalzun": {
@@ -476,7 +518,10 @@
     "skill_e_cooldown": 320,
     "skill_r_damage": 450,
     "skill_r_cooldown": 620,
+    "label_top": 77,
+    "entrance_text": "VHALZUN, THE REAPER OF SOULS, DESCENDS!",
     "color": "#23b95c",
+    "color_dark": "#122c30",
     "entrance_color": "#78f57d"
   },
   "gravewake": {
@@ -508,7 +553,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 500,
     "skill_r_cooldown": 600,
+    "label_top": 61,
+    "entrance_text": "GRAVEWAKE, THE TIDEHUNTER, RISES FROM THE DEPTHS!",
     "color": "#376952",
+    "color_dark": "#0c1c19",
     "entrance_color": "#78e1e6"
   },
   "syrentha": {
@@ -540,7 +588,10 @@
     "skill_e_cooldown": 420,
     "skill_r_damage": 525,
     "skill_r_cooldown": 600,
+    "label_top": 59,
+    "entrance_text": "SYRENTHA, THE SONG OF THE SEAS, BEGINS HER LAMENT!",
     "color": "#c86919",
+    "color_dark": "#122828",
     "entrance_color": "#f0a537"
   },
   "thalgryn": {
@@ -572,7 +623,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 475,
     "skill_r_cooldown": 600,
+    "label_top": 50,
+    "entrance_text": "THALGRYN, THE SHAPE OF WATER, FLOWS FORTH!",
     "color": "#3791b9",
+    "color_dark": "#0a2844",
     "entrance_color": "#afebeb"
   },
   "malzareth": {
@@ -604,7 +658,10 @@
     "skill_e_cooldown": 260,
     "skill_r_damage": 500,
     "skill_r_cooldown": 600,
+    "label_top": 46,
+    "entrance_text": "MALZARETH, THE CHAINBOUND, EMERGES FROM THE VOID!",
     "color": "#be1e4b",
+    "color_dark": "#0a060c",
     "entrance_color": "#fa4182"
   },
   "akashari": {
@@ -636,7 +693,10 @@
     "skill_e_cooldown": 260,
     "skill_r_damage": 562,
     "skill_r_cooldown": 600,
+    "label_top": 59,
+    "entrance_text": "AKASHARI, THE PAINBRINGER, DESCENDS WITH A SCREAM!",
     "color": "#d71e55",
+    "color_dark": "#08040a",
     "entrance_color": "#ff5591"
   },
   "vorenmarr": {
@@ -668,7 +728,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 525,
     "skill_r_cooldown": 600,
+    "label_top": 61,
+    "entrance_text": "VORENMARR, THE CHAOS BINDER, SUMMONS HELLFIRE!",
     "color": "#c82819",
+    "color_dark": "#080305",
     "entrance_color": "#ff5a32"
   },
   "vaerith": {
@@ -700,7 +763,10 @@
     "skill_e_cooldown": 260,
     "skill_r_damage": 587,
     "skill_r_cooldown": 620,
+    "label_top": 23,
+    "entrance_text": "VAERITH, THE WEB MATRIARCH, SPINS YOUR DOOM!",
     "color": "#8c191e",
+    "color_dark": "#08040c",
     "entrance_color": "#ff5a55"
   },
   "xirthalis": {
@@ -732,7 +798,10 @@
     "skill_e_cooldown": 220,
     "skill_r_damage": 0,
     "skill_r_cooldown": 600,
+    "label_top": 26,
+    "entrance_text": "XIR'THALIS SLIPS THROUGH TIME ITSELF!",
     "color": "#3cb4e6",
+    "color_dark": "#051419",
     "entrance_color": "#96f0ff"
   },
   "vhyssarion": {
@@ -764,7 +833,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 537,
     "skill_r_cooldown": 640,
+    "label_top": 47,
+    "entrance_text": "VHYSSARION, THE PLAGUE SERPENT, POISONS THE AIR!",
     "color": "#8cbe23",
+    "color_dark": "#0a1408",
     "entrance_color": "#c8f550"
   },
   "kenshiro": {
@@ -796,7 +868,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 650,
     "skill_r_cooldown": 640,
+    "label_top": 53,
+    "entrance_text": "KENSHIRO, THE WANDERING BLADE, DRAWS NEAR!",
     "color": "#5a8cdc",
+    "color_dark": "#14203c",
     "entrance_color": "#78aaf0"
   },
   "khazan": {
@@ -828,7 +903,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 700,
     "skill_r_cooldown": 660,
+    "label_top": 34,
+    "entrance_text": "KHAZAN, THE CHAINED EXECUTIONER, ARRIVES!",
     "color": "#c8783c",
+    "color_dark": "#461e0f",
     "entrance_color": "#e69650"
   },
   "wiro": {
@@ -860,7 +938,10 @@
     "skill_e_cooldown": 240,
     "skill_r_damage": 675,
     "skill_r_cooldown": 620,
+    "label_top": 51,
+    "entrance_text": "WIRO, THE STORM FIST, SWEEPS IN!",
     "color": "#6edc96",
+    "color_dark": "#0f3c23",
     "entrance_color": "#82eba5"
   },
   "krognarr": {
@@ -892,7 +973,10 @@
     "skill_e_cooldown": 320,
     "skill_r_damage": 750,
     "skill_r_cooldown": 660,
+    "label_top": 59,
+    "entrance_text": "KROGNARR, THE CRYSTAL COLOSSUS, AWAKENS!",
     "color": "#78dc6e",
+    "color_dark": "#0f3c23",
     "entrance_color": "#8ceb82"
   },
   "raz": {
@@ -924,7 +1008,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 725,
     "skill_r_cooldown": 640,
+    "label_top": 51,
+    "entrance_text": "RAZ, THE HEAT OF DESPAIR, BURNS THE AIR!",
     "color": "#f07828",
+    "color_dark": "#5a190a",
     "entrance_color": "#ff963c"
   },
   "vraskhan": {
@@ -956,7 +1043,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 737,
     "skill_r_cooldown": 650,
+    "label_top": 55,
+    "entrance_text": "VRASKHAN, THE VOID ASSASSIN, STALKS THE SHADOWS!",
     "color": "#965adc",
+    "color_dark": "#230f46",
     "entrance_color": "#b478f5"
   },
   "aeralith": {
@@ -988,7 +1078,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 712,
     "skill_r_cooldown": 630,
+    "label_top": 69,
+    "entrance_text": "AERALITH, THE WEST GALE, RIDES THE WIND!",
     "color": "#82dcfa",
+    "color_dark": "#0f3c5f",
     "entrance_color": "#96e6ff"
   },
   "aurex": {
@@ -1020,7 +1113,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 725,
     "skill_r_cooldown": 650,
+    "label_top": 57,
+    "entrance_text": "AUREX, THE OMEGA KNIGHT, STANDS UNBROKEN!",
     "color": "#dcc878",
+    "color_dark": "#463714",
     "entrance_color": "#ebd78c"
   },
   "nyxareva": {
@@ -1052,7 +1148,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 737,
     "skill_r_cooldown": 640,
+    "label_top": 53,
+    "entrance_text": "NYXAREVA, THE FALLEN QUEEN, SPREADS HER SHADOW!",
     "color": "#aa5ae6",
+    "color_dark": "#280f4b",
     "entrance_color": "#c37dfa"
   },
   "aurelix": {
@@ -1084,7 +1183,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 750,
     "skill_r_cooldown": 650,
+    "label_top": 57,
+    "entrance_text": "AURELIX, THE TIME SOVEREIGN, FREEZES THE MOMENT!",
     "color": "#f0d25a",
+    "color_dark": "#503c0f",
     "entrance_color": "#fadc6e"
   },
   "aurelyssa": {
@@ -1116,7 +1218,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 737,
     "skill_r_cooldown": 640,
+    "label_top": 51,
+    "entrance_text": "AURELYSSA, THE GOLDEN BLADE DANCER, TWIRLS INTO BATTLE!",
     "color": "#ffd764",
+    "color_dark": "#5f410f",
     "entrance_color": "#ffe68c"
   },
   "vargrath": {
@@ -1148,7 +1253,10 @@
     "skill_e_cooldown": 290,
     "skill_r_damage": 775,
     "skill_r_cooldown": 660,
+    "label_top": 48,
+    "entrance_text": "VARGRATH, THE DEMONIC WARLORD, UNLEASHES HELLFIRE!",
     "color": "#dc463c",
+    "color_dark": "#460a0c",
     "entrance_color": "#f56450"
   },
   "kaeldris": {
@@ -1180,7 +1288,10 @@
     "skill_e_cooldown": 290,
     "skill_r_damage": 775,
     "skill_r_cooldown": 650,
+    "label_top": 73,
+    "entrance_text": "KAELDRIS, THE WARRIOR COMMANDER, MARSHALS THE ONSLAUGHT!",
     "color": "#9678c8",
+    "color_dark": "#2d1e4b",
     "entrance_color": "#af91dc"
   },
   "pyraklos": {
@@ -1212,7 +1323,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 800,
     "skill_r_cooldown": 660,
+    "label_top": 57,
+    "entrance_text": "PYRAKLOS, THE SPARTAN WAR CHAMPION, STANDS IN THE BREACH!",
     "color": "#dc823c",
+    "color_dark": "#4b230c",
     "entrance_color": "#f0a05a"
   },
   "velmyrth": {
@@ -1244,7 +1358,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 787,
     "skill_r_cooldown": 640,
+    "label_top": 51,
+    "entrance_text": "VELMYRTH, THE PHANTOM ASSASSIN, FADES INTO THE SHADOWS!",
     "color": "#78c8be",
+    "color_dark": "#0f3c41",
     "entrance_color": "#91e1d7"
   },
   "azureth": {
@@ -1276,7 +1393,10 @@
     "skill_e_cooldown": 290,
     "skill_r_damage": 850,
     "skill_r_cooldown": 650,
+    "label_top": 53,
+    "entrance_text": "AZURETH, THE ARCANE SKY-SCRIBE, INSCRIBES THE SKIES!",
     "color": "#4b78d2",
+    "color_dark": "#0f1e4b",
     "entrance_color": "#82b4fa"
   },
   "luminar": {
@@ -1308,7 +1428,10 @@
     "skill_e_cooldown": 295,
     "skill_r_damage": 875,
     "skill_r_cooldown": 660,
+    "label_top": 60,
+    "entrance_text": "LUMINAR, THE ETERNAL CUSTODIAN, RIDES FORTH IN LIGHT!",
     "color": "#a0b9eb",
+    "color_dark": "#283764",
     "entrance_color": "#d7e6ff"
   },
   "solara": {
@@ -1340,7 +1463,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 900,
     "skill_r_cooldown": 680,
+    "label_top": 55,
+    "entrance_text": "SOLARA, THE DAWNFORGED SENTINEL, STANDS AGAINST THE NIGHT!",
     "color": "#ebb950",
+    "color_dark": "#55320f",
     "entrance_color": "#ffdc82"
   },
   "auroth": {
@@ -1372,7 +1498,10 @@
     "skill_e_cooldown": 310,
     "skill_r_damage": 925,
     "skill_r_cooldown": 700,
+    "label_top": 42,
+    "entrance_text": "AUROTH, THE CELESTIAL BASTION, HOLDS THE LINE!",
     "color": "#e6b941",
+    "color_dark": "#4b320f",
     "entrance_color": "#ffdc78"
   },
   "morvein": {
@@ -1404,7 +1533,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 950,
     "skill_r_cooldown": 690,
+    "label_top": 31,
+    "entrance_text": "MORVEIN, THE PHANTOM LANCER, STRIKES FROM THE MIST!",
     "color": "#5f6e9b",
+    "color_dark": "#12192d",
     "entrance_color": "#a0afdc"
   },
   "thorvak": {
@@ -1436,7 +1568,10 @@
     "skill_e_cooldown": 310,
     "skill_r_damage": 950,
     "skill_r_cooldown": 680,
+    "label_top": 47,
+    "entrance_text": "THORVAK, THE ANCIENT GROVEWARDEN, AWAKENS!",
     "color": "#82dc5a",
+    "color_dark": "#144619",
     "entrance_color": "#82dc5a"
   },
   "ignirus": {
@@ -1468,7 +1603,10 @@
     "skill_e_cooldown": 315,
     "skill_r_damage": 1000,
     "skill_r_cooldown": 690,
+    "label_top": 53,
+    "entrance_text": "IGNIRUS, THE INFERNAL PYROMANCER, SCORCHES THE SKIES!",
     "color": "#d74b3c",
+    "color_dark": "#4b0f14",
     "entrance_color": "#f5825a"
   },
   "leoric": {
@@ -1500,7 +1638,10 @@
     "skill_e_cooldown": 310,
     "skill_r_damage": 1000,
     "skill_r_cooldown": 700,
+    "label_top": 35,
+    "entrance_text": "LEORIC, THE LIONHEART GUARDIAN, ROARS IN DEFIANCE!",
     "color": "#f0c350",
+    "color_dark": "#5f4114",
     "entrance_color": "#ffe182"
   },
   "shirotaka": {
@@ -1532,7 +1673,10 @@
     "skill_e_cooldown": 310,
     "skill_r_damage": 1025,
     "skill_r_cooldown": 680,
+    "label_top": 35,
+    "entrance_text": "SHIROTAKA, THE TIDEBORN TACTICIAN, STRIKES LIKE THE TIDE!",
     "color": "#4b64a5",
+    "color_dark": "#0f193c",
     "entrance_color": "#87a5dc"
   },
   "kaelthorn": {
@@ -1564,7 +1708,10 @@
     "skill_e_cooldown": 320,
     "skill_r_damage": 1050,
     "skill_r_cooldown": 690,
+    "label_top": 35,
+    "entrance_text": "KAELTHORN, THE AZURE VANGUARD, BRINGS THE STORM OF STEEL!",
     "color": "#3782e6",
+    "color_dark": "#050f2d",
     "entrance_color": "#82c8ff"
   },
   "solvanth": {
@@ -1596,7 +1743,10 @@
     "skill_e_cooldown": 320,
     "skill_r_damage": 1075,
     "skill_r_cooldown": 700,
+    "label_top": 50,
+    "entrance_text": "SOLVANTH, THE RADIANT GUARDIAN, GALLOPS INTO BATTLE!",
     "color": "#f5d25a",
+    "color_dark": "#5f3c19",
     "entrance_color": "#f5d76e"
   },
   "xyrael": {
@@ -1628,7 +1778,10 @@
     "skill_e_cooldown": 315,
     "skill_r_damage": 1100,
     "skill_r_cooldown": 680,
+    "label_top": 53,
+    "entrance_text": "XY'RAEL, THE CYAN WRAITH, CUTS THROUGH THE MIST!",
     "color": "#5ac8e6",
+    "color_dark": "#080c19",
     "entrance_color": "#8cdcf0"
   },
   "cryssalia": {
@@ -1660,7 +1813,10 @@
     "skill_e_cooldown": 325,
     "skill_r_damage": 1125,
     "skill_r_cooldown": 700,
+    "label_top": 73,
+    "entrance_text": "CRYSSALIA, THE GLACIAL EMPRESS, FREEZES THE BATTLEFIELD!",
     "color": "#7396d7",
+    "color_dark": "#1e2d5a",
     "entrance_color": "#96c8ff"
   },
   "kaelthar": {
@@ -1692,7 +1848,10 @@
     "skill_e_cooldown": 320,
     "skill_r_damage": 1150,
     "skill_r_cooldown": 690,
+    "label_top": 53,
+    "entrance_text": "KAELTHAR, THE STORM FIST, SHATTERS THE SKIES!",
     "color": "#fad250",
+    "color_dark": "#371e14",
     "entrance_color": "#ffeb82"
   },
   "morkhaera": {
@@ -1724,7 +1883,10 @@
     "skill_e_cooldown": 325,
     "skill_r_damage": 1150,
     "skill_r_cooldown": 700,
+    "label_top": 58,
+    "entrance_text": "MOR'KHAERA, THE BLOOD-FEATHER WITCH, DESCENDS ON DARK WINGS!",
     "color": "#b41e32",
+    "color_dark": "#3c374b",
     "entrance_color": "#ff506e"
   },
   "akahime": {
@@ -1756,7 +1918,10 @@
     "skill_e_cooldown": 330,
     "skill_r_damage": 1187,
     "skill_r_cooldown": 710,
+    "label_top": 53,
+    "entrance_text": "AKAHIME, THE SCARLET BLOSSOM, BLOOMS IN BLOOD!",
     "color": "#c8234b",
+    "color_dark": "#6e0f28",
     "entrance_color": "#ffa0c3"
   },
   "nyxthrael": {
@@ -1788,7 +1953,10 @@
     "skill_e_cooldown": 325,
     "skill_r_damage": 1200,
     "skill_r_cooldown": 700,
+    "label_top": 38,
+    "entrance_text": "NYXTHRAEL, THE CURSED EXECUTIONER, SWINGS THE SCYTHE!",
     "color": "#78559b",
+    "color_dark": "#120a1c",
     "entrance_color": "#aa82c8"
   },
   "sylvantheros": {
@@ -1820,7 +1988,10 @@
     "skill_e_cooldown": 330,
     "skill_r_damage": 1200,
     "skill_r_cooldown": 710,
+    "label_top": 55,
+    "entrance_text": "SYLVANTHEROS, THE VERDANT FARSEER, WHISPERS TO THE GROVE!",
     "color": "#6eaf55",
+    "color_dark": "#193c1c",
     "entrance_color": "#aadc78"
   },
   "astraelion": {
@@ -1852,7 +2023,10 @@
     "skill_e_cooldown": 330,
     "skill_r_damage": 1250,
     "skill_r_cooldown": 710,
+    "label_top": 53,
+    "entrance_text": "ASTRAELION, THE STARLIGHT SWORDMASTER, DANCES BETWEEN STARS!",
     "color": "#96b4e6",
+    "color_dark": "#121c37",
     "entrance_color": "#c8dcff"
   },
   "morvaenthir": {
@@ -1884,7 +2058,10 @@
     "skill_e_cooldown": 335,
     "skill_r_damage": 1262,
     "skill_r_cooldown": 720,
+    "label_top": 73,
+    "entrance_text": "MORVAENTHIR, THE SOUL REAPER, HARVESTS THE FALLEN!",
     "color": "#d7dceb",
+    "color_dark": "#121926",
     "entrance_color": "#dce6fa"
   },
   "thornvaegrim": {
@@ -1916,7 +2093,10 @@
     "skill_e_cooldown": 330,
     "skill_r_damage": 1262,
     "skill_r_cooldown": 710,
+    "label_top": 31,
+    "entrance_text": "THORNVAEGRIM, THE TWISTED ELDERWOOD, RISES FROM ROTTEN EARTH!",
     "color": "#6eaf46",
+    "color_dark": "#1e4116",
     "entrance_color": "#a0d264"
   },
   "kurogari": {
@@ -1948,7 +2128,10 @@
     "skill_e_cooldown": 340,
     "skill_r_damage": 1312,
     "skill_r_cooldown": 730,
+    "label_top": 55,
+    "entrance_text": "KUROGARI, THE VOID REAPER, CUTS THROUGH THE SHADOWS!",
     "color": "#8c55af",
+    "color_dark": "#1e0f2d",
     "entrance_color": "#f03c82"
   },
   "morvekhar": {
@@ -1980,7 +2163,10 @@
     "skill_e_cooldown": 345,
     "skill_r_damage": 1325,
     "skill_r_cooldown": 740,
+    "label_top": 57,
+    "entrance_text": "MORVEKHAR, THE DEATHFORGED, MARCHES WITH IRON SOUL!",
     "color": "#78828c",
+    "color_dark": "#0a0c0f",
     "entrance_color": "#f0c85a"
   },
   "vorgath": {
@@ -2012,7 +2198,10 @@
     "skill_e_cooldown": 340,
     "skill_r_damage": 1337,
     "skill_r_cooldown": 730,
+    "label_top": 61,
+    "entrance_text": "VORGATH, THE DEMON WARDEN, UNLEASHES HIS CHAINS!",
     "color": "#9673a5",
+    "color_dark": "#0f0a14",
     "entrance_color": "#c8a050"
   },
   "grimstalker": {
@@ -2044,7 +2233,10 @@
     "skill_e_cooldown": 345,
     "skill_r_damage": 1350,
     "skill_r_cooldown": 740,
+    "label_top": 55,
+    "entrance_text": "GRIMSTALKER, THE CHEMBEAST OF THE DEPTHS, RISES FROM THE TOXIC VOID!",
     "color": "#5ac846",
+    "color_dark": "#122d0a",
     "entrance_color": "#78e65a"
   },
   "kryvoxar": {
@@ -2076,7 +2268,10 @@
     "skill_e_cooldown": 350,
     "skill_r_damage": 1362,
     "skill_r_cooldown": 745,
+    "label_top": 62,
+    "entrance_text": "KRYVOXAR, THE CRYSTALBORNE WRAITH, SHATTERS THE LIGHT!",
     "color": "#8caaff",
+    "color_dark": "#0f1437",
     "entrance_color": "#bed2ff"
   },
   "vargroth": {
@@ -2108,7 +2303,10 @@
     "skill_e_cooldown": 350,
     "skill_r_damage": 1375,
     "skill_r_cooldown": 750,
+    "label_top": 58,
+    "entrance_text": "VARGROTH, THE BLOODMOON ALPHA, HOWLS AT THE CRIMSON MOON!",
     "color": "#dc3c50",
+    "color_dark": "#320a12",
     "entrance_color": "#ff6e82"
   },
   "drav": {
@@ -2140,7 +2338,10 @@
     "skill_e_cooldown": 350,
     "skill_r_damage": 1400,
     "skill_r_cooldown": 750,
+    "label_top": 57,
+    "entrance_text": "DRAV, THE TIDEFORGED WARDEN, RISES FROM THE DEEP!",
     "color": "#46a0c8",
+    "color_dark": "#0a1e37",
     "entrance_color": "#8cdcff"
   },
   "lyrienne": {
@@ -2172,7 +2373,10 @@
     "skill_e_cooldown": 355,
     "skill_r_damage": 1412,
     "skill_r_cooldown": 755,
+    "label_top": 56,
+    "entrance_text": "LYRIENNE, THE CHORISTER OF TWILIGHT VESPERS, SINGS THE DUSK!",
     "color": "#b478e6",
+    "color_dark": "#1e0f3c",
     "entrance_color": "#dcaaff"
   },
   "valthar": {
@@ -2204,7 +2408,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 1425,
     "skill_r_cooldown": 760,
+    "label_top": 58,
+    "entrance_text": "VALTHAR, THE SENTINEL OF BROKEN KINGS, STANDS ETERNAL!",
     "color": "#d7af46",
+    "color_dark": "#231905",
     "entrance_color": "#ffdc78"
   },
   "khalzaredh": {
@@ -2236,7 +2443,10 @@
     "skill_e_cooldown": 355,
     "skill_r_damage": 1450,
     "skill_r_cooldown": 760,
+    "label_top": 57,
+    "entrance_text": "KHAL'ZAREDH, THE SANDBORN PRINCE, RISES FROM THE DUNES!",
     "color": "#e1b46e",
+    "color_dark": "#37230f",
     "entrance_color": "#ffdc96"
   },
   "nyxaroth": {
@@ -2268,7 +2478,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 1462,
     "skill_r_cooldown": 765,
+    "label_top": 62,
+    "entrance_text": "NYXAROTH, THE VOID-STARWEAVER, UNRAVELS THE COSMOS!",
     "color": "#9678ff",
+    "color_dark": "#140c3c",
     "entrance_color": "#c8b4ff"
   },
   "veshtrax": {
@@ -2300,7 +2513,10 @@
     "skill_e_cooldown": 365,
     "skill_r_damage": 1475,
     "skill_r_cooldown": 770,
+    "label_top": 60,
+    "entrance_text": "VESHTRAX, THE SAPPHIRE EXECUTOR, STRIKES WITH ROYAL FURY!",
     "color": "#5096ff",
+    "color_dark": "#0a1946",
     "entrance_color": "#96c8ff"
   },
   "grimjack": {
@@ -2332,7 +2548,10 @@
     "skill_e_cooldown": 365,
     "skill_r_damage": 1500,
     "skill_r_cooldown": 775,
+    "label_top": 55,
+    "entrance_text": "GRIMJACK, THE CACKLING FIEND, DANCES IN THE VOID!",
     "color": "#965ac8",
+    "color_dark": "#230f3c",
     "entrance_color": "#c896ff"
   },
   "morvaeth": {
@@ -2364,7 +2583,10 @@
     "skill_e_cooldown": 370,
     "skill_r_damage": 1512,
     "skill_r_cooldown": 780,
+    "label_top": 58,
+    "entrance_text": "MORVAETH, THE CRIMSON REAVER, HARVESTS IN BLOOD!",
     "color": "#dc374b",
+    "color_dark": "#37080f",
     "entrance_color": "#ff788c"
   },
   "vulkareth": {
@@ -2396,7 +2618,10 @@
     "skill_e_cooldown": 375,
     "skill_r_damage": 1525,
     "skill_r_cooldown": 785,
+    "label_top": 62,
+    "entrance_text": "VULKARETH, THE EMBERBORN TITAN, IGNITES THE EARTH!",
     "color": "#ff8228",
+    "color_dark": "#3c1405",
     "entrance_color": "#ffbe5a"
   },
   "aelyrion": {
@@ -2428,7 +2653,10 @@
     "skill_e_cooldown": 375,
     "skill_r_damage": 1550,
     "skill_r_cooldown": 790,
+    "label_top": 58,
+    "entrance_text": "AELYRION, THE DIVINE GUARDIAN, SHIELDS THE EMPYREAN GATES!",
     "color": "#c8dcff",
+    "color_dark": "#283250",
     "entrance_color": "#dcebff"
   },
   "kaervosth": {
@@ -2460,7 +2688,10 @@
     "skill_e_cooldown": 380,
     "skill_r_damage": 1562,
     "skill_r_cooldown": 795,
+    "label_top": 60,
+    "entrance_text": "KAERVOSTH, THE STORMBLADE KNIGHT, RIDES THE THUNDER!",
     "color": "#96aaff",
+    "color_dark": "#191e50",
     "entrance_color": "#c8d2ff"
   },
   "morvyssk": {
@@ -2492,7 +2723,10 @@
     "skill_e_cooldown": 380,
     "skill_r_damage": 1575,
     "skill_r_cooldown": 800,
+    "label_top": 46,
+    "entrance_text": "MORVYSSK, THE CORROSIVE OOZE, DISSOLVES ALL IN ITS PATH!",
     "color": "#a050dc",
+    "color_dark": "#280a3c",
     "entrance_color": "#d296ff"
   },
   "kyumirra": {
@@ -2524,7 +2758,10 @@
     "skill_e_cooldown": 380,
     "skill_r_damage": 1600,
     "skill_r_cooldown": 805,
+    "label_top": 50,
+    "entrance_text": "KYUMIRRA, THE FOX ENCHANTRESS, WEAVES NINE TAILS OF MAGIC!",
     "color": "#ffaa5a",
+    "color_dark": "#46230a",
     "entrance_color": "#ffd296"
   },
   "morvakhul": {
@@ -2556,7 +2793,10 @@
     "skill_e_cooldown": 385,
     "skill_r_damage": 1612,
     "skill_r_cooldown": 810,
+    "label_top": 58,
+    "entrance_text": "MORVAKHUL, THE UNDYING EXECUTIONER, SWINGS THE CURSED AXE!",
     "color": "#6ec8aa",
+    "color_dark": "#143728",
     "entrance_color": "#aaffdc"
   },
   "nyxariel": {
@@ -2588,7 +2828,10 @@
     "skill_e_cooldown": 385,
     "skill_r_damage": 1625,
     "skill_r_cooldown": 815,
+    "label_top": 45,
+    "entrance_text": "NYXARIEL, THE ABYSSAL TRICKSTER, DANCES WITH THE SHARK!",
     "color": "#50c8e6",
+    "color_dark": "#0f2d41",
     "entrance_color": "#a0ebff"
   },
   "morthyrax": {
@@ -2620,7 +2863,10 @@
     "skill_e_cooldown": 390,
     "skill_r_damage": 1650,
     "skill_r_cooldown": 820,
+    "label_top": 55,
+    "entrance_text": "MORTHYRAX, THE EVER-ROTTING PROPHET, PREACHES DECAY!",
     "color": "#8cbe78",
+    "color_dark": "#193719",
     "entrance_color": "#bef0a0"
   },
   "sanguiveth": {
@@ -2652,7 +2898,10 @@
     "skill_e_cooldown": 390,
     "skill_r_damage": 1662,
     "skill_r_cooldown": 825,
+    "label_top": 55,
+    "entrance_text": "SANGUIVETH, THE BLOODBOUND FAMINE, DEVOURS THE LIVING!",
     "color": "#e13c4b",
+    "color_dark": "#3c080f",
     "entrance_color": "#ff828c"
   },
   "xerakhotep": {
@@ -2684,7 +2933,10 @@
     "skill_e_cooldown": 395,
     "skill_r_damage": 1675,
     "skill_r_cooldown": 830,
+    "label_top": 58,
+    "entrance_text": "XERAKHOTEP, THE SUNBORNE SOVEREIGN, COMMANDS THE DAWN!",
     "color": "#ffc850",
+    "color_dark": "#462d08",
     "entrance_color": "#ffeb96"
   },
   "ignakhor": {
@@ -2716,7 +2968,10 @@
     "skill_e_cooldown": 395,
     "skill_r_damage": 1700,
     "skill_r_cooldown": 835,
+    "label_top": 60,
+    "entrance_text": "IGNAKHOR, THE FURNACE-WROUGHT BERSERKER, BURNS WITH RAGE!",
     "color": "#ff8232",
+    "color_dark": "#3c1405",
     "entrance_color": "#ffbe64"
   },
   "kazureth": {
@@ -2748,7 +3003,10 @@
     "skill_e_cooldown": 395,
     "skill_r_damage": 1712,
     "skill_r_cooldown": 840,
+    "label_top": 52,
+    "entrance_text": "KAZURETH, THE THUNDER WIELDER, STRIKES WITH HONOIKAZUCHI!",
     "color": "#ffd750",
+    "color_dark": "#463208",
     "entrance_color": "#fff096"
   },
   "sethrakhar": {
@@ -2780,7 +3038,10 @@
     "skill_e_cooldown": 400,
     "skill_r_damage": 1725,
     "skill_r_cooldown": 845,
+    "label_top": 62,
+    "entrance_text": "SETH'RAKHAAR, THE SUNFORGED BUTCHER, CARVES IN DAYLIGHT!",
     "color": "#ffaf3c",
+    "color_dark": "#4b2808",
     "entrance_color": "#ffd782"
   },
   "kaelvyrn": {
@@ -2812,7 +3073,10 @@
     "skill_e_cooldown": 405,
     "skill_r_damage": 1750,
     "skill_r_cooldown": 850,
+    "label_top": 55,
+    "entrance_text": "KAELVYRN, THE GILDED MARAUDER, PLUNDERS THE GOLDEN HORDE!",
     "color": "#f0c85a",
+    "color_dark": "#46320a",
     "entrance_color": "#ffe696"
   },
   "thorvin": {
@@ -2844,7 +3108,10 @@
     "skill_e_cooldown": 405,
     "skill_r_damage": 1762,
     "skill_r_cooldown": 855,
+    "label_top": 55,
+    "entrance_text": "THORVIN, THE IRONBOUND WARDEN, STANDS UNBROKEN!",
     "color": "#788291",
+    "color_dark": "#0f1216",
     "entrance_color": "#becddc"
   },
   "xaerissa": {
@@ -2876,7 +3143,10 @@
     "skill_e_cooldown": 410,
     "skill_r_damage": 1775,
     "skill_r_cooldown": 860,
+    "label_top": 60,
+    "entrance_text": "XAERISSA, THE WEAVER OF CRIMSON SILK, SPINS A BLOOD WEB!",
     "color": "#e1465a",
+    "color_dark": "#370a12",
     "entrance_color": "#ff8ca0"
   },
   "celwynn": {
@@ -2908,7 +3178,10 @@
     "skill_e_cooldown": 410,
     "skill_r_damage": 1812,
     "skill_r_cooldown": 865,
+    "label_top": 55,
+    "entrance_text": "CELWYNN, THE STAR CARETAKER, TENDS THE CELESTIAL FLAME!",
     "color": "#a0c8ff",
+    "color_dark": "#192850",
     "entrance_color": "#d2e6ff"
   },
   "rynvara": {
@@ -2940,7 +3213,10 @@
     "skill_e_cooldown": 415,
     "skill_r_damage": 1825,
     "skill_r_cooldown": 870,
+    "label_top": 55,
+    "entrance_text": "RYNVARA, THE WILD ONSLAUGHT, STORMS WITH PRIMAL FURY!",
     "color": "#ff8c3c",
+    "color_dark": "#461e0a",
     "entrance_color": "#ffc882"
   },
   "syrindra": {
@@ -2972,7 +3248,10 @@
     "skill_e_cooldown": 420,
     "skill_r_damage": 1837,
     "skill_r_cooldown": 875,
+    "label_top": 60,
+    "entrance_text": "SYRINDRA, THE DARK SOVEREIGN, RULES THE SHADOW REALM!",
     "color": "#8c5adc",
+    "color_dark": "#190c32",
     "entrance_color": "#c8a0ff"
   },
   "ghrakmaal": {
@@ -3004,7 +3283,10 @@
     "skill_e_cooldown": 420,
     "skill_r_damage": 1875,
     "skill_r_cooldown": 885,
+    "label_top": 62,
+    "entrance_text": "GHRAKMAAL, THE COLOSSUS OF SUNDERED EARTH, TREMBLES THE GROUND!",
     "color": "#967855",
+    "color_dark": "#281c0f",
     "entrance_color": "#d2b996"
   },
   "selunara": {
@@ -3036,7 +3318,10 @@
     "skill_e_cooldown": 425,
     "skill_r_damage": 1887,
     "skill_r_cooldown": 890,
+    "label_top": 55,
+    "entrance_text": "SELUNARA, THE MOONBOUND HUNTRESS, HUNTS BENEATH THE CRESCENT!",
     "color": "#c8d2ff",
+    "color_dark": "#1e2346",
     "entrance_color": "#e6ebff"
   },
   "vessyra": {
@@ -3068,7 +3353,10 @@
     "skill_e_cooldown": 430,
     "skill_r_damage": 1900,
     "skill_r_cooldown": 895,
+    "label_top": 58,
+    "entrance_text": "VESSYRA, THE GORGON QUEEN, TURNS HEROES TO STONE!",
     "color": "#78be78",
+    "color_dark": "#143219",
     "entrance_color": "#b4f0b4"
   },
   "rakzhan": {
@@ -3100,7 +3388,10 @@
     "skill_e_cooldown": 430,
     "skill_r_damage": 1925,
     "skill_r_cooldown": 900,
+    "label_top": 55,
+    "entrance_text": "RAKZHAN, THE EMBERFIST PRODIGY, IGNITES THE ARENA!",
     "color": "#ff963c",
+    "color_dark": "#461e08",
     "entrance_color": "#ffcd82"
   },
   "sirakzan": {
@@ -3132,7 +3423,10 @@
     "skill_e_cooldown": 435,
     "skill_r_damage": 1937,
     "skill_r_cooldown": 905,
+    "label_top": 55,
+    "entrance_text": "SIRAKZAN, THE BLADE ROLLING DUELIST, SPINS TO VICTORY!",
     "color": "#a082ff",
+    "color_dark": "#28195a",
     "entrance_color": "#d7c3ff"
   },
   "valekris": {
@@ -3164,7 +3458,10 @@
     "skill_e_cooldown": 440,
     "skill_r_damage": 1950,
     "skill_r_cooldown": 910,
+    "label_top": 58,
+    "entrance_text": "VALEKRIS, THE VENGEFUL WRAITH, HAUNTS THE LIVING!",
     "color": "#78e6f5",
+    "color_dark": "#0a3241",
     "entrance_color": "#befaff"
   },
   "infrakzaar": {
@@ -3196,7 +3493,10 @@
     "skill_e_cooldown": 440,
     "skill_r_damage": 1975,
     "skill_r_cooldown": 915,
+    "label_top": 55,
+    "entrance_text": "INFRAKZAAR, THE EMBERFLESH PYROMANCER, BURNS THE FLESH!",
     "color": "#ff7832",
+    "color_dark": "#461908",
     "entrance_color": "#ffb978"
   },
   "xarnathul": {
@@ -3228,7 +3528,10 @@
     "skill_e_cooldown": 445,
     "skill_r_damage": 1987,
     "skill_r_cooldown": 920,
+    "label_top": 55,
+    "entrance_text": "XARNATHUL THE DEATHSINGER, SINGS THE FINAL HYMN!",
     "color": "#aa6ee6",
+    "color_dark": "#230f3c",
     "entrance_color": "#dcb4ff"
   },
   "zhyrakaan": {
@@ -3260,7 +3563,10 @@
     "skill_e_cooldown": 450,
     "skill_r_damage": 2000,
     "skill_r_cooldown": 925,
+    "label_top": 60,
+    "entrance_text": "ZHYRAKAAN, THE PHANTOMWEAVE LANCER, PIERCES THE VEIL!",
     "color": "#8cdcff",
+    "color_dark": "#143750",
     "entrance_color": "#d2f5ff"
   },
   "kaerissa": {
@@ -3292,7 +3598,10 @@
     "skill_e_cooldown": 450,
     "skill_r_damage": 2025,
     "skill_r_cooldown": 930,
+    "label_top": 55,
+    "entrance_text": "KAERISSA THE BLOODWHIRL, SPINS A DANCE OF DEATH!",
     "color": "#e63c5a",
+    "color_dark": "#3c0a14",
     "entrance_color": "#ff8ca0"
   },
   "thorgaruk": {
@@ -3324,7 +3633,10 @@
     "skill_e_cooldown": 455,
     "skill_r_damage": 2037,
     "skill_r_cooldown": 935,
+    "label_top": 60,
+    "entrance_text": "THORGARUK THE SKYHORN, CALLS THE STORM FROM ABOVE!",
     "color": "#aac8ff",
+    "color_dark": "#1e2d5a",
     "entrance_color": "#d7e6ff"
   },
   "zorathiel": {
@@ -3356,7 +3668,10 @@
     "skill_e_cooldown": 460,
     "skill_r_damage": 2050,
     "skill_r_cooldown": 940,
+    "label_top": 55,
+    "entrance_text": "ZORATHIEL THE ARCANIST, WEAVES THE FORBIDDEN WEAVE!",
     "color": "#a078ff",
+    "color_dark": "#231450",
     "entrance_color": "#d7c3ff"
   },
   "nyxallaria": {
@@ -3388,7 +3703,10 @@
     "skill_e_cooldown": 465,
     "skill_r_damage": 2075,
     "skill_r_cooldown": 950,
+    "label_top": 55,
+    "entrance_text": "NYXALLARIA, THE ABYSSAL SOVEREIGN, RULES THE DARK DEPTHS!",
     "color": "#9678ff",
+    "color_dark": "#1e1250",
     "entrance_color": "#cdbeff"
   },
   "vhaerinth": {
@@ -3420,7 +3738,10 @@
     "skill_e_cooldown": 470,
     "skill_r_damage": 2087,
     "skill_r_cooldown": 955,
+    "label_top": 55,
+    "entrance_text": "VHAERINTH THE INKWEAVER, PAINTS FATE WITH DARK INK!",
     "color": "#5a78c8",
+    "color_dark": "#0f1937",
     "entrance_color": "#a5c3ff"
   },
   "xharokh": {
@@ -3452,7 +3773,10 @@
     "skill_e_cooldown": 475,
     "skill_r_damage": 2100,
     "skill_r_cooldown": 960,
+    "label_top": 58,
+    "entrance_text": "XHAROKH THE VOIDBINDER, CHAINS THE UNIVERSE!",
     "color": "#7850dc",
+    "color_dark": "#190c3c",
     "entrance_color": "#c3a5ff"
   },
   "kazreth": {
@@ -3484,7 +3808,10 @@
     "skill_e_cooldown": 475,
     "skill_r_damage": 2125,
     "skill_r_cooldown": 965,
+    "label_top": 55,
+    "entrance_text": "KAZRETH THE BLOOD REAVER, HARVESTS THE BATTLEFIELD!",
     "color": "#d23250",
+    "color_dark": "#370812",
     "entrance_color": "#ff8ca0"
   },
   "varkuthar": {
@@ -3516,7 +3843,10 @@
     "skill_e_cooldown": 480,
     "skill_r_damage": 2137,
     "skill_r_cooldown": 970,
+    "label_top": 58,
+    "entrance_text": "VARKUTHAR THE BLOODFIRE ZEALOT, BURNS FOR THE BLOOD GOD!",
     "color": "#ff7832",
+    "color_dark": "#461608",
     "entrance_color": "#ffb978"
   },
   "zhyvrek": {
@@ -3548,7 +3878,10 @@
     "skill_e_cooldown": 485,
     "skill_r_damage": 2150,
     "skill_r_cooldown": 975,
+    "label_top": 55,
+    "entrance_text": "ZHYVREK THE VOID REAPER, CUTS THROUGH THE DARK!",
     "color": "#8250dc",
+    "color_dark": "#1e0c41",
     "entrance_color": "#c8a5ff"
   },
   "azkharion": {
@@ -3580,7 +3913,10 @@
     "skill_e_cooldown": 490,
     "skill_r_damage": 2175,
     "skill_r_cooldown": 980,
+    "label_top": 55,
+    "entrance_text": "AZKHARION THE ASHEN WARLORD, COMMANDS THE BURNT LANDS!",
     "color": "#8c8782",
+    "color_dark": "#231e1c",
     "entrance_color": "#cdc8c3"
   },
   "thargoroth": {
@@ -3612,7 +3948,10 @@
     "skill_e_cooldown": 495,
     "skill_r_damage": 2187,
     "skill_r_cooldown": 985,
+    "label_top": 62,
+    "entrance_text": "THARGOROTH THE PRIMORDIAL COLOSSUS, TRAMPLES THE ANCIENT WORLD!",
     "color": "#6e8c5a",
+    "color_dark": "#1e2d19",
     "entrance_color": "#afd296"
   },
   "zahkareth": {
@@ -3644,7 +3983,10 @@
     "skill_e_cooldown": 500,
     "skill_r_damage": 2200,
     "skill_r_cooldown": 990,
+    "label_top": 58,
+    "entrance_text": "ZAHKARETH THE GOLDEN TYRANT, DEMANDS ALL TREASURE!",
     "color": "#f0cd5a",
+    "color_dark": "#4b370a",
     "entrance_color": "#ffeb96"
   },
   "bhorgathul": {
@@ -3676,7 +4018,10 @@
     "skill_e_cooldown": 505,
     "skill_r_damage": 2225,
     "skill_r_cooldown": 1000,
+    "label_top": 58,
+    "entrance_text": "BHOR'GATHUL THE EARTH RENDER, SPLITS THE WORLD!",
     "color": "#966e46",
+    "color_dark": "#281c0f",
     "entrance_color": "#d7b996"
   },
   "morkhelvis": {
@@ -3708,7 +4053,10 @@
     "skill_e_cooldown": 510,
     "skill_r_damage": 2237,
     "skill_r_cooldown": 1005,
+    "label_top": 60,
+    "entrance_text": "MOR'KHELVIS THE NECROGARGOYLE, AWAKENS FROM STONE!",
     "color": "#78828c",
+    "color_dark": "#14161c",
     "entrance_color": "#bec8d2"
   },
   "vorthakul": {
@@ -3740,7 +4088,10 @@
     "skill_e_cooldown": 515,
     "skill_r_damage": 2250,
     "skill_r_cooldown": 1010,
+    "label_top": 58,
+    "entrance_text": "VOR'THAKUL, TERROR OF THE ABYSS, RISES FROM THE DEEP!",
     "color": "#6e3cbe",
+    "color_dark": "#190a37",
     "entrance_color": "#b991ff"
   },
   "urgharun": {
@@ -3772,7 +4123,10 @@
     "skill_e_cooldown": 515,
     "skill_r_damage": 2275,
     "skill_r_cooldown": 1020,
+    "label_top": 58,
+    "entrance_text": "UR'GHARUN THE FERAL WRATH, RIPS THROUGH THE HORDE!",
     "color": "#ff8c3c",
+    "color_dark": "#461e0a",
     "entrance_color": "#ffc882"
   },
   "yhoranth": {
@@ -3804,7 +4158,10 @@
     "skill_e_cooldown": 520,
     "skill_r_damage": 2287,
     "skill_r_cooldown": 1025,
+    "label_top": 55,
+    "entrance_text": "YH'ORANTH THE UNFORGIVEN WRAITH, HAUNTS THE ETERNAL!",
     "color": "#8ca0ff",
+    "color_dark": "#19235a",
     "entrance_color": "#cdd7ff"
   },
   "zulkhaven": {
@@ -3836,7 +4193,10 @@
     "skill_e_cooldown": 525,
     "skill_r_damage": 2300,
     "skill_r_cooldown": 1030,
+    "label_top": 60,
+    "entrance_text": "ZUL'KHAVEN THE DEVOURER, CONSUMES ALL IN ITS PATH!",
     "color": "#b43c50",
+    "color_dark": "#320a12",
     "entrance_color": "#ff96a0"
   },
   "emberwick": {
@@ -3868,7 +4228,10 @@
     "skill_e_cooldown": 525,
     "skill_r_damage": 2325,
     "skill_r_cooldown": 1040,
+    "label_top": 58,
+    "entrance_text": "MOTHER EMBERWICK THE BLAZING MATRON, BURNS THE WORLD!",
     "color": "#ffa532",
+    "color_dark": "#1e0802",
     "entrance_color": "#ffdc78"
   },
   "grondarthul": {
@@ -3900,7 +4263,10 @@
     "skill_e_cooldown": 530,
     "skill_r_damage": 2337,
     "skill_r_cooldown": 1045,
+    "label_top": 62,
+    "entrance_text": "GRONDAR THUL THE TROLL KING, RULES THE FROZEN HILLS!",
     "color": "#6e9b50",
+    "color_dark": "#192814",
     "entrance_color": "#aad282"
   },
   "xareth": {
@@ -3932,7 +4298,10 @@
     "skill_e_cooldown": 535,
     "skill_r_damage": 2350,
     "skill_r_cooldown": 1050,
+    "label_top": 55,
+    "entrance_text": "XARETH THE TIMERENDER, UNRAVELS FATE ITSELF!",
     "color": "#9664e6",
+    "color_dark": "#1e0f41",
     "entrance_color": "#d2b4ff"
   },
   "kaedrin": {
@@ -3964,7 +4333,10 @@
     "skill_e_cooldown": 535,
     "skill_r_damage": 2375,
     "skill_r_cooldown": 1055,
+    "label_top": 55,
+    "entrance_text": "KAEDRIN THE MOONFANG, STRIKES UNDER THE CRESCENT!",
     "color": "#b4c8ff",
+    "color_dark": "#1e2850",
     "entrance_color": "#dce6ff"
   },
   "morvaeth2": {
@@ -3996,7 +4368,10 @@
     "skill_e_cooldown": 540,
     "skill_r_damage": 2387,
     "skill_r_cooldown": 1060,
+    "label_top": 58,
+    "entrance_text": "MORVAETH THE MIRRORBORN, MARCHES WITH DEMON LEGIONS!",
     "color": "#e64650",
+    "color_dark": "#370a12",
     "entrance_color": "#ff9696"
   },
   "vardrok": {
@@ -4028,7 +4403,10 @@
     "skill_e_cooldown": 545,
     "skill_r_damage": 2400,
     "skill_r_cooldown": 1065,
+    "label_top": 60,
+    "entrance_text": "VARDROK THE AXE-KING, EXECUTES WITH GLORY!",
     "color": "#c8783c",
+    "color_dark": "#3c1e0a",
     "entrance_color": "#ffc882"
   },
   "nixweaver": {
@@ -4060,7 +4438,10 @@
     "skill_e_cooldown": 545,
     "skill_r_damage": 2425,
     "skill_r_cooldown": 1075,
+    "label_top": 55,
+    "entrance_text": "NIXWEAVER THE WOODLAND TRICKSTER, PLAYS THE FOREST GAMES!",
     "color": "#6ebe5a",
+    "color_dark": "#193714",
     "entrance_color": "#b4f0a0"
   },
   "nyxraal": {
@@ -4092,7 +4473,10 @@
     "skill_e_cooldown": 550,
     "skill_r_damage": 2437,
     "skill_r_cooldown": 1080,
+    "label_top": 58,
+    "entrance_text": "NYXRAAL THE ABYSSAL PRINCE, CLAIMS THE DARK THRONE!",
     "color": "#6e3cbe",
+    "color_dark": "#190a37",
     "entrance_color": "#b991ff"
   },
   "xarnthuul": {
@@ -4124,7 +4508,10 @@
     "skill_e_cooldown": 555,
     "skill_r_damage": 2450,
     "skill_r_cooldown": 1085,
+    "label_top": 55,
+    "entrance_text": "XARN'THUUL THE VOID SOVEREIGN, RULES THE EMPTY REACH!",
     "color": "#8c50e6",
+    "color_dark": "#1e0c41",
     "entrance_color": "#d2afff"
   },
   "lyrenya": {
@@ -4156,7 +4543,10 @@
     "skill_e_cooldown": 555,
     "skill_r_damage": 2475,
     "skill_r_cooldown": 1090,
+    "label_top": 55,
+    "entrance_text": "LYRENYA THE VERDANT WHISPER, SPEAKS IN LEAVES AND VINES!",
     "color": "#6ebe6e",
+    "color_dark": "#193719",
     "entrance_color": "#b4f0b4"
   },
   "vyraeth": {
@@ -4188,7 +4578,10 @@
     "skill_e_cooldown": 560,
     "skill_r_damage": 2487,
     "skill_r_cooldown": 1095,
+    "label_top": 55,
+    "entrance_text": "VYRAETH THE HAUNTING WRAITH, WHISPERS FROM THE VEIL!",
     "color": "#96aaff",
+    "color_dark": "#1e285a",
     "entrance_color": "#d7e1ff"
   },
   "zorothrax": {
@@ -4220,7 +4613,10 @@
     "skill_e_cooldown": 565,
     "skill_r_damage": 2500,
     "skill_r_cooldown": 1100,
+    "label_top": 58,
+    "entrance_text": "ZOROTHRAX THE RUNE SOVEREIGN, ETCHES THE FATES!",
     "color": "#be96ff",
+    "color_dark": "#281950",
     "entrance_color": "#ebd7ff"
   },
   "akiraze": {
@@ -4252,7 +4648,10 @@
     "skill_e_cooldown": 565,
     "skill_r_damage": 2525,
     "skill_r_cooldown": 1110,
+    "label_top": 55,
+    "entrance_text": "AKIRAZE THE GOLDEN TEMPEST, STRIKES LIKE THUNDER!",
     "color": "#ffd75a",
+    "color_dark": "#46320a",
     "entrance_color": "#fff0a0"
   },
   "brumhar": {
@@ -4284,7 +4683,10 @@
     "skill_e_cooldown": 570,
     "skill_r_damage": 2537,
     "skill_r_cooldown": 1115,
+    "label_top": 60,
+    "entrance_text": "BRUMHAR THE GLACIER REAVER, FREEZES THE BATTLEFIELD!",
     "color": "#96dcff",
+    "color_dark": "#19375a",
     "entrance_color": "#d2f5ff"
   },
   "zorashi": {
@@ -4316,7 +4718,10 @@
     "skill_e_cooldown": 575,
     "skill_r_damage": 2550,
     "skill_r_cooldown": 1120,
+    "label_top": 55,
+    "entrance_text": "ZORASHI THE SERPENT SAGE, WHISPERS WITH SNAKES!",
     "color": "#8cc864",
+    "color_dark": "#1e3714",
     "entrance_color": "#c8f5aa"
   },
   "akaroth": {
@@ -4348,7 +4753,10 @@
     "skill_e_cooldown": 575,
     "skill_r_damage": 2575,
     "skill_r_cooldown": 1125,
+    "label_top": 55,
+    "entrance_text": "AKAROTH THE CRIMSON FIST, SMASHES THROUGH ALL BARRIERS!",
     "color": "#e6462d",
+    "color_dark": "#3c0c0a",
     "entrance_color": "#ff9682"
   },
   "kassadin": {
@@ -4380,7 +4788,10 @@
     "skill_e_cooldown": 580,
     "skill_r_damage": 2587,
     "skill_r_cooldown": 1130,
+    "label_top": 55,
+    "entrance_text": "KASSADIN THE VOID WALKER, WALKS BETWEEN DIMENSIONS!",
     "color": "#7850dc",
+    "color_dark": "#190c3c",
     "entrance_color": "#c3a5ff"
   },
   "shimorakh": {
@@ -4412,7 +4823,10 @@
     "skill_e_cooldown": 585,
     "skill_r_damage": 2600,
     "skill_r_cooldown": 1135,
+    "label_top": 58,
+    "entrance_text": "SHIMORAKH THE ROOT OF SHADOWS, SPREADS DARKNESS BENEATH!",
     "color": "#5a468c",
+    "color_dark": "#140c28",
     "entrance_color": "#af96e1"
   },
   "kaizoku_raijin": {
@@ -4444,7 +4858,10 @@
     "skill_e_cooldown": 585,
     "skill_r_damage": 2625,
     "skill_r_cooldown": 1140,
+    "label_top": 58,
+    "entrance_text": "KAIZOKU RAIJIN THE FESTIVAL THUNDER, LIGHTS UP THE NIGHT!",
     "color": "#ffdc5a",
+    "color_dark": "#46320a",
     "entrance_color": "#fff5b4"
   },
   "korokai": {
@@ -4476,7 +4893,10 @@
     "skill_e_cooldown": 590,
     "skill_r_damage": 2637,
     "skill_r_cooldown": 1145,
+    "label_top": 55,
+    "entrance_text": "KOROKAI THE MIRROR BLADE, REFLECTS ALL THREATS!",
     "color": "#bedcff",
+    "color_dark": "#232d50",
     "entrance_color": "#e1f0ff"
   },
   "verdanix": {
@@ -4508,7 +4928,10 @@
     "skill_e_cooldown": 595,
     "skill_r_damage": 2650,
     "skill_r_cooldown": 1150,
+    "label_top": 58,
+    "entrance_text": "VERDANIX THE VERDANT FURY, STORMS WITH NATURE'S WRATH!",
     "color": "#78c85a",
+    "color_dark": "#193714",
     "entrance_color": "#bef5a0"
   },
   "broggmar": {
@@ -4540,7 +4963,10 @@
     "skill_e_cooldown": 595,
     "skill_r_damage": 2675,
     "skill_r_cooldown": 1160,
+    "label_top": 60,
+    "entrance_text": "BROGGMAR THE CASKBREAKER, SMASHES WITH EXPLOSIVE FURY!",
     "color": "#aa6428",
+    "color_dark": "#231208",
     "entrance_color": "#ffd28c"
   },
   "ursath": {
@@ -4572,7 +4998,10 @@
     "skill_e_cooldown": 600,
     "skill_r_damage": 2687,
     "skill_r_cooldown": 1165,
+    "label_top": 58,
+    "entrance_text": "URSATH THORNMANE THE WILDCALLER, SUMMONS THE BEASTS!",
     "color": "#8cc86e",
+    "color_dark": "#1e3716",
     "entrance_color": "#cdf5b4"
   },
   "zhaeris": {
@@ -4604,7 +5033,10 @@
     "skill_e_cooldown": 605,
     "skill_r_damage": 2700,
     "skill_r_cooldown": 1170,
+    "label_top": 55,
+    "entrance_text": "ZHAERIS THE SHADOWBLADE, STRIKES FROM THE DARK!",
     "color": "#6e5aa0",
+    "color_dark": "#140c28",
     "entrance_color": "#b9a5eb"
   },
   "kairenji": {
@@ -4636,7 +5068,10 @@
     "skill_e_cooldown": 610,
     "skill_r_damage": 2750,
     "skill_r_cooldown": 1170,
+    "label_top": 55,
+    "entrance_text": "KAIRENJI THE VOIDBLADE, SLICES FROM THE SHADOWS!",
     "color": "#9646dc",
+    "color_dark": "#0f051e",
     "entrance_color": "#e6beff"
   },
   "karzhul": {
@@ -4668,7 +5103,10 @@
     "skill_e_cooldown": 615,
     "skill_r_damage": 2762,
     "skill_r_cooldown": 1175,
+    "label_top": 60,
+    "entrance_text": "KARZHUL THE FANGREAVER, HUNTS BENEATH THE FULL MOON!",
     "color": "#b9b9c8",
+    "color_dark": "#121216",
     "entrance_color": "#f5f5fa"
   },
   "xerakkuth": {
@@ -4700,7 +5138,10 @@
     "skill_e_cooldown": 605,
     "skill_r_damage": 2725,
     "skill_r_cooldown": 1160,
+    "label_top": 58,
+    "entrance_text": "XERAKKUTH THE DUNEHORROR, RISES FROM THE BURNING SANDS!",
     "color": "#d7a041",
+    "color_dark": "#190f05",
     "entrance_color": "#fad782"
   },
   "kaelthys": {
@@ -4732,7 +5173,10 @@
     "skill_e_cooldown": 620,
     "skill_r_damage": 2812,
     "skill_r_cooldown": 1180,
+    "label_top": 58,
+    "entrance_text": "KAELTHYS THE STILLWATER BLADE, FLOWS FROM THE DEEP!",
     "color": "#8cc8eb",
+    "color_dark": "#0a1e37",
     "entrance_color": "#b4e1fa"
   },
   "kaoruken": {
@@ -4764,7 +5208,10 @@
     "skill_e_cooldown": 625,
     "skill_r_damage": 2825,
     "skill_r_cooldown": 1185,
+    "label_top": 55,
+    "entrance_text": "KAORUKEN THE PALMSEER, PIERCES WITH THE ALL-SEEING EYE!",
     "color": "#aabeff",
+    "color_dark": "#0f143c",
     "entrance_color": "#d7e1ff"
   },
   "vaelkorr": {
@@ -4796,7 +5243,10 @@
     "skill_e_cooldown": 615,
     "skill_r_damage": 2800,
     "skill_r_cooldown": 1170,
+    "label_top": 60,
+    "entrance_text": "VAELKORR THE THREADBINDER IMMORTAL, WEAVES A WEB OF DEATH!",
     "color": "#be785a",
+    "color_dark": "#1e0a0a",
     "entrance_color": "#ebb9a0"
   },
   "aurelian": {
@@ -4828,7 +5278,10 @@
     "skill_e_cooldown": 630,
     "skill_r_damage": 2862,
     "skill_r_cooldown": 1190,
+    "label_top": 60,
+    "entrance_text": "AURELIAN VHORN THE GOLDSPEAR SOVEREIGN, LEADS THE VANGUARD!",
     "color": "#f5d25f",
+    "color_dark": "#1e1605",
     "entrance_color": "#ffeba0"
   },
   "morvath": {
@@ -4860,7 +5313,10 @@
     "skill_e_cooldown": 635,
     "skill_r_damage": 2875,
     "skill_r_cooldown": 1195,
+    "label_top": 62,
+    "entrance_text": "MORVATH THE DEEPMAW LEVIATHAN, RISES FROM THE ABYSSAL TRENCH!",
     "color": "#3c82a0",
+    "color_dark": "#05141e",
     "entrance_color": "#8cd2eb"
   },
   "pyrhaan": {
@@ -4892,7 +5348,10 @@
     "skill_e_cooldown": 625,
     "skill_r_damage": 2850,
     "skill_r_cooldown": 1185,
+    "label_top": 55,
+    "entrance_text": "PYRHAAN THE CINDERBORN ADEPT, BURNS WITH RESTLESS FLAME!",
     "color": "#ff9628",
+    "color_dark": "#1e0802",
     "entrance_color": "#ffd782"
   },
   "garumenshi": {
@@ -4924,7 +5383,10 @@
     "skill_e_cooldown": 635,
     "skill_r_damage": 2887,
     "skill_r_cooldown": 1200,
+    "label_top": 62,
+    "entrance_text": "GARUMENSHI THE SAGE TOAD HERMIT, SUMMONS THE TOAD MOUNTAIN!",
     "color": "#96be78",
+    "color_dark": "#0f1e0c",
     "entrance_color": "#cdebb9"
   },
   "thoraz": {
@@ -4956,7 +5418,10 @@
     "skill_e_cooldown": 640,
     "skill_r_damage": 2900,
     "skill_r_cooldown": 1205,
+    "label_top": 62,
+    "entrance_text": "THORAZ THE MOUNTAINBREAKER, SHATTERS THE EARTH ITSELF!",
     "color": "#a58764",
+    "color_dark": "#140f0a",
     "entrance_color": "#e1cdaf"
   },
   "vhaerith": {
@@ -4988,7 +5453,10 @@
     "skill_e_cooldown": 625,
     "skill_r_damage": 2875,
     "skill_r_cooldown": 1185,
+    "label_top": 58,
+    "entrance_text": "VHAERITH THE HOLLOW REAPER, HARVESTS THE SCREAMING DARK!",
     "color": "#aabedc",
+    "color_dark": "#0f1428",
     "entrance_color": "#d7e6fa"
   },
   "dorakai": {
@@ -5020,7 +5488,10 @@
     "skill_e_cooldown": 640,
     "skill_r_damage": 2912,
     "skill_r_cooldown": 1210,
+    "label_top": 60,
+    "entrance_text": "DORAKAI THE BLOOD-DRUM ONI, BEATS THE RHYTHM OF RUIN!",
     "color": "#c83c3c",
+    "color_dark": "#190508",
     "entrance_color": "#ff968c"
   },
   "hitokage": {
@@ -5052,7 +5523,10 @@
     "skill_e_cooldown": 645,
     "skill_r_damage": 2925,
     "skill_r_cooldown": 1215,
+    "label_top": 58,
+    "entrance_text": "HITOKAGE THE SUNFIRE BLADE MASTER, BLAZES WITH THE SUN!",
     "color": "#ffb43c",
+    "color_dark": "#280f02",
     "entrance_color": "#ffe196"
   },
   "kazuren": {
@@ -5084,7 +5558,10 @@
     "skill_e_cooldown": 630,
     "skill_r_damage": 2900,
     "skill_r_cooldown": 1200,
+    "label_top": 55,
+    "entrance_text": "KAZUREN THE SHADOW OF THE VOID, ERASES YOU FROM EXISTENCE!",
     "color": "#7850a0",
+    "color_dark": "#0a0514",
     "entrance_color": "#bea0e6"
   },
   "obanai": {
@@ -5116,7 +5593,10 @@
     "skill_e_cooldown": 645,
     "skill_r_damage": 2937,
     "skill_r_cooldown": 1220,
+    "label_top": 58,
+    "entrance_text": "OBANAI IGURO THE SERPENT HASHIRA, COILS TO STRIKE!",
     "color": "#9682c8",
+    "color_dark": "#140a23",
     "entrance_color": "#cdbef5"
   },
   "sanguire": {
@@ -5148,7 +5628,10 @@
     "skill_e_cooldown": 635,
     "skill_r_damage": 2925,
     "skill_r_cooldown": 1205,
+    "label_top": 60,
+    "entrance_text": "SANGUIRE VOXTHAL THE BLOOD MANIPULATOR, BATHES IN CRIMSON!",
     "color": "#c83c5a",
+    "color_dark": "#19050c",
     "entrance_color": "#ff96aa"
   },
   "sasori": {
@@ -5180,7 +5663,10 @@
     "skill_e_cooldown": 650,
     "skill_r_damage": 2950,
     "skill_r_cooldown": 1225,
+    "label_top": 55,
+    "entrance_text": "SASORI THE RED SAND PUPPETEER, DANCES WITH A HUNDRED PUPPETS!",
     "color": "#c85a3c",
+    "color_dark": "#190a05",
     "entrance_color": "#ffb496"
   },
   "abaddon": {
@@ -5212,7 +5698,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 675,
     "skill_r_cooldown": 600,
+    "label_top": 63,
+    "entrance_text": "ABADDON, LORD OF AVERNUS RIDES FORTH!",
     "color": "#64dcf0",
+    "color_dark": "#1e3c64",
     "entrance_color": "#64dcf0"
   },
   "alchemist": {
@@ -5244,7 +5733,10 @@
     "skill_e_cooldown": 480,
     "skill_r_damage": 742,
     "skill_r_cooldown": 720,
+    "label_top": 112,
+    "entrance_text": "ALCHEMIST DUO ARRIVES FOR GOLD!",
     "color": "#d79b2d",
+    "color_dark": "#8c5a14",
     "entrance_color": "#64dc28"
   },
   "ancient_apparition": {
@@ -5276,7 +5768,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 810,
     "skill_r_cooldown": 720,
+    "label_top": 61,
+    "entrance_text": "ANCIENT APPARITION AWAKENS FROM THE VOID!",
     "color": "#8cc8ff",
+    "color_dark": "#2850a0",
     "entrance_color": "#8cc8ff"
   },
   "ignis_drachorn": {
@@ -5308,7 +5803,10 @@
     "skill_e_cooldown": 420,
     "skill_r_damage": 810,
     "skill_r_cooldown": 780,
+    "label_top": 68,
+    "entrance_text": "IGNIS DRACHORN, THE MOLTEN SOVEREIGN AWAKENS!",
     "color": "#ff821e",
+    "color_dark": "#6e1e0a",
     "entrance_color": "#ff9632"
   },
   "krobellus": {
@@ -5340,7 +5838,10 @@
     "skill_e_cooldown": 260,
     "skill_r_damage": 594,
     "skill_r_cooldown": 680,
+    "label_top": 62,
+    "entrance_text": "KROBELLLUS, THE DEATH PROPHET, RISES!",
     "color": "#37b496",
+    "color_dark": "#26104b",
     "entrance_color": "#64ffc8"
   },
   "kunkka": {
@@ -5372,7 +5873,10 @@
     "skill_e_cooldown": 480,
     "skill_r_damage": 877,
     "skill_r_cooldown": 720,
+    "label_top": 47,
+    "entrance_text": "KUNKKA, THE ADMIRAL OF THE FLEET, SETS SAIL!",
     "color": "#2882c8",
+    "color_dark": "#081e3e",
     "entrance_color": "#6ec8f5"
   },
   "nyxarath": {
@@ -5404,7 +5908,10 @@
     "skill_e_cooldown": 420,
     "skill_r_damage": 945,
     "skill_r_cooldown": 780,
+    "label_top": 66,
+    "entrance_text": "NYXARATH, THE SOUL EATER, DEVOURS ALL LIGHT!",
     "color": "#b42319",
+    "color_dark": "#080506",
     "entrance_color": "#ff9150"
   },
   "vhorethzir": {
@@ -5436,7 +5943,10 @@
     "skill_e_cooldown": 420,
     "skill_r_damage": 972,
     "skill_r_cooldown": 780,
+    "label_top": 67,
+    "entrance_text": "VHORETH'ZIR, THE NETHERVENOM WYRM, POISONS THE SKY!",
     "color": "#8cbe23",
+    "color_dark": "#05140a",
     "entrance_color": "#c8f550"
   },
   "naraka": {
@@ -5468,7 +5978,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 945,
     "skill_r_cooldown": 640,
+    "label_top": 67,
+    "entrance_text": "NARAKA, THE LOST SOUL, RISES FROM THE ABYSS!",
     "color": "#6edceb",
+    "color_dark": "#0f283c",
     "entrance_color": "#6edceb"
   },
   "aurethzar": {
@@ -5500,7 +6013,10 @@
     "skill_e_cooldown": 280,
     "skill_r_damage": 999,
     "skill_r_cooldown": 640,
+    "label_top": 71,
+    "entrance_text": "AURETH'ZAR, THE RADIANT DAWN, ILLUMINATES THE SKY!",
     "color": "#f0c350",
+    "color_dark": "#5f410f",
     "entrance_color": "#ffe18c"
   },
   "thalakryon": {
@@ -5532,7 +6048,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 1026,
     "skill_r_cooldown": 640,
+    "label_top": 71,
+    "entrance_text": "THALAKRYON, THE ABYSSAL SOVEREIGN, RISES FROM THE DEEP!",
     "color": "#3282be",
+    "color_dark": "#05142d",
     "entrance_color": "#8cd2f0"
   },
   "nazulmor": {
@@ -5564,7 +6083,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 1080,
     "skill_r_cooldown": 640,
+    "label_top": 73,
+    "entrance_text": "NAZULMOR, THE DEEPBORN HERALD, WHISPERS FROM THE VOID!",
     "color": "#2d6e69",
+    "color_dark": "#051419",
     "entrance_color": "#78dcf0"
   },
   "solvarin": {
@@ -5596,7 +6118,10 @@
     "skill_e_cooldown": 300,
     "skill_r_damage": 1134,
     "skill_r_cooldown": 640,
+    "label_top": 75,
+    "entrance_text": "SOLVARIN, THE HOLY PALADIN WARDEN, DESCENDS IN LIGHT!",
     "color": "#d7dce6",
+    "color_dark": "#232832",
     "entrance_color": "#fafcff"
   },
   "pyraethis": {
@@ -5628,7 +6153,10 @@
     "skill_e_cooldown": 310,
     "skill_r_damage": 1215,
     "skill_r_cooldown": 660,
+    "label_top": 77,
+    "entrance_text": "PYRAETHIS, THE ETERNAL FIREBIRD, RISES IN FLAMES!",
     "color": "#ff8c1e",
+    "color_dark": "#6e1e0a",
     "entrance_color": "#ffc846"
   },
   "yamako": {
@@ -5660,7 +6188,10 @@
     "skill_e_cooldown": 315,
     "skill_r_damage": 1282,
     "skill_r_cooldown": 670,
+    "label_top": 65,
+    "entrance_text": "YAMAKO, THE PRIMORDIAL WOODSHAPER, AWAKENS THE GROVE!",
     "color": "#558c5a",
+    "color_dark": "#122d16",
     "entrance_color": "#8cbe8c"
   },
   "seiryukong": {
@@ -5692,7 +6223,10 @@
     "skill_e_cooldown": 320,
     "skill_r_damage": 1350,
     "skill_r_cooldown": 680,
+    "label_top": 100,
+    "entrance_text": "SEIRYUKONG, THE CELESTIAL SIMIAN, DESCENDS FROM THE CLOUDS!",
     "color": "#f0c350",
+    "color_dark": "#5f4114",
     "entrance_color": "#ffe182"
   },
   "nyxareth": {
@@ -5724,7 +6258,10 @@
     "skill_e_cooldown": 325,
     "skill_r_damage": 1417,
     "skill_r_cooldown": 690,
+    "label_top": 81,
+    "entrance_text": "NYXARETH, THE COSMIC SOVEREIGN, UNRAVELS THE STARS!",
     "color": "#8737dc",
+    "color_dark": "#0a0519",
     "entrance_color": "#c882ff"
   },
   "aurelion": {
@@ -5756,7 +6293,10 @@
     "skill_e_cooldown": 330,
     "skill_r_damage": 1485,
     "skill_r_cooldown": 700,
+    "label_top": 83,
+    "entrance_text": "AURELION, THE GOLDEN SOVEREIGN, CLAIMS THE BATTLEFIELD!",
     "color": "#f5d75f",
+    "color_dark": "#372805",
     "entrance_color": "#fff5b4"
   },
   "vaelindra": {
@@ -5788,7 +6328,10 @@
     "skill_e_cooldown": 335,
     "skill_r_damage": 1552,
     "skill_r_cooldown": 710,
+    "label_top": 85,
+    "entrance_text": "VAELINDRA, THE VIOLET SOVEREIGN, BECKONS FROM BEYOND!",
     "color": "#9b64dc",
+    "color_dark": "#280f50",
     "entrance_color": "#c8a0f5"
   },
   "morthraxis": {
@@ -5820,7 +6363,10 @@
     "skill_e_cooldown": 340,
     "skill_r_damage": 1620,
     "skill_r_cooldown": 720,
+    "label_top": 87,
+    "entrance_text": "MORTHRAXIS, THE CRIMSON SOVEREIGN, THIRSTS FOR THE NIGHT!",
     "color": "#dc325a",
+    "color_dark": "#500a19",
     "entrance_color": "#ff5a82"
   },
   "nexthyrius": {
@@ -5852,7 +6398,10 @@
     "skill_e_cooldown": 350,
     "skill_r_damage": 1755,
     "skill_r_cooldown": 740,
+    "label_top": 85,
+    "entrance_text": "NEXTHYRIUS, THE CHAINED HOLLOW, DRAGS ALL SOULS INTO THE VOID!",
     "color": "#00b4c8",
+    "color_dark": "#02080c",
     "entrance_color": "#50f0c8"
   },
   "molgravar": {
@@ -5884,7 +6433,10 @@
     "skill_e_cooldown": 360,
     "skill_r_damage": 1822,
     "skill_r_cooldown": 760,
+    "label_top": 90,
+    "entrance_text": "MOLGRAVAR, THE COLOSSUS OF THE SUNDERED PEAK, SHATTERS THE EARTH!",
     "color": "#e68c32",
+    "color_dark": "#120c08",
     "entrance_color": "#ffbe50"
   },
   "seraphienne": {
@@ -5916,7 +6468,10 @@
     "skill_e_cooldown": 370,
     "skill_r_damage": 1890,
     "skill_r_cooldown": 780,
+    "label_top": 92,
+    "entrance_text": "SERAPHIENNE, THE EMPYREAN EXECUTIONER, DESCENDS IN JUDGMENT!",
     "color": "#fad769",
+    "color_dark": "#231403",
     "entrance_color": "#fff0aa"
   },
   "solareth": {
@@ -5948,7 +6503,10 @@
     "skill_e_cooldown": 375,
     "skill_r_damage": 1957,
     "skill_r_cooldown": 790,
+    "label_top": 88,
+    "entrance_text": "SOLARETH, THE SUNBORN HERALD, BLINDS THE WORLD WITH DAWN!",
     "color": "#ffd25a",
+    "color_dark": "#371e05",
     "entrance_color": "#fff0a0"
   },
   "okeanora": {
@@ -5980,7 +6538,10 @@
     "skill_e_cooldown": 380,
     "skill_r_damage": 2025,
     "skill_r_cooldown": 800,
+    "label_top": 90,
+    "entrance_text": "OKEANORA, THE DEEPBORN ORACLE, SUMMONS THE KRAKEN'S WRATH!",
     "color": "#5ff5dc",
+    "color_dark": "#051919",
     "entrance_color": "#aafff0"
   },
   "vaelmyrra": {
@@ -6012,7 +6573,10 @@
     "skill_e_cooldown": 385,
     "skill_r_damage": 2092,
     "skill_r_cooldown": 810,
+    "label_top": 82,
+    "entrance_text": "VAELMYRRA, THE CRIMSON MATRIARCH, CLAIMS THE BLOOD THRONE!",
     "color": "#e13746",
+    "color_dark": "#08050a",
     "entrance_color": "#ff6464"
   },
   "zarethyr": {
@@ -6044,7 +6608,10 @@
     "skill_e_cooldown": 390,
     "skill_r_damage": 2160,
     "skill_r_cooldown": 820,
+    "label_top": 72,
+    "entrance_text": "ZARETHYR, THE ASTRAL SOVEREIGN, COMMANDS THE COSMOS!",
     "color": "#82c8ff",
+    "color_dark": "#050819",
     "entrance_color": "#c8ebff"
   },
   "nyrethzalv": {
@@ -6076,7 +6643,10 @@
     "skill_e_cooldown": 395,
     "skill_r_damage": 2227,
     "skill_r_cooldown": 830,
+    "label_top": 78,
+    "entrance_text": "NYRETH'ZALVARIN, THE FORSAKEN EMPRESS, UNLEASHES SHADOW-CHAINS!",
     "color": "#d25aeb",
+    "color_dark": "#0f0519",
     "entrance_color": "#f08cff"
   },
   "nyrellieth": {
@@ -6108,7 +6678,10 @@
     "skill_e_cooldown": 400,
     "skill_r_damage": 2295,
     "skill_r_cooldown": 850,
+    "label_top": 82,
+    "entrance_text": "NYRELLIETH, THE FROST-VEILED HUNTRESS, FREEZES THE DAWN!",
     "color": "#8cdcff",
+    "color_dark": "#050814",
     "entrance_color": "#c8f5ff"
   },
   "nyxharr": {
@@ -6140,7 +6713,10 @@
     "skill_e_cooldown": 405,
     "skill_r_damage": 2430,
     "skill_r_cooldown": 870,
+    "label_top": 90,
+    "entrance_text": "NYXHARR, THE SHADOW OF WAR, RIDES FROM THE ETERNAL BATTLEFIELD!",
     "color": "#5ae1f5",
+    "color_dark": "#050a0c",
     "entrance_color": "#aafaff"
   },
   "ravokkar": {
@@ -6172,7 +6748,10 @@
     "skill_e_cooldown": 410,
     "skill_r_damage": 2497,
     "skill_r_cooldown": 880,
+    "label_top": 82,
+    "entrance_text": "RAVOKKAR, THE OUTLAW KING, CLAIMS THE FRONTIER!",
     "color": "#d74b4b",
+    "color_dark": "#050508",
     "entrance_color": "#f58c8c"
   },
   "malzeroth": {
@@ -6204,7 +6783,10 @@
     "skill_e_cooldown": 420,
     "skill_r_damage": 2565,
     "skill_r_cooldown": 900,
+    "label_top": 72,
+    "entrance_text": "MALZEROTH, THE HEXBOUND SOVEREIGN, CURSES ALL WHO DEFY HIM!",
     "color": "#8c3cc8",
+    "color_dark": "#190f28",
     "entrance_color": "#f0d2ff"
   },
   "zharakzuul": {
@@ -6236,7 +6818,10 @@
     "skill_e_cooldown": 425,
     "skill_r_damage": 2632,
     "skill_r_cooldown": 910,
+    "label_top": 78,
+    "entrance_text": "ZHARAKZUUL, THE VOIDBOUND SOVEREIGN, COMMANDS THE EMPTY DARK!",
     "color": "#af37eb",
+    "color_dark": "#0f081e",
     "entrance_color": "#f5c8ff"
   },
   "grondmauris": {
@@ -6268,7 +6853,10 @@
     "skill_e_cooldown": 430,
     "skill_r_damage": 2700,
     "skill_r_cooldown": 930,
+    "label_top": 85,
+    "entrance_text": "GRONDMAURIS THE EARTHBORN, AWAKENS FROM THE DEEP!",
     "color": "#8cbe46",
+    "color_dark": "#191614",
     "entrance_color": "#c8ffb4"
   },
   "lyssarethys": {
@@ -6300,7 +6888,10 @@
     "skill_e_cooldown": 435,
     "skill_r_damage": 2767,
     "skill_r_cooldown": 950,
+    "label_top": 78,
+    "entrance_text": "LYSSARETHYS THE HEARTBANE, BREAKS ALL HEARTS THAT BEHOLD HER!",
     "color": "#ff64be",
+    "color_dark": "#1e1428",
     "entrance_color": "#ffb4e6"
   },
   "kaerinya": {
@@ -6332,7 +6923,10 @@
     "skill_e_cooldown": 440,
     "skill_r_damage": 2835,
     "skill_r_cooldown": 960,
+    "label_top": 70,
+    "entrance_text": "KAERINYA THE SUNFIST, STRIKES WITH THE HEART OF THE SUN!",
     "color": "#fadc6e",
+    "color_dark": "#050a19",
     "entrance_color": "#fff5be"
   },
   "xelnarath": {
@@ -6364,7 +6958,10 @@
     "skill_e_cooldown": 445,
     "skill_r_damage": 2902,
     "skill_r_cooldown": 970,
+    "label_top": 72,
+    "entrance_text": "XEL'NARATH THE VOID SOVEREIGN, UNFOLDS THE DARK WINGS!",
     "color": "#e664f0",
+    "color_dark": "#08030f",
     "entrance_color": "#ffa0ff"
   },
   "kyrenzai": {
@@ -6396,7 +6993,10 @@
     "skill_e_cooldown": 450,
     "skill_r_damage": 2970,
     "skill_r_cooldown": 980,
+    "label_top": 70,
+    "entrance_text": "KYRENZAI THE CRIMSON DEVOURER, FEEDS ON THE LIVING!",
     "color": "#e63741",
+    "color_dark": "#050305",
     "entrance_color": "#ff6e64"
   },
   "xaelmoran": {
@@ -6428,7 +7028,10 @@
     "skill_e_cooldown": 455,
     "skill_r_damage": 3037,
     "skill_r_cooldown": 1000,
+    "label_top": 75,
+    "entrance_text": "XAEL'MORAN THE ELEMENTAL WEAVER, COMMANDS ALL ELEMENTS!",
     "color": "#aa3cdc",
+    "color_dark": "#0f0819",
     "entrance_color": "#f0c85a"
   },
   "thalryndel": {
@@ -6460,7 +7063,10 @@
     "skill_e_cooldown": 460,
     "skill_r_damage": 3105,
     "skill_r_cooldown": 1010,
+    "label_top": 72,
+    "entrance_text": "THAL'RYNDEL THE TEMPEST WEAVER, COMMANDS THE STORM!",
     "color": "#3c8cf0",
+    "color_dark": "#050a1e",
     "entrance_color": "#dcf5ff"
   },
   "grimkor": {
@@ -6492,7 +7098,10 @@
     "skill_e_cooldown": 465,
     "skill_r_damage": 3172,
     "skill_r_cooldown": 1020,
+    "label_top": 75,
+    "entrance_text": "GRIMKOR THE SAWMILL WARLORD, CARVES THROUGH ALL TIMBER AND FLESH!",
     "color": "#dc5a14",
+    "color_dark": "#120f0c",
     "entrance_color": "#ffdc78"
   },
   "kaineroth": {
@@ -6524,7 +7133,10 @@
     "skill_e_cooldown": 470,
     "skill_r_damage": 3240,
     "skill_r_cooldown": 1030,
+    "label_top": 72,
+    "entrance_text": "KAINEROTH THE CROW-EYED, SEES ALL WITH CRIMSON GAZE!",
     "color": "#e64650",
+    "color_dark": "#050308",
     "entrance_color": "#ff8282"
   },
   "zyvareth": {
@@ -6556,7 +7168,10 @@
     "skill_e_cooldown": 475,
     "skill_r_damage": 3307,
     "skill_r_cooldown": 1040,
+    "label_top": 78,
+    "entrance_text": "ZYVARETH THE STORMHERALD, ROARS WITH CRYSTAL THUNDER!",
     "color": "#d782fa",
+    "color_dark": "#051e28",
     "entrance_color": "#f5c3ff"
   },
   "kagetsuka": {
@@ -6588,7 +7203,10 @@
     "skill_e_cooldown": 480,
     "skill_r_damage": 3375,
     "skill_r_cooldown": 1050,
+    "label_top": 72,
+    "entrance_text": "KAGETSUKA THE ETERNAL WARLORD, BURNS WITH SHARINGAN FIRE!",
     "color": "#c81e28",
+    "color_dark": "#190a0f",
     "entrance_color": "#ffb4a0"
   },
   "deidara": {
@@ -6620,7 +7238,10 @@
     "skill_e_cooldown": 485,
     "skill_r_damage": 3442,
     "skill_r_cooldown": 1060,
+    "label_top": 72,
+    "entrance_text": "DEIDARA THE EXPLOSIVE ARTIST, SHOWS HIS ART TO THE WORLD!",
     "color": "#fa463c",
+    "color_dark": "#050508",
     "entrance_color": "#ff9682"
   },
   "sunakage": {
@@ -6652,7 +7273,10 @@
     "skill_e_cooldown": 490,
     "skill_r_damage": 3510,
     "skill_r_cooldown": 1070,
+    "label_top": 75,
+    "entrance_text": "SUNAKAGE THE SAND SHADOW, COMMANDS THE ENDLESS DUNES!",
     "color": "#e6462d",
+    "color_dark": "#19080a",
     "entrance_color": "#fa9664"
   },
   "pyraena": {
@@ -6684,7 +7308,10 @@
     "skill_e_cooldown": 495,
     "skill_r_damage": 3577,
     "skill_r_cooldown": 1080,
+    "label_top": 75,
+    "entrance_text": "PYRAENA THE EMBERWEAVER, WEAVES DESTINY IN FIRE!",
     "color": "#ffa53c",
+    "color_dark": "#23080f",
     "entrance_color": "#ffdc82"
   },
   "cogsworth": {
@@ -6716,7 +7343,10 @@
     "skill_e_cooldown": 500,
     "skill_r_damage": 3645,
     "skill_r_cooldown": 1090,
+    "label_top": 72,
+    "entrance_text": "COGSWORTH THE SKYFURY, RAINS STEEL FROM THE CLOUDS!",
     "color": "#e69b4b",
+    "color_dark": "#0c0c0f",
     "entrance_color": "#ffd28c"
   },
   "yomigetsu": {
@@ -6748,7 +7378,10 @@
     "skill_e_cooldown": 505,
     "skill_r_damage": 3712,
     "skill_r_cooldown": 1095,
+    "label_top": 75,
+    "entrance_text": "YOMIGETSU THE MOONREAPER, DESCENDS UNDER THE CRIMSON MOON!",
     "color": "#c88cff",
+    "color_dark": "#0f0528",
     "entrance_color": "#ebc3ff"
   },
   "akirakumo": {
@@ -6780,7 +7413,10 @@
     "skill_e_cooldown": 510,
     "skill_r_damage": 3780,
     "skill_r_cooldown": 1100,
+    "label_top": 78,
+    "entrance_text": "AKIRAKUMO THE MOONFANG PRINCE, BOWS TO NO ONE BUT THE MOON!",
     "color": "#d7d7e6",
+    "color_dark": "#141428",
     "entrance_color": "#ebeef5"
   },
   "kaithros": {
@@ -6812,7 +7448,10 @@
     "skill_e_cooldown": 515,
     "skill_r_damage": 3847,
     "skill_r_cooldown": 1105,
+    "label_top": 75,
+    "entrance_text": "KAITHROS THE EMBERLION RONIN, BLAZES WITH UNQUENCHABLE SPIRIT!",
     "color": "#ff9628",
+    "color_dark": "#140500",
     "entrance_color": "#ffe682"
   },
   "nyxaris": {
@@ -6844,7 +7483,10 @@
     "skill_e_cooldown": 520,
     "skill_r_damage": 3915,
     "skill_r_cooldown": 1110,
+    "label_top": 75,
+    "entrance_text": "NYXARIS THE LUNAR HERALD, PROCLAIMS THE MOON'S JUDGMENT!",
     "color": "#c8ebff",
+    "color_dark": "#0a080f",
     "entrance_color": "#f0faff"
   },
   "tsukiyora": {
@@ -6876,7 +7518,10 @@
     "skill_e_cooldown": 525,
     "skill_r_damage": 3982,
     "skill_r_cooldown": 1115,
+    "label_top": 78,
+    "entrance_text": "TSUKIYORA THE MOON-BORN SOVEREIGN, DECREES THE END OF ALL WORLDS!",
     "color": "#f0eef8",
+    "color_dark": "#0f0a1e",
     "entrance_color": "#faf8ff"
   },
   "hollowbane": {
@@ -6908,7 +7553,10 @@
     "skill_e_cooldown": 530,
     "skill_r_damage": 4050,
     "skill_r_cooldown": 1120,
+    "label_top": 78,
+    "entrance_text": "KUROSAKI HOLLOWBANE THE SUBSTITUTE SHINIGAMI, RELEASES HIS BANKA!",
     "color": "#ff9b37",
+    "color_dark": "#0a0a0f",
     "entrance_color": "#ffd264"
   }
 }

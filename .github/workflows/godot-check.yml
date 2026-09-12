@@ -49,6 +49,9 @@ on:
       - 'tools/test_godot_localization_parity.py'
       - 'ui_theme.py'
       - 'tools/test_godot_ui_theme_parity.py'
+      - 'tools/test_boss_draw_parity.py'
+      - 'tools/test_boss_overlay_model_parity.py'
+      - 'tools/test_boss_data_parity.py'
       - 'main_desktop_legacy.py'
       - 'main.py'
       - '.github/workflows/godot-check.yml'
@@ -80,6 +83,9 @@ on:
       - 'tools/test_godot_localization_parity.py'
       - 'ui_theme.py'
       - 'tools/test_godot_ui_theme_parity.py'
+      - 'tools/test_boss_draw_parity.py'
+      - 'tools/test_boss_overlay_model_parity.py'
+      - 'tools/test_boss_data_parity.py'
       - 'main_desktop_legacy.py'
       - 'main.py'
       - '.github/workflows/godot-check.yml'
@@ -160,6 +166,13 @@ jobs:
           # param/var lokal/bridge Hero.gd) — tangkap 'Identifier not
           # declared' sebelum engine.
           python3 tools/check_bosskit_scope.py godot/scenes/hero/HeroSkillKit.gd
+          # BossOverlay.gd (FASE 32): KEMBARAN Python dari logika lapisan
+          # overlay Boss.draw — konstanta dibaca langsung dari berkas .gd lalu
+          # op-nya dibandingkan dengan fixture yang direkam pygame ASLI
+          # (50 skenario, 647 op). Tidak butuh pygame maupun engine, jadi salah
+          # transkripsi (floor division, int(), urutan lapisan, pita alpha)
+          # ketahuan sebelum Godot diunduh.
+          python3 tools/test_boss_overlay_model_parity.py
 
       # ── 2. Godot binary (di-cache) ──
       - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
@@ -1017,6 +1030,74 @@ jobs:
             cat /tmp/uitheme.gate
             echo "::error::UITHEME-FAIL-TAIL: $(tail -40 /tmp/uitheme.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::UITHEME-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/uitheme.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4z. BossDrawParityTest (FASE 32): LAPISAN OVERLAY Boss.draw() ──
+      # Oracle tiga lapis. (1) tools/test_boss_draw_parity.py MENJALANKAN
+      # Boss.draw pygame ASLI (SDL dummy) untuk 50 skenario — entrance
+      # (eksklusif), aura ability/enrage/true boss, bayangan, indikator debuff
+      # menara (_core.py:1037), badan generik, HP bar, papan nama + clamp tepi
+      # layar — merekam setiap primitif gambar, mengonversinya ke OP KANONIK
+      # (kosakata BossOverlay.gd), lalu MEMVERIFIKASI konversi itu dengan
+      # PIKSEL: op kanonik digambar ulang dengan semantik pygame dan harus
+      # identik byte-per-byte dengan render asli. Profil alpha aura diukur dari
+      # render sungguhan (pygame.draw.circle MENIMPA -> pita alpha rata; port
+      # naif draw_circle Godot yang mem-blend harus terbukti meleset). Fixture
+      # yang di-commit wajib SEGAR terhadap pygame. (2) Kembaran Python-nya
+      # sudah dicek di langkah statis. (3) Scene ini memutar ulang fixture di
+      # engine betulan: op BossOverlay.underlay_ops/over_ops, plumbing
+      # Boss.gd::overlay_state() dari node Boss asli + bosses.json (label_top,
+      # entrance_text, warna, detik->frame), posisi BossPlate sesudah Visual,
+      # dan raster exec() atas semua op.
+      - name: "BossDrawParityTest (overlay Boss.draw ↔ BossOverlay.gd)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          python -m pip install --quiet pygame-ce
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_boss_draw_parity.py
+          godot --headless --path godot res://tests/BossDrawParityTest.tscn --quit-after 400 2>&1 | tee /tmp/bossdraw.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/bossdraw.log --label "BossDrawParityTest" \
+              --require "[BossDrawParityTest] PASS" > /tmp/bossdraw.gate 2>&1; then
+            cat /tmp/bossdraw.gate
+          else
+            cat /tmp/bossdraw.gate
+            echo "::error::BOSSDRAW-FAIL-TAIL: $(tail -40 /tmp/bossdraw.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::BOSSDRAW-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/bossdraw.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 4z2. BossDataParityTest (FASE 32): PIPELINE DATA boss_data.py ──
+      # boss_data.py menjalankan 5 fungsi pada saat import dan menimpa tabelnya
+      # sendiri (rebalance piecewise -> smoothing monoton per slot wave/level ->
+      # curve override -> normalisasi stat hero_unlock least-squares + clamp +
+      # running-max -> normalisasi range melee/ranged). BossData.gd mem-port
+      # kelimanya dan BossDB memakainya sebagai jalur pemulihan katalog.
+      # Oracle-nya merekam 3024 field dari modul boss_data ASLI dan 3024 field
+      # dari ekspor baker (bosses.json + boss_stats_full.json), mengukur
+      # invariant pipeline (monoton, lantai piecewise, pita clamp, skill_range
+      # >= range), mengunci gotcha GDScript (pow(d,2) vs d*d, round banker's,
+      # pembagian float, sort stabil, truthiness dict kosong), lalu menulis
+      # fixture + probe fit least-squares NYATA. Scene ini menghitung ulang
+      # seluruh 216 boss di engine dan membandingkannya field demi field.
+      - name: "BossDataParityTest (pipeline data boss_data.py ↔ BossData.gd)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          python -m pip install --quiet pygame-ce
+          SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_boss_data_parity.py
+          godot --headless --path godot res://tests/BossDataParityTest.tscn --quit-after 120 2>&1 | tee /tmp/bossdata.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/bossdata.log --label "BossDataParityTest" \
+              --require "[BossDataParityTest] PASS" > /tmp/bossdata.gate 2>&1; then
+            cat /tmp/bossdata.gate
+          else
+            cat /tmp/bossdata.gate
+            echo "::error::BOSSDATA-FAIL-TAIL: $(tail -40 /tmp/bossdata.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::BOSSDATA-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/bossdata.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 
