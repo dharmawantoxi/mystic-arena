@@ -15,7 +15,7 @@ yang sama:
 |---|---|---|---|
 | Python (sumber kebenaran) | `hero_skills/_bundle.py` | — | dimainkan pygame; oracle fixture |
 | GDScript | `godot/scenes/hero/HeroSkillKit.gd` (5.807 baris, 330 `static func`) | `tools/gen_hero_skill_kit.py` | jalur default Godot, tanpa compiler |
-| **C++ (godot++)** | `godot/gdext/mystic_skills/src/hero_skills_processor.{h,cpp}` (455 + 6.792 baris, 429 definisi) | `tools/gen_hero_skills_cpp.py` | hot-path native, opt-in |
+| **C++ (godot++)** | `godot/gdext/mystic_skills/src/hero_skills_processor.{h,cpp}` (459 + 6.802 baris, 432 definisi) | `tools/gen_hero_skills_cpp.py` | hot-path native, opt-in |
 | Saklar | `godot/scenes/hero/HeroSkillKitLoader.gd` | tangan | `Hero.gd` tidak tahu backend mana yang jalan |
 
 Tidak ada satu pun angka (koefisien damage, radius, durasi, cooldown) yang
@@ -87,7 +87,7 @@ godot/gdext/mystic_skills/
   README.md                        # cara build + pemetaan transpiler
   src/register_types.{h,cpp}       # entry mystic_skills_library_init
   src/hero_skills_processor.h      # class MysticHeroSkills : RefCounted (generated)
-  src/hero_skills_processor.cpp    # 429 definisi: helper + 6 starter + 66 boss (generated)
+  src/hero_skills_processor.cpp    # 432 definisi: helper + 6 starter + 66 boss (generated)
 godot/addons/mystic_skills/
   mystic_skills.gdextension        # kunci linux.debug.x86_64 -> berkas template_debug
   bin/                             # hasil build (di-gitignore, kecuali .gitkeep)
@@ -215,6 +215,8 @@ transpile AST sudah 1:1 dengan GDScript):
 | 9 | `has_target` di-bind tanpa `DEFVAL` untuk `range_val` | `__has_target(..., range_val = null)` | `DEFVAL(Variant())` |
 | 10 | `get_attack_cooldown_frames()` mengembalikan `attack_cooldown * 60.0` mentah (float) | GDScript: `int(roundf(float(h.attack_cooldown) * 60.0))` — **frame bulat** | `(double)(int64_t)round(v * 60.0)`. Tanpa ini `kit["_original_attack_cd"]` (Thorne R, Sylara Q) menyimpan 49.99998 alih-alih 50, dan `maxf(15, int(frame / 1.5))` bisa meleset satu frame |
 | 11 | `X.attack_timer = N` (assign langsung) dipetakan ke `kit_lock` | Python `_bundle.py:4227` `h._shackle_target.attack_timer = 30` → GDScript `.attack_timer = float(30) / 60.0` (tulis apa adanya) | helper baru `set_atk_timer_frames(h, target, frames)` (guard `kit_has_atk_timer`, tulis `frames / 60.0`); `kit_lock` — yang memakai `maxf` — tetap untuk 74 situs berbentuk `max(X.attack_timer, N)` |
+| 12 | `kit_catalog_all(h)[get_hero_type(h)]["damage"]` — index berantai `Dictionary::operator[]` **non-const** di atas temporary | GDScript `h.kit_catalog_all()[(h).hero_type]["damage"]` = 124 (alchemist) | helper `dict_at(container, key)` (`.get()` const, balik by-value, tanpa `ptrw()`/detach COW, tanpa menyisipkan NIL). Ketemu dari CI: **33 kegagalan / 22.594 check** — buff damage 7 skill boss (alchemist, drakar, ignis_drachorn, nyxarath, syrentha, thalgryn) jadi `int(100 × mult)` alih-alih `int(damage_katalog × mult)`, mis. 186 → 150 |
+| 13 | `(double)(Variant)` / `(int)(Variant)` di 1.000+ situs | GDScript memperlakukan `null` sebagai 0 | `var_num()` / `var_int()`: switch eksplisit per tipe Variant, NIL/non-numerik → 0. godot-cpp `Variant::operator double()` menulis ke `double result;` **tanpa inisialisasi** lewat `to_type_constructor[FLOAT]`; kalau constructor gagal (sumber NIL/Dictionary) buffer dibiarkan → angka acak dari stack (inilah asal `100.0` = sisa `skill_range` di bug 12) |
 
 ### Audit literal per fungsi (cara bug 10 & 11 ketemu)
 
@@ -233,6 +235,11 @@ dijelaskan satu per satu:
 | `"boss"` hanya di GDScript (`init_state`, `update_timers`) | GDScript memakai `match kind:` dengan label `"boss"`; C++ memakai rantai `if/else` dengan `else` — `hero_kind()` hanya bisa mengembalikan 7 nilai, jadi `_ : pass` di GDScript tak terjangkau |
 | `"skill_range"` hanya di C++ (`grimjaw_update_timers`) | bentuk `get_skill_data(h).get(Variant("skill_range"), 80)` vs `(h).skill_data.get("skill_range", 80)` — pembungkus `Variant(` lolos dari normalisasi |
 | `hero_kind` (multiset label berbeda) | label `match` vs literal di rantai `||` — nilai kembalinya sama untuk tiap `hero_type` (dibuktikan A/B battery di `HeroSkillGdextParityTest`) |
+
+Bug 12 & 13 **tidak** terlihat dari audit literal (angkanya sama persis dengan
+GDScript: `1.5`, `124` tidak muncul sebagai literal karena datang dari katalog) —
+yang menangkapnya oracle Pygame di CI. Pelengkapnya: audit literal menangkap bug
+10 & 11, oracle menangkap 12 & 13; keduanya dibutuhkan.
 
 Yang **tidak** diubah karena sudah benar (diaudit baris per baris vs GDScript):
 `hero_kind`, dispatch `cast_q/w/e/r` + `update_timers` + `init_state`,

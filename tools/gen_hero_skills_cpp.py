@@ -45,6 +45,14 @@ HERO_READ = {
     "attack_cooldown": "get_attack_cooldown_frames({r})",
 }
 
+## Properti Hero.gd yang setter-nya numerik (x/y/hp/damage/...). "target" dan
+## "active_skill" sengaja di luar: nilainya Object*/String.
+NUMERIC_WRITES = {
+    "x", "y", "hp", "max_hp", "damage", "base_damage", "level", "facing",
+    "active_skill_timer", "skill_timer", "w_cooldown", "e_cooldown",
+    "r_cooldown", "speed", "attack_cooldown",
+}
+
 HERO_WRITE = {
     "x": "set_global_pos_x({r}, {v})",
     "y": "set_global_pos_y({r}, {v})",
@@ -126,6 +134,47 @@ class CppEmitter:
         clean = mname.lstrip("_")
         return f"{alias}_{clean}"
 
+    # ── Konversi numerik AMAN dari Variant ────────────────────────────────
+    # Variant::operator double() godot-cpp memanggil to_type_constructor[FLOAT]
+    # ke buffer `double result;` yang TIDAK DIINISIALISASI: kalau sumber bukan
+    # tipe numerik (mis. NIL karena key Dictionary tidak ada), constructor gagal
+    # dan buffer dibiarkan apa adanya -> angka acak dari stack (terbukti di CI:
+    # base_damage jadi 100.0 = sisa skill_range, damage buff 186 -> 150).
+    # var_num()/var_int() deterministik dan cocok dengan GDScript (null -> 0).
+    def _is_variant_expr(self, x):
+        t = x.strip()
+        if "get_kit_value" in t or "dict_at" in t or "py_or" in t:
+            return True
+        return t in getattr(self, "_current_locals_set", set())
+
+    def num_cast(self, x):
+        t = x.strip()
+        for pre in ("(double)(", "(int)(", "(int64_t)(", "var_num(", "var_int("):
+            if t.startswith(pre):
+                return t
+        try:
+            float(t)
+            return t
+        except Exception:
+            pass
+        if self._is_variant_expr(t):
+            return f"var_num({t})"
+        return f"(double)({t})"
+
+    def int_cast(self, x):
+        t = x.strip()
+        for pre in ("(int64_t)(", "(int)(", "var_int("):
+            if t.startswith(pre):
+                return t
+        try:
+            float(t)
+            return f"(int64_t)({t})"
+        except Exception:
+            pass
+        if self._is_variant_expr(t):
+            return f"var_int({t})"
+        return f"(int64_t)({t})"
+
     def expr(self, node, method):
         if isinstance(node, ast.Constant):
             v = node.value
@@ -166,17 +215,7 @@ class CppEmitter:
             # Always cast to double for arithmetic to avoid Variant ambiguity
             # Except for cases where both are clearly numeric literals or known double-returning funcs, we still cast to be safe
             def _d(x):
-                # If x is already (double)(...) or (int)(...), keep
-                if x.startswith("(double)(") or x.startswith("(int)("):
-                    return x
-                # If x is numeric literal, keep
-                try:
-                    float(x)
-                    return x
-                except:
-                    pass
-                # Otherwise cast to double
-                return f"(double)({x})"
+                return self.num_cast(x)
             a_d = _d(a)
             b_d = _d(b)
             if isinstance(node.op, ast.Add):
@@ -190,7 +229,7 @@ class CppEmitter:
             if isinstance(node.op, ast.FloorDiv):
                 return f"(int64_t)({a_d} / {b_d})"
             if isinstance(node.op, ast.Mod):
-                return f"Math::fmod((double)({a}), (double)({b}))"
+                return f"Math::fmod({self.num_cast(a)}, {self.num_cast(b)})"
             raise Exception(f"binop {type(node.op)}")
 
         if isinstance(node, ast.UnaryOp):
@@ -199,8 +238,8 @@ class CppEmitter:
                 return f"!({v})"
             if isinstance(node.op, ast.USub):
                 # cast Variant to double for unary minus
-                if "get_kit_value" in v or v in getattr(self, "_current_locals_set", set()):
-                    return f"-((double)({v}))"
+                if self._is_variant_expr(v):
+                    return f"-({self.num_cast(v)})"
                 return f"-({v})"
             raise Exception("unary")
 
@@ -227,11 +266,7 @@ class CppEmitter:
                 right_expr = self.expr(rhs, method)
                 if isinstance(op, (ast.Lt, ast.LtE, ast.Gt, ast.GtE)):
                     def _cd(x):
-                        try:
-                            float(x)
-                            return x
-                        except:
-                            return f"(double)({x})"
+                        return self.num_cast(x)
                     left_expr = _cd(left_expr)
                     right_expr = _cd(right_expr)
                 elif isinstance(op, (ast.Eq, ast.NotEq, ast.Is, ast.IsNot)):
@@ -242,18 +277,18 @@ class CppEmitter:
                             other = right_expr if x==left_expr else left_expr
                             # if other is numeric literal, cast to int/double
                             if other.strip().lstrip("-").isdigit():
-                                return f"(int)({x})"
+                                return self.int_cast(x)
                             # if other is 0, 1 etc, cast to int
                             try:
                                 float(other)
-                                return f"(double)({x})"
+                                return self.num_cast(x)
                             except:
                                 pass
                         if x in getattr(self, "_current_locals_set", set()):
                             # local Variant compared to int -> cast
                             try:
                                 float(right_expr if x==left_expr else left_expr)
-                                return f"(double)({x})"
+                                return self.num_cast(x)
                             except:
                                 pass
                         return x
@@ -263,7 +298,7 @@ class CppEmitter:
                     if "get_kit_value" in right_expr or right_expr in getattr(self, "_current_locals_set", set()):
                         try:
                             float(left_expr)
-                            right_expr = f"(double)({right_expr})" if "." in left_expr or "double" in left_expr else f"(int)({right_expr})"
+                            right_expr = self.num_cast(right_expr) if "." in left_expr or "double" in left_expr else self.int_cast(right_expr)
                         except:
                             pass
                 parts.append(f"({left_expr} {op_map[type(op)]} {right_expr})")
@@ -328,11 +363,21 @@ class CppEmitter:
             sl = node.slice
             # If v is Variant holding Array/Dictionary, cast to appropriate type for indexing
             is_variant_array = "get_kit_value" in v or "py_or" in v or v in getattr(self, "_current_locals_set", set())
+            # Kontainer Dictionary dari helper: JANGAN pakai operator[] (non-const,
+            # ptrw/detach COW + menyisipkan NIL kalau key tidak ada, dan berantai
+            # pada temporary menghasilkan Variant kosong). dict_at() = .get() const.
+            is_dict_expr = (v.strip().startswith("dict_at(")
+                            or any(v.strip().startswith(pre) for pre in
+                                   ("kit_catalog_all(", "kit_hero_levels(", "get_skill_data(", "make_dict(")))
             if isinstance(sl, ast.Constant) and isinstance(sl.value, str):
-                if is_variant_array:
-                    return f'((Dictionary)({v}))["{sl.value}"]'
+                if is_variant_array or is_dict_expr:
+                    return f'dict_at({v}, "{sl.value}")'
                 return f'{v}["{sl.value}"]'
             idx = self.expr(sl, method)
+            if is_dict_expr and not v.strip().startswith("dict_at(") is False:
+                pass
+            if v.strip().startswith("dict_at(") or (is_dict_expr and not is_variant_array):
+                return f"dict_at({v}, {idx})"
             if is_variant_array:
                 # assume Array indexing
                 return f'((Array)({v}))[{idx}]'
@@ -473,21 +518,21 @@ class CppEmitter:
             if fn.id == "hasattr":
                 return self.hasattr_call(node, method)
             if fn.id == "min":
-                args = [f"(double)({self.expr(a, method)})" for a in node.args]
+                args = [self.num_cast(self.expr(a, method)) for a in node.args]
                 if len(args)==2:
                     return f"MIN({', '.join(args)})"
                 return f"min_n({', '.join(args)})"
             if fn.id == "max":
-                args = [f"(double)({self.expr(a, method)})" for a in node.args]
+                args = [self.num_cast(self.expr(a, method)) for a in node.args]
                 if len(args)==2:
                     return f"MAX({', '.join(args)})"
                 return f"max_n({', '.join(args)})"
             if fn.id == "int":
-                return f"(int64_t)({self.expr(node.args[0], method)})"
+                return self.int_cast(self.expr(node.args[0], method))
             if fn.id == "float":
-                return f"(double)({self.expr(node.args[0], method)})"
+                return self.num_cast(self.expr(node.args[0], method))
             if fn.id == "abs":
-                return f"Math::abs((double)({self.expr(node.args[0], method)}))"
+                return f"Math::abs({self.num_cast(self.expr(node.args[0], method))})"
             if fn.id == "len":
                 return f"(int64_t)({self.expr(node.args[0], method)}.size())"
             if fn.id == "set":
@@ -519,7 +564,7 @@ class CppEmitter:
                 b = self.expr(node.args[1], method)
                 return f"Vector2({a}, {b}).length()"
             if fn.attr in ("cos", "sin", "atan2", "sqrt", "pow", "floor", "ceil"):
-                args = ", ".join(f"(double)({self.expr(a, method)})" for a in node.args)
+                args = ", ".join(self.num_cast(self.expr(a, method)) for a in node.args)
                 return f"Math::{fn.attr}({args})"
             if fn.attr == "pi":
                 return "Math_PI"
@@ -535,7 +580,7 @@ class CppEmitter:
                     src = self.expr(kw.value, method)
                 elif kw.arg == "school":
                     school = self.expr(kw.value, method)
-            return f"kit_hit(h, {recv}, (int)({self.expr(node.args[0], method)}), get_team(h), {src}, {school})"
+            return f"kit_hit(h, {recv}, {self.int_cast(self.expr(node.args[0], method))}, get_team(h), {src}, {school})"
 
         if fn.attr == "apply_slow":
             recv = self.expr(fn.value, method)
@@ -802,7 +847,7 @@ class CppEmitter:
                     rhs = f"({cur}) / ({val})" if op=="/" else f"({cur}) {op} ({val})"
                     out.append(pad + HERO_WRITE[t.attr].format(r="h", v=rhs) + ";")
                     return
-                out.append(pad + f'set_kit_value(h, "{t.attr}", (int)get_kit_value(h, "{t.attr}") {op} (int)({val}));')
+                out.append(pad + f'set_kit_value(h, "{t.attr}", var_int(get_kit_value(h, "{t.attr}")) {op} {self.int_cast(val)});')
                 return
             if isinstance(t, ast.Subscript):
                 # h.kit["key"] -= 1
@@ -810,10 +855,10 @@ class CppEmitter:
                     sl = t.slice
                     if isinstance(sl, ast.Constant) and isinstance(sl.value, str):
                         key = sl.value
-                        out.append(pad + f'set_kit_value(h, "{key}", (int)get_kit_value(h, "{key}") {op} (int)({val}));')
+                        out.append(pad + f'set_kit_value(h, "{key}", var_int(get_kit_value(h, "{key}")) {op} {self.int_cast(val)});')
                         return
                     idx = self.expr(sl, method)
-                    out.append(pad + f'set_kit_value(h, {idx}, (int)get_kit_value(h, {idx}) {op} (int)({val}));')
+                    out.append(pad + f'set_kit_value(h, {idx}, var_int(get_kit_value(h, {idx})) {op} {self.int_cast(val)});')
                     return
                 # generic dict/array augassign
                 recv = self.expr(t.value, method)
@@ -910,7 +955,11 @@ class CppEmitter:
             if isinstance(target.value, ast.Name) and target.value.id=="h":
                 a = target.attr
                 if a in HERO_WRITE:
-                    out.append(pad + HERO_WRITE[a].format(r="h", v=value) + ";")
+                    # Setter numerik menerima double/int; kalau nilainya Variant
+                    # (kit/dict) konversi lewat var_num() — (double)(Variant) atas
+                    # NIL menghasilkan garbage stack (lihat komentar num_cast).
+                    v_expr = self.num_cast(value) if a in NUMERIC_WRITES else value
+                    out.append(pad + HERO_WRITE[a].format(r="h", v=v_expr) + ";")
                     return
                 if a=="skill_damage":
                     out.append(pad + f"/* skill_damage set ignored: {value} */")
@@ -1148,6 +1197,10 @@ def generate(check: bool = False):
     header.append("    static void set_attack_cooldown_frames(Object* obj, double v);")
     header.append('    // Assign langsung `X.attack_timer = N` (frame) -> detik; bukan max seperti kit_lock.')
     header.append("    static void set_atk_timer_frames(Object* h, Object* target, double frames);")
+    header.append('    // Baca Dictionary const-safe + konversi numerik deterministik (lihat komentar definisi).')
+    header.append("    static Variant dict_at(const Variant& container, const Variant& key);")
+    header.append("    static double var_num(const Variant& v);")
+    header.append("    static int64_t var_int(const Variant& v);")
     header.append("    static bool is_alive(Object* obj);")
     header.append("    static Variant get_kit_value(Object* obj, const String& key, Variant def = Variant());")
     header.append("    static void set_kit_value(Object* obj, const String& key, Variant value);")
@@ -1324,6 +1377,16 @@ def generate(check: bool = False):
     cpp.append("void MysticHeroSkills::set_attack_cooldown_frames(Object* obj, double v) { obj->set(\"attack_cooldown\", (double)v / 60.0); }")
     cpp.append('// Assign langsung `X.attack_timer = N` (frame) -> detik apa adanya; Hero.kit_lock memakai maxf().')
     cpp.append('void MysticHeroSkills::set_atk_timer_frames(Object* h, Object* target, double frames) { if (!target) { return; } if (!kit_has_atk_timer(h, target)) { return; } target->set("attack_timer", frames / 60.0); }')
+    cpp.append("// Baca Dictionary TANPA operator[] non-const: operator[] memanggil ptrw()")
+    cpp.append("// (detach COW) dan MENYISIPKAN entri NIL kalau key tidak ada; dipakai berantai")
+    cpp.append("// pada temporary (kit_catalog_all(h)[type][\"damage\"]) hasilnya Variant kosong.")
+    cpp.append("Variant MysticHeroSkills::dict_at(const Variant& container, const Variant& key) { if (container.get_type()!=Variant::DICTIONARY) { return Variant(); } Dictionary d = container; return d.get(key, Variant()); }")
+    cpp.append("// Variant::operator double() godot-cpp menulis ke `double result;` TANPA inisialisasi")
+    cpp.append("// lewat to_type_constructor[FLOAT]; kalau sumber bukan numerik (NIL/Dictionary),")
+    cpp.append("// buffer dibiarkan -> angka acak dari stack. var_num/var_int deterministik")
+    cpp.append("// dan sama dengan GDScript (null diperlakukan 0).")
+    cpp.append("double MysticHeroSkills::var_num(const Variant& v) { switch (v.get_type()) { case Variant::INT: return (double)(int64_t)v; case Variant::FLOAT: return (double)v; case Variant::BOOL: return ((bool)v) ? 1.0 : 0.0; case Variant::STRING: { String s = v; return s.is_valid_float() ? (double)s.to_float() : 0.0; } default: return 0.0; } }")
+    cpp.append("int64_t MysticHeroSkills::var_int(const Variant& v) { switch (v.get_type()) { case Variant::INT: return (int64_t)v; case Variant::FLOAT: return (int64_t)(double)v; case Variant::BOOL: return ((bool)v) ? 1 : 0; case Variant::STRING: { String s = v; return s.is_valid_float() ? (int64_t)s.to_float() : 0; } default: return 0; } }")
     cpp.append("bool MysticHeroSkills::is_alive(Object* obj) { Variant v = obj->get(\"is_dead\"); bool dead = (bool)v; return !dead; }")
     cpp.append("Dictionary MysticHeroSkills::get_kit(Object* obj) { Variant v = obj->get(\"kit\"); if (v.get_type()==Variant::DICTIONARY) return v; return Dictionary(); }")
     cpp.append("void MysticHeroSkills::set_kit(Object* obj, const Dictionary& d) { obj->set(\"kit\", d); }")

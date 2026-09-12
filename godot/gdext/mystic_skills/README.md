@@ -25,7 +25,7 @@ godot/gdext/mystic_skills/
   SConstruct                        # output -> ../../addons/mystic_skills/bin/
   src/register_types.{h,cpp}        # entry mystic_skills_library_init (level SCENE)
   src/hero_skills_processor.h       # GENERATED — class MysticHeroSkills : RefCounted
-  src/hero_skills_processor.cpp     # GENERATED — 429 definisi (helper + 6 starter + 66 boss)
+  src/hero_skills_processor.cpp     # GENERATED — 432 definisi (helper + 6 starter + 66 boss)
 godot/addons/mystic_skills/
   mystic_skills.gdextension         # kunci debug/release -> berkas template_debug/template_release
   bin/libmystic_skills.*            # hasil build (di-gitignore kecuali .gitkeep)
@@ -166,6 +166,8 @@ ObjectID dan memberi `nullptr`, jadi `if (tgt && ...)` setara
 | `a or b`, truthiness | `py_or`, `truthy` (semantik Python per tipe Variant) |
 | tuple unpack `tx, ty = …` | `Array` + `((Array)v)[0]` |
 | `nearby.sort(key=lambda t: t[0])` | insertion sort kunci `(dist, idx)` — **stabil** |
+| `catalog[type]["damage"]` (index berantai) | `dict_at(dict_at(catalog, type), "damage")` — `.get()` const; `Dictionary::operator[]` non-const memanggil `ptrw()` (detach COW) dan menyisipkan NIL kalau key tidak ada |
+| `int(x)` / `float(x)` / arithmetic atas Variant | `var_int(x)` / `var_num(x)` — deterministik untuk NIL (0), bukan `(double)(Variant)` yang membiarkan buffer tak terinisialisasi kalau `to_type_constructor` gagal |
 | `self._get_visual_duration(k)` | `visual_duration_kind("{kind}", get_hero_type(h), k)` |
 | aritmetika Variant | cast `(double)` eksplisit (hindari overload ambigu) |
 

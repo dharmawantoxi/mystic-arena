@@ -67,6 +67,10 @@ public:
     static void set_attack_cooldown_frames(Object* obj, double v);
     // Assign langsung `X.attack_timer = N` (frame) -> detik; bukan max seperti kit_lock.
     static void set_atk_timer_frames(Object* h, Object* target, double frames);
+    // Baca Dictionary const-safe + konversi numerik deterministik (lihat komentar definisi).
+    static Variant dict_at(const Variant& container, const Variant& key);
+    static double var_num(const Variant& v);
+    static int64_t var_int(const Variant& v);
     static bool is_alive(Object* obj);
     static Variant get_kit_value(Object* obj, const String& key, Variant def = Variant());
     static void set_kit_value(Object* obj, const String& key, Variant value);
