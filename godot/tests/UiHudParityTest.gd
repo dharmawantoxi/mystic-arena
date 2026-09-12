@@ -5,6 +5,7 @@ extends Node
 
 const MainScene = preload("res://scenes/main.tscn")
 const LevelIntroScript = preload("res://scenes/ui/LevelIntro.gd")
+const ShopPanelScript = preload("res://scenes/ui/ShopPanel.gd")
 const MinionScene = preload("res://scenes/minion/Minion.tscn")
 const TowerScene = preload("res://scenes/tower/Tower.tscn")
 const FIXTURE := "res://tests/fixtures/match_parity.json"
@@ -650,6 +651,38 @@ func _test_shop_item() -> void:
 	var db := _button_by_key("item_buy_dead_edge")
 	_expect(db != null and db.disabled and db.text.ends_with("— dimiliki"),
 		"owned label (got %s)" % (db.text if db else "?"))
+	# Ikon item (port get_icon hero_items.py:1661-1699): baris toko memakai
+	# Button.icon + expand_icon, dan clip_text supaya label panjang yang
+	# terdorong ikon dipangkas elipsis alih-alih meluber keluar kotak.
+	_expect(db != null and db.icon != null and db.expand_icon and db.clip_text,
+		"baris toko berikon item")
+	# Ikonnya dari cache ItemIcons dan SUDAH seukuran tampilan (bukan tekstur
+	# sumber 256 px apa adanya — lihat komentar VRAM di ItemIcons.gd).
+	var row_px := ShopPanelScript.ITEM_ROW_ICON
+	_expect(db != null
+		and db.icon == ItemIcons.texture("dead_edge", row_px),
+		"ikon baris toko = cache ItemIcons")
+	_expect(db != null and db.icon is ImageTexture
+		and db.icon.get_size() == Vector2(row_px, row_px),
+		"ikon baris toko %d px" % row_px)
+	# Chip slot item SkillBar (paritas hero_items.py:3026-3095): bg gelap,
+	# border warna katalog 2 px, ikon 26 px di tengah.
+	_bar._sync_items(["dead_edge"])
+	var chip: Button = _bar._item_chips[0]
+	var csb := chip.get_theme_stylebox("normal") as StyleBoxFlat
+	var slot_px := ItemIcons.SLOT_ICON_SIZE
+	_expect(chip.icon != null and chip.expand_icon, "chip slot 0 berikon")
+	_expect(chip.icon == ItemIcons.texture("dead_edge", slot_px),
+		"ikon chip = cache ItemIcons")
+	_expect(chip.icon is ImageTexture
+		and chip.icon.get_size() == Vector2(slot_px, slot_px),
+		"ikon chip %d px" % slot_px)
+	_expect(csb != null and csb.border_color == ItemDB.item_color("dead_edge"),
+		"border chip = warna katalog")
+	_expect(csb != null and csb.border_width_left == 2, "border chip 2 px")
+	_bar._sync_items([])
+	_expect(chip.icon == null, "slot kosong tanpa ikon")
+	_expect(csb != null and csb.border_width_left == 1, "slot kosong border 1 px")
 	GameManager.select_hero(kaizen)
 
 

@@ -6,7 +6,9 @@ Menjalankan ini menghasilkan res://data/*.json yang dibaca HeroDB/BossDB Godot.
 Tanpa ini, Godot pakai fallback hardcode 6 hero.
 
 Usage:
-    python tools/convert_to_godot.py
+    python tools/convert_to_godot.py            # data JSON + salin aset biner
+    python tools/convert_to_godot.py --assets   # HANYA salin aset biner
+                                                # (tanpa pygame/numpy)
 
 Output:
     godot/data/heroes.json            (+ field skill_* untuk SkillBook.gd)
@@ -20,6 +22,19 @@ Output:
     godot/data/nexus.json             (NEXUS_LEVELS + castle shield)
     godot/data/economy.json           (gold/s, bonus level, multiplier difficulty, wave)
     godot/data/themes.json            (54 palet tema map + dekor; dibaca ArenaMap.gd)
+
+Aset biner yang ikut tersalin (semuanya DI-GITIGNORE — duplikat dari assets/
+pygame, sumber kebenaran tetap di sana; res:// tidak bisa keluar dari root
+project Godot jadi memang harus ada salinan di dalam godot/):
+
+    godot/assets/sounds/*.wav         24 suara -> AudioManager.gd
+    godot/assets/items/*.png          33 ikon item -> ItemIcons.gd (port
+                                      hero_items.get_icon, hero_items.py:1661)
+    godot/assets/presplash.png        boot splash Android -> project.godot
+                                      application/boot_splash/image
+
+Tanpa aset itu game TETAP JALAN: AudioManager no-op + log sekali, ikon item
+mundur ke badge prosedural warna katalog, boot splash pakai bawaan Godot.
 
 Butuh pygame (THEMES/HERO_TYPES hidup di modul yang meng-import pygame).
 Jalankan tanpa display/audio:
@@ -623,29 +638,197 @@ def export_themes():
         import traceback; traceback.print_exc()
 
 
+# Ekstensi audio yang importer Godot 4.3 kenal (WAV -> AudioStreamWAV,
+# Ogg Vorbis -> AudioStreamOggVorbis, MP3 -> AudioStreamMP3).
+AUDIO_EXTS = (".wav", ".ogg", ".mp3")
+
+
+def audio_container_ext(path, fallback=".wav"):
+    """Ekstensi yang SESUAI isi kontainer berkas audio (bukan namanya).
+
+    pygame memuat audio lewat SDL_mixer yang mengendus isi berkas, jadi nama
+    `.wav` di assets/sounds/ tidak harus benar-benar RIFF — dan di repo ini
+    memang tidak: 7 berkas "wav" adalah Ogg Vorbis (ui_click, ui_error,
+    ui_buy, ui_sell, ui_upgrade, victory, minion_hit) dan 1 MP3 ber-tag ID3
+    (ambient_forest). Godot sebaliknya memilih importer dari EKSTENSI, jadi
+    salinan apa adanya membuat 8 berkas itu gagal import:
+
+        ERROR: Not a WAV file. File should start with 'RIFF', but found 'OggS'
+        ERROR: Failed loading resource: res://assets/sounds/ui_click.wav
+
+    (8 SFX senyap di AAB — termasuk fanfare victory dan loop ambient).
+    Karena assets/sounds/ adalah sumber kebenaran pygame (nama berkasnya
+    dirujuk literal di _system.py:543-574), yang diluruskan di sini hanyalah
+    SALINAN untuk Godot, bukan berkas aslinya.
+    """
+    with open(path, "rb") as fh:
+        head = fh.read(64)
+    if head[:4] == b"RIFF" and head[8:12] == b"WAVE":
+        return ".wav"
+    if head[:4] == b"OggS":
+        if b"\x01vorbis" in head:
+            return ".ogg"
+        # Opus/Speex/FLAC-in-Ogg tidak didukung importer Godot 4.3; biarkan
+        # ekstensi asli supaya kegagalannya terlihat, bukan tersamar.
+        return fallback
+    if head[:3] == b"ID3":
+        # Lewati tag ID3v2 (panjang synchsafe 4 byte di offset 6) lalu cari
+        # frame sync MP3 (0xFF 0xE0) untuk memastikan ini memang MPEG audio.
+        size = ((head[6] & 0x7F) << 21 | (head[7] & 0x7F) << 14
+                | (head[8] & 0x7F) << 7 | (head[9] & 0x7F))
+        with open(path, "rb") as fh:
+            fh.seek(10 + size)
+            nxt = fh.read(2)
+        if len(nxt) == 2 and nxt[0] == 0xFF and nxt[1] & 0xE0 == 0xE0:
+            return ".mp3"
+        return fallback
+    if len(head) >= 2 and head[0] == 0xFF and head[1] & 0xE0 == 0xE0:
+        return ".mp3"
+    return fallback
+
+
 def export_sounds():
-    """Salin 24 file .wav assets/sounds/ -> godot/assets/sounds/.
+    """Salin 24 berkas audio assets/sounds/ -> godot/assets/sounds/.
 
     AudioManager.gd memuat dari res://assets/sounds/ — res:// tidak bisa
     keluar dari root project Godot, jadi aset harus diduplikasi. Folder
     tujuan sengaja di-gitignore (duplikat 15 MB; sumber kebenaran tetap
     assets/sounds/ pygame). Jalankan converter = audio siap dipakai.
+
+    Ekstensi salinan DILURUSKAN ke kontainer aslinya (audio_container_ext):
+    16 WAV tetap .wav, 7 Ogg Vorbis jadi .ogg, 1 MP3 jadi .mp3 — tanpa itu
+    Godot menolak mengimpornya dan 8 SFX hilang di AAB. Kunci stream tetap
+    nama tanpa ekstensi (AudioManager._scan_sounds memakai get_basename()),
+    jadi play("ui_click") / AMBIENT_TRACK "ambient_forest" tidak berubah.
     """
     import shutil
     src_dir = os.path.join(ROOT, "assets", "sounds")
     dst_dir = os.path.join(ROOT, "godot", "assets", "sounds")
     if not os.path.isdir(src_dir):
         print("[convert] sounds: assets/sounds/ tidak ada — dilewati", file=sys.stderr)
-        return
+        return 0
     os.makedirs(dst_dir, exist_ok=True)
     copied = 0
+    renamed = []
+    produced = set()
     for fname in sorted(os.listdir(src_dir)):
         src = os.path.join(src_dir, fname)
-        dst = os.path.join(dst_dir, fname)
-        if os.path.isfile(src) and fname.lower().endswith((".wav", ".txt", ".ogg")):
-            shutil.copy2(src, dst)
-            copied += 1
-    print(f"[convert] sounds: {copied} file -> {dst_dir}")
+        if not os.path.isfile(src):
+            continue
+        stem, ext = os.path.splitext(fname)
+        low = ext.lower()
+        if low in AUDIO_EXTS:
+            real = audio_container_ext(src, low)
+            out = stem + real
+            if real != low:
+                renamed.append(f"{fname} -> {out}")
+        elif low == ".txt":
+            out = fname  # LISENSI_DAN_SUMBER.txt ikut, atribusi aset
+        else:
+            continue
+        shutil.copy2(src, os.path.join(dst_dir, out))
+        produced.add(out)
+        copied += 1
+    # Bersihkan salinan audio lama: kalau ui_click.wav (sebenarnya Ogg) jadi
+    # ui_click.ogg, sisa .wav-nya akan tetap di-import Godot dan mencetak
+    # "Not a WAV file" lagi. Sidecar .import-nya ikut dibuang (regenerasi
+    # otomatis saat --import).
+    removed = 0
+    for old in sorted(os.listdir(dst_dir)):
+        stem, ext = os.path.splitext(old)
+        if ext.lower() not in AUDIO_EXTS or old in produced:
+            continue
+        stale = os.path.join(dst_dir, old)
+        os.remove(stale)
+        removed += 1
+        sidecar = stale + ".import"
+        if os.path.isfile(sidecar):
+            os.remove(sidecar)
+    tail = f" · {removed} salinan basi dibuang" if removed else ""
+    print(f"[convert] sounds: {copied} file -> {dst_dir}{tail}")
+    if renamed:
+        print("[convert] sounds: %d ekstensi diluruskan ke kontainer aslinya "
+              "(pygame mengendus isi berkas, Godot memilih importer dari "
+              "ekstensi): %s" % (len(renamed), ", ".join(renamed)))
+    return copied
+
+
+def export_items_png():
+    """Salin 33 ikon item assets/items/ -> godot/assets/items/.
+
+    Padanan `hero_items.get_icon()` (hero_items.py:1661-1699) membaca
+    `assets/items/<icon>` — nama file-nya field "icon" di ITEM_CATALOG,
+    ikut ter-ekspor ke godot/data/items.json. `res://` tidak bisa keluar
+    dari root project Godot, jadi PNG-nya harus diduplikasi ke
+    `godot/assets/items/` (dibaca ItemIcons.gd lewat ItemDB.item_icon).
+
+    Folder tujuan di-gitignore seperti sounds: ±3 MB duplikat, sumber
+    kebenaran tetap assets/items/ pygame. TANPA ikon ini Godot tidak error —
+    ItemIcons.gd menggambar badge prosedural (warna + glow katalog), persis
+    cabang fallback `get_icon()` saat PNG-nya tidak ada.
+    """
+    import shutil
+    src_dir = os.path.join(ROOT, "assets", "items")
+    dst_dir = os.path.join(ROOT, "godot", "assets", "items")
+    if not os.path.isdir(src_dir):
+        print("[convert] items: assets/items/ tidak ada — dilewati", file=sys.stderr)
+        return 0
+    os.makedirs(dst_dir, exist_ok=True)
+    copied = 0
+    total_kb = 0.0
+    for fname in sorted(os.listdir(src_dir)):
+        src = os.path.join(src_dir, fname)
+        if not (os.path.isfile(src) and fname.lower().endswith(".png")):
+            continue
+        shutil.copy2(src, os.path.join(dst_dir, fname))
+        copied += 1
+        total_kb += os.path.getsize(src) / 1024.0
+    print(f"[convert] items: {copied} ikon ({total_kb / 1024.0:.1f} MB) -> {dst_dir}")
+    return copied
+
+
+def export_presplash():
+    """Salin assets/presplash.png -> godot/assets/presplash.png.
+
+    Di pygame/buildozer berkas ini layar pembuka Android
+    (`presplash.filename` buildozer.spec:79, warna latar
+    `android.presplash_color = #0B0A12` :78). Padanan Godot-nya boot splash:
+    `application/boot_splash/image` + `boot_splash/bg_color` (sudah #0B0A12
+    di project.godot) — dipakai engine saat inisialisasi, sebelum scene
+    pertama tampil.
+
+    Ikut di-gitignore (±1,1 MB duplikat). Kalau belum disalin, Godot
+    mencetak "Non-existing or invalid boot splash ... Loading default
+    splash." sekali lalu memakai splash bawaan — tidak fatal.
+    """
+    import shutil
+    src = os.path.join(ROOT, "assets", "presplash.png")
+    dst_dir = os.path.join(ROOT, "godot", "assets")
+    dst = os.path.join(dst_dir, "presplash.png")
+    if not os.path.isfile(src):
+        print("[convert] presplash: assets/presplash.png tidak ada — dilewati",
+              file=sys.stderr)
+        return 0
+    os.makedirs(dst_dir, exist_ok=True)
+    shutil.copy2(src, dst)
+    print(f"[convert] presplash: {os.path.getsize(src) / 1024.0:.0f} KB -> {dst}")
+    return 1
+
+
+def export_bin_assets():
+    """Salin SEMUA aset biner duplikat pygame -> project Godot.
+
+    Tiga-tiganya (suara, ikon item, presplash) di-gitignore karena cuma
+    salinan: sumber kebenaran tetap `assets/` pygame. Mode ini SENGAJA
+    tidak menyentuh pygame/numpy — hanya os+shutil — jadi bisa dijalankan
+    langsung setelah clone (atau di CI sebelum `godot --import`) tanpa
+    venv maupun dependensi apa pun:
+
+        python3 tools/convert_to_godot.py --assets
+    """
+    n = export_sounds() + export_items_png() + export_presplash()
+    print(f"[convert] assets: {n} berkas biner siap di godot/assets/")
+    return n
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -2219,6 +2402,12 @@ def _require_numpy():
 
 if __name__ == "__main__":
     _argv = sys.argv[1:]
+    # --assets: salin aset biner duplikat (suara + ikon item + presplash) saja.
+    # Dicek SEBELUM _require_numpy() karena mode ini tidak butuh numpy maupun
+    # pygame — CI menjalankannya tepat setelah checkout, sebelum Godot diimpor.
+    if "--assets" in _argv:
+        export_bin_assets()
+        sys.exit(0)
     # Semua mode bake butuh numpy; tanpa itu minion tim merah dibakar lewat
     # jalur BLEND_* yang pikselnya beda (lihat _require_numpy).
     _require_numpy()
@@ -2257,4 +2446,6 @@ if __name__ == "__main__":
         export_themes()
         export_map_bakes()
         export_sounds()
+        export_items_png()
+        export_presplash()
         print("[convert] Done. Copy godot/data/*.json ke Godot res://data/")

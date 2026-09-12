@@ -14,7 +14,17 @@ name="Mystic Arena"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus", "Mobile")
 config/icon="res://assets/icon.png"
+; Boot splash = padanan presplash buildozer (buildozer.spec:78-79:
+; presplash.filename = assets/presplash.png + android.presplash_color #0B0A12 —
+; warna yang sama persis dengan boot_splash/bg_color di bawah). Berkasnya
+; DUPLIKAT assets/presplash.png pygame dan di-gitignore: disalin
+; `python3 tools/convert_to_godot.py --assets` (CI menjalankannya sebelum
+; --import maupun sebelum export AAB). Exporter Godot memaksa berkas mentah
+; ini ikut ke PCK/AAB (EditorExportPlatform::get_forced_export_files) ASAL
+; sudah ada di disk saat export — tanpa salinan, splash jatuh ke bawaan
+; engine dan Godot mencetak "Non-existing or invalid boot splash" sekali.
 boot_splash/bg_color=Color(0.0431373, 0.0392157, 0.0705882, 1)
+boot_splash/image="res://assets/presplash.png"
 
 [autoload]
 

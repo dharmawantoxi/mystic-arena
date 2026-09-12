@@ -120,10 +120,32 @@ func _test_boot_artifacts() -> void:
 		_expect(text.contains("SESSION START"),
 				"crash_log.txt harus memuat penanda SESSION START")
 	# BGM boot: pygame memutar 'bgm_battle.wav' SEBELUM menu dibuat
-	# (main.py:163). AudioManager no-op + catat nama walau aset wav belum
+	# (main.py:163). AudioManager no-op + catat nama walau aset audio belum
 	# disalin converter, jadi nama track-nya tetap bisa dikunci di CI.
 	_expect(AudioManager._current_bgm == AppShell.BOOT_BGM,
 			"boot harus memutar BGM %s (main.py:163)" % AppShell.BOOT_BGM)
+	# Audio benar-benar TERMUAT, bukan cuma tersalin. 8 berkas di
+	# assets/sounds/ bernama ".wav" padahal kontainernya Ogg Vorbis (7) / MP3
+	# (1); importer Godot dipilih dari EKSTENSI, jadi salinan yang salah nama
+	# tetap ada di disk namun ditolak ("Not a WAV file ... found 'OggS'") dan
+	# SFX-nya senyap tanpa membuat tes lain gagal. CI selalu menyalin aset
+	# (langkah 0 godot-check.yml) -> jumlah stream harus == jumlah berkas.
+	# Tanpa aset (clone segar) cek ini lolos trivial.
+	if DirAccess.dir_exists_absolute(AudioManager.SOUNDS_DIR):
+		var berkas := 0
+		for f in DirAccess.get_files_at(AudioManager.SOUNDS_DIR):
+			if AudioManager.AUDIO_EXTS.has(f.get_extension().to_lower()):
+				berkas += 1
+		_expect(berkas == 0 or AudioManager._streams.size() == berkas,
+			"semua berkas audio termuat (%d stream / %d berkas)"
+				% [AudioManager._streams.size(), berkas])
+	if AudioManager._sounds_available:
+		# Kunci _streams memakai nama TANPA ekstensi: play_bgm("bgm_battle.wav")
+		# harus menormalkannya, kalau tidak BGM tidak pernah dapat stream
+		# (gejalanya: baris "bgm ... tidak tersedia" walau aset sudah disalin).
+		_expect(AudioManager._bgm_player.stream != null,
+			"BGM boot %s dapat stream (kunci stream = nama tanpa ekstensi)"
+				% AppShell.BOOT_BGM)
 
 
 # ══════════════════════════════════════════════════════════

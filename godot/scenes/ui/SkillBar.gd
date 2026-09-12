@@ -3,7 +3,8 @@
 # Port HeroPanel pygame (ui_components: panel 280x276 @ (20, H-296),
 # gradasi + border warna tim + sudut emas): nama + chip Lv + tombol X,
 # HP bar premium, 4 slot skill 38px-rasa (di sini 54px agar muat nama),
-# toggle auto-cast, 6 slot item 30px, ITEM FORGE, upgrade.
+# toggle auto-cast, 6 slot item 30px (ikon assets/items/ lewat ItemIcons.gd),
+# ITEM FORGE, upgrade.
 #
 # Sumber kebenaran = GameManager.selected_hero. Tombol skill dan keyboard
 # QWER memanggil jalur yang sama (hero.cast_q/w/e/r), jadi tidak ada
@@ -14,6 +15,16 @@ extends Control
 const SkillButtonScript = preload("res://scenes/ui/SkillButton.gd")
 const SKILL_KEYS: Array = ["q", "w", "e", "r"]
 const ITEM_SLOTS: int = 6
+## Chrome slot item — paritas hero_items.py:3026 (bg (14,17,30) radius 5)
+## dan :3092 (border warna katalog 2 px kalau terisi, (66,74,104) 1 px kalau
+## kosong). Ikonnya 26 px = SLOT_SIZE 30 - 4 di inset 2 (:3080-3082); di sini
+## digambar engine lewat Button.expand_icon (content area chip 30 - border 2
+## = 26 px, jadi skalanya keluar sama tanpa hitung manual).
+const SLOT_BG := Color(14.0 / 255.0, 17.0 / 255.0, 30.0 / 255.0)
+const SLOT_BORDER_EMPTY := Color(66.0 / 255.0, 74.0 / 255.0, 104.0 / 255.0)
+const SLOT_BORDER_FILLED := 2
+## Kotak slot item 30 px — paritas hero_items.py:3010 (cls.SLOT_SIZE).
+const SLOT_SIZE_PX := 30.0
 ## Seberapa sering angka HP/cooldown disinkronkan (20 Hz cukup halus, hemat)
 const REFRESH_INTERVAL := 0.05
 const PANEL_W := 280.0
@@ -174,11 +185,15 @@ func _build() -> void:
 		# Chip = tombol: klik slot (kosong/isi) membuka ITEM FORGE, paritas
 		# panel_slot0_empty (itemshop_open=true).
 		var chip := Button.new()
-		chip.custom_minimum_size = Vector2(30, 30)
+		chip.custom_minimum_size = Vector2(SLOT_SIZE_PX, SLOT_SIZE_PX)
 		chip.focus_mode = Control.FOCUS_NONE
+		# Ikon item (assets/items/) di-scale engine ke content area chip —
+		# lihat ItemIcons.gd. Tanpa expand_icon PNG 256 px digambar apa
+		# adanya dan menutup seluruh panel.
+		chip.expand_icon = true
 		var csb := StyleBoxFlat.new()
-		csb.bg_color = Color(14.0 / 255.0, 17.0 / 255.0, 30.0 / 255.0)
-		csb.border_color = Color(66.0 / 255.0, 74.0 / 255.0, 104.0 / 255.0)
+		csb.bg_color = SLOT_BG
+		csb.border_color = SLOT_BORDER_EMPTY
 		csb.set_border_width_all(1)
 		csb.set_corner_radius_all(5)
 		chip.add_theme_stylebox_override("normal", csb)
@@ -341,15 +356,24 @@ func _sync_items(ids: Array) -> void:
 		var sb := chip.get_theme_stylebox("normal") as StyleBoxFlat
 		if i < ids.size() and str(ids[i]) != "":
 			var item_id := str(ids[i])
-			var col: Color = ItemDB.item_color(item_id)
+			# Slot terisi (paritas hero_items.py:3031-3095): bg tetap gelap,
+			# border = warna katalog 2 px, ikon item di tengah. Glow halo saat
+			# item AKTIF (blood frenzy/guard/veil, :3036-3079) belum diport —
+			# timer aktifnya belum terbaca dari ItemInventory di panel ini.
 			if sb != null:
-				sb.bg_color = Color(col.r, col.g, col.b, 0.85)
-				sb.border_color = ItemDB.item_glow(item_id)
+				sb.bg_color = SLOT_BG
+				sb.border_color = ItemDB.item_color(item_id)
+				sb.set_border_width_all(SLOT_BORDER_FILLED)
+			# PNG asli assets/items/ kalau sudah disalin converter, badge
+			# prosedural warna katalog kalau belum (ItemIcons = port get_icon).
+			chip.icon = ItemIcons.texture(item_id, ItemIcons.SLOT_ICON_SIZE)
 			chip.tooltip_text = "%s — %s" % [ItemDB.item_name(item_id), ItemDB.item_desc(item_id)]
 		else:
 			if sb != null:
-				sb.bg_color = Color(14.0 / 255.0, 17.0 / 255.0, 30.0 / 255.0)
-				sb.border_color = Color(66.0 / 255.0, 74.0 / 255.0, 104.0 / 255.0)
+				sb.bg_color = SLOT_BG
+				sb.border_color = SLOT_BORDER_EMPTY
+				sb.set_border_width_all(1)
+			chip.icon = null
 			chip.tooltip_text = "slot item %d kosong" % (i + 1)
 		# StyleBoxFlat yang di-mutate tidak otomatis memicu redraw Panel
 		chip.queue_redraw()

@@ -18,6 +18,9 @@
 #   6. deliver_pending_forge_items: antrian -> inventory, item yang tak
 #      muat/tak dikenal tetap diantrikan.
 #   7. hero_level_mult: level 0..20 vs HeroDB.hero_levels_int().
+#   8. ikon item (get_icon hero_items.py:1661-1699): field "icon" 33 item ->
+#      path res://assets/items/, loader tak pernah null, geometri + warna
+#      badge fallback, dan cache — lihat _test_icons().
 #
 # godot --headless --path godot res://tests/HeroItemsParityTest.tscn --quit-after 120
 # Require "[HeroItemsParityTest] PASS" tanpa SCRIPT ERROR / Parse Error.
@@ -72,6 +75,7 @@ func _boot() -> void:
 		_test_resolve()
 		_test_deliver()
 		_test_level_mult()
+		_test_icons()
 	_finish()
 
 
@@ -201,7 +205,101 @@ func _test_level_mult() -> void:
 			float(c["out"]), "level_mult %d" % int(c["level"]), 1e-12)
 
 
+# ── 8) ikon item (port hero_items.get_icon, hero_items.py:1661-1699) ────
+## get_icon() pygame menyusun path assets/items/<ITEM_CATALOG[id]["icon"]>
+## (:1676), smoothscale ke `size`, dan kalau PNG-nya TIDAK ADA menggambar
+## ikon prosedural: rect(color, (2,2,size-4,size-4), radius 6) + border glow
+## 2 px (:1686-1690). Yang dikunci di sini: field "icon" diteruskan ItemDB
+## apa adanya, path res:// tersusun dari folder yang sama dengan converter,
+## loader tidak pernah mengembalikan null (padanan get_icon yang selalu
+## mengembalikan Surface untuk id dikenal), badge fallback == geometri +
+## warna cabang pygame, dan cache tidak membuat tekstur ganda.
+##
+## Keberadaan PNG-nya SENGAJA tidak dikunci: godot/assets/items/
+## di-gitignore (salinan assets/items/ pygame, diisi
+## `tools/convert_to_godot.py --assets` / CI), jadi tes ini harus lulus
+## dengan maupun tanpa aset — persis seperti game yang tetap jalan tanpa
+## berkas aset (assets/README.md).
+func _test_icons() -> void:
+	ItemIcons.clear_cache()
+	_expect(ItemIcons.ITEMS_DIR == "res://assets/items/", "folder ikon")
+	var with_art := 0
+	for sid in _items:
+		var iid := str(sid)
+		var data: Dictionary = _items[iid]
+		var fname := str(data.get("icon", ""))
+		_expect(not fname.is_empty(), "field icon %s" % iid)
+		_expect(ItemDB.item_icon(iid) == fname, "ItemDB.item_icon %s" % iid)
+		_expect(ItemIcons.path_for(iid) == ItemIcons.ITEMS_DIR + fname,
+			"path_for %s" % iid)
+		# has_art() harus == keberadaan berkas sungguhan: load() ke path yang
+		# tidak ada mencetak "Error opening file" ke log, dan
+		# godot/tools/godot_log_gate.py menggagalkan CI untuk baris error.
+		_expect(ItemIcons.has_art(iid)
+			== ResourceLoader.exists(ItemIcons.path_for(iid)),
+			"has_art %s" % iid)
+		var tex := ItemIcons.texture(iid, ItemIcons.SLOT_ICON_SIZE)
+		_expect(tex != null, "tekstur %s tidak null" % iid)
+		# Seukuran tampilan (paritas smoothscale hero_items.py:1678) — BUKAN
+		# tekstur sumber 256 px: 33 ikon mentah = ±8,6 MB VRAM untuk gambar
+		# yang tampil 26 px di chip slot.
+		_expect(tex != null and tex is ImageTexture
+			and tex.get_size() == Vector2(ItemIcons.SLOT_ICON_SIZE,
+				ItemIcons.SLOT_ICON_SIZE),
+			"ikon %s = ImageTexture %d px" % [iid, ItemIcons.SLOT_ICON_SIZE])
+		if ItemIcons.has_art(iid):
+			with_art += 1
+			_expect(tex != load(ItemIcons.path_for(iid)),
+				"ikon %s salinan ter-scale, bukan tekstur sumber" % iid)
+	# Cache (paritas _ICON_CACHE hero_items.py:1659): UI menyegarkan baris
+	# toko/slot item beberapa kali per detik, tanpa cache berarti decode PNG
+	# atau gambar ulang badge tiap refresh.
+	_expect(ItemIcons.texture("dead_edge", ItemIcons.SLOT_ICON_SIZE)
+		== ItemIcons.texture("dead_edge", ItemIcons.SLOT_ICON_SIZE),
+		"cache tekstur")
+	_expect(ItemIcons.fallback("dead_edge", ItemIcons.SLOT_ICON_SIZE)
+		== ItemIcons.fallback("dead_edge", ItemIcons.SLOT_ICON_SIZE),
+		"cache badge")
+	# 64 = ukuran popup detail pygame (hero_items.py:3530): cache per
+	# (item, ukuran) tidak boleh mengembalikan badge ukuran lain.
+	_expect(ItemIcons.fallback("dead_edge", ItemIcons.SLOT_ICON_SIZE)
+		!= ItemIcons.fallback("dead_edge", 64), "badge digambar per ukuran")
+	# Geometri + warna badge == cabang fallback pygame.
+	var s := ItemIcons.SLOT_ICON_SIZE
+	var mid := int(s * 0.5)
+	var edge := ItemIcons.FALLBACK_INSET
+	var img: Image = ItemIcons.fallback("dead_edge", s).get_image()
+	_expect(img != null and img.get_size() == Vector2i(s, s),
+		"ukuran badge %d" % s)
+	_expect(_same_color(img.get_pixel(mid, mid), ItemDB.item_color("dead_edge")),
+		"tengah badge = warna katalog")
+	_expect(_same_color(img.get_pixel(edge, mid), ItemDB.item_glow("dead_edge")),
+		"ring 2 px = glow")
+	_expect(is_zero_approx(img.get_pixel(0, mid).a), "luar kotak transparan")
+	# Item tak dikenal: path kosong (tidak ada berkas yang coba dimuat) tapi
+	# badge tetap tersedia — pemanggil UI tidak perlu null-check.
+	_expect(ItemDB.item_icon("item_tak_ada") == "", "icon id asing kosong")
+	_expect(ItemIcons.path_for("item_tak_ada") == "", "path id asing kosong")
+	_expect(ItemIcons.texture("item_tak_ada", s) != null, "badge id asing")
+	# loaded_count() == jumlah item yang PNG-nya benar-benar ada: setiap ikon
+	# asli di-scale tepat sekali (cache mencegah hitungan dobel), dan item
+	# tanpa aset tidak ikut terhitung.
+	_expect(ItemIcons.loaded_count() == with_art,
+		"hitung ikon termuat %d (got %d)" % [with_art, ItemIcons.loaded_count()])
+	print("[HeroItemsParityTest] ikon item: %d/%d PNG asli di %s"
+		% [with_art, _items.size(), ItemIcons.ITEMS_DIR])
+
+
 # ── util ────────────────────────────────────────────────────────────────
+
+## Warna piksel badge sama persis (alpha ikut). Hanya piksel INTI yang
+## dibandingkan: tepi badge di-anti-alias 1 px (engine men-scale ikonnya
+## lewat Button.expand_icon, tepi keras terlihat bergerigi), jadi piksel
+## tepi memang bukan warna katalog murni.
+func _same_color(a: Color, b: Color) -> bool:
+	return (is_equal_approx(a.r, b.r) and is_equal_approx(a.g, b.g)
+		and is_equal_approx(a.b, b.b) and is_equal_approx(a.a, b.a))
+
 func _near(a: float, b: float, message: String, eps: float) -> void:
 	_checks += 1
 	if absf(a - b) > eps:

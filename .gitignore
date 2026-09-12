@@ -62,6 +62,14 @@ godot/**/*.import
 # ═══ Hasil export Godot (APK/AAB keluaran build-android-godot.yml / editor) ═══
 godot/build/
 
-# ═══ Duplikat aset audio untuk project Godot (hasil tools/convert_to_godot.py;
-# sumber kebenaran tetap assets/sounds/ pygame, 15 MB tidak perlu 2x di git) ═══
+# ═══ Duplikat aset biner untuk project Godot (hasil
+# tools/convert_to_godot.py [--assets]; sumber kebenaran tetap assets/ pygame,
+# ±19 MB tidak perlu 2x di git). res:// tidak bisa keluar dari root project
+# Godot, jadi salinannya wajib ada di dalam godot/ saat runtime/export:
+#   sounds/     24 .wav  -> AudioManager.gd
+#   items/      33 ikon  -> ItemIcons.gd (port hero_items.get_icon)
+#   presplash   boot splash Android -> application/boot_splash/image
+# CI menyalinnya sebelum `godot --import` / export AAB. ═══
 godot/assets/sounds/
+godot/assets/items/
+godot/assets/presplash.png

@@ -1,10 +1,15 @@
 # AudioManager.gd — autoload audio: BGM per level (hook bgm_track) + SFX + volume.
 #
-# Port awal dari _system.py SoundManager (baris 463-620). pygame memuat 24 file
-# .wav dari assets/sounds/ lewat SoundManager.load_all(); di Godot file itu
-# harus ada DI DALAM project (res://assets/sounds/) — tools/convert_to_godot.py
-# yang menyalinnya (folder itu di-gitignore karena duplikat 15 MB dari
-# assets/sounds/ repo pygame, sumber kebenarannya tetap di sana).
+# Port awal dari _system.py SoundManager (baris 463-620). pygame memuat 24
+# berkas audio dari assets/sounds/ lewat SoundManager.load_all(); di Godot file
+# itu harus ada DI DALAM project (res://assets/sounds/) —
+# tools/convert_to_godot.py yang menyalinnya (folder itu di-gitignore karena
+# duplikat 15 MB dari assets/sounds/ repo pygame, sumber kebenarannya tetap di
+# sana). Nama berkas di assets/sounds/ TIDAK selalu jujur: SDL_mixer mengendus
+# isi berkas, jadi pygame santai saja memutar 7 Ogg Vorbis dan 1 MP3 yang
+# bernama ".wav". Godot memilih importer dari EKSTENSI, sehingga converter
+# meluruskan ekstensi salinannya (16 .wav + 7 .ogg + 1 .mp3) dan pemindaian di
+# bawah menerima ketiganya.
 #
 # Sengaja dibuat TIDAK pernah crash kalau aset belum disalin: hook bgm_track
 # (_core.py level_data "bgm_track") tetap jalan dan hanya mencatat log, jadi
@@ -16,6 +21,12 @@
 extends Node
 
 const SOUNDS_DIR := "res://assets/sounds/"
+## Ekstensi yang importer audio Godot 4.3 kenal: WAV (AudioStreamWAV),
+## Ogg Vorbis (AudioStreamOggVorbis), MP3 (AudioStreamMP3). Salinan dari
+## assets/sounds/ bisa bercampur ketiganya — lihat audio_container_ext() di
+## tools/convert_to_godot.py. Kunci _streams tetap nama TANPA ekstensi
+## (get_basename), jadi play("ui_click") tidak peduli kontainernya apa.
+const AUDIO_EXTS: Array = [".wav", ".ogg", ".mp3"]
 ## Seluruh berkas yang dimuat SoundManager.load_all (_system.py:543-574) +
 ## 7 suara tempur mobile/combat_audio.py. Hanya dokumentasi: _scan_sounds()
 ## memuat apa pun yang ada di folder, jadi berkas baru langsung kebaca.
@@ -163,7 +174,7 @@ func _process(delta: float) -> void:
 		_report_stats()
 
 
-## Cek sekali saat boot: file wav harus ADA di res://assets/sounds/ (hasil
+## Cek sekali saat boot: berkas audio harus ADA di res://assets/sounds/ (hasil
 ## convert_to_godot.py). Kalau belum, semua play_* jadi no-op + log —
 ## sama seperti SoundManager.enabled=false saat mixer.init() gagal.
 func _scan_sounds() -> void:
@@ -173,12 +184,16 @@ func _scan_sounds() -> void:
 		# daripada '+', jadi tanpa kurung '%s' di baris pertama tak terisi
 		# ("not all arguments converted during string formatting").
 		push_warning(("[AudioManager] %s belum ada — jalankan tools/convert_to_godot.py "
-			+ "agar 24 file .wav disalin. Audio no-op sampai itu.") % SOUNDS_DIR)
+			+ "--assets agar 24 berkas audio disalin. Audio no-op sampai itu.") % SOUNDS_DIR)
 		return
 	dir.list_dir_begin()
 	var file := dir.get_next()
 	while not file.is_empty():
-		if file.ends_with(".wav"):
+		# BUKAN hanya ".wav": 8 dari 24 berkas pygame sebenarnya Ogg Vorbis /
+		# MP3 dan converter menamainya sesuai kontainer supaya Godot mau
+		# mengimpornya (kalau dipaksa .wav, importer WAV menolak dengan
+		# "Not a WAV file ... found 'OggS'" dan 8 SFX itu senyap).
+		if AUDIO_EXTS.has(file.get_extension().to_lower()):
 			var path := SOUNDS_DIR + file
 			var stream := load(path)
 			if stream is AudioStream:
@@ -227,13 +242,22 @@ func play_bgm(track_name: String, fade_sec: float = 1.5) -> void:
 		return
 	if track_name == _current_bgm and _bgm_player.playing:
 		return
-	if not _sounds_available or not _streams.has(track_name):
+	# levels.json/AppShell menulis NAMA BERKAS ("bgm_battle.wav") sedangkan
+	# kunci _streams adalah nama tanpa ekstensi — tanpa normalisasi ini BGM
+	# tidak pernah ketemu dan boot selalu mencetak "belum tersedia" walau 24
+	# berkas audio sudah disalin. _current_bgm tetap menyimpan nama apa adanya
+	# (dikunci MainEntryParityTest == AppShell.BOOT_BGM).
+	var key := track_name.get_basename()
+	if not _sounds_available or not _streams.has(key):
 		# HOOK: jangan error — level tetap jalan tanpa musik.
-		print("[AudioManager] bgm '%s' belum tersedia (aset belum disalin) — hook aktif" % track_name)
+		print("[AudioManager] bgm '%s' tidak tersedia (%s) — hook aktif" % [
+			track_name,
+			"aset belum disalin" if not _sounds_available
+				else "tidak ada di %d stream termuat" % _streams.size()])
 		_current_bgm = track_name
 		return
 	_current_bgm = track_name
-	_bgm_player.stream = _streams[track_name]
+	_bgm_player.stream = _streams[key]
 	# pygame play_bgm: set_volume(master_volume * bgm_volume) — _system.py:632
 	_bgm_player.volume_db = _db(master_volume * bgm_volume)
 	_bgm_player.play()
