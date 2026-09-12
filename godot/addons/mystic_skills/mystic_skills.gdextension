@@ -1,20 +1,53 @@
+; GDExtension mystic_skills — port hero_skills/_bundle.py ke godot++ (C++).
+;
+; NAMA BERKAS PENTING: kunci di [libraries] memakai nama TARGET GODOT
+; (debug/release/editor), sedangkan NILAI-nya harus nama berkas hasil scons
+; yang memakai nama TARGET BUILD godot-cpp (template_debug/template_release).
+; Kedua nama itu BEDA — `libmystic_skills.linux.debug.x86_64.so` tidak pernah
+; dihasilkan SConstruct, jadi Godot akan selalu gagal memuat lib dan diam-diam
+; jatuh ke fallback GDScript. Konvensi resmi godot-cpp:
+;   linux.debug.x86_64 = ".../libgdexample.linux.template_debug.x86_64.so"
+; (godot-cpp/test/project/example.gdextension).
+;
+; Arch Android juga mengikuti godot-cpp: `arm64` / `arm32` / `x86_64`
+; (bukan `arm64v8` / `armeabi-v7a` yang merupakan nama android_arch scons).
+;
+; Build:
+;   cd godot/gdext/mystic_skills
+;   git clone -b godot-4.3-stable --depth 1 \
+;     https://github.com/godotengine/godot-cpp godot-cpp
+;   scons platform=linux target=template_debug -j4
+; CI: .github/workflows/godot-gdext.yml
+
 [configuration]
+
 entry_symbol = "mystic_skills_library_init"
-compatibility_minimum = 4.3
+compatibility_minimum = "4.3"
 reloadable = true
 
 [libraries]
-linux.debug.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.debug.x86_64.so"
-linux.release.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.release.x86_64.so"
-linux.debug.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.debug.arm64.so"
-linux.release.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.release.arm64.so"
-windows.debug.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.windows.debug.x86_64.dll"
-windows.release.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.windows.release.x86_64.dll"
-macos.debug = "res://addons/mystic_skills/bin/libmystic_skills.macos.debug.framework"
-macos.release = "res://addons/mystic_skills/bin/libmystic_skills.macos.release.framework"
-macos.debug.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.macos.debug.arm64.framework"
-macos.release.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.macos.release.arm64.framework"
-android.debug.arm64v8 = "res://addons/mystic_skills/bin/libmystic_skills.android.debug.arm64v8.so"
-android.release.arm64v8 = "res://addons/mystic_skills/bin/libmystic_skills.android.release.arm64v8.so"
-android.debug.armeabi-v7a = "res://addons/mystic_skills/bin/libmystic_skills.android.debug.armeabi-v7a.so"
-android.release.armeabi-v7a = "res://addons/mystic_skills/bin/libmystic_skills.android.release.armeabi-v7a.so"
+
+linux.debug.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.template_debug.x86_64.so"
+linux.release.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.template_release.x86_64.so"
+linux.debug.x86_32 = "res://addons/mystic_skills/bin/libmystic_skills.linux.template_debug.x86_32.so"
+linux.release.x86_32 = "res://addons/mystic_skills/bin/libmystic_skills.linux.template_release.x86_32.so"
+linux.debug.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.template_debug.arm64.so"
+linux.release.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.linux.template_release.arm64.so"
+linux.debug.arm32 = "res://addons/mystic_skills/bin/libmystic_skills.linux.template_debug.arm32.so"
+linux.release.arm32 = "res://addons/mystic_skills/bin/libmystic_skills.linux.template_release.arm32.so"
+windows.debug.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.windows.template_release.x86_64.dll"
+windows.debug.x86_32 = "res://addons/mystic_skills/bin/libmystic_skills.windows.template_debug.x86_32.dll"
+windows.release.x86_32 = "res://addons/mystic_skills/bin/libmystic_skills.windows.template_release.x86_32.dll"
+windows.debug.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.windows.template_debug.arm64.dll"
+windows.release.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.windows.template_release.arm64.dll"
+macos.debug = "res://addons/mystic_skills/bin/libmystic_skills.macos.template_debug.framework"
+macos.release = "res://addons/mystic_skills/bin/libmystic_skills.macos.template_release.framework"
+android.debug.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.android.template_debug.arm64.so"
+android.release.arm64 = "res://addons/mystic_skills/bin/libmystic_skills.android.template_release.arm64.so"
+android.debug.arm32 = "res://addons/mystic_skills/bin/libmystic_skills.android.template_debug.arm32.so"
+android.release.arm32 = "res://addons/mystic_skills/bin/libmystic_skills.android.template_release.arm32.so"
+android.debug.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.android.template_debug.x86_64.so"
+android.release.x86_64 = "res://addons/mystic_skills/bin/libmystic_skills.android.template_release.x86_64.so"
+web.debug.wasm32 = "res://addons/mystic_skills/bin/libmystic_skills.web.template_debug.wasm32.wasm"
+web.release.wasm32 = "res://addons/mystic_skills/bin/libmystic_skills.web.template_release.wasm32.wasm"

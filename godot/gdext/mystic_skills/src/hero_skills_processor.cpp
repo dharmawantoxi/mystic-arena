@@ -50,8 +50,11 @@ int MysticHeroSkills::get_e_cooldown_max(Object* obj) { Variant v = obj->get("e_
 int MysticHeroSkills::get_r_cooldown_max(Object* obj) { Variant v = obj->get("r_cooldown_max"); return (int)v; }
 double MysticHeroSkills::get_speed_frames(Object* obj) { Variant v = obj->get("move_speed"); return (double)v / 60.0; }
 void MysticHeroSkills::set_speed_frames(Object* obj, double v) { obj->set("move_speed", (double)v * 60.0); }
-double MysticHeroSkills::get_attack_cooldown_frames(Object* obj) { Variant v = obj->get("attack_cooldown"); return (double)v * 60.0; }
+// GDScript membaca int(roundf(float(h.attack_cooldown) * 60.0)) -> frame bulat.
+double MysticHeroSkills::get_attack_cooldown_frames(Object* obj) { Variant v = obj->get("attack_cooldown"); return (double)(int64_t)round((double)v * 60.0); }
 void MysticHeroSkills::set_attack_cooldown_frames(Object* obj, double v) { obj->set("attack_cooldown", (double)v / 60.0); }
+// Assign langsung `X.attack_timer = N` (frame) -> detik apa adanya; Hero.kit_lock memakai maxf().
+void MysticHeroSkills::set_atk_timer_frames(Object* h, Object* target, double frames) { if (!target) { return; } if (!kit_has_atk_timer(h, target)) { return; } target->set("attack_timer", frames / 60.0); }
 bool MysticHeroSkills::is_alive(Object* obj) { Variant v = obj->get("is_dead"); bool dead = (bool)v; return !dead; }
 Dictionary MysticHeroSkills::get_kit(Object* obj) { Variant v = obj->get("kit"); if (v.get_type()==Variant::DICTIONARY) return v; return Dictionary(); }
 void MysticHeroSkills::set_kit(Object* obj, const Dictionary& d) { obj->set("kit", d); }
@@ -139,35 +142,47 @@ Object* MysticHeroSkills::acquire_target(Object* h, const Array& all_units, cons
 bool MysticHeroSkills::has_target(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases, Variant range_val) {
     return acquire_target(h, all_units, all_towers, all_bases, range_val)!=nullptr;
 }
-int MysticHeroSkills::visual_duration(const String& hero_type, const String& key) {
-    // BOSS_HERO_VISUAL_DURATION
-    if (hero_type=="nyzrak") { if (key=="q") return 50; if (key=="w") return 50; if (key=="e") return 70; if (key=="r") return 90; }
-    if (hero_type=="vhalzun") { if (key=="q") return 60; if (key=="w") return 80; if (key=="e") return 60; if (key=="r") return 100; }
-    // VISUAL_DURATION per starter
-    if (hero_type=="grimjaw") { if (key=="q") return 180; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 90; }
-    if (hero_type=="kaizen") { if (key=="q") return 60; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 100; }
-    if (hero_type=="sylara") { if (key=="q") return 180; if (key=="w") return 180; if (key=="e") return 150; if (key=="r") return 60; }
-    if (hero_type=="thorne") { if (key=="q") return 40; if (key=="w") return 100; if (key=="e") return 60; if (key=="r") return 120; }
-    if (hero_type=="vex") { if (key=="q") return 40; if (key=="w") return 100; if (key=="e") return 60; if (key=="r") return 80; }
-    if (hero_type=="zephyr") { if (key=="q") return 240; if (key=="w") return 180; if (key=="e") return 180; if (key=="r") return 240; }
-    // default
+int MysticHeroSkills::default_visual_duration(const String& key) {
     if (key=="q") return 60; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 100; return 60;
 }
-void MysticHeroSkills::set_active_skill(Object* h, const String& key, Variant duration) {
-    int dur = duration.get_type()==Variant::NIL ? visual_duration(get_hero_type(h), key) : (int)duration;
+bool MysticHeroSkills::is_starter_kind(const String& hero_type) {
+    return hero_type=="grimjaw" || hero_type=="kaizen" || hero_type=="sylara" || hero_type=="thorne" || hero_type=="vex" || hero_type=="zephyr";
+}
+int MysticHeroSkills::visual_duration_kind(const String& kind, const String& hero_type, const String& key) {
+    if (kind=="boss") {
+        if (hero_type=="nyzrak") { if (key=="q") return 50; if (key=="w") return 50; if (key=="e") return 70; if (key=="r") return 90; }
+        if (hero_type=="vhalzun") { if (key=="q") return 60; if (key=="w") return 80; if (key=="e") return 60; if (key=="r") return 100; }
+        return default_visual_duration(key);
+    }
+    if (kind=="grimjaw") { if (key=="q") return 180; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 90; }
+    if (kind=="kaizen") { if (key=="q") return 60; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 100; }
+    if (kind=="sylara") { if (key=="q") return 180; if (key=="w") return 180; if (key=="e") return 150; if (key=="r") return 60; }
+    if (kind=="thorne") { if (key=="q") return 40; if (key=="w") return 100; if (key=="e") return 60; if (key=="r") return 120; }
+    if (kind=="vex") { if (key=="q") return 40; if (key=="w") return 100; if (key=="e") return 60; if (key=="r") return 80; }
+    if (kind=="zephyr") { if (key=="q") return 240; if (key=="w") return 180; if (key=="e") return 180; if (key=="r") return 240; }
+    return default_visual_duration(key);
+}
+int MysticHeroSkills::visual_duration(const String& hero_type, const String& key) {
+    // API tanpa kind (dipakai HeroSkillKitLoader.get_visual_duration):
+    // kind diturunkan dari hero_type — 6 starter punya kelas handler
+    // sendiri, sisanya lewat BossHeroSkills (kind "boss").
+    return visual_duration_kind(is_starter_kind(hero_type) ? hero_type : String("boss"), hero_type, key);
+}
+void MysticHeroSkills::set_active_skill(Object* h, const String& kind, const String& key, Variant duration) {
+    int dur = duration.get_type()==Variant::NIL ? visual_duration_kind(kind, get_hero_type(h), key) : (int)duration;
     set_active_skill(h, Variant(key)); set_active_skill_timer(h, dur);
 }
 void MysticHeroSkills::trigger_q(Object* h, const String& kind, double shake_amount, Variant visual_duration) {
-    set_skill_timer(h, get_skill_cooldown_max(h)); set_active_skill(h, "q", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);
+    set_skill_timer(h, get_skill_cooldown_max(h)); set_active_skill(h, kind, "q", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);
 }
 void MysticHeroSkills::trigger_w(Object* h, const String& kind, double shake_amount, Variant visual_duration) {
-    set_w_cooldown(h, get_w_cooldown_max(h)); set_active_skill(h, "w", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.6);
+    set_w_cooldown(h, get_w_cooldown_max(h)); set_active_skill(h, kind, "w", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.6);
 }
 void MysticHeroSkills::trigger_e(Object* h, const String& kind, double shake_amount, Variant visual_duration) {
-    set_e_cooldown(h, get_e_cooldown_max(h)); set_active_skill(h, "e", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);
+    set_e_cooldown(h, get_e_cooldown_max(h)); set_active_skill(h, kind, "e", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);
 }
 void MysticHeroSkills::trigger_r(Object* h, const String& kind, double shake_amount, Variant visual_duration) {
-    set_r_cooldown(h, get_r_cooldown_max(h)); set_active_skill(h, "r", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 1.0);
+    set_r_cooldown(h, get_r_cooldown_max(h)); set_active_skill(h, kind, "r", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 1.0);
 }
 
 String MysticHeroSkills::hero_kind(Object* h) {
@@ -5318,7 +5333,7 @@ void MysticHeroSkills::sylara_update_timers(Object* h, const Array& all_units, c
             if (((int)(Math::fmod((double)(get_kit_value(h, "_shackle_timer")), (double)(15))) == 0)) {
                 kit_hit(h, get_kit_value(h, "_shackle_target"), (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.4))), get_team(h), Variant(), "");
                 if (kit_has_atk_timer(h, get_kit_value(h, "_shackle_target"))) {
-                    kit_lock(h, get_kit_value(h, "_shackle_target"), 30);
+                    set_atk_timer_frames(h, get_kit_value(h, "_shackle_target"), 30);
                 }
             }
         } else {
@@ -6111,8 +6126,8 @@ void MysticHeroSkills::fallback_cast(Object* h, const Array& enemies, const Stri
     set_active_skill(h, Variant(skill_key)); set_active_skill_timer(h, 40);
     double mult=1.0; if (skill_key=="q") mult=1.0; else if (skill_key=="w") mult=1.2; else if (skill_key=="e") mult=1.5; else if (skill_key=="r") mult=2.5;
     String school = get_dmg_school(h);
-    if (skill_key=="q" || skill_key=="w") { Object* tgt=get_target(h); if (tgt && kit_unit_alive(h,tgt)) { int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,tgt,dmg,get_team(h),Variant(),school); } }
-    else { double aoe_range = skill_key=="e" ? 150.0 : 200.0; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=aoe_range){ int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,e,dmg,get_team(h),Variant(),school); } } }
+    if (skill_key=="q" || skill_key=="w") { Object* tgt=get_target(h); if (tgt && kit_unit_alive(h,tgt)) { int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,tgt,dmg,get_team(h),h,school); } }
+    else { double aoe_range = skill_key=="e" ? 150.0 : 200.0; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=aoe_range){ int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,e,dmg,get_team(h),h,school); } } }
 }
 
 bool MysticHeroSkills::boss_generic(Object* h, const String& skill_key, const Array& all_units, const Array& all_towers, const Array& all_bases) {
@@ -6125,9 +6140,21 @@ bool MysticHeroSkills::boss_generic(Object* h, const String& skill_key, const Ar
     double sr = get_skill_range(h); if (sr==0) sr=100; double cast_range = MAX((int)sr, 140);
     Array nearby; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); double d=Vector2(dx,dy).length(); if(d<=cast_range){ Array t; t.append(d); t.append(e); t.append(nearby.size()); nearby.append(t);} }
     if (nearby.size()==0) return false;
-    // sort by distance
-    // simple bubble sort for small N
-    for(int i=0;i<nearby.size();++i){ for(int j=i+1;j<nearby.size();++j){ double di=(double)((Array)nearby[i])[0]; double dj=(double)((Array)nearby[j])[0]; if(dj<di){ Variant tmp=nearby[i]; nearby[i]=nearby[j]; nearby[j]=tmp; } } }
+    // nearby.sort_custom(__by_pair0) di GDScript == Python nearby.sort(key=t[0])
+    // yang STABIL: urutkan (dist, idx) dengan insertion sort — idx unik dan
+    // naik, jadi hasilnya identik dengan sort stabil by-dist. (Sort tukar
+    // pasangan ala bubble TIDAK stabil: musuh berjarak sama bisa tertukar,
+    // target skill boss jadi beda dari pygame.)
+    for (int i=1; i<nearby.size(); ++i) {
+        Variant keyv = nearby[i]; Array ka = keyv; double kd = (double)ka[0]; int64_t ki = (int64_t)ka[2];
+        int j = i - 1;
+        while (j >= 0) {
+            Array ja = nearby[j]; double jd = (double)ja[0]; int64_t ji = (int64_t)ja[2];
+            if (!(kd < jd || (kd == jd && ki < ji))) break;
+            nearby[j+1] = nearby[j]; --j;
+        }
+        nearby[j+1] = keyv;
+    }
     Object* tgt=get_target(h); bool valid=false; if(tgt && kit_unit_alive(h,tgt)){ double dx=get_global_pos_x(tgt)-get_global_pos_x(h); double dy=get_global_pos_y(tgt)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=cast_range) valid=true; }
     if(!valid){ Object* best = Object::cast_to<Object>(((Array)nearby[0])[1]); set_target(h, best); }
     // check recipe
@@ -6739,7 +6766,13 @@ bool MysticHeroSkills::cast_r(Object* h, const Array& all_units, const Array& al
     return boss_generic(h, "r", all_units, all_towers, all_bases);
 }
 
-bool MysticHeroSkills::by_pair0(Variant a, Variant b) { double av=0,bv=0; if (a.get_type()==Variant::ARRAY) av=(double)((Array)a)[0]; else if (a.get_type()==Variant::FLOAT || a.get_type()==Variant::INT) av=(double)a; if (b.get_type()==Variant::ARRAY) bv=(double)((Array)b)[0]; else if (b.get_type()==Variant::FLOAT || b.get_type()==Variant::INT) bv=(double)b; return av < bv; }
+bool MysticHeroSkills::by_pair0(Variant a, Variant b) {
+    Array aa = a; Array bb = b;
+    if (aa.size() < 3 || bb.size() < 3) { double av = aa.size() > 0 ? (double)aa[0] : 0.0; double bv = bb.size() > 0 ? (double)bb[0] : 0.0; return av < bv; }
+    double ad = (double)aa[0]; double bd = (double)bb[0];
+    if (ad == bd) return (int64_t)aa[2] < (int64_t)bb[2];
+    return ad < bd;
+}
 bool MysticHeroSkills::__by_pair0(Variant a, Variant b) { return by_pair0(a,b); }
 
 void MysticHeroSkills::_bind_methods() {
@@ -6751,7 +6784,7 @@ void MysticHeroSkills::_bind_methods() {
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("cast_r", "hero", "all_units", "all_towers", "all_bases"), &MysticHeroSkills::cast_r);
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("hero_kind", "hero"), &MysticHeroSkills::hero_kind);
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("skill_range", "hero", "fallback"), &MysticHeroSkills::skill_range, DEFVAL(200.0));
-    ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("has_target", "hero", "all_units", "all_towers", "all_bases", "range_val"), &MysticHeroSkills::has_target);
+    ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("has_target", "hero", "all_units", "all_towers", "all_bases", "range_val"), &MysticHeroSkills::has_target, DEFVAL(Variant()));
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("visual_duration", "hero_type", "key"), &MysticHeroSkills::visual_duration);
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("boss_generic", "hero", "skill_key", "all_units", "all_towers", "all_bases"), &MysticHeroSkills::boss_generic);
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("by_pair0", "a", "b"), &MysticHeroSkills::by_pair0);

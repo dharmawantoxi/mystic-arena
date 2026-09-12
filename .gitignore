@@ -23,6 +23,7 @@ godot/addons/mystic_skills/bin/*.dll
 godot/addons/mystic_skills/bin/*.dylib
 godot/addons/mystic_skills/bin/*.framework/
 godot/gdext/mystic_skills/godot-cpp/
+godot/gdext/mystic_skills/godot-cpp
 
 # ═══ Save game & log (jangan ikut ke repo) ═══
 savegame*.json

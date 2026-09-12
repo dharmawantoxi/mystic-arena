@@ -41,6 +41,8 @@ on:
       - 'tools/test_godot_match_parity.py'
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/gen_hero_skill_kit.py'
+      - 'tools/gen_hero_skills_cpp.py'
+      - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
@@ -75,6 +77,8 @@ on:
       - 'tools/test_godot_match_parity.py'
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/gen_hero_skill_kit.py'
+      - 'tools/gen_hero_skills_cpp.py'
+      - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
       - 'tools/test_basic_attack_no_impact_fx.py'
@@ -162,6 +166,12 @@ jobs:
           # sini berarti ada perubahan skill hero pygame yang belum
           # ditranspile (regenerasi: python3 tools/gen_hero_skill_kit.py).
           python3 tools/gen_hero_skill_kit.py --check
+          # hero_skills_processor.h/.cpp (GDExtension C++ di
+          # godot/gdext/mystic_skills) JUGA di-transpile dari _bundle.py yang
+          # sama. Cek ini tidak butuh compiler: cuma membandingkan hasil
+          # transpile dengan berkas ter-commit. Build + uji runtime-nya ada di
+          # workflow terpisah godot-gdext.yml (butuh scons + godot-cpp).
+          python3 tools/gen_hero_skills_cpp.py --check
           # Scope-check hasil generate (identifier harus terdeklarasi di
           # param/var lokal/bridge Hero.gd) — tangkap 'Identifier not
           # declared' sebelum engine.

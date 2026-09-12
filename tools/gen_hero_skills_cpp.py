@@ -3,6 +3,7 @@
 Generate C++ GDExtension for hero_skills from _bundle.py
 Paritas 1:1 dengan gen_hero_skill_kit.py tapi output C++ (godot-cpp)
 """
+import argparse
 import ast
 import sys
 from pathlib import Path
@@ -699,7 +700,7 @@ class CppEmitter:
                     # for visual_duration, prefix is '"{kind}", h' -> actually visual_duration(hero_type, key) but we have wrapper
                     # We'll simplify: call visual_duration with hero_type
                     if gname=="visual_duration":
-                        return f"visual_duration(get_hero_type(h), {', '.join(built)})"
+                        return f"visual_duration_kind(\"{kind_str}\", get_hero_type(h), {', '.join(built)})"
                     # for set_active_skill etc, kind is second param
                     return f"{gname}({prefix}, {', '.join(built)})"
                 else:
@@ -721,14 +722,14 @@ class CppEmitter:
             return f"kit_popup(h, {args[2]}, {crit})"
         if attr=="_set_active_skill":
             dur = kw.get("duration", args[1] if len(args)>1 else "Variant()")
-            return f'set_active_skill(h, {args[0]}, {dur})'
+            return f'set_active_skill(h, "{self.kind}", {args[0]}, {dur})'
         if attr in ("_trigger_q_cooldown","_trigger_w_cooldown","_trigger_e_cooldown","_trigger_r_cooldown"):
             key = attr[len("_trigger_")]
             shake = kw.get("shake_amount", {"q":"8","w":"5","e":"6","r":"15"}[key])
             vd = kw.get("visual_duration","Variant()")
             return f"trigger_{key}(h, \"{self.kind}\", {shake}, {vd})"
         if attr=="_get_visual_duration":
-            return f'visual_duration(get_hero_type(h), {args[0]})'
+            return f'visual_duration_kind("{self.kind}", get_hero_type(h), {args[0]})'
         if attr=="_spawn_skill_projectile":
             sp = kw.get("speed", args[1] if len(args)>1 else "13.0")
             return f"kit_skill_proj(h, {args[0]}, {sp})"
@@ -927,8 +928,17 @@ class CppEmitter:
                     out.append(pad + f"{{ Vector2 gp = get_global_pos({recv}); gp.y = {value}; set_global_pos({recv}, gp); }}")
                 return
             if target.attr=="attack_timer":
-                # if value is max(...)
-                out.append(pad + f"kit_lock(h, {recv}, {value});")
+                # `X.attack_timer = max(X.attack_timer, N)` -> Hero.kit_lock (semantik max) == GDScript.
+                # `X.attack_timer = N` (assign langsung; 1 situs: Sylara shackle) -> set detik apa adanya.
+                #   kit_lock akan menahan nilai lama yang lebih besar (maxf) -> divergensi vs Python.
+                src_val = getattr(s, "value", None)
+                is_max = (isinstance(src_val, ast.Call)
+                          and isinstance(src_val.func, ast.Name)
+                          and src_val.func.id == "max")
+                if is_max:
+                    out.append(pad + f"kit_lock(h, {recv}, {value});")
+                else:
+                    out.append(pad + f"set_atk_timer_frames(h, {recv}, {value});")
                 return
             # For Object* (e, u, tgt, etc.) use ->set
             # For Dictionary/Array use .set? But hp/max_hp are Object* properties
@@ -1059,7 +1069,7 @@ class CppEmitter:
         out.append("")
         return "\n".join(out)
 
-def generate():
+def generate(check: bool = False):
     classes = load_bundle()
     boss_cls = classes["BossHeroSkills"]
     registry = registry_of(boss_cls)
@@ -1136,6 +1146,8 @@ def generate():
     header.append("    static void set_speed_frames(Object* obj, double v);")
     header.append("    static double get_attack_cooldown_frames(Object* obj);")
     header.append("    static void set_attack_cooldown_frames(Object* obj, double v);")
+    header.append('    // Assign langsung `X.attack_timer = N` (frame) -> detik; bukan max seperti kit_lock.')
+    header.append("    static void set_atk_timer_frames(Object* h, Object* target, double frames);")
     header.append("    static bool is_alive(Object* obj);")
     header.append("    static Variant get_kit_value(Object* obj, const String& key, Variant def = Variant());")
     header.append("    static void set_kit_value(Object* obj, const String& key, Variant value);")
@@ -1165,7 +1177,10 @@ def generate():
     header.append("    static Object* acquire_target(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases, Variant range_val = Variant());")
     header.append("    static bool has_target(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases, Variant range_val = Variant());")
     header.append("    static int visual_duration(const String& hero_type, const String& key);")
-    header.append("    static void set_active_skill(Object* h, const String& key, Variant duration);")
+    header.append("    static int visual_duration_kind(const String& kind, const String& hero_type, const String& key);")
+    header.append("    static int default_visual_duration(const String& key);")
+    header.append("    static bool is_starter_kind(const String& hero_type);")
+    header.append("    static void set_active_skill(Object* h, const String& kind, const String& key, Variant duration);")
     header.append("    static void trigger_q(Object* h, const String& kind, double shake_amount = 8.0, Variant visual_duration = Variant());")
     header.append("    static void trigger_w(Object* h, const String& kind, double shake_amount = 5.0, Variant visual_duration = Variant());")
     header.append("    static void trigger_e(Object* h, const String& kind, double shake_amount = 6.0, Variant visual_duration = Variant());")
@@ -1246,8 +1261,7 @@ def generate():
     header.append("")
     header.append("#endif // MYSTIC_HERO_SKILLS_PROCESSOR_H")
 
-    OUT_H.write_text("\n".join(header), encoding="utf-8")
-    print(f"[gen_cpp] wrote {OUT_H}")
+    header_text = "\n".join(header)
 
     # Generate cpp
     cpp = []
@@ -1303,8 +1317,13 @@ def generate():
     cpp.append("int MysticHeroSkills::get_r_cooldown_max(Object* obj) { Variant v = obj->get(\"r_cooldown_max\"); return (int)v; }")
     cpp.append("double MysticHeroSkills::get_speed_frames(Object* obj) { Variant v = obj->get(\"move_speed\"); return (double)v / 60.0; }")
     cpp.append("void MysticHeroSkills::set_speed_frames(Object* obj, double v) { obj->set(\"move_speed\", (double)v * 60.0); }")
-    cpp.append("double MysticHeroSkills::get_attack_cooldown_frames(Object* obj) { Variant v = obj->get(\"attack_cooldown\"); return (double)v * 60.0; }")
+    # GDScript: int(roundf(float(h.attack_cooldown) * 60.0)) -> frame BULAT.
+    # Tanpa round, nilai kit (mis. _original_attack_cd) menyimpan 49.99998 alih-alih 50.
+    cpp.append('// GDScript membaca int(roundf(float(h.attack_cooldown) * 60.0)) -> frame bulat.')
+    cpp.append('double MysticHeroSkills::get_attack_cooldown_frames(Object* obj) { Variant v = obj->get("attack_cooldown"); return (double)(int64_t)round((double)v * 60.0); }')
     cpp.append("void MysticHeroSkills::set_attack_cooldown_frames(Object* obj, double v) { obj->set(\"attack_cooldown\", (double)v / 60.0); }")
+    cpp.append('// Assign langsung `X.attack_timer = N` (frame) -> detik apa adanya; Hero.kit_lock memakai maxf().')
+    cpp.append('void MysticHeroSkills::set_atk_timer_frames(Object* h, Object* target, double frames) { if (!target) { return; } if (!kit_has_atk_timer(h, target)) { return; } target->set("attack_timer", frames / 60.0); }')
     cpp.append("bool MysticHeroSkills::is_alive(Object* obj) { Variant v = obj->get(\"is_dead\"); bool dead = (bool)v; return !dead; }")
     cpp.append("Dictionary MysticHeroSkills::get_kit(Object* obj) { Variant v = obj->get(\"kit\"); if (v.get_type()==Variant::DICTIONARY) return v; return Dictionary(); }")
     cpp.append("void MysticHeroSkills::set_kit(Object* obj, const Dictionary& d) { obj->set(\"kit\", d); }")
@@ -1395,35 +1414,59 @@ def generate():
     cpp.append("bool MysticHeroSkills::has_target(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases, Variant range_val) {")
     cpp.append("    return acquire_target(h, all_units, all_towers, all_bases, range_val)!=nullptr;")
     cpp.append("}")
-    cpp.append("int MysticHeroSkills::visual_duration(const String& hero_type, const String& key) {")
-    cpp.append("    // BOSS_HERO_VISUAL_DURATION")
-    cpp.append("    if (hero_type==\"nyzrak\") { if (key==\"q\") return 50; if (key==\"w\") return 50; if (key==\"e\") return 70; if (key==\"r\") return 90; }")
-    cpp.append("    if (hero_type==\"vhalzun\") { if (key==\"q\") return 60; if (key==\"w\") return 80; if (key==\"e\") return 60; if (key==\"r\") return 100; }")
-    cpp.append("    // VISUAL_DURATION per starter")
-    cpp.append("    if (hero_type==\"grimjaw\") { if (key==\"q\") return 180; if (key==\"w\") return 90; if (key==\"e\") return 60; if (key==\"r\") return 90; }")
-    cpp.append("    if (hero_type==\"kaizen\") { if (key==\"q\") return 60; if (key==\"w\") return 90; if (key==\"e\") return 60; if (key==\"r\") return 100; }")
-    cpp.append("    if (hero_type==\"sylara\") { if (key==\"q\") return 180; if (key==\"w\") return 180; if (key==\"e\") return 150; if (key==\"r\") return 60; }")
-    cpp.append("    if (hero_type==\"thorne\") { if (key==\"q\") return 40; if (key==\"w\") return 100; if (key==\"e\") return 60; if (key==\"r\") return 120; }")
-    cpp.append("    if (hero_type==\"vex\") { if (key==\"q\") return 40; if (key==\"w\") return 100; if (key==\"e\") return 60; if (key==\"r\") return 80; }")
-    cpp.append("    if (hero_type==\"zephyr\") { if (key==\"q\") return 240; if (key==\"w\") return 180; if (key==\"e\") return 180; if (key==\"r\") return 240; }")
-    cpp.append("    // default")
-    cpp.append("    if (key==\"q\") return 60; if (key==\"w\") return 90; if (key==\"e\") return 60; if (key==\"r\") return 100; return 60;")
+    # ── durasi visual ──
+    # Semantik BaseSkill._get_visual_duration (== HeroSkillKit.__vis_dur):
+    #   kind "boss"  -> BOSS_HERO_VISUAL_DURATION[hero_type][key], else default
+    #   kind starter -> SKILL_VISUAL_DURATION[kelas][key],        else default
+    # Tabelnya DIBANGKITKAN dari data Python (vis/bvis/dflt) — bukan angka
+    # yang disalin tangan, supaya override baru tidak membuat C++ basi.
+    vis_map = {k.replace("Skills", "").lower(): v for k, v in vis.items()}
+
+    def _chain(tbl):
+        return " ".join('if (key=="%s") return %d;' % (k, int(tbl[k]))
+                        for k in ("q", "w", "e", "r") if k in tbl)
+
+    dflt_chain = _chain(dflt)
+    dflt_fallback = int(dflt.get("q", 60))
+    starter_chain = " || ".join('hero_type=="%s"' % k for k in STARTERS)
+
+    cpp.append("int MysticHeroSkills::default_visual_duration(const String& key) {")
+    cpp.append("    " + dflt_chain + " return %d;" % dflt_fallback)
     cpp.append("}")
-    cpp.append("void MysticHeroSkills::set_active_skill(Object* h, const String& key, Variant duration) {")
-    cpp.append("    int dur = duration.get_type()==Variant::NIL ? visual_duration(get_hero_type(h), key) : (int)duration;")
+    cpp.append("bool MysticHeroSkills::is_starter_kind(const String& hero_type) {")
+    cpp.append("    return " + starter_chain + ";")
+    cpp.append("}")
+    cpp.append("int MysticHeroSkills::visual_duration_kind(const String& kind, const String& hero_type, const String& key) {")
+    cpp.append("    if (kind==\"boss\") {")
+    for _ht in sorted(bvis.keys()):
+        cpp.append("        if (hero_type==\"%s\") { %s }" % (_ht, _chain(bvis[_ht])))
+    cpp.append("        return default_visual_duration(key);")
+    cpp.append("    }")
+    for _kind in sorted(vis_map.keys()):
+        cpp.append("    if (kind==\"%s\") { %s }" % (_kind, _chain(vis_map[_kind])))
+    cpp.append("    return default_visual_duration(key);")
+    cpp.append("}")
+    cpp.append("int MysticHeroSkills::visual_duration(const String& hero_type, const String& key) {")
+    cpp.append("    // API tanpa kind (dipakai HeroSkillKitLoader.get_visual_duration):")
+    cpp.append("    // kind diturunkan dari hero_type — 6 starter punya kelas handler")
+    cpp.append("    // sendiri, sisanya lewat BossHeroSkills (kind \"boss\").")
+    cpp.append("    return visual_duration_kind(is_starter_kind(hero_type) ? hero_type : String(\"boss\"), hero_type, key);")
+    cpp.append("}")
+    cpp.append("void MysticHeroSkills::set_active_skill(Object* h, const String& kind, const String& key, Variant duration) {")
+    cpp.append("    int dur = duration.get_type()==Variant::NIL ? visual_duration_kind(kind, get_hero_type(h), key) : (int)duration;")
     cpp.append("    set_active_skill(h, Variant(key)); set_active_skill_timer(h, dur);")
     cpp.append("}")
     cpp.append("void MysticHeroSkills::trigger_q(Object* h, const String& kind, double shake_amount, Variant visual_duration) {")
-    cpp.append("    set_skill_timer(h, get_skill_cooldown_max(h)); set_active_skill(h, \"q\", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);")
+    cpp.append("    set_skill_timer(h, get_skill_cooldown_max(h)); set_active_skill(h, kind, \"q\", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);")
     cpp.append("}")
     cpp.append("void MysticHeroSkills::trigger_w(Object* h, const String& kind, double shake_amount, Variant visual_duration) {")
-    cpp.append("    set_w_cooldown(h, get_w_cooldown_max(h)); set_active_skill(h, \"w\", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.6);")
+    cpp.append("    set_w_cooldown(h, get_w_cooldown_max(h)); set_active_skill(h, kind, \"w\", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.6);")
     cpp.append("}")
     cpp.append("void MysticHeroSkills::trigger_e(Object* h, const String& kind, double shake_amount, Variant visual_duration) {")
-    cpp.append("    set_e_cooldown(h, get_e_cooldown_max(h)); set_active_skill(h, \"e\", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);")
+    cpp.append("    set_e_cooldown(h, get_e_cooldown_max(h)); set_active_skill(h, kind, \"e\", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);")
     cpp.append("}")
     cpp.append("void MysticHeroSkills::trigger_r(Object* h, const String& kind, double shake_amount, Variant visual_duration) {")
-    cpp.append("    set_r_cooldown(h, get_r_cooldown_max(h)); set_active_skill(h, \"r\", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 1.0);")
+    cpp.append("    set_r_cooldown(h, get_r_cooldown_max(h)); set_active_skill(h, kind, \"r\", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 1.0);")
     cpp.append("}")
     cpp.append("")
 
@@ -1453,8 +1496,11 @@ def generate():
     cpp.append("    set_active_skill(h, Variant(skill_key)); set_active_skill_timer(h, 40);")
     cpp.append("    double mult=1.0; if (skill_key==\"q\") mult=1.0; else if (skill_key==\"w\") mult=1.2; else if (skill_key==\"e\") mult=1.5; else if (skill_key==\"r\") mult=2.5;")
     cpp.append("    String school = get_dmg_school(h);")
-    cpp.append("    if (skill_key==\"q\" || skill_key==\"w\") { Object* tgt=get_target(h); if (tgt && kit_unit_alive(h,tgt)) { int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,tgt,dmg,get_team(h),Variant(),school); } }")
-    cpp.append("    else { double aoe_range = skill_key==\"e\" ? 150.0 : 200.0; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=aoe_range){ int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,e,dmg,get_team(h),Variant(),school); } } }")
+    # src = h (BUKAN Variant()): Hero.kit_hit meneruskan src ke
+    # CombatSystem.apply_damage untuk atribusi damage/reflect (bristleback).
+    # GDScript __fallback_cast mengirim h; nil di sini = kredit damage hilang.
+    cpp.append("    if (skill_key==\"q\" || skill_key==\"w\") { Object* tgt=get_target(h); if (tgt && kit_unit_alive(h,tgt)) { int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,tgt,dmg,get_team(h),h,school); } }")
+    cpp.append("    else { double aoe_range = skill_key==\"e\" ? 150.0 : 200.0; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=aoe_range){ int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,e,dmg,get_team(h),h,school); } } }")
     cpp.append("}")
     cpp.append("")
 
@@ -1468,9 +1514,21 @@ def generate():
     cpp.append("    double sr = get_skill_range(h); if (sr==0) sr=100; double cast_range = MAX((int)sr, 140);")
     cpp.append("    Array nearby; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); double d=Vector2(dx,dy).length(); if(d<=cast_range){ Array t; t.append(d); t.append(e); t.append(nearby.size()); nearby.append(t);} }")
     cpp.append("    if (nearby.size()==0) return false;")
-    cpp.append("    // sort by distance")
-    cpp.append("    // simple bubble sort for small N")
-    cpp.append("    for(int i=0;i<nearby.size();++i){ for(int j=i+1;j<nearby.size();++j){ double di=(double)((Array)nearby[i])[0]; double dj=(double)((Array)nearby[j])[0]; if(dj<di){ Variant tmp=nearby[i]; nearby[i]=nearby[j]; nearby[j]=tmp; } } }")
+    cpp.append("    // nearby.sort_custom(__by_pair0) di GDScript == Python nearby.sort(key=t[0])")
+    cpp.append("    // yang STABIL: urutkan (dist, idx) dengan insertion sort — idx unik dan")
+    cpp.append("    // naik, jadi hasilnya identik dengan sort stabil by-dist. (Sort tukar")
+    cpp.append("    // pasangan ala bubble TIDAK stabil: musuh berjarak sama bisa tertukar,")
+    cpp.append("    // target skill boss jadi beda dari pygame.)")
+    cpp.append("    for (int i=1; i<nearby.size(); ++i) {")
+    cpp.append("        Variant keyv = nearby[i]; Array ka = keyv; double kd = (double)ka[0]; int64_t ki = (int64_t)ka[2];")
+    cpp.append("        int j = i - 1;")
+    cpp.append("        while (j >= 0) {")
+    cpp.append("            Array ja = nearby[j]; double jd = (double)ja[0]; int64_t ji = (int64_t)ja[2];")
+    cpp.append("            if (!(kd < jd || (kd == jd && ki < ji))) break;")
+    cpp.append("            nearby[j+1] = nearby[j]; --j;")
+    cpp.append("        }")
+    cpp.append("        nearby[j+1] = keyv;")
+    cpp.append("    }")
     cpp.append("    Object* tgt=get_target(h); bool valid=false; if(tgt && kit_unit_alive(h,tgt)){ double dx=get_global_pos_x(tgt)-get_global_pos_x(h); double dy=get_global_pos_y(tgt)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=cast_range) valid=true; }")
     cpp.append("    if(!valid){ Object* best = Object::cast_to<Object>(((Array)nearby[0])[1]); set_target(h, best); }")
     cpp.append("    // check recipe")
@@ -1578,7 +1636,19 @@ def generate():
     cpp.append("}")
     cpp.append("")
 
-    cpp.append("bool MysticHeroSkills::by_pair0(Variant a, Variant b) { double av=0,bv=0; if (a.get_type()==Variant::ARRAY) av=(double)((Array)a)[0]; else if (a.get_type()==Variant::FLOAT || a.get_type()==Variant::INT) av=(double)a; if (b.get_type()==Variant::ARRAY) bv=(double)((Array)b)[0]; else if (b.get_type()==Variant::FLOAT || b.get_type()==Variant::INT) bv=(double)b; return av < bv; }")
+    # Elemen pembanding = [dist, entity, idx] (dibangun boss_generic, sama
+    # dengan nearby.append([d, e, nearby.size()]) di GDScript). Python
+    # `nearby.sort(key=lambda t: t[0])` STABIL; GDScript meniru lewat
+    # tie-break idx di HeroSkillKit.__by_pair0 — C++ harus sama, kalau tidak
+    # musuh berjarak sama bisa terpilih dalam urutan berbeda (target skill
+    # beda = damage beda).
+    cpp.append("bool MysticHeroSkills::by_pair0(Variant a, Variant b) {")
+    cpp.append("    Array aa = a; Array bb = b;")
+    cpp.append("    if (aa.size() < 3 || bb.size() < 3) { double av = aa.size() > 0 ? (double)aa[0] : 0.0; double bv = bb.size() > 0 ? (double)bb[0] : 0.0; return av < bv; }")
+    cpp.append("    double ad = (double)aa[0]; double bd = (double)bb[0];")
+    cpp.append("    if (ad == bd) return (int64_t)aa[2] < (int64_t)bb[2];")
+    cpp.append("    return ad < bd;")
+    cpp.append("}")
     cpp.append("bool MysticHeroSkills::__by_pair0(Variant a, Variant b) { return by_pair0(a,b); }")
     cpp.append("")
     cpp.append("void MysticHeroSkills::_bind_methods() {")
@@ -1590,15 +1660,52 @@ def generate():
     cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"cast_r\", \"hero\", \"all_units\", \"all_towers\", \"all_bases\"), &MysticHeroSkills::cast_r);")
     cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"hero_kind\", \"hero\"), &MysticHeroSkills::hero_kind);")
     cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"skill_range\", \"hero\", \"fallback\"), &MysticHeroSkills::skill_range, DEFVAL(200.0));")
-    cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"has_target\", \"hero\", \"all_units\", \"all_towers\", \"all_bases\", \"range_val\"), &MysticHeroSkills::has_target);")
+    cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"has_target\", \"hero\", \"all_units\", \"all_towers\", \"all_bases\", \"range_val\"), &MysticHeroSkills::has_target, DEFVAL(Variant()));")
     cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"visual_duration\", \"hero_type\", \"key\"), &MysticHeroSkills::visual_duration);")
     cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"boss_generic\", \"hero\", \"skill_key\", \"all_units\", \"all_towers\", \"all_bases\"), &MysticHeroSkills::boss_generic);")
     cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"by_pair0\", \"a\", \"b\"), &MysticHeroSkills::by_pair0);")
     cpp.append("    ClassDB::bind_static_method(\"MysticHeroSkills\", D_METHOD(\"__by_pair0\", \"a\", \"b\"), &MysticHeroSkills::__by_pair0);")
     cpp.append("}")
 
-    OUT_CPP.write_text("\n".join(cpp), encoding="utf-8")
-    print(f"[gen_cpp] wrote {OUT_CPP} with {len(cpp)} lines")
+    cpp_text = "\n".join(cpp)
+
+    if check:
+        # Mode --check: JANGAN tulis apa pun. Bandingkan hasil transpile dengan
+        # berkas yang ter-commit supaya CI tahu kapan hero_skills/_bundle.py
+        # berubah tanpa C++ GDExtension ikut dibangkitkan ulang (pola sama
+        # dengan tools/gen_hero_skill_kit.py --check).
+        stale = []
+        for path, text in ((OUT_H, header_text), (OUT_CPP, cpp_text)):
+            old = path.read_text(encoding="utf-8") if path.exists() else ""
+            if old != text:
+                stale.append(str(path.relative_to(ROOT)))
+        if stale:
+            for rel in stale:
+                print(f"[gen_cpp] BASI: {rel} != hasil transpile hero_skills/_bundle.py")
+            print("[gen_cpp] regenerasi: python3 tools/gen_hero_skills_cpp.py")
+            sys.exit(1)
+        print("[gen_cpp] PASS: hero_skills_processor.h/.cpp ter-commit == hasil transpile "
+              f"({cpp_text.count(chr(10)) + 1} baris cpp, "
+              f"{cpp_text.count('MysticHeroSkills::')} definisi)")
+        return
+
+    OUT_H.parent.mkdir(parents=True, exist_ok=True)
+    OUT_H.write_text(header_text, encoding="utf-8")
+    OUT_CPP.write_text(cpp_text, encoding="utf-8")
+    print(f"[gen_cpp] wrote {OUT_H.relative_to(ROOT)} ({header_text.count(chr(10)) + 1} baris)")
+    print(f"[gen_cpp] wrote {OUT_CPP.relative_to(ROOT)} ({cpp_text.count(chr(10)) + 1} baris, "
+          f"{cpp_text.count('MysticHeroSkills::')} definisi, "
+          f"{len(registry)} resep registry boss)")
+
+
+def main():
+    ap = argparse.ArgumentParser(
+        description="Transpile hero_skills/_bundle.py -> C++ GDExtension (godot++)")
+    ap.add_argument("--check", action="store_true",
+                    help="exit 1 kalau hero_skills_processor.h/.cpp ter-commit basi")
+    args = ap.parse_args()
+    generate(check=args.check)
+
 
 if __name__=="__main__":
-    generate()
+    main()
