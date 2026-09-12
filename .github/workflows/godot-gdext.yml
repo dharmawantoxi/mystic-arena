@@ -1,0 +1,245 @@
+name: Godot GDExtension (godot++)
+
+# ═══════════════════════════════════════════════════════
+# BUILD + UJI GDExtension C++ (hero_skills/_bundle.py -> godot++)
+#
+# Kenapa workflow TERPISAH dari godot-check.yml:
+#   * godot-check.yml menjaga jalur GDScript (HeroSkillKit.gd) dan sengaja
+#     TIDAK butuh compiler — lib .so/.dll tidak ikut repo, jadi di sana
+#     HeroSkillKitLoader selalu jatuh ke fallback GDScript.
+#   * Di sini lib C++ BENERAN dibuild (godot-cpp + scons, ±10 menit dengan
+#     cache) lalu HeroSkillGdextParityTest memutar ulang oracle Pygame
+#     (222 hero × 4 skenario) lewat MysticHeroSkills. Tanpa workflow ini,
+#     "sudah dimigrasikan ke C++" hanya klaim: kode yang tidak pernah
+#     dikompilasi/dijalankan bisa basi diam-diam.
+#
+# HEMAT KUOTA:
+#   * hanya jalan kalau berkas GDExt/skill/generator yang berubah (filter paths),
+#   * godot-cpp (sumber + objek hasil compile) di-cache per commit SHA,
+#   * binary Godot di-cache (pola sama dengan godot-check.yml),
+#   * concurrency membatalkan run lama, timeout 45 menit.
+#
+# Jalan manual: tab Actions -> "Godot GDExtension (godot++)" -> Run workflow.
+# ═══════════════════════════════════════════════════════
+
+on:
+  pull_request:
+    paths:
+      - 'godot/gdext/**'
+      - 'godot/addons/mystic_skills/**'
+      - 'godot/addons/mystic_lighting/**'
+      - 'godot/scenes/hero/HeroSkillKit.gd'
+      - 'godot/scenes/hero/HeroSkillKitLoader.gd'
+      - 'godot/scenes/hero/Hero.gd'
+      - 'godot/tests/HeroSkillParityTest.gd'
+      - 'godot/tests/HeroSkillGdextParityTest.gd'
+      - 'godot/tests/HeroSkillGdextParityTest.tscn'
+      - 'godot/project.godot'
+      - 'hero_skills/**'
+      - 'tools/gen_hero_skills_cpp.py'
+      - 'tools/gen_hero_skill_kit.py'
+      - '.github/workflows/godot-gdext.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'godot/gdext/**'
+      - 'godot/addons/mystic_skills/**'
+      - 'godot/addons/mystic_lighting/**'
+      - 'godot/scenes/hero/HeroSkillKit.gd'
+      - 'godot/scenes/hero/HeroSkillKitLoader.gd'
+      - 'godot/scenes/hero/Hero.gd'
+      - 'godot/tests/HeroSkillParityTest.gd'
+      - 'godot/tests/HeroSkillGdextParityTest.gd'
+      - 'godot/tests/HeroSkillGdextParityTest.tscn'
+      - 'godot/project.godot'
+      - 'hero_skills/**'
+      - 'tools/gen_hero_skills_cpp.py'
+      - 'tools/gen_hero_skill_kit.py'
+      - '.github/workflows/godot-gdext.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: godot-gdext-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Harus sama dengan config/features di godot/project.godot
+  GODOT_VERSION: '4.3'
+  GODOT_RELEASE: 'stable'
+  # godot-cpp WAJIB se-versi dengan engine (ABI GDExtension per minor version)
+  GODOT_CPP_REF: 'godot-4.3-stable'
+  # optimize=none debug_symbols=no: yang diuji PARITAS, bukan kecepatan;
+  # memangkas waktu compile godot-cpp (±950 berkas) drastis di runner.
+  SCONS_FLAGS: 'platform=linux target=template_debug optimize=none debug_symbols=no'
+
+jobs:
+  build:
+    name: Build mystic_skills + paritas C++ vs oracle Pygame
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── 0. Kesegaran transpile (detik, tanpa compiler) ──
+      # HeroSkillKit.gd (GDScript) dan hero_skills_processor.h/.cpp (C++)
+      # keduanya dibangkitkan dari hero_skills/_bundle.py. Kalau salah satu
+      # basi, build C++ di bawah mengunci perilaku LAMA — jadi dicek dulu.
+      - name: Cek freshness generator
+        run: |
+          python3 tools/gen_hero_skill_kit.py --check
+          python3 tools/gen_hero_skills_cpp.py --check
+
+      # ── 1. godot-cpp: sumber + objek build di-cache per commit SHA ──
+      - name: Resolve commit godot-cpp
+        id: cpp-ref
+        run: |
+          SHA=$(git ls-remote https://github.com/godotengine/godot-cpp "$GODOT_CPP_REF" | cut -f1)
+          if [ -z "$SHA" ]; then echo "::error::gagal resolve $GODOT_CPP_REF"; exit 1; fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "godot-cpp $GODOT_CPP_REF = $SHA"
+
+      - name: Cache godot-cpp (sumber + objek)
+        id: cache-cpp
+        uses: actions/cache@v4
+        with:
+          path: godot/gdext/mystic_skills/godot-cpp
+          key: godot-cpp-${{ steps.cpp-ref.outputs.sha }}-linux-template_debug-optnone-v1
+
+      - name: Clone godot-cpp
+        if: steps.cache-cpp.outputs.cache-hit != 'true'
+        run: |
+          rm -rf godot/gdext/mystic_skills/godot-cpp
+          git clone -b "$GODOT_CPP_REF" --depth 1 \
+            https://github.com/godotengine/godot-cpp \
+            godot/gdext/mystic_skills/godot-cpp
+
+      - name: Install scons
+        run: python -m pip install --quiet scons
+
+      # ── 2. Build lib C++ ──
+      # Output: godot/addons/mystic_skills/bin/libmystic_skills.linux.template_debug.x86_64.so
+      # (nama berkas = suffix scons; .gdextension memetakannya ke kunci
+      # linux.debug.x86_64 — jangan "dikoreksi" jadi .linux.debug. tanpa
+      # template_, engine tidak akan pernah menemukan lib-nya.)
+      - name: Build mystic_skills (linux x86_64)
+        working-directory: godot/gdext/mystic_skills
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          scons $SCONS_FLAGS -j"$(nproc)"
+          SO=../../addons/mystic_skills/bin/libmystic_skills.linux.template_debug.x86_64.so
+          ls -lh ../../addons/mystic_skills/bin/
+          test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
+          # entry_symbol di mystic_skills.gdextension harus benar-benar ada,
+          # kalau tidak Godot menolak memuat lib tanpa pesan yang jelas.
+          nm -D --defined-only "$SO" | grep -q " T mystic_skills_library_init" \
+            || { echo "::error::symbol mystic_skills_library_init tidak diekspor"; exit 1; }
+          echo "[gdext] OK: $SO + symbol entry ada"
+
+      # ── 3. Godot binary (di-cache; pola sama dengan godot-check.yml) ──
+      - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux-x86_64
+
+      - name: Unduh Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          V="${GODOT_VERSION}-${GODOT_RELEASE}"
+          URL="https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_linux.x86_64.zip"
+          mkdir -p ~/godot-bin
+          curl -fsSL -o /tmp/godot.zip "$URL"
+          unzip -q -o /tmp/godot.zip -d /tmp/godot
+          mv /tmp/godot/Godot_v${V}_linux.x86_64 ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+
+      - name: Versi Godot
+        run: |
+          echo "$HOME/godot-bin" >> "$GITHUB_PATH"
+          ~/godot-bin/godot --headless --version
+
+      # ── 4. Aset biner gitignored (sounds/items/presplash) ──
+      # Tanpa presplash, boot engine mencetak error ke log headless yang
+      # menutupi error sungguhan. --assets hanya os+shutil (tanpa pygame).
+      - name: Salin aset biner (gitignored)
+        run: python3 tools/convert_to_godot.py --assets
+
+      # ── 5. Import project: di sinilah .gdextension + lib C++ DIMUAT ──
+      - name: Import project
+        run: |
+          set -o pipefail
+          godot --headless --path godot --import 2>&1 | tee /tmp/import1.log || true
+          godot --headless --path godot --import 2>&1 | tee /tmp/import.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/import.log --label "import" > /tmp/gate.out 2>&1; then
+            cat /tmp/gate.out
+          else
+            cat /tmp/gate.out
+            grep '|' /tmp/gate.out | sed 's/^[[:space:]]*[0-9]* |[[:space:]]*//' | head -5 | while read -r LINE; do
+              [ -z "$LINE" ] && continue
+              echo "::error::IMPORT-FAIL: $LINE"
+            done
+            exit 1
+          fi
+
+      # ── 6. UJI UTAMA: skill C++ vs oracle Pygame ──
+      # HeroSkillGdextParityTest memaksa backend loader ke "gdext", lalu:
+      #   (a) A/B backend untuk SEMUA hero_type katalog: hero_kind() +
+      #       visual_duration(q/w/e/r) C++ vs GDScript, plus tie-break
+      #       __by_pair0 (stabilitas sort Python);
+      #   (b) replay fixture match_parity.json["hero_skills"] (direkam dari
+      #       Hero.update pygame ASLI: 222 hero × 4 skenario, jejak event per
+      #       frame + state final) lewat Hero.gd -> MysticHeroSkills (C++).
+      # Require dua penanda: PASS dari test DAN baris loader yang membuktikan
+      # jalur C++ benar-benar dipakai (bukan diam-diam fallback GDScript).
+      - name: "HeroSkillGdextParityTest (hero_skills C++ ↔ oracle Pygame)"
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/HeroSkillGdextParityTest.tscn --quit-after 900 2>&1 \
+            | tee /tmp/skillgdext.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/skillgdext.log --label "HeroSkillGdextParityTest" \
+              --require "[HeroSkillGdextParityTest] PASS" \
+              --require "GDExtension MysticHeroSkills aktif" > /tmp/skillgdext.gate 2>&1; then
+            cat /tmp/skillgdext.gate
+          else
+            cat /tmp/skillgdext.gate
+            echo "::error::SKILL-GDEXT-FAIL-TAIL: $(tail -40 /tmp/skillgdext.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::SKILL-GDEXT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/skillgdext.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 7. Regresi jalur GDScript ──
+      # Loader + HeroSkillKit.gd disentuh PR ini; dengan lib C++ TERPASANG
+      # tapi flag project.godot tetap false, replay oracle harus tetap lulus
+      # lewat GDScript (fallback tidak boleh rusak karena ada lib).
+      - name: "HeroSkillParityTest (baseline GDScript, lib terpasang)"
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/HeroSkillParityTest.tscn --quit-after 900 2>&1 \
+            | tee /tmp/heroskill.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/heroskill.log --label "HeroSkillParityTest" \
+              --require "[HeroSkillParityTest] PASS" > /tmp/heroskill.gate 2>&1; then
+            cat /tmp/heroskill.gate
+          else
+            cat /tmp/heroskill.gate
+            echo "::error::SKILL-GDSCRIPT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/heroskill.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      - name: Simpan log kalau gagal
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-gdext-logs
+          path: /tmp/*.log
+          retention-days: 7

@@ -319,6 +319,40 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 - **Raster efek tidak dibandingkan piksel demi piksel.** `draw_circle`/`draw_colored_polygon` Godot vs sprite hasil `transform.scale` + `blit` pygame; yang dikunci geometri (pusat, radius, titik), warna+alpha, dan urutan perintah gambar per frame. Headless Godot tidak bisa screenshot.
 - **Sekolah damage** diambil dari penyerang (`DamageSchool.resolve`), dot `fire`/`ice` netral — paritas `resolve_damage_school` pygame.
 
+## Skill hero: GDScript (default) atau C++ godot++ (opt-in)
+
+`hero_skills/_bundle.py` punya **dua** port yang dibangkitkan dari AST Python
+yang sama, dan `Hero.gd` tidak tahu mana yang jalan:
+
+```
+hero_skills/_bundle.py
+  ├─ tools/gen_hero_skill_kit.py  -> scenes/hero/HeroSkillKit.gd   (GDScript, default)
+  └─ tools/gen_hero_skills_cpp.py -> gdext/mystic_skills/src/*.cpp (C++ GDExtension)
+                                        │ scons + godot-cpp
+                                        ▼
+                     addons/mystic_skills/bin/libmystic_skills.<platform>.<target>.<arch>.so
+                                        │
+              scenes/hero/HeroSkillKitLoader.gd  <- const HeroSkillKit di Hero.gd
+```
+
+Default `mystic/skills/use_gdext_skills=false`: semua skill jalan lewat
+GDScript, **tanpa butuh compiler**. Untuk mencoba jalur native:
+
+```bash
+cd godot/gdext/mystic_skills
+git clone -b godot-4.3-stable --depth 1 https://github.com/godotengine/godot-cpp godot-cpp
+scons platform=linux target=template_debug -j4
+# lalu set mystic/skills/use_gdext_skills=true di project.godot (atau
+# HeroSkillKitLoader.force_backend("gdext") dari kode/harness)
+```
+
+Kalau lib tidak ada, loader jatuh ke GDScript tanpa error — jadi F5 di mesin
+tanpa toolchain tetap normal. Paritas jalur C++ dijaga
+`tests/HeroSkillGdextParityTest.tscn` (oracle Pygame 222 hero × 4 skenario +
+A/B backend) di workflow `godot-gdext.yml`; kesegaran kedua generator dijaga
+`gen_hero_skill_kit.py --check` + `gen_hero_skills_cpp.py --check` di
+`godot-check.yml`. Rincian: `docs/HERO_SKILLS_GODOTPP.md`.
+
 ## Asset Pipeline
 
 - `godot/data/*.json` — hasil convert, dibaca `HeroDB`/`BossDB`/`ArenaMap`. Ikut repo (bukan

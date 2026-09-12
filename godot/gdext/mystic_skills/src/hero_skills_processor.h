@@ -65,6 +65,12 @@ public:
     static void set_speed_frames(Object* obj, double v);
     static double get_attack_cooldown_frames(Object* obj);
     static void set_attack_cooldown_frames(Object* obj, double v);
+    // Assign langsung `X.attack_timer = N` (frame) -> detik; bukan max seperti kit_lock.
+    static void set_atk_timer_frames(Object* h, Object* target, double frames);
+    // Baca Dictionary const-safe + konversi numerik deterministik (lihat komentar definisi).
+    static Variant dict_at(const Variant& container, const Variant& key);
+    static double var_num(const Variant& v);
+    static int64_t var_int(const Variant& v);
     static bool is_alive(Object* obj);
     static Variant get_kit_value(Object* obj, const String& key, Variant def = Variant());
     static void set_kit_value(Object* obj, const String& key, Variant value);
@@ -94,7 +100,10 @@ public:
     static Object* acquire_target(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases, Variant range_val = Variant());
     static bool has_target(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases, Variant range_val = Variant());
     static int visual_duration(const String& hero_type, const String& key);
-    static void set_active_skill(Object* h, const String& key, Variant duration);
+    static int visual_duration_kind(const String& kind, const String& hero_type, const String& key);
+    static int default_visual_duration(const String& key);
+    static bool is_starter_kind(const String& hero_type);
+    static void set_active_skill(Object* h, const String& kind, const String& key, Variant duration);
     static void trigger_q(Object* h, const String& kind, double shake_amount = 8.0, Variant visual_duration = Variant());
     static void trigger_w(Object* h, const String& kind, double shake_amount = 5.0, Variant visual_duration = Variant());
     static void trigger_e(Object* h, const String& kind, double shake_amount = 6.0, Variant visual_duration = Variant());

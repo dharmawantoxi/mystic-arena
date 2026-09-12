@@ -50,8 +50,21 @@ int MysticHeroSkills::get_e_cooldown_max(Object* obj) { Variant v = obj->get("e_
 int MysticHeroSkills::get_r_cooldown_max(Object* obj) { Variant v = obj->get("r_cooldown_max"); return (int)v; }
 double MysticHeroSkills::get_speed_frames(Object* obj) { Variant v = obj->get("move_speed"); return (double)v / 60.0; }
 void MysticHeroSkills::set_speed_frames(Object* obj, double v) { obj->set("move_speed", (double)v * 60.0); }
-double MysticHeroSkills::get_attack_cooldown_frames(Object* obj) { Variant v = obj->get("attack_cooldown"); return (double)v * 60.0; }
+// GDScript membaca int(roundf(float(h.attack_cooldown) * 60.0)) -> frame bulat.
+double MysticHeroSkills::get_attack_cooldown_frames(Object* obj) { Variant v = obj->get("attack_cooldown"); return (double)(int64_t)round((double)v * 60.0); }
 void MysticHeroSkills::set_attack_cooldown_frames(Object* obj, double v) { obj->set("attack_cooldown", (double)v / 60.0); }
+// Assign langsung `X.attack_timer = N` (frame) -> detik apa adanya; Hero.kit_lock memakai maxf().
+void MysticHeroSkills::set_atk_timer_frames(Object* h, Object* target, double frames) { if (!target) { return; } if (!kit_has_atk_timer(h, target)) { return; } target->set("attack_timer", frames / 60.0); }
+// Baca Dictionary TANPA operator[] non-const: operator[] memanggil ptrw()
+// (detach COW) dan MENYISIPKAN entri NIL kalau key tidak ada; dipakai berantai
+// pada temporary (kit_catalog_all(h)[type]["damage"]) hasilnya Variant kosong.
+Variant MysticHeroSkills::dict_at(const Variant& container, const Variant& key) { if (container.get_type()!=Variant::DICTIONARY) { return Variant(); } Dictionary d = container; return d.get(key, Variant()); }
+// Variant::operator double() godot-cpp menulis ke `double result;` TANPA inisialisasi
+// lewat to_type_constructor[FLOAT]; kalau sumber bukan numerik (NIL/Dictionary),
+// buffer dibiarkan -> angka acak dari stack. var_num/var_int deterministik
+// dan sama dengan GDScript (null diperlakukan 0).
+double MysticHeroSkills::var_num(const Variant& v) { switch (v.get_type()) { case Variant::INT: return (double)(int64_t)v; case Variant::FLOAT: return (double)v; case Variant::BOOL: return ((bool)v) ? 1.0 : 0.0; case Variant::STRING: { String s = v; return s.is_valid_float() ? (double)s.to_float() : 0.0; } default: return 0.0; } }
+int64_t MysticHeroSkills::var_int(const Variant& v) { switch (v.get_type()) { case Variant::INT: return (int64_t)v; case Variant::FLOAT: return (int64_t)(double)v; case Variant::BOOL: return ((bool)v) ? 1 : 0; case Variant::STRING: { String s = v; return s.is_valid_float() ? (int64_t)s.to_float() : 0; } default: return 0; } }
 bool MysticHeroSkills::is_alive(Object* obj) { Variant v = obj->get("is_dead"); bool dead = (bool)v; return !dead; }
 Dictionary MysticHeroSkills::get_kit(Object* obj) { Variant v = obj->get("kit"); if (v.get_type()==Variant::DICTIONARY) return v; return Dictionary(); }
 void MysticHeroSkills::set_kit(Object* obj, const Dictionary& d) { obj->set("kit", d); }
@@ -139,35 +152,47 @@ Object* MysticHeroSkills::acquire_target(Object* h, const Array& all_units, cons
 bool MysticHeroSkills::has_target(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases, Variant range_val) {
     return acquire_target(h, all_units, all_towers, all_bases, range_val)!=nullptr;
 }
-int MysticHeroSkills::visual_duration(const String& hero_type, const String& key) {
-    // BOSS_HERO_VISUAL_DURATION
-    if (hero_type=="nyzrak") { if (key=="q") return 50; if (key=="w") return 50; if (key=="e") return 70; if (key=="r") return 90; }
-    if (hero_type=="vhalzun") { if (key=="q") return 60; if (key=="w") return 80; if (key=="e") return 60; if (key=="r") return 100; }
-    // VISUAL_DURATION per starter
-    if (hero_type=="grimjaw") { if (key=="q") return 180; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 90; }
-    if (hero_type=="kaizen") { if (key=="q") return 60; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 100; }
-    if (hero_type=="sylara") { if (key=="q") return 180; if (key=="w") return 180; if (key=="e") return 150; if (key=="r") return 60; }
-    if (hero_type=="thorne") { if (key=="q") return 40; if (key=="w") return 100; if (key=="e") return 60; if (key=="r") return 120; }
-    if (hero_type=="vex") { if (key=="q") return 40; if (key=="w") return 100; if (key=="e") return 60; if (key=="r") return 80; }
-    if (hero_type=="zephyr") { if (key=="q") return 240; if (key=="w") return 180; if (key=="e") return 180; if (key=="r") return 240; }
-    // default
+int MysticHeroSkills::default_visual_duration(const String& key) {
     if (key=="q") return 60; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 100; return 60;
 }
-void MysticHeroSkills::set_active_skill(Object* h, const String& key, Variant duration) {
-    int dur = duration.get_type()==Variant::NIL ? visual_duration(get_hero_type(h), key) : (int)duration;
+bool MysticHeroSkills::is_starter_kind(const String& hero_type) {
+    return hero_type=="grimjaw" || hero_type=="kaizen" || hero_type=="sylara" || hero_type=="thorne" || hero_type=="vex" || hero_type=="zephyr";
+}
+int MysticHeroSkills::visual_duration_kind(const String& kind, const String& hero_type, const String& key) {
+    if (kind=="boss") {
+        if (hero_type=="nyzrak") { if (key=="q") return 50; if (key=="w") return 50; if (key=="e") return 70; if (key=="r") return 90; }
+        if (hero_type=="vhalzun") { if (key=="q") return 60; if (key=="w") return 80; if (key=="e") return 60; if (key=="r") return 100; }
+        return default_visual_duration(key);
+    }
+    if (kind=="grimjaw") { if (key=="q") return 180; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 90; }
+    if (kind=="kaizen") { if (key=="q") return 60; if (key=="w") return 90; if (key=="e") return 60; if (key=="r") return 100; }
+    if (kind=="sylara") { if (key=="q") return 180; if (key=="w") return 180; if (key=="e") return 150; if (key=="r") return 60; }
+    if (kind=="thorne") { if (key=="q") return 40; if (key=="w") return 100; if (key=="e") return 60; if (key=="r") return 120; }
+    if (kind=="vex") { if (key=="q") return 40; if (key=="w") return 100; if (key=="e") return 60; if (key=="r") return 80; }
+    if (kind=="zephyr") { if (key=="q") return 240; if (key=="w") return 180; if (key=="e") return 180; if (key=="r") return 240; }
+    return default_visual_duration(key);
+}
+int MysticHeroSkills::visual_duration(const String& hero_type, const String& key) {
+    // API tanpa kind (dipakai HeroSkillKitLoader.get_visual_duration):
+    // kind diturunkan dari hero_type — 6 starter punya kelas handler
+    // sendiri, sisanya lewat BossHeroSkills (kind "boss").
+    return visual_duration_kind(is_starter_kind(hero_type) ? hero_type : String("boss"), hero_type, key);
+}
+void MysticHeroSkills::set_active_skill(Object* h, const String& kind, const String& key, Variant duration) {
+    int dur = duration.get_type()==Variant::NIL ? visual_duration_kind(kind, get_hero_type(h), key) : (int)duration;
     set_active_skill(h, Variant(key)); set_active_skill_timer(h, dur);
 }
 void MysticHeroSkills::trigger_q(Object* h, const String& kind, double shake_amount, Variant visual_duration) {
-    set_skill_timer(h, get_skill_cooldown_max(h)); set_active_skill(h, "q", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);
+    set_skill_timer(h, get_skill_cooldown_max(h)); set_active_skill(h, kind, "q", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);
 }
 void MysticHeroSkills::trigger_w(Object* h, const String& kind, double shake_amount, Variant visual_duration) {
-    set_w_cooldown(h, get_w_cooldown_max(h)); set_active_skill(h, "w", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.6);
+    set_w_cooldown(h, get_w_cooldown_max(h)); set_active_skill(h, kind, "w", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.6);
 }
 void MysticHeroSkills::trigger_e(Object* h, const String& kind, double shake_amount, Variant visual_duration) {
-    set_e_cooldown(h, get_e_cooldown_max(h)); set_active_skill(h, "e", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);
+    set_e_cooldown(h, get_e_cooldown_max(h)); set_active_skill(h, kind, "e", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 0.7);
 }
 void MysticHeroSkills::trigger_r(Object* h, const String& kind, double shake_amount, Variant visual_duration) {
-    set_r_cooldown(h, get_r_cooldown_max(h)); set_active_skill(h, "r", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 1.0);
+    set_r_cooldown(h, get_r_cooldown_max(h)); set_active_skill(h, kind, "r", visual_duration); kit_shake(h, shake_amount); kit_sound(h, 1.0);
 }
 
 String MysticHeroSkills::hero_kind(Object* h) {
@@ -218,29 +243,29 @@ void MysticHeroSkills::bosshero_update_timers(Object* h, const Array& all_units,
     Variant stats;
 
     if (get_kit_value(h, "rage_active")) {
-        set_kit_value(h, "rage_timer", (int)get_kit_value(h, "rage_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "rage_timer")) <= 0)) {
+        set_kit_value(h, "rage_timer", var_int(get_kit_value(h, "rage_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "rage_timer")) <= 0)) {
             set_kit_value(h, "rage_active", false);
-            stats = kit_catalog_all(h)[get_hero_type(h)];
-            set_damage(h, ((Dictionary)(stats))["damage"]);
+            stats = dict_at(kit_catalog_all(h), get_hero_type(h));
+            set_damage(h, var_num(dict_at(stats, "damage")));
         }
     }
     if (get_kit_value(h, "defense_boost")) {
-        set_kit_value(h, "defense_timer", (int)get_kit_value(h, "defense_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "defense_timer")) <= 0)) {
+        set_kit_value(h, "defense_timer", var_int(get_kit_value(h, "defense_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "defense_timer")) <= 0)) {
             set_kit_value(h, "defense_boost", false);
         }
     }
-    if (((double)(get_kit_value(h, "vortex_active_timer")) > 0)) {
-        set_kit_value(h, "vortex_active_timer", (int)get_kit_value(h, "vortex_active_timer") - (int)(1));
-        if (((int)(Math::fmod((double)(get_kit_value(h, "vortex_active_timer")), (double)(20))) == 0)) {
+    if ((var_num(get_kit_value(h, "vortex_active_timer")) > 0)) {
+        set_kit_value(h, "vortex_active_timer", var_int(get_kit_value(h, "vortex_active_timer")) - (int64_t)(1));
+        if ((var_int(Math::fmod(var_num(get_kit_value(h, "vortex_active_timer")), 20)) == 0)) {
             enemies = kit_enemies(h, all_units, all_towers, all_bases);
             for (int __i=0; __i< (int)(((Array)(enemies)).size()); ++__i) {
                 Variant __v_e = ((Array)(enemies))[__i];
                 Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-                dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_kit_value(h, "vortex_x"))), ((double)(get_global_pos_y(e)) - (double)(get_kit_value(h, "vortex_y")))).length();
-                if (((double)(dist) <= 80)) {
-                    kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.3))), get_team(h), Variant(), "");
+                dist = Vector2(((double)(get_global_pos_x(e)) - var_num(get_kit_value(h, "vortex_x"))), ((double)(get_global_pos_y(e)) - var_num(get_kit_value(h, "vortex_y")))).length();
+                if ((var_num(dist) <= 80)) {
+                    kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.3)), get_team(h), Variant(), "");
                     if (kit_has_slow(h, e)) {
                         kit_slow(h, e, 0.5, 60);
                     }
@@ -248,37 +273,37 @@ void MysticHeroSkills::bosshero_update_timers(Object* h, const Array& all_units,
             }
         }
     }
-    if (((double)(get_kit_value(h, "flux_active_timer")) > 0)) {
-        set_kit_value(h, "flux_active_timer", (int)get_kit_value(h, "flux_active_timer") - (int)(1));
-        if (((int)(Math::fmod((double)(get_kit_value(h, "flux_active_timer")), (double)(30))) == 0)) {
+    if ((var_num(get_kit_value(h, "flux_active_timer")) > 0)) {
+        set_kit_value(h, "flux_active_timer", var_int(get_kit_value(h, "flux_active_timer")) - (int64_t)(1));
+        if ((var_int(Math::fmod(var_num(get_kit_value(h, "flux_active_timer")), 30)) == 0)) {
             if ((get_kit_value(h, "flux_target")) && (kit_unit_alive(h, get_kit_value(h, "flux_target")))) {
-                kit_hit(h, get_kit_value(h, "flux_target"), (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.3))), get_team(h), Variant(), "");
+                kit_hit(h, get_kit_value(h, "flux_target"), (int64_t)(((double)(kit_skill_damage(h)) * 0.3)), get_team(h), Variant(), "");
                 if (kit_has_slow(h, get_kit_value(h, "flux_target"))) {
                     kit_slow(h, get_kit_value(h, "flux_target"), 0.4, 60);
                 }
             }
         }
     }
-    if (((double)(get_kit_value(h, "clones_active_timer")) > 0)) {
-        set_kit_value(h, "clones_active_timer", (int)get_kit_value(h, "clones_active_timer") - (int)(1));
-        if (((int)(Math::fmod((double)(get_kit_value(h, "clones_active_timer")), (double)(40))) == 0)) {
+    if ((var_num(get_kit_value(h, "clones_active_timer")) > 0)) {
+        set_kit_value(h, "clones_active_timer", var_int(get_kit_value(h, "clones_active_timer")) - (int64_t)(1));
+        if ((var_int(Math::fmod(var_num(get_kit_value(h, "clones_active_timer")), 40)) == 0)) {
             if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
                 clone_damage = (int64_t)(((double)(get_damage(h)) * 0.5));
-                kit_hit(h, get_target(h), (int)(clone_damage), get_team(h), Variant(), "");
+                kit_hit(h, get_target(h), var_int(clone_damage), get_team(h), Variant(), "");
             }
         }
     }
     if (get_kit_value(h, "dragon_form_active", false)) {
-        set_kit_value(h, "dragon_form_timer", (int)get_kit_value(h, "dragon_form_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "dragon_form_timer")) <= 0)) {
+        set_kit_value(h, "dragon_form_timer", var_int(get_kit_value(h, "dragon_form_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "dragon_form_timer")) <= 0)) {
             set_kit_value(h, "dragon_form_active", false);
-            stats = kit_catalog_all(h)[get_hero_type(h)];
-            set_damage(h, ((Dictionary)(stats))["damage"]);
+            stats = dict_at(kit_catalog_all(h), get_hero_type(h));
+            set_damage(h, var_num(dict_at(stats, "damage")));
         }
     }
     if (get_kit_value(h, "dragon_blood_active", false)) {
-        set_kit_value(h, "dragon_blood_timer", (int)get_kit_value(h, "dragon_blood_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "dragon_blood_timer")) <= 0)) {
+        set_kit_value(h, "dragon_blood_timer", var_int(get_kit_value(h, "dragon_blood_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "dragon_blood_timer")) <= 0)) {
             set_kit_value(h, "dragon_blood_active", false);
         }
     }
@@ -289,7 +314,7 @@ void MysticHeroSkills::bosshero_cast_q_mana_break(Object* h, const Array& enemie
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -308,10 +333,10 @@ void MysticHeroSkills::bosshero_cast_w_blink(Object* h) {
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         dist = Vector2(dx, dy).length();
-        if (((double)(dist) > 0)) {
-            offset = MAX((double)(0), (double)(((double)(dist) - 60)));
-            set_global_pos_x(h, ((double)(get_global_pos_x(h)) + (double)(((double)(((double)(dx) / (double)(dist))) * (double)(offset)))));
-            set_global_pos_y(h, ((double)(get_global_pos_y(h)) + (double)(((double)(((double)(dy) / (double)(dist))) * (double)(offset)))));
+        if ((var_num(dist) > 0)) {
+            offset = MAX(0, (double)((var_num(dist) - 60)));
+            set_global_pos_x(h, (double)(((double)(get_global_pos_x(h)) + (double)(((double)((var_num(dx) / var_num(dist))) * var_num(offset))))));
+            set_global_pos_y(h, (double)(((double)(get_global_pos_y(h)) + (double)(((double)((var_num(dy) / var_num(dist))) * var_num(offset))))));
         }
     }
 }
@@ -327,10 +352,10 @@ void MysticHeroSkills::bosshero_cast_e_counterspell(Object* h, const Array& enem
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= 100)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.8))), get_team(h), Variant(), "");
+        if ((var_num(dist) <= 100)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -348,9 +373,9 @@ void MysticHeroSkills::bosshero_cast_r_mana_void(Object* h, const Array& enemies
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_kit_value(h, "mana_void_x"))), ((double)(get_global_pos_y(e)) - (double)(get_kit_value(h, "mana_void_y")))).length();
-        if (((double)(dist) <= 180)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+        dist = Vector2(((double)(get_global_pos_x(e)) - var_num(get_kit_value(h, "mana_void_x"))), ((double)(get_global_pos_y(e)) - var_num(get_kit_value(h, "mana_void_y")))).length();
+        if ((var_num(dist) <= 180)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -360,7 +385,7 @@ void MysticHeroSkills::bosshero_cast_q_spark_wraith(Object* h, const Array& enem
     set_active_skill(h, "q");
     set_active_skill_timer(h, 50);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -371,7 +396,7 @@ void MysticHeroSkills::bosshero_cast_w_flux(Object* h) {
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         set_kit_value(h, "flux_target", get_target(h));
         set_kit_value(h, "flux_active_timer", 240);
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.5))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 0.5)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.5, 240);
         }
@@ -390,15 +415,15 @@ void MysticHeroSkills::bosshero_cast_e_magnetic_field(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= 90)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.7))), get_team(h), Variant(), "");
+        if ((var_num(dist) <= 90)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.7)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(45)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 45));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.08));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_tempest_double L1108
@@ -409,7 +434,7 @@ void MysticHeroSkills::bosshero_cast_r_tempest_double(Object* h) {
     set_active_skill_timer(h, 60);
     set_kit_value(h, "clones_active_timer", 480);
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.15));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_battle_hunger L1119
@@ -421,10 +446,10 @@ void MysticHeroSkills::bosshero_cast_q_battle_hunger(Object* h) {
     set_active_skill_timer(h, 90);
     set_kit_value(h, "rage_active", true);
     set_kit_value(h, "rage_timer", 300);
-    base_damage = kit_catalog_all(h)[get_hero_type(h)]["damage"];
-    set_damage(h, (int64_t)(((double)(base_damage) * 1.5)));
+    base_damage = dict_at(dict_at(kit_catalog_all(h), get_hero_type(h)), "damage");
+    set_damage(h, (int64_t)((var_num(base_damage) * 1.5)));
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_w_counter_helix L1133
@@ -438,8 +463,8 @@ void MysticHeroSkills::bosshero_cast_w_counter_helix(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= 100)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+        if ((var_num(dist) <= 100)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
         }
     }
 }
@@ -457,10 +482,10 @@ void MysticHeroSkills::bosshero_cast_e_berserkers_call(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= 120)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+        if ((var_num(dist) <= 120)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(30)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 30));
             }
         }
     }
@@ -475,9 +500,9 @@ void MysticHeroSkills::bosshero_cast_r_culling_blade(Object* h) {
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         damage = (int64_t)(((double)(kit_skill_damage(h)) * 2.5));
         if (((double)(((double)(get_hp(get_target(h))) / (double)(get_max_hp(get_target(h))))) < 0.3)) {
-            damage = (int64_t)(((double)(damage) * 2));
+            damage = (int64_t)((var_num(damage) * 2));
         }
-        kit_hit(h, get_target(h), (int)(damage), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(damage), get_team(h), Variant(), "");
     }
 }
 
@@ -486,7 +511,7 @@ void MysticHeroSkills::bosshero_cast_q_mist_coil(Object* h, const Array& enemies
     set_active_skill(h, "q");
     set_active_skill_timer(h, 30);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -501,11 +526,11 @@ void MysticHeroSkills::bosshero_cast_w_aphotic_shield(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 100)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
         }
     }
     shield_hp = (int64_t)(((double)(get_max_hp(h)) * 0.25));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(shield_hp)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(shield_hp))))));
 }
 
 // BossHeroSkills._cast_e_darkness_gale L1185
@@ -520,11 +545,11 @@ void MysticHeroSkills::bosshero_cast_e_darkness_gale(Object* h) {
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         dist = Vector2(dx, dy).length();
-        if (((double)(dist) > 0)) {
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(dist))) * 80)));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(dist))) * 80)));
+        if ((var_num(dist) > 0)) {
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(dist))) * 80)));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(dist))) * 80)));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
     }
 }
 
@@ -538,7 +563,7 @@ void MysticHeroSkills::bosshero_cast_r_death_sever(Object* h, const Array& enemi
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 180)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.5))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.5)), get_team(h), Variant(), "");
         }
     }
 }
@@ -548,7 +573,7 @@ void MysticHeroSkills::bosshero_cast_q_acid_spray(Object* h, const Array& enemie
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
     }
 }
 
@@ -570,8 +595,8 @@ void MysticHeroSkills::bosshero_cast_w_unstable_concoction(Object* h, const Arra
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(target_x)), ((double)(get_global_pos_y(e)) - (double)(target_y))).length()) <= 100)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+        if (((double)(Vector2(((double)(get_global_pos_x(e)) - var_num(target_x)), ((double)(get_global_pos_y(e)) - var_num(target_y))).length()) <= 100)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 180);
             }
@@ -590,10 +615,10 @@ void MysticHeroSkills::bosshero_cast_e_chemical_rage(Object* h) {
     set_active_skill_timer(h, 60);
     set_kit_value(h, "rage_active", true);
     set_kit_value(h, "rage_timer", 360);
-    base_damage = kit_catalog_all(h)[get_hero_type(h)]["damage"];
-    set_damage(h, (int64_t)(((double)(base_damage) * 1.5)));
+    base_damage = dict_at(dict_at(kit_catalog_all(h), get_hero_type(h)), "damage");
+    set_damage(h, (int64_t)((var_num(base_damage) * 1.5)));
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.15));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_greevils_greed L1249
@@ -609,15 +634,15 @@ void MysticHeroSkills::bosshero_cast_r_greevils_greed(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.5))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.5)), get_team(h), Variant(), "");
             if (!(kit_unit_alive(h, e))) {
                 kills = (double)(kills) + (double)(1);
             }
         }
     }
-    if (((double)(kills) > 0)) {
-        heal = ((double)(kills) * 100);
-        set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    if ((var_num(kills) > 0)) {
+        heal = (var_num(kills) * 100);
+        set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
     }
 }
 
@@ -639,9 +664,9 @@ void MysticHeroSkills::bosshero_cast_q_ice_vortex(Object* h, const Array& enemie
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_kit_value(h, "vortex_x"))), ((double)(get_global_pos_y(e)) - (double)(get_kit_value(h, "vortex_y")))).length();
-        if (((double)(dist) <= 80)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.6))), get_team(h), Variant(), "");
+        dist = Vector2(((double)(get_global_pos_x(e)) - var_num(get_kit_value(h, "vortex_x"))), ((double)(get_global_pos_y(e)) - var_num(get_kit_value(h, "vortex_y")))).length();
+        if ((var_num(dist) <= 80)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.6)), get_team(h), Variant(), "");
         }
     }
 }
@@ -667,7 +692,7 @@ void MysticHeroSkills::bosshero_cast_w_chilling_touch(Object* h, const Array& en
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -679,11 +704,11 @@ void MysticHeroSkills::bosshero_cast_w_chilling_touch(Object* h, const Array& en
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < (double)(max_range))) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            if (((double)(perp) < (double)(line_width))) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < var_num(max_range))) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            if ((var_num(perp) < var_num(line_width))) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
                 if (kit_has_slow(h, e)) {
                     kit_slow(h, e, 0.6, 180);
                 }
@@ -699,9 +724,9 @@ void MysticHeroSkills::bosshero_cast_e_ice_blast(Object* h) {
     set_active_skill(h, "e");
     set_active_skill_timer(h, 50);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.5))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 2.5)), get_team(h), Variant(), "");
         if (kit_has_atk_timer(h, get_target(h))) {
-            kit_lock(h, get_target(h), MAX((double)(kit_atk_timer(h, get_target(h))), (double)(90)));
+            kit_lock(h, get_target(h), MAX((double)(kit_atk_timer(h, get_target(h))), 90));
         }
     }
 }
@@ -727,7 +752,7 @@ void MysticHeroSkills::bosshero_cast_r_cold_feet(Object* h, const Array& enemies
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -739,11 +764,11 @@ void MysticHeroSkills::bosshero_cast_r_cold_feet(Object* h, const Array& enemies
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < (double)(max_range))) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            if (((double)(perp) < (double)(line_width))) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 3.0))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < var_num(max_range))) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            if ((var_num(perp) < var_num(line_width))) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 3.0)), get_team(h), Variant(), "");
                 if (kit_has_slow(h, e)) {
                     kit_slow(h, e, 0.7, 240);
                 }
@@ -783,18 +808,18 @@ void MysticHeroSkills::bosshero_cast_q_arctic_burn(Object* h, const Array& enemi
     sy = get_global_pos_y(h);
     max_range = 240.0;
     line_width = 26.0;
-    ln = py_or(Vector2(((double)(tx) - (double)(sx)), ((double)(ty) - (double)(sy))).length(), 1.0);
-    ux = ((double)(((double)(tx) - (double)(sx))) / (double)(ln));
-    uy = ((double)(((double)(ty) - (double)(sy))) / (double)(ln));
+    ln = py_or(Vector2((var_num(tx) - var_num(sx)), (var_num(ty) - var_num(sy))).length(), 1.0);
+    ux = ((double)((var_num(tx) - var_num(sx))) / var_num(ln));
+    uy = ((double)((var_num(ty) - var_num(sy))) / var_num(ln));
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        ex = ((double)(get_global_pos_x(e)) - (double)(sx));
-        ey = ((double)(get_global_pos_y(e)) - (double)(sy));
-        proj = ((double)(((double)(ex) * (double)(ux))) + (double)(((double)(ey) * (double)(uy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < (double)(max_range))) {
-            if (((double)(Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(uy))))) + (double)(((double)(ey) * (double)(ux))))))) < (double)(line_width))) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        ex = ((double)(get_global_pos_x(e)) - var_num(sx));
+        ey = ((double)(get_global_pos_y(e)) - var_num(sy));
+        proj = ((double)((var_num(ex) * var_num(ux))) + (double)((var_num(ey) * var_num(uy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < var_num(max_range))) {
+            if (((double)(Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(uy))))) + (double)((var_num(ey) * var_num(ux))))))) < var_num(line_width))) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
                 if (kit_has_slow(h, e)) {
                     kit_slow(h, e, 0.4, 120);
                 }
@@ -822,8 +847,8 @@ void MysticHeroSkills::bosshero_cast_w_splinter_blast(Object* h, const Array& en
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(tx)), ((double)(get_global_pos_y(e)) - (double)(ty))).length()) <= 80)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+        if (((double)(Vector2(((double)(get_global_pos_x(e)) - var_num(tx)), ((double)(get_global_pos_y(e)) - var_num(ty))).length()) <= 80)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.3, 60);
             }
@@ -837,9 +862,9 @@ void MysticHeroSkills::bosshero_cast_e_winters_curse(Object* h, const Array& ene
     set_active_skill(h, "e");
     set_active_skill_timer(h, 70);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         if (kit_has_atk_timer(h, get_target(h))) {
-            kit_lock(h, get_target(h), MAX((double)(kit_atk_timer(h, get_target(h))), (double)(90)));
+            kit_lock(h, get_target(h), MAX((double)(kit_atk_timer(h, get_target(h))), 90));
         }
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.7, 180);
@@ -861,14 +886,14 @@ void MysticHeroSkills::bosshero_cast_r_cold_embrace(Object* h, const Array& enem
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 180);
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.15));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
     kit_fx_impact(h, get_global_pos_x(h), get_global_pos_y(h), 200, "r");
 }
 
@@ -894,7 +919,7 @@ void MysticHeroSkills::bosshero_cast_q_dragon_breath(Object* h, const Array& ene
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -906,14 +931,14 @@ void MysticHeroSkills::bosshero_cast_q_dragon_breath(Object* h, const Array& ene
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < (double)(max_range))) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            allowed_width = ((double)(cone_width) * (double)((0.3 + (double)(((double)(((double)(proj) / (double)(max_range))) * 0.7)))));
-            if (((double)(perp) < (double)(allowed_width))) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.6))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < var_num(max_range))) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            allowed_width = (var_num(cone_width) * (double)((0.3 + (double)(((double)((var_num(proj) / var_num(max_range))) * 0.7)))));
+            if ((var_num(perp) < var_num(allowed_width))) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.6)), get_team(h), Variant(), "");
                 if (kit_has_atk_timer(h, e)) {
-                    kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(45)));
+                    kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 45));
                 }
             }
         }
@@ -931,10 +956,10 @@ void MysticHeroSkills::bosshero_cast_w_dragon_tail(Object* h, const Array& enemi
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= 130)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+        if ((var_num(dist) <= 130)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -949,10 +974,10 @@ void MysticHeroSkills::bosshero_cast_e_dragon_blood(Object* h) {
     set_active_skill_timer(h, 60);
     set_kit_value(h, "dragon_blood_active", true);
     set_kit_value(h, "dragon_blood_timer", 480);
-    base_damage = kit_catalog_all(h)[get_hero_type(h)]["damage"];
-    set_damage(h, (int64_t)(((double)(base_damage) * 1.3)));
+    base_damage = dict_at(dict_at(kit_catalog_all(h), get_hero_type(h)), "damage");
+    set_damage(h, (int64_t)((var_num(base_damage) * 1.3)));
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.2));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_elder_dragon_form L1516
@@ -965,20 +990,20 @@ void MysticHeroSkills::bosshero_cast_r_elder_dragon_form(Object* h, const Array&
     set_active_skill_timer(h, 90);
     set_kit_value(h, "dragon_form_active", true);
     set_kit_value(h, "dragon_form_timer", 600);
-    base_damage = kit_catalog_all(h)[get_hero_type(h)]["damage"];
-    set_damage(h, (int64_t)(((double)(base_damage) * 1.8)));
+    base_damage = dict_at(dict_at(kit_catalog_all(h), get_hero_type(h)), "damage");
+    set_damage(h, (int64_t)((var_num(base_damage) * 1.8)));
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 3.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 3.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(90)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 90));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.25));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_krobellus_exorcism L1541
@@ -991,7 +1016,7 @@ void MysticHeroSkills::bosshero_cast_q_krobellus_exorcism(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 150)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
         }
     }
     kit_fx_cast(h, "q");
@@ -1008,9 +1033,9 @@ void MysticHeroSkills::bosshero_cast_w_krobellus_silence(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 120)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
@@ -1025,9 +1050,9 @@ void MysticHeroSkills::bosshero_cast_e_krobellus_siphon(Object* h) {
     set_active_skill(h, "e");
     set_active_skill_timer(h, 50);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
         heal = (int64_t)(((double)(kit_skill_damage(h)) * 0.5));
-        set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+        set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
         kit_fx_cast(h, "e");
         kit_fx_impact(h, get_global_pos_x(get_target(h)), get_global_pos_y(get_target(h)), 44, "e");
     }
@@ -1044,11 +1069,11 @@ void MysticHeroSkills::bosshero_cast_r_krobellus_crypt(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.5))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.5)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.15));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
     kit_fx_cast(h, "r");
     kit_fx_impact(h, get_global_pos_x(h), get_global_pos_y(h), 200, "r");
 }
@@ -1063,7 +1088,7 @@ void MysticHeroSkills::bosshero_cast_q_vhalzun_death_pulse(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 130)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
         }
     }
     kit_fx_cast(h, "q");
@@ -1080,9 +1105,9 @@ void MysticHeroSkills::bosshero_cast_w_vhalzun_heartstopper(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 150)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -1095,7 +1120,7 @@ void MysticHeroSkills::bosshero_cast_e_vhalzun_reapers_scythe(Object* h, const A
     set_active_skill(h, "e");
     set_active_skill_timer(h, 60);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
     }
     kit_fx_cast(h, "e");
 }
@@ -1111,11 +1136,11 @@ void MysticHeroSkills::bosshero_cast_r_vhalzun_ghost_shroud(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 150)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.4))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.4)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.18));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
     kit_fx_cast(h, "r");
     kit_fx_impact(h, get_global_pos_x(h), get_global_pos_y(h), 150, "r");
 }
@@ -1139,7 +1164,7 @@ void MysticHeroSkills::bosshero_cast_q_kunkka_tide(Object* h, const Array& enemi
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -1149,11 +1174,11 @@ void MysticHeroSkills::bosshero_cast_q_kunkka_tide(Object* h, const Array& enemi
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < 250)) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            if (((double)(perp) < 70)) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < 250)) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            if ((var_num(perp) < 70)) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             }
         }
     }
@@ -1173,10 +1198,10 @@ void MysticHeroSkills::bosshero_cast_w_kunkka_xmark(Object* h, const Array& enem
         for (int __i=0; __i< (int)(enemies.size()); ++__i) {
             Variant __v_e = enemies[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-            if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(tx)), ((double)(get_global_pos_y(e)) - (double)(ty))).length()) <= 120)) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+            if (((double)(Vector2(((double)(get_global_pos_x(e)) - var_num(tx)), ((double)(get_global_pos_y(e)) - var_num(ty))).length()) <= 120)) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
                 if (kit_has_atk_timer(h, e)) {
-                    kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                    kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
                 }
             }
         }
@@ -1203,7 +1228,7 @@ void MysticHeroSkills::bosshero_cast_e_kunkka_ghost(Object* h, const Array& enem
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -1213,19 +1238,19 @@ void MysticHeroSkills::bosshero_cast_e_kunkka_ghost(Object* h, const Array& enem
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < 300)) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            if (((double)(perp) < 80)) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.2))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < 300)) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            if ((var_num(perp) < 80)) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.2)), get_team(h), Variant(), "");
                 if (kit_has_atk_timer(h, e)) {
-                    kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(90)));
+                    kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 90));
                 }
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.15));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_kunkka_torrent L1701
@@ -1247,15 +1272,15 @@ void MysticHeroSkills::bosshero_cast_r_kunkka_torrent(Object* h, const Array& en
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(tx)), ((double)(get_global_pos_y(e)) - (double)(ty))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 3.0))), get_team(h), Variant(), "");
+        if (((double)(Vector2(((double)(get_global_pos_x(e)) - var_num(tx)), ((double)(get_global_pos_y(e)) - var_num(ty))).length()) <= 200)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 3.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(120)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 120));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.2));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_nyxarath_shadowraze L1718
@@ -1280,18 +1305,18 @@ void MysticHeroSkills::bosshero_cast_q_nyxarath_shadowraze(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         d = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(d) < (double)(closest_dist))) {
+        if ((var_num(d) < var_num(closest_dist))) {
             closest_dist = d;
             closest = e;
         }
     }
-    if (py_or(!(closest), ((double)(closest_dist) > 300))) {
+    if (py_or(!(closest), (var_num(closest_dist) > 300))) {
         return;
     }
     dx = ((double)(get_global_pos_x(closest)) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(closest)) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -1301,13 +1326,13 @@ void MysticHeroSkills::bosshero_cast_q_nyxarath_shadowraze(Object* h, const Arra
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < 280)) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            if (((double)(perp) < 50)) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < 280)) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            if ((var_num(perp) < 50)) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
                 if (kit_has_atk_timer(h, e)) {
-                    kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(45)));
+                    kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 45));
                 }
             }
         }
@@ -1328,18 +1353,18 @@ void MysticHeroSkills::bosshero_cast_w_nyxarath_necro(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 180)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.7))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.7)), get_team(h), Variant(), "");
             if (!(kit_unit_alive(h, e))) {
                 kills = (double)(kills) + (double)(1);
             }
         }
     }
-    base_damage = kit_catalog_all(h)[get_hero_type(h)]["damage"];
-    set_damage(h, (int64_t)(((double)(base_damage) * 1.4)));
+    base_damage = dict_at(dict_at(kit_catalog_all(h), get_hero_type(h)), "damage");
+    set_damage(h, (int64_t)((var_num(base_damage) * 1.4)));
     set_kit_value(h, "rage_active", true);
     set_kit_value(h, "rage_timer", 480);
-    heal = ((double)((int64_t)(((double)(get_max_hp(h)) * 0.08))) + (double)(((double)(kills) * 30)));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    heal = ((int64_t)(((double)(get_max_hp(h)) * 0.08)) + (double)((var_num(kills) * 30)));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_e_nyxarath_presence L1752
@@ -1354,7 +1379,7 @@ void MysticHeroSkills::bosshero_cast_e_nyxarath_presence(Object* h, const Array&
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(90)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 90));
             }
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 240);
@@ -1362,7 +1387,7 @@ void MysticHeroSkills::bosshero_cast_e_nyxarath_presence(Object* h, const Array&
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_nyxarath_requiem L1762
@@ -1376,14 +1401,14 @@ void MysticHeroSkills::bosshero_cast_r_nyxarath_requiem(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 3.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 3.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(120)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 120));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.15));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_gravewake_anchor L1775
@@ -1405,7 +1430,7 @@ void MysticHeroSkills::bosshero_cast_q_gravewake_anchor(Object* h, const Array& 
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -1415,11 +1440,11 @@ void MysticHeroSkills::bosshero_cast_q_gravewake_anchor(Object* h, const Array& 
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < 200)) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            if (((double)(perp) < 60)) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.4))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < 200)) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            if ((var_num(perp) < 60)) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.4)), get_team(h), Variant(), "");
                 if (kit_has_slow(h, e)) {
                     kit_slow(h, e, 0.5, 180);
                 }
@@ -1446,10 +1471,10 @@ void MysticHeroSkills::bosshero_cast_w_gravewake_tide(Object* h, const Array& en
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(tx)), ((double)(get_global_pos_y(e)) - (double)(ty))).length()) <= 120)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        if (((double)(Vector2(((double)(get_global_pos_x(e)) - var_num(tx)), ((double)(get_global_pos_y(e)) - var_num(ty))).length()) <= 120)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -1464,7 +1489,7 @@ void MysticHeroSkills::bosshero_cast_e_gravewake_shell(Object* h) {
     set_kit_value(h, "defense_boost", true);
     set_kit_value(h, "defense_timer", 300);
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_gravewake_ravage L1807
@@ -1478,14 +1503,14 @@ void MysticHeroSkills::bosshero_cast_r_gravewake_ravage(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 180);
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_syrentha_riptide L1820
@@ -1507,7 +1532,7 @@ void MysticHeroSkills::bosshero_cast_q_syrentha_riptide(Object* h, const Array& 
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -1517,11 +1542,11 @@ void MysticHeroSkills::bosshero_cast_q_syrentha_riptide(Object* h, const Array& 
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < 250)) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            if (((double)(perp) < 70)) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < 250)) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            if ((var_num(perp) < 70)) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
                 if (kit_has_slow(h, e)) {
                     kit_slow(h, e, 0.5, 180);
                 }
@@ -1540,9 +1565,9 @@ void MysticHeroSkills::bosshero_cast_w_syrentha_song(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 150)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(120)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 120));
             }
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.7, 240);
@@ -1560,10 +1585,10 @@ void MysticHeroSkills::bosshero_cast_e_syrentha_mirror(Object* h) {
     set_active_skill_timer(h, 70);
     set_kit_value(h, "rage_active", true);
     set_kit_value(h, "rage_timer", 360);
-    base_damage = kit_catalog_all(h)[get_hero_type(h)]["damage"];
-    set_damage(h, (int64_t)(((double)(base_damage) * 1.4)));
+    base_damage = dict_at(dict_at(kit_catalog_all(h), get_hero_type(h)), "damage");
+    set_damage(h, (int64_t)((var_num(base_damage) * 1.4)));
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_syrentha_siren L1853
@@ -1577,14 +1602,14 @@ void MysticHeroSkills::bosshero_cast_r_syrentha_siren(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.2)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(150)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 150));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_thalgryn_waveform L1866
@@ -1607,7 +1632,7 @@ void MysticHeroSkills::bosshero_cast_q_thalgryn_waveform(Object* h, const Array&
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) == 0)) {
+    if ((var_num(dist) == 0)) {
         return;
     }
     dx = (double)(dx) / (double)(dist);
@@ -1617,17 +1642,17 @@ void MysticHeroSkills::bosshero_cast_q_thalgryn_waveform(Object* h, const Array&
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-        proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-        if ((0 < (double)(proj)) && ((double)(proj) < 250)) {
-            perp = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-            if (((double)(perp) < 50)) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.6))), get_team(h), Variant(), "");
+        proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+        if ((0 < var_num(proj)) && (var_num(proj) < 250)) {
+            perp = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+            if ((var_num(perp) < 50)) {
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.6)), get_team(h), Variant(), "");
             }
         }
     }
-    surge = MIN((double)(dist), (double)(200));
-    set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(dx) * (double)(surge))));
-    set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(dy) * (double)(surge))));
+    surge = MIN(var_num(dist), 200);
+    set_global_pos_x(h, (get_global_pos_x(h)) + ((var_num(dx) * var_num(surge))));
+    set_global_pos_y(h, (get_global_pos_y(h)) + ((var_num(dy) * var_num(surge))));
 }
 
 // BossHeroSkills._cast_w_thalgryn_adaptive L1879
@@ -1637,12 +1662,12 @@ void MysticHeroSkills::bosshero_cast_w_thalgryn_adaptive(Object* h, const Array&
     set_active_skill(h, "w");
     set_active_skill_timer(h, 50);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
         for (int __i=0; __i< (int)(enemies.size()); ++__i) {
             Variant __v_e = enemies[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
             if (((e != get_target(h))) && (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(get_target(h)))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(get_target(h))))).length()) <= 60))) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.7))), get_team(h), Variant(), "");
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.7)), get_team(h), Variant(), "");
             }
         }
     }
@@ -1657,10 +1682,10 @@ void MysticHeroSkills::bosshero_cast_e_thalgryn_morph(Object* h) {
     set_active_skill_timer(h, 60);
     set_kit_value(h, "rage_active", true);
     set_kit_value(h, "rage_timer", 300);
-    base_damage = kit_catalog_all(h)[get_hero_type(h)]["damage"];
-    set_damage(h, (int64_t)(((double)(base_damage) * 1.35)));
+    base_damage = dict_at(dict_at(kit_catalog_all(h), get_hero_type(h)), "damage");
+    set_damage(h, (int64_t)((var_num(base_damage) * 1.35)));
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.14));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_thalgryn_replicate L1895
@@ -1674,14 +1699,14 @@ void MysticHeroSkills::bosshero_cast_r_thalgryn_replicate(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.4, 180);
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_malzareth_disruption L1908
@@ -1702,8 +1727,8 @@ void MysticHeroSkills::bosshero_cast_q_malzareth_disruption(Object* h, const Arr
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(tx)), ((double)(get_global_pos_y(e)) - (double)(ty))).length()) <= 100)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+        if (((double)(Vector2(((double)(get_global_pos_x(e)) - var_num(tx)), ((double)(get_global_pos_y(e)) - var_num(ty))).length()) <= 100)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
         }
     }
 }
@@ -1715,12 +1740,12 @@ void MysticHeroSkills::bosshero_cast_w_malzareth_soul(Object* h, const Array& en
     set_active_skill(h, "w");
     set_active_skill_timer(h, 50);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.4))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.4)), get_team(h), Variant(), "");
         for (int __i=0; __i< (int)(enemies.size()); ++__i) {
             Variant __v_e = enemies[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
             if (((e != get_target(h))) && (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(get_target(h)))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(get_target(h))))).length()) <= 60))) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.7))), get_team(h), Variant(), "");
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.7)), get_team(h), Variant(), "");
             }
         }
     }
@@ -1731,7 +1756,7 @@ void MysticHeroSkills::bosshero_cast_e_malzareth_poison(Object* h, const Array& 
     set_active_skill(h, "e");
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.5, 180);
         }
@@ -1749,14 +1774,14 @@ void MysticHeroSkills::bosshero_cast_r_malzareth_disillusion(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(90)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 90));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_akashari_strike L1946
@@ -1764,7 +1789,7 @@ void MysticHeroSkills::bosshero_cast_q_akashari_strike(Object* h, const Array& e
     set_active_skill(h, "q");
     set_active_skill_timer(h, 50);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.6))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.6)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.4, 120);
         }
@@ -1785,20 +1810,20 @@ void MysticHeroSkills::bosshero_cast_w_akashari_blink(Object* h, const Array& en
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         dist = Vector2(dx, dy).length();
-        if (((double)(dist) > 0)) {
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(dist))) * (double)(MIN((double)(dist), (double)(150))))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(dist))) * (double)(MIN((double)(dist), (double)(150))))));
+        if ((var_num(dist) > 0)) {
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(dist))) * (double)(MIN(var_num(dist), 150)))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(dist))) * (double)(MIN(var_num(dist), 150)))));
         }
         for (int __i=0; __i< (int)(enemies.size()); ++__i) {
             Variant __v_e = enemies[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
             if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 80)) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.08));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_e_akashari_scream L1964
@@ -1811,7 +1836,7 @@ void MysticHeroSkills::bosshero_cast_e_akashari_scream(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 150)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.5))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.5)), get_team(h), Variant(), "");
         }
     }
 }
@@ -1827,14 +1852,14 @@ void MysticHeroSkills::bosshero_cast_r_akashari_sonic(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.3))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.3)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 240);
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_vorenmarr_bonds L1983
@@ -1844,12 +1869,12 @@ void MysticHeroSkills::bosshero_cast_q_vorenmarr_bonds(Object* h, const Array& e
     set_active_skill(h, "q");
     set_active_skill_timer(h, 70);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
         for (int __i=0; __i< (int)(enemies.size()); ++__i) {
             Variant __v_e = enemies[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
             if (((e != get_target(h))) && (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(get_target(h)))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(get_target(h))))).length()) <= 80))) {
-                kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.6))), get_team(h), Variant(), "");
+                kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.6)), get_team(h), Variant(), "");
             }
         }
     }
@@ -1862,7 +1887,7 @@ void MysticHeroSkills::bosshero_cast_w_vorenmarr_power(Object* h) {
     set_active_skill(h, "w");
     set_active_skill_timer(h, 70);
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.14));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_e_vorenmarr_upheaval L1995
@@ -1883,10 +1908,10 @@ void MysticHeroSkills::bosshero_cast_e_vorenmarr_upheaval(Object* h, const Array
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(tx)), ((double)(get_global_pos_y(e)) - (double)(ty))).length()) <= 120)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+        if (((double)(Vector2(((double)(get_global_pos_x(e)) - var_num(tx)), ((double)(get_global_pos_y(e)) - var_num(ty))).length()) <= 120)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -1903,14 +1928,14 @@ void MysticHeroSkills::bosshero_cast_r_vorenmarr_golem(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.2)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(90)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 90));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_kenshiro_swiftslash L2021
@@ -1918,7 +1943,7 @@ void MysticHeroSkills::bosshero_cast_q_kenshiro_swiftslash(Object* h, const Arra
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -1935,13 +1960,13 @@ void MysticHeroSkills::bosshero_cast_w_kenshiro_assault(Object* h, const Array& 
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(90));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 90);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.4))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.4)), get_team(h), Variant(), "");
     }
 }
 
@@ -1955,7 +1980,7 @@ void MysticHeroSkills::bosshero_cast_e_kenshiro_gale(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 150)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -1970,7 +1995,7 @@ void MysticHeroSkills::bosshero_cast_r_kenshiro_supremacy(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
         }
     }
 }
@@ -1980,7 +2005,7 @@ void MysticHeroSkills::bosshero_cast_q_khazan_chained(Object* h, const Array& en
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -1998,18 +2023,18 @@ void MysticHeroSkills::bosshero_cast_w_khazan_leap(Object* h, const Array& enemi
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(110));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 110);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
     }
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 90)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2024,7 +2049,7 @@ void MysticHeroSkills::bosshero_cast_e_khazan_spin(Object* h, const Array& enemi
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 160)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2040,11 +2065,11 @@ void MysticHeroSkills::bosshero_cast_r_khazan_vanish(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.08));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_wiro_windcut L2095
@@ -2052,7 +2077,7 @@ void MysticHeroSkills::bosshero_cast_q_wiro_windcut(Object* h, const Array& enem
     set_active_skill(h, "q");
     set_active_skill_timer(h, 30);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -2066,7 +2091,7 @@ void MysticHeroSkills::bosshero_cast_w_wiro_whirl(Object* h, const Array& enemie
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 140)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2084,13 +2109,13 @@ void MysticHeroSkills::bosshero_cast_e_wiro_dash(Object* h, const Array& enemies
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(100));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 100);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
     }
 }
 
@@ -2104,7 +2129,7 @@ void MysticHeroSkills::bosshero_cast_r_wiro_typhoon(Object* h, const Array& enem
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 90);
             }
@@ -2117,7 +2142,7 @@ void MysticHeroSkills::bosshero_cast_q_naraka_chaos(Object* h, const Array& enem
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -2134,13 +2159,13 @@ void MysticHeroSkills::bosshero_cast_w_naraka_shadowstep(Object* h, const Array&
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(120));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 120);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -2154,9 +2179,9 @@ void MysticHeroSkills::bosshero_cast_e_naraka_hammer(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 180)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(30)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 30));
             }
         }
     }
@@ -2175,14 +2200,14 @@ void MysticHeroSkills::bosshero_cast_r_naraka_execution(Object* h, const Array& 
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 230)) {
             dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.8));
-            if (((double)(((double)(get_hp(e)) / (double)(MAX((double)(1), (double)(get_max_hp(e)))))) < 0.3)) {
-                dmg = (int64_t)(((double)(dmg) * 1.6));
+            if (((double)(((double)(get_hp(e)) / (double)(MAX(1, (double)(get_max_hp(e)))))) < 0.3)) {
+                dmg = (int64_t)((var_num(dmg) * 1.6));
             }
-            kit_hit(h, e, (int)(dmg), get_team(h), Variant(), "");
+            kit_hit(h, e, var_int(dmg), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_krognarr_strike L2179
@@ -2190,7 +2215,7 @@ void MysticHeroSkills::bosshero_cast_q_krognarr_strike(Object* h, const Array& e
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -2204,9 +2229,9 @@ void MysticHeroSkills::bosshero_cast_w_krognarr_seismic(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(30)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 30));
             }
         }
     }
@@ -2223,11 +2248,11 @@ void MysticHeroSkills::bosshero_cast_e_krognarr_rampart(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 120)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.9)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.08));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_krognarr_eruption L2203
@@ -2240,9 +2265,9 @@ void MysticHeroSkills::bosshero_cast_r_krognarr_eruption(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -2253,7 +2278,7 @@ void MysticHeroSkills::bosshero_cast_q_raz_overdrive(Object* h, const Array& ene
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -2270,13 +2295,13 @@ void MysticHeroSkills::bosshero_cast_w_raz_searing(Object* h, const Array& enemi
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(100));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 100);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.4))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.4)), get_team(h), Variant(), "");
     }
 }
 
@@ -2290,7 +2315,7 @@ void MysticHeroSkills::bosshero_cast_e_raz_surge(Object* h, const Array& enemies
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 160)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2305,9 +2330,9 @@ void MysticHeroSkills::bosshero_cast_r_raz_gloom(Object* h, const Array& enemies
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(50)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 50));
             }
         }
     }
@@ -2326,13 +2351,13 @@ void MysticHeroSkills::bosshero_cast_q_vraskhan_thorned(Object* h, const Array& 
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(90));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 90);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -2343,8 +2368,8 @@ void MysticHeroSkills::bosshero_cast_w_vraskhan_leap(Object* h, const Array& ene
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         set_global_pos_x(h, (double)(get_global_pos_x(get_target(h))));
         set_global_pos_y(h, (double)(((double)(get_global_pos_y(get_target(h))) - 20)));
-        set_facing(h, (((double)(get_global_pos_x(get_target(h))) > (double)(get_global_pos_x(h))) ? 1 : -(1)));
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        set_facing(h, (double)((((double)(get_global_pos_x(get_target(h))) > (double)(get_global_pos_x(h))) ? 1 : -(1))));
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -2358,7 +2383,7 @@ void MysticHeroSkills::bosshero_cast_e_vraskhan_deathslash(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2373,9 +2398,9 @@ void MysticHeroSkills::bosshero_cast_r_vraskhan_omni(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -2386,7 +2411,7 @@ void MysticHeroSkills::bosshero_cast_q_aurethzar_marksman(Object* h, const Array
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -2400,7 +2425,7 @@ void MysticHeroSkills::bosshero_cast_w_aurethzar_piercing(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2410,7 +2435,7 @@ void MysticHeroSkills::bosshero_cast_e_aurethzar_frost(Object* h, const Array& e
     set_active_skill(h, "e");
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.5, 90);
         }
@@ -2427,9 +2452,9 @@ void MysticHeroSkills::bosshero_cast_r_aurethzar_thunder(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 250)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -2440,7 +2465,7 @@ void MysticHeroSkills::bosshero_cast_q_aeralith_tailwind(Object* h, const Array&
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -2454,7 +2479,7 @@ void MysticHeroSkills::bosshero_cast_w_aeralith_windblade(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2470,8 +2495,8 @@ void MysticHeroSkills::bosshero_cast_e_aeralith_vacuum(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         d = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(d) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+        if ((var_num(d) <= 170)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 90);
             }
@@ -2489,7 +2514,7 @@ void MysticHeroSkills::bosshero_cast_r_aeralith_skyrider(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 240)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2499,7 +2524,7 @@ void MysticHeroSkills::bosshero_cast_q_aurex_shieldcrash(Object* h, const Array&
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -2508,7 +2533,7 @@ void MysticHeroSkills::bosshero_cast_w_aurex_voltblast(Object* h, const Array& e
     set_active_skill(h, "w");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.4))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.4)), get_team(h), Variant(), "");
     }
 }
 
@@ -2523,11 +2548,11 @@ void MysticHeroSkills::bosshero_cast_e_aurex_aegis(Object* h, const Array& enemi
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 130)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.9)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_aurex_spin L2377
@@ -2540,9 +2565,9 @@ void MysticHeroSkills::bosshero_cast_r_aurex_spin(Object* h, const Array& enemie
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -2553,7 +2578,7 @@ void MysticHeroSkills::bosshero_cast_q_nyxareva_darkslash(Object* h, const Array
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -2562,7 +2587,7 @@ void MysticHeroSkills::bosshero_cast_w_nyxareva_mortalwound(Object* h, const Arr
     set_active_skill(h, "w");
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.4))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.4)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.5, 90);
         }
@@ -2579,7 +2604,7 @@ void MysticHeroSkills::bosshero_cast_e_nyxareva_sacrifice(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2594,9 +2619,9 @@ void MysticHeroSkills::bosshero_cast_r_nyxareva_avatar(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -2607,7 +2632,7 @@ void MysticHeroSkills::bosshero_cast_q_thalakryon_bolt(Object* h, const Array& e
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -2622,11 +2647,11 @@ void MysticHeroSkills::bosshero_cast_w_thalakryon_aquashield(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 150)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.8)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_e_thalakryon_tidalrage L2433
@@ -2639,9 +2664,9 @@ void MysticHeroSkills::bosshero_cast_e_thalakryon_tidalrage(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(40)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 40));
             }
         }
     }
@@ -2658,14 +2683,14 @@ void MysticHeroSkills::bosshero_cast_r_thalakryon_metamorph(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 260)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_aurelix_timebomb L2458
@@ -2673,7 +2698,7 @@ void MysticHeroSkills::bosshero_cast_q_aurelix_timebomb(Object* h, const Array& 
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -2684,7 +2709,7 @@ void MysticHeroSkills::bosshero_cast_w_aurelix_will(Object* h, const Array& enem
     set_active_skill(h, "w");
     set_active_skill_timer(h, 60);
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_e_aurelix_shockwave L2470
@@ -2697,9 +2722,9 @@ void MysticHeroSkills::bosshero_cast_e_aurelix_shockwave(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(40)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 40));
             }
         }
     }
@@ -2715,7 +2740,7 @@ void MysticHeroSkills::bosshero_cast_r_aurelix_transcend(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 240)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 90);
             }
@@ -2733,7 +2758,7 @@ void MysticHeroSkills::bosshero_cast_q_aurelyssa_whirlwind(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 140)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2748,7 +2773,7 @@ void MysticHeroSkills::bosshero_cast_w_aurelyssa_sweep(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 160)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2767,18 +2792,18 @@ void MysticHeroSkills::bosshero_cast_e_aurelyssa_wings(Object* h, const Array& e
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(100));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 100);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
     }
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 120)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2793,9 +2818,9 @@ void MysticHeroSkills::bosshero_cast_r_aurelyssa_phantom(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -2806,7 +2831,7 @@ void MysticHeroSkills::bosshero_cast_q_vargrath_bloodthirst(Object* h, const Arr
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -2824,18 +2849,18 @@ void MysticHeroSkills::bosshero_cast_w_vargrath_charge(Object* h, const Array& e
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(110));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 110);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
     }
     for (int __i=0; __i< (int)(enemies.size()); ++__i) {
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 100)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2850,7 +2875,7 @@ void MysticHeroSkills::bosshero_cast_e_vargrath_devilstrike(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2865,9 +2890,9 @@ void MysticHeroSkills::bosshero_cast_r_vargrath_souldom(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 230)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -2883,7 +2908,7 @@ void MysticHeroSkills::bosshero_cast_q_nazulmor_typhoon(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -2899,11 +2924,11 @@ void MysticHeroSkills::bosshero_cast_w_nazulmor_aquashield(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 150)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.8)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_e_nazulmor_tidalrage L2584
@@ -2916,9 +2941,9 @@ void MysticHeroSkills::bosshero_cast_e_nazulmor_tidalrage(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(40)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 40));
             }
         }
     }
@@ -2935,14 +2960,14 @@ void MysticHeroSkills::bosshero_cast_r_nazulmor_chaotic(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 270)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_kaeldris_overwhelming L2609
@@ -2950,7 +2975,7 @@ void MysticHeroSkills::bosshero_cast_q_kaeldris_overwhelming(Object* h, const Ar
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -2967,13 +2992,13 @@ void MysticHeroSkills::bosshero_cast_w_kaeldris_press(Object* h, const Array& en
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(110));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 110);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -2987,7 +3012,7 @@ void MysticHeroSkills::bosshero_cast_e_kaeldris_moment(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3002,9 +3027,9 @@ void MysticHeroSkills::bosshero_cast_r_kaeldris_duel(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -3015,7 +3040,7 @@ void MysticHeroSkills::bosshero_cast_q_pyraklos_spearmars(Object* h, const Array
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -3029,7 +3054,7 @@ void MysticHeroSkills::bosshero_cast_w_pyraklos_rebuke(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3045,11 +3070,11 @@ void MysticHeroSkills::bosshero_cast_e_pyraklos_bulwark(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 130)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.7))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.7)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_pyraklos_arena L2668
@@ -3062,9 +3087,9 @@ void MysticHeroSkills::bosshero_cast_r_pyraklos_arena(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 230)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.8))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.8)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(60)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 60));
             }
         }
     }
@@ -3075,7 +3100,7 @@ void MysticHeroSkills::bosshero_cast_q_velmyrth_dagger(Object* h, const Array& e
     set_active_skill(h, "q");
     set_active_skill_timer(h, 35);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.5, 90);
         }
@@ -3089,8 +3114,8 @@ void MysticHeroSkills::bosshero_cast_w_velmyrth_strike(Object* h, const Array& e
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         set_global_pos_x(h, (double)(get_global_pos_x(get_target(h))));
         set_global_pos_y(h, (double)(((double)(get_global_pos_y(get_target(h))) - 20)));
-        set_facing(h, (((double)(get_global_pos_x(get_target(h))) > (double)(get_global_pos_x(h))) ? 1 : -(1)));
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        set_facing(h, (double)((((double)(get_global_pos_x(get_target(h))) > (double)(get_global_pos_x(h))) ? 1 : -(1))));
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -3104,7 +3129,7 @@ void MysticHeroSkills::bosshero_cast_e_velmyrth_blur(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3121,10 +3146,10 @@ void MysticHeroSkills::bosshero_cast_r_velmyrth_coup(Object* h, const Array& ene
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
             dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.8));
-            if (((double)(((double)(get_hp(e)) / (double)(MAX((double)(1), (double)(get_max_hp(e)))))) < 0.3)) {
-                dmg = (int64_t)(((double)(dmg) * 1.6));
+            if (((double)(((double)(get_hp(e)) / (double)(MAX(1, (double)(get_max_hp(e)))))) < 0.3)) {
+                dmg = (int64_t)((var_num(dmg) * 1.6));
             }
-            kit_hit(h, e, (int)(dmg), get_team(h), Variant(), "");
+            kit_hit(h, e, var_int(dmg), get_team(h), Variant(), "");
         }
     }
 }
@@ -3134,7 +3159,7 @@ void MysticHeroSkills::bosshero_cast_q_solvarin_purification(Object* h, const Ar
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -3148,9 +3173,9 @@ void MysticHeroSkills::bosshero_cast_w_solvarin_repel(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 180)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(40)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 40));
             }
         }
     }
@@ -3166,7 +3191,7 @@ void MysticHeroSkills::bosshero_cast_e_solvarin_degen(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.9)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.4, 90);
             }
@@ -3185,14 +3210,14 @@ void MysticHeroSkills::bosshero_cast_r_solvarin_guardian(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 280)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_azureth_arcanebolt L2750
@@ -3200,7 +3225,7 @@ void MysticHeroSkills::bosshero_cast_q_azureth_arcanebolt(Object* h, const Array
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -3214,7 +3239,7 @@ void MysticHeroSkills::bosshero_cast_w_azureth_concussive(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 170)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3229,7 +3254,7 @@ void MysticHeroSkills::bosshero_cast_e_azureth_ancientseal(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 100);
             }
@@ -3247,9 +3272,9 @@ void MysticHeroSkills::bosshero_cast_r_azureth_mysticflare(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 240)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(65)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 65));
             }
         }
     }
@@ -3260,7 +3285,7 @@ void MysticHeroSkills::bosshero_cast_q_luminar_illuminate(Object* h, const Array
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -3274,9 +3299,9 @@ void MysticHeroSkills::bosshero_cast_w_luminar_blindinglight(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(45)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 45));
             }
         }
     }
@@ -3292,7 +3317,7 @@ void MysticHeroSkills::bosshero_cast_e_luminar_wisp(Object* h, const Array& enem
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3308,11 +3333,11 @@ void MysticHeroSkills::bosshero_cast_r_luminar_spiritform(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 280)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.15));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_solara_starbreaker L2814
@@ -3320,7 +3345,7 @@ void MysticHeroSkills::bosshero_cast_q_solara_starbreaker(Object* h, const Array
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -3334,7 +3359,7 @@ void MysticHeroSkills::bosshero_cast_w_solara_celestialhammer(Object* h, const A
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 185)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3350,11 +3375,11 @@ void MysticHeroSkills::bosshero_cast_e_solara_luminosity(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 195)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.95)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_r_solara_solarguardian L2836
@@ -3367,9 +3392,9 @@ void MysticHeroSkills::bosshero_cast_r_solara_solarguardian(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 240)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -3383,10 +3408,10 @@ void MysticHeroSkills::bosshero_cast_q_pyraethis_icarusdive(Object* h, const Arr
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.5));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.5));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -3400,7 +3425,7 @@ void MysticHeroSkills::bosshero_cast_w_pyraethis_firespirits(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3415,7 +3440,7 @@ void MysticHeroSkills::bosshero_cast_e_pyraethis_sunray(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.05))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.05)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.35, 90);
             }
@@ -3434,14 +3459,14 @@ void MysticHeroSkills::bosshero_cast_r_pyraethis_supernova(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 300)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.1)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(80)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 80));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_auroth_ionicedge L2883
@@ -3449,7 +3474,7 @@ void MysticHeroSkills::bosshero_cast_q_auroth_ionicedge(Object* h, const Array& 
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -3464,11 +3489,11 @@ void MysticHeroSkills::bosshero_cast_w_auroth_ward(Object* h, const Array& enemi
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 185)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.1)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_e_auroth_consecration L2898
@@ -3481,7 +3506,7 @@ void MysticHeroSkills::bosshero_cast_e_auroth_consecration(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 195)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.4, 90);
             }
@@ -3499,9 +3524,9 @@ void MysticHeroSkills::bosshero_cast_r_auroth_guardian(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 240)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -3515,10 +3540,10 @@ void MysticHeroSkills::bosshero_cast_q_morvein_puncture(Object* h, const Array& 
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.5));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.5));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -3532,7 +3557,7 @@ void MysticHeroSkills::bosshero_cast_w_morvein_violentstrike(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3547,7 +3572,7 @@ void MysticHeroSkills::bosshero_cast_e_morvein_spectralcharge(Object* h, const A
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.05))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.05)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3563,11 +3588,11 @@ void MysticHeroSkills::bosshero_cast_r_morvein_phantomform(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 250)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_thorvak_seed L2950
@@ -3575,7 +3600,7 @@ void MysticHeroSkills::bosshero_cast_q_thorvak_seed(Object* h, const Array& enem
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.4, 90);
         }
@@ -3592,7 +3617,7 @@ void MysticHeroSkills::bosshero_cast_w_thorvak_natureswrath(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 195)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3607,7 +3632,7 @@ void MysticHeroSkills::bosshero_cast_e_thorvak_vengeance(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3623,14 +3648,14 @@ void MysticHeroSkills::bosshero_cast_r_thorvak_dryad(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 250)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.1));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_yamako_deepforest L2984
@@ -3641,10 +3666,10 @@ void MysticHeroSkills::bosshero_cast_q_yamako_deepforest(Object* h, const Array&
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.4));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.4));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -3658,7 +3683,7 @@ void MysticHeroSkills::bosshero_cast_w_yamako_woodcreation(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3673,9 +3698,9 @@ void MysticHeroSkills::bosshero_cast_e_yamako_woodgolem(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(50)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 50));
             }
         }
     }
@@ -3692,14 +3717,14 @@ void MysticHeroSkills::bosshero_cast_r_yamako_kannon(Object* h, const Array& ene
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 300)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.1))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.1)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(80)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 80));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_ignirus_searingtorrent L3021
@@ -3707,7 +3732,7 @@ void MysticHeroSkills::bosshero_cast_q_ignirus_searingtorrent(Object* h, const A
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     }
 }
 
@@ -3721,7 +3746,7 @@ void MysticHeroSkills::bosshero_cast_w_ignirus_flameshot(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 195)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3736,7 +3761,7 @@ void MysticHeroSkills::bosshero_cast_e_ignirus_burstfireball(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.35, 90);
             }
@@ -3754,9 +3779,9 @@ void MysticHeroSkills::bosshero_cast_r_ignirus_vengeance(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 280)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -3775,13 +3800,13 @@ void MysticHeroSkills::bosshero_cast_q_leoric_fearlesscharge(Object* h, const Ar
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(100));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 100);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -3795,7 +3820,7 @@ void MysticHeroSkills::bosshero_cast_w_leoric_sacredhammer(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3810,9 +3835,9 @@ void MysticHeroSkills::bosshero_cast_e_leoric_concealblast(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(50)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 50));
             }
         }
     }
@@ -3829,11 +3854,11 @@ void MysticHeroSkills::bosshero_cast_r_leoric_immortality(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 250)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.2));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_shirotaka_hiraishin L3093
@@ -3845,12 +3870,12 @@ void MysticHeroSkills::bosshero_cast_q_shirotaka_hiraishin(Object* h, const Arra
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         set_global_pos_x(h, (double)(get_global_pos_x(get_target(h))));
         set_global_pos_y(h, (double)(((double)(get_global_pos_y(get_target(h))) - 20)));
-        set_facing(h, (((double)(get_global_pos_x(get_target(h))) > (double)(get_global_pos_x(h))) ? 1 : -(1)));
+        set_facing(h, (double)((((double)(get_global_pos_x(get_target(h))) > (double)(get_global_pos_x(h))) ? 1 : -(1))));
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.5));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.5));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -3864,7 +3889,7 @@ void MysticHeroSkills::bosshero_cast_w_shirotaka_waterboundary(Object* h, const 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 90);
             }
@@ -3882,7 +3907,7 @@ void MysticHeroSkills::bosshero_cast_e_shirotaka_shadowclones(Object* h, const A
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3897,9 +3922,9 @@ void MysticHeroSkills::bosshero_cast_r_shirotaka_paperbomb(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 250)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -3913,10 +3938,10 @@ void MysticHeroSkills::bosshero_cast_q_seiryukong_boundless(Object* h, const Arr
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.4));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.4));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -3930,7 +3955,7 @@ void MysticHeroSkills::bosshero_cast_w_seiryukong_treedance(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -3945,9 +3970,9 @@ void MysticHeroSkills::bosshero_cast_e_seiryukong_jingusoldiers(Object* h, const
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(55)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 55));
             }
         }
     }
@@ -3964,14 +3989,14 @@ void MysticHeroSkills::bosshero_cast_r_seiryukong_wukong(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 300)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.15)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(80)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 80));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_kaelthorn_bravestfighter L3168
@@ -3987,13 +4012,13 @@ void MysticHeroSkills::bosshero_cast_q_kaelthorn_bravestfighter(Object* h, const
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(110));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 110);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -4007,7 +4032,7 @@ void MysticHeroSkills::bosshero_cast_w_kaelthorn_justiceblade(Object* h, const A
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4022,7 +4047,7 @@ void MysticHeroSkills::bosshero_cast_e_kaelthorn_defendersassault(Object* h, con
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4037,9 +4062,9 @@ void MysticHeroSkills::bosshero_cast_r_kaelthorn_chivalryfists(Object* h, const 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 250)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.9))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.9)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -4050,7 +4075,7 @@ void MysticHeroSkills::bosshero_cast_q_solvanth_ringpunishment(Object* h, const 
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -4064,7 +4089,7 @@ void MysticHeroSkills::bosshero_cast_w_solvanth_gloriouspathway(Object* h, const
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 195)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.4, 90);
             }
@@ -4082,7 +4107,7 @@ void MysticHeroSkills::bosshero_cast_e_solvanth_laworder(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4097,9 +4122,9 @@ void MysticHeroSkills::bosshero_cast_r_solvanth_wrath(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 260)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -4114,12 +4139,12 @@ void MysticHeroSkills::bosshero_cast_q_xyrael_finch(Object* h, const Array& enem
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         set_global_pos_x(h, (double)(get_global_pos_x(get_target(h))));
         set_global_pos_y(h, (double)(((double)(get_global_pos_y(get_target(h))) - 20)));
-        set_facing(h, (((double)(get_global_pos_x(get_target(h))) > (double)(get_global_pos_x(h))) ? 1 : -(1)));
+        set_facing(h, (double)((((double)(get_global_pos_x(get_target(h))) > (double)(get_global_pos_x(h))) ? 1 : -(1))));
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.5));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.5));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -4133,7 +4158,7 @@ void MysticHeroSkills::bosshero_cast_w_xyrael_defiant(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4148,7 +4173,7 @@ void MysticHeroSkills::bosshero_cast_e_xyrael_tempest(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4163,9 +4188,9 @@ void MysticHeroSkills::bosshero_cast_r_xyrael_lightness(Object* h, const Array& 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 250)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
@@ -4176,7 +4201,7 @@ void MysticHeroSkills::bosshero_cast_q_nyxareth_starsplit(Object* h, const Array
     set_active_skill(h, "1");
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -4190,7 +4215,7 @@ void MysticHeroSkills::bosshero_cast_w_nyxareth_realworld(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4205,9 +4230,9 @@ void MysticHeroSkills::bosshero_cast_e_nyxareth_spacetime(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.05))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.05)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(55)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 55));
             }
         }
     }
@@ -4224,14 +4249,14 @@ void MysticHeroSkills::bosshero_cast_r_nyxareth_astrorealm(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 300)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.2)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(80)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 80));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_cryssalia_frostshock L3310
@@ -4239,7 +4264,7 @@ void MysticHeroSkills::bosshero_cast_q_cryssalia_frostshock(Object* h, const Arr
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -4253,7 +4278,7 @@ void MysticHeroSkills::bosshero_cast_w_cryssalia_bitterfrost(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 90);
             }
@@ -4271,7 +4296,7 @@ void MysticHeroSkills::bosshero_cast_e_cryssalia_frostbites(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 215)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4286,7 +4311,7 @@ void MysticHeroSkills::bosshero_cast_r_cryssalia_coldest(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 280)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 120);
             }
@@ -4307,13 +4332,13 @@ void MysticHeroSkills::bosshero_cast_q_kaelthar_chargingfist(Object* h, const Ar
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         d = Vector2(dx, dy).length();
-        if (((double)(d) > 1)) {
-            step = MIN((double)(d), (double)(110));
-            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(((double)(dx) / (double)(d))) * (double)(step))));
-            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(((double)(dy) / (double)(d))) * (double)(step))));
-            set_facing(h, (((double)(dx) > 0) ? 1 : -(1)));
+        if ((var_num(d) > 1)) {
+            step = MIN(var_num(d), 110);
+            set_global_pos_x(h, (get_global_pos_x(h)) + (((double)((var_num(dx) / var_num(d))) * var_num(step))));
+            set_global_pos_y(h, (get_global_pos_y(h)) + (((double)((var_num(dy) / var_num(d))) * var_num(step))));
+            set_facing(h, (double)(((var_num(dx) > 0) ? 1 : -(1))));
         }
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.3))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.3)), get_team(h), Variant(), "");
     }
 }
 
@@ -4327,7 +4352,7 @@ void MysticHeroSkills::bosshero_cast_w_kaelthar_quake(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 190)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4342,7 +4367,7 @@ void MysticHeroSkills::bosshero_cast_e_kaelthar_fistcrack(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.05))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.05)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4357,9 +4382,9 @@ void MysticHeroSkills::bosshero_cast_r_kaelthar_fistbreak(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 250)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
@@ -4370,7 +4395,7 @@ void MysticHeroSkills::bosshero_cast_q_morkhaera_spiritburst(Object* h, const Ar
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -4384,7 +4409,7 @@ void MysticHeroSkills::bosshero_cast_w_morkhaera_airstrike(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4399,9 +4424,9 @@ void MysticHeroSkills::bosshero_cast_e_morkhaera_energyimpact(Object* h, const A
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 215)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(55)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 55));
             }
         }
     }
@@ -4418,11 +4443,11 @@ void MysticHeroSkills::bosshero_cast_r_morkhaera_ethereal(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 280)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_aurelion_callcourage L3412
@@ -4433,10 +4458,10 @@ void MysticHeroSkills::bosshero_cast_q_aurelion_callcourage(Object* h, const Arr
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.4));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.4));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -4450,7 +4475,7 @@ void MysticHeroSkills::bosshero_cast_w_aurelion_guardianassault(Object* h, const
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4465,7 +4490,7 @@ void MysticHeroSkills::bosshero_cast_e_aurelion_kingscommand(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 225)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.35, 90);
             }
@@ -4484,14 +4509,14 @@ void MysticHeroSkills::bosshero_cast_r_aurelion_kingssummon(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 300)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.2)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(80)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 80));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_akahime_petalbarrage L3449
@@ -4499,7 +4524,7 @@ void MysticHeroSkills::bosshero_cast_q_akahime_petalbarrage(Object* h, const Arr
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -4513,7 +4538,7 @@ void MysticHeroSkills::bosshero_cast_w_akahime_soulscroll(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 195)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.4, 90);
             }
@@ -4531,7 +4556,7 @@ void MysticHeroSkills::bosshero_cast_e_akahime_shadow(Object* h, const Array& en
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4546,9 +4571,9 @@ void MysticHeroSkills::bosshero_cast_r_akahime_higanbana(Object* h, const Array&
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 270)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -4562,10 +4587,10 @@ void MysticHeroSkills::bosshero_cast_q_nyxthrael_ambush(Object* h, const Array& 
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.5));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.5));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -4579,7 +4604,7 @@ void MysticHeroSkills::bosshero_cast_w_nyxthrael_nightfall(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 195)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4594,9 +4619,9 @@ void MysticHeroSkills::bosshero_cast_e_nyxthrael_darknightfall(Object* h, const 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(55)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 55));
             }
         }
     }
@@ -4612,9 +4637,9 @@ void MysticHeroSkills::bosshero_cast_r_nyxthrael_shadowbringer(Object* h, const 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 260)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
@@ -4625,7 +4650,7 @@ void MysticHeroSkills::bosshero_cast_q_sylvantheros_sprout(Object* h, const Arra
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.4, 90);
         }
@@ -4642,7 +4667,7 @@ void MysticHeroSkills::bosshero_cast_w_sylvantheros_teleport(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4657,7 +4682,7 @@ void MysticHeroSkills::bosshero_cast_e_sylvantheros_treants(Object* h, const Arr
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 215)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4672,9 +4697,9 @@ void MysticHeroSkills::bosshero_cast_r_sylvantheros_wrath(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 280)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -4688,10 +4713,10 @@ void MysticHeroSkills::bosshero_cast_q_vaelindra_energywave(Object* h, const Arr
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.4));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.4));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -4705,7 +4730,7 @@ void MysticHeroSkills::bosshero_cast_w_vaelindra_spacering(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 215)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4720,7 +4745,7 @@ void MysticHeroSkills::bosshero_cast_e_vaelindra_violetrequiem(Object* h, const 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 230)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.05))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.05)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.35, 90);
             }
@@ -4739,14 +4764,14 @@ void MysticHeroSkills::bosshero_cast_r_vaelindra_realm(Object* h, const Array& e
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 310)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.25))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.25)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(80)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 80));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.12));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_q_astraelion_swordfall L3585
@@ -4757,10 +4782,10 @@ void MysticHeroSkills::bosshero_cast_q_astraelion_swordfall(Object* h, const Arr
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.5));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.5));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -4774,7 +4799,7 @@ void MysticHeroSkills::bosshero_cast_w_astraelion_spiritblade(Object* h, const A
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 195)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4789,9 +4814,9 @@ void MysticHeroSkills::bosshero_cast_e_astraelion_forceescape(Object* h, const A
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(55)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 55));
             }
         }
     }
@@ -4807,9 +4832,9 @@ void MysticHeroSkills::bosshero_cast_r_astraelion_zeroreturn(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 260)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
@@ -4820,7 +4845,7 @@ void MysticHeroSkills::bosshero_cast_q_morvaenthir_soulfragment(Object* h, const
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
     }
 }
 
@@ -4834,7 +4859,7 @@ void MysticHeroSkills::bosshero_cast_w_morvaenthir_spiritbind(Object* h, const A
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 205)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
             if (kit_has_slow(h, e)) {
                 kit_slow(h, e, 0.5, 100);
             }
@@ -4852,7 +4877,7 @@ void MysticHeroSkills::bosshero_cast_e_morvaenthir_essence(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 220)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4867,9 +4892,9 @@ void MysticHeroSkills::bosshero_cast_r_morvaenthir_shadowrealm(Object* h, const 
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 290)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(75)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 75));
             }
         }
     }
@@ -4880,7 +4905,7 @@ void MysticHeroSkills::bosshero_cast_q_thornvaegrim_bramble(Object* h, const Arr
     set_active_skill(h, "q");
     set_active_skill_timer(h, 40);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.25))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.25)), get_team(h), Variant(), "");
         if (kit_has_slow(h, get_target(h))) {
             kit_slow(h, get_target(h), 0.4, 90);
         }
@@ -4897,7 +4922,7 @@ void MysticHeroSkills::bosshero_cast_w_thornvaegrim_twistedadvance(Object* h, co
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 200)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.15))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.15)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4912,7 +4937,7 @@ void MysticHeroSkills::bosshero_cast_e_thornvaegrim_saplingthrow(Object* h, cons
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 215)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.0))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.0)), get_team(h), Variant(), "");
         }
     }
 }
@@ -4927,9 +4952,9 @@ void MysticHeroSkills::bosshero_cast_r_thornvaegrim_grasp(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 270)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.95))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.95)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(70)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 70));
             }
         }
     }
@@ -4943,10 +4968,10 @@ void MysticHeroSkills::bosshero_cast_q_morthraxis_batimpale(Object* h, const Arr
     set_active_skill_timer(h, 45);
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dmg = (int64_t)(((double)(kit_skill_damage(h)) * 1.3));
-        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX((double)(1), (double)(get_max_hp(get_target(h))))))) < 0.3)) {
-            dmg = (int64_t)(((double)(dmg) * 1.4));
+        if (((double)(((double)(get_hp(get_target(h))) / (double)(MAX(1, (double)(get_max_hp(get_target(h))))))) < 0.3)) {
+            dmg = (int64_t)((var_num(dmg) * 1.4));
         }
-        kit_hit(h, get_target(h), (int)(dmg), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), var_int(dmg), get_team(h), Variant(), "");
     }
 }
 
@@ -4961,11 +4986,11 @@ void MysticHeroSkills::bosshero_cast_w_morthraxis_sanguine(Object* h, const Arra
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 210)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.08));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // BossHeroSkills._cast_e_morthraxis_phantommob L3702
@@ -4978,9 +5003,9 @@ void MysticHeroSkills::bosshero_cast_e_morthraxis_phantommob(Object* h, const Ar
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 225)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.05))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 1.05)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(55)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 55));
             }
         }
     }
@@ -4997,14 +5022,14 @@ void MysticHeroSkills::bosshero_cast_r_morthraxis_baleful(Object* h, const Array
         Variant __v_e = enemies[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         if (((double)(Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length()) <= 310)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.25))), get_team(h), Variant(), "");
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 2.25)), get_team(h), Variant(), "");
             if (kit_has_atk_timer(h, e)) {
-                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), (double)(80)));
+                kit_lock(h, e, MAX((double)(kit_atk_timer(h, e)), 80));
             }
         }
     }
     heal = (int64_t)(((double)(get_max_hp(h)) * 0.15));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + (double)(heal)))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + var_num(heal))))));
 }
 
 // GrimjawSkills.init_state L3753
@@ -5034,59 +5059,59 @@ void MysticHeroSkills::grimjaw_update_timers(Object* h, const Array& all_units, 
     Variant spin_range;
     Variant u;
 
-    if (((double)(get_kit_value(h, "_blade_fury_timer")) > 0)) {
-        set_kit_value(h, "_blade_fury_timer", (int)get_kit_value(h, "_blade_fury_timer") - (int)(1));
-        if (((int)(Math::fmod((double)(get_kit_value(h, "_blade_fury_timer")), (double)(15))) == 0)) {
+    if ((var_num(get_kit_value(h, "_blade_fury_timer")) > 0)) {
+        set_kit_value(h, "_blade_fury_timer", var_int(get_kit_value(h, "_blade_fury_timer")) - (int64_t)(1));
+        if ((var_int(Math::fmod(var_num(get_kit_value(h, "_blade_fury_timer")), 15)) == 0)) {
             enemies = kit_enemies(h, all_units, all_towers, all_bases);
             spin_range = get_skill_data(h).get(Variant("skill_range"), 80);
             for (int __i=0; __i< (int)(((Array)(enemies)).size()); ++__i) {
                 Variant __v_e = ((Array)(enemies))[__i];
                 Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
                 dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-                if (((double)(dist) <= (double)(spin_range))) {
-                    kit_hit(h, e, (int)(kit_skill_damage(h)), get_team(h), h, "");
+                if ((var_num(dist) <= var_num(spin_range))) {
+                    kit_hit(h, e, (int64_t)(kit_skill_damage(h)), get_team(h), h, "");
                 }
             }
         }
-        if (((double)(get_kit_value(h, "_blade_fury_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_blade_fury_timer")) <= 0)) {
             set_kit_value(h, "_blade_fury_active", false);
         }
     }
-    if (((double)(get_kit_value(h, "_heal_ward_timer")) > 0)) {
-        set_kit_value(h, "_heal_ward_timer", (int)get_kit_value(h, "_heal_ward_timer") - (int)(1));
-        dist_ward = Vector2(((double)(get_global_pos_x(h)) - (double)(((Array)(get_kit_value(h, "_heal_ward_pos")))[0])), ((double)(get_global_pos_y(h)) - (double)(((Array)(get_kit_value(h, "_heal_ward_pos")))[1]))).length();
-        if ((((double)(dist_ward) <= 100)) && (((double)(get_hp(h)) < (double)(get_max_hp(h))))) {
-            set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 2))));
+    if ((var_num(get_kit_value(h, "_heal_ward_timer")) > 0)) {
+        set_kit_value(h, "_heal_ward_timer", var_int(get_kit_value(h, "_heal_ward_timer")) - (int64_t)(1));
+        dist_ward = Vector2(((double)(get_global_pos_x(h)) - var_num(((Array)(get_kit_value(h, "_heal_ward_pos")))[0])), ((double)(get_global_pos_y(h)) - var_num(((Array)(get_kit_value(h, "_heal_ward_pos")))[1]))).length();
+        if (((var_num(dist_ward) <= 100)) && (((double)(get_hp(h)) < (double)(get_max_hp(h))))) {
+            set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 2)))));
         }
         for (int __i=0; __i< (int)(all_units.size()); ++__i) {
             Variant __v_u = all_units[__i];
             Object* u = nullptr; if (__v_u.get_type()==Variant::OBJECT) u = Object::cast_to<Object>(__v_u); if (!u) continue;
             if (((get_team(u) == get_team(h))) && (kit_unit_alive(h, u)) && ((u != h))) {
-                d = Vector2(((double)(get_global_pos_x(u)) - (double)(((Array)(get_kit_value(h, "_heal_ward_pos")))[0])), ((double)(get_global_pos_y(u)) - (double)(((Array)(get_kit_value(h, "_heal_ward_pos")))[1]))).length();
-                if ((((double)(d) <= 100)) && (kit_has_hp(h, u))) {
+                d = Vector2(((double)(get_global_pos_x(u)) - var_num(((Array)(get_kit_value(h, "_heal_ward_pos")))[0])), ((double)(get_global_pos_y(u)) - var_num(((Array)(get_kit_value(h, "_heal_ward_pos")))[1]))).length();
+                if (((var_num(d) <= 100)) && (kit_has_hp(h, u))) {
                     u->set("hp", MIN((double)(get_max_hp(u)), (double)(((double)(get_hp(u)) + 1))));
                 }
             }
         }
-        if (((double)(get_kit_value(h, "_heal_ward_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_heal_ward_timer")) <= 0)) {
             set_kit_value(h, "_heal_ward_active", false);
         }
     }
-    if (((double)(get_kit_value(h, "_omnislash_timer")) > 0)) {
-        set_kit_value(h, "_omnislash_timer", (int)get_kit_value(h, "_omnislash_timer") - (int)(1));
-        if (((int)(Math::fmod((double)(get_kit_value(h, "_omnislash_timer")), (double)(8))) == 0)) {
+    if ((var_num(get_kit_value(h, "_omnislash_timer")) > 0)) {
+        set_kit_value(h, "_omnislash_timer", var_int(get_kit_value(h, "_omnislash_timer")) - (int64_t)(1));
+        if ((var_int(Math::fmod(var_num(get_kit_value(h, "_omnislash_timer")), 8)) == 0)) {
             if ((get_kit_value(h, "_omnislash_target")) && (kit_unit_alive(h, get_kit_value(h, "_omnislash_target")))) {
-                kit_hit(h, get_kit_value(h, "_omnislash_target"), (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.6))), get_team(h), h, "");
+                kit_hit(h, get_kit_value(h, "_omnislash_target"), (int64_t)(((double)(kit_skill_damage(h)) * 0.6)), get_team(h), h, "");
             }
         }
-        if (((double)(get_kit_value(h, "_omnislash_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_omnislash_timer")) <= 0)) {
             set_kit_value(h, "_omnislash_active", false);
             set_kit_value(h, "_omnislash_target", Variant());
         }
     }
-    if (((double)(get_kit_value(h, "_crit_buff_timer")) > 0)) {
-        set_kit_value(h, "_crit_buff_timer", (int)get_kit_value(h, "_crit_buff_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_crit_buff_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_crit_buff_timer")) > 0)) {
+        set_kit_value(h, "_crit_buff_timer", var_int(get_kit_value(h, "_crit_buff_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_crit_buff_timer")) <= 0)) {
             set_kit_value(h, "_crit_buff_active", false);
         }
     }
@@ -5114,7 +5139,7 @@ bool MysticHeroSkills::grimjaw_cast_w(Object* h, const Array& all_units, const A
     set_kit_value(h, "_heal_ward_active", true);
     set_kit_value(h, "_heal_ward_timer", 360);
     set_kit_value(h, "_heal_ward_pos", make_array(get_global_pos_x(h), get_global_pos_y(h)));
-    set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 30))));
+    set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 30)))));
     trigger_w(h, "grimjaw", 5, Variant());
     return true;
 }
@@ -5146,7 +5171,7 @@ bool MysticHeroSkills::grimjaw_cast_r(Object* h, const Array& all_units, const A
         set_kit_value(h, "_omnislash_active", true);
         set_kit_value(h, "_omnislash_timer", 90);
         set_kit_value(h, "_omnislash_target", get_target(h));
-        kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 2.5))), get_team(h), Variant(), "");
+        kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 2.5)), get_team(h), Variant(), "");
     } else {
         deal_aoe(h, all_units, all_towers, all_bases, 150, 2.0);
         set_kit_value(h, "_omnislash_active", true);
@@ -5169,24 +5194,24 @@ void MysticHeroSkills::kaizen_init_state(Object* h) {
 
 // KaizenSkills.update_timers L3992
 void MysticHeroSkills::kaizen_update_timers(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases) {
-    if (((double)(get_kit_value(h, "_q_reset_timer")) > 0)) {
-        set_kit_value(h, "_q_reset_timer", (int)get_kit_value(h, "_q_reset_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_q_reset_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_q_reset_timer")) > 0)) {
+        set_kit_value(h, "_q_reset_timer", var_int(get_kit_value(h, "_q_reset_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_q_reset_timer")) <= 0)) {
             set_kit_value(h, "_q_stack", 0);
         }
     }
-    if (((double)(get_kit_value(h, "_dash_timer")) > 0)) {
-        set_kit_value(h, "_dash_timer", (int)get_kit_value(h, "_dash_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_dash_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_dash_timer")) > 0)) {
+        set_kit_value(h, "_dash_timer", var_int(get_kit_value(h, "_dash_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_dash_timer")) <= 0)) {
             set_kit_value(h, "_is_dashing", false);
         }
     }
-    if (((double)(get_kit_value(h, "_wind_wall_timer")) > 0)) {
-        set_kit_value(h, "_wind_wall_timer", (int)get_kit_value(h, "_wind_wall_timer") - (int)(1));
+    if ((var_num(get_kit_value(h, "_wind_wall_timer")) > 0)) {
+        set_kit_value(h, "_wind_wall_timer", var_int(get_kit_value(h, "_wind_wall_timer")) - (int64_t)(1));
     }
-    if (((double)(get_kit_value(h, "_ulti_timer")) > 0)) {
-        set_kit_value(h, "_ulti_timer", (int)get_kit_value(h, "_ulti_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_ulti_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_ulti_timer")) > 0)) {
+        set_kit_value(h, "_ulti_timer", var_int(get_kit_value(h, "_ulti_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_ulti_timer")) <= 0)) {
             set_kit_value(h, "_ulti_active", false);
         }
     }
@@ -5201,7 +5226,7 @@ bool MysticHeroSkills::kaizen_cast_q(Object* h, const Array& all_units, const Ar
         return false;
     }
     set_kit_value(h, "_q_reset_timer", 180);
-    if (((int)(get_kit_value(h, "_q_stack")) == 0)) {
+    if ((var_int(get_kit_value(h, "_q_stack")) == 0)) {
         kaizen_cast_steel_wind(h, all_units, all_towers, all_bases);
         set_kit_value(h, "_q_stack", 1);
     } else {
@@ -5216,7 +5241,7 @@ bool MysticHeroSkills::kaizen_cast_q(Object* h, const Array& all_units, const Ar
 void MysticHeroSkills::kaizen_cast_steel_wind(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases) {
     Variant skill_range;
 
-    skill_range = get_skill_data(h)["skill_range"];
+    skill_range = dict_at(get_skill_data(h), "skill_range");
     deal_aoe(h, all_units, all_towers, all_bases, skill_range, 1.0);
 }
 
@@ -5232,9 +5257,9 @@ void MysticHeroSkills::kaizen_cast_dash_strike(Object* h, const Array& all_units
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) > 0)) {
-        set_global_pos_x(h, (get_global_pos_x(h)) + (((double)(dx) * 0.7)));
-        set_global_pos_y(h, (get_global_pos_y(h)) + (((double)(dy) * 0.7)));
+    if ((var_num(dist) > 0)) {
+        set_global_pos_x(h, (get_global_pos_x(h)) + ((var_num(dx) * 0.7)));
+        set_global_pos_y(h, (get_global_pos_y(h)) + ((var_num(dy) * 0.7)));
         set_kit_value(h, "_is_dashing", true);
         set_kit_value(h, "_dash_timer", 15);
         deal_aoe(h, all_units, all_towers, all_bases, 80, 1.5);
@@ -5297,42 +5322,42 @@ void MysticHeroSkills::sylara_init_state(Object* h) {
 void MysticHeroSkills::sylara_update_timers(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases) {
     Variant stats;
 
-    if (((double)(get_kit_value(h, "_focus_fire_timer")) > 0)) {
-        set_kit_value(h, "_focus_fire_timer", (int)get_kit_value(h, "_focus_fire_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_focus_fire_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_focus_fire_timer")) > 0)) {
+        set_kit_value(h, "_focus_fire_timer", var_int(get_kit_value(h, "_focus_fire_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_focus_fire_timer")) <= 0)) {
             set_kit_value(h, "_focus_fire_active", false);
-            stats = kit_catalog_all(h)[get_hero_type(h)];
-            set_attack_cooldown_frames(h, ((Dictionary)(stats))["attack_cooldown"]);
+            stats = dict_at(kit_catalog_all(h), get_hero_type(h));
+            set_attack_cooldown_frames(h, var_num(dict_at(stats, "attack_cooldown")));
         }
     }
-    if (((double)(get_kit_value(h, "_windrun_timer")) > 0)) {
-        set_kit_value(h, "_windrun_timer", (int)get_kit_value(h, "_windrun_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_windrun_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_windrun_timer")) > 0)) {
+        set_kit_value(h, "_windrun_timer", var_int(get_kit_value(h, "_windrun_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_windrun_timer")) <= 0)) {
             set_kit_value(h, "_windrun_active", false);
-            set_speed_frames(h, get_kit_value(h, "_original_speed"));
+            set_speed_frames(h, var_num(get_kit_value(h, "_original_speed")));
         }
     }
-    if (((double)(get_kit_value(h, "_shackle_timer")) > 0)) {
-        set_kit_value(h, "_shackle_timer", (int)get_kit_value(h, "_shackle_timer") - (int)(1));
+    if ((var_num(get_kit_value(h, "_shackle_timer")) > 0)) {
+        set_kit_value(h, "_shackle_timer", var_int(get_kit_value(h, "_shackle_timer")) - (int64_t)(1));
         if ((get_kit_value(h, "_shackle_target")) && (kit_unit_alive(h, get_kit_value(h, "_shackle_target")))) {
-            if (((int)(Math::fmod((double)(get_kit_value(h, "_shackle_timer")), (double)(15))) == 0)) {
-                kit_hit(h, get_kit_value(h, "_shackle_target"), (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.4))), get_team(h), Variant(), "");
+            if ((var_int(Math::fmod(var_num(get_kit_value(h, "_shackle_timer")), 15)) == 0)) {
+                kit_hit(h, get_kit_value(h, "_shackle_target"), (int64_t)(((double)(kit_skill_damage(h)) * 0.4)), get_team(h), Variant(), "");
                 if (kit_has_atk_timer(h, get_kit_value(h, "_shackle_target"))) {
-                    kit_lock(h, get_kit_value(h, "_shackle_target"), 30);
+                    set_atk_timer_frames(h, get_kit_value(h, "_shackle_target"), 30);
                 }
             }
         } else {
             set_kit_value(h, "_shackle_active", false);
             set_kit_value(h, "_shackle_target", Variant());
         }
-        if (((double)(get_kit_value(h, "_shackle_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_shackle_timer")) <= 0)) {
             set_kit_value(h, "_shackle_active", false);
             set_kit_value(h, "_shackle_target", Variant());
         }
     }
-    if (((double)(get_kit_value(h, "_powershot_timer")) > 0)) {
-        set_kit_value(h, "_powershot_timer", (int)get_kit_value(h, "_powershot_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_powershot_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_powershot_timer")) > 0)) {
+        set_kit_value(h, "_powershot_timer", var_int(get_kit_value(h, "_powershot_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_powershot_timer")) <= 0)) {
             set_kit_value(h, "_powershot_charging", false);
             sylara_release_powershot(h, all_units, all_towers, all_bases);
         }
@@ -5362,15 +5387,15 @@ bool MysticHeroSkills::sylara_cast_q(Object* h, const Array& all_units, const Ar
     }
     set_kit_value(h, "_focus_fire_active", true);
     set_kit_value(h, "_focus_fire_timer", 180);
-    set_attack_cooldown_frames(h, MAX((double)(20), (double)((int64_t)(((double)(get_attack_cooldown_frames(h)) / 1.7)))));
+    set_attack_cooldown_frames(h, (double)(MAX(20, (int64_t)(((double)(get_attack_cooldown_frames(h)) / 1.7)))));
     if (get_target(h)) {
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         dist = Vector2(dx, dy).length();
-        if (((double)(dist) > 0)) {
+        if ((var_num(dist) > 0)) {
             dx = (double)(dx) / (double)(dist);
             dy = (double)(dy) / (double)(dist);
-            skill_range = get_skill_data(h)["skill_range"];
+            skill_range = dict_at(get_skill_data(h), "skill_range");
             enemies = kit_enemies(h, all_units, all_towers, all_bases);
             hit_count = 0;
             for (int __i=0; __i< (int)(((Array)(enemies)).size()); ++__i) {
@@ -5378,12 +5403,12 @@ bool MysticHeroSkills::sylara_cast_q(Object* h, const Array& all_units, const Ar
                 Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
                 ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
                 ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-                proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-                if ((0 < (double)(proj)) && ((double)(proj) < (double)(skill_range))) {
-                    perp_dist = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-                    if (((double)(perp_dist) < 15)) {
-                        damage_falloff = MAX((double)(0.5), (double)((1.0 - (double)(((double)(hit_count) * 0.15)))));
-                        kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * (double)(damage_falloff)))), get_team(h), Variant(), "");
+                proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+                if ((0 < var_num(proj)) && (var_num(proj) < var_num(skill_range))) {
+                    perp_dist = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+                    if ((var_num(perp_dist) < 15)) {
+                        damage_falloff = MAX(0.5, (double)((1.0 - (double)((var_num(hit_count) * 0.15)))));
+                        kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * var_num(damage_falloff))), get_team(h), Variant(), "");
                         hit_count = (double)(hit_count) + (double)(1);
                     }
                 }
@@ -5404,7 +5429,7 @@ bool MysticHeroSkills::sylara_cast_w(Object* h, const Array& all_units, const Ar
     set_kit_value(h, "_original_speed", get_speed_frames(h));
     set_speed_frames(h, (get_speed_frames(h)) * (2.0));
     if (kit_has_hp(h, h)) {
-        set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 30))));
+        set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 30)))));
     }
     trigger_w(h, "sylara", 5, Variant());
     return true;
@@ -5429,7 +5454,7 @@ bool MysticHeroSkills::sylara_cast_e(Object* h, const Array& all_units, const Ar
     target = Variant();
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dist = Vector2(((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= (double)(shackle_range))) {
+        if ((var_num(dist) <= var_num(shackle_range))) {
             target = get_target(h);
         }
     }
@@ -5440,7 +5465,7 @@ bool MysticHeroSkills::sylara_cast_e(Object* h, const Array& all_units, const Ar
             Variant __v_e = ((Array)(enemies))[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
             dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-            if (((double)(dist) < (double)(nearest_dist))) {
+            if ((var_num(dist) < var_num(nearest_dist))) {
                 target = e;
                 nearest_dist = dist;
             }
@@ -5450,7 +5475,7 @@ bool MysticHeroSkills::sylara_cast_e(Object* h, const Array& all_units, const Ar
         set_kit_value(h, "_shackle_active", true);
         set_kit_value(h, "_shackle_timer", 150);
         set_kit_value(h, "_shackle_target", target);
-        kit_hit(h, target, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.7))), get_team(h), Variant(), "");
+        kit_hit(h, target, (int64_t)(((double)(kit_skill_damage(h)) * 0.7)), get_team(h), Variant(), "");
         kit_lock(h, target, 45);
         trigger_e(h, "sylara", 6, Variant());
         return true;
@@ -5503,7 +5528,7 @@ void MysticHeroSkills::sylara_release_powershot(Object* h, const Array& all_unit
         dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
         dist = Vector2(dx, dy).length();
-        if (((double)(dist) > 0)) {
+        if ((var_num(dist) > 0)) {
             dx = (double)(dx) / (double)(dist);
             dy = (double)(dy) / (double)(dist);
         } else {
@@ -5519,11 +5544,11 @@ void MysticHeroSkills::sylara_release_powershot(Object* h, const Array& all_unit
     max_range = 300;
     hit_enemies = Dictionary();
     for (int arrow_i=0; arrow_i< (int)(range_array(num_arrows).size()); ++arrow_i) {
-        spread = ((double)(((double)(((double)(arrow_i) / (double)(((double)(num_arrows) - 1)))) - 0.5)) * (double)(cone_angle));
-        base_angle = Math::atan2((double)(dy), (double)(dx));
-        arrow_angle = ((double)(base_angle) + (double)(spread));
-        arrow_dx = Math::cos((double)(arrow_angle));
-        arrow_dy = Math::sin((double)(arrow_angle));
+        spread = ((double)(((double)((var_num(arrow_i) / (double)((var_num(num_arrows) - 1)))) - 0.5)) * var_num(cone_angle));
+        base_angle = Math::atan2(var_num(dy), var_num(dx));
+        arrow_angle = (var_num(base_angle) + var_num(spread));
+        arrow_dx = Math::cos(var_num(arrow_angle));
+        arrow_dy = Math::sin(var_num(arrow_angle));
         for (int __i=0; __i< (int)(((Array)(enemies)).size()); ++__i) {
             Variant __v_e = ((Array)(enemies))[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
@@ -5532,13 +5557,13 @@ void MysticHeroSkills::sylara_release_powershot(Object* h, const Array& all_unit
             }
             ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
             ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-            proj = ((double)(((double)(ex) * (double)(arrow_dx))) + (double)(((double)(ey) * (double)(arrow_dy))));
-            if ((0 < (double)(proj)) && ((double)(proj) < (double)(max_range))) {
-                perp_dist = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(arrow_dy))))) + (double)(((double)(ey) * (double)(arrow_dx))))));
-                if (((double)(perp_dist) < 20)) {
-                    distance_falloff = MAX((double)(0.6), (double)((1.0 - (double)(((double)(((double)(proj) / (double)(max_range))) * 0.4)))));
-                    damage = (int64_t)(((double)(((double)(kit_skill_damage(h)) * 1.0)) * (double)(distance_falloff)));
-                    kit_hit(h, e, (int)(damage), get_team(h), Variant(), "");
+            proj = ((double)((var_num(ex) * var_num(arrow_dx))) + (double)((var_num(ey) * var_num(arrow_dy))));
+            if ((0 < var_num(proj)) && (var_num(proj) < var_num(max_range))) {
+                perp_dist = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(arrow_dy))))) + (double)((var_num(ey) * var_num(arrow_dx))))));
+                if ((var_num(perp_dist) < 20)) {
+                    distance_falloff = MAX(0.6, (double)((1.0 - (double)(((double)((var_num(proj) / var_num(max_range))) * 0.4)))));
+                    damage = (int64_t)(((double)(((double)(kit_skill_damage(h)) * 1.0)) * var_num(distance_falloff)));
+                    kit_hit(h, e, var_int(damage), get_team(h), Variant(), "");
                     hit_enemies[Variant(e)] = true;
                     kit_skill_proj(h, e, 13.0);
                 }
@@ -5569,33 +5594,33 @@ void MysticHeroSkills::thorne_init_state(Object* h) {
 void MysticHeroSkills::thorne_update_timers(Object* h, const Array& all_units, const Array& all_towers, const Array& all_bases) {
     Variant _lvl;
 
-    if (((double)(get_kit_value(h, "_viscous_nose_timer")) > 0)) {
-        set_kit_value(h, "_viscous_nose_timer", (int)get_kit_value(h, "_viscous_nose_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_viscous_nose_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_viscous_nose_timer")) > 0)) {
+        set_kit_value(h, "_viscous_nose_timer", var_int(get_kit_value(h, "_viscous_nose_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_viscous_nose_timer")) <= 0)) {
             set_kit_value(h, "_viscous_nose_active", false);
         }
     }
-    if (((double)(get_kit_value(h, "_bristleback_timer")) > 0)) {
-        set_kit_value(h, "_bristleback_timer", (int)get_kit_value(h, "_bristleback_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_bristleback_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_bristleback_timer")) > 0)) {
+        set_kit_value(h, "_bristleback_timer", var_int(get_kit_value(h, "_bristleback_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_bristleback_timer")) <= 0)) {
             set_kit_value(h, "_bristleback_active", false);
         }
     }
-    if (((double)(get_kit_value(h, "_spray_timer")) > 0)) {
-        set_kit_value(h, "_spray_timer", (int)get_kit_value(h, "_spray_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_spray_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_spray_timer")) > 0)) {
+        set_kit_value(h, "_spray_timer", var_int(get_kit_value(h, "_spray_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_spray_timer")) <= 0)) {
             set_kit_value(h, "_spraying_quills", false);
         }
     }
-    if (((double)(get_kit_value(h, "_warpath_timer")) > 0)) {
-        set_kit_value(h, "_warpath_timer", (int)get_kit_value(h, "_warpath_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_warpath_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_warpath_timer")) > 0)) {
+        set_kit_value(h, "_warpath_timer", var_int(get_kit_value(h, "_warpath_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_warpath_timer")) <= 0)) {
             set_kit_value(h, "_warpath_active", false);
             _lvl = kit_hero_levels(h).get(Variant(get_level(h)), Variant());
             if (_lvl) {
-                set_damage(h, (int64_t)(((double)(get_base_damage(h)) * (double)(((Dictionary)(_lvl))["dmg_mult"]))));
+                set_damage(h, var_int(((double)(get_base_damage(h)) * var_num(dict_at(_lvl, "dmg_mult")))));
             }
-            set_attack_cooldown_frames(h, get_kit_value(h, "_original_attack_cd"));
+            set_attack_cooldown_frames(h, var_num(get_kit_value(h, "_original_attack_cd")));
         }
     }
 }
@@ -5630,17 +5655,17 @@ bool MysticHeroSkills::thorne_cast_q(Object* h, const Array& all_units, const Ar
         dx = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
         dy = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
         dist = Vector2(dx, dy).length();
-        if (((double)(dist) > (double)(cone_length))) {
+        if ((var_num(dist) > var_num(cone_length))) {
             continue;
         }
-        enemy_angle = Math::atan2((double)(dy), (double)(dx));
+        enemy_angle = Math::atan2(var_num(dy), var_num(dx));
         facing_angle = (((double)(get_facing(h)) > 0) ? 0 : Math_PI);
-        angle_diff = Math::abs((double)(((double)(enemy_angle) - (double)(facing_angle))));
-        if (((double)(angle_diff) > (double)(Math_PI))) {
-            angle_diff = ((double)((2 * (double)(Math_PI))) - (double)(angle_diff));
+        angle_diff = Math::abs((double)((var_num(enemy_angle) - var_num(facing_angle))));
+        if ((var_num(angle_diff) > (double)(Math_PI))) {
+            angle_diff = ((double)((2 * (double)(Math_PI))) - var_num(angle_diff));
         }
-        if (((double)(angle_diff) < (double)(((double)(cone_width) / 2)))) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.8))), get_team(h), Variant(), "");
+        if ((var_num(angle_diff) < (double)((var_num(cone_width) / 2)))) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.8)), get_team(h), Variant(), "");
             kit_slow(h, e, 0.4, 180);
         }
     }
@@ -5657,7 +5682,7 @@ bool MysticHeroSkills::thorne_cast_w(Object* h, const Array& all_units, const Ar
     set_kit_value(h, "_bristleback_timer", 240);
     deal_aoe(h, all_units, all_towers, all_bases, 60, 0.5);
     if (kit_has_hp(h, h)) {
-        set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 20))));
+        set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 20)))));
     }
     trigger_w(h, "thorne", 5, Variant());
     return true;
@@ -5691,10 +5716,10 @@ bool MysticHeroSkills::thorne_cast_r(Object* h, const Array& all_units, const Ar
     set_kit_value(h, "_original_damage", get_damage(h));
     set_kit_value(h, "_original_attack_cd", get_attack_cooldown_frames(h));
     set_damage(h, (int64_t)(((double)(get_damage(h)) * 1.5)));
-    set_attack_cooldown_frames(h, MAX((double)(15), (double)((int64_t)(((double)(get_attack_cooldown_frames(h)) / 1.5)))));
+    set_attack_cooldown_frames(h, (double)(MAX(15, (int64_t)(((double)(get_attack_cooldown_frames(h)) / 1.5)))));
     deal_aoe(h, all_units, all_towers, all_bases, 120, 1.5);
     if (kit_has_hp(h, h)) {
-        set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 50))));
+        set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 50)))));
     }
     trigger_r(h, "thorne", 15, Variant());
     return true;
@@ -5717,42 +5742,42 @@ void MysticHeroSkills::vex_update_timers(Object* h, const Array& all_units, cons
     Variant e;
     Variant enemies;
 
-    if (((double)(get_kit_value(h, "_sanity_eclipse_timer")) > 0)) {
-        set_kit_value(h, "_sanity_eclipse_timer", (int)get_kit_value(h, "_sanity_eclipse_timer") - (int)(1));
-        if (((int)(Math::fmod((double)(get_kit_value(h, "_sanity_eclipse_timer")), (double)(20))) == 0)) {
+    if ((var_num(get_kit_value(h, "_sanity_eclipse_timer")) > 0)) {
+        set_kit_value(h, "_sanity_eclipse_timer", var_int(get_kit_value(h, "_sanity_eclipse_timer")) - (int64_t)(1));
+        if ((var_int(Math::fmod(var_num(get_kit_value(h, "_sanity_eclipse_timer")), 20)) == 0)) {
             enemies = kit_enemies(h, all_units, all_towers, all_bases);
             for (int __i=0; __i< (int)(((Array)(enemies)).size()); ++__i) {
                 Variant __v_e = ((Array)(enemies))[__i];
                 Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
                 dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-                if ((30 < (double)(dist)) && ((double)(dist) <= 55)) {
-                    kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.4))), get_team(h), h, "");
+                if ((30 < var_num(dist)) && (var_num(dist) <= 55)) {
+                    kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.4)), get_team(h), h, "");
                 }
             }
         }
-        if (((double)(get_kit_value(h, "_sanity_eclipse_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_sanity_eclipse_timer")) <= 0)) {
             set_kit_value(h, "_sanity_eclipse_active", false);
         }
     }
-    if (((double)(get_kit_value(h, "_astral_prison_timer")) > 0)) {
-        set_kit_value(h, "_astral_prison_timer", (int)get_kit_value(h, "_astral_prison_timer") - (int)(1));
+    if ((var_num(get_kit_value(h, "_astral_prison_timer")) > 0)) {
+        set_kit_value(h, "_astral_prison_timer", var_int(get_kit_value(h, "_astral_prison_timer")) - (int64_t)(1));
         if ((get_kit_value(h, "_astral_prison_target")) && (kit_unit_alive(h, get_kit_value(h, "_astral_prison_target")))) {
             kit_lock(h, get_kit_value(h, "_astral_prison_target"), 15);
-            if (((int)(Math::fmod((double)(get_kit_value(h, "_astral_prison_timer")), (double)(10))) == 0)) {
-                kit_hit(h, get_kit_value(h, "_astral_prison_target"), (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.3))), get_team(h), h, "");
+            if ((var_int(Math::fmod(var_num(get_kit_value(h, "_astral_prison_timer")), 10)) == 0)) {
+                kit_hit(h, get_kit_value(h, "_astral_prison_target"), (int64_t)(((double)(kit_skill_damage(h)) * 0.3)), get_team(h), h, "");
             }
         } else {
             set_kit_value(h, "_astral_prison_active", false);
             set_kit_value(h, "_astral_prison_target", Variant());
         }
-        if (((double)(get_kit_value(h, "_astral_prison_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_astral_prison_timer")) <= 0)) {
             set_kit_value(h, "_astral_prison_active", false);
             set_kit_value(h, "_astral_prison_target", Variant());
         }
     }
-    if (((double)(get_kit_value(h, "_essence_flux_timer")) > 0)) {
-        set_kit_value(h, "_essence_flux_timer", (int)get_kit_value(h, "_essence_flux_timer") - (int)(1));
-        if (((double)(get_kit_value(h, "_essence_flux_timer")) <= 0)) {
+    if ((var_num(get_kit_value(h, "_essence_flux_timer")) > 0)) {
+        set_kit_value(h, "_essence_flux_timer", var_int(get_kit_value(h, "_essence_flux_timer")) - (int64_t)(1));
+        if ((var_num(get_kit_value(h, "_essence_flux_timer")) <= 0)) {
             set_kit_value(h, "_essence_flux_active", false);
         }
     }
@@ -5782,11 +5807,11 @@ bool MysticHeroSkills::vex_cast_q(Object* h, const Array& all_units, const Array
     if (kit_unit_alive(h, get_target(h))) {
         kit_skill_proj(h, get_target(h), 13.0);
     }
-    kit_hit(h, get_target(h), (int)((int64_t)(((double)(kit_skill_damage(h)) * 1.2))), get_team(h), Variant(), "");
+    kit_hit(h, get_target(h), (int64_t)(((double)(kit_skill_damage(h)) * 1.2)), get_team(h), Variant(), "");
     dx = ((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h)));
     dy = ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)));
     dist = Vector2(dx, dy).length();
-    if (((double)(dist) > 0)) {
+    if ((var_num(dist) > 0)) {
         dx = (double)(dx) / (double)(dist);
         dy = (double)(dy) / (double)(dist);
         enemies = kit_enemies(h, all_units, all_towers, all_bases);
@@ -5798,11 +5823,11 @@ bool MysticHeroSkills::vex_cast_q(Object* h, const Array& all_units, const Array
             }
             ex = ((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h)));
             ey = ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)));
-            proj = ((double)(((double)(ex) * (double)(dx))) + (double)(((double)(ey) * (double)(dy))));
-            if ((0 < (double)(proj)) && ((double)(proj) < (double)(dist))) {
-                perp_dist = Math::abs((double)(((double)(((double)(ex) * (double)(-((double)(dy))))) + (double)(((double)(ey) * (double)(dx))))));
-                if (((double)(perp_dist) < 18)) {
-                    kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.5))), get_team(h), Variant(), "");
+            proj = ((double)((var_num(ex) * var_num(dx))) + (double)((var_num(ey) * var_num(dy))));
+            if ((0 < var_num(proj)) && (var_num(proj) < var_num(dist))) {
+                perp_dist = Math::abs((double)(((double)((var_num(ex) * (double)(-(var_num(dy))))) + (double)((var_num(ey) * var_num(dx))))));
+                if ((var_num(perp_dist) < 18)) {
+                    kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.5)), get_team(h), Variant(), "");
                 }
             }
         }
@@ -5830,8 +5855,8 @@ bool MysticHeroSkills::vex_cast_w(Object* h, const Array& all_units, const Array
         Variant __v_e = ((Array)(enemies))[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
         dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= 60)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.8))), get_team(h), Variant(), "");
+        if ((var_num(dist) <= 60)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.8)), get_team(h), Variant(), "");
             kit_slow(h, e, 0.5, 180);
         }
     }
@@ -5858,7 +5883,7 @@ bool MysticHeroSkills::vex_cast_e(Object* h, const Array& all_units, const Array
     prison_range = 200;
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dist = Vector2(((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= (double)(prison_range))) {
+        if ((var_num(dist) <= var_num(prison_range))) {
             target = get_target(h);
         }
     }
@@ -5869,7 +5894,7 @@ bool MysticHeroSkills::vex_cast_e(Object* h, const Array& all_units, const Array
             Variant __v_e = ((Array)(enemies))[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
             dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-            if (((double)(dist) < (double)(nearest_dist))) {
+            if ((var_num(dist) < var_num(nearest_dist))) {
                 target = e;
                 nearest_dist = dist;
             }
@@ -5880,7 +5905,7 @@ bool MysticHeroSkills::vex_cast_e(Object* h, const Array& all_units, const Array
         set_kit_value(h, "_astral_prison_timer", 150);
         set_kit_value(h, "_astral_prison_target", target);
         kit_skill_proj(h, target, 13.0);
-        kit_hit(h, target, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.6))), get_team(h), Variant(), "");
+        kit_hit(h, target, (int64_t)(((double)(kit_skill_damage(h)) * 0.6)), get_team(h), Variant(), "");
         trigger_e(h, "vex", 6, Variant());
         return true;
     } else {
@@ -5926,65 +5951,65 @@ void MysticHeroSkills::zephyr_update_timers(Object* h, const Array& all_units, c
     Variant ox;
     Variant oy;
 
-    if (((double)(get_kit_value(h, "_bramble_timer")) > 0)) {
-        set_kit_value(h, "_bramble_timer", (int)get_kit_value(h, "_bramble_timer") - (int)(1));
-        if (((int)(Math::fmod((double)(get_kit_value(h, "_bramble_timer")), (double)(20))) == 0)) {
+    if ((var_num(get_kit_value(h, "_bramble_timer")) > 0)) {
+        set_kit_value(h, "_bramble_timer", var_int(get_kit_value(h, "_bramble_timer")) - (int64_t)(1));
+        if ((var_int(Math::fmod(var_num(get_kit_value(h, "_bramble_timer")), 20)) == 0)) {
             enemies = kit_enemies(h, all_units, all_towers, all_bases);
             ox = ((Array)(py_or(get_kit_value(h, "_bramble_origin"), make_array(get_global_pos_x(h), get_global_pos_y(h)))))[0];
             oy = ((Array)(py_or(get_kit_value(h, "_bramble_origin"), make_array(get_global_pos_x(h), get_global_pos_y(h)))))[1];
             for (int __i=0; __i< (int)(((Array)(enemies)).size()); ++__i) {
                 Variant __v_e = ((Array)(enemies))[__i];
                 Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-                dist = Vector2(((double)(get_global_pos_x(e)) - (double)(ox)), ((double)(get_global_pos_y(e)) - (double)(oy))).length();
-                if ((40 < (double)(dist)) && ((double)(dist) <= 60)) {
-                    kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.3))), get_team(h), h, "");
+                dist = Vector2(((double)(get_global_pos_x(e)) - var_num(ox)), ((double)(get_global_pos_y(e)) - var_num(oy))).length();
+                if ((40 < var_num(dist)) && (var_num(dist) <= 60)) {
+                    kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.3)), get_team(h), h, "");
                     kit_slow(h, e, 0.5, 60);
                 }
             }
         }
-        if (((double)(get_kit_value(h, "_bramble_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_bramble_timer")) <= 0)) {
             set_kit_value(h, "_bramble_active", false);
             set_kit_value(h, "_bramble_origin", Variant());
         }
     }
-    if (((double)(get_kit_value(h, "_shadow_realm_timer")) > 0)) {
-        set_kit_value(h, "_shadow_realm_timer", (int)get_kit_value(h, "_shadow_realm_timer") - (int)(1));
+    if ((var_num(get_kit_value(h, "_shadow_realm_timer")) > 0)) {
+        set_kit_value(h, "_shadow_realm_timer", var_int(get_kit_value(h, "_shadow_realm_timer")) - (int64_t)(1));
         if (((double)(get_hp(h)) < (double)(get_max_hp(h)))) {
-            set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 2))));
+            set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 2)))));
         }
-        if (((double)(get_kit_value(h, "_shadow_realm_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_shadow_realm_timer")) <= 0)) {
             set_kit_value(h, "_shadow_realm_active", false);
         }
     }
-    if (((double)(get_kit_value(h, "_curse_timer")) > 0)) {
-        set_kit_value(h, "_curse_timer", (int)get_kit_value(h, "_curse_timer") - (int)(1));
+    if ((var_num(get_kit_value(h, "_curse_timer")) > 0)) {
+        set_kit_value(h, "_curse_timer", var_int(get_kit_value(h, "_curse_timer")) - (int64_t)(1));
         if ((get_kit_value(h, "_curse_target")) && (kit_unit_alive(h, get_kit_value(h, "_curse_target")))) {
-            if (((int)(Math::fmod((double)(get_kit_value(h, "_curse_timer")), (double)(20))) == 0)) {
-                kit_hit(h, get_kit_value(h, "_curse_target"), (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.35))), get_team(h), h, "");
+            if ((var_int(Math::fmod(var_num(get_kit_value(h, "_curse_timer")), 20)) == 0)) {
+                kit_hit(h, get_kit_value(h, "_curse_target"), (int64_t)(((double)(kit_skill_damage(h)) * 0.35)), get_team(h), h, "");
             }
         } else {
             set_kit_value(h, "_curse_active", false);
             set_kit_value(h, "_curse_target", Variant());
         }
-        if (((double)(get_kit_value(h, "_curse_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_curse_timer")) <= 0)) {
             set_kit_value(h, "_curse_active", false);
             set_kit_value(h, "_curse_target", Variant());
         }
     }
-    if (((double)(get_kit_value(h, "_bedlam_timer")) > 0)) {
-        set_kit_value(h, "_bedlam_timer", (int)get_kit_value(h, "_bedlam_timer") - (int)(1));
-        if (((int)(Math::fmod((double)(get_kit_value(h, "_bedlam_timer")), (double)(15))) == 0)) {
+    if ((var_num(get_kit_value(h, "_bedlam_timer")) > 0)) {
+        set_kit_value(h, "_bedlam_timer", var_int(get_kit_value(h, "_bedlam_timer")) - (int64_t)(1));
+        if ((var_int(Math::fmod(var_num(get_kit_value(h, "_bedlam_timer")), 15)) == 0)) {
             enemies = kit_enemies(h, all_units, all_towers, all_bases);
             for (int __i=0; __i< (int)(((Array)(enemies)).size()); ++__i) {
                 Variant __v_e = ((Array)(enemies))[__i];
                 Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
                 dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-                if (((double)(dist) <= 80)) {
-                    kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.5))), get_team(h), h, "");
+                if ((var_num(dist) <= 80)) {
+                    kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.5)), get_team(h), h, "");
                 }
             }
         }
-        if (((double)(get_kit_value(h, "_bedlam_timer")) <= 0)) {
+        if ((var_num(get_kit_value(h, "_bedlam_timer")) <= 0)) {
             set_kit_value(h, "_bedlam_active", false);
         }
     }
@@ -6018,9 +6043,9 @@ bool MysticHeroSkills::zephyr_cast_q(Object* h, const Array& all_units, const Ar
     for (int __i=0; __i< (int)(((Array)(enemies)).size()); ++__i) {
         Variant __v_e = ((Array)(enemies))[__i];
         Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
-        dist = Vector2(((double)(get_global_pos_x(e)) - (double)(ox)), ((double)(get_global_pos_y(e)) - (double)(oy))).length();
-        if (((double)(dist) <= 60)) {
-            kit_hit(h, e, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.8))), get_team(h), Variant(), "");
+        dist = Vector2(((double)(get_global_pos_x(e)) - var_num(ox)), ((double)(get_global_pos_y(e)) - var_num(oy))).length();
+        if ((var_num(dist) <= 60)) {
+            kit_hit(h, e, (int64_t)(((double)(kit_skill_damage(h)) * 0.8)), get_team(h), Variant(), "");
             kit_slow(h, e, 0.5, 180);
         }
     }
@@ -6036,7 +6061,7 @@ bool MysticHeroSkills::zephyr_cast_w(Object* h, const Array& all_units, const Ar
     set_kit_value(h, "_shadow_realm_active", true);
     set_kit_value(h, "_shadow_realm_timer", 180);
     if (kit_has_hp(h, h)) {
-        set_hp(h, MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 40))));
+        set_hp(h, (double)(MIN((double)(get_max_hp(h)), (double)(((double)(get_hp(h)) + 40)))));
     }
     trigger_w(h, "zephyr", 5, Variant());
     return true;
@@ -6061,7 +6086,7 @@ bool MysticHeroSkills::zephyr_cast_e(Object* h, const Array& all_units, const Ar
     curse_range = 200;
     if ((get_target(h)) && (kit_unit_alive(h, get_target(h)))) {
         dist = Vector2(((double)(get_global_pos_x(get_target(h))) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(get_target(h))) - (double)(get_global_pos_y(h)))).length();
-        if (((double)(dist) <= (double)(curse_range))) {
+        if ((var_num(dist) <= var_num(curse_range))) {
             target = get_target(h);
         }
     }
@@ -6072,7 +6097,7 @@ bool MysticHeroSkills::zephyr_cast_e(Object* h, const Array& all_units, const Ar
             Variant __v_e = ((Array)(enemies))[__i];
             Object* e = nullptr; if (__v_e.get_type()==Variant::OBJECT) e = Object::cast_to<Object>(__v_e); if (!e) continue;
             dist = Vector2(((double)(get_global_pos_x(e)) - (double)(get_global_pos_x(h))), ((double)(get_global_pos_y(e)) - (double)(get_global_pos_y(h)))).length();
-            if (((double)(dist) < (double)(nearest_dist))) {
+            if ((var_num(dist) < var_num(nearest_dist))) {
                 target = e;
                 nearest_dist = dist;
             }
@@ -6082,7 +6107,7 @@ bool MysticHeroSkills::zephyr_cast_e(Object* h, const Array& all_units, const Ar
         set_kit_value(h, "_curse_active", true);
         set_kit_value(h, "_curse_timer", 180);
         set_kit_value(h, "_curse_target", target);
-        kit_hit(h, target, (int)((int64_t)(((double)(kit_skill_damage(h)) * 0.6))), get_team(h), Variant(), "");
+        kit_hit(h, target, (int64_t)(((double)(kit_skill_damage(h)) * 0.6)), get_team(h), Variant(), "");
         trigger_e(h, "zephyr", 6, Variant());
         return true;
     } else {
@@ -6111,8 +6136,8 @@ void MysticHeroSkills::fallback_cast(Object* h, const Array& enemies, const Stri
     set_active_skill(h, Variant(skill_key)); set_active_skill_timer(h, 40);
     double mult=1.0; if (skill_key=="q") mult=1.0; else if (skill_key=="w") mult=1.2; else if (skill_key=="e") mult=1.5; else if (skill_key=="r") mult=2.5;
     String school = get_dmg_school(h);
-    if (skill_key=="q" || skill_key=="w") { Object* tgt=get_target(h); if (tgt && kit_unit_alive(h,tgt)) { int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,tgt,dmg,get_team(h),Variant(),school); } }
-    else { double aoe_range = skill_key=="e" ? 150.0 : 200.0; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=aoe_range){ int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,e,dmg,get_team(h),Variant(),school); } } }
+    if (skill_key=="q" || skill_key=="w") { Object* tgt=get_target(h); if (tgt && kit_unit_alive(h,tgt)) { int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,tgt,dmg,get_team(h),h,school); } }
+    else { double aoe_range = skill_key=="e" ? 150.0 : 200.0; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=aoe_range){ int dmg=(int)((double)kit_skill_damage(h)*mult); kit_hit(h,e,dmg,get_team(h),h,school); } } }
 }
 
 bool MysticHeroSkills::boss_generic(Object* h, const String& skill_key, const Array& all_units, const Array& all_towers, const Array& all_bases) {
@@ -6125,9 +6150,21 @@ bool MysticHeroSkills::boss_generic(Object* h, const String& skill_key, const Ar
     double sr = get_skill_range(h); if (sr==0) sr=100; double cast_range = MAX((int)sr, 140);
     Array nearby; for(int i=0;i<enemies.size();++i){ Variant vv=enemies[i]; if(vv.get_type()!=Variant::OBJECT) continue; Object* e=Object::cast_to<Object>(vv); if(!e) continue; double dx=get_global_pos_x(e)-get_global_pos_x(h); double dy=get_global_pos_y(e)-get_global_pos_y(h); double d=Vector2(dx,dy).length(); if(d<=cast_range){ Array t; t.append(d); t.append(e); t.append(nearby.size()); nearby.append(t);} }
     if (nearby.size()==0) return false;
-    // sort by distance
-    // simple bubble sort for small N
-    for(int i=0;i<nearby.size();++i){ for(int j=i+1;j<nearby.size();++j){ double di=(double)((Array)nearby[i])[0]; double dj=(double)((Array)nearby[j])[0]; if(dj<di){ Variant tmp=nearby[i]; nearby[i]=nearby[j]; nearby[j]=tmp; } } }
+    // nearby.sort_custom(__by_pair0) di GDScript == Python nearby.sort(key=t[0])
+    // yang STABIL: urutkan (dist, idx) dengan insertion sort — idx unik dan
+    // naik, jadi hasilnya identik dengan sort stabil by-dist. (Sort tukar
+    // pasangan ala bubble TIDAK stabil: musuh berjarak sama bisa tertukar,
+    // target skill boss jadi beda dari pygame.)
+    for (int i=1; i<nearby.size(); ++i) {
+        Variant keyv = nearby[i]; Array ka = keyv; double kd = (double)ka[0]; int64_t ki = (int64_t)ka[2];
+        int j = i - 1;
+        while (j >= 0) {
+            Array ja = nearby[j]; double jd = (double)ja[0]; int64_t ji = (int64_t)ja[2];
+            if (!(kd < jd || (kd == jd && ki < ji))) break;
+            nearby[j+1] = nearby[j]; --j;
+        }
+        nearby[j+1] = keyv;
+    }
     Object* tgt=get_target(h); bool valid=false; if(tgt && kit_unit_alive(h,tgt)){ double dx=get_global_pos_x(tgt)-get_global_pos_x(h); double dy=get_global_pos_y(tgt)-get_global_pos_y(h); if(Vector2(dx,dy).length()<=cast_range) valid=true; }
     if(!valid){ Object* best = Object::cast_to<Object>(((Array)nearby[0])[1]); set_target(h, best); }
     // check recipe
@@ -6739,7 +6776,13 @@ bool MysticHeroSkills::cast_r(Object* h, const Array& all_units, const Array& al
     return boss_generic(h, "r", all_units, all_towers, all_bases);
 }
 
-bool MysticHeroSkills::by_pair0(Variant a, Variant b) { double av=0,bv=0; if (a.get_type()==Variant::ARRAY) av=(double)((Array)a)[0]; else if (a.get_type()==Variant::FLOAT || a.get_type()==Variant::INT) av=(double)a; if (b.get_type()==Variant::ARRAY) bv=(double)((Array)b)[0]; else if (b.get_type()==Variant::FLOAT || b.get_type()==Variant::INT) bv=(double)b; return av < bv; }
+bool MysticHeroSkills::by_pair0(Variant a, Variant b) {
+    Array aa = a; Array bb = b;
+    if (aa.size() < 3 || bb.size() < 3) { double av = aa.size() > 0 ? (double)aa[0] : 0.0; double bv = bb.size() > 0 ? (double)bb[0] : 0.0; return av < bv; }
+    double ad = (double)aa[0]; double bd = (double)bb[0];
+    if (ad == bd) return (int64_t)aa[2] < (int64_t)bb[2];
+    return ad < bd;
+}
 bool MysticHeroSkills::__by_pair0(Variant a, Variant b) { return by_pair0(a,b); }
 
 void MysticHeroSkills::_bind_methods() {
@@ -6751,7 +6794,7 @@ void MysticHeroSkills::_bind_methods() {
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("cast_r", "hero", "all_units", "all_towers", "all_bases"), &MysticHeroSkills::cast_r);
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("hero_kind", "hero"), &MysticHeroSkills::hero_kind);
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("skill_range", "hero", "fallback"), &MysticHeroSkills::skill_range, DEFVAL(200.0));
-    ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("has_target", "hero", "all_units", "all_towers", "all_bases", "range_val"), &MysticHeroSkills::has_target);
+    ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("has_target", "hero", "all_units", "all_towers", "all_bases", "range_val"), &MysticHeroSkills::has_target, DEFVAL(Variant()));
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("visual_duration", "hero_type", "key"), &MysticHeroSkills::visual_duration);
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("boss_generic", "hero", "skill_key", "all_units", "all_towers", "all_bases"), &MysticHeroSkills::boss_generic);
     ClassDB::bind_static_method("MysticHeroSkills", D_METHOD("by_pair0", "a", "b"), &MysticHeroSkills::by_pair0);

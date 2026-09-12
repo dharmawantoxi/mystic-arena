@@ -72,7 +72,10 @@ godot/
                            # toko, pengali level; FASE 29 — dikunci HeroItemsParityTest)
     core/GameManagerConnector.gd # Jembatan Main.tscn → autoload (container + start_level)
     items/ItemInventory.gd # Port HeroItemInventory: 6 slot, cap stat, pasif, aura, crit
-    skills/SkillBook.gd  # Port hero_skills/_bundle.py (6 hero starter + fallback generik)
+    skills/SkillBook.gd  # Facade skill (baca skill_timer/w_cooldown utk UI); logikanya di
+                         # scenes/hero/HeroSkillKit.gd — transpile hero_skills/_bundle.py
+                         # (tools/gen_hero_skill_kit.py), dipilih backend-nya oleh
+                         # scenes/hero/HeroSkillKitLoader.gd (GDScript | C++ MysticHeroSkills)
     systems/CombatSystem.gd # Pipeline damage penuh + heal + aura + damage number
     systems/StatusEffects.gd # Port TowerDebuffMixin/buff: slow, burn, stun, blind, buff skill
     systems/AIPlayer.gd     # Port _entity.AIPlayer (Dire): brain/elite, 6 prioritas aksi, beli hero/item, lane assignment
@@ -81,6 +84,12 @@ godot/
     render/BakedUnitDB.gd  # manifest baked_units.json + tekstur lazy FIFO 64 (Fase 5)
     render/RendererRegistry.gd # 3 tingkat: rig custom (Kaizen) > strip bake > silhouette
   shaders/hamon.gdshader # temper katana Kaizen (wave + cloud + attack pulse)
+  gdext/                 # GDExtension C++ (godot++) — sumber + SConstruct; lib hasilnya
+                         # masuk addons/<name>/bin/ (di-gitignore), godot-cpp di-clone saat build
+    mystic_lighting/src/ # port lighting.py (Image CPU) — opsional, fallback Lighting.gd
+    mystic_skills/src/   # port hero_skills/_bundle.py (GENERATED tools/gen_hero_skills_cpp.py)
+                         # + addons/mystic_skills/mystic_skills.gdextension; FASE 33,
+                         # dikunci tests/HeroSkillGdextParityTest + workflow godot-gdext.yml
   tools/                 # tscn_lint.py + check_refs.py + particles_lint.py (verifikasi tanpa binary Godot)
   assets/
     shaders/outline.gdshader  # 1-pass outline + hit flash + rim (ganti 5 blit pygame)
