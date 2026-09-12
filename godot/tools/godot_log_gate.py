@@ -83,6 +83,9 @@ ALLOWED_PATTERNS = [
     # tidak muncul, dst).
     r"libmystic_ui",
     r"addons/mystic_ui",
+    # mystic_mobile (FASE 37) pola SEMPIT yang sama.
+    r"libmystic_mobile",
+    r"addons/mystic_mobile",
     r"FileAccess::exists",
     r"open_dynamic_library",
     r"open_library",
@@ -92,6 +95,7 @@ ALLOWED_PATTERNS = [
     r"Failed loading resource.*mystic_levels",
     r"Failed loading resource.*mystic_maps",
     r"Failed loading resource.*mystic_ui",
+    r"Failed loading resource.*mystic_mobile",
     r"addons/mystic_lighting",
     r"addons/mystic_skills",
 ]

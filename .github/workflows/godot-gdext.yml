@@ -67,6 +67,10 @@ on:
       - 'tools/gen_ui_cpp.py'
       - 'tools/test_ui_cpp_selftest.py'
       - 'godot/addons/mystic_ui/**'
+      - 'mobile/**'
+      - 'tools/gen_mobile_cpp.py'
+      - 'tools/test_mobile_cpp_selftest.py'
+      - 'godot/addons/mystic_mobile/**'
       - 'godot/scripts/core/MapDB.gd'
       - 'godot/scripts/core/MapDBLoader.gd'
       - 'godot/scenes/map/ArenaMap.gd'
@@ -113,6 +117,10 @@ on:
       - 'tools/gen_ui_cpp.py'
       - 'tools/test_ui_cpp_selftest.py'
       - 'godot/addons/mystic_ui/**'
+      - 'mobile/**'
+      - 'tools/gen_mobile_cpp.py'
+      - 'tools/test_mobile_cpp_selftest.py'
+      - 'godot/addons/mystic_mobile/**'
       - 'godot/scripts/core/MapDB.gd'
       - 'godot/scripts/core/MapDBLoader.gd'
       - 'godot/scenes/map/ArenaMap.gd'
@@ -144,7 +152,7 @@ env:
 
 jobs:
   build:
-    name: Build mystic_skills + mystic_levels + mystic_maps + mystic_ui + paritas C++ vs oracle
+    name: Build mystic_skills + mystic_levels + mystic_maps + mystic_ui + mystic_mobile + paritas C++ vs oracle
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -169,6 +177,9 @@ jobs:
           # map_components/_bundle.py -> maps_processor.h/.cpp (FASE 35).
           # Sama: tabel tema/lane/dekor basi tidak boleh dibuild.
           python3 tools/gen_maps_cpp.py --check
+          # mobile/*.py -> mobile_processor.h/.cpp (FASE 37). Sama: ambang
+          # gesture/HUD/kualitas basi tidak boleh dibuild.
+          python3 tools/gen_mobile_cpp.py --check
 
       # ── 0b. Paritas statis + self-test C++ di luar engine (levels) ──
       # test_godot_level_data_parity.py: levels.json + FIELD_KINDS LevelDB.gd +
@@ -219,6 +230,20 @@ jobs:
           python3 tools/gen_ui_cpp.py --check
           python3 tools/test_ui_cpp_selftest.py
 
+      # ── 0e. Self-test C++ di luar engine (mobile, FASE 37) ──
+      # test_mobile_cpp_selftest.py: MENG-EXECUTE mobile_processor.cpp apa
+      # adanya lewat stub Variant (godot/gdext/mystic_mobile/selftest) dengan
+      # oracle mobile/*.py ASLI (di-exec tanpa import pygame): ambang gesture
+      # touch, geometri tombol HUD + visibilitas, preset/gubernur kualitas,
+      # AdaptiveQuality, safe area + posisi panel, overlay debug, konfigurasi
+      # suara tempur + gerbang play, validasi payload cloud + ringkasan, dan
+      # label build. Butuh g++ saja; SEBELUM build godot-cpp: regresi ambang
+      # gagal cepat dan murah.
+      - name: Self-test C++ tanpa engine (mobile, FASE 37)
+        run: |
+          python3 tools/gen_mobile_cpp.py --check
+          python3 tools/test_mobile_cpp_selftest.py
+
       # ── 1. godot-cpp: sumber + objek build di-cache per commit SHA ──
       - name: Resolve commit godot-cpp
         id: cpp-ref
@@ -260,7 +285,7 @@ jobs:
       - name: Symlink godot-cpp ke tiap ekstensi
         run: |
           set -euo pipefail
-          for lib in mystic_skills mystic_levels mystic_maps mystic_ui; do
+          for lib in mystic_skills mystic_levels mystic_maps mystic_ui mystic_mobile; do
             link="godot/gdext/$lib/godot-cpp"
             rm -rf "$link"
             ln -s ../godot-cpp "$link"
@@ -363,6 +388,32 @@ jobs:
             *) echo "::error::nama kelas MysticUI tidak ada di $SO"; exit 1 ;;
           esac
           echo "[gdext] isi modul UI ada di $SO (api_signature + kelas MysticUI)"
+          echo "[gdext] OK: $SO + symbol entry ada"
+
+      # mystic_mobile (FASE 37): pola persis mystic_ui — entry via nm -D,
+      # isi modul via string khas yang tahan strip (visibility=hidden +
+      # debug_symbols=no membunuh symbol table statis).
+      - name: Build mystic_mobile (linux x86_64)
+        working-directory: godot/gdext/mystic_mobile
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          scons $SCONS_FLAGS -j"$(nproc)"
+          SO=../../addons/mystic_mobile/bin/libmystic_mobile.linux.template_debug.x86_64.so
+          ls -lh ../../addons/mystic_mobile/bin/
+          test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
+          nm -D --defined-only "$SO" | grep -q " T mystic_mobile_library_init" \
+            || { echo "::error::symbol mystic_mobile_library_init tidak diekspor"; exit 1; }
+          STRINGS=$(strings -a "$SO")
+          case "$STRINGS" in
+            *mobile_v1:8mod:66fn:*) ;;
+            *) echo "::error::api_signature mobile_v1:8mod:66fn: tidak ada di $SO"; exit 1 ;;
+          esac
+          case "$STRINGS" in
+            *MysticMobile*) ;;
+            *) echo "::error::nama kelas MysticMobile tidak ada di $SO"; exit 1 ;;
+          esac
+          echo "[gdext] isi modul mobile ada di $SO (api_signature + kelas MysticMobile)"
           echo "[gdext] OK: $SO + symbol entry ada"
 
       # ── 3. Godot binary (di-cache; pola sama dengan godot-check.yml) ──
