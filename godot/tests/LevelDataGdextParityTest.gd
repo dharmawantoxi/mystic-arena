@@ -119,7 +119,11 @@ func _collect(backend: String) -> Dictionary:
 func _fail_gdext(tag: String, message: String) -> void:
 	# Lewat _fail() base supaya ikut terhitung di _failures (exit code 1) dan
 	# tercetak dengan pola "[...Test] ..." yang dibaca godot_log_gate.
-	_fail("gdext/" + tag, message)
+	# PENTING: _fail() base hanya menerima SATU argumen (message) — tag
+	# dirangkai di sini. Salah jumlah argumen = Parse Error saat scene dimuat
+	# (GDScript memeriksa arity lintas berkas, gdparse tidak), jadi bentuk ini
+	# dikunci tools/test_godot_level_data_parity.py.
+	_fail("gdext/%s: %s" % [tag, message])
 
 
 func _abort() -> void:

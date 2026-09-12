@@ -304,6 +304,45 @@ def strip_cpp_comments(text):
     return "".join(out)
 
 
+def strip_gd_comments(text):
+    """Buang komentar GDScript (# ...) tapi PERTAHANKAN literal string.
+
+    Beda dengan strip_gd_literals() yang juga mengosongkan isi string: untuk
+    menghitung arity pemanggilan, argumen berupa string harus tetap terlihat
+    (`_fail("x")` = 1 argumen; kalau isinya dibuang jadi `_fail()` = 0).
+    """
+    out = []
+    for line in text.splitlines():
+        cleaned = []
+        in_string = False
+        quote = ""
+        i = 0
+        while i < len(line):
+            ch = line[i]
+            if in_string:
+                cleaned.append(ch)
+                if ch == "\\" and i + 1 < len(line):
+                    cleaned.append(line[i + 1])
+                    i += 2
+                    continue
+                if ch == quote:
+                    in_string = False
+                i += 1
+                continue
+            if ch in "\"'":
+                in_string = True
+                quote = ch
+                cleaned.append(ch)
+                i += 1
+                continue
+            if ch == "#":
+                break
+            cleaned.append(ch)
+            i += 1
+        out.append("".join(cleaned))
+    return "\n".join(out)
+
+
 def gd_function_body(text, func_name):
     """Badan `func <name>(...)` (sampai func/kolom-0 berikutnya) dari sumber .gd."""
     lines = text.splitlines()
@@ -1122,6 +1161,91 @@ def check_wiring(catalog):
 #  main
 # ══════════════════════════════════════════════════════════
 
+
+
+def _call_arg_counts(text, name):
+    """Jumlah argumen tiap pemanggilan `name(...)` (top-level comma, lintas baris).
+
+    Parser GDScript engine memeriksa arity LINTAS berkas (subclass memanggil
+    helper base), gdparse tidak — salah hitung argumen baru ketahuan sebagai
+    "Parse Error: Too many arguments" saat scene dimuat di CI. Fungsi ini
+    membuat cek itu jalan tanpa engine.
+    """
+    counts = []
+    for match in re.finditer(r"(?<![\w.])%s\s*\(" % re.escape(name), text):
+        i = match.end()
+        depth = 1
+        args = 1
+        quote = ""
+        while i < len(text) and depth > 0:
+            ch = text[i]
+            if quote:
+                if ch == "\\":
+                    i += 2
+                    continue
+                if ch == quote:
+                    quote = ""
+            elif ch in "\"'":
+                quote = ch
+            elif ch in "([":
+                depth += 1
+            elif ch in ")]":
+                depth -= 1
+                if depth == 0:
+                    break
+            elif ch == "," and depth == 1:
+                args += 1
+            i += 1
+        body = text[match.end():i].strip()
+        counts.append(0 if not body else args)
+    return counts
+
+
+def _declared_arity(text, name):
+    """Jumlah parameter `func name(...)` (None kalau tidak ada / multi-baris)."""
+    match = re.search(r"^\s*func\s+%s\s*\(([^)]*)\)" % re.escape(name), text, re.M)
+    if not match:
+        return None
+    params = [part for part in match.group(1).split(",") if part.strip()]
+    return len(params)
+
+
+def check_test_arity():
+    """Setiap panggilan helper di kedua scene tes cocok dengan deklarasinya."""
+    base_path = ROOT / "godot/tests/LevelDataParityTest.gd"
+    gdext_path = ROOT / "godot/tests/LevelDataGdextParityTest.gd"
+    base_text = base_path.read_text(encoding="utf-8")
+    gdext_text = gdext_path.read_text(encoding="utf-8")
+    # Subclass mewarisi helper base, jadi gabungan keduanya = ruang nama yang
+    # boleh dipanggil dari LevelDataGdextParityTest.gd.
+    combined = base_text + "\n" + gdext_text
+
+    helpers = ["_fail", "_expect", "_dec", "_dec_list", "_probe_label", "_kind_name",
+               "_row_signature", "_canon", "_as_str_array", "_compare_mini_bosses",
+               "_expect_kind", "_expect_value", "_compare_str", "_fail_gdext",
+               "_load_fixture", "_snapshot", "_restore", "_finish", "_abort",
+               "_collect", "_ab_battery"]
+    # Komentar dibuang (menyebut "_fail()" di komentar bukan pemanggilan), tapi
+    # literal string DIPERTAHANKAN supaya argumen string tetap terhitung.
+    scan = {str(base_path): strip_gd_comments(base_text),
+            str(gdext_path): strip_gd_comments(gdext_text)}
+    for path, text in ((base_path, scan[str(base_path)]),
+                       (gdext_path, scan[str(gdext_path)])):
+        for name in helpers:
+            want = _declared_arity(combined, name)
+            if want is None:
+                continue
+            for got in _call_arg_counts(text, name):
+                expect(got == want,
+                       "%s: %s() dipanggil dengan %d argumen, deklarasinya %d "
+                       "(Parse Error saat scene dimuat — gdparse tidak melihat "
+                       "arity lintas berkas)"
+                       % (path.relative_to(ROOT), name, got, want))
+    print("  arity %d helper di 2 scene tes diperiksa" % len(helpers))
+
+
+
+
 SELFTEST_DIR = ROOT / "godot/gdext/mystic_levels/selftest"
 SCONSTRUCT = ROOT / "godot/gdext/mystic_levels/SConstruct"
 
@@ -1202,6 +1326,7 @@ def main():
     check_fixture(catalog, args.write_fixture)
     check_wiring(catalog)
     check_selftest()
+    check_test_arity()
 
     if _failures:
         print("\n[level_parity] FAIL: %d kegagalan dari %d cek" % (len(_failures), _checks))
