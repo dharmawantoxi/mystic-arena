@@ -2,7 +2,7 @@ name: Godot GDExtension (godot++)
 
 # ═══════════════════════════════════════════════════════
 # BUILD + UJI GDExtension C++ (hero_skills/_bundle.py + levels/level_data.py
-# -> godot++)
+# + map_components/_bundle.py -> godot++)
 #
 # Kenapa workflow TERPISAH dari godot-check.yml:
 #   * godot-check.yml menjaga jalur GDScript (HeroSkillKit.gd) dan sengaja
@@ -12,11 +12,14 @@ name: Godot GDExtension (godot++)
 #     cache) lalu HeroSkillGdextParityTest memutar ulang oracle Pygame
 #     (222 hero × 4 skenario) lewat MysticHeroSkills, dan
 #     LevelDataGdextParityTest memutar ulang oracle levels/level_data.py
-#     (54 level × 17 field + 4 helper) lewat MysticLevels. Tanpa workflow
-#     ini, "sudah dimigrasikan ke C++" hanya klaim: kode yang tidak pernah
-#     dikompilasi/dijalankan bisa basi diam-diam.
+#     (54 level × 17 field + 4 helper) lewat MysticLevels, dan
+#     MapDataGdextParityTest memutar ulang oracle map_components/_bundle.py
+#     (54 tema + PathGenerator + DecorationGenerator + derive) lewat
+#     MysticMaps. Tanpa workflow ini, "sudah dimigrasikan ke C++" hanya
+#     klaim: kode yang tidak pernah dikompilasi/dijalankan bisa basi
+#     diam-diam.
 #   * godot-cpp di-clone SEKALI ke godot/gdext/godot-cpp lalu di-symlink ke
-#     tiap ekstensi: objek compile-nya dipakai bersama, jadi dua lib hanya
+#     tiap ekstensi: objek compile-nya dipakai bersama, jadi tiga lib hanya
 #     membayar satu compile godot-cpp.
 #
 # HEMAT KUOTA:
@@ -56,6 +59,19 @@ on:
       - 'godot/tests/LevelDataGdextParityTest.tscn'
       - 'godot/tests/fixtures/level_data.json'
       - 'levels/**'
+      - 'tools/gen_maps_cpp.py'
+      - 'tools/test_godot_map_data_parity.py'
+      - 'tools/test_maps_cpp_selftest.py'
+      - 'godot/addons/mystic_maps/**'
+      - 'godot/scripts/core/MapDB.gd'
+      - 'godot/scripts/core/MapDBLoader.gd'
+      - 'godot/scenes/map/ArenaMap.gd'
+      - 'godot/tests/MapDataParityTest.gd'
+      - 'godot/tests/MapDataParityTest.tscn'
+      - 'godot/tests/MapDataGdextParityTest.gd'
+      - 'godot/tests/MapDataGdextParityTest.tscn'
+      - 'godot/tests/fixtures/map_data.json'
+      - 'map_components/**'
       - '.github/workflows/godot-gdext.yml'
   push:
     branches: [main]
@@ -85,6 +101,19 @@ on:
       - 'godot/tests/LevelDataGdextParityTest.tscn'
       - 'godot/tests/fixtures/level_data.json'
       - 'levels/**'
+      - 'tools/gen_maps_cpp.py'
+      - 'tools/test_godot_map_data_parity.py'
+      - 'tools/test_maps_cpp_selftest.py'
+      - 'godot/addons/mystic_maps/**'
+      - 'godot/scripts/core/MapDB.gd'
+      - 'godot/scripts/core/MapDBLoader.gd'
+      - 'godot/scenes/map/ArenaMap.gd'
+      - 'godot/tests/MapDataParityTest.gd'
+      - 'godot/tests/MapDataParityTest.tscn'
+      - 'godot/tests/MapDataGdextParityTest.gd'
+      - 'godot/tests/MapDataGdextParityTest.tscn'
+      - 'godot/tests/fixtures/map_data.json'
+      - 'map_components/**'
       - '.github/workflows/godot-gdext.yml'
   workflow_dispatch:
 
@@ -107,7 +136,7 @@ env:
 
 jobs:
   build:
-    name: Build mystic_skills + mystic_levels + paritas C++ vs oracle
+    name: Build mystic_skills + mystic_levels + mystic_maps + paritas C++ vs oracle
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -129,6 +158,9 @@ jobs:
           # levels/level_data.py -> levels_processor.h/.cpp (FASE 34). Kalau
           # ini gagal, build C++ di bawah mengunci tabel level yang BASI.
           python3 tools/gen_levels_cpp.py --check
+          # map_components/_bundle.py -> maps_processor.h/.cpp (FASE 35).
+          # Sama: tabel tema/lane/dekor basi tidak boleh dibuild.
+          python3 tools/gen_maps_cpp.py --check
 
       # ── 0b. Paritas statis + self-test C++ di luar engine (levels) ──
       # test_godot_level_data_parity.py: levels.json + FIELD_KINDS LevelDB.gd +
@@ -146,6 +178,23 @@ jobs:
         run: |
           python3 tools/test_godot_level_data_parity.py
           python3 tools/test_levels_cpp_selftest.py
+
+      # ── 0c. Paritas statis + self-test C++ di luar engine (maps, FASE 35) ──
+      # test_godot_map_data_parity.py: themes_raw.json + KEY_KINDS/waypoint/
+      # struktur dekor/stream MT19937/derive MapDB.gd + literal tabel C++ vs
+      # _bundle.py Python, fixture engine segar, wiring closed-world
+      # (ArenaMap -> MapDBLoader, project.godot, .gdextension, .gitignore,
+      # kedua workflow). Tanpa compiler.
+      # test_maps_cpp_selftest.py: MENG-EXECUTE maps_processor.cpp apa adanya
+      # lewat stub Variant (godot/gdext/mystic_maps/selftest) — 200 perintah:
+      # 54 tema x kunci union (nilai + tipe + urutan), palet, index/build,
+      # make_curved_path (tepi + 4 ukuran), generate_lanes/generate_river,
+      # generate_decorations penuh (14 kategori, replika MT19937 bit-eksak).
+      # Butuh g++ saja, dan sengaja SEBELUM build godot-cpp yang ±10 menit.
+      - name: Paritas maps (statis + self-test C++ tanpa engine)
+        run: |
+          python3 tools/test_godot_map_data_parity.py
+          python3 tools/test_maps_cpp_selftest.py
 
       # ── 1. godot-cpp: sumber + objek build di-cache per commit SHA ──
       - name: Resolve commit godot-cpp
@@ -181,13 +230,13 @@ jobs:
 
       # SConstruct tiap ekstensi mengharapkan godot-cpp DI DALAM direktorinya
       # sendiri; symlink ke checkout bersama adalah jembatannya. Objek compile
-      # godot-cpp (±950 berkas) hidup di dalam direktori itu, jadi mystic_skills
-      # dan mystic_levels memakai ulang hasil compile yang sama — satu compile
-      # godot-cpp untuk dua lib. Kedua symlink di-gitignore.
+      # godot-cpp (±950 berkas) hidup di dalam direktori itu, jadi mystic_skills,
+      # mystic_levels, dan mystic_maps memakai ulang hasil compile yang sama —
+      # satu compile godot-cpp untuk tiga lib. Semua symlink di-gitignore.
       - name: Symlink godot-cpp ke tiap ekstensi
         run: |
           set -euo pipefail
-          for lib in mystic_skills mystic_levels; do
+          for lib in mystic_skills mystic_levels mystic_maps; do
             link="godot/gdext/$lib/godot-cpp"
             rm -rf "$link"
             ln -s ../godot-cpp "$link"
@@ -233,6 +282,22 @@ jobs:
           test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
           nm -D --defined-only "$SO" | grep -q " T mystic_levels_library_init" \
             || { echo "::error::symbol mystic_levels_library_init tidak diekspor"; exit 1; }
+          echo "[gdext] OK: $SO + symbol entry ada"
+
+      # ── 2c. Build mystic_maps (map_components/_bundle.py -> godot++, FASE 35) ──
+      # Output: godot/addons/mystic_maps/bin/libmystic_maps.linux.template_debug.x86_64.so
+      # (suffix scons = nama berkas; kunci .gdextension-nya linux.debug.x86_64.)
+      - name: Build mystic_maps (linux x86_64)
+        working-directory: godot/gdext/mystic_maps
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          scons $SCONS_FLAGS -j"$(nproc)"
+          SO=../../addons/mystic_maps/bin/libmystic_maps.linux.template_debug.x86_64.so
+          ls -lh ../../addons/mystic_maps/bin/
+          test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
+          nm -D --defined-only "$SO" | grep -q " T mystic_maps_library_init" \
+            || { echo "::error::symbol mystic_maps_library_init tidak diekspor"; exit 1; }
           echo "[gdext] OK: $SO + symbol entry ada"
 
       # ── 3. Godot binary (di-cache; pola sama dengan godot-check.yml) ──
@@ -377,6 +442,52 @@ jobs:
           else
             cat /tmp/levels.gate
             echo "::error::LEVELS-GDSCRIPT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/levels.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 10. UJI UTAMA FASE 35: katalog peta C++ vs oracle Python ──
+      # MapDataGdextParityTest memaksa backend MapDBLoader ke "gdext" lalu:
+      #   (a) A/B backend untuk SELURUH permukaan API (54 baris katalog lewat
+      #       str(Dictionary) — ikut mengunci urutan kunci, palet, 56 kasus
+      #       theme_index, 5 get_theme, 5 build_theme, 5 kurva, lane/river 2
+      #       ukuran, dekor 2 varian, 54 derive);
+      #   (b) replay godot/tests/fixtures/map_data.json yang direkam
+      #       map_components/_bundle.py ASLI (nilai + TIPE Variant per kunci)
+      #       lewat MysticMaps (C++), termasuk derive vs themes.json dan
+      #       wiring produksi ArenaMap (scene asli).
+      # Require dua penanda: PASS dari test DAN baris loader yang membuktikan
+      # jalur C++ benar-benar dipakai (bukan diam-diam fallback GDScript).
+      - name: "MapDataGdextParityTest (maps C++ ↔ oracle _bundle.py)"
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/MapDataGdextParityTest.tscn --quit-after 120 2>&1 \
+            | tee /tmp/mapsgdext.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/mapsgdext.log --label "MapDataGdextParityTest" \
+              --require "[MapDataGdextParityTest] PASS" \
+              --require "GDExtension MysticMaps aktif" > /tmp/mapsgdext.gate 2>&1; then
+            cat /tmp/mapsgdext.gate
+          else
+            cat /tmp/mapsgdext.gate
+            echo "::error::MAPS-GDEXT-FAIL-TAIL: $(tail -40 /tmp/mapsgdext.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::MAPS-GDEXT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/mapsgdext.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 11. Regresi jalur GDScript (lib maps TERPASANG, flag tetap false) ──
+      # Scene yang sama dengan godot-check.yml, tapi di sini libmystic_maps.so
+      # ada di addons/: fallback GDScript tidak boleh rusak hanya karena lib-nya
+      # terpasang (pola langkah 7/9 untuk hero_skills/levels).
+      - name: "MapDataParityTest (baseline GDScript, lib terpasang)"
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/MapDataParityTest.tscn --quit-after 120 2>&1 \
+            | tee /tmp/maps.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/maps.log --label "MapDataParityTest" \
+              --require "[MapDataParityTest] PASS" > /tmp/maps.gate 2>&1; then
+            cat /tmp/maps.gate
+          else
+            cat /tmp/maps.gate
+            echo "::error::MAPS-GDSCRIPT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/maps.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 

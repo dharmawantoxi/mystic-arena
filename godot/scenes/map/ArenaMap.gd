@@ -18,15 +18,21 @@
 # map_components/themes.py + lane path dari PathGenerator.generate_lanes().
 # apply_theme() menyalakan fallback ini otomatis kalau tekstur tidak ketemu.
 #
-# TEMA PER LEVEL: const THEMES di bawah hanya 4 palet kurasi manual
-# (forest/desert/ice/abyss) — itu yang bikin level >= 3 semua jatuh ke fallback
-# forest dan terlihat identik, padahal levels.json memakai 54 nama tema dan
-# pygame punya 54 palet (map_components/themes.py THEMES). Sekarang
-# res://data/themes.json (hasil tools/convert_to_godot.py export_themes())
-# di-merge ke palet runtime saat _ready, jadi 54 level punya warna sendiri.
-# const THEMES tetap ada sebagai jaring pengaman kalau themes.json belum
-# di-generate (converter belum dijalankan) — perilaku lama persis terjaga.
+# TEMA PER LEVEL (FASE 35 — migrasi map_components/ -> godot++): 54 palet
+# runtime dihitung saat _ready dari MapDBLoader.theme_palette() — dict tema
+# mentah (backend GDScript MapDB.gd + data/themes_raw.json, atau C++
+# MysticMaps kalau lib GDExt dibuild + flag mystic/maps/use_gdext_maps true)
+# + derive_palette() yang bit-eksak dengan export_themes() converter
+# (termasuk round() bankir Python — lihat MapDB.round_half_even).
+# res://data/themes.json TIDAK dibaca lagi; berkas itu tinggal sebagai
+# pembanding independen (MapDataParityTest baterai 13 membuktikan loader ==
+# converter untuk semua 54 tema). const THEMES di bawah tinggal sebagai
+# (a) override kurasi modulate/light/energy untuk 4 tema pertama
+# (forest/desert/ice/abyss — art direction Godot tanpa padanan pygame), dan
+# (b) jaring pengaman kalau loader kosong (themes_raw.json hilang).
 extends Node2D
+
+const MapDB = preload("res://scripts/core/MapDBLoader.gd")
 
 ## Tema level — diisi dari levels.json["map_theme"] (54 nama; lihat
 ## map_components/themes.py THEMES). Nama tak dikenal -> fallback forest.
@@ -115,10 +121,10 @@ const THEMES: Dictionary = {
 	},
 }
 
-## 54 palet tema hasil export_themes() — paritas map_components/themes.py THEMES.
-## Data ikut repo (bukan gitignore seperti godot/assets/sounds/), jadi port
-## tetap punya 54 tema tanpa harus menjalankan converter dulu.
-const THEMES_JSON := "res://data/themes.json"
+## Palet runtime 54 tema — dihitung _load_themes() dari MapDBLoader (backend
+## GDScript MapDB.gd + data/themes_raw.json, atau C++ MysticMaps). Kunci dan
+## nilainya bit-eksak dengan res://data/themes.json (converter), yang tinggal
+## sebagai pembanding independen di MapDataParityTest.
 ## Nama tema fallback untuk nama yang benar-benar tak dikenal
 ## (paritas get_theme: THEMES.get(theme_name, FOREST_THEME)).
 const FALLBACK_THEME := "forest"
@@ -204,61 +210,38 @@ func _ready():
 	_setup_weather_nodes()
 	apply_theme(theme_name)
 
-## Gabungkan 54 palet themes.json ke palet runtime.
+## Bangun 54 palet runtime dari MapDBLoader (FASE 35).
 ##
 ## Urutan menang:
-##   1. warna palet  -> themes.json (pygame = sumber kebenaran; 23 warna)
+##   1. seluruh palet -> MapDBLoader.theme_palette() (dict tema mentah dari
+##      backend GDScript/C++ + derive_palette() yang bit-eksak dengan
+##      export_themes() converter — 23 warna + flag + kabut + extras).
 ##   2. modulate/light/energy -> const THEMES kalau tema itu sudah dikurasi
-##      manual (forest/desert/ice/abyss), selain itu nilai turunan dari
-##      converter (_derive_theme_extras di tools/convert_to_godot.py).
-##      Tiga kunci ini konsep Godot (CanvasModulate + DirectionalLight2D)
-##      yang tidak ada padanannya di palet pygame, jadi kurasi manual untuk
-##      4 level pertama dipertahankan agar tampilannya tidak berubah.
-## themes.json tidak ada -> palet runtime = const THEMES (perilaku lama).
+##      manual (forest/desert/ice/abyss). Tiga kunci ini konsep Godot
+##      (CanvasModulate + DirectionalLight2D) yang tidak ada padanannya di
+##      palet pygame, jadi kurasi manual untuk 4 level pertama dipertahankan
+##      agar tampilannya tidak berubah (dikunci MapDataParityTest baterai 14).
+## Loader kosong (themes_raw.json hilang + lib C++ tidak ada) -> palet runtime
+## = const THEMES (jaring pengaman; perilaku lama persis terjaga).
 func _load_themes() -> void:
 	themes.clear()
-	for k in THEMES:
-		themes[k] = (THEMES[k] as Dictionary).duplicate(true)
-	if not FileAccess.file_exists(THEMES_JSON):
-		# Kurung eksplisit: di GDScript '%' mengikat lebih kuat daripada '+',
-		# jadi tanpa kurung niat "dua format lalu gabung" jadi samar.
-		push_warning(("[ArenaMap] %s belum ada — jalankan tools/convert_to_godot.py. " % THEMES_JSON)
-			+ ("Hanya %d tema (const THEMES) yang tersedia." % themes.size()))
+	for tname in MapDB.theme_names():
+		var pal := MapDB.theme_palette(str(tname))
+		if not pal.is_empty():
+			themes[str(tname)] = pal
+	if themes.is_empty():
+		for k in THEMES:
+			themes[k] = (THEMES[k] as Dictionary).duplicate(true)
+		push_warning("[ArenaMap] MapDBLoader kosong — hanya %d tema (const THEMES). "
+			% themes.size() + "Jalankan tools/convert_to_godot.py --map-raw.")
 		return
-	var f := FileAccess.open(THEMES_JSON, FileAccess.READ)
-	if f == null:
-		push_warning("[ArenaMap] %s tidak bisa dibaca" % THEMES_JSON)
-		return
-	var parsed = JSON.parse_string(f.get_as_text())
-	if not (parsed is Dictionary) or not (parsed.get("themes") is Dictionary):
-		push_warning("[ArenaMap] %s rusak — pakai const THEMES" % THEMES_JSON)
-		return
-	var palettes: Dictionary = parsed["themes"]
-	for tname in palettes:
-		var pal = palettes[tname]
-		if not (pal is Dictionary):
-			continue
-		# Dasar = palet const kalau ada, kalau tidak forest — supaya tema baru
-		# tetap punya kunci yang tidak diekspor converter (mis. grass_high lama).
-		var base: Dictionary = (THEMES.get(tname, THEMES[FALLBACK_THEME]) as Dictionary).duplicate(true)
-		base.merge(_colors_from(pal), true)
-		if THEMES.has(tname):
-			for k in ["modulate", "light", "energy"]:
-				base[k] = (THEMES[tname] as Dictionary)[k]
-		themes[tname] = base
-	print("[ArenaMap] %d tema palet dimuat dari %s" % [themes.size(), THEMES_JSON])
-
-## '#rrggbb' JSON -> Color. Kunci non-warna (energy: float, has_*: bool,
-## name/particle_type: String) diteruskan apa adanya.
-static func _colors_from(pal: Dictionary) -> Dictionary:
-	var out := {}
-	for k in pal:
-		var v = pal[k]
-		if v is String and v.begins_with("#"):
-			out[k] = Color(v)
-		else:
-			out[k] = v
-	return out
+	if THEMES.has(FALLBACK_THEME):
+		for tname in THEMES:
+			if themes.has(tname):
+				for k in ["modulate", "light", "energy"]:
+					(themes[tname] as Dictionary)[k] = (THEMES[tname] as Dictionary)[k]
+	print("[ArenaMap] %d tema palet dari MapDBLoader (backend %s)"
+		% [themes.size(), MapDB.backend_name()])
 
 ## Palet tema aktif (fallback forest — paritas get_theme pygame).
 func palette(t: String = "") -> Dictionary:
@@ -507,8 +490,12 @@ func cycle_theme() -> String:
 	apply_theme(nxt)
 	return nxt
 
-# ═══ LANE PATH — port persis PathGenerator (map_components/generators.py) ═══
-# waypoints sama dengan generate_lanes(map_w, map_h) versi pygame.
+# ═══ LANE PATH — via MapDBLoader (FASE 35) ═══
+# Dulu waypoint + interpolasi Catmull-Rom ditulis tangan di sini (duplikat
+# PathGenerator dengan DUA deviasi: titik float tanpa trunc int() Python, dan
+# lane mid memakai smoothness 10 bukan 8 -> minion berjalan di jalur yang
+# sedikit beda). Sekarang satu sumber (MapDB.gd/MysticMaps, dibuktikan
+# MapDataParityTest baterai 9-10) — fungsi ini tinggal cache + override bake.
 func get_lane_path(lane: String) -> PackedVector2Array:
 	if _lane_cache.has(lane):
 		return _lane_cache[lane]
@@ -516,80 +503,30 @@ func get_lane_path(lane: String) -> PackedVector2Array:
 	var curve_path = "res://data/paths/%s.tres" % lane
 	if ResourceLoader.exists(curve_path):
 		var curve: Curve2D = load(curve_path)
-		var baked := curve.get_baked_points()
+		var baked: PackedVector2Array = curve.get_baked_points()
 		_lane_cache[lane] = baked
 		return baked
-	var w := arena_size.x
-	var h := arena_size.y
-	var waypoints := PackedVector2Array()
-	match lane:
-		"top":
-			waypoints = PackedVector2Array([
-				Vector2(90, h - 130), Vector2(85, h - 260), Vector2(95, h - 380),
-				Vector2(120, h - 500), Vector2(170, 180), Vector2(240, 100),
-				Vector2(380, 75), Vector2(550, 70), Vector2(720, 75),
-				Vector2(880, 85), Vector2(1030, 110), Vector2(w - 100, 180),
-			])
-		"bot":
-			waypoints = PackedVector2Array([
-				Vector2(130, h - 90), Vector2(260, h - 70), Vector2(420, h - 60),
-				Vector2(600, h - 60), Vector2(780, h - 65), Vector2(940, h - 75),
-				Vector2(1070, h - 100), Vector2(w - 110, h - 220),
-				Vector2(w - 90, h - 380), Vector2(w - 85, 250), Vector2(w - 100, 180),
-			])
-		_: # "mid"
-			waypoints = PackedVector2Array([
-				Vector2(170, h - 170), Vector2(300, h - 300), Vector2(440, h - 400),
-				Vector2(w / 2.0 - 60, h / 2.0 + 40), Vector2(w / 2.0, h / 2.0),
-				Vector2(w / 2.0 + 60, h / 2.0 - 40), Vector2(w - 440, 400),
-				Vector2(w - 300, 300), Vector2(w - 170, 170),
-			])
-	var baked := _curved_path(waypoints, 10)
-	_lane_cache[lane] = baked
-	return baked
+	var lanes := MapDB.generate_lanes(int(arena_size.x), int(arena_size.y))
+	var key := lane if (lanes as Dictionary).has(lane) else "mid"
+	var pts: PackedVector2Array = (lanes as Dictionary)[key]
+	_lane_cache[lane] = pts
+	return pts
 
 func get_river_path() -> PackedVector2Array:
 	if _lane_cache.has("river"):
 		return _lane_cache["river"]
-	var w := arena_size.x
-	var h := arena_size.y
-	var baked := _curved_path(PackedVector2Array([
-		Vector2(0, 200), Vector2(150, 270), Vector2(350, 350),
-		Vector2(w / 2.0, h / 2.0), Vector2(w - 350, h - 350),
-		Vector2(w - 150, h - 270), Vector2(w, h - 200),
-	]), 10)
-	_lane_cache["river"] = baked
-	return baked
+	var pts := MapDB.generate_river(int(arena_size.x), int(arena_size.y))
+	_lane_cache["river"] = pts
+	return pts
 
-# Catmull-Rom interpolation — port make_curved_path (smoothness=10)
-static func _curved_path(waypoints: PackedVector2Array, smoothness: int = 10) -> PackedVector2Array:
-	var out := PackedVector2Array()
-	if waypoints.size() < 2:
-		return waypoints.duplicate()
-	var padded: Array = [waypoints[0]]
-	for p in waypoints:
-		padded.append(p)
-	padded.append(waypoints[waypoints.size() - 1])
-	for i in range(padded.size() - 3):
-		var p0: Vector2 = padded[i]
-		var p1: Vector2 = padded[i + 1]
-		var p2: Vector2 = padded[i + 2]
-		var p3: Vector2 = padded[i + 3]
-		for step in smoothness:
-			var t := float(step) / float(smoothness)
-			var t2 := t * t
-			var t3 := t2 * t
-			var x := 0.5 * ((2.0 * p1.x) + (-p0.x + p2.x) * t
-				+ (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2
-				+ (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3)
-			var y := 0.5 * ((2.0 * p1.y) + (-p0.y + p2.y) * t
-				+ (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2
-				+ (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3)
-			out.append(Vector2(x, y))
-	out.append(waypoints[waypoints.size() - 1])
-	return out
-
-# Titik dekor (pohon/batu) — deterministik seed 42 seperti DecorationGenerator.generate_all()
+# Titik dekor (pohon/batu) — deterministik seed 42.
+#
+# SENGAJA tidak memakai MapDBLoader.generate_decorations(): scatter di sini
+# adalah sistem kurasi Godot (74 titik + picker jenis per sisi peta dengan
+# ambang bertumpuk) yang tampilannya sudah dikunci; 14 kategori pygame
+# (posisi + ukuran + varian) tidak dipetakan 1:1 ke 6 jenis DECOR_* di sini.
+# Posisi pygame ASLI tersedia lewat loader (dibuktikan MapDataParityTest
+# baterai 11 + A/B C++) untuk dipakai nanti tanpa mengubah visual sekarang.
 func _build_decor():
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
