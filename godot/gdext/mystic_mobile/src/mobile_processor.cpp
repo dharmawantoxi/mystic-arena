@@ -872,7 +872,7 @@ bool highest_is_float = false;
 int64_t best_gold = 0;
 double newest_played = 0.0;
 for (int64_t i = 0; i < p_slots.size(); i++) {
-    const Variant slot_v = p_slots.get(i);
+    const Variant slot_v = p_slots[i];  // godot-cpp Array: akses via operator[] const
     Dictionary data = slot_v;  // operator Dictionary; non-dict -> kosong
     // completed = data.get("completed_levels", []) or []
     const Variant completed = data.get(Variant(String("completed_levels")),
@@ -889,7 +889,7 @@ for (int64_t i = 0; i < p_slots.size(); i++) {
             skip_rest = true;  // max(str) -> max(int, str) TypeError
         }
         for (int64_t j = 0; !skip_rest && j < completed_arr.size(); j++) {
-            const Variant item = completed_arr.get(j);
+            const Variant item = completed_arr[j];
             const Variant::Type it = item.get_type();
             if (it != Variant::INT && it != Variant::FLOAT &&
                     it != Variant::BOOL) {
