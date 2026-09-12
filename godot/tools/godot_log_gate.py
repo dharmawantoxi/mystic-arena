@@ -54,21 +54,30 @@ ALLOWED_PATTERNS = [
     r"Condition \"!driver\" is true",
     r"No audio driver",
     r"Unable to initialize .* driver",
-    # GDExtension mystic_lighting / mystic_skills opsional — lib .so/.dll tidak ikut repo
-    # (build lokal via SConstruct). Godot log \"Failed loading resource\" /
-    # \"Cannot open file\" / \"Condition !FileAccess::exists\" untuk lib yang
-    # belum dibuild adalah wajar di CI headless; runtime fallback ke
-    # Lighting.gd + shader GPU / HeroSkillKitLoader.gd tetap jalan.
+    # GDExtension mystic_lighting / mystic_skills / mystic_levels opsional —
+    # lib .so/.dll tidak ikut repo (build lokal via SConstruct). Godot log
+    # \"Failed loading resource\" / \"Cannot open file\" /
+    # \"Condition !FileAccess::exists\" untuk lib yang belum dibuild adalah
+    # wajar di CI headless; runtime fallback ke Lighting.gd + shader GPU /
+    # HeroSkillKitLoader.gd / LevelDBLoader.gd tetap jalan.
+    # Pola levels sengaja SEMPIT (addons/… + libmystic… + Failed loading
+    # resource…), tidak seperti dua lib pertama yang punya entri telanjang
+    # r"mystic_skills": baris kegagalan harness level ("[LevelDBLoader] GAGAL
+    # instantiate MysticLevels", "[LevelDataGdextParityTest] FAIL: …") tidak
+    # boleh ikut termaafkan.
     r"mystic_lighting",
     r"libmystic_lighting",
     r"mystic_skills",
     r"libmystic_skills",
+    r"libmystic_levels",
+    r"addons/mystic_levels",
     r"FileAccess::exists",
     r"open_dynamic_library",
     r"open_library",
     r"GDExtension dynamic library not found",
     r"Failed loading resource.*mystic_lighting",
     r"Failed loading resource.*mystic_skills",
+    r"Failed loading resource.*mystic_levels",
     r"addons/mystic_lighting",
     r"addons/mystic_skills",
 ]

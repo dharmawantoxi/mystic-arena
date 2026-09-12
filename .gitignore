@@ -22,8 +22,22 @@ godot/addons/mystic_skills/bin/*.so
 godot/addons/mystic_skills/bin/*.dll
 godot/addons/mystic_skills/bin/*.dylib
 godot/addons/mystic_skills/bin/*.framework/
+godot/addons/mystic_levels/bin/*.so
+godot/addons/mystic_levels/bin/*.dll
+godot/addons/mystic_levels/bin/*.dylib
+godot/addons/mystic_levels/bin/*.framework/
+godot/addons/mystic_levels/bin/*.wasm
 godot/gdext/mystic_skills/godot-cpp/
 godot/gdext/mystic_skills/godot-cpp
+godot/gdext/mystic_levels/godot-cpp/
+godot/gdext/mystic_levels/godot-cpp
+godot/gdext/mystic_lighting/godot-cpp/
+godot/gdext/mystic_lighting/godot-cpp
+# Checkout godot-cpp BERSAMA (satu clone untuk semua ekstensi; tiap ekstensi
+# men-symlink `godot-cpp -> ../godot-cpp` sehingga objek build-nya dipakai
+# ulang). CI .github/workflows/godot-gdext.yml memakai tata letak ini.
+godot/gdext/godot-cpp/
+godot/gdext/godot-cpp
 
 # ═══ Save game & log (jangan ikut ke repo) ═══
 savegame*.json
@@ -81,3 +95,7 @@ godot/assets/items/
 godot/assets/presplash.png
 godot/gdext/mystic_skills/.sconsign.dblite
 godot/gdext/mystic_skills/src/*.os
+godot/gdext/mystic_levels/.sconsign.dblite
+godot/gdext/mystic_levels/src/*.os
+godot/gdext/mystic_lighting/.sconsign.dblite
+godot/gdext/mystic_lighting/src/*.os

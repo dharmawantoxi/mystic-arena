@@ -42,6 +42,8 @@ on:
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/gen_hero_skill_kit.py'
       - 'tools/gen_hero_skills_cpp.py'
+      - 'tools/gen_levels_cpp.py'
+      - 'tools/test_godot_level_data_parity.py'
       - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
@@ -78,6 +80,8 @@ on:
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/gen_hero_skill_kit.py'
       - 'tools/gen_hero_skills_cpp.py'
+      - 'tools/gen_levels_cpp.py'
+      - 'tools/test_godot_level_data_parity.py'
       - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
@@ -172,6 +176,22 @@ jobs:
           # transpile dengan berkas ter-commit. Build + uji runtime-nya ada di
           # workflow terpisah godot-gdext.yml (butuh scons + godot-cpp).
           python3 tools/gen_hero_skills_cpp.py --check
+          # levels/level_data.py -> Godot (FASE 34), dua cek yang menutup celah
+          # berbeda:
+          #   (a) --check = levels_processor.h/.cpp di godot/gdext/mystic_levels
+          #       benar-benar hasil transpile AST level_data.py yang segar
+          #       (byte-identik), bukan suntingan tangan atau keluaran basi;
+          #   (b) test_godot_level_data_parity.py = SEMANTIK: levels.json +
+          #       FIELD_KINDS LevelDB.gd + literal tabel C++ dibandingkan dengan
+          #       ALL_LEVELS Python (54 level x 17 field + 4 helper), fixture
+          #       LevelDataParityTest diperiksa segar, dan wiring diaudit
+          #       closed-world (BossDB/GameManager/SaveManager -> LevelDBLoader,
+          #       setting project.godot default false, entry_symbol
+          #       .gdextension, .gitignore, kedua workflow).
+          # Keduanya tanpa compiler dan tanpa engine; build + uji runtime C++
+          # ada di godot-gdext.yml.
+          python3 tools/gen_levels_cpp.py --check
+          python3 tools/test_godot_level_data_parity.py
           # Scope-check hasil generate (identifier harus terdeklarasi di
           # param/var lokal/bridge Hero.gd) — tangkap 'Identifier not
           # declared' sebelum engine.
@@ -1024,6 +1044,41 @@ jobs:
       # pusat label hasil clamp (dibaca dari piksel TEXT_WHITE), rentang garis
       # section_header, thumb scroll. Scene ini memutar ulang fixture itu di
       # engine betulan terhadap fungsi murni UiTheme.gd + 9 widget Control.
+      # ── LevelDataParityTest: levels/level_data.py ↔ LevelDB.gd + fixture ──
+      # Backend GDScript (flag mystic/levels/use_gdext_levels default false dan
+      # lib .so tidak ikut repo, jadi LevelDBLoader turun ke LevelDB.gd).
+      # Yang diputar ulang dari fixture rekaman level_data.py ASLI:
+      #   * katalog 54 level x 17 field — nilai, TIPE Python (int vs float vs
+      #     str vs null), dan URUTAN kunci Dictionary;
+      #   * 4 helper: get_level_config (22 kasus: level 0/-1/55/999, float 3.0
+      #     yang Python-nya cocok, 3.5 yang tidak), get_level_count,
+      #     is_level_unlocked (20 kasus, termasuk completed_levels berisi FLOAT
+      #     hasil JSON.parse_string dan STRING yang memang TIDAK boleh cocok),
+      #     get_next_level (17 kasus, termasuk float 3.0 -> 4.0);
+      #   * py_contains: `1 in [1.0]` harus True (Python ==) — kunci bug
+      #     "level terkunci lagi setelah restart" karena Array.has() Godot
+      #     strict-tipe (variant.cpp hash_compare);
+      #   * wiring produksi: BossDB/GameManager/SaveManager benar-benar lewat
+      #     LevelDBLoader, bukan membaca levels.json sendiri.
+      # Jalur C++ (MysticLevels) diuji LevelDataGdextParityTest di
+      # godot-gdext.yml (workflow itu yang punya compiler + godot-cpp).
+      - name: "LevelDataParityTest (levels/level_data.py ↔ LevelDB.gd)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/LevelDataParityTest.tscn --quit-after 120 2>&1 | tee /tmp/levels.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/levels.log --label "LevelDataParityTest" \
+              --require "[LevelDataParityTest] PASS" > /tmp/levels.gate 2>&1; then
+            cat /tmp/levels.gate
+          else
+            cat /tmp/levels.gate
+            echo "::error::LEVELS-FAIL-TAIL: $(tail -40 /tmp/levels.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::LEVELS-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/levels.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       - name: "UiThemeParityTest (ui_theme.py ↔ UiTheme.gd + widget)"
         run: |
           set -o pipefail

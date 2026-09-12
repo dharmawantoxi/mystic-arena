@@ -49,6 +49,11 @@ const LEGACY_SAVE_FILE := "user://mystic_save.json"
 ## Hasil rename berkas legacy setelah migrasi — paritas `progress_backup.
 ## json.old` _system.py:834-836.
 const LEGACY_BACKUP_FILE := "user://mystic_save_backup.json.old"
+
+# FASE 34: pembanding anggota list semantik Python (`x in list` memakai ==,
+# jadi 3 cocok dengan 3.0) — satu implementasi dipakai is_level_completed dan
+# LevelDB.is_level_unlocked. Lihat komentar is_level_completed.
+const LevelDBScript = preload("res://scripts/core/LevelDB.gd")
 ## Nama bulan singkat locale C — dipakai `format_last_played` pada cabang
 ## tanggal (paritas `time.strftime("%d %b %Y")`).
 const MONTH_ABBR := ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -472,9 +477,20 @@ func complete_level(lv: int):
 	data["last_played_level"] = lv
 	save()
 
+## Level sudah pernah dimenang (Python: `lv in save["completed_levels"]`).
+## FASE 34: pembanding numerik lintas tipe, bukan `in`/Array.has(). Array.has()
+## memakai Variant::hash_compare yang MENOLAK pasangan beda tipe
+## (core/variant/variant.cpp:3309), sementara save Godot hasil
+## JSON.parse_string berisi FLOAT untuk semua angka (core/io/json.cpp:341) —
+## jadi setelah restart `3 in [3.0]` false: badge "MAIN LAGI", deteksi replay
+## (GameManager._grant_meta_reward) dan tombol NEXT di GameOverOverlay semua
+## salah baca progres. Python `in` memakai ==, dan itulah yang ditiru di sini
+## (satu implementasi: LevelDB.py_contains, dipakai juga is_level_unlocked).
 func is_level_completed(lv: int) -> bool:
 	var completed = data.get("completed_levels", [])
-	return completed is Array and lv in completed
+	if not (completed is Array):
+		return false
+	return LevelDBScript.py_contains(completed, lv)
 
 # ══════════════════════════════════════════════════════════
 #  LEVEL STATS (best per level — paritas _system.py:1022-1116)

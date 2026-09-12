@@ -76,6 +76,10 @@ const FPS := 60.0
 const ComboCounterScript = preload("res://scripts/utils/ComboCounter.gd")
 const FloatingTextQueueScript = preload("res://scripts/utils/FloatingTextQueue.gd")
 const SparkFieldScript = preload("res://scripts/render/SparkField.gd")
+# FASE 34: helper level (count / next / unlock) lewat saklar backend
+# levels/level_data.py — GDScript LevelDB.gd (default) atau GDExtension C++
+# MysticLevels (mystic/levels/use_gdext_levels=true).
+const LevelDBLoader = preload("res://scripts/core/LevelDBLoader.gd")
 
 # ═══ FALLBACK MINION_TYPES — port persis dari _core.py (dipakai kalau
 # data/economy.json belum di-generate; warna = GRASS/GOBLIN_COLOR dkk) ═══
@@ -608,31 +612,36 @@ func next_level() -> bool:
 
 
 ## Nomor level berikutnya (0 = tidak ada) — paritas get_next_level.
+## FASE 34: delegasi ke LevelDBLoader (Python `get_next_level`: None kalau
+## next > len(ALL_LEVELS) ATAU config level itu tidak ada). 0 = padanan None
+## untuk pemakai Godot yang sudah ada (Main/GameOverOverlay/MainMenu/TouchHUD
+## membandingkan `nxt > 0`).
 func next_level_number(after: int = -1) -> int:
 	var cur := level_number if after < 0 else after
-	var nxt := cur + 1
-	var cfg: Dictionary = BossDB.get_level(nxt)
-	if cfg.is_empty():
+	var nxt = LevelDBLoader.get_next_level(cur)
+	if nxt == null:
 		return 0
-	return nxt
+	return int(nxt)
 
 
 ## Total level (paritas levels/level_data.py get_level_count).
 func level_count() -> int:
-	return BossDB.levels.size()
+	return LevelDBLoader.get_level_count()
 
 
 ## Kunci level di LEVEL_SELECT (paritas is_level_unlocked level_data.py:2318-2337):
 ## unlock_after_level == null -> selalu terbuka; selain itu butuh level itu
 ## ada di SaveManager.completed_levels.
+## FASE 34: delegasi ke LevelDBLoader + daftar completed apa adanya. Dulu
+## `SaveManager.is_level_completed(int(required))`, yang memakai Array.has()
+## -> Variant::hash_compare: STRICT tipe (core/variant/variant.cpp:3309),
+## padahal save hasil JSON.parse_string berisi FLOAT (json.cpp:341 mengubah
+## semua angka jadi double). Akibatnya `3 in [3.0]` false dan level yang
+## sudah tamat tampak TERKUNCI lagi setelah game dimuat ulang — Python
+## membandingkan dengan == sehingga 3 in [3.0] True.
 func is_level_unlocked(level_num: int) -> bool:
-	var cfg: Dictionary = BossDB.get_level(level_num)
-	if cfg.is_empty():
-		return false
-	var required = cfg.get("unlock_after_level")
-	if required == null:
-		return true
-	return SaveManager.is_level_completed(int(required))
+	return LevelDBLoader.is_level_unlocked(level_num,
+		SaveManager.data.get("completed_levels", []))
 
 
 ## Kembali ke menu utama dari dalam match (PAUSE -> MAIN MENU, atau ESC

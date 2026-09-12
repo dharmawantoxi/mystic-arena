@@ -1,7 +1,8 @@
 name: Godot GDExtension (godot++)
 
 # ═══════════════════════════════════════════════════════
-# BUILD + UJI GDExtension C++ (hero_skills/_bundle.py -> godot++)
+# BUILD + UJI GDExtension C++ (hero_skills/_bundle.py + levels/level_data.py
+# -> godot++)
 #
 # Kenapa workflow TERPISAH dari godot-check.yml:
 #   * godot-check.yml menjaga jalur GDScript (HeroSkillKit.gd) dan sengaja
@@ -9,9 +10,14 @@ name: Godot GDExtension (godot++)
 #     HeroSkillKitLoader selalu jatuh ke fallback GDScript.
 #   * Di sini lib C++ BENERAN dibuild (godot-cpp + scons, ±10 menit dengan
 #     cache) lalu HeroSkillGdextParityTest memutar ulang oracle Pygame
-#     (222 hero × 4 skenario) lewat MysticHeroSkills. Tanpa workflow ini,
-#     "sudah dimigrasikan ke C++" hanya klaim: kode yang tidak pernah
+#     (222 hero × 4 skenario) lewat MysticHeroSkills, dan
+#     LevelDataGdextParityTest memutar ulang oracle levels/level_data.py
+#     (54 level × 17 field + 4 helper) lewat MysticLevels. Tanpa workflow
+#     ini, "sudah dimigrasikan ke C++" hanya klaim: kode yang tidak pernah
 #     dikompilasi/dijalankan bisa basi diam-diam.
+#   * godot-cpp di-clone SEKALI ke godot/gdext/godot-cpp lalu di-symlink ke
+#     tiap ekstensi: objek compile-nya dipakai bersama, jadi dua lib hanya
+#     membayar satu compile godot-cpp.
 #
 # HEMAT KUOTA:
 #   * hanya jalan kalau berkas GDExt/skill/generator yang berubah (filter paths),
@@ -38,6 +44,18 @@ on:
       - 'hero_skills/**'
       - 'tools/gen_hero_skills_cpp.py'
       - 'tools/gen_hero_skill_kit.py'
+      - 'tools/gen_levels_cpp.py'
+      - 'tools/test_godot_level_data_parity.py'
+      - 'tools/test_levels_cpp_selftest.py'
+      - 'godot/addons/mystic_levels/**'
+      - 'godot/scripts/core/LevelDB.gd'
+      - 'godot/scripts/core/LevelDBLoader.gd'
+      - 'godot/scripts/core/BossDB.gd'
+      - 'godot/tests/LevelDataParityTest.gd'
+      - 'godot/tests/LevelDataGdextParityTest.gd'
+      - 'godot/tests/LevelDataGdextParityTest.tscn'
+      - 'godot/tests/fixtures/level_data.json'
+      - 'levels/**'
       - '.github/workflows/godot-gdext.yml'
   push:
     branches: [main]
@@ -55,6 +73,18 @@ on:
       - 'hero_skills/**'
       - 'tools/gen_hero_skills_cpp.py'
       - 'tools/gen_hero_skill_kit.py'
+      - 'tools/gen_levels_cpp.py'
+      - 'tools/test_godot_level_data_parity.py'
+      - 'tools/test_levels_cpp_selftest.py'
+      - 'godot/addons/mystic_levels/**'
+      - 'godot/scripts/core/LevelDB.gd'
+      - 'godot/scripts/core/LevelDBLoader.gd'
+      - 'godot/scripts/core/BossDB.gd'
+      - 'godot/tests/LevelDataParityTest.gd'
+      - 'godot/tests/LevelDataGdextParityTest.gd'
+      - 'godot/tests/LevelDataGdextParityTest.tscn'
+      - 'godot/tests/fixtures/level_data.json'
+      - 'levels/**'
       - '.github/workflows/godot-gdext.yml'
   workflow_dispatch:
 
@@ -77,7 +107,7 @@ env:
 
 jobs:
   build:
-    name: Build mystic_skills + paritas C++ vs oracle Pygame
+    name: Build mystic_skills + mystic_levels + paritas C++ vs oracle
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
@@ -96,6 +126,26 @@ jobs:
         run: |
           python3 tools/gen_hero_skill_kit.py --check
           python3 tools/gen_hero_skills_cpp.py --check
+          # levels/level_data.py -> levels_processor.h/.cpp (FASE 34). Kalau
+          # ini gagal, build C++ di bawah mengunci tabel level yang BASI.
+          python3 tools/gen_levels_cpp.py --check
+
+      # ── 0b. Paritas statis + self-test C++ di luar engine (levels) ──
+      # test_godot_level_data_parity.py: levels.json + FIELD_KINDS LevelDB.gd +
+      # literal tabel C++ vs ALL_LEVELS Python, fixture engine segar, wiring
+      # closed-world (loader/autoload/project.godot/.gdextension/.gitignore/
+      # kedua workflow). Tanpa compiler.
+      # test_levels_cpp_selftest.py: MENG-EXECUTE levels_processor.cpp apa
+      # adanya lewat stub Variant (godot/gdext/mystic_levels/selftest) — 245
+      # perintah: 54 baris x 17 field (nilai + tipe + urutan kunci), row_index,
+      # get_level_config, get_level_count, is_level_unlocked, get_next_level,
+      # py_contains (termasuk deviasi bool/int yang terdokumentasi). Butuh g++
+      # saja (tanpa godot-cpp), jalan ±2 detik, dan sengaja ditempatkan SEBELUM
+      # build godot-cpp yang ±10 menit: regresi data gagal cepat dan murah.
+      - name: Paritas levels (statis + self-test C++ tanpa engine)
+        run: |
+          python3 tools/test_godot_level_data_parity.py
+          python3 tools/test_levels_cpp_selftest.py
 
       # ── 1. godot-cpp: sumber + objek build di-cache per commit SHA ──
       - name: Resolve commit godot-cpp
@@ -106,20 +156,45 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           echo "godot-cpp $GODOT_CPP_REF = $SHA"
 
-      - name: Cache godot-cpp (sumber + objek)
+      # Cache SATU checkout bersama (bukan per ekstensi): kuncinya versi
+      # -shared-v1 karena lokasinya pindah dari godot/gdext/mystic_skills/.
+      - name: Cache godot-cpp (sumber + objek, dipakai bersama)
         id: cache-cpp
         uses: actions/cache@v4
         with:
-          path: godot/gdext/mystic_skills/godot-cpp
-          key: godot-cpp-${{ steps.cpp-ref.outputs.sha }}-linux-template_debug-optnone-v1
+          path: godot/gdext/godot-cpp
+          key: godot-cpp-${{ steps.cpp-ref.outputs.sha }}-linux-template_debug-optnone-shared-v1
+          # save-always: tanpa ini cache HANYA tersimpan kalau job sukses, jadi
+          # tiap run yang gagal di langkah tes membayar ulang compile godot-cpp
+          # (±10 menit) — persis yang terjadi saat debug PR FASE 34. Objek scons
+          # bersifat inkremental per berkas, jadi cache dari job yang gagal
+          # tetap aman dipakai (scons memverifikasi signature tiap target).
+          save-always: true
 
-      - name: Clone godot-cpp
+      - name: Clone godot-cpp (sekali untuk semua lib)
         if: steps.cache-cpp.outputs.cache-hit != 'true'
         run: |
-          rm -rf godot/gdext/mystic_skills/godot-cpp
+          rm -rf godot/gdext/godot-cpp
           git clone -b "$GODOT_CPP_REF" --depth 1 \
             https://github.com/godotengine/godot-cpp \
-            godot/gdext/mystic_skills/godot-cpp
+            godot/gdext/godot-cpp
+
+      # SConstruct tiap ekstensi mengharapkan godot-cpp DI DALAM direktorinya
+      # sendiri; symlink ke checkout bersama adalah jembatannya. Objek compile
+      # godot-cpp (±950 berkas) hidup di dalam direktori itu, jadi mystic_skills
+      # dan mystic_levels memakai ulang hasil compile yang sama — satu compile
+      # godot-cpp untuk dua lib. Kedua symlink di-gitignore.
+      - name: Symlink godot-cpp ke tiap ekstensi
+        run: |
+          set -euo pipefail
+          for lib in mystic_skills mystic_levels; do
+            link="godot/gdext/$lib/godot-cpp"
+            rm -rf "$link"
+            ln -s ../godot-cpp "$link"
+            test -f "$link/SConstruct" || {
+              echo "::error::$link tidak menunjuk checkout godot-cpp"; exit 1; }
+            echo "[gdext] $link -> ../godot-cpp"
+          done
 
       - name: Install scons
         run: python -m pip install --quiet scons
@@ -142,6 +217,22 @@ jobs:
           # kalau tidak Godot menolak memuat lib tanpa pesan yang jelas.
           nm -D --defined-only "$SO" | grep -q " T mystic_skills_library_init" \
             || { echo "::error::symbol mystic_skills_library_init tidak diekspor"; exit 1; }
+          echo "[gdext] OK: $SO + symbol entry ada"
+
+      # ── 2b. Build mystic_levels (levels/level_data.py -> godot++) ──
+      # Output: godot/addons/mystic_levels/bin/libmystic_levels.linux.template_debug.x86_64.so
+      # (suffix scons = nama berkas; kunci .gdextension-nya linux.debug.x86_64.)
+      - name: Build mystic_levels (linux x86_64)
+        working-directory: godot/gdext/mystic_levels
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          scons $SCONS_FLAGS -j"$(nproc)"
+          SO=../../addons/mystic_levels/bin/libmystic_levels.linux.template_debug.x86_64.so
+          ls -lh ../../addons/mystic_levels/bin/
+          test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
+          nm -D --defined-only "$SO" | grep -q " T mystic_levels_library_init" \
+            || { echo "::error::symbol mystic_levels_library_init tidak diekspor"; exit 1; }
           echo "[gdext] OK: $SO + symbol entry ada"
 
       # ── 3. Godot binary (di-cache; pola sama dengan godot-check.yml) ──
@@ -233,6 +324,59 @@ jobs:
           else
             cat /tmp/heroskill.gate
             echo "::error::SKILL-GDSCRIPT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/heroskill.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 8. UJI UTAMA FASE 34: katalog level C++ vs oracle Python ──
+      # LevelDataGdextParityTest memaksa backend LevelDBLoader ke "gdext" lalu:
+      #   (a) A/B backend untuk SELURUH permukaan API (54 baris katalog lewat
+      #       str(Dictionary) — ikut mengunci urutan kunci, 22 kasus
+      #       get_level_config, 20 is_level_unlocked, 15 py_contains, 2 deviasi
+      #       bool/int, 17 get_next_level termasuk tipe nilai balik float);
+      #   (b) replay godot/tests/fixtures/level_data.json yang direkam
+      #       levels/level_data.py ASLI (nilai + TIPE Python per field) lewat
+      #       MysticLevels (C++), termasuk wiring produksi BossDB/GameManager/
+      #       SaveManager.
+      # Require dua penanda: PASS dari test DAN baris loader yang membuktikan
+      # jalur C++ benar-benar dipakai (bukan diam-diam fallback GDScript).
+      # XDG_DATA_HOME diisolasi: test ini snapshot + restore data SaveManager.
+      - name: "LevelDataGdextParityTest (levels C++ ↔ oracle level_data.py)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/LevelDataGdextParityTest.tscn --quit-after 120 2>&1 \
+            | tee /tmp/levelsgdext.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/levelsgdext.log --label "LevelDataGdextParityTest" \
+              --require "[LevelDataGdextParityTest] PASS" \
+              --require "GDExtension MysticLevels aktif" > /tmp/levelsgdext.gate 2>&1; then
+            cat /tmp/levelsgdext.gate
+          else
+            cat /tmp/levelsgdext.gate
+            echo "::error::LEVELS-GDEXT-FAIL-TAIL: $(tail -40 /tmp/levelsgdext.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::LEVELS-GDEXT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/levelsgdext.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 9. Regresi jalur GDScript (lib levels TERPASANG, flag tetap false) ──
+      # Scene yang sama dengan godot-check.yml, tapi di sini libmystic_levels.so
+      # ada di addons/: fallback GDScript tidak boleh rusak hanya karena lib-nya
+      # terpasang (pola langkah 7 untuk hero_skills).
+      - name: "LevelDataParityTest (baseline GDScript, lib terpasang)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/LevelDataParityTest.tscn --quit-after 120 2>&1 \
+            | tee /tmp/levels.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/levels.log --label "LevelDataParityTest" \
+              --require "[LevelDataParityTest] PASS" > /tmp/levels.gate 2>&1; then
+            cat /tmp/levels.gate
+          else
+            cat /tmp/levels.gate
+            echo "::error::LEVELS-GDSCRIPT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/levels.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 
