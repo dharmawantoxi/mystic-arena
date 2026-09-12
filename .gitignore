@@ -18,6 +18,11 @@ godot/addons/mystic_lighting/bin/*.so
 godot/addons/mystic_lighting/bin/*.dll
 godot/addons/mystic_lighting/bin/*.dylib
 godot/addons/mystic_lighting/bin/*.framework/
+godot/addons/mystic_skills/bin/*.so
+godot/addons/mystic_skills/bin/*.dll
+godot/addons/mystic_skills/bin/*.dylib
+godot/addons/mystic_skills/bin/*.framework/
+godot/gdext/mystic_skills/godot-cpp/
 
 # ═══ Save game & log (jangan ikut ke repo) ═══
 savegame*.json
@@ -73,3 +78,5 @@ godot/build/
 godot/assets/sounds/
 godot/assets/items/
 godot/assets/presplash.png
+godot/gdext/mystic_skills/.sconsign.dblite
+godot/gdext/mystic_skills/src/*.os
