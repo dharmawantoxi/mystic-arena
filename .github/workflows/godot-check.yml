@@ -218,8 +218,8 @@ jobs:
           #   (a) --check = ui_processor.h/.cpp/ui_dispatch.inc byte-identik
           #       dengan transpile AST _bundle.py yang segar;
           #   (b) test_ui_cpp_selftest.py = MENG-EXECUTE ui_processor.cpp apa
-          #       adanya lewat stub Variant (tanpa engine): 206 cek di CI /
-          #       210 dengan checkout godot-cpp — nilai (fixture ui_hud =
+          #       adanya lewat stub Variant (tanpa engine): 208 cek di CI /
+          #       213 dengan checkout godot-cpp — nilai (fixture ui_hud =
           #       geometri popup/panel yang direkam pygame asli +
           #       _core.py/ui_theme.py), closed-world (tabel perintah
           #       == bind_static_method == deklarasi .h; setiap fungsi

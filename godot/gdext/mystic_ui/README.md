@@ -87,26 +87,28 @@ diarahkan ke shim kosong), lalu membandingkan balasannya dengan oracle:
   konstanta dibaca dari AST berkas yang sama);
 - built-in Python: `round()` half-to-even, `f"{v:,}"`, `int()`, `//`.
 
-Selain nilai (210 cek; 206 di CI yang tidak punya checkout godot-cpp), skrip
+Selain nilai (213 cek; 208 di CI yang tidak punya checkout godot-cpp), skrip
 mengunci **closed-world** (jumlah entri tabel
 perintah == jumlah `bind_static_method` == deklarasi `.h`, setiap fungsi
 ter-bind wajib punya perintah uji, tidak ada perintah di luar tabel) dan
 **audit wiring** (entry symbol, `.gdextension`, `.gitignore`, rujukan kedua
-workflow, allowlist SEMPIT `godot_log_gate`, bentuk cek symbol kelas yang
-benar: `nm` statis + demangle, BUKAN `nm -D`).
+workflow, allowlist SEMPIT `godot_log_gate`, bentuk cek isi `.so` yang benar:
+string khas tahan-strip + `nm -D` untuk entry — BUKAN `nm -D` untuk kelas
+(visibility hidden) dan BUKAN symbol table statis (di-strip `-s`)).
 
 Kalau ada checkout godot-cpp asli (`GODOT_CPP_DIR`, `godot/gdext/godot-cpp`,
 atau `/tmp/godot-cpp`) dan `gen/include`-nya sudah dibangkitkan, skrip juga
 mengompilasi `ui_processor.cpp` + `register_types.cpp` dengan `-fsyntax-only`
 terhadap header **asli** — ini penangkap bug yang lolos dari stub (mis.
 `color.r8()` alih-alih `color.get_r8()` di godot-cpp 4.3) — lalu
-meng-compile+**link** `.so` probe dengan default godot-cpp
-(`-fvisibility=hidden`) dan mengulang cek symbol langkah "Build mystic_ui":
-kelas `godot::MysticUI::` di symbol table STATIS (`nm -C`) dan
-`mystic_ui_library_init` di symbol table dinamis (`nm -D`). Dua bug nyata PR
-#234 (mangling `_ZN6…` vs `_ZN5…`, dan `nm -D` untuk symbol kelas padahal
-visibility-nya hidden) jadi ketahuan lokal dalam ±10 detik, bukan ±30 menit
-siklus CI.
+meng-compile+**link**+**strip** `.so` probe dengan flag default godot-cpp
+(`-fvisibility=hidden`; CI `debug_symbols=no` → `-s`) dan mengulang cek langkah
+"Build mystic_ui": `mystic_ui_library_init` di symbol table dinamis (`nm -D`),
+isi modul lewat string khas yang tahan strip (`ui_v1:11mod:80fn:`, `MysticUI`).
+Symbol table statis TIDAK dipakai: `-s` menghapusnya. Tiga bug nyata PR #234
+(`color.r8()`, `nm -D` untuk kelas padahal visibility-nya hidden, dan cek
+symbol statis padahal `.so` di-strip) jadi ketahuan lokal dalam ±10 detik,
+bukan ±30 menit siklus CI.
 
 ## Yang belum (jangan aktifkan `mystic/ui/use_gdext_ui` sebelum selesai)
 
@@ -117,9 +119,9 @@ siklus CI.
    backend, fallback senyap) dan setelan `mystic/ui/use_gdext_ui` (default
    **false**).
 3. Scene paritas engine (`UiComponentsGdextParityTest`) — langkah build
-   `mystic_ui` di `.github/workflows/godot-gdext.yml` (scons + cek symbol
-   entry `mystic_ui_library_init` lewat `nm -D`, kelas `MysticUI` lewat `nm -C`
-   statis) sudah ada dan menahan regresi link/registrasi.
+   `mystic_ui` di `.github/workflows/godot-gdext.yml` (scons + cek entry
+   `mystic_ui_library_init` lewat `nm -D` + string khas `ui_v1:11mod:80fn:` /
+   `MysticUI` yang tahan strip) sudah ada dan menahan regresi link/registrasi.
 4. `docs/UI_COMPONENTS_GODOTPP.md`.
 
 Sampai itu selesai, Python/pygame adalah satu-satunya backend dan tidak ada
