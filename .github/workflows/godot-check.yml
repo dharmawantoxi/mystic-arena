@@ -44,6 +44,8 @@ on:
       - 'tools/gen_hero_skills_cpp.py'
       - 'tools/gen_levels_cpp.py'
       - 'tools/test_godot_level_data_parity.py'
+      - 'tools/gen_maps_cpp.py'
+      - 'tools/test_godot_map_data_parity.py'
       - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
@@ -82,6 +84,8 @@ on:
       - 'tools/gen_hero_skills_cpp.py'
       - 'tools/gen_levels_cpp.py'
       - 'tools/test_godot_level_data_parity.py'
+      - 'tools/gen_maps_cpp.py'
+      - 'tools/test_godot_map_data_parity.py'
       - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
@@ -192,6 +196,18 @@ jobs:
           # ada di godot-gdext.yml.
           python3 tools/gen_levels_cpp.py --check
           python3 tools/test_godot_level_data_parity.py
+          # map_components/_bundle.py -> Godot (FASE 35), pasangan cek yang sama:
+          #   (a) --check = maps_processor.h/.cpp benar-benar hasil transpile
+          #       AST _bundle.py yang segar (byte-identik);
+          #   (b) test_godot_map_data_parity.py = SEMANTIK: themes_raw.json +
+          #       KEY_KINDS/waypoint/dekor/MT19937/derive MapDB.gd + literal
+          #       C++ vs _bundle.py (54 tema x 77 kunci union + PathGenerator
+          #       + DecorationGenerator), fixture MapDataParityTest segar, dan
+          #       wiring diaudit closed-world (ArenaMap -> MapDBLoader, setting
+          #       project.godot default false, entry_symbol .gdextension,
+          #       .gitignore, kedua workflow).
+          python3 tools/gen_maps_cpp.py --check
+          python3 tools/test_godot_map_data_parity.py
           # Scope-check hasil generate (identifier harus terdeklarasi di
           # param/var lokal/bridge Hero.gd) — tangkap 'Identifier not
           # declared' sebelum engine.
@@ -1076,6 +1092,29 @@ jobs:
             cat /tmp/levels.gate
             echo "::error::LEVELS-FAIL-TAIL: $(tail -40 /tmp/levels.log | tr '\n' ' | ' | cut -c1-3000)"
             echo "::error::LEVELS-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/levels.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # FASE 35: map_components/_bundle.py ↔ MapDB.gd (backend GDScript).
+      # Fixture map_data.json direkam oracle Python ASLI; scene mengunci
+      # runtime: 54 tema x kunci union (nilai + TIPE Color/PackedColorArray +
+      # urutan), theme_index/get_theme/build_theme, make_curved_path (5 kasus),
+      # lane/river 2 ukuran (titik PERSIS — menangkap deviasi float port lama),
+      # dekor 14 kategori x 2 varian toko (replika MT19937), isolasi mutasi,
+      # derive 54 palet vs themes.json (termasuk royal.energy = 1.169, kasus
+      # batas double-rounding), dan wiring ArenaMap (scene asli).
+      # Jalur C++ (MysticMaps) diuji MapDataGdextParityTest di godot-gdext.yml.
+      - name: "MapDataParityTest (map_components/_bundle.py ↔ MapDB.gd)"
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/MapDataParityTest.tscn --quit-after 120 2>&1 | tee /tmp/maps.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/maps.log --label "MapDataParityTest" \
+              --require "[MapDataParityTest] PASS" > /tmp/maps.gate 2>&1; then
+            cat /tmp/maps.gate
+          else
+            cat /tmp/maps.gate
+            echo "::error::MAPS-FAIL-TAIL: $(tail -40 /tmp/maps.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::MAPS-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/maps.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 

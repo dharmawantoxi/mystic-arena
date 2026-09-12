@@ -8,6 +8,41 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Peta `map_components/` — jalur native C++ (godot++) — 12 September 2026 (FASE 35)
+
+`map_components/_bundle.py` (palet + 54 tema + `PathGenerator` +
+`DecorationGenerator`) sebelumnya punya dua port GDScript yang ditulis tangan
+dan tidak teruji paritasnya: `ArenaMap._curved_path` (lane) dan
+`res://data/themes.json` + merge const (palet). Fase ini menambahkan
+**lapisan data + generator yang dibangkitkan dari AST** — backend GDScript
+(`MapDB.gd` + `data/themes_raw.json`), **lapisan C++** (`MysticMaps`,
+GDExtension `mystic_maps`), saklar backend, rewrite `ArenaMap`, dan lima lapis
+verifikasi — sekaligus menutup dua deviasi lane yang sudah ada di produksi.
+Renderer pygame (`static/decoration/shop/dynamic_renderer`) SENGAJA tidak
+dimigrasi: Fase 3 meng-cover render statik lewat bake tekstur, dan
+`DynamicRenderer` non-deterministik. Rincian teknis + semantik Python↔Godot:
+[MAPS_GODOTPP.md](MAPS_GODOTPP.md).
+
+| Bagian | Sebelum (FASE 35) | Sesudah |
+|---|---|---|
+| Sumber tema + generator | Dua port tangan: `ArenaMap._curved_path` (waypoint + Catmull-Rom_inline) dan `themes.json` (format TURUNAN converter: hex, key diganti, fog dipecah — lossy, tidak bisa dinormalkan balik) | Tiga lapisan dari satu sumber: Python (oracle) → GDScript (`scripts/core/MapDB.gd`, 975 baris: `KEY_KINDS` 77 kunci + `_normalize_row` + `make_curved_path` + replika MT19937 `PyMt` + `generate_decorations` + `derive_palette`, data `themes_raw.json` yang SETIA 1:1) → **C++** (`gdext/mystic_maps/src/maps_processor.h` 66 baris + `.cpp` 4.197 baris, entri POD per tema + tabel waypoint + 13 method static). `ArenaMap` kini memanggil `MapDBLoader`; `themes.json` tinggal sebagai pembanding independen |
+| Titik lane + smoothness | **Deviasi produksi**: `_curved_path` menyimpan float (Python `int()` trunc) dan memakai smoothness 10 untuk mid (Python: 8 → 65 titik, bukan 81) — minion berjalan di jalur yang sedikit beda | Kedua backend me-`trunc` + smoothness per lane dari AST (top 10, mid 8, bot 10, river 10); waypoint GDScript dibandingkan EKSPRESI-per-ekpresi dengan AST. Engine test mengunci titik PERSIS di 1280×720 + ganjil 1025×769 |
+| RNG dekor | `ArenaMap._build_decor` scatter PCG sendiri (sistem kurasi Godot, tetap dipertahankan — lihat bawah); `DecorationGenerator.generate_all` (`random.seed(42)`) tidak ada portnya | Replika MT19937 `init_by_array` di C++ (generated) + GDScript (`PyMt`) + cermin Python — semuanya dibuktikan se-stream dengan `random.Random(42)` (draw pertama 2746317213; 500 getrandbits + 500 randint + 200 choice). Oracle menangkap bug preseden `^` vs `+` di transkripsi pertama (stream salah total) sebelum engine. Bug `_too_close_to_base` lingkaran-1 direplika verbatim + dikunci |
+| `round()` bankir Python | `round()` GDScript = half-away (converter = half-even) — palet meleset 1 LSB di 3 kasus aktual | `MapDB.round_half_even` + `_round_nd` EKSAK via dekomposisi IEEE-754 (dua limb int64) — cara naif `round(x·m)/m` TERBUKTI salah untuk `royal.energy` (1.1685000000000001 → 1.169, bukan 1.168; bahkan repr terpendek `"1.1685"` ikut salah). Cermin dibuktikan == `round()` pada 32.500 nilai; engine mengunci 1.169 ujung-ke-ujung. Alpha dihitung dari `.a8` (int), bukan `.a` float32 |
+| Pemilihan backend | Tidak ada | `scripts/core/MapDBLoader.gd` (311 baris): `mystic/maps/use_gdext_maps` + `ClassDB.class_exists("MysticMaps")`, instance + katalog di-cache, `force_backend()`, `theme_palette()` = `derive(get_theme())`. Tidak pernah menyebut class GDExt sebagai identifier. `derive_palette`/`theme_palette`/`reload` GDScript-only (dikunci oracle); 13 method lain mencoba C++ dulu |
+| Verifikasi | Tidak ada: lane + palet tidak pernah dibandingkan dengan pygame | (1) `gen_maps_cpp.py --check` di **kedua** workflow; (2) `test_godot_map_data_parity.py` — **9.844 cek** tanpa pygame/engine/compiler (JSON setia, `KEY_KINDS`, keymap/flag, waypoint, struktur dekor dua-sisi, stream MT, bankir, derive == converter 54 tema, API tiga sisi, kesegaran `themes.json` + fixture, wiring closed-world); (3) `test_maps_cpp_selftest.py` — eksekusi `maps_processor.cpp` apa adanya (200 perintah, **19.834 cek**); (4) compile+link nyata (`nm -D` symbol); (5) `MapDataParityTest` (±10 ribu cek) + `MapDataGdextParityTest` (paksa C++ + A/B seluruh API) memutar ulang `map_data.json` (428 KB) dari `_bundle.py` ASLI: 54 tema, 5 kurva, lane/river 2 ukuran, dekor 2 varian (101 + 105 entri), derive 54 palet vs `themes.json`, wiring `ArenaMap` scene asli |
+| CI GDExt | Dua lib (`mystic_skills`, `mystic_levels`) | Tiga lib: symlink + build + `nm` `mystic_maps`, langkah paritas maps (statis + self-test SEBELUM build ±10 menit), scene GDExt + regresi GDScript |
+
+**Yang TIDAK berubah (sengaja):** `mystic/maps/use_gdext_maps` tetap `false` —
+jalur produksi masih GDScript, CI hanya membuild linux x86_64,
+`build-android-godot.yml` belum memanggil scons. `_build_decor` ArenaMap tetap
+scatter kurasi Godot (keputusan tercatat: 14 kategori pygame tidak dipetakan
+1:1 ke 6 jenis `DECOR_*`; posisi pygame tersedia via loader). Kurasi
+`modulate`/`light`/`energy` 4 tema pertama dipertahankan bit-identik (dikunci
+baterai 14). Python mengembalikan dict tema live; kedua backend Godot
+mengembalikan Dictionary SEGAR — deviasi terdokumentasi, dikunci isolasi
+mutasi. `_bundle.py` **tidak disunting** (`docs/MIGRASI_1_1.md`).
+
 ## Katalog level `levels/` — jalur native C++ (godot++) — 12 September 2026 (FASE 34)
 
 `levels/level_data.py` (2.347 baris: 54 literal dict `LEVEL_N` + `ALL_LEVELS` +

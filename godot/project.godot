@@ -165,3 +165,8 @@ skills/use_gdext_skills=false
 ; (MysticLevels) menggantikan LevelDB.gd + data/levels.json.
 ; true kalau sudah build lib di addons/mystic_levels/bin/ (SConstruct di godot/gdext/mystic_levels/)
 levels/use_gdext_levels=false
+; Fase Maps (port map_components/_bundle.py -> godot++): palet + 54 tema +
+; PathGenerator + DecorationGenerator dari C++ (MysticMaps) menggantikan
+; MapDB.gd + data/themes_raw.json.
+; true kalau sudah build lib di addons/mystic_maps/bin/ (SConstruct di godot/gdext/mystic_maps/)
+maps/use_gdext_maps=false

@@ -772,6 +772,95 @@ def export_themes():
         import traceback; traceback.print_exc()
 
 
+# ═══════════════════════════════════════════════════════════════════
+#  TEMA MAP MENTAH (map_components/_bundle.py -> godot/data/themes_raw.json)
+# ═══════════════════════════════════════════════════════════════════
+#
+# FASE 35 (migrasi map_components -> godot++): export_themes() di atas
+# menghasilkan format TURUNAN (hex, key diganti, fog dipecah, extras
+# turunan) yang LOSSY — tidak bisa dinormalkan kembali ke dict Python
+# (particle_colors_* hilang, fog_alpha dibulatkan, ambient_tint hanya
+# tersisa sebagai modulate). Backend GDScript MapDB.gd butuh skema yang
+# SETIA 1:1 dengan THEMES Python (kunci asli + urutan asli + tuple utuh),
+# didampingi tabel C++ MysticMaps yang dibangkitkan dari AST yang sama.
+#
+# Berbeda dengan export_themes(), fungsi ini TIDAK butuh pygame/SDL: tabel
+# dibaca sebagai literal AST (tidak di-import), jadi berjalan di CI statis
+# maupun mesin tanpa display. Tuple -> list JSON, None -> null; urutan
+# kunci = urutan literal dict (json.dump + JSON.parse_string Godot keduanya
+# mempertahankan urutan insert — dicek oracle paritas).
+
+def _raw_json_value(value):
+    if isinstance(value, tuple):
+        return [_raw_json_value(v) for v in value]
+    if isinstance(value, list):
+        return [_raw_json_value(v) for v in value]
+    return value
+
+
+def export_map_raw():
+    """THEMES + palet map_components/_bundle.py -> godot/data/themes_raw.json.
+
+    Backend GDScript (MapDB.gd) membaca berkas ini; C++ (MysticMaps) memakai
+    tabel yang dibangkitkan tools/gen_maps_cpp.py dari AST yang sama. Tanpa
+    pygame (AST): `python3 tools/convert_to_godot.py --map-raw`.
+    """
+    try:
+        import ast
+        src_path = os.path.join(ROOT, "map_components", "_bundle.py")
+        with open(src_path, encoding="utf-8") as f:
+            tree = ast.parse(f.read(), filename=src_path)
+
+        palettes = {}
+        tile_size = None
+        themes = {}
+        order = []
+        for node in tree.body:
+            if not (isinstance(node, ast.Assign) and len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)):
+                continue
+            nid = node.targets[0].id
+            if nid.endswith("_THEME") and isinstance(node.value, ast.Dict):
+                themes[nid] = ast.literal_eval(node.value)
+            elif nid == "THEMES" and isinstance(node.value, ast.Dict):
+                for key, val in zip(node.value.keys, node.value.values):
+                    order.append((ast.literal_eval(key), val.id))
+            elif nid.isupper() and not nid.startswith("_"):
+                try:
+                    value = ast.literal_eval(node.value)
+                except (ValueError, SyntaxError):
+                    continue
+                if nid == "TILE_SIZE":
+                    tile_size = value
+                elif isinstance(value, tuple):
+                    palettes[nid] = list(value)
+
+        themes_out = {}
+        for key, const in order:
+            row = themes[const]
+            themes_out[key] = {k: _raw_json_value(v) for k, v in row.items()}
+
+        out = {
+            "_generated_by": "tools/convert_to_godot.py export_map_raw()",
+            "_source": "map_components/_bundle.py THEMES+palettes (pygame, %d tema)"
+                       % len(themes_out),
+            "_note": "Skema SETIA 1:1 dict Python: kunci + urutan asli, tuple "
+                     "jadi list, None jadi null. Backend GDScript MapDB.gd "
+                     "menormalkan tipe (bandingkan FIELD_KINDS LevelDB.gd).",
+            "fallback": "forest",
+            "tile_size": tile_size,
+            "palettes": palettes,
+            "themes": themes_out,
+        }
+        write_json("themes_raw.json", out)
+        print("[convert] map_raw: %d tema, %d palet (%s ... %s)"
+              % (len(themes_out), len(palettes), next(iter(themes_out)),
+                 next(reversed(themes_out))))
+    except Exception as e:
+        print(f"[convert] map_raw failed: {e}", file=sys.stderr)
+        import traceback; traceback.print_exc()
+
+
 # Ekstensi audio yang importer Godot 4.3 kenal (WAV -> AudioStreamWAV,
 # Ogg Vorbis -> AudioStreamOggVorbis, MP3 -> AudioStreamMP3).
 AUDIO_EXTS = (".wav", ".ogg", ".mp3")
@@ -2542,6 +2631,10 @@ if __name__ == "__main__":
     if "--assets" in _argv:
         export_bin_assets()
         sys.exit(0)
+    # --map-raw: ekspor tema mentah saja (AST, tanpa pygame/numpy/display).
+    if "--map-raw" in _argv:
+        export_map_raw()
+        sys.exit(0)
     # Semua mode bake butuh numpy; tanpa itu minion tim merah dibakar lewat
     # jalur BLEND_* yang pikselnya beda (lihat _require_numpy).
     _require_numpy()
@@ -2579,6 +2672,7 @@ if __name__ == "__main__":
         export_nexus()
         export_economy()
         export_themes()
+        export_map_raw()
         export_map_bakes()
         export_sounds()
         export_items_png()
