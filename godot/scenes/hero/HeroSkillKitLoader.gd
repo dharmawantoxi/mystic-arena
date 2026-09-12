@@ -117,15 +117,8 @@ static func get_visual_duration(hero_type: String, key: String) -> int:
 		var r = _call_gdext("visual_duration", [hero_type, key])
 		if r != null:
 			return int(r)
-	# Fallback: GDScript punya __vis_dur dengan signature beda (kind, h, key)
-	# Untuk loader kita butuh mapping hero_type -> kind, jadi panggil via
-	# BOSS_HERO_VISUAL_DURATION / VISUAL_DURATION jika ada, else 0.
-	# Sederhana: coba panggil helper GDScript yang ada, atau fallback 40.
-	# HeroSkillKitGD.__vis_dur butuh h, jadi kita akses konstanta langsung
-	# kalau tersedia.
-	if HeroSkillKitGD.has_method("__vis_dur"):
-		# tidak punya h, fallback ke DEFAULT
-		return 40
+	# Fallback GDScript: __vis_dur butuh h, jadi tidak bisa dipanggil tanpa instance hero.
+	# Untuk keperluan loader (hanya expose constant), kembalikan default 40 frame.
 	return 40
 
 static func visual_duration(hero_type: String, key: String) -> int:
