@@ -160,3 +160,8 @@ rendering/light_dir_y=-1
 ; Fase Hero Skills (port hero_skills/_bundle.py -> godot++): C++ GDExtension menggantikan HeroSkillKit.gd transpiled
 ; true kalau sudah build lib di addons/mystic_skills/bin/ (SConstruct di godot/gdext/mystic_skills/)
 skills/use_gdext_skills=false
+; Fase Levels (port levels/level_data.py -> godot++): katalog 54 level + helper
+; get_level_config/get_level_count/is_level_unlocked/get_next_level dari C++
+; (MysticLevels) menggantikan LevelDB.gd + data/levels.json.
+; true kalau sudah build lib di addons/mystic_levels/bin/ (SConstruct di godot/gdext/mystic_levels/)
+levels/use_gdext_levels=false

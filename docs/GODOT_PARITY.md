@@ -8,6 +8,39 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Katalog level `levels/` — jalur native C++ (godot++) — 12 September 2026 (FASE 34)
+
+`levels/level_data.py` (2.347 baris: 54 literal dict `LEVEL_N` + `ALL_LEVELS` +
+`get_level_config` / `get_level_count` / `is_level_unlocked` / `get_next_level`)
+sebelumnya hanya punya satu port: `godot/data/levels.json` yang di-parse
+`BossDB.load_levels()`. Fase ini menambahkan **lapisan C++** (`MysticLevels`,
+GDExtension `mystic_levels`) yang dibangkitkan dari AST Python yang sama,
+saklar backend, dan tiga lapis verifikasi — sekaligus menutup bug kunci level
+yang sudah ada di produksi. Rincian teknis + semantik Python↔Godot:
+[LEVELS_GODOTPP.md](LEVELS_GODOTPP.md).
+
+| Bagian | Sebelum (FASE 34) | Sesudah |
+|---|---|---|
+| Sumber katalog | Satu jalur: `BossDB.load_levels()` membaca `res://data/levels.json` dengan `JSON.parse_string` | Tiga lapisan dari satu sumber: Python (oracle) → GDScript (`scripts/core/LevelDB.gd`, 257 baris: `FIELD_KINDS` + `_normalize_row` + cache statis) → **C++** (`gdext/mystic_levels/src/levels_processor.h` 55 baris + `.cpp` 682 baris, tabel POD 54 baris × 19 kolom + 54 array mini boss, 9 method static). `BossDB.load_levels()` kini mengambil katalog dari `LevelDBLoader.all_levels()`; 20+ pemakai `BossDB.levels` / `get_level` tidak berubah |
+| Tipe nilai field | **Semua angka float** — `JSON.parse_string` Godot 4.3 tidak punya cabang bilangan bulat (`core/io/json.cpp:341`), jadi `starting_gold = 1000.0`, `castle_start_level = 1.0`, `unlock_after_level = null` hanya di level 1 | Tipe Python dipulihkan: `FIELD_KINDS` (17 field: 11 `int`, 3 `float`, 4 `str` — dibaca dari berkas `.gd` oleh oracle statis, closed-world dua arah) menormalkan jalur GDScript; jalur C++ mengembalikan `int64`/`double` asli dari tabel. `unlock_after_level` nullable (`int?`) di kedua backend, dan kuncinya **selalu ada** (NIL untuk level 1) supaya `Dictionary.keys()` == `dict.keys()` Python |
+| Kunci level & progres save | `GameManager.is_level_unlocked()` memanggil `SaveManager.is_level_completed(int(required))` yang memakai `lv in completed` → `Array.has()` → `Variant::hash_compare` **strict tipe** (`core/variant/variant.cpp:3309`), padahal save hasil `JSON.parse_string` berisi float. Akibatnya `3 in [3.0]` **false**: setelah game dimuat ulang, level yang sudah tamat tampak terkunci lagi, badge "MAIN LAGI" hilang, deteksi replay `_grant_meta_reward` salah, tombol NEXT `GameOverOverlay` salah baca progres | Satu implementasi pembanding semantik `==` Python: `LevelDB.py_contains()` (GDScript) dan `MysticLevels::py_contains()` (C++, `Variant::evaluate(OP_EQUAL)`). `SaveManager.is_level_completed()` dan `is_level_unlocked()` (20 kasus fixture, termasuk `completed_levels` berisi float dan string) lewat itu. Deviasi yang **disengaja** dicatat + dikunci: `bool` vs `int` tidak punya evaluator `OP_EQUAL` (`variant_op.cpp:522-528`), jadi `1 in [True]` false di kedua backend Godot padahal Python true — `deviation_battery` mengunci keduanya sepakat |
+| Helper level | Tiga implementasi terpisah: `GameManager.next_level_number()` memakai `BossDB.get_level(nxt).is_empty()`, `level_count()` memakai `BossDB.levels.size()`, `is_level_unlocked()` menulis ulang logika `level_data.py:2318-2337` | Ketiganya delegasi ke `LevelDBLoader` (`get_next_level` / `get_level_count` / `is_level_unlocked`) yang menerjemahkan `None` Python → `null` → `0` untuk pemakai Godot lama. Batas helper dikunci fixture: `not config → False` (level 55 tetap terkunci walau 54 tamat), `required None → True`, `next > len(ALL_LEVELS) → None`, dan **tipe nilai balik** `get_next_level(3.0) → 4.0` (float, karena Python mengembalikan `current_level + 1` apa adanya) |
+| Pemilihan backend | Tidak ada | `scripts/core/LevelDBLoader.gd` (266 baris): `mystic/levels/use_gdext_levels` + `ClassDB.class_exists("MysticLevels")`, instance + katalog **di-cache** per backend, `force_backend()` untuk harness, `backend_name()`/`catalog_signature()` untuk debug, `_announce()` sekali per perubahan backend. **Tidak pernah** menyebut class GDExt sebagai identifier (di CI headless lib tidak ikut repo → Parse Error mematikan seluruh project). Perutean tipe: `_int_key()` mengembalikan `null` untuk float tak bulat / non-angka → turun ke `LevelDB.gd`, karena argumen C++ `int64_t` memangkas `3.5` jadi `3` padahal Python menjawab `None` |
+| Verifikasi C++ | Tidak ada: katalog hanya diperiksa `BossDataParityTest` dari sisi data boss | (1) `tools/gen_levels_cpp.py --check` di **kedua** workflow (`.h`/`.cpp` ter-commit harus byte-identik hasil transpile AST); (2) `tools/test_godot_level_data_parity.py` — **5.009 cek** tanpa pygame/engine/compiler: `levels.json` ↔ `ALL_LEVELS` (nilai+tipe+urutan kunci), `FIELD_KINDS` ↔ tipe Python, literal tabel C++ ↔ katalog Python bit-per-bit, kesegaran fixture, wiring closed-world (loader/3 autoload/`project.godot`/`.gdextension`/`.gitignore`/kedua workflow/harness self-test); (3) `tools/test_levels_cpp_selftest.py` — **mengeksekusi** `levels_processor.cpp` apa adanya lewat stub `Variant` (`gdext/mystic_levels/selftest/`, bukan bagian lib), 253 cek dalam ±2 detik dengan g++ saja, ditempatkan SEBELUM build godot-cpp yang ±10 menit; (4) compile+link nyata (`scons` + godot-cpp 4.3, symbol `mystic_levels_library_init` diverifikasi `nm -D`); (5) `LevelDataParityTest` (backend GDScript) + `LevelDataGdextParityTest` (backend DIPAKSA C++, gagal keras kalau `MysticLevels` tidak terdaftar, plus A/B `str(Dictionary)` seluruh permukaan API — ikut mengunci urutan kunci) memutar ulang `godot/tests/fixtures/level_data.json` (117 KB) yang direkam `level_data.py` ASLI: 54 baris, 22 kasus `get_level_config`, 20 `is_level_unlocked`, 15 `py_contains`, 17 `get_next_level`, 2 deviasi |
+| CI GDExt | Satu lib (`mystic_skills`), satu cache godot-cpp di `gdext/mystic_skills/godot-cpp` | Dua lib: `godot-cpp` di-clone SEKALI ke `godot/gdext/godot-cpp` lalu di-symlink ke tiap ekstensi (objek compile ±950 berkas dipakai bersama → satu compile godot-cpp untuk dua lib), cache key `-shared-v1`, langkah build + `nm` sendiri untuk `mystic_levels`, dan regresi "lib terpasang tapi flag false → tetap GDScript" |
+
+**Yang TIDAK berubah (sengaja):** `mystic/levels/use_gdext_levels` tetap
+`false` — jalur produksi masih GDScript (`LevelDB.gd` + `levels.json`), sama
+seperti FASE 33 untuk skill: C++ paritas-teruji di CI, tapi menyalakannya untuk
+pemain berarti mewajibkan lib per platform (dua arch Android + wasm) di setiap
+rilis. `build-android-godot.yml` belum memanggil scons. CI hanya membuild linux
+x86_64. `BossDB.get_level()` sengaja tetap scan `BossDB.levels` (bukan delegasi
+ke loader) supaya katalog yang dipegang `BossDB` konsisten untuk 20+
+pemakainya, termasuk harness yang menyuntik backend berbeda.
+`levels/level_data.py` **tidak disunting** — deviasi Godot dicatat dan dikunci
+fixture, bukan "diperbaiki" di sumber (`docs/MIGRASI_1_1.md`). Tidak ada RNG di
+`levels/`, jadi paritasnya deterministik penuh.
+
 ## Skill hero `hero_skills/` — jalur native C++ (godot++) — 12 September 2026 (FASE 33)
 
 `hero_skills/_bundle.py` (5.221 baris: `BaseSkill` 28 method, 6 kelas starter,

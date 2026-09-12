@@ -109,7 +109,12 @@ def check(root):
     problems = []
     scenes, scripts = [], []
     for dirpath, dirs, files in os.walk(root):
-        dirs[:] = [d for d in dirs if d not in (".godot", ".import")]
+        # "godot-cpp" = checkout sumber GDExtension (di-gitignore, ada hanya di
+        # mesin yang membuild lib / di CI godot-gdext.yml). Ia membawa project
+        # contoh sendiri (test/project/*.tscn -> res://main.gd) yang res://-nya
+        # relatif ke project ITU, bukan ke project ini, jadi selalu tampak
+        # sebagai ext_resource hilang. Bukan bug repo -> dilewati.
+        dirs[:] = [d for d in dirs if d not in (".godot", ".import", "godot-cpp")]
         for f in files:
             p = os.path.join(dirpath, f)
             if f.endswith((".tscn", ".tres")):

@@ -1,5 +1,15 @@
 # BossDB.gd — Port dari bosses/boss_data.py + levels/level_data.py
+#
+# FASE 34: katalog level tidak lagi di-parse dari levels.json di sini, tapi
+# diminta dari LevelDBLoader — saklar backend levels/level_data.py yang
+# memakai GDScript (LevelDB.gd + levels.json, default) atau GDExtension C++
+# MysticLevels (godot/gdext/mystic_levels, opt-in lewat
+# mystic/levels/use_gdext_levels). Bentuk hasilnya identik (Array of
+# Dictionary, tipe Python dipulihkan), jadi 20+ pemakai BossDB.levels /
+# BossDB.get_level tidak berubah.
 extends Node
+
+const LevelDBLoader = preload("res://scripts/core/LevelDBLoader.gd")
 
 var bosses: Dictionary = {}
 var levels: Array = []
@@ -31,12 +41,15 @@ func load_bosses():
 	print("[BossDB] Loaded %d bosses" % bosses.size())
 
 func load_levels():
-	var path = "res://data/levels.json"
-	if FileAccess.file_exists(path):
-		var f = FileAccess.open(path, FileAccess.READ)
-		var data = JSON.parse_string(f.get_as_text())
-		levels = data if data is Array else []
-		print("[BossDB] Loaded %d levels" % levels.size())
+	# LevelDBLoader = satu-satunya pintu katalog level (GDScript LevelDB.gd
+	# atau C++ MysticLevels). Peringatan "levels.json belum ada" dicetak
+	# LevelDB.gd sendiri; MainMenu tetap menampilkan kartu penjelasan kalau
+	# hasilnya kosong.
+	levels = LevelDBLoader.all_levels()
+	if levels.is_empty():
+		return
+	print("[BossDB] Loaded %d levels (backend %s)"
+		% [levels.size(), LevelDBLoader.backend_name()])
 
 ## Jalur pemulihan katalog: pipeline 5 langkah BossData atas tabel mentah.
 ## Field yang tidak ikut pipeline (nama/warna/radius/kecepatan/label) tidak
@@ -71,6 +84,13 @@ static func title_from_key(key: String) -> String:
 func get_boss(boss_type: String) -> Dictionary:
 	return bosses.get(boss_type, {})
 
+## Config satu level ({} kalau tidak ada) — padanan levels.get_level_config.
+## Sengaja tetap scan `levels` (bukan LevelDBLoader.get_level_config) supaya
+## BossDB selalu konsisten dengan katalog yang DIPEGANG-nya: harness paritas
+## menyuntik backend berbeda, dan pemakai yang menyimpan BossDB.levels harus
+## melihat baris yang sama. Isinya tetap berasal dari backend aktif karena
+## load_levels() mengambilnya dari LevelDBLoader. Semantik null-vs-{} milik
+## loader (Python mengembalikan None) dikunci LevelDataParityTest.
 func get_level(level_num: int) -> Dictionary:
 	for lv in levels:
 		if lv.get("level_number") == level_num:

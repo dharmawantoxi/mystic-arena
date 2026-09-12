@@ -353,6 +353,48 @@ A/B backend) di workflow `godot-gdext.yml`; kesegaran kedua generator dijaga
 `gen_hero_skill_kit.py --check` + `gen_hero_skills_cpp.py --check` di
 `godot-check.yml`. Rincian: `docs/HERO_SKILLS_GODOTPP.md`.
 
+## Katalog level: GDScript (default) atau C++ godot++ (opt-in)
+
+`levels/level_data.py` (54 level × 17 field + 4 helper) punya **dua** port dari
+satu sumber, dan `BossDB` / `GameManager` / `SaveManager` tidak tahu mana yang
+jalan:
+
+```
+levels/level_data.py
+  ├─ tools/convert_to_godot.py -> data/levels.json -> scripts/core/LevelDB.gd   (GDScript, default)
+  └─ tools/gen_levels_cpp.py   -> gdext/mystic_levels/src/*.cpp  (C++ GDExtension)
+                                        │ scons + godot-cpp
+                                        ▼
+                     addons/mystic_levels/bin/libmystic_levels.<platform>.<target>.<arch>.so
+                                        │
+                     scripts/core/LevelDBLoader.gd  <- BossDB.load_levels(),
+                                                       GameManager.level_count()/
+                                                       next_level_number()/is_level_unlocked()
+```
+
+Default `mystic/levels/use_gdext_levels=false`: katalog jalan lewat GDScript,
+**tanpa butuh compiler**. `LevelDB.gd` memulihkan tipe Python yang hilang di
+`JSON.parse_string` (semua angka Godot jadi float) lewat `FIELD_KINDS`. Untuk
+mencoba jalur native:
+
+```bash
+cd godot/gdext/mystic_levels
+git clone -b godot-4.3-stable --depth 1 https://github.com/godotengine/godot-cpp godot-cpp
+scons platform=linux target=template_debug -j4
+# lalu set mystic/levels/use_gdext_levels=true di project.godot (atau
+# LevelDBLoader.force_backend("gdext") dari kode/harness)
+```
+
+Kalau lib tidak ada, loader jatuh ke GDScript tanpa error — F5 di mesin tanpa
+toolchain tetap normal. Paritas dijaga tiga lapis: `tools/test_godot_level_data_parity.py`
+(statis, 5.009 cek: levels.json + FIELD_KINDS + literal tabel C++ vs
+`level_data.py`, tanpa engine), `tools/test_levels_cpp_selftest.py`
+(**menjalankan** `levels_processor.cpp` lewat stub Variant — butuh g++ saja,
+±2 detik), dan `tests/LevelDataParityTest.tscn` /
+`tests/LevelDataGdextParityTest.tscn` (replay fixture oracle di engine; yang
+kedua memaksa backend C++ + A/B) di workflow `godot-gdext.yml`. Rincian:
+`docs/LEVELS_GODOTPP.md`.
+
 ## Asset Pipeline
 
 - `godot/data/*.json` — hasil convert, dibaca `HeroDB`/`BossDB`/`ArenaMap`. Ikut repo (bukan

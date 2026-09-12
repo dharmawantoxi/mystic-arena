@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+import os
+import sys
+
+# SConstruct untuk Mystic Levels GDExtension (port levels/level_data.py -> godot++)
+# Cara pakai:
+#   cd godot/gdext/mystic_levels
+#   git clone -b godot-4.3-stable https://github.com/godotengine/godot-cpp godot-cpp --depth 1
+#   scons platform=linux target=template_debug -j4
+#   scons platform=linux target=template_release -j4
+#   scons platform=android target=template_release android_arch=arm64v8 -j4
+#
+# godot-cpp BOLEH dipakai bersama dengan ekstensi lain (mystic_skills,
+# mystic_lighting) lewat symlink — objek build godot-cpp ada DI DALAM
+# direktori godot-cpp, jadi dua ekstensi yang menunjuk checkout yang sama
+# memakai ulang hasil compile yang sama:
+#   git clone -b godot-4.3-stable --depth 1 \
+#     https://github.com/godotengine/godot-cpp godot/gdext/godot-cpp
+#   ln -s ../godot-cpp godot/gdext/mystic_levels/godot-cpp
+# Itulah yang dilakukan CI (.github/workflows/godot-gdext.yml): satu clone +
+# satu cache untuk dua lib yang dibuild (mystic_skills + mystic_levels);
+# mystic_lighting ikut pola yang sama kalau nanti ikut dibuild.
+
+if not os.path.isdir("godot-cpp"):
+    print("\n[ERROR] godot-cpp tidak ditemukan!")
+    print("Jalankan:")
+    print("  git clone -b godot-4.3-stable https://github.com/godotengine/godot-cpp godot-cpp --depth 1")
+    print("Atau pakai checkout bersama (hemat compile kalau sudah build ekstensi lain):")
+    print("  ln -s ../godot-cpp godot-cpp")
+    print("")
+    sys.exit(1)
+
+env = SConscript("godot-cpp/SConstruct")
+
+env.Append(CPPPATH=["src/"])
+
+sources = Glob("src/*.cpp")
+
+if env["platform"] == "macos":
+    library = env.SharedLibrary(
+        "../../addons/mystic_levels/bin/libmystic_levels.{}.{}.framework/libmystic_levels.{}.{}".format(
+            env["platform"], env["target"], env["platform"], env["target"]
+        ),
+        source=sources,
+    )
+else:
+    # suffix sudah mengandung platform+target+arch, contoh
+    # ".linux.template_debug.x86_64" — nama berkas inilah yang harus ditulis
+    # di [libraries] addons/mystic_levels/mystic_levels.gdextension (kunci
+    # Godot-nya linux.debug.x86_64, NILAI-nya nama berkas scons).
+    library = env.SharedLibrary(
+        "../../addons/mystic_levels/bin/libmystic_levels{}{}".format(env["suffix"], env["SHLIBSUFFIX"]),
+        source=sources,
+    )
+
+Default(library)
+
+print("\n[Mystic Levels] Building for platform={} target={} arch={}".format(env["platform"], env["target"], env.get("arch", "default")))
+print("[Mystic Levels] Output -> godot/addons/mystic_levels/bin/")
+print("[Mystic Levels] Setelah build, aktifkan di project.godot:")
+print("  mystic/levels/use_gdext_levels=true")
+print("")
