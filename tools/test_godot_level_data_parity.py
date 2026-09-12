@@ -1075,6 +1075,26 @@ def check_wiring(catalog):
                    "LevelDataParityTest.tscn"):
         expect(needle in gdext, "godot-gdext.yml kehilangan %s" % needle)
 
+    # LevelDB.py_equal: penjaga tipe (deviasi bool/int) + perbandingan NILAI
+    # untuk tipe yang sama. Bug nyata yang hanya ketahuan di engine
+    # (LevelDataParityTest, CI PR ini): cabang terakhir `return false` membuat
+    # `None in [1, None]` menjawab false padahal Python true — dan jalur C++
+    # (Variant::evaluate OP_EQUAL(NIL, NIL) = AlwaysTrue, variant_op.cpp:522)
+    # menjawab true, jadi A/B backend juga akan pecah.
+    level_db = LEVELDB_GD.read_text(encoding="utf-8")
+    body = gd_function_body(level_db, "py_equal")
+    expect(bool(body), "py_equal tidak ditemukan di LevelDB.gd")
+    if body:
+        expect("if ta != tb:" in body,
+               "py_equal harus menolak pasangan beda tipe (deviasi bool/int "
+               "Python True == 1 tidak boleh ikut")
+        expect(body.rstrip().endswith("return bool(a == b)"),
+               "py_equal harus jatuh ke `a == b` untuk tipe yang sama "
+               "(NIL/Array/Dictionary deep compare di Godot = nilai di Python); "
+               "`return false` di akhir membuat None in [1, None] salah")
+        expect("float(a) == float(b)" in body,
+               "py_equal harus membandingkan numerik lintas tipe (1 == 1.0)")
+
     # godot_log_gate.py: lib .so TIDAK ikut repo, jadi langkah "Import project"
     # di godot-check.yml selalu mencetak "Failed loading resource:
     # res://addons/mystic_levels/mystic_levels.gdextension" + "GDExtension

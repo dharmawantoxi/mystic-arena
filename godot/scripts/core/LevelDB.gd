@@ -243,6 +243,20 @@ static func py_contains(haystack: Array, needle) -> bool:
 ## dibandingkan lintas tipe, selain itu harus se-tipe. bool TIDAK disamakan
 ## dengan int (Python: True == 1) — deviasi dicatat docs/LEVELS_GODOTPP.md;
 ## save Godot hanya menyimpan int/float jadi tidak pernah terjadi.
+##
+## Sesudah penjaga tipe, sisanya diserahkan ke `==` Godot karena untuk tipe
+## yang SAMA keduanya sepakat: NIL selalu sama (engine mendaftarkan
+## OperatorEvaluatorAlwaysTrue untuk OP_EQUAL(NIL, NIL), variant_op.cpp:522),
+## String/bool membandingkan nilai, dan Array/Dictionary deep-compare
+## (OperatorEvaluatorEqual<Array/Dictionary>, variant_op.cpp:555-556) — sama
+## seperti `==` Python untuk list/dict. Jalur C++ MysticLevels::py_contains
+## memakai Variant::evaluate(OP_EQUAL) yang memang evaluator-evaluator itu,
+## jadi kedua backend selalu sepakat (dikunci A/B LevelDataGdextParityTest).
+##
+## Dulu cabang terakhir `return false`, sehingga `None in [1, None]` menjawab
+## false padahal Python true — bug yang hanya terlihat saat scene dijalankan
+## (LevelDataParityTest di CI): kasus null tidak mungkin muncul dari save, tapi
+## fixture oracle memang menguncinya.
 static func py_equal(a, b) -> bool:
 	var ta := typeof(a)
 	var tb := typeof(b)
@@ -252,6 +266,4 @@ static func py_equal(a, b) -> bool:
 		return float(a) == float(b)
 	if ta != tb:
 		return false
-	if ta == TYPE_STRING or ta == TYPE_STRING_NAME or ta == TYPE_BOOL:
-		return bool(a == b)
-	return false
+	return bool(a == b)

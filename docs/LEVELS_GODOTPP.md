@@ -214,6 +214,19 @@ Perbaikannya satu implementasi untuk kedua pemakai: `LevelDB.py_contains()`
 dan `MysticLevels::py_contains()` (C++, `Variant::evaluate(OP_EQUAL, …)`).
 `SaveManager.is_level_completed()` dan `is_level_unlocked()` sekarang lewat itu.
 
+**Bug kedua di fungsi yang sama, ketahuan hanya di engine.** Draf pertama
+`LevelDB.py_equal()` menutup semua tipe non-primitif dengan `return false`,
+jadi `None in [1, None]` menjawab `false` padahal Python `true`. Jalur C++
+sudah benar sejak awal — engine mendaftarkan
+`OperatorEvaluatorAlwaysTrue<OP_EQUAL, NIL, NIL>` (`variant_op.cpp:522`) dan
+`OperatorEvaluatorEqual<Array/Dictionary>` (`:555-556`), jadi `Variant::evaluate`
+membandingkan NIL/Array/Dictionary berdasarkan nilai, persis `==` Python.
+Sekarang GDScript menyerahkan sisa tipe ke `==` Godot sesudah penjaga tipe, dan
+oracle statis mengunci bentuk fungsi itu (`if ta != tb` + jatuh ke
+`return bool(a == b)`) supaya tidak mundur lagi. Kasusnya tidak mungkin muncul
+dari save (isinya int/float), tapi fixture oracle memang menguncinya — dan
+`LevelDataParityTest` di CI yang menangkapnya: 1 kegagalan dari 2.057 cek.
+
 ### 5. Deviasi yang **disengaja**: `bool` vs `int`
 
 Python: `1 in [True]` → `True` (karena `True == 1`). Godot: tidak ada evaluator
@@ -331,11 +344,13 @@ Oracle statis mengunci kedua sifat itu (allowlist ada, pola telarang tidak).
 | 1 | `tools/gen_levels_cpp.py --check` | Python saja | `.h`/`.cpp` ter-commit byte-identik hasil transpile AST | — |
 | 2 | `tools/test_godot_level_data_parity.py` | Python saja (tanpa pygame, tanpa engine, tanpa compiler) | `levels.json` ↔ `ALL_LEVELS` (nilai+tipe+urutan kunci), `FIELD_KINDS` ↔ tipe Python (closed-world dua arah), literal tabel C++ ↔ katalog Python (54 baris × 19 kolom + 54 array mini boss, bit-per-bit), kesegaran fixture, wiring (loader/3 autoload/`project.godot`/`.gdextension`/`.gitignore`/kedua workflow/ harness self-test) | **5.009** |
 | 3 | `tools/test_levels_cpp_selftest.py` | g++ saja (±2 detik) | **mengeksekusi** `levels_processor.cpp` apa adanya lewat stub `Variant`: 54 baris × 17 field (nilai+tipe+urutan kunci), `row_index`, 20 kasus `get_level_config`, `get_level_count`, 20 `is_level_unlocked`, 12 `get_next_level`, 15 `py_contains`, 2 deviasi bool/int | **253** |
-| 4 | `godot/tests/LevelDataParityTest.tscn` | Godot 4.3 headless | replay fixture di engine, backend GDScript: katalog, 4 helper, `py_contains`, wiring produksi (`BossDB`/`GameManager`/`SaveManager`), snapshot+restore save | 9 seksi |
+| 4 | `godot/tests/LevelDataParityTest.tscn` | Godot 4.3 headless | replay fixture di engine, backend GDScript: katalog, 4 helper, `py_contains`, wiring produksi (`BossDB`/`GameManager`/`SaveManager`), snapshot+restore save | **2.057** (9 seksi) |
 | 5 | `godot/tests/LevelDataGdextParityTest.tscn` | Godot + lib `.so` | memaksa backend `gdext` (gagal keras kalau `MysticLevels` tidak terdaftar), replay fixture yang sama lewat C++, **plus** A/B backend untuk seluruh permukaan API (`str(Dictionary)` ikut mengunci urutan kunci) | A/B + fixture |
 
 Lapis 2 jalan di `godot-check.yml` (tanpa compiler); lapis 1, 3, 5 + build lib
-jalan di `godot-gdext.yml`. Lapis 3 sengaja ditempatkan **sebelum** build
+jalan di `godot-gdext.yml`. Lapis 4–5 bukan formalitas: lapis 4 yang menangkap
+bug `py_equal` di §4 (nilai `null` tidak mungkin terlihat oleh parser statis
+maupun stub C++, karena yang salah justru cabang fallback GDScript-nya). Lapis 3 sengaja ditempatkan **sebelum** build
 godot-cpp: regresi data/logika gagal dalam detik, bukan setelah sepuluh menit.
 
 Kenapa lapis 3 perlu kalau sudah ada lapis 2? Lapis 2 **mem-parse** literal
