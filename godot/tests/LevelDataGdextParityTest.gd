@@ -56,7 +56,7 @@ func _boot() -> void:
 	# A/B butuh baterai fixture; base _boot() memuatnya lagi (murah, dan
 	# snapshot save memang harus terjadi setelah jalur C++ terbukti aktif).
 	_load_fixture()
-	if _failures == 0:
+	if not _fx.is_empty():
 		_ab_battery()
 
 	# Sisa baterai = persis LevelDataParityTest, tapi tiap panggilan katalog
@@ -71,6 +71,16 @@ func _boot() -> void:
 func _ab_battery() -> void:
 	var got_c := _collect("gdext")
 	var got_g := _collect("gdscript")
+	# Label backend BUKAN bagian permukaan API yang dibandingkan — isinya justru
+	# HARUS beda. Kalau sama, force_backend() tidak benar-benar berpindah dan
+	# seluruh A/B ini tidak berarti, jadi labelnya dijadikan assertion sendiri
+	# lalu dibuang dari kamus sebelum perbandingan kunci demi kunci.
+	_expect(str(got_c.get("backend")) == "gdext"
+		and str(got_g.get("backend")) == "gdscript",
+		"force_backend() tidak mengganti backend (A=%s, B=%s) — A/B tidak berarti"
+		% [str(got_c.get("backend")), str(got_g.get("backend"))])
+	got_c.erase("backend")
+	got_g.erase("backend")
 	LevelsLoader.force_backend("gdext")
 	var keys := got_c.keys()
 	keys.sort()
@@ -90,6 +100,8 @@ func _ab_battery() -> void:
 func _collect(backend: String) -> Dictionary:
 	LevelsLoader.force_backend(backend)
 	var out := {}
+	# Kunci "backend" = label batch ini (dipakai _ab_battery sebagai bukti
+	# force_backend() bekerja); dihapus sebelum kamus A dan B dibandingkan.
 	out["backend"] = LevelsLoader.backend_name()
 	out["count"] = LevelsLoader.get_level_count()
 	var rows: Array = LevelsLoader.all_levels()

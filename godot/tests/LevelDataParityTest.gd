@@ -66,7 +66,14 @@ func _boot() -> void:
 	_snapshot()
 	_load_fixture()
 	Loader.force_backend(backend_override)
-	if _failures == 0:
+	# Penjaga: kalau fixture tidak termuat, SEMUA baterai gagal beruntun dan
+	# menenggelamkan penyebabnya. Sebaliknya, kegagalan di satu baterai sengaja
+	# TIDAK menghentikan baterai lain — dulu syaratnya `if _failures == 0`, dan
+	# itu membuat satu kegagalan A/B di LevelDataGdextParityTest menyembunyikan
+	# 2.057 cek sisanya di CI (log cuma menunjukkan 133 cek).
+	if _fx.is_empty():
+		_fail("fixture tidak termuat — seluruh baterai dilewati")
+	else:
 		_test_backend_active()
 		_test_signature_and_count()
 		_test_all_levels()

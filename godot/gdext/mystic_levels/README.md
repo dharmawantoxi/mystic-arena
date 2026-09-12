@@ -119,7 +119,7 @@ dikirim ke C++ — itu jalur GDScript), jadi self-test tidak diam-diam
 
 ```bash
 python3 tools/gen_levels_cpp.py --check             # 1. kesegaran transpile
-python3 tools/test_godot_level_data_parity.py       # 2. oracle statis (5.009 cek)
+python3 tools/test_godot_level_data_parity.py       # 2. oracle statis (5.162 cek)
 python3 tools/test_levels_cpp_selftest.py           # 3. eksekusi C++ (253 cek)
 godot --headless --path godot res://tests/LevelDataParityTest.tscn      --quit-after 120
 godot --headless --path godot res://tests/LevelDataGdextParityTest.tscn --quit-after 120

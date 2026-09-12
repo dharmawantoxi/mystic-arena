@@ -387,7 +387,7 @@ scons platform=linux target=template_debug -j4
 
 Kalau lib tidak ada, loader jatuh ke GDScript tanpa error — F5 di mesin tanpa
 toolchain tetap normal. Paritas dijaga tiga lapis: `tools/test_godot_level_data_parity.py`
-(statis, 5.009 cek: levels.json + FIELD_KINDS + literal tabel C++ vs
+(statis, 5.162 cek: levels.json + FIELD_KINDS + literal tabel C++ vs
 `level_data.py`, tanpa engine), `tools/test_levels_cpp_selftest.py`
 (**menjalankan** `levels_processor.cpp` lewat stub Variant — butuh g++ saja,
 ±2 detik), dan `tests/LevelDataParityTest.tscn` /

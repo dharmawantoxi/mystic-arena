@@ -164,6 +164,12 @@ jobs:
         with:
           path: godot/gdext/godot-cpp
           key: godot-cpp-${{ steps.cpp-ref.outputs.sha }}-linux-template_debug-optnone-shared-v1
+          # save-always: tanpa ini cache HANYA tersimpan kalau job sukses, jadi
+          # tiap run yang gagal di langkah tes membayar ulang compile godot-cpp
+          # (±10 menit) — persis yang terjadi saat debug PR FASE 34. Objek scons
+          # bersifat inkremental per berkas, jadi cache dari job yang gagal
+          # tetap aman dipakai (scons memverifikasi signature tiap target).
+          save-always: true
 
       - name: Clone godot-cpp (sekali untuk semua lib)
         if: steps.cache-cpp.outputs.cache-hit != 'true'
