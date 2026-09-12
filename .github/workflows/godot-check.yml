@@ -218,12 +218,14 @@ jobs:
           #   (a) --check = ui_processor.h/.cpp/ui_dispatch.inc byte-identik
           #       dengan transpile AST _bundle.py yang segar;
           #   (b) test_ui_cpp_selftest.py = MENG-EXECUTE ui_processor.cpp apa
-          #       adanya lewat stub Variant (tanpa engine): 205 cek nilai
-          #       (fixture ui_hud = geometri popup/panel yang direkam pygame
-          #       asli + _core.py/ui_theme.py), closed-world (tabel perintah
+          #       adanya lewat stub Variant (tanpa engine): 206 cek di CI /
+          #       210 dengan checkout godot-cpp — nilai (fixture ui_hud =
+          #       geometri popup/panel yang direkam pygame asli +
+          #       _core.py/ui_theme.py), closed-world (tabel perintah
           #       == bind_static_method == deklarasi .h; setiap fungsi
           #       ter-bind diuji), dan audit wiring (entry symbol, allowlist
-          #       SEMPIT godot_log_gate, rujukan kedua workflow).
+          #       SEMPIT godot_log_gate, rujukan kedua workflow, bentuk cek
+          #       symbol .so yang benar).
           python3 tools/gen_ui_cpp.py --check
           python3 tools/test_ui_cpp_selftest.py
           # Scope-check hasil generate (identifier harus terdeklarasi di

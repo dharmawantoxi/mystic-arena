@@ -921,6 +921,23 @@ def wiring_checks():
                    "for lib in mystic_skills mystic_levels mystic_maps mystic_ui"):
         expect(needle in gdext_yml,
                "godot-gdext.yml tak merujuk %s" % needle)
+
+    # Cek symbol KELAS di .so tidak boleh memakai `nm -D`: godot-cpp default
+    # symbols_visibility=hidden (-fvisibility=hidden), jadi hanya entry point
+    # GDE_EXPORT yang tampak di symbol table dinamis — `nm -D | grep MysticUI`
+    # MUSTAHIL cocok dan membuat langkah "Build mystic_ui" gagal palsu
+    # (kejadian nyata CI PR #234; mangling kelasnya juga `_ZN5godot8MysticUI…`,
+    # karena "godot" 5 huruf, bukan `_ZN6godot…`). Symbol kelas tetap ada di
+    # symbol table statis sebagai lokal ('t') — itu yang dipakai.
+    expect('nm -C --defined-only "$SO" > /tmp/mystic_ui_syms.txt' in gdext_yml
+           and 'grep -q "godot::MysticUI::" /tmp/mystic_ui_syms.txt' in gdext_yml,
+           "godot-gdext.yml tidak memverifikasi symbol kelas MysticUI lewat "
+           "symbol table STATIS (nm -C ke berkas lalu grep). Pipeline "
+           "`nm -C | grep -q` juga salah: keluaran ±800 baris bikin grep -q "
+           "menutup pipe → nm kena SIGPIPE → `set -o pipefail` gagal palsu")
+    expect('nm -D --defined-only "$SO" | grep -q "_ZN' not in gdext_yml,
+           "godot-gdext.yml memakai `nm -D` untuk symbol kelas — dengan "
+           "symbols_visibility=hidden godot-cpp itu mustahil cocok")
     gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
     expect("godot/addons/mystic_ui/bin/*.so" in gitignore,
            ".gitignore tidak mengabaikan lib mystic_ui")
@@ -936,6 +953,14 @@ def godot_cpp_syntax_check(compiler):
     sendiri sehingga tidak ketahuan). Di CI godot-gdext hal ini sudah dicakup
     build scons; di sini supaya ketahuan sebelum push. Tanpa checkout, langkah
     ini dilewati (bukan kegagalan).
+
+    Kalau header asli ada, sekaligus compile+LINK .so probe dengan
+    `-fvisibility=hidden` (default godot-cpp) dan mengulang cek symbol langkah
+    "Build mystic_ui" di godot-gdext.yml: kelas `godot::MysticUI::` harus ada di
+    symbol table STATIS (`nm -C`) dan `mystic_ui_library_init` harus dinamis
+    (`nm -D`). Dua kegagalan nyata PR #234 (mangling salah + `nm -D` untuk kelas
+    padahal visibility hidden) jadi ketahuan dalam ±10 detik, bukan ±30 menit
+    siklus CI.
     """
     import os
     candidates = [os.environ.get("GODOT_CPP_DIR"),
@@ -966,6 +991,44 @@ def godot_cpp_syntax_check(compiler):
                % proc.stderr.strip().split("\n")[-1][:200])
         if proc.returncode != 0:
             print(proc.stderr[:2000])
+            return
+
+        # (b) Compile+LINK .so NYATA dengan flag default godot-cpp
+        # (symbols_visibility=hidden) lalu ULANGI cek symbol langkah "Build
+        # mystic_ui" tanpa menunggu siklus CI ±30 menit. Symbol godot tetap
+        # undefined di .so — legal dan sama seperti godot-cpp statis yang
+        # di-link scons.
+        nm = shutil.which("nm")
+        if nm is None:
+            print("[ui_selftest] `nm` tidak ada — cek symbol .so dilewati")
+            return
+        probe = Path("/tmp/ui_probe.so")
+        cmd = [compiler, "-std=c++17", "-fPIC", "-fvisibility=hidden", "-O1",
+               "-shared", "-I", str(base_path / "include"), "-I", str(gen),
+               "-I", str(base_path / "gdextension"),
+               "-I", str(SRC), str(SRC / "ui_processor.cpp"),
+               str(SRC / "register_types.cpp"), "-o", str(probe)]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        section("symbol .so seperti langkah CI (compile+link nyata)")
+        expect(proc.returncode == 0,
+               "compile+link .so probe gagal: %s"
+               % proc.stderr.strip().split("\n")[-1][:200])
+        if proc.returncode != 0:
+            print(proc.stderr[:2000])
+            return
+        static = subprocess.run([nm, "-C", "--defined-only", str(probe)],
+                                capture_output=True, text=True).stdout
+        dynamic = subprocess.run([nm, "-D", "--defined-only", str(probe)],
+                                 capture_output=True, text=True).stdout
+        # Kelas: -fvisibility=hidden bikin symbol-nya lokal ('t'), jadi
+        # `nm -D` MUSTAHIL memuatnya (gagal palsu di CI PR #234) — pakai nm
+        # statis + demangle, persis seperti workflow.
+        expect("godot::MysticUI::" in static,
+               "symbol kelas godot::MysticUI:: tidak ada di symbol table .so "
+               "(kelas tidak ikut ter-link?)")
+        # Entry point: GDE_EXPORT => default visibility, wajib dinamis.
+        expect("mystic_ui_library_init" in dynamic,
+               "entry symbol mystic_ui_library_init tidak diekspor dinamis")
         return
     section("sintaks vs godot-cpp asli (dilewati: tidak ada checkout)")
 

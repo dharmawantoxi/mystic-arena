@@ -206,10 +206,14 @@ jobs:
 
       # ── 0d. Self-test C++ di luar engine (UI, FASE 36) ──
       # test_ui_cpp_selftest.py: MENG-EXECUTE ui_processor.cpp apa adanya lewat
-      # stub Variant (godot/gdext/mystic_ui/selftest) — 205 cek: geometri popup
-      # build/panel hero/kartu toko vs fixture ui_hud (direkam draw pygame
-      # ASLI), kurva slide popup unlock, tombol popup menara/nexus, label, dan
+      # stub Variant (godot/gdext/mystic_ui/selftest) — 206 cek di CI / 210
+      # dengan checkout godot-cpp: geometri popup
+      # build/panel hero/kartu toko vs fixture ui_hud (direkam draw pygame ASLI),
+      # kurva slide popup unlock, tombol popup menara/nexus, label, dan
       # closed-world tabel perintah == bind == deklarasi .h. Butuh g++ saja.
+      # Kalau checkout godot-cpp ada (mis. lokal), skrip juga compile+link .so
+      # probe dengan flag default godot-cpp lalu mengulang cek symbol langkah
+      # build di bawah (kelas via `nm -C` statis, entry via `nm -D`).
       - name: Self-test C++ tanpa engine (UI, FASE 36)
         run: |
           python3 tools/gen_ui_cpp.py --check
@@ -334,8 +338,22 @@ jobs:
           test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
           nm -D --defined-only "$SO" | grep -q " T mystic_ui_library_init" \
             || { echo "::error::symbol mystic_ui_library_init tidak diekspor"; exit 1; }
-          nm -D --defined-only "$SO" | grep -q "_ZN6godot8MysticUI" \
-            || { echo "::error::MysticUI tidak ada di symbol table"; exit 1; }
+          # Kelas MysticUI harus ikut ter-link ke .so. TIDAK boleh dicek dengan
+          # `nm -D`: godot-cpp default symbols_visibility=hidden
+          # (-fvisibility=hidden), jadi hanya entry point di atas (GDE_EXPORT)
+          # yang tampak di symbol table DINAMIS — `nm -D | grep MysticUI`
+          # MUSTAHIL cocok dan bikin langkah ini gagal palsu (kejadian nyata CI
+          # PR #234). Simbol kelas tetap ada di symbol table statis sebagai
+          # lokal ('t', mangling `_ZN5godot8MysticUI…`), jadi pakai `nm -C`.
+          # Ditulis ke berkas dulu, BUKAN `nm -C | grep -q`: symbol table statis
+          # itu besar (±800 baris) sehingga `grep -q` menutup pipe lebih dulu →
+          # `nm` kena SIGPIPE → `set -o pipefail` menganggapnya gagal (gagal
+          # palsu). Pola kecil `nm -D | grep -q` di atas aman karena keluarannya
+          # pendek (hanya symbol dinamis).
+          nm -C --defined-only "$SO" > /tmp/mystic_ui_syms.txt
+          grep -q "godot::MysticUI::" /tmp/mystic_ui_syms.txt \
+            || { echo "::error::MysticUI tidak ada di symbol table $SO"; exit 1; }
+          echo "[gdext] MysticUI: $(grep -c 'godot::MysticUI::' /tmp/mystic_ui_syms.txt) simbol"
           echo "[gdext] OK: $SO + symbol entry ada"
 
       # ── 3. Godot binary (di-cache; pola sama dengan godot-check.yml) ──
