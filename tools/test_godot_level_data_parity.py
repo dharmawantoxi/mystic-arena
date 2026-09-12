@@ -1075,6 +1075,23 @@ def check_wiring(catalog):
                    "LevelDataParityTest.tscn"):
         expect(needle in gdext, "godot-gdext.yml kehilangan %s" % needle)
 
+    # godot_log_gate.py: lib .so TIDAK ikut repo, jadi langkah "Import project"
+    # di godot-check.yml selalu mencetak "Failed loading resource:
+    # res://addons/mystic_levels/mystic_levels.gdextension" + "GDExtension
+    # dynamic library not found". Tanpa entri allowlist, gate menganggap itu
+    # fatal dan SELURUH langkah engine di-skip (kejadian nyata di CI PR ini).
+    gate = (ROOT / "godot/tools/godot_log_gate.py").read_text(encoding="utf-8")
+    for needle in (r'r"addons/mystic_levels"',
+                   r'r"libmystic_levels"',
+                   r'r"Failed loading resource.*mystic_levels"'):
+        expect(needle in gate, "godot_log_gate.py kehilangan allowlist %s "
+                               "(import headless akan gagal tanpa lib)" % needle)
+    # Sengaja TIDAK boleh ada entri telanjang: baris FAIL harness level harus
+    # tetap terhitung fatal.
+    expect('\n    r"mystic_levels",' not in gate,
+           "godot_log_gate.py punya allowlist telanjang r\"mystic_levels\" — "
+           "terlalu lebar, bisa memaafkan baris kegagalan harness level")
+
     for scene in (ROOT / "godot/tests/LevelDataParityTest.tscn",
                   ROOT / "godot/tests/LevelDataGdextParityTest.tscn"):
         expect(scene.exists(), "%s tidak ada" % scene.relative_to(ROOT))

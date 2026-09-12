@@ -311,6 +311,19 @@ kode/harness. Loader mencetak satu baris saat backend berubah:
 Baris itu di-`--require` oleh CI: tanpa lib, tanpa symbol, atau dengan tabel
 basi, harness gagal — bukan diam-diam fallback.
 
+Sebaliknya, **absennya** lib harus tetap wajar: `.so` tidak ikut repo, jadi
+langkah `Import project` di `godot-check.yml` selalu mencetak
+`Failed loading resource: res://addons/mystic_levels/mystic_levels.gdextension`
++ `GDExtension dynamic library not found`. Karena itu
+`godot/tools/godot_log_gate.py` punya allowlist untuk ekstensi opsional
+(`addons/mystic_levels`, `libmystic_levels`, `Failed loading
+resource.*mystic_levels`) — tanpa entri itu, gate menganggap import fatal dan
+**seluruh** langkah engine di-skip. Entri levels sengaja lebih sempit daripada
+`mystic_skills`/`mystic_lighting` (tidak ada pola telanjang `mystic_levels`)
+supaya baris kegagalan harness — `[LevelDBLoader] GAGAL instantiate
+MysticLevels`, `[LevelDataGdextParityTest] FAIL: …` — tetap terhitung fatal.
+Oracle statis mengunci kedua sifat itu (allowlist ada, pola telarang tidak).
+
 ## Tiga lapis verifikasi
 
 | # | Alat | Butuh | Mengunci | Cek |
