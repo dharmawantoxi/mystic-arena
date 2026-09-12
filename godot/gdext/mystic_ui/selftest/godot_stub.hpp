@@ -7,7 +7,9 @@
 //
 //   * Dictionary ordered (urutan insert) — core/variant/dictionary.h.
 //   * Array::size() = int64_t; Packed*::size() = int64_t.
-//   * Color menyimpan float; r8() = round(v*255) clamped — round-trip
+//   * Color menyimpan float; get_r8() = round(v*255) clamped (nama accessor
+//     godot-cpp 4.3: get_r8/get_g8/get_b8/get_a8, dipanggil binder dari
+//     properti `r8` GDScript) — round-trip
 //     Color(n/255) -> n dijamin untuk n 0..255 (properti yang dipakai
 //     seluruh rantai paritas warna tema).
 //   * Vector2 menyimpan float; koordinat jalur integral (< 2^24) sehingga
@@ -174,10 +176,10 @@ public:
         }
         return (int64_t)rounded;
     }
-    int64_t r8() const { return channel8(r); }
-    int64_t g8() const { return channel8(g); }
-    int64_t b8() const { return channel8(b); }
-    int64_t a8() const { return channel8(a); }
+    int32_t get_r8() const { return (int32_t)channel8(r); }
+    int32_t get_g8() const { return (int32_t)channel8(g); }
+    int32_t get_b8() const { return (int32_t)channel8(b); }
+    int32_t get_a8() const { return (int32_t)channel8(a); }
 
     bool operator==(const Color &other) const {
         return r == other.r && g == other.g && b == other.b && a == other.a;
@@ -474,7 +476,8 @@ inline std::string Variant::to_text() const {
         case COLOR: {
             char buf[64];
             snprintf(buf, sizeof(buf), "color:%lld,%lld,%lld,%lld",
-                    (long long)c.r8(), (long long)c.g8(), (long long)c.b8(), (long long)c.a8());
+                    (long long)c.get_r8(), (long long)c.get_g8(),
+                    (long long)c.get_b8(), (long long)c.get_a8());
             return std::string(buf);
         }
         case VECTOR2: {

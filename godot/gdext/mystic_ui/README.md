@@ -87,9 +87,17 @@ diarahkan ke shim kosong), lalu membandingkan balasannya dengan oracle:
   konstanta dibaca dari AST berkas yang sama);
 - built-in Python: `round()` half-to-even, `f"{v:,}"`, `int()`, `//`.
 
-Selain nilai, skrip mengunci **closed-world**: jumlah entri tabel perintah ==
-jumlah `bind_static_method` == deklarasi `.h`, setiap fungsi ter-bind wajib
-punya perintah uji, dan tidak ada perintah di luar tabel.
+Selain nilai (205 cek), skrip mengunci **closed-world** (jumlah entri tabel
+perintah == jumlah `bind_static_method` == deklarasi `.h`, setiap fungsi
+ter-bind wajib punya perintah uji, tidak ada perintah di luar tabel) dan
+**audit wiring** (entry symbol, `.gdextension`, `.gitignore`, rujukan kedua
+workflow, allowlist SEMPIT `godot_log_gate`).
+
+Kalau ada checkout godot-cpp asli (`GODOT_CPP_DIR`, `godot/gdext/godot-cpp`,
+atau `/tmp/godot-cpp`) dan `gen/include`-nya sudah dibangkitkan, skrip juga
+mengompilasi `ui_processor.cpp` + `register_types.cpp` dengan `-fsyntax-only`
+terhadap header **asli** — ini penangkap bug yang lolos dari stub (mis.
+`color.r8()` alih-alih `color.get_r8()` di godot-cpp 4.3).
 
 ## Yang belum (jangan aktifkan `mystic/ui/use_gdext_ui` sebelum selesai)
 

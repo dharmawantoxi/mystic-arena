@@ -837,9 +837,12 @@ def build_functions(spec):
        "Dictionary",
        [("bool", "can_afford"), ("bool", "hover"), ("const Color &", "color")],
        tpl("""
-    int64_t cr = color.r8();
-    int64_t cg = color.g8();
-    int64_t cb = color.b8();
+    // godot-cpp 4.3 mengekspos Color::get_r8() (dibaca binder dari properti
+    // `r8` GDScript) — BUKAN color.r8(). Semantiknya CLAMP(Math::round(r*255))
+    // sehingga sama dengan r8() stub self-test.
+    int64_t cr = color.get_r8();
+    int64_t cg = color.get_g8();
+    int64_t cb = color.get_b8();
     int64_t dr = (int64_t)((double)cr * 0.30) + 18;
     int64_t dg = (int64_t)((double)cg * 0.30) + 18;
     int64_t db = (int64_t)((double)cb * 0.30) + 18;

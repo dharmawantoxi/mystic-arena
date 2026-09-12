@@ -926,6 +926,50 @@ def wiring_checks():
            ".gitignore tidak mengabaikan lib mystic_ui")
 
 
+def godot_cpp_syntax_check(compiler):
+    """Opsional: kalau ada checkout godot-cpp ASLI, kompilasi ui_processor.cpp
+    + register_types.cpp terhadap header aslinya (`-fsyntax-only`).
+
+    Ini penangkap kelas bug yang LOLOS dari stub: memanggil API godot-cpp yang
+    tidak ada / beda nama (kejadian nyata di CI PR #234 — `color.r8()` padahal
+    godot-cpp 4.3 hanya punya `color.get_r8()`; stub self-test punya r8()
+    sendiri sehingga tidak ketahuan). Di CI godot-gdext hal ini sudah dicakup
+    build scons; di sini supaya ketahuan sebelum push. Tanpa checkout, langkah
+    ini dilewati (bukan kegagalan).
+    """
+    import os
+    candidates = [os.environ.get("GODOT_CPP_DIR"),
+                  str(ROOT / "godot" / "gdext" / "godot-cpp"),
+                  "/tmp/godot-cpp"]
+    for base in candidates:
+        if not base:
+            continue
+        base_path = Path(base)
+        if not (base_path / "include" / "godot_cpp" / "godot.hpp").exists():
+            continue
+        # Header kelas dibuat binding_generator ke gen/include (scons
+        # menjalankannya); tanpa itu belum bisa dipakai cek sintaks.
+        gen = base_path / "gen" / "include"
+        if not (gen / "godot_cpp" / "classes" / "ref_counted.hpp").exists():
+            print("[ui_selftest] godot-cpp di %s belum di-generate "
+                  "(gen/include kosong) — cek sintaks dilewati" % base)
+            return
+        cmd = [compiler, "-std=c++17", "-fsyntax-only",
+               "-I", str(base_path / "include"), "-I", str(gen),
+               "-I", str(base_path / "gdextension"),
+               "-I", str(SRC), str(SRC / "ui_processor.cpp"),
+               str(SRC / "register_types.cpp")]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        section("sintaks vs godot-cpp asli (%s)" % base)
+        expect(proc.returncode == 0,
+               "kompilasi terhadap header godot-cpp gagal: %s"
+               % proc.stderr.strip().split("\n")[-1][:200])
+        if proc.returncode != 0:
+            print(proc.stderr[:2000])
+        return
+    section("sintaks vs godot-cpp asli (dilewati: tidak ada checkout)")
+
+
 def main():
     hud = load_hud_fixture()
     commands = build_commands(hud)
@@ -942,6 +986,7 @@ def main():
     if not ok:
         return 1
 
+    godot_cpp_syntax_check(compiler)
     replies = run_binary(out, commands)
     structural_checks(replies, commands)
     wiring_checks()

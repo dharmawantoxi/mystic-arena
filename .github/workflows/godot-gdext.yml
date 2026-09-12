@@ -206,7 +206,7 @@ jobs:
 
       # ── 0d. Self-test C++ di luar engine (UI, FASE 36) ──
       # test_ui_cpp_selftest.py: MENG-EXECUTE ui_processor.cpp apa adanya lewat
-      # stub Variant (godot/gdext/mystic_ui/selftest) — 181 cek: geometri popup
+      # stub Variant (godot/gdext/mystic_ui/selftest) — 205 cek: geometri popup
       # build/panel hero/kartu toko vs fixture ui_hud (direkam draw pygame
       # ASLI), kurva slide popup unlock, tombol popup menara/nexus, label, dan
       # closed-world tabel perintah == bind == deklarasi .h. Butuh g++ saja.
