@@ -263,7 +263,15 @@ static func text_metrics(state: Dictionary, text: String, size: int,
 	if f == null:
 		return [0, 0, 0]
 	var sz := f.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size)
-	return [int(sz.x), int(f.get_height(size)), int(f.get_ascent(size))]
+	# Tinggi permukaan teks pygame = ascent + descent font pada ukuran itu
+	# (SDL_ttf TTF_FontHeight), BUKAN `Font.get_height()` Godot yang ikut
+	# menghitung line gap (terukur di CI: 48 px vs 29 px pygame pada size 24 —
+	# kotak papan nama jadi dua kali terlalu tinggi). Lebar tetap dari shaping
+	# engine: font-nya berkas yang sama, tapi HarfBuzz dan SDL_ttf bisa selisih
+	# ~0,5% (426 vs 428 px) — deviasi terdokumentasi, posisi blit dikunci
+	# fixture lewat metrik yang disuntik.
+	var asc := int(f.get_ascent(size))
+	return [int(sz.x), asc + int(f.get_descent(size)), asc]
 
 
 static func text_width(state: Dictionary, text: String, size: int,
@@ -349,8 +357,11 @@ static func wrap_entrance(state: Dictionary, text: String, size: int) -> Array:
 static func ability_aura_ops(state: Dictionary) -> Array:
 	var pulse := sin(float(int(state.get("anim_time", 0))) * ABILITY_PULSE_RATE) * 0.3 + 0.7
 	var aura_r := int(float(state.get("ability_range", 0.0)) * pulse)
+	# ABILITY_RINGS (7), BUKAN AURA_RINGS (8): pygame menggambar
+	# `for r in range(aura_r, aura_r - 18, -3)` -> 6 lingkaran + inti
+	# (base_boss.py:6139-6159). Salah konstanta di sini menambah satu pita.
 	return filled_aura_bands([int(state.get("x", 0)), int(state.get("y", 0))],
-		aura_r, AURA_RINGS, ABILITY_STEP, ABILITY_ALPHA_STEP, pulse,
+		aura_r, ABILITY_RINGS, ABILITY_STEP, ABILITY_ALPHA_STEP, pulse,
 		col_arr(state, "entrance_color", [140, 100, 220, 255]))
 
 

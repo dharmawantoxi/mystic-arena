@@ -346,8 +346,7 @@ def generic_body_ops(state):
     true_boss = is_true(state)
     body = col_arr(state, "color", [140, 100, 220, 255])
     if bool(state.get("hurt_flash", False)):
-        body = list(k("GENERIC_HURT")) + [255] if len(k("GENERIC_HURT")) == 3 \
-            else list(k("GENERIC_HURT"))
+        body = k("GENERIC_HURT")
     dark = col_arr(state, "color_dark", body)
     ops.append({"k": "disc", "c": [x + 1, y + 1], "r": radius + 2,
                 "col": with_alpha(k("GENERIC_BLACK"), 255)})
@@ -552,6 +551,111 @@ def diff_ops(got, want, layer):
     return None
 
 
+# ═══════════════════════════════════════════════════════════════════
+# Fidelitas transkripsi: twin Python harus memakai KONSTANTA dan LITERAL
+# ANGKA yang sama dengan BossOverlay.gd. Tanpa ini, twin bisa "benar"
+# sementara .gd salah ketik konstanta (nyata terjadi: ability_aura_ops
+# .gd sempat memakai AURA_RINGS=8 padahal pygame-nya ABILITY_RINGS=7 —
+# twin hijau, engine merah).
+# ═══════════════════════════════════════════════════════════════════
+
+TWIN_FUNCS = [
+    "wrap_entrance", "entrance_ops", "filled_aura_bands", "ability_aura_ops",
+    "enrage_aura_ops", "true_aura_ops", "shadow_ops", "debuff_ops",
+    "generic_body_ops", "head_top", "bar_top_y", "bar_width", "bar_height",
+    "border_color", "label_color", "plate_text", "plate_font_size",
+    "hp_bar_ops", "name_plate_ops", "is_entrance", "is_true", "col_arr",
+    "underlay_ops", "over_ops", "idiv", "a255", "a200", "with_alpha",
+    "lighten",
+]
+
+
+def _strip_comments(lines):
+    out = []
+    for ln in lines:
+        code = ln.split("#", 1)[0].rstrip()
+        if code.strip():
+            out.append(code)
+    return "\n".join(out)
+
+
+def gd_func_body(name):
+    src = open(OVERLAY_GD, encoding="utf-8").read().splitlines()
+    start = None
+    for i, ln in enumerate(src):
+        if ln.startswith("static func %s(" % name):
+            start = i
+            break
+    if start is None:
+        return None
+    body = [src[start]]  # signature ikut: default arg bisa memakai konstanta
+    for ln in src[start + 1:]:
+        if ln.startswith("static func ") or ln.startswith("# ═") or ln.startswith("func "):
+            break
+        body.append(ln)
+    return _strip_comments(body)
+
+
+def py_func_body(name):
+    import inspect
+    fn = globals().get(name)
+    if fn is None or not callable(fn):
+        return None
+    lines = inspect.getsource(fn).splitlines()
+    # baris def ikut (simetris dengan signature .gd), docstring dibuang
+    out, in_doc = [], False
+    for i, ln in enumerate(lines):
+        st = ln.strip()
+        if not in_doc and (st.startswith('"""') or st.startswith("'''")):
+            if st.count('"""') >= 2 or st.count("'''") >= 2:
+                continue
+            in_doc = True
+            continue
+        if in_doc:
+            if '"""' in st or "'''" in st:
+                in_doc = False
+            continue
+        out.append(ln)
+    return _strip_comments(out)
+
+
+def const_tokens_gd(body):
+    return {t for t in re.findall(r"\b([A-Z][A-Z0-9_]{2,})\b", body) if t in C}
+
+
+def const_tokens_py(body):
+    return set(re.findall(r'k\(\s*"(\w+)"\s*\)', body))
+
+
+def number_tokens(body):
+    nums = re.findall(r"(?<![\w.\"\'])(\d+\.\d+|\d+)(?![\w.])", body)
+    out = []
+    for n in nums:
+        out.append(float(n))
+    return sorted(out)
+
+
+def fidelity_checks():
+    section("Fidelitas transkripsi twin Python ↔ BossOverlay.gd")
+    for name in TWIN_FUNCS:
+        gb = gd_func_body(name)
+        pb = py_func_body(name)
+        if gb is None:
+            check("%s: ada di BossOverlay.gd" % name, False, "static func tidak ditemukan")
+            continue
+        if pb is None:
+            check("%s: ada di twin" % name, False, "fungsi Python tidak ditemukan")
+            continue
+        gt, pt = const_tokens_gd(gb), const_tokens_py(pb)
+        check("%s: konstanta yang dipakai identik (%d)" % (name, len(gt | pt)),
+              gt == pt,
+              "hanya di .gd: %s | hanya di twin: %s"
+              % (sorted(gt - pt), sorted(pt - gt)))
+        gn, pn = number_tokens(gb), number_tokens(pb)
+        check("%s: literal angka identik (%s)" % (name, gn), gn == pn,
+              ".gd %s | twin %s" % (gn, pn))
+
+
 def main():
     if not os.path.exists(FIXTURE):
         print("fixture belum ada: jalankan tools/test_boss_draw_parity.py")
@@ -593,6 +697,8 @@ def main():
           [str(x) for x in C.get("DEBUFF_PIP_ORDER", [])]
           == ["slow", "atk_slow", "skill_down", "anti_heal", "burn"],
           str(C.get("DEBUFF_PIP_ORDER")))
+
+    fidelity_checks()
 
     section("Op twin == op pygame (semua skenario fixture)")
     n_ops = 0

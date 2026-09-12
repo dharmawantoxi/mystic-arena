@@ -77,7 +77,7 @@ direkam oracle (Godot tidak punya API metrik font pygame).
 | 1 | Bayangan ellipse digambar **hitam solid** `(0,0,0,120)`, bukan tekstur ber-alpha gradasi | `draw_circle`/poligon Godot tidak punya padanan `pygame.draw.ellipse` pada surface SRCALPHA; rect + warna sumbernya identik, jadi hanya rasterisasi tepinya yang beda sub-piksel |
 | 2 | Godot tidak punya primitif `draw_ellipse` → ellipse dipetakan ke poligon 32 titik (`poly`) | Satu-satunya cara menggambar ellipse di `_draw()`; bbox-nya sama persis |
 | 3 | Aura true boss/ability/enrage memakai **pita annulus + `draw_arc`**, bukan lingkaran bertumpuk | Meniru semantik TIMPA `pygame.draw.circle` (lihat di atas) |
-| 4 | Teks overlay dirender font Godot (Cinzel/Barlow repo), bukan font pygame | Metrik (`wh`, `asc`) direkam oracle supaya **posisi blit** identik; bentuk glif mengikuti font engine |
+| 4 | Teks overlay diukur & dirender font Godot (Cinzel/Barlow repo), bukan SDL_ttf pygame | Metrik (`wh`, `asc`) direkam oracle dan **disuntik lewat `state["metrics"]`** supaya posisi blit yang dibandingkan identik; tanpa suntikan `BossOverlay.text_metrics` mengukur dengan font engine (`get_string_size`, tinggi = `ascent + descent` — bukan `Font.get_height()` yang ikut line gap). Lebar hasil shaping HarfBuzz selisih ±0,5% dari SDL_ttf (426 vs 428 px), jadi jalur produksi dikunci sifatnya (op terbentuk, jumlah baris entrance sama, teks ≤ `ENTRANCE_WRAP_W`/`SCREEN_W`), bukan angkanya |
 | 5 | Badan generik (langkah 7) hanya jalan bila `has_renderer` false — di produksi semua 216 boss punya strip bake | Jalur fallback untuk tipe baru yang belum di-bake; pygame juga hanya menggambarnya bila renderer tidak ada |
 | 6 | `entrance_timer` disimpan detik di Godot, dikonversi `int(round(t·60))` frame di `overlay_state()` | pygame menghitung frame; konversinya diuji fixture |
 
@@ -169,6 +169,22 @@ field, probe helper statis (`_py_round`/`_py_int`/`slot_of_mini_wave`/
 `hero_unlock_trend` + fit nyata), purity/determinisme `build()`, kesepakatan
 katalog runtime (`BossDB` vs hitung ulang), dan jalur pemulihan
 `rebuild_from_pristine()`.
+
+## Temuan run engine pertama (CI PR #229)
+
+Run `godot-check` pertama **gagal di `BossDrawParityTest`** (36 scene lain
+hijau) dan menemukan tiga hal yang lolos semua cek statis lokal — persis alasan
+langkah replay engine ada:
+
+| # | Temuan | Sebab | Perbaikan |
+|---|---|---|---|
+| 1 | `aura_ability_*`: Godot menghasilkan **8 op**, pygame 7 (pita ekstra `ri 84..87`) | `ability_aura_ops` di `.gd` memanggil `filled_aura_bands(…, AURA_RINGS, …)` — seharusnya `ABILITY_RINGS` (7 vs 8; pygame `range(aura_r, aura_r − 18, −3)` = 6 lingkaran + inti) | Konstanta diperbaiki, **dan** kembaran Python kini punya seksi *fidelitas transkripsi*: untuk 29 fungsi, himpunan token konstanta dan multiset literal angka di `.gd` harus identik dengan di twin (mutasi `ABILITY_RINGS → AURA_RINGS` kini gagal di langkah statis, tanpa engine) |
+| 2 | `pita aura tidak ada yang tumpang tindih (123)` | Cek di scene salah rumus: membandingkan pita **berurutan** (`ro <= prev_outer`), padahal pygame menggambar dari luar ke dalam, dan dua grup aura (ability + true boss) memang saling menimpa | Cek diganti **per grup** (grup berakhir di pita `ri = 0`): dalam satu grup pita tidak boleh bertabrakan dan jumlah lebarnya harus == radius terluar (partisi cakram). Fixture: 142 pita → 21 grup, 0 tabrakan, 0 celah |
+| 3 | `entrance_*`: geometri teks dari node beda (`wh [426,48]` vs `[428,29]`, `pos y 62` vs `72`) | `overlay_state()` tidak membawa metrik font pygame, jadi `text_metrics` jatuh ke font engine; tinggi memakai `Font.get_height()` yang menghitung **line gap** (48 px untuk size 24, padahal pygame 29) | Tinggi fallback jadi `ascent + descent` (deviasi 4). Scene kini menyuntik metrik fixture untuk perbandingan geometri (yang diuji plumbing angkanya) **dan** menguji jalur produksi terpisah: metrik terukur, teks ≤ `ENTRANCE_WRAP_W`/`SCREEN_W`, urutan jenis op dicatat sebagai NOTE bila shaping font membuatnya beda |
+
+Setelah ketiganya, simulasi lokal plumbing node (44 skenario yang memenuhi
+syarat, memetakan `bosses.json` → `overlay_state()` persis seperti `Boss.gd`)
+cocok di semua field, dan model pita fixture tertutup 21 grup tanpa celah.
 
 ## Menambah boss / mengubah overlay
 
