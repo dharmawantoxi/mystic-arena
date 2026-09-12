@@ -46,6 +46,9 @@ on:
       - 'tools/test_godot_level_data_parity.py'
       - 'tools/gen_maps_cpp.py'
       - 'tools/test_godot_map_data_parity.py'
+      - 'ui_components/**'
+      - 'tools/gen_ui_cpp.py'
+      - 'tools/test_ui_cpp_selftest.py'
       - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
@@ -86,6 +89,9 @@ on:
       - 'tools/test_godot_level_data_parity.py'
       - 'tools/gen_maps_cpp.py'
       - 'tools/test_godot_map_data_parity.py'
+      - 'ui_components/**'
+      - 'tools/gen_ui_cpp.py'
+      - 'tools/test_ui_cpp_selftest.py'
       - 'godot/gdext/**'
       - 'hero_skills/**'
       - 'tools/test_boss_true_aura_parity.py'
@@ -208,6 +214,20 @@ jobs:
           #       .gitignore, kedua workflow).
           python3 tools/gen_maps_cpp.py --check
           python3 tools/test_godot_map_data_parity.py
+          # ui_components/_bundle.py -> Godot C++ (FASE 36), pasangan cek sama:
+          #   (a) --check = ui_processor.h/.cpp/ui_dispatch.inc byte-identik
+          #       dengan transpile AST _bundle.py yang segar;
+          #   (b) test_ui_cpp_selftest.py = MENG-EXECUTE ui_processor.cpp apa
+          #       adanya lewat stub Variant (tanpa engine): 208 cek di CI /
+          #       213 dengan checkout godot-cpp — nilai (fixture ui_hud =
+          #       geometri popup/panel yang direkam pygame asli +
+          #       _core.py/ui_theme.py), closed-world (tabel perintah
+          #       == bind_static_method == deklarasi .h; setiap fungsi
+          #       ter-bind diuji), dan audit wiring (entry symbol, allowlist
+          #       SEMPIT godot_log_gate, rujukan kedua workflow, bentuk cek
+          #       symbol .so yang benar).
+          python3 tools/gen_ui_cpp.py --check
+          python3 tools/test_ui_cpp_selftest.py
           # Scope-check hasil generate (identifier harus terdeklarasi di
           # param/var lokal/bridge Hero.gd) — tangkap 'Identifier not
           # declared' sebelum engine.

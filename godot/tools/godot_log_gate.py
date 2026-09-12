@@ -55,7 +55,7 @@ ALLOWED_PATTERNS = [
     r"No audio driver",
     r"Unable to initialize .* driver",
     # GDExtension mystic_lighting / mystic_skills / mystic_levels /
-    # mystic_maps opsional —
+    # mystic_maps / mystic_ui opsional —
     # lib .so/.dll tidak ikut repo (build lokal via SConstruct). Godot log
     # \"Failed loading resource\" / \"Cannot open file\" /
     # \"Condition !FileAccess::exists\" untuk lib yang belum dibuild adalah
@@ -74,6 +74,15 @@ ALLOWED_PATTERNS = [
     r"addons/mystic_levels",
     r"libmystic_maps",
     r"addons/mystic_maps",
+    # mystic_ui (FASE 36) ikut pola SEMPIT yang sama: lib .so tidak ada di
+    # checkout godot-check, jadi impor selalu mencetak
+    # "Failed loading resource: res://addons/mystic_ui/mystic_ui.gdextension"
+    # + "GDExtension dynamic library not found ... libmystic_ui...". Jangan
+    # diganti dengan r"mystic_ui" telanjang: itu akan ikut memaafkan baris
+    # gagal harness UI ("[ui_selftest] FAIL", "GDExtension MysticUI aktif"
+    # tidak muncul, dst).
+    r"libmystic_ui",
+    r"addons/mystic_ui",
     r"FileAccess::exists",
     r"open_dynamic_library",
     r"open_library",
@@ -82,6 +91,7 @@ ALLOWED_PATTERNS = [
     r"Failed loading resource.*mystic_skills",
     r"Failed loading resource.*mystic_levels",
     r"Failed loading resource.*mystic_maps",
+    r"Failed loading resource.*mystic_ui",
     r"addons/mystic_lighting",
     r"addons/mystic_skills",
 ]
