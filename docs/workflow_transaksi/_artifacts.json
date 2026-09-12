@@ -1,0 +1,212 @@
+{
+  "mode_mock": {
+    "healthz": {
+      "mock": true,
+      "ok": true,
+      "packages": {
+        "PAKET 50K": [
+          10000,
+          50000
+        ]
+      }
+    },
+    "base": "http://127.0.0.1:8391"
+  },
+  "currency": "IDR",
+  "invoice": {
+    "amount": 10000,
+    "gold": 50000,
+    "id": "mock-490c0fc533c1c651",
+    "mock": true,
+    "pkg": "PAKET 50K",
+    "qr_url": "/api/topup/qr/mock-490c0fc533c1c651",
+    "status": "pending"
+  },
+  "status_pending": {
+    "http": 200,
+    "json": {
+      "amount": 10000,
+      "gold": 50000,
+      "id": "mock-490c0fc533c1c651",
+      "status": "pending"
+    }
+  },
+  "settle": {
+    "http": 200,
+    "json": {
+      "code": "MA-743373",
+      "ok": true
+    }
+  },
+  "gold_after_mock": 50000,
+  "history_entry": {
+    "tx": "MA-9184840230",
+    "pkg": "REDEEM",
+    "gold": 50000,
+    "bonus": 0,
+    "price": 0,
+    "cur": "IDR",
+    "price_cur": 0,
+    "method": "redeem",
+    "code": "MA-743373",
+    "ts": 1789184840
+  },
+  "mode_midtrans": {
+    "healthz": {
+      "mock": false,
+      "ok": true,
+      "packages": {
+        "PAKET 50K": [
+          10000,
+          50000
+        ]
+      }
+    },
+    "base": "http://127.0.0.1:8392",
+    "stub_api": "http://127.0.0.1:8399"
+  },
+  "midtrans": {
+    "create_request": {
+      "method": "POST",
+      "path": "/v2/invoice",
+      "authorization": "Basic SB-Stub-Demo-Key",
+      "content_type": "application/json",
+      "body": {
+        "transaction_id": "MA-eaa607224868e364",
+        "gross_amount": 10000,
+        "currency": "IDR",
+        "description": "Mystic Arena - PAKET 50K"
+      }
+    },
+    "qr_file": "/tmp/stub_qr_3p49h4h7/MA-eaa607224868e364.png",
+    "invoice": {
+      "amount": 10000,
+      "gold": 50000,
+      "id": "MA-eaa607224868e364",
+      "mock": false,
+      "pkg": "PAKET 50K",
+      "qr_url": "/api/topup/qr/MA-eaa607224868e364",
+      "status": "pending"
+    },
+    "qr_bytes_len": 892,
+    "webhook": {
+      "payload": {
+        "transaction_id": "MA-eaa607224868e364",
+        "order_id": "MA-eaa607224868e364",
+        "status_code": "200",
+        "transaction_status": "settle",
+        "payment_type": "qris",
+        "gross_amount": "10000.00",
+        "currency": "IDR",
+        "fraud_status": "accept",
+        "transaction_time": "2026-09-12 03:47:21"
+      },
+      "header_x_signature_1": "7bc5845f8ee948cf7b4f5dd291082954bbba3363f2a5f1a46a97655267e0f57a098996ab90aaa4ddd92562f3591c51ac55f30d1424aeb794d8f344737974602b",
+      "response_http": 200,
+      "response_json": {
+        "status": "accepted"
+      }
+    },
+    "webhook_bad_signature": {
+      "response_http": 400,
+      "response_json": {
+        "error": "bad_signature"
+      }
+    },
+    "status_settled": {
+      "http": 200,
+      "json": {
+        "amount": 10000,
+        "code": "MA-601190",
+        "gold": 50000,
+        "id": "MA-eaa607224868e364",
+        "status": "settled"
+      }
+    }
+  },
+  "gold_after_midtrans": 50000,
+  "shots": [
+    {
+      "file": "01_menu_utama.png",
+      "note": "Menu utama Mystic Arena"
+    },
+    {
+      "file": "02_hero_shop.png",
+      "note": "Hero Shop: saldo Hero Gold + tombol TOP UP"
+    },
+    {
+      "file": "03_pilih_paket.png",
+      "note": "Dialog TOP UP: pilih paket"
+    },
+    {
+      "file": "04_pilih_metode.png",
+      "note": "Pilih metode pembayaran (DANA)"
+    },
+    {
+      "file": "05_mencetak_invoice.png",
+      "note": "PREPARING PAYMENT: invoice dicetak server"
+    },
+    {
+      "file": "06_checkout_qris.png",
+      "note": "Checkout QRIS: scan & bayar"
+    },
+    {
+      "file": "07_qris_closeup.png",
+      "note": "QR pembayaran (PNG dari /api/topup/qr/<id>)"
+    },
+    {
+      "file": "08_menunggu_verifikasi.png",
+      "note": "Sudah dibayar, game menunggu konfirmasi (poll status)"
+    },
+    {
+      "file": "09_pembayaran_sukses.png",
+      "note": "TOP UP sukses: gold masuk otomatis"
+    },
+    {
+      "file": "10_saldo_masuk.png",
+      "note": "Hero Shop: saldo Hero Gold bertambah"
+    },
+    {
+      "file": "11_error_server.png",
+      "note": "Gagal hubungi server: TRY AGAIN / BACK"
+    },
+    {
+      "file": "12_redeem_manual.png",
+      "note": "Alur cadangan: redeem kode manual"
+    },
+    {
+      "file": "13_midtrans_hero_shop.png",
+      "note": "Hero Shop sebelum transaksi Midtrans"
+    },
+    {
+      "file": "14_midtrans_pilih_paket.png",
+      "note": "Pilih paket (mode Midtrans)"
+    },
+    {
+      "file": "15_midtrans_mencetak_invoice.png",
+      "note": "Server memanggil API invoice Midtrans"
+    },
+    {
+      "file": "16_midtrans_checkout_qris.png",
+      "note": "Checkout QRIS dari Midtrans (tanpa badge MOCK)"
+    },
+    {
+      "file": "17_midtrans_qris_closeup.png",
+      "note": "QR Midtrans yang di-proxy server"
+    },
+    {
+      "file": "18_midtrans_menunggu_verifikasi.png",
+      "note": "Menunggu game membaca status settle"
+    },
+    {
+      "file": "19_midtrans_pembayaran_sukses.png",
+      "note": "Webhook settle -> gold masuk otomatis"
+    },
+    {
+      "file": "20_midtrans_saldo_masuk.png",
+      "note": "Saldo bertambah setelah settle"
+    }
+  ],
+  "generated_at": "2026-09-12 03:47:23",
+  "git_commit": "18dc3cf"
+}
