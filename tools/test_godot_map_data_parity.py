@@ -40,7 +40,10 @@ Cakupan (gagal = CI merah):
      Regenerasi HANYA bila _bundle.py berubah: --write-fixture.
   M. Wiring closed-world: ArenaMap -> MapDBLoader (tanpa sisa port lama),
      scene engine test + arity _fail, .gdextension, .gitignore, kedua
-     workflow merujuk artefak maps.
+     workflow merujuk artefak maps, allowlist log gate.
+  N. GDScript compile-safety: properti Color tidak dipanggil sebagai fungsi;
+     `:=` tidak memakai global/method Variant; semua fungsi maps beranotasi
+     balik (gdparse tidak memeriksa ini — engine --import yang gagal).
 
 Keluar 0 = PASS; selain itu FAIL + daftar kegagalan.
 """
@@ -1350,7 +1353,75 @@ def check_wiring():
                    "for lib in mystic_skills mystic_levels mystic_maps"):
         expect(needle in gdext_yml,
                "M: godot-gdext.yml tak merujuk %s" % needle)
-    print("   arenamap + 2 scene + gdextension + gitignore + 2 workflow")
+    # godot_log_gate.py: lib .so TIDAK ikut repo, jadi langkah "Import project"
+    # selalu mencetak "Failed loading resource: res://addons/mystic_maps/…".
+    # Tanpa allowlist, gate menganggap itu fatal (kejadian nyata di CI PR ini,
+    # bersamaan dengan Parse Error MapDB.gd).
+    gate = (ROOT / "godot/tools/godot_log_gate.py").read_text(encoding="utf-8")
+    for needle in (r'r"addons/mystic_maps"',
+                   r'r"libmystic_maps"',
+                   r'r"Failed loading resource.*mystic_maps"'):
+        expect(needle in gate, "M: godot_log_gate.py kehilangan allowlist %s "
+                               "(import headless akan gagal tanpa lib)" % needle)
+    expect('\n    r"mystic_maps",' not in gate,
+           'M: godot_log_gate.py punya allowlist telanjang r"mystic_maps" — '
+           "terlalu lebar, bisa memaafkan baris FAIL harness maps")
+    print("   arenamap + 2 scene + gdextension + gitignore + 2 workflow + gate")
+
+
+# ══════════════════════════════════════════════════════════
+#  N. GDScript compile-safety (statis, tanpa engine)
+# ══════════════════════════════════════════════════════════
+def check_gdscript_safety():
+    # gdparse hanya memeriksa sintaks: pola di bawah lolos gdparse lalu meledak
+    # sebagai Parse Error saat engine --import di CI ("Name g8 called as a
+    # function but is a int", "Cannot infer the type of d"). Kunci polanya di
+    # sini supaya tertangkap tanpa engine.
+    maps_files = [ROOT / "godot/scripts/core/MapDB.gd",
+                  ROOT / "godot/scripts/core/MapDBLoader.gd",
+                  ROOT / "godot/scenes/map/ArenaMap.gd",
+                  ROOT / "godot/tests/MapDataParityTest.gd",
+                  ROOT / "godot/tests/MapDataGdextParityTest.gd"]
+    # N1: r8/g8/b8/a8 adalah PROPERTI Color (int), bukan method.
+    prop_call = re.compile(r"\.(r8|g8|b8|a8)\s*\(")
+    # N2: global Variant -> `:=` gagal inferensi (pakai floorf/maxf/…).
+    # Mensyaratkan `(` tepat setelah nama: maxf(/round_half_even(/_round_nd(
+    # tidak ikut kena.
+    variant_global = re.compile(
+        r":=\s*(floor|ceil|round|abs|sign|sqrt|pow|max|min|clamp|lerp)\(")
+    # N3: method Variant tidak boleh jadi sisi kanan `:=`.
+    variant_method = re.compile(
+        r":=.*\.(max|min)\(\)|:=.*\.(pick_random|pop_back|pop_front)\(")
+    for path in maps_files:
+        text = path.read_text(encoding="utf-8")
+        rel = str(path.relative_to(ROOT))
+        for i, line in enumerate(text.splitlines(), 1):
+            code = line.split("#", 1)[0]  # abaikan komentar
+            m = prop_call.search(code)
+            expect(m is None,
+                   "N: %s:%d properti Color dipanggil sebagai fungsi (%s)" %
+                   (rel, i, code.strip()[:60]))
+            m = variant_global.search(code)
+            expect(m is None,
+                   "N: %s:%d `:=` memakai global Variant %s "
+                   "(engine: Cannot infer)" %
+                   (rel, i, (m.group(1) + "()") if m else ""))
+            expect(variant_method.search(code) is None,
+                   "N: %s:%d `:=` memakai method Variant (%s)" %
+                   (rel, i, code.strip()[:60]))
+    # N4: semua fungsi di berkas milik-maps beranotasi balik — `:=` di
+    # pemanggil hanya bisa inferensi dari `->`. Pengecualian tunggal yang
+    # diaudit manual: _call_gdext (Variant; hanya dipakai via str()/return).
+    owned = [f for f in maps_files if f.name != "ArenaMap.gd"]
+    for path in owned:
+        joined = re.sub(r",\s*\n", ",", path.read_text(encoding="utf-8"))
+        rel = str(path.relative_to(ROOT))
+        for m in re.finditer(r"func (\w+)\([^)]*\)( -> [^:]+)?\s*:",
+                             joined):
+            name, ret = m.group(1), m.group(2)
+            expect(ret is not None or name == "_call_gdext",
+                   "N: %s func %s() tanpa anotasi balik" % (rel, name))
+    print("  5 berkas GDScript maps bebas pola compile-error")
 
 
 def main():
@@ -1372,6 +1443,7 @@ def main():
     check_themes_json(ordered)
     check_fixture(ordered, pathgen, palettes, "--write-fixture" in sys.argv)
     check_wiring()
+    check_gdscript_safety()
     print("═" * 60)
     print("checks=%d failures=%d" % (CHECKS[0], len(FAILURES)))
     for f in FAILURES[:40]:

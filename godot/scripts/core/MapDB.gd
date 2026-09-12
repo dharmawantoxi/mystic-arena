@@ -814,7 +814,7 @@ const THEME_DECOR_FLAGS := [
 ## round() Python: half-even pada nilai biner eksak. Input kami selalu
 ## non-negatif (kanal warna, energi, alpha).
 static func round_half_even(x: float) -> float:
-	var f := floor(x)
+	var f := floorf(x) # floor() mengembalikan Variant -> `:=` gagal inferensi
 	var d := x - f
 	if d < 0.5:
 		return f
@@ -897,13 +897,13 @@ static func _mix_chan(ch: int, amount: float) -> int:
 
 
 static func _mix_color(col: Color, amount: float) -> Color:
-	return Color8(_mix_chan(col.r8(), amount), _mix_chan(col.g8(), amount),
-		_mix_chan(col.b8(), amount))
+	return Color8(_mix_chan(col.r8, amount), _mix_chan(col.g8, amount),
+		_mix_chan(col.b8, amount))
 
 
 static func _lum(col: Color) -> float:
 	# Luminance BT.601 — urutan op sama dengan converter.
-	return (0.299 * float(col.r8()) + 0.587 * float(col.g8()) + 0.114 * float(col.b8())) / 255.0
+	return (0.299 * float(col.r8) + 0.587 * float(col.g8) + 0.114 * float(col.b8)) / 255.0
 
 
 ## Dict tema mentah (skema Python) -> palet turunan 45 kunci (skema ArenaMap).
@@ -942,17 +942,17 @@ static func derive_palette(theme_key: String, raw: Dictionary) -> Dictionary:
 	var avg := [0.0, 0.0, 0.0]
 	for s in samples:
 		var c: Color = s
-		avg[0] += float(c.r8())
-		avg[1] += float(c.g8())
-		avg[2] += float(c.b8())
+		avg[0] += float(c.r8)
+		avg[1] += float(c.g8)
+		avg[2] += float(c.b8)
 	avg[0] /= 5.0
 	avg[1] /= 5.0
 	avg[2] /= 5.0
 	var peak: float = maxf(1.0, maxf(avg[0], maxf(avg[1], avg[2])))
 	var light_ch := []
 	for i in range(3):
-		var norm := avg[i] / peak
-		var lv := 1.0 - (1.0 - norm) * 0.45
+		var norm: float = avg[i] / peak # avg[i] Variant -> `:=` gagal inferensi
+		var lv: float = 1.0 - (1.0 - norm) * 0.45
 		light_ch.append(int(round_half_even(clampf(lv * 255.0, 0.0, 255.0))))
 	out["light"] = Color8(light_ch[0], light_ch[1], light_ch[2])
 	var g3: Color = raw.get("radiant_grass_3", Color.BLACK)
@@ -967,9 +967,9 @@ static func derive_palette(theme_key: String, raw: Dictionary) -> Dictionary:
 		# float(a8)/255.0*3.0 sama persis dengan converter.
 		var a: float = minf(0.35, float(tc.a8) / 255.0 * 3.0)
 		mod = [
-			int(round_half_even(255.0 - (255.0 - float(tc.r8())) * a)),
-			int(round_half_even(255.0 - (255.0 - float(tc.g8())) * a)),
-			int(round_half_even(255.0 - (255.0 - float(tc.b8())) * a)),
+			int(round_half_even(255.0 - (255.0 - float(tc.r8)) * a)),
+			int(round_half_even(255.0 - (255.0 - float(tc.g8)) * a)),
+			int(round_half_even(255.0 - (255.0 - float(tc.b8)) * a)),
 		]
 	out["modulate"] = Color8(mod[0], mod[1], mod[2])
 	return out
