@@ -8,6 +8,27 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Lapisan Android `mobile/` — jalur native C++ (godot++) — 13 September 2026 (FASE 37) — **DALAM PROSES**
+
+`mobile/` (8 submodul: `touch`, `hud`, `perf`, `platform_utils`, `debug`,
+`combat_audio`, `cloud_save`, `buildinfo`) adalah lapisan keputusan Android:
+ambang gesture, geometri + visibilitas tombol HUD, preset/gubernur kualitas,
+safe area + posisi panel, overlay debug, konfigurasi suara tempur, validasi
+payload Cloud Save, dan label build. Fase ini membangkitkan lapisan itu
+sebagai C++ (`tools/gen_mobile_cpp.py` →
+`godot/gdext/mystic_mobile/src/mobile_processor.{h,cpp}`,
+`MysticMobile : RefCounted`, **66 method static**) plus tabel perintah
+self-test — **belum ada** saklar backend, jadi tidak ada perilaku pemain
+yang berubah. Rincian teknis: [MOBILE_GODOTPP.md](MOBILE_GODOTPP.md).
+
+| Bagian | Sesudah (FASE 37, sejauh ini) |
+|---|---|
+| Sumber | Satu: AST `mobile/*.py` (8 submodul). Generator MENOLAK (bukan menebak) kalau literal/ekspresi hilang atau berubah bentuk; setiap fungsi menyebut baris sumber Python-nya; `--check` byte-identik |
+| Cakupan | Ambang gesture (TAP_SLOP/LONG_PRESS/DOUBLE_TAP/SCROLL_STEP/FLING — `scroll_notch` kontrak satu-langkah-loop), geometri 7 tombol HUD + hit rect semantik `pygame.Rect.inflate` ASLI + visibilitas `sync()` 7 primitif, 3 preset kualitas + properti perangkat + gubernur FX (smooth 0.40/min 0.10/exp 1.5, token 140/18/10→56/10/5) + `AdaptiveQuality` (26/52, window 90, cd 180/300), safe area + zona panel (430/120) + popup/bawah + konversi koordinat, mode overlay debug + warna FPS + baris `[PERF]`, 7 jenis suara + `_KONFIG`/`POLA` + gerbang play + `ringkas()`, konstanta cloud + urutan `parse_payload` lengkap (termasuk "bad version") + `payload_summary` try/except per slot dgn `max()` atomik, label build |
+| Sengaja TIDAK diport | Semua yang menyentuh SDL/pygame/JNI: `fastblit`, `blitwatch`, `spritecache`, `_bench_core`, `bootcheck`, `diagnostics` (sidepanel sudah jalur UI), mixer + pemilihan berkas fnmatch, sha256/canonical-JSON, strftime (`exported_at` double), draw, `apply_device_profile`, `PhaseTimer`/`FrameTimer` |
+| Verifikasi | (1) `gen_mobile_cpp.py --check` di **kedua** workflow; (2) `test_mobile_cpp_selftest.py` — MENG-EXECUTE `mobile_processor.cpp` apa adanya lewat stub Variant tanpa engine (g++ saja, **tanpa pygame**): oracle = `mobile/*.py` ASLI dieksekusi sebagai AST tanpa node import (stub `pygame.Rect` semantik SDL + stub modul tetangga), **1.564 cek** dengan perilaku nyata (gesture lewat `TouchManager`, preset lewat `Quality.apply`, `AdaptiveQuality` diberi makan FPS, `parse_payload`/`get_payload_summary` asli), closed-world (tabel perintah == bind == deklarasi `.h`) + audit wiring (entry symbol, `.gdextension`, allowlist log gate SEMPIT, path filter kedua workflow, `.gitignore`, `mobile/` bersih); (3) build lib ke-5 di `godot-gdext.yml`: symlink `godot-cpp` bersama, scons, `nm -D` entry `mystic_mobile_library_init`, string tahan-strip `mobile_v1:8mod:66fn:` + `MysticMobile` |
+| Belum | Scene paritas engine + saklar backend (`mystic/mobile/use_gdext_mobile`) — sengaja belum, pola FASE 36; jalur produksi tetap pygame |
+
 ## Komponen UI `ui_components/` — jalur native C++ (godot++) — 12 September 2026 (FASE 36) — **DALAM PROSES**
 
 `ui_components/_bundle.py` (11 submodul: base UI, portrait hero, popup build,

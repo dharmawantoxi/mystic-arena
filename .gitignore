@@ -37,6 +37,11 @@ godot/addons/mystic_ui/bin/*.dll
 godot/addons/mystic_ui/bin/*.dylib
 godot/addons/mystic_ui/bin/*.framework/
 godot/addons/mystic_ui/bin/*.wasm
+godot/addons/mystic_mobile/bin/*.so
+godot/addons/mystic_mobile/bin/*.dll
+godot/addons/mystic_mobile/bin/*.dylib
+godot/addons/mystic_mobile/bin/*.framework/
+godot/addons/mystic_mobile/bin/*.wasm
 godot/gdext/mystic_skills/godot-cpp/
 godot/gdext/mystic_skills/godot-cpp
 godot/gdext/mystic_levels/godot-cpp/
@@ -45,6 +50,10 @@ godot/gdext/mystic_lighting/godot-cpp/
 godot/gdext/mystic_lighting/godot-cpp
 godot/gdext/mystic_maps/godot-cpp/
 godot/gdext/mystic_maps/godot-cpp
+godot/gdext/mystic_ui/godot-cpp/
+godot/gdext/mystic_ui/godot-cpp
+godot/gdext/mystic_mobile/godot-cpp/
+godot/gdext/mystic_mobile/godot-cpp
 # Checkout godot-cpp BERSAMA (satu clone untuk semua ekstensi; tiap ekstensi
 # men-symlink `godot-cpp -> ../godot-cpp` sehingga objek build-nya dipakai
 # ulang). CI .github/workflows/godot-gdext.yml memakai tata letak ini.
@@ -111,3 +120,7 @@ godot/gdext/mystic_levels/.sconsign.dblite
 godot/gdext/mystic_levels/src/*.os
 godot/gdext/mystic_lighting/.sconsign.dblite
 godot/gdext/mystic_lighting/src/*.os
+godot/gdext/mystic_ui/.sconsign.dblite
+godot/gdext/mystic_ui/src/*.os
+godot/gdext/mystic_mobile/.sconsign.dblite
+godot/gdext/mystic_mobile/src/*.os
