@@ -862,6 +862,70 @@ def structural_checks(replies, commands):
            "api_signature tidak menyebut %d fungsi" % binds)
 
 
+def wiring_checks():
+    """Audit wiring statis (tanpa engine): berkas yang harus ada, entry symbol
+    .gdextension, allowlist SEMPIT godot_log_gate, dan rujukan di kedua
+    workflow. Pola sama dengan seksi M oracle maps (FASE 35)."""
+    section("wiring (statis)")
+    ext = ROOT / "godot" / "gdext" / "mystic_ui"
+    addon = ROOT / "godot" / "addons" / "mystic_ui"
+    for needle, path in (("mystic_ui_library_init",
+                          ext / "src" / "register_types.cpp"),
+                         ("ClassDB::register_class<MysticUI>()",
+                          ext / "src" / "register_types.cpp"),
+                         ("mystic_ui_library_init",
+                          addon / "mystic_ui.gdextension"),
+                         ('compatibility_minimum = "4.3"',
+                          addon / "mystic_ui.gdextension"),
+                         ("libmystic_ui.linux.template_debug.x86_64.so",
+                          addon / "mystic_ui.gdextension"),
+                         ("env", ext / "SConstruct"),
+                         ("ui_dispatch.inc", ext / "selftest" / "ui_selftest.cpp"),
+                         ("MYSTIC_UI_SELFTEST_GODOT_STUB_H",
+                          ext / "selftest" / "godot_stub.hpp")):
+        expect(path.exists() and needle in path.read_text(encoding="utf-8"),
+               "%s tidak memuat/ada: %s" % (path.name, needle))
+    expect((addon / "bin" / ".gitkeep").exists(),
+           "addons/mystic_ui/bin/.gitkeep hilang (folder bin tidak ikut git)")
+
+    # godot_log_gate.py: lib .so TIDAK ikut repo, jadi langkah "Import project"
+    # di godot-check selalu mencetak
+    # "Failed loading resource: res://addons/mystic_ui/mystic_ui.gdextension".
+    # Tanpa allowlist SEMPIT itu, gate menganggapnya fatal (persis kegagalan CI
+    # PR #234). Pola telanjang r"mystic_ui" dilarang: itu akan memaafkan baris
+    # gagal harness UI.
+    gate = (ROOT / "godot" / "tools" / "godot_log_gate.py").read_text(
+        encoding="utf-8")
+    for needle in (r'r"addons/mystic_ui"', r'r"libmystic_ui"',
+                   r'r"Failed loading resource.*mystic_ui"'):
+        expect(needle in gate,
+               "godot_log_gate.py kehilangan allowlist %s (import headless "
+               "gagal tanpa lib)" % needle)
+    expect('\n    r"mystic_ui",' not in gate,
+           'godot_log_gate.py punya allowlist telanjang r"mystic_ui" — terlalu '
+           "lebar, bisa memaafkan baris FAIL harness UI")
+
+    check_yml = (ROOT / ".github" / "workflows" / "godot-check.yml").read_text(
+        encoding="utf-8")
+    gdext_yml = (ROOT / ".github" / "workflows" / "godot-gdext.yml").read_text(
+        encoding="utf-8")
+    for needle in ("tools/gen_ui_cpp.py --check",
+                   "tools/test_ui_cpp_selftest.py", "'ui_components/**'"):
+        expect(needle in check_yml,
+               "godot-check.yml tak merujuk %s" % needle)
+    for needle in ("tools/gen_ui_cpp.py --check",
+                   "tools/test_ui_cpp_selftest.py",
+                   "godot/gdext/mystic_ui",
+                   "libmystic_ui.linux.template_debug.x86_64.so",
+                   "mystic_ui_library_init",
+                   "for lib in mystic_skills mystic_levels mystic_maps mystic_ui"):
+        expect(needle in gdext_yml,
+               "godot-gdext.yml tak merujuk %s" % needle)
+    gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
+    expect("godot/addons/mystic_ui/bin/*.so" in gitignore,
+           ".gitignore tidak mengabaikan lib mystic_ui")
+
+
 def main():
     hud = load_hud_fixture()
     commands = build_commands(hud)
@@ -880,6 +944,7 @@ def main():
 
     replies = run_binary(out, commands)
     structural_checks(replies, commands)
+    wiring_checks()
 
     section("nilai (C++ vs oracle pygame/_core)")
     for cid, _fn, _args, kind, expected in commands:
