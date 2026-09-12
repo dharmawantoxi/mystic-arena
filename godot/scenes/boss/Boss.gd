@@ -1,6 +1,8 @@
 # Boss.gd — Port dari bosses/base_boss.py
-# Visual baseline: UnitSilhouette pygame (lebih besar + tanduk). Upgrade
-# satu-satu lewat RendererRegistry.BOSS[boss_type].
+# Badan: strip bake RendererRegistry.BOSS[boss_type] (Fase 5); tanpa strip,
+# badan generik pygame digambar BossOverlay (base_boss.py:6301).
+# Lapisan overlay Boss.draw() (aura, bayangan, debuff, HP bar, papan nama,
+# entrance) ada di scripts/render/BossOverlay.gd — Fase 32.
 extends CharacterBody2D
 
 @export var boss_type: String = "abaddon"
@@ -38,8 +40,14 @@ var boss_class: String = "mini"
 ## (paritas boss.entrance_color & boss.gold_reward bosses/base_boss.py:394)
 var entrance_color: Color = Color("#8c64dc")
 var gold_reward: int = 0
+## Fase 32: puncak sprite di atas titik jangkar (BOSS_LABEL_TOP,
+## base_boss.py:216) = jangkar HP bar, dan teks entrance (base_boss.py:6380)
+## yang berdenyut di tengah layar selama entrance freeze. Keduanya diekspor
+## converter ke bosses.json (label_top dari AST base_boss.py, entrance_text
+## dari tabel ENTRANCE_TEXT boss_data.py).
+var label_top: int = 0
+var entrance_text: String = ""
 
-const UnitSilhouetteScript = preload("res://scripts/render/UnitSilhouette.gd")
 const HurtFlashScript = preload("res://scripts/render/HurtFlash.gd")
 const RendererRegistry = preload("res://scripts/render/RendererRegistry.gd")
 const StatusEffectsScript = preload("res://scripts/systems/StatusEffects.gd")
@@ -47,6 +55,11 @@ const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
 ## Kit smart-AI Q/W/E/R 79 boss — transpile 1:1 dari bosses/base_boss.py
 ## (lihat header BossKit.gd; state kit hidup di `kit`).
 const BossKit = preload("res://scenes/boss/BossKit.gd")
+## Lapisan overlay Boss.draw() (base_boss.py:6124-6430): aura ability/enrage/
+## true boss, bayangan, indikator debuff, badan generik, HP bar, papan nama,
+## dan entrance. Node Boss menggambar lapisan BAWAH badan; anak `Plate`
+## (BossPlate.gd) menggambar lapisan ATAS badan.
+const BossOverlay = preload("res://scripts/render/BossOverlay.gd")
 var silhouette = null
 var custom_visual = null
 ## Flash putih hurt_flash_timer pygame (bosses/base_boss.py:6039, dibaca
@@ -129,8 +142,9 @@ var kit: Dictionary = {}
 @onready var sprite: AnimatedSprite2D = $Visual/AnimatedSprite2D
 @onready var shadow: Polygon2D = $Shadow
 @onready var aura: CPUParticles2D = $FX/Aura # CPU: aman di Android/GLES
-@onready var hp_bar: ProgressBar = $UI/HPBar
-@onready var name_label: Label = $UI/NameLabel
+## HP bar + papan nama (base_boss.py:6225-6276) — digambar DI ATAS badan,
+## jadi node anak sendiri sesudah Visual. Isi: BossPlate.gd -> BossOverlay.
+@onready var plate: Node2D = $Plate
 
 const FPS := 60.0
 const AGGRO_MARGIN := 100.0
@@ -171,7 +185,9 @@ func _ready():
 	role = str(s.get("title", s.get("role", "")))
 	boss_class = str(s.get("boss_class", "mini"))
 	fill_color = _parse_color(s.get("color", "#8c64dc"), Color("#8c64dc"))
-	fill_dark = fill_color.darkened(0.4)
+	# Warna gelap boss_data (`self.color_dark` base_boss.py:396) dibaca badan
+	# generik (base_boss.py:6312). Tanpa data: darkened(0.4) seperti sebelumnya.
+	fill_dark = _parse_color(s.get("color_dark", ""), fill_color.darkened(0.4))
 	entrance_color = _parse_color(s.get("entrance_color", ""), fill_color)
 	gold_reward = int(s.get("gold_reward", 0))
 	radius = float(s.get("radius", 42.0 if boss_class == "true" else 30.0))
@@ -197,9 +213,14 @@ func _ready():
 	# frame digambar di atasnya; Pygame menjalankan boss.update selama banner,
 	# dan entrance_timer membuat boss diam sampai timer habis).
 	entrance_timer = (180.0 if boss_class == "true" else 120.0) / FPS
+	# Fase 32: jangkar HP bar + teks entrance (BossOverlay).
+	label_top = int(s.get("label_top", 0))
+	entrance_text = str(s.get("entrance_text", ""))
 	if shadow != null:
-		shadow.visible = false
+		shadow.visible = false # bayangan digambar BossOverlay (base_boss.py:6166)
 	setup_visual(s)
+	if plate != null:
+		plate.boss = self # papan HP/nama di atas badan (BossPlate.gd)
 	# Dibuat SETELAH setup_visual: HurtFlash memilih target tint dari
 	# silhouette / custom_visual yang baru saja dipasang.
 	hurt_flash = HurtFlashScript.new(self, sprite)
@@ -224,13 +245,13 @@ func setup_visual(_s: Dictionary) -> void:
 			# heroes/__init__.py:2873-2878) — boss tanpa offset ekstra.
 			custom_visual.configure_baked(boss_type, "boss", team)
 		return
-	silhouette = UnitSilhouetteScript.new()
-	silhouette.name = "Silhouette"
-	visual.add_child(silhouette)
-	var ranged := attack_range >= 100.0 # AMBANG_RANGED combat_audio.py
-	silhouette.configure(
-		UnitSilhouetteScript.Kind.BOSS, boss_type, team, fill_color, fill_dark,
-		radius, role, dmg_school, ranged, boss_class)
+	# Tanpa strip bake: pygame menggambar `_draw_generic_body`
+	# (base_boss.py:6301 — bulatan bermahkota + mata), BUKAN siluet. Badan itu
+	# ikut digambar BossOverlay (langkah 7) karena `has_renderer` false di
+	# overlay_state(), jadi tidak ada node visual yang dibuat di sini. Semua
+	# 216 boss di bosses.json sudah punya strip (Fase 5); jalur ini hanya
+	# untuk tipe baru yang belum di-bake.
+	silhouette = null
 
 func _physics_process(delta):
 	if is_dead:
@@ -238,7 +259,12 @@ func _physics_process(delta):
 	if boss_class == "true":
 		# pygame: self.pulse += 0.1 tiap frame (base_boss.py:580) -> 6 rad/detik.
 		_pulse += delta * PULSE_SPEED
-		queue_redraw() # aura true boss menyala terus (lihat _draw)
+	# Overlay digambar ulang TIAP frame: pygame immediate-mode menggambar
+	# semuanya tiap frame, dan beberapa lapisan berdenyut (aura ability +
+	# entrance ikut anim_time, burn flicker, cincin entrance membesar).
+	# queue_redraw hanya menandai kotor — state dibaca saat _draw benar-benar
+	# jalan, jadi perubahan di bawah ini tetap terlihat pada frame yang sama.
+	_queue_overlay()
 	if hurt_flash != null:
 		hurt_flash.tick(self, delta)
 	if status != null:
@@ -366,9 +392,10 @@ func _tick_enrage(delta: float) -> void:
 			_callout("FRENZY!")
 			update_ui()
 	if is_enraged:
-		# +0.08/frame (base_boss.py:649) -> 4,8 rad/s
+		# +0.08/frame (base_boss.py:649) -> 4,8 rad/s. Overlay (aura enrage +
+		# warna bar/papan nama) sudah digambar ulang tiap frame di
+		# _physics_process, jadi tidak perlu queue_redraw di sini.
 		enrage_pulse += 0.08 * FPS * delta
-		queue_redraw()
 
 
 ## attack_cooldown (detik) × `mult`, minimal `min_frames` frame (pygame
@@ -517,77 +544,88 @@ func _drive_visual(is_moving: bool) -> void:
 
 
 # ══════════════════════════════════════════════════════════
-#  AURA TRUE BOSS (_draw_true_boss_aura bosses/base_boss.py:6351-6375)
+#  OVERLAY Boss.draw() -> scripts/render/BossOverlay.gd (Fase 32)
 # ══════════════════════════════════════════════════════════
-# pygame menggambarnya SETIAP frame selama true boss hidup — bukan efek skill,
-# melainkan penanda kelas. Mini boss TIDAK punya ini. Resep pygame:
-#   pulse  = sin(self.pulse) * 0.3 + 0.7      (self.pulse += 0.1/frame :580)
-#   aura_r = radius + 15
-#   for r_off in range(aura_r, aura_r - 15, -2):        -> 8 lingkaran
-#       alpha = (aura_r - r_off) * 5 * pulse            -> 0,10,20..70 x pulse
+# Seluruh lapisan overlay `Boss.draw()` (bosses/base_boss.py:6124-6430) hidup
+# di BossOverlay.gd: entrance (eksklusif), aura ability, aura enrage/frenzy,
+# aura true boss, bayangan, indikator debuff menara, badan generik fallback —
+# lalu HP bar + papan nama lewat anak `Plate` (harus DI ATAS badan). Node ini
+# hanya menyuplai state dan meraster lapisan BAWAH badan.
 #
-# JEBAKAN YANG DIVERIFIKASI ULANG: `pygame.draw.circle` TIDAK melakukan alpha
-# blending — ia MENIMPA piksel (termasuk kanal alpha) di surface SRCALPHA.
-# Jadi 8 lingkaran itu bukan tumpukan yang makin pekat, melainkan gradien
-# BERPITA: tiap piksel memakai alpha lingkaran TERKECIL yang menutupinya, dan
-# bagian dalam (d <= aura_r - 14) rata di alpha 70 * pulse.
-# `draw_circle()` Godot sebaliknya MEM-BLEND; menyalinnya mentah-mentah
-# membuat pusat aura ~3x lebih pekat (144/255 vs 49/255 pada pulse 0,7 —
-# diukur di tools/test_boss_true_aura_parity.py). Karena itu di sini: satu
-# cakram inti + 7 cincin `draw_arc` selebar AURA_STEP yang TIDAK saling
-# menimpa, sehingga profil alpha-nya sama dengan pygame.
-#
-# Aura ability (`ability_active`) dan aura enrage (`is_enraged`) pygame belum
-# diport karena mekanik enrage/ability boss memang belum ada di Godot; begitu
-# diport, tempatnya di sini juga.
-#
-# Digambar di node Boss (bukan child) supaya otomatis BERADA DI BAWAH
-# Visual/Silhouette: CanvasItem menggambar dirinya dulu, anaknya belakangan.
-## rad/detik = 0.1 per frame pygame x 60 fps
+# JEBAKAN ALPHA (kenapa bukan draw_circle bertumpuk) dan alasan titik (x, y)
+# pygame == origin node ini dicatat di kepala BossOverlay.gd; profil alpha-nya
+# dikunci tools/test_boss_true_aura_parity.py + tools/test_boss_draw_parity.py.
+## rad/detik = 0.1 per frame pygame x 60 fps (base_boss.py:580)
 const PULSE_SPEED := 6.0
-## jumlah lingkaran pygame: range(aura_r, aura_r - 15, -2) -> 8
-const AURA_RINGS := 8
-const AURA_STEP := 2.0
-const AURA_MARGIN := 15.0
-## kenaikan alpha per langkah (0..70) sebelum dikali pulse, /255 -> 0..1
-const AURA_ALPHA_STEP := 5.0
 
 
+## Lapisan BAWAH badan. CanvasItem menggambar dirinya dulu, anak (Visual)
+## belakangan — jadi aura/bayangan/debuff otomatis di belakang badan, persis
+## urutan pygame (aura -> bayangan -> debuff -> badan -> bar -> nama).
 func _draw() -> void:
 	if is_dead:
 		return
-	var center := Vector2(0.0, -radius * 0.7)
-	if boss_class == "true":
-		var pulse := sin(_pulse) * 0.3 + 0.7
-		var aura_r := radius + AURA_MARGIN
-		# pygame memusatkan aura di (x, y) = TENGAH badan; origin unit Godot ada di
-		# telapak kaki (UnitSilhouette._draw), jadi digeser naik ke torso.
-		# 1) cakram inti: alpha maksimum, rata sampai aura_r - 14
-		var inner_r := aura_r - float(AURA_RINGS - 1) * AURA_STEP
-		var inner_a: float = float(AURA_RINGS - 1) * AURA_STEP * AURA_ALPHA_STEP * pulse / 255.0
-		draw_circle(center, inner_r, Color(fill_color.r, fill_color.g, fill_color.b, inner_a))
-		# 2) cincin luar, makin ke luar makin transparan (i = 0 alpha 0 -> dilewati)
-		for i in range(1, AURA_RINGS - 1):
-			var r_off := aura_r - float(i) * AURA_STEP
-			var a := (aura_r - r_off) * AURA_ALPHA_STEP * pulse / 255.0
-			if a <= 0.0:
-				continue
-			# draw_arc menaruh garis DI TENGAH radius -> mid = r_off - step/2
-			# menutup pita (r_off - step, r_off], persis satu langkah pygame.
-			draw_arc(center, r_off - AURA_STEP * 0.5, 0.0, TAU, 32,
-				Color(fill_color.r, fill_color.g, fill_color.b, a), AURA_STEP)
-	# ── AURA ENRAGE / FRENZY (base_boss.py:6277-6300) ──
-	# Pygame menggambar cincin garis (bukan cakram) radius = radius + 14*pulse,
-	# warna merah untuk true boss / oranye untuk mini. Pendekatan draw_arc
-	# lebar 2 px menyamai stroke pygame; profil alpha/pixel belum diverifikasi
-	# screenshot — dicatat di docs/GODOT_PARITY_CHECKLIST.md (visual stage).
-	if is_enraged:
-		var epulse := sin(enrage_pulse) * 0.3 + 0.7
-		var era := radius + 14.0 * epulse
-		var ecol := Color(1.0, 0.196, 0.157) if boss_class == "true" else Color(1.0, 0.55, 0.118)
-		draw_arc(center, era, 0.0, TAU, 40, ecol, 2.0)
-		draw_arc(center, era - 3.0, 0.0, TAU, 40,
-			Color(ecol.r, ecol.g, ecol.b, 0.6), 2.0)
+	BossOverlay.exec(self, BossOverlay.underlay_ops(overlay_state()),
+		global_position)
+
+
+## Minta gambar ulang overlay: node ini (lapisan bawah) + `Plate` (HP bar dan
+## papan nama). Dipanggil di semua titik yang dulu memanggil queue_redraw().
+func _queue_overlay() -> void:
+	queue_redraw()
+	if plate != null:
+		plate.queue_redraw()
+
+
+## State overlay: semua masukan `Boss.draw()` pygame, dikumpulkan dari node
+## ini (satu-satunya tempat angka permainan bertemu geometri overlay).
+## Kunci & satuan mengikuti fixture tools/test_boss_draw_parity.py:
+##   - x/y = koordinat DUNIA, int (paritas `int(self.x)` base_boss.py:6127)
+##   - entrance_timer = FRAME pygame (Godot menyimpan detik -> x FPS)
+##   - anim_time = FRAME (pygame `self.anim_time += 1` per update)
+##   - pulse / enrage_pulse = fase radian. pygame menambah 0.1/frame dan
+##     0.08/frame; Godot menambah 6 rad/detik dan 4,8 rad/detik, jadi setelah
+##     t detik keduanya SAMA (0.1 * 60t == 6t) dan langsung dipakai sin().
+func overlay_state() -> Dictionary:
+	var true_boss := boss_class == "true"
+	var debuff := {}
+	if status != null:
+		# `TowerDebuffMixin` pygame: indikator digambar untuk timer > 0
+		# (_core.py:1043-1085). Boss Godot menyimpannya di StatusEffects.
+		debuff = {
+			"slow": status.slow_timer > 0.0,
+			"atk_slow": status.atk_slow_timer > 0.0,
+			"skill_down": status.skill_down_timer > 0.0,
+			"anti_heal": status.anti_heal_timer > 0.0,
+			"burn": status.burn_timer > 0.0,
+		}
+	return {
+		"x": int(global_position.x),
+		"y": int(global_position.y),
+		"radius": int(radius),
+		"boss_class": boss_class,
+		"name": display_name,
+		"hp": hp,
+		"max_hp": max_hp,
+		"color": [int(fill_color.r8), int(fill_color.g8), int(fill_color.b8)],
+		"color_dark": [int(fill_dark.r8), int(fill_dark.g8), int(fill_dark.b8)],
+		"entrance_color": [int(entrance_color.r8), int(entrance_color.g8),
+			int(entrance_color.b8)],
+		"label_top": label_top,
+		"has_renderer": custom_visual != null,
+		"hurt_flash": hurt_flash != null and hurt_flash.is_active(),
+		"anim_time": _anim_frame,
+		"pulse": _pulse,
+		"enrage_pulse": enrage_pulse,
+		"is_enraged": is_enraged,
+		"ability_active": ability_active,
+		"ability_range": ability_range,
+		"entrance_timer": int(round(entrance_timer * FPS)),
+		"entrance_max": 180 if true_boss else 120,
+		"entrance_text": entrance_text,
+		"screen_w": BossOverlay.SCREEN_W,
+		"debuff": debuff,
+	}
 
 
 static func _parse_color(v, fallback: Color) -> Color:
@@ -845,7 +883,7 @@ func _use_ability() -> void:
 	ability_timer = float(ability_cooldown_max) / FPS
 	ability_active = true
 	ability_active_timer = 1.0 # 60 frame
-	queue_redraw()
+	_queue_overlay() # aura ability menyala (base_boss.py:6139-6159)
 	var hits := 0
 	for e in CombatSystem.enemies_of(team):
 		if not is_instance_valid(e):
@@ -992,15 +1030,9 @@ func apply_scaling(hp_mult: float = 1.0, dmg_mult: float = 1.0, spd_mult: float 
 	max_damage_per_hit = max_hp * (0.08 if boss_class == "true" else 0.12)
 	update_ui()
 
+## HP bar + papan nama (base_boss.py:6225-6276) digambar BossPlate tiap frame
+## dari `overlay_state()`, jadi tidak ada node UI yang perlu disinkronkan di
+## sini. Fungsi ini tetap jadi pintu eksplisit (dipanggil saat HP/enrage/skala
+## berubah) supaya lapisan overlay langsung digambar ulang.
 func update_ui():
-	if hp_bar:
-		hp_bar.max_value = 100.0
-		hp_bar.value = clampf(hp / maxf(1.0, max_hp) * 100.0, 0.0, 100.0)
-	if name_label:
-		var tag := ""
-		if is_enraged:
-			tag = " [ENRAGED]" if boss_class == "true" else " [FRENZY]"
-		name_label.text = "%s%s  %d/%d" % [display_name, tag, int(maxf(0.0, hp)), int(max_hp)]
-		# Label memerah saat enrage (base_boss.py:6254 label_color merah)
-		name_label.add_theme_color_override("font_color",
-			Color(1.0, 0.235, 0.235) if is_enraged else Color(1, 0.86, 0.6))
+	_queue_overlay()

@@ -15,14 +15,21 @@ BERPITA (tiap piksel memakai alpha lingkaran terkecil yang menutupinya), bukan
 tumpukan yang makin pekat. ``CanvasItem.draw_circle()`` Godot sebaliknya
 MEM-BLEND — port naif "8 draw_circle" membuat pusat aura ~3x lebih pekat.
 
-Karena itu ``godot/scenes/boss/Boss.gd::_draw()`` memakai 1 cakram inti +
-6 cincin ``draw_arc`` yang tidak saling menimpa. Test ini:
+Sejak FASE 32 aura ini tidak lagi digambar ``Boss._draw()`` langsung,
+melainkan dibangun ``godot/scripts/render/BossOverlay.gd`` sebagai op ``band``
+(anulus alpha rata: ``inner < d <= outer``) yang diraster ``draw_arc`` lebar
+``outer - inner`` — jadi pita-pita itu tidak pernah saling menimpa. Test ini:
 
-  1. membaca konstanta aura langsung dari Boss.gd (bukan menyalinnya),
-  2. memodelkan profil alpha hasil gambar Godot,
+  1. membaca konstanta aura langsung dari BossOverlay.gd (bukan menyalinnya),
+  2. memodelkan profil alpha hasil gambar Godot (band -> draw_arc),
   3. membandingkannya dengan surface pygame yang sungguh-sungguh dirender,
   4. memastikan model "8 draw_circle bertumpuk" MEMANG gagal — supaya tidak
-     ada yang "menyederhanakan" kode Godot kembali ke sana.
+     ada yang "menyederhanakan" kode Godot kembali ke sana,
+  5. memeriksa struktur BossOverlay.gd: pita dipakai untuk kedua aura ISI
+     (ability + true boss) dan aura true boss hanya menyala untuk kelas true.
+
+Oracle lengkap seluruh lapisan overlay (termasuk piksel round-trip per
+skenario) ada di ``tools/test_boss_draw_parity.py``.
 
 Jalankan: python3 tools/test_boss_true_aura_parity.py
 """
@@ -37,6 +44,7 @@ os.environ.setdefault("SDL_AUDIODRIVER", "dummy")
 import pygame  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OVERLAY_GD = os.path.join(ROOT, "godot", "scripts", "render", "BossOverlay.gd")
 BOSS_GD = os.path.join(ROOT, "godot", "scenes", "boss", "Boss.gd")
 
 _pass = 0
@@ -54,14 +62,15 @@ def check(name, cond, detail=""):
 
 
 def gd_const(src, name, cast=float):
-    m = re.search(r"^const %s\s*:?=\s*([0-9.]+)" % re.escape(name), src, re.M)
+    m = re.search(r"^const %s\s*:?[^=\n]*=\s*([0-9.]+)" % re.escape(name),
+                  src, re.M)
     if not m:
-        raise AssertionError("konstanta %s tidak ada di Boss.gd" % name)
+        raise AssertionError("konstanta %s tidak ada di BossOverlay.gd" % name)
     return cast(m.group(1))
 
 
 def pygame_profile(radius, pulse, color=(140, 100, 220)):
-    """Profil alpha pygame di sepanjang sumbu x dari pusat."""
+    """Profil alpha pygame di sepanjang sumbu x dari pusat (render asli)."""
     aura_r = radius + 15
     surf = pygame.Surface((aura_r * 3, aura_r * 3), pygame.SRCALPHA)
     for r_off in range(aura_r, aura_r - 15, -2):
@@ -74,28 +83,36 @@ def pygame_profile(radius, pulse, color=(140, 100, 220)):
 
 
 def godot_profile(radius, pulse, rings, step, margin, alpha_step):
-    """Model gambar Boss.gd: cakram inti + cincin draw_arc (tidak menimpa)."""
+    """Model BossOverlay.gd: `filled_aura_bands` -> op band -> draw_arc.
+
+    Cermin ``radial_profile``: pita menutup ``inner < d <= outer``, dan pita
+    paling dalam (``ri = 0``) menutup pusat. Tidak ada penumpukan alpha.
+    """
     aura_r = radius + margin
-    prof = [0.0] * (int(aura_r) + 3)
-    inner_r = aura_r - (rings - 1) * step
-    inner_a = (rings - 1) * step * alpha_step * pulse / 255.0
-    for d in range(len(prof)):
-        if d <= inner_r:
-            prof[d] = inner_a
-    for i in range(1, rings - 1):
-        r_off = aura_r - i * step
-        a = (aura_r - r_off) * alpha_step * pulse / 255.0
+    prof = [0] * (int(aura_r) + 3)
+    radii, alphas = [], []
+    for i in range(1, int(rings)):
+        r_off = aura_r - int(step * float(i))
+        if r_off <= 0:
+            continue
+        a = max(0, min(255, int((aura_r - r_off) * alpha_step * pulse)))
+        if a <= 0:
+            continue
+        radii.append(r_off)
+        alphas.append(a)
+    for i, outer in enumerate(radii):
+        inner = radii[i + 1] if i + 1 < len(radii) else 0
         for d in range(len(prof)):
-            if r_off - step < d <= r_off:
-                prof[d] = a
-    return [round(x * 255) for x in prof]
+            if d <= outer and (d > inner or inner <= 0):
+                prof[d] = alphas[i]
+    return prof
 
 
 def stacked_circle_profile(radius, pulse, rings, step, margin, alpha_step):
     """Model port NAIF: 8 draw_circle Godot yang saling mem-blend."""
     aura_r = radius + margin
     prof = [0.0] * (int(aura_r) + 3)
-    for i in range(rings):
+    for i in range(int(rings)):
         r_off = aura_r - i * step
         a = (aura_r - r_off) * alpha_step * pulse / 255.0
         if a <= 0:
@@ -103,11 +120,11 @@ def stacked_circle_profile(radius, pulse, rings, step, margin, alpha_step):
         for d in range(len(prof)):
             if d <= r_off:
                 prof[d] = prof[d] + a * (1.0 - prof[d])
-    return [round(x * 255) for x in prof]
+    return [int(round(x * 255)) for x in prof]
 
 
 def save_shot(path, radius=26, pulse=0.7, color=(140, 100, 220)):
-    """Tulis PNG perbandingan: pygame vs port naif vs port Boss.gd."""
+    """Tulis PNG perbandingan: pygame vs port naif vs port BossOverlay.gd."""
     aura_r = radius + 15
     cell = aura_r * 3
     img = pygame.Surface((cell * 3, cell + 26), pygame.SRCALPHA)
@@ -116,7 +133,7 @@ def save_shot(path, radius=26, pulse=0.7, color=(140, 100, 220)):
         ("pygame (acuan)", pygame_profile(radius, pulse, color)),
         ("naif: 8 draw_circle", stacked_circle_profile(
             radius, pulse, 8, 2.0, 15.0, 5.0)),
-        ("Boss.gd: cakram+cincin", godot_profile(
+        ("BossOverlay: pita band", godot_profile(
             radius, pulse, 8, 2.0, 15.0, 5.0)),
     ]
     font = pygame.font.SysFont(None, 16)
@@ -140,12 +157,21 @@ def save_shot(path, radius=26, pulse=0.7, color=(140, 100, 220)):
     print("shot -> %s" % path)
 
 
+def gd_func(src, name):
+    """Ambil badan satu `static func` (sampai func/komentar berikutnya)."""
+    i = src.index("static func %s(" % name)
+    j = len(src)
+    for m in re.finditer(r"^static func \w+\(", src[i + 10:], re.M):
+        j = min(j, i + 10 + m.start())
+    return src[i:j]
+
+
 def main():
     pygame.init()
     pygame.display.set_mode((1, 1))
-    src = open(BOSS_GD, encoding="utf-8").read()
+    src = open(OVERLAY_GD, encoding="utf-8").read()
 
-    print("Konstanta aura dibaca dari godot/scenes/boss/Boss.gd")
+    print("Konstanta aura dibaca dari godot/scripts/render/BossOverlay.gd")
     rings = int(gd_const(src, "AURA_RINGS"))
     step = gd_const(src, "AURA_STEP")
     margin = gd_const(src, "AURA_MARGIN")
@@ -161,8 +187,8 @@ def main():
 
     print("\nProfil alpha vs pygame (beberapa fase denyut & radius)")
     # Toleransi = 1 langkah alpha + 1. Dua sumber beda yang sah:
-    #   * pygame.draw.circle radius r menutup d < r (bukan d <= r), jadi pita
-    #     bisa bergeser satu piksel;
+    #   * pygame.draw.circle radius r menutup d < r (bukan d <= r), jadi tepi
+    #     pita bisa bergeser satu piksel;
     #   * pygame memakai int() (pemotongan), model Godot membulatkan.
     for radius in (22, 26, 30):
         for phase in (0.0, math.pi * 0.5, math.pi, math.pi * 1.5):
@@ -187,18 +213,38 @@ def main():
         check("r=%d: draw_circle bertumpuk jauh lebih pekat" % radius,
               bad[0] >= ref[0] * 2, "naif %d vs pygame %d" % (bad[0], ref[0]))
 
-    print("\nKode Boss.gd memakai draw_arc, bukan tumpukan draw_circle")
-    draw_body = src[src.index("func _draw() -> void:"):]
-    draw_body = draw_body[:draw_body.index("\nstatic func ")]
-    check("ada draw_arc (cincin tidak menimpa)", "draw_arc(" in draw_body)
-    check("draw_circle dipakai maksimal 1x (cakram inti)",
-          draw_body.count("draw_circle(") <= 1,
-          "%d kali" % draw_body.count("draw_circle("))
-    # Aura dasar true-boss harus tetap di dalam guard `if boss_class == "true"`
-    # supaya mini boss tidak menggambar aura denyut ungu. (Mini boss kini hanya
-    # menggambar aura enrage oranye saat frenzy — paritas _draw_enrage_aura
-    # base_boss.py:6277 yang berlaku untuk kedua kelas.)
-    check("aura dasar hanya untuk boss_class true", 'if boss_class == "true":' in draw_body)
+    print("\nStruktur BossOverlay.gd (pita, bukan tumpukan cakram)")
+    bands = gd_func(src, "filled_aura_bands")
+    check("filled_aura_bands menghasilkan op band", '"k": "band"' in bands)
+    check("pita punya inner/outer (ri/ro)", '"ri": inner' in bands
+          and '"ro": outer' in bands)
+    check("kedua aura ISI memakai pita yang sama (ability + true boss)",
+          "filled_aura_bands(" in gd_func(src, "ability_aura_ops")
+          and "filled_aura_bands(" in gd_func(src, "true_aura_ops"))
+    ex = gd_func(src, "exec")
+    band_branch = ex[ex.index('"band":'):ex.index('"rect":')]
+    check("band digambar draw_arc (cincin tidak menimpa)",
+          "draw_arc(" in band_branch)
+    check("draw_circle di cabang band hanya untuk pusat (inner <= 0)",
+          band_branch.count("draw_circle(") == 1
+          and "inner <= 0.0" in band_branch)
+    check("aura enrage tetap cincin GARIS (ring, width 2)",
+          '"k": "ring"' in gd_func(src, "enrage_aura_ops")
+          and int(gd_const(src, "ENRAGE_RING_W")) == 2)
+    under = gd_func(src, "underlay_ops")
+    check("aura true boss hanya untuk kelas true",
+          "if is_true(state):" in under
+          and "true_aura_ops(state)" in under)
+    check("urutan lapisan: ability -> enrage -> true -> bayangan -> debuff",
+          under.index("ability_aura_ops") < under.index("enrage_aura_ops")
+          < under.index("true_aura_ops") < under.index("shadow_ops")
+          < under.index("debuff_ops"))
+    boss_src = open(BOSS_GD, encoding="utf-8").read()
+    check("Boss.gd tidak lagi menggambar aura sendiri",
+          "draw_arc(" not in boss_src and "draw_circle(" not in boss_src)
+    check("Boss.gd mendelegasikan overlay ke BossOverlay",
+          "BossOverlay.exec(" in boss_src
+          and "BossOverlay.underlay_ops(" in boss_src)
 
     if "--shot" in sys.argv:
         pygame.font.init()

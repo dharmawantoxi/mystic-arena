@@ -8,6 +8,46 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Paket `bosses/` — lapisan overlay `Boss.draw()` + pipeline data `boss_data.py` — 12 September 2026 (FASE 32)
+
+Dua bagian `bosses/` yang realistis diport diport penuh: **(A)** seluruh lapisan
+overlay `Boss.draw()` (`base_boss.py:6124-6430` — entrance, aura
+ability/enrage/true boss, bayangan, indikator debuff menara, badan generik, HP
+bar, papan nama) → `scripts/render/BossOverlay.gd` + `scenes/boss/BossPlate.gd`,
+dan **(B)** pipeline data saat-import `boss_data.py` (lima fungsi yang menimpa
+tabelnya sendiri) → `scripts/core/BossData.gd` + `BossDB.rebuild_from_pristine()`.
+Rincian, kosakata op kanonik, dan daftar deviasi:
+[BOSS_OVERLAY_GODOTPP.md](BOSS_OVERLAY_GODOTPP.md).
+
+**Tetap di luar cakupan (keputusan Fase 2b→5, bukan gap baru):** 54 renderer
+prosedural per boss (`bosses/level1.py`…`level54.py`, ±350 ribu baris). Badan
+boss tampil lewat **strip bake** yang di-render dari renderer pygame ASLI
+(`assets/units/`, 445 PNG ter-commit); yang diambil dari berkas-berkas itu hanya
+pemetaan dispatch-nya (`has_renderer`), yang menentukan apakah overlay menggambar
+badan generik fallback.
+
+| Bagian pygame | Sebelum (Godot) | Sesudah (FASE 32) |
+|---|---|---|
+| Entrance `_draw_entrance` (`:6376-6430`) | Tidak ada: selama `entrance_timer` boss hanya diam (freeze perilaku sudah ada), layar tidak menampilkan cincin ekspansi + teks entrance berdenyut | `entrance_ops()` **eksklusif** (kalau `entrance_timer > 0`, hanya ini yang digambar — paritas `return` dini pygame): cakram alpha 200, cincin ekspansi, teks `entrance_text` dari `boss_data` (font 28 true / 24 mini, baris 34 px, `start_y = 84 − (n−1)·18`, `cx = SCREEN_W//2`) + bayangan +2/+2 alpha 200; clamp lebar 1000 px |
+| Aura true boss `_draw_true_boss_aura` (`:6351-6375`) | Ada, tetapi ditulis inline di `Boss._draw()` dengan resep pita yang hanya dikunci satu tes alpha | `true_aura_ops()` di BossOverlay (8 pita `range(aura_r, aura_r−15, −2)`, alpha `(aura_r − r_off)·5·pulse`, `pulse = sin(pulse)·0,3 + 0,7`); `Boss.gd` tidak lagi punya `draw_arc`/`draw_circle` — seluruh geometri lewat op kanonik yang dibandingkan fixture |
+| Aura ability (`:6139-6159`) + enrage `_draw_enrage_aura` (`:6277-6300`) | Aura ability **tidak diport**; enrage digambar dua `draw_arc` 2 px dengan warna hardcode dan catatan "profil alpha/pixel belum diverifikasi" | `ability_aura_ops()` (3 cakram alpha 26/40/60 radius `ability_range`) + `enrage_aura_ops()` (dua cincin stroke 2 px radius `radius + 14·pulse`, `(255,50,40)` true / `(255,142,30)` mini) — keduanya bagian dari 647 op fixture |
+| Bayangan (`:6166`) | `Polygon2D` "Shadow" di `Boss.tscn` — **dimatikan** di `_ready`, jadi boss tidak punya bayangan sama sekali | `shadow_ops()`: ellipse hitam `(0,0,0,120)` rect `(x − rx, y + ry·0,35, 2rx, ry·0,7)` (+10 px untuk true), digambar di node Boss supaya tetap di bawah badan |
+| Indikator debuff menara (`_core.py:1037-1085`) | Tidak ada: SLOW/ATK SLOW/SKILL DOWN/ANTI HEAL/BURN dari menara tidak terlihat pada boss | `debuff_ops()` dari `StatusEffects` timer > 0: cincin slow `(150,220,255)`, burn dua lapis `(255,140,40)`/`(255,220,90)`, pip 4 px urutan `DEBUFF_PIP_ORDER` di `y − radius − 12` |
+| Badan generik `_draw_generic_body` (`:6301-6350`) | Tanpa strip bake, Godot memasang **siluet** `UnitSilhouette` (bentuk yang tidak pernah digambar pygame untuk boss) | `generic_body_ops()` (bulatan `color`/`color_dark` + mahkota + mata) hanya bila `has_renderer` false; `setup_visual()` tidak lagi membuat siluet — `color_dark` kini dibaca dari data (`bosses.json`, field baru hasil converter), bukan `darkened(0,4)` |
+| HP bar + papan nama (`:6225-6276`) | Node statis `UI` (`CanvasGroup` + `ProgressBar` + `Label`): tinggi/lebar bar tetap, tanpa warna border enrage, tanpa prefix `TRUE BOSS:`, teks `nama [ENRAGED] 1234/5678`, tidak di-clamp ke tepi layar | `BossPlate.gd` (anak **sesudah** `Visual`, jadi di atas badan) meraster `hp_bar_ops()` + `name_plate_ops()`: geometri persis pygame (`bar_w` 70/60, `bar_h` 10/8, jangkar `y − head_top − 6 − bar_h` dengan `head_top` dari `BOSS_LABEL_TOP`/radius, tiga warna isi per rasio HP, border enrage/kelas, kotak bg `inflate(8,4)` radius 3, clamp margin 2 px ke `SCREEN_W`); `update_ui()` tinggal memicu gambar ulang |
+| Urutan lapisan | `queue_redraw()` dipanggil hanya untuk true boss + enrage, jadi aura ability/entrance/debuff bisa tertinggal satu frame | `_queue_overlay()` (node + `Plate`) tiap frame di `_physics_process`; `underlay_ops()` (langkah 1-7) digambar node Boss, `over_ops()` (langkah 8-9) oleh `Plate` — urutan pygame aura → bayangan → debuff → badan → bar → nama dijaga struktur node, bukan `z_index` |
+| Pipeline data `boss_data.py` (`:11452-11841`) | Tidak ada: Godot hanya membaca **hasil** bake. Fallback `BossDB` bila `bosses.json` hilang = 3 baris hardcode dengan angka **pre-pipeline** (salah) | `BossData.gd` mem-port kelima langkah (rebalance piecewise → smoothing monoton per slot wave/level → curve override → normalisasi stat hero_unlock least-squares + clamp + running-max 15% → normalisasi range melee/ranged) atas `data/boss_pristine.json` (tabel mentah hasil ekstraksi **AST** converter); `BossDB.rebuild_from_pristine()` memulihkan 216 baris, `load_levels()` kini jalan lebih dulu karena smoothing butuh jadwal |
+| Verifikasi | `test_boss_true_aura_parity.py` (46 cek, hanya aura true boss, tanpa fixture engine) | 4 oracle + 2 scene replay: `test_boss_draw_parity.py` **menjalankan `Boss.draw` pygame ASLI** untuk 50 skenario, merekam primitif → op kanonik, lalu memverifikasi konversinya dengan piksel (byte-per-byte) + profil alpha terukur (245 cek, fixture 185 KB/647 op wajib segar); `test_boss_overlay_model_parity.py` = kembaran Python `BossOverlay.gd` (104 cek, konstanta dibaca dari `.gd`); `test_boss_true_aura_parity.py` ditulis ulang (53 cek, pendekatan naif 8×`draw_circle` **wajib gagal**); `test_boss_data_parity.py` (2515 cek: model vs modul asli 3024 field, vs baker 3024 field, invariant, probe fit nyata). Replay engine: `BossDrawParityTest` (op + semantik lapisan + plumbing `overlay_state()` node asli + raster `exec()`) dan `BossDataParityTest` (216 boss field demi field + purity + katalog + jalur pemulihan) — CI `godot-check` langkah **4z** dan **4z2** |
+
+**Yang belum (jujur):** raster overlay belum diaudit **piksel-per-piksel**
+terhadap screenshot pygame — fixture mengunci geometri/warna/urutan op dan
+oracle mengunci semantik alpha pita, tetapi bentuk glif teks mengikuti font
+engine (metrik `wh`/`asc` yang direkam oracle hanya menjamin **posisi blit**
+identik). Bayangan ellipse digambar poligon 32 titik (Godot tidak punya
+`draw_ellipse`) sehingga tepinya beda sub-piksel. Visual skill smart-AI per boss
+(`heroes/<boss>_fx`) tetap aproksimasi `KitShockRing.gd` seperti sebelum fase
+ini — itu ranah `_entity.py`/`heroes/`, bukan `bosses/`.
+
 ## Design system UI `ui_theme.py` (palet, teks, ikon, komponen menu) — 11 September 2026 (FASE 31)
 
 `ui_theme.py` (1011 baris, **31 def**) adalah satu sumber kebenaran tampilan
@@ -520,7 +560,7 @@ milik bucket piksel).
 | Ekonomi AI | Gold awal dan income sama dengan pemain | Mulai dengan `STARTING_GOLD` (350), income `GOLD_PER_SECOND + wave_number`. AI membangun/draft memakai saldo ini (`AIPlayer.__init__`, `Game.update`). |
 | Nexus AI | Tidak ada eskalasi wave otomatis | Naik ke level 2/3/4/5 pada wave 4/7/10/13, sebelum menghitung komposisi baru (`Game._auto_scale_ai_castle`). |
 | Mini boss | Wave tetap dari JSON | Wave unik diacak tiap match: easy 20–40, normal/hard 11–30, urutan dan tipe boss tetap (`Game._roll_mini_boss_schedule`). |
-| Data boss | BossDB hanya hp/damage/speed/range/cooldown/radius | `bosses.json` diekspor converter dari `boss_data.py` + `hero_archetypes`: armor/MR tematik, ability/ability2 (cooldown, damage, range, heal), jarak kiting, dan bendera `uses_smart_ai` hasil AST `Boss.update` — 216 baris cocok dengan oracle Pygame (`BossCoreParityTest`). Modul `hero_archetypes.py` itu sendiri diport utuh 1:1 ke `HeroArchetypes.gd`: const `ARCHETYPES` (222 hero: dmg_type/playstyle/tier/power) + `BOSS_RESISTANCES` (216 boss), `get_archetype` (termasuk override manual `dmg_type` ala `boss_data['hero_unlock']` dan entri default `derived`), `school_of`, `physical_mitigation`, `_resist_from_profile` (pembulatan banker ala `round()` Python + clamp `ARMOR_MAX`/`MR_MAX`), dan `get_boss_resistances` (fallback profil balanced per kelas untuk boss yang belum terdaftar). `Boss.gd` memakai fungsi itu sebagai default sebelum override + clamp persis `base_boss.py:447-457`, dan `HeroDB.get_balanced_stats` mengambil `dmg_school` dari modul yang sama. Dikunci `HeroArchetypesParityTest` (oracle konstanta py + fixture `boss_core` + sinkron data JSON). |
+| Data boss | BossDB hanya hp/damage/speed/range/cooldown/radius | `bosses.json` diekspor converter dari `boss_data.py` + `hero_archetypes`: armor/MR tematik, ability/ability2 (cooldown, damage, range, heal), jarak kiting, dan bendera `uses_smart_ai` hasil AST `Boss.update` — 216 baris cocok dengan oracle Pygame (`BossCoreParityTest`). Modul `hero_archetypes.py` itu sendiri diport utuh 1:1 ke `HeroArchetypes.gd`: const `ARCHETYPES` (222 hero: dmg_type/playstyle/tier/power) + `BOSS_RESISTANCES` (216 boss), `get_archetype` (termasuk override manual `dmg_type` ala `boss_data['hero_unlock']` dan entri default `derived`), `school_of`, `physical_mitigation`, `_resist_from_profile` (pembulatan banker ala `round()` Python + clamp `ARMOR_MAX`/`MR_MAX`), dan `get_boss_resistances` (fallback profil balanced per kelas untuk boss yang belum terdaftar). `Boss.gd` memakai fungsi itu sebagai default sebelum override + clamp persis `base_boss.py:447-457`, dan `HeroDB.get_balanced_stats` mengambil `dmg_school` dari modul yang sama. Dikunci `HeroArchetypesParityTest` (oracle konstanta py + fixture `boss_core` + sinkron data JSON). **FASE 32 menambah tiga field** (`color_dark` badan generik, `label_top` jangkar HP bar dari AST `BOSS_LABEL_TOP`, `entrance_text` dari tabel `ENTRANCE_TEXT`) plus ekspor tabel MENTAH `boss_pristine.json` dan port pipeline saat-import `boss_data.py` ke `BossData.gd` — lihat [BOSS_OVERLAY_GODOTPP.md](BOSS_OVERLAY_GODOTPP.md). |
 | Resilience boss | Tidak ada; hit besar menembus | `damage_reduction` 30% (true) / 20% (mini), anti-burst cap 8% / 12% max HP, tenacity slow/atk_slow (×0.5, cap 0.35) dan resist stun 55% (`Boss.__init__`, `Boss.take_damage`, `Boss.apply_slow/apply_debuff`). |
 | Enrage / Frenzy | Tidak ada | True boss enrage di HP ≤50% (×1.25/×1.25/cd ×0.75 min 18), mini frenzy di HP ≤40% (×1.15/×1.20/cd ×0.80 min 20) + callout + shake; nilai dibandingkan dengan hasil `Boss.update()` Pygame sungguhan di fixture. |
 | Entrance boss | Langsung bergerak/menyerang | Freeze entrance 3 s (true) / 2 s (mini); cooldown serangan tidak jalan selama entrance. |
@@ -667,8 +707,14 @@ untuk hero terpilih; gate False hanya dipakai harness replay).
   `KitShockRing.gd` pada posisi/radius panggilan yang sama. **Perilaku**
   (koefisien, target, timing, frame) diverifikasi `BossSmartAIParityTest`;
   tampilan visualnya belum diaudit piksel-per-piksel dan dibiarkan terbuka.
-  Aura ability/enrage juga belum (test `test_boss_true_aura_parity` baru
-  mencakup aura true boss).
+  ~~Aura ability/enrage juga belum (test `test_boss_true_aura_parity` baru
+  mencakup aura true boss)~~ — **DITUTUP FASE 32**: seluruh lapisan overlay
+  `Boss.draw()` (entrance, aura ability/enrage/true boss, bayangan, indikator
+  debuff menara, badan generik, HP bar, papan nama) diport ke
+  `BossOverlay.gd`/`BossPlate.gd` dan dikunci fixture 50 skenario/647 op yang
+  direkam dari `Boss.draw` pygame ASLI (`tools/test_boss_draw_parity.py` +
+  `BossDrawParityTest`); `test_boss_true_aura_parity.py` kini menguji model
+  pita dan **mewajibkan** pendekatan naif 8×`draw_circle` gagal.
 - **Mitigasi damage hero — TERUTUP audit basic attack (7 September 2026):**
   blok armor `Hero.take_damage` pygame (armor ITEM utk SEMUA damage non-
   `fire`, tanpa MR) kini di-mirror persis oleh `CombatSystem` per jenis

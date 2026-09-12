@@ -55,6 +55,13 @@ func trigger() -> void:
 	_t = DURATION
 
 
+## `hurt_flash_timer > 0` pygame. Dibaca renderer yang menggambar ulang tiap
+## frame (BossOverlay: badan generik jadi putih, base_boss.py:6307) — tint
+## modulate di bawah ini hanya untuk sprite/silhouette.
+func is_active() -> bool:
+	return _t > 0.0
+
+
 ## Dipanggil tiap frame dari _physics_process unit.
 func tick(unit, delta: float) -> void:
 	if unit == null or not is_instance_valid(unit):

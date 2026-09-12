@@ -12,8 +12,11 @@ Usage:
 
 Output:
     godot/data/heroes.json            (+ field skill_* untuk SkillBook.gd)
-    godot/data/bosses.json
+    godot/data/bosses.json            (+ label_top & entrance_text — FASE 32)
     godot/data/boss_stats_full.json  (stat mentah boss_data utk kit smart-AI)
+    godot/data/boss_pristine.json    (tabel boss_data SEBELUM mutasi import-time
+                                      + kurva + MELEE_ROLE_HINTS; input
+                                      BossData.gd, FASE 32)
     godot/data/levels.json
     godot/data/hero_archetypes.json
     godot/data/items.json
@@ -58,6 +61,118 @@ def write_json(fname, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
     print(f"[convert] {fname}: {len(data) if isinstance(data,(dict,list)) else 1} entries -> {path}")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# PEMBACA LITERAL AST (FASE 32 — migrasi paket bosses/)
+# ═══════════════════════════════════════════════════════════════════
+# Dua tabel boss TIDAK bisa diambil dengan `import`:
+#   * `bosses/base_boss.py` meng-import `settings` (alias yang baru dipasang
+#     `_core.py:1283`) + pygame, jadi memuatnya demi satu dict konstanta
+#     berarti memuat seluruh renderer;
+#   * `bosses/boss_data.py` MENGUBAH tabelnya sendiri saat import
+#     (`_apply_boss_rebalancing()` dkk. dipanggil di level modul), jadi
+#     nilai sesudah import sudah bukan input mentah lagi.
+# Keduanya dibaca sebagai AST literal — deterministik, tanpa pygame, dan
+# gagal keras kalau pola sumbernya hilang (bukan diam-diam mengembalikan {}).
+def _ast_literals(rel_path, names):
+    """Ambil {name: literal} dari assignment level-modul sebuah berkas .py."""
+    import ast
+    src = open(os.path.join(ROOT, *rel_path.split("/")), encoding="utf-8").read()
+    tree = ast.parse(src)
+    out = {}
+    for node in tree.body:
+        if not isinstance(node, ast.Assign):
+            continue
+        for target in node.targets:
+            if isinstance(target, ast.Name) and target.id in names:
+                out[target.id] = ast.literal_eval(node.value)
+    missing = [n for n in names if n not in out]
+    if missing:
+        raise AssertionError(
+            "literal %s tidak ditemukan di %s (pola sumber berubah?)"
+            % (", ".join(missing), rel_path))
+    return out
+
+
+def boss_label_top():
+    """BOSS_LABEL_TOP (bosses/base_boss.py:69) — puncak sprite 216 boss.
+
+    Dibaca Boss.gd/BossOverlay.gd untuk menjangkar HP bar + papan nama DI ATAS
+    kepala boss (paritas base_boss.py:6223 `head_top`).
+    """
+    return _ast_literals("bosses/base_boss.py", {"BOSS_LABEL_TOP"})["BOSS_LABEL_TOP"]
+
+
+# Field boss_data yang DISENTUH pipeline import-time (FASE 32). Pristine export
+# hanya membawa field ini + hero_unlock: sisanya data identitas yang tidak
+# pernah diubah logika balance dan sudah ada di boss_stats_full.json.
+_PRISTINE_BOSS_FIELDS = ("hp", "damage", "ability_damage",
+                         "skill_q_damage", "skill_w_damage",
+                         "skill_e_damage", "skill_r_damage")
+_PRISTINE_UNLOCK_FIELDS = ("cost", "hp", "damage", "attack_cooldown",
+                           "skill_damage", "range", "skill_range", "role")
+
+
+def boss_pristine_tables():
+    """Tabel boss_data MENTAH (sebelum `_apply_boss_rebalancing()` dkk.).
+
+    Urutan key DIPERTAHANKAN (dict Python & Dictionary Godot sama-sama
+    insertion-ordered): `_normalize_hero_unlock_stats()` memakai
+    `list.sort(key=cost)` yang STABIL, jadi urutan tabel ikut menentukan
+    hasil pada cost yang seri.
+    """
+    lit = _ast_literals("bosses/boss_data.py", {
+        "MINI_BOSS_WAVES", "MINI_BOSS_TYPES", "LEVEL_TRUE_BOSS",
+        "TRUE_BOSS_TYPES", "TRUE_BOSS_HP_CURVE", "TRUE_BOSS_DMG_CURVE",
+        "TRUE_BOSS_ABILITY_CURVE", "MELEE_ROLE_HINTS"})
+
+    def slim(table):
+        out = {}
+        for btype, bd in table.items():
+            row = {"boss_class": bd.get("boss_class", "mini")}
+            for f in _PRISTINE_BOSS_FIELDS:
+                if f in bd:
+                    row[f] = bd[f]
+            hu = bd.get("hero_unlock")
+            if isinstance(hu, dict):
+                row["hero_unlock"] = {f: hu[f] for f in _PRISTINE_UNLOCK_FIELDS
+                                      if f in hu}
+            elif hu is not None:
+                row["hero_unlock"] = None
+            out[btype] = row
+        return out
+
+    return {
+        "_generated_by": "tools/convert_to_godot.py boss_pristine_tables()",
+        "_source": ("bosses/boss_data.py — literal AST SEBELUM mutasi "
+                    "import-time (_apply_boss_rebalancing, "
+                    "_smooth_boss_progression, _apply_boss_curve_overrides, "
+                    "_normalize_hero_unlock_stats, _normalize_hero_unlock_range)"),
+        "_note": ("Input BossData.gd (port 1:1 pipeline itu). Hanya field yang "
+                  "disentuh logika + hero_unlock yang diekspor; urutan key = "
+                  "urutan sumber (sort by cost di normalisasi bersifat STABIL)."),
+        "mini_boss_waves": {str(k): v for k, v in lit["MINI_BOSS_WAVES"].items()},
+        "level_true_boss": {str(k): v for k, v in lit["LEVEL_TRUE_BOSS"].items()},
+        "mini": slim(lit["MINI_BOSS_TYPES"]),
+        "true": slim(lit["TRUE_BOSS_TYPES"]),
+        "curves": {
+            "hp": lit["TRUE_BOSS_HP_CURVE"],
+            "damage": lit["TRUE_BOSS_DMG_CURVE"],
+            "ability": lit["TRUE_BOSS_ABILITY_CURVE"],
+        },
+        "melee_role_hints": list(lit["MELEE_ROLE_HINTS"]),
+    }
+
+
+def export_boss_pristine():
+    """Tulis godot/data/boss_pristine.json (dibaca BossData.gd)."""
+    try:
+        write_json("boss_pristine.json", boss_pristine_tables())
+    except Exception as e:
+        print(f"[convert] boss_pristine failed: {e}", file=sys.stderr)
+        import traceback; traceback.print_exc()
+
 
 def export_heroes():
     try:
@@ -148,6 +263,12 @@ def export_bosses():
                             smart_ai.add(_c.value)
         except Exception:
             smart_ai = set()
+        # BOSS_LABEL_TOP (base_boss.py:69): puncak sprite tiap boss, dipakai
+        # Boss.draw() pygame (:6223) untuk menjangkar HP bar + papan nama di
+        # atas kepala. Dibaca BossOverlay.gd (FASE 32). Gagal keras kalau
+        # tabelnya hilang — nilai default (radius) diam-diam menggeser bar
+        # menutupi badan boss.
+        label_top = boss_label_top()
         simple = {}
         for k, v in bosses.items():
             if not isinstance(v, dict): continue
@@ -207,7 +328,20 @@ def export_bosses():
                 "skill_e_cooldown": v.get("skill_e_cooldown", 0),
                 "skill_r_damage": v.get("skill_r_damage", 0),
                 "skill_r_cooldown": v.get("skill_r_cooldown", 0),
+                # ── FASE 32: lapisan render boss (Boss.draw base_boss.py:6124) ──
+                # Puncak sprite (px di atas jangkar kaki) — jangkar HP bar +
+                # papan nama (base_boss.py:6223). 0 = tidak ada entri di
+                # BOSS_LABEL_TOP -> BossOverlay jatuh ke `radius` persis
+                # `BOSS_LABEL_TOP.get(boss_type, r)` pygame.
+                "label_top": int(label_top.get(k, 0)),
+                # Teks entrance yang berdenyut di tengah layar selama
+                # entrance_timer > max/2 (base_boss.py:6396).
+                "entrance_text": str(v.get("entrance_text", "")),
                 "color": "#%02x%02x%02x" % v.get("color", (150,100,200)) if isinstance(v.get("color"), tuple) else v.get("color","#aaaaaa"),
+                # Warna gelap badan: dibaca `_draw_generic_body`
+                # (base_boss.py:6312) — dipakai BossOverlay hanya untuk boss
+                # tanpa strip bake (semua 216 boss sudah punya strip).
+                "color_dark": "#%02x%02x%02x" % v["color_dark"] if isinstance(v.get("color_dark"), tuple) else v.get("color_dark", ""),
                 "entrance_color": "#%02x%02x%02x" % v.get("entrance_color", (200,150,255)) if isinstance(v.get("entrance_color"), tuple) else v.get("entrance_color","#ffffff"),
             }
         write_json("bosses.json", simple)
@@ -2435,6 +2569,7 @@ if __name__ == "__main__":
         export_heroes()
         export_bosses()
         export_boss_stats_full()
+        export_boss_pristine()
         export_levels()
         export_archetypes()
         export_items()
