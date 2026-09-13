@@ -30,6 +30,14 @@ const ITEM_COLUMNS := 3
 ## pygame), Button.expand_icon tinggal memasangkannya ke kotak isi.
 ## Acuan pygame: ikon 56 px di kartu ±76 px (hero_items.py:3808-3812).
 const ITEM_ROW_ICON := 20
+## Kartu ItemForgeCard dipakai begitu grid punya >= 2 kolom; rail kanan
+## (268 px) tidak memuat kartu 250 px dan tetap jadi baris + ikon 20 px.
+const ITEM_CARD_MIN_COLS := 2
+## Potret hero di baris tab HERO = tinggi ikon yang sama seperti item.
+const HERO_ROW_ICON := 22
+## Kartu HeroShopCard dipakai begitu grid hero punya 2 kolom (340 px belum
+## aman di panel 268 px; grid hero = `if size.x >= 560 -> 2`).
+const HERO_CARD_MIN_COLS := 2
 ## Seberapa sering panel menyegarkan angka yang bergerak (HP nexus / gold)
 const REFRESH_INTERVAL := 0.25
 
@@ -610,13 +618,18 @@ func _build_item_tab() -> void:
 			if not owned_text.is_empty() else "-"), Color(0.6, 0.9, 0.7), 11)
 
 	var grouped: Dictionary = ItemDB.grouped()
+	# Kartu digambar 250x200 dengan gap 12/14 (paritas `_draw_item_grid`,
+	# hero_items.py:3731-3745); mode baris di rail sempit tetap 6/4.
+	var use_cards := _grid_columns() >= ITEM_CARD_MIN_COLS
 	for cat in grouped:
 		var col: Color = ItemDB.category_color(str(cat))
 		_add_label("%s" % ItemDB.category_label(str(cat)), col, 13)
 		var grid := GridContainer.new()
 		grid.columns = _grid_columns()
-		grid.add_theme_constant_override("h_separation", 6)
-		grid.add_theme_constant_override("v_separation", 4)
+		grid.add_theme_constant_override("h_separation",
+			12 if use_cards else 6)
+		grid.add_theme_constant_override("v_separation",
+			14 if use_cards else 4)
 		_body.add_child(grid)
 		for item_id in grouped[cat]:
 			var iid := str(item_id)
@@ -635,6 +648,19 @@ func _build_item_tab() -> void:
 				label = "[%s] %s — %s" % [ItemDB.item_class_label(iid),
 					ItemDB.item_name(iid), _loc("shop_item_owned_suffix")]
 			var tip := "%s\n%s" % [ItemDB.item_desc(iid), _item_reason_tip(reason)]
+			# ── RENDERER kartu (permintaan user: ITEM FORGE digambar seperti
+			# pygame). Kartu ItemForgeCard mem-port `ItemShopUI._draw_item_card`
+			# — gradasi + border kelas + sudut emas + ikon 56 + badge
+			# PHYSICAL/MAGIC/TANK + nama + harga + "dimiliki" + deskripsi
+			# ter-wrap + pill BUY. Kontrak kontrol TIDAK berubah: Button dengan
+			# ui_key "item_buy_<id>" + ui_data {cost, blocked} tetap ada (di
+			# dalam kartu), jadi audit UiHudParityTest + HudLayout tetap sah.
+			if use_cards:
+				grid.add_child(_make_item_card(iid, can and not have and afford,
+					1 if have else 0, items != null,
+					items != null and items.is_melee(),
+					items != null and items.is_magic(), reason, tip))
+				continue
 			var b := _make_button(label, tip, _buy_item.bind(iid),
 				can and not have and afford, "item_buy_" + iid,
 				{"cost": cost, "blocked": reason})
@@ -705,6 +731,63 @@ func _build_buy_for_strip(heroes: Array, target) -> void:
 		row.add_child(b)
 
 
+## Kartu ITEM FORGE (ItemForgeCard.gd). `tip` = tooltip alasan yang sama
+## seperti baris sempit (dan padanan klik-ikon popup detail pygame, yang di
+## port masih dibuka lewat tooltip).
+func _make_item_card(item_id: String, can_buy: bool, owned: int,
+		has_hero: bool, is_melee: bool, is_magic: bool, reason: String,
+		tip: String) -> Control:
+	var card := ItemForgeCard.new()
+	card.configure(item_id, can_buy, owned, has_hero, is_melee, is_magic,
+		reason, _item_card_label(reason, can_buy, has_hero), tip,
+		_buy_item.bind(item_id))
+	return card
+
+
+## Label pill bawah kartu = pygame ("BUY" / alasan). MELEE ONLY / MAGIC ONLY
+## sengaja literal: string yang sama di kedua bahasa, seperti di pygame
+## (tidak ada kunci tabel yang perlu diduplikasi).
+func _item_card_label(reason: String, can_buy: bool,
+		has_hero: bool) -> String:
+	if can_buy:
+		return _loc("shop_card_buy")
+	match reason:
+		"OWNED":
+			return _loc("shop_reason_owned")
+		"FULL":
+			# "Slot penuh (6/6)" sudah memuat angkanya di tabel — JANGAN
+			# diformat ulang (`%` dengan nol specifier = error runtime).
+			return _loc("shop_reason_full")
+		"MELEE ONLY":
+			return "MELEE ONLY"
+		"MAGIC ONLY":
+			return "MAGIC ONLY"
+	return _loc("shop_card_poor") if has_hero else _loc("shop_card_no_hero")
+
+
+## Kartu HERO toko in-match (HeroShopCard.gd). `blocked` peta ke state kartu
+## persis percabangan `_draw_compact_card` pygame (owned -> ACTIVE, roster
+## penuh -> MAX, gold kurang -> harga bergaya "tak mampu", sisanya BUY).
+func _make_hero_card(hero_type: String, d: Dictionary, cost: int,
+		blocked: String, can: bool, tip: String) -> Control:
+	var card_state := "POOR"
+	match blocked:
+		"":
+			card_state = "BUY" if can else "LOCKED"
+		"OWNED":
+			card_state = "ACTIVE"
+		"FULL":
+			card_state = "MAX"
+		"POOR":
+			card_state = "POOR"
+		"LOCKED":
+			card_state = "LOCKED"
+	var card := HeroShopCard.new()
+	card.configure(hero_type, d, cost, card_state, _buy_hero.bind(hero_type),
+		tip)
+	return card
+
+
 ## Teks alasan disabled item (MELEE ONLY/MAGIC ONLY = label kartu pygame).
 func _item_reason_tip(reason: String) -> String:
 	match reason:
@@ -764,8 +847,11 @@ func _build_hero_tab() -> void:
 		unlocked = []
 	var grid := GridContainer.new()
 	grid.columns = _pair_columns()
-	grid.add_theme_constant_override("h_separation", 6)
-	grid.add_theme_constant_override("v_separation", 4)
+	# Kartu HeroShopCard 340x120 (2 kolom, gap 8) begitu ruangnya ada —
+	# paritas `HeroShop._draw_hero_cards`; rail sempit tetap baris + ikon.
+	var use_hero_cards := _pair_columns() >= HERO_CARD_MIN_COLS
+	grid.add_theme_constant_override("h_separation", 8 if use_hero_cards else 6)
+	grid.add_theme_constant_override("v_separation", 8 if use_hero_cards else 4)
 	_body.add_child(grid)
 	var roster_full := GameManager.owned_heroes().size() >= GameManager.max_heroes_owned
 	for ht in unlocked:
@@ -784,17 +870,36 @@ func _build_hero_tab() -> void:
 			blocked = "POOR"
 		elif not can:
 			blocked = "LOCKED"
+		var tip := "%s\nHP %d · DMG %d · RANGE %d · %s" % [
+			str(d.get("description", "")), int(d.get("hp", 0)),
+			int(d.get("damage", 0)), int(d.get("range", 0)),
+			str(d.get("dmg_type", "PHYSICAL"))]
+		if use_hero_cards:
+			# ── RENDERER kartu (permintaan user: Hero Shop digambar seperti
+			# pygame). Kartu 340x120 port `_draw_compact_card`: potret hasil
+			# render unit, nama + judul + chip ROLE + baris HP/DMG/RNG, dan
+			# pill harga 90x30 di kanan. ui_key/ui_data/tooltip pindah ke
+			# Button transparan di dalam kartu, jadi audit kontrol tetap sama.
+			grid.add_child(_make_hero_card(htype, d, cost, blocked, can, tip))
+			continue
 		var b := _make_button("%s (%s) — %d g" % [
 				str(d.get("name", htype)), str(d.get("role", "-")), cost],
-			"%s\nHP %d · DMG %d · RANGE %d · %s" % [str(d.get("description", "")),
-				int(d.get("hp", 0)), int(d.get("damage", 0)), int(d.get("range", 0)),
-				str(d.get("dmg_type", "PHYSICAL"))],
+			tip,
 			_buy_hero.bind(htype), can, "buy_hero_" + htype,
 			{"cost": cost, "blocked": blocked}, "gold")
 		if blocked == "OWNED":
 			b.text += _loc("shop_hero_owned_badge")
 		elif blocked == "FULL":
 			b.text += " · MAX"
+		# Art hero = frame idle DIRENDER dari unit aslinya (port
+		# HeroPortraits._try_auto_render + _crop_and_scale: crop bbox alpha,
+		# scale tanpa pernah memperbesar, grayscale untuk hero yang tidak
+		# bisa dipakai), bukan lingkaran berhuruf.
+		b.icon = UnitPortrait.portrait_texture(htype, HERO_ROW_ICON,
+			HERO_ROW_ICON, blocked == "LOCKED")
+		b.expand_icon = b.icon != null
+		b.clip_text = true
+		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		b.custom_minimum_size = Vector2(_row_width(_pair_columns()), 30)
 		grid.add_child(b)
 	_add_label(_loc("shop_hero_others") % HeroDB.get_all_types().size(),

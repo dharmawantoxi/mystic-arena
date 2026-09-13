@@ -84,6 +84,8 @@ func _ready() -> void:
 	GameManager.hero_died.connect(func(_h): _refresh())
 	GameManager.boss_spawned.connect(func(_b): _refresh())
 	GameManager.tower_destroyed.connect(func(_t, _k): _refresh())
+	# Ganti bahasa -> tooltip dibangun ulang (dibuat sekali di _build).
+	GameManager.language_changed.connect(func(_l): _rebuild_tooltips())
 	_refresh()
 
 ## Tempatkan kotak command di dasar panel kanan (paritas _gambar_tactical),
@@ -233,7 +235,7 @@ func _build() -> void:
 	_toggle.text = "TACTICAL"
 	_toggle.focus_mode = Control.FOCUS_NONE
 	_toggle.custom_minimum_size = Vector2(TOGGLE_W, TOGGLE_H)
-	_toggle.tooltip_text = "Buka panel perintah taktis (hold tombol untuk menahan perintah)"
+	_toggle.tooltip_text = MysticLocalization.tr_text("tac_toggle_tip")
 	UiTheme.apply_row_button(_toggle, "neutral", 12, false)
 	_toggle.add_theme_color_override("font_color", Color(0.85, 0.88, 0.98))
 	_toggle.pressed.connect(_on_toggle_pressed)
@@ -273,6 +275,14 @@ func _build_feedback() -> void:
 	_feedback_panel.visible = false
 
 
+## Ulang pemasangan tooltip setelah bahasa aktif berubah.
+func _rebuild_tooltips() -> void:
+	if _toggle != null:
+		_toggle.tooltip_text = MysticLocalization.tr_text("tac_toggle_tip")
+	for action in _buttons:
+		(_buttons[action] as Button).tooltip_text = _tooltip(action)
+
+
 ## Ambil manajer dari Main, bukan membuat state taktik kedua di HUD.
 func _sync_feedback() -> void:
 	if _feedback_panel == null:
@@ -307,19 +317,23 @@ func _sync_feedback() -> void:
 	if c is Color and _feedback_style != null:
 		_feedback_style.border_color = Color(c.r, c.g, c.b, 0.95)
 
+## Tooltip perintah lewat tabel teks (MysticLocalization) supaya pilihan
+## English benar-benar berlaku di HUD, bukan hanya di menu. Kunci per aksi —
+## daftar tertutupnya diaudit tools/test_godot_localization_parity.py.
+const TOOLTIPS := {
+	"gather": "tac_gather_tip",
+	"protect_tower": "tac_protect_tower_tip",
+	"protect_castle": "tac_protect_castle_tip",
+	"attack_boss": "tac_attack_boss_tip",
+	"attack_damage_dealer": "tac_attack_dd_tip",
+}
+
+
 static func _tooltip(action: String) -> String:
-	match action:
-		"gather":
-			return "Semua hero kumpul & serang bersama (tahan untuk terus aktif)"
-		"protect_tower":
-			return "Min 2 hero lindungi tower (tahan untuk terus aktif)"
-		"protect_castle":
-			return "Semua hero lindungi castle (tahan untuk terus aktif)"
-		"attack_boss":
-			return "Semua hero serang boss (tahan untuk terus aktif)"
-		"attack_damage_dealer":
-			return "Fokus hero musuh damage terbesar (tahan untuk terus aktif)"
-	return ""
+	var key := str(TOOLTIPS.get(action, ""))
+	if key.is_empty():
+		return ""
+	return MysticLocalization.tr_text(key)
 
 # ══════════════════════════════════════════════════════════
 #  VISIBILITAS (port _gambar_tactical mobile/sidepanel.py)

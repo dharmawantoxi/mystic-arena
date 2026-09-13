@@ -5,8 +5,18 @@
 #   CREDITS · PAUSE
 # Visual = port ui_theme + _draw_* pygame 1:1 (MenuBackground animasi,
 # ScreenTitle Cinzel, Flourish, PygameButton/PygamePanel, chip, tab, pill,
-# toggle, slider emas). Label UI tetap Bahasa Indonesia (keputusan port yang
-# dikunci test paritas); geometri + gaya = pygame.
+# toggle, slider emas). Geometri + gaya = pygame.
+#
+# BAHASA (permintaan user 2026-09-13: "saat ganti ke English semuanya
+# Inggris, starting dari main menu"): SEMUA label layar dibangun lewat
+# `_loc(kunci)` -> MysticLocalization, dan `GameManager.language_changed`
+# memicu `_show(state)` ulang. Teks yang SUDAH Inggris di kedua bahasa (merek
+# "MYSTIC ARENA"/"v2.0 • MOBA Tower Defense", badge "LV. %d"/"TRUE BOSS", tab
+# "STARTER HEROES"/"MINI BOSS", judul "HERO SHOP"/"TOP UP") sengaja tanpa
+# kunci — tidak ada yang bisa diterjemahkan. Karena nilai "id" tabel = string
+# yang dulu di-hardcode di sini, pemain Indonesia tidak melihat perubahan.
+# Audit closed-world tools/test_godot_localization_parity.py menjaga tiap
+# `_loc("kunci")` nyata ada di tabel.
 #
 # Sinyal keluar (dipasang Main.gd):
 #   play_requested(level_num) — LEVEL_SELECT/CONTINUE -> mulai match
@@ -26,6 +36,22 @@ signal main_menu_requested
 ## dan menampilkan arena beku di belakang dim selama PAUSE (paritas
 ## pygame: pause = frame game beku + overlay gelap + panel).
 signal menu_coverage_changed(covers: bool, is_pause: bool)
+
+## Satu-satunya pintu teks menu: kunci tabel -> string bahasa aktif.
+## Pintasan `_loc` (pola ShopPanel/SkillBar/HUD/GameOverOverlay) dipakai di
+## SEMUA layar supaya tidak ada satu pun label Indonesia yang tersisa di
+## berkas ini — audit `tools/test_godot_localization_parity.py` menjaga tiap
+## `_loc("kunci")` benar-benar ada di tabel, dan gate bahasa di
+## LocalizationParityTest memastikan layar Inggris tidak menyisakan teks
+## Indonesia.
+func _loc(key: String) -> String:
+	return MysticLocalization.tr_text(key)
+
+
+func _on_language_changed(_language: String) -> void:
+	if is_inside_tree() and visible:
+		_show(state)
+
 
 ## Paritas MenuState _core.py:3099-3105 — SEMUA state termasuk SLOT_SELECT
 ## (FASE 21: multi-slot save + migrasi legacy sudah diport).
@@ -124,6 +150,13 @@ var _input_label_node: Label = null
 func _ready() -> void:
 	name = "MainMenu"
 	add_to_group("main_menu")
+	# Bahasa berganti (SETTINGS/pause) -> layar yang sedang tampil dibangun
+	# ulang, karena seluruh teks menu sekarang dibaca lewat tabel
+	# MysticLocalization (permintaan user: English = SEMUA layar Inggris).
+	# pygame tidak butuh sinyal ini (menggambar ulang tiap frame), Godot
+	# membangun Control sekali per layar — pola yang sama dengan
+	# ShopPanel/SkillBar/HUD/GameOverOverlay.
+	GameManager.language_changed.connect(_on_language_changed)
 	# Harus tetap hidup saat SceneTree di-pause (menu PAUSE dibuka justru
 	# ketika get_tree().paused = true).
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -326,7 +359,7 @@ func _add_back_button(back_to: int) -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(row)
-	var b := PygameButton.pill_button("KEMBALI", "neutral", "back",
+	var b := PygameButton.pill_button(_loc("menu_back"), "neutral", "back",
 		200, 42, 20)
 	b.pressed.connect(_show.bind(back_to))
 	# SFX ui_click sudah otomatis dari PygameButton.
@@ -406,10 +439,11 @@ func _build_main() -> void:
 	# Paritas _on_button_click "play" _core.py:7022-7023: MULAI GAME lewat
 	# layar PILIH SLOT dulu (slot aktif ditentukan di situ). LANJUTKAN
 	# mem-bypass slot select seperti pygame.
-	row.add_child(_make_button("LANJUTKAN — LEVEL %d" % cont,
+	row.add_child(_make_button(_loc("menu_continue") % cont,
 		Color(140.0 / 255.0, 225.0 / 255.0, 1.0),
 		func(): _request_play(cont), Vector2(300, 50), 22, "continue"))
-	row.add_child(_make_button("MULAI GAME", Color(100.0 / 255.0, 220.0 / 255.0, 110.0 / 255.0),
+	row.add_child(_make_button(_loc("menu_play"),
+		Color(100.0 / 255.0, 220.0 / 255.0, 110.0 / 255.0),
 		_show.bind(State.SLOT_SELECT), Vector2(300, 50), 22, "play"))
 
 	# ── tumpukan tombol 360x50 gap 53 (paritas buttons_data pygame) ──
@@ -419,10 +453,10 @@ func _build_main() -> void:
 		# keyboard <-> controller, rescan kalau belum terdeteksi.
 		["INPUT", Color(100.0 / 255.0, 200.0 / 255.0, 220.0 / 255.0),
 			_toggle_input_mode, "pad"],
-		["CARA MAIN (HOW TO PLAY)", Color(110.0 / 255.0, 180.0 / 255.0, 1.0), _show.bind(State.HOW_TO_PLAY), "help"],
-		["PENGATURAN (SETTINGS)", Color(205.0 / 255.0, 180.0 / 255.0, 105.0 / 255.0), _show.bind(State.SETTINGS), "gear"],
-		["KREDIT", Color(200.0 / 255.0, 130.0 / 255.0, 210.0 / 255.0), _show.bind(State.CREDITS), "star"],
-		["KELUAR GAME", Color(225.0 / 255.0, 90.0 / 255.0, 90.0 / 255.0), _open_exit_confirm, "quit"],
+		[_loc("menu_how_to_play"), Color(110.0 / 255.0, 180.0 / 255.0, 1.0), _show.bind(State.HOW_TO_PLAY), "help"],
+		[_loc("menu_settings"), Color(205.0 / 255.0, 180.0 / 255.0, 105.0 / 255.0), _show.bind(State.SETTINGS), "gear"],
+		[_loc("menu_credits"), Color(200.0 / 255.0, 130.0 / 255.0, 210.0 / 255.0), _show.bind(State.CREDITS), "star"],
+		[_loc("menu_quit"), Color(225.0 / 255.0, 90.0 / 255.0, 90.0 / 255.0), _open_exit_confirm, "quit"],
 	]
 	var stack := VBoxContainer.new()
 	stack.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -442,7 +476,7 @@ func _build_main() -> void:
 	var meta := SaveManager.meta_gold()
 	var info := Label.new()
 	UiTheme.style_label(info,
-		"Meta gold: %d  ·  %d / %d level selesai  ·  %d hero dimiliki" % [
+		_loc("menu_meta_summary") % [
 			meta, _completed_count(), GameManager.level_count(),
 			(SaveManager.data.get("unlocked_heroes", []) as Array).size()],
 		UiTheme.body_regular(), 12, UiTheme.TEXT_DIM,
@@ -542,7 +576,7 @@ func _open_exit_confirm() -> void:
 	box.add_theme_constant_override("separation", 10)
 	_confirm.add_child(box)
 	var q := Label.new()
-	UiTheme.style_label(q, "Keluar dari Mystic Arena?",
+	UiTheme.style_label(q, _loc("menu_exit_question"),
 		UiTheme.body_semibold(), 17, UiTheme.TEXT_WHITE,
 		HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(q)
@@ -550,10 +584,10 @@ func _open_exit_confirm() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 12)
 	box.add_child(row)
-	var yes := PygameButton.pill_button("YA, KELUAR", "danger", "", 140, 32)
+	var yes := PygameButton.pill_button(_loc("menu_exit_yes"), "danger", "", 140, 32)
 	yes.pressed.connect(func(): get_tree().quit())
 	row.add_child(yes)
-	var no := PygameButton.pill_button("BATAL", "success", "", 140, 32)
+	var no := PygameButton.pill_button(_loc("menu_cancel"), "success", "", 140, 32)
 	no.pressed.connect(func(): _confirm.visible = false)
 	row.add_child(no)
 
@@ -563,9 +597,9 @@ func _open_exit_confirm() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build_slot_select() -> void:
-	_screen_header("PILIH SLOT SAVE")
+	_screen_header(_loc("slot_title"))
 	var sub := Label.new()
-	UiTheme.style_label(sub, "Pilih slot untuk lanjut, atau mulai permainan baru",
+	UiTheme.style_label(sub, _loc("slot_subtitle"),
 		UiTheme.body_medium(), 20, UiTheme.TEXT_BODY,
 		HORIZONTAL_ALIGNMENT_CENTER)
 	_root.add_child(sub)
@@ -691,18 +725,18 @@ func _slot_card(slot_num: int) -> Control:
 		plus.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		circ.add_child(plus)
 		var empty := Label.new()
-		UiTheme.style_label(empty, UiTheme.letter("KOSONG"),
+		UiTheme.style_label(empty, UiTheme.letter(_loc("slot_empty")),
 			UiTheme.body_semibold(), 28, UiTheme.SLATE,
 			HORIZONTAL_ALIGNMENT_CENTER)
 		box.add_child(empty)
 		var hint := Label.new()
-		UiTheme.style_label(hint, "Ketuk untuk mulai permainan baru",
+		UiTheme.style_label(hint, _loc("slot_empty_hint"),
 			UiTheme.body_medium(), 16, UiTheme.TEXT_DIM,
 			HORIZONTAL_ALIGNMENT_CENTER)
 		box.add_child(hint)
 	else:
 		if highest > 0:
-			box.add_child(_slot_line(UiTheme.letter("LEVEL TERTINGGI SELESAI"),
+			box.add_child(_slot_line(UiTheme.letter(_loc("slot_highest")),
 				UiTheme.TEXT_DIM, 13))
 			var lv_big := Label.new()
 			UiTheme.style_label(lv_big, "LV. %d" % highest,
@@ -713,7 +747,7 @@ func _slot_card(slot_num: int) -> Control:
 				UiTheme.body_medium(), 17, level_name, SLOT_CARD_W - 40),
 				UiTheme.TEXT_BODY, 17))
 		else:
-			box.add_child(_slot_line("Belum ada level selesai",
+			box.add_child(_slot_line(_loc("slot_no_levels"),
 				UiTheme.TEXT_DIM, 16))
 		box.add_child(_icon_line("coin", UiTheme.GOLD,
 			"%s Gold" % _format_grouped(gold), UiTheme.GOLD_TEXT, 20, 0.8))
@@ -722,7 +756,7 @@ func _slot_card(slot_num: int) -> Control:
 		box.add_child(_icon_line("skull", Color(1.0, 150.0 / 255.0, 150.0 / 255.0),
 			"Boss: %d" % bosses, Color(1.0, 150.0 / 255.0, 150.0 / 255.0),
 			16, 0.6))
-		box.add_child(_slot_line(UiTheme.letter("TERAKHIR DIMAINKAN"),
+		box.add_child(_slot_line(UiTheme.letter(_loc("slot_last_played")),
 			UiTheme.TEXT_DIM, 13))
 		box.add_child(_slot_line(last_played, UiTheme.TEXT_BODY, 17))
 
@@ -732,7 +766,8 @@ func _slot_card(slot_num: int) -> Control:
 	box.add_child(spacer)
 
 	# ── tombol aksi (paritas pill CONTINUE/START NEW GAME + DELETE SAVE) ──
-	var play_label := "MULAI BARU" if is_empty else "LANJUTKAN"
+	var play_label := _loc("slot_start_new") if is_empty \
+		else _loc("slot_continue")
 	card.set_meta("play_label", play_label)
 	var play_btn := PygameButton.pill_button(play_label,
 		"cyan" if is_empty else "success", "play", 280, 40, 20)
@@ -740,8 +775,8 @@ func _slot_card(slot_num: int) -> Control:
 	play_btn.pressed.connect(_on_slot_select.bind(slot_num))
 	box.add_child(play_btn)
 	if not is_empty:
-		card.set_meta("delete_label", "HAPUS SAVE")
-		var del_btn := PygameButton.pill_button("HAPUS SAVE", "danger",
+		card.set_meta("delete_label", _loc("slot_delete"))
+		var del_btn := PygameButton.pill_button(_loc("slot_delete"), "danger",
 			"quit", 280, 30, 16)
 		del_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		del_btn.pressed.connect(_open_slot_delete_dialog.bind(slot_num))
@@ -823,16 +858,16 @@ func _build_slot_delete_dialog(slot_num: int) -> void:
 	box.add_child(head)
 	head.add_child(VectorIcon.new("warn", COL_RED, 1.1))
 	var title := Label.new()
-	UiTheme.style_label(title, "HAPUS SLOT?", UiTheme.body_bold(), 24,
+	UiTheme.style_label(title, _loc("slot_delete_title"), UiTheme.body_bold(), 24,
 		COL_RED)
 	box.add_child(title)
 	var msg := Label.new()
-	UiTheme.style_label(msg, "Hapus SAVE GAME %d?" % slot_num,
+	UiTheme.style_label(msg, _loc("slot_delete_question") % slot_num,
 		UiTheme.body_semibold(), 20, UiTheme.TEXT_WHITE,
 		HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(msg)
 	var warn := Label.new()
-	UiTheme.style_label(warn, "Tindakan ini tidak bisa dibatalkan!",
+	UiTheme.style_label(warn, _loc("slot_delete_warning"),
 		UiTheme.body_medium(), 16, Color(0.86, 0.7, 0.7),
 		HORIZONTAL_ALIGNMENT_CENTER)
 	box.add_child(warn)
@@ -841,10 +876,10 @@ func _build_slot_delete_dialog(slot_num: int) -> void:
 	row.add_theme_constant_override("separation", 16)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(row)
-	var yes := PygameButton.pill_button("YA, HAPUS", "danger", "", 160, 36)
+	var yes := PygameButton.pill_button(_loc("slot_delete_yes"), "danger", "", 160, 36)
 	yes.pressed.connect(_on_slot_delete_confirm.bind(true))
 	row.add_child(yes)
-	var no := PygameButton.pill_button("BATAL", "success", "", 160, 36)
+	var no := PygameButton.pill_button(_loc("menu_cancel"), "success", "", 160, 36)
 	no.pressed.connect(_on_slot_delete_confirm.bind(false))
 	row.add_child(no)
 
@@ -866,7 +901,7 @@ func _on_slot_delete_confirm(confirmed: bool) -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build_level_select() -> void:
-	_screen_header("PILIH LEVEL")
+	_screen_header(_loc("lvl_title"))
 
 	# ── pemilih difficulty (3 tab: paritas MODE EASY/NORMAL/HARD) ──
 	var diff_row := HBoxContainer.new()
@@ -875,9 +910,9 @@ func _build_level_select() -> void:
 	diff_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(diff_row)
 	var group := ButtonGroup.new()
-	for d in [["easy", "MUDAH", Color(0.4, 0.85, 1.0)],
-			["normal", "NORMAL", COL_GREEN],
-			["hard", "SULIT", COL_RED]]:
+	for d in [["easy", _loc("lvl_diff_easy"), Color(0.4, 0.85, 1.0)],
+			["normal", _loc("lvl_diff_normal"), COL_GREEN],
+			["hard", _loc("lvl_diff_hard"), COL_RED]]:
 		var mode := str(d[0])
 		var b := PygameButton.tab_button(str(d[1]), d[2], 150, 34, 18)
 		b.button_group = group
@@ -890,8 +925,7 @@ func _build_level_select() -> void:
 	var total := GameManager.level_count()
 	var prog := Label.new()
 	UiTheme.style_label(prog,
-		"SELESAI: %d / %d  ·  hard = musuh +15%% HP, +10%% damage (scaling aktif)" % [
-			done, total],
+		_loc("lvl_progress") % [done, total],
 		UiTheme.body_semibold(), 18, Color(0.5, 0.85, 0.95),
 		HORIZONTAL_ALIGNMENT_CENTER)
 	_root.add_child(prog)
@@ -928,7 +962,7 @@ func _build_level_select() -> void:
 		# menjelaskan, bukan hening.
 		var warn := Label.new()
 		UiTheme.style_label(warn,
-			"LEVELS JSON BELUM DIMUAT — jalankan dulu:\npython tools/convert_to_godot.py",
+			_loc("lvl_json_missing"),
 			UiTheme.body_medium(), 14, COL_RED)
 		grid.add_child(warn)
 
@@ -1050,15 +1084,15 @@ func _level_card(lv: Dictionary) -> Control:
 	if completed:
 		badge_row.add_child(VectorIcon.new("check",
 			Color(0.55, 0.95, 0.7), 0.55))
-		UiTheme.style_label(badge, "SELESAI", UiTheme.body_bold(), 11,
+		UiTheme.style_label(badge, _loc("lvl_badge_done"), UiTheme.body_bold(), 11,
 			Color(0.55, 0.95, 0.7))
 	elif not unlocked:
 		badge_row.add_child(VectorIcon.new("lock", COL_LOCKED, 0.55))
-		UiTheme.style_label(badge, "TERKUNCI", UiTheme.body_bold(), 11,
+		UiTheme.style_label(badge, _loc("lvl_badge_locked"), UiTheme.body_bold(), 11,
 			COL_LOCKED)
 	else:
 		badge_row.add_child(VectorIcon.new("play", COL_GREEN, 0.55))
-		UiTheme.style_label(badge, "SIAP MAIN", UiTheme.body_bold(), 11,
+		UiTheme.style_label(badge, _loc("lvl_badge_ready"), UiTheme.body_bold(), 11,
 			COL_GREEN)
 	badge_row.add_child(badge)
 
@@ -1085,7 +1119,7 @@ func _level_card(lv: Dictionary) -> Control:
 		minis.append(str(BossDB.get_boss(bt).get("name", bt)))
 	var info := Label.new()
 	info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	UiTheme.style_label(info, "Tema: %s  ·  Mini boss: %s  ·  True boss: %s" % [
+	UiTheme.style_label(info, _loc("lvl_theme_line") % [
 		str(lv.get("map_theme", "forest")).to_upper(),
 		", ".join(minis) if not minis.is_empty() else "-",
 		true_name if not true_name.is_empty() else "-"],
@@ -1117,12 +1151,12 @@ func _level_card(lv: Dictionary) -> Control:
 			# Truncasi diukur pada px SETARA pygame (20/19 — val_font_bold/
 			# val_font _core.py:4262-4263) meski render lebih kecil, agar
 			# rasio string terhadap ambang 120px pygame dipertahankan.
-			grid.add_child(_stat_cell("SKOR TERBAIK",
+			grid.add_child(_stat_cell(_loc("lvl_stat_score"),
 				_fit_stat_text(_format_level_score(int(
 					stats.get("best_score", 0))), 20),
 				COL_STAT_SCORE, "score"))
 			# Slot waktu (kolom 2): label + nilai warna CYAN_SOFT.
-			grid.add_child(_stat_cell("WAKTU TERBAIK",
+			grid.add_child(_stat_cell(_loc("lvl_stat_time"),
 				_fit_stat_text(SaveManager.format_time(int(
 					stats.get("best_time_seconds", 0))), 19),
 				COL_STAT_TIME, "time"))
@@ -1141,13 +1175,13 @@ func _level_card(lv: Dictionary) -> Control:
 				"win_rate"))
 		else:
 			var empty := Label.new()
-			UiTheme.style_label(empty, "Belum ada statistik",
+			UiTheme.style_label(empty, _loc("lvl_stat_none"),
 				UiTheme.body_medium(), 11, COL_STAT_LABEL)
 			box.add_child(empty)
 
 	# ── baris 4: aksi ──
 	if unlocked:
-		var label := "MAIN" if not completed else "MAIN LAGI"
+		var label := _loc("lvl_play") if not completed else _loc("lvl_replay")
 		var btn := PygameButton.pill_button(label, "success", "play",
 			0, 30, 18)
 		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1158,11 +1192,11 @@ func _level_card(lv: Dictionary) -> Control:
 		var lock := Label.new()
 		var req := int(lv.get("unlock_after_level", 0))
 		UiTheme.style_label(lock,
-			"Selesaikan Level %d dulu untuk membuka" % req,
+			_loc("lvl_locked_hint") % req,
 			UiTheme.body_medium(), 11, COL_LOCKED)
 		box.add_child(lock)
-		var lock_btn := PygameButton.pill_button("TERKUNCI", "locked",
-			"lock", 0, 28, 16)
+		var lock_btn := PygameButton.pill_button(_loc("lvl_badge_locked"),
+			"locked", "lock", 0, 28, 16)
 		lock_btn.disabled = true
 		lock_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		box.add_child(lock_btn)
@@ -1175,17 +1209,18 @@ func _diff_pip_row(lv: Dictionary) -> HBoxContainer:
 	row.add_theme_constant_override("separation", 8)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var diff := GameManager.difficulty
-	var diff_title := "NORMAL"
+	var diff_title := _loc("lvl_diff_normal")
 	var diff_color := UiTheme.GREEN
 	var diff_level := 1
 	if diff == "hard":
 		var mult := float(lv.get("enemy_hp_mult", 1.0))
 		var pct := int(round((mult - 1.0) * 100.0))
-		diff_title = "SULIT (+%d%%)" % pct if pct > 0 else "SULIT"
+		diff_title = _loc("lvl_diff_hard_pct") % pct if pct > 0 \
+			else _loc("lvl_diff_hard")
 		diff_color = Color(1.0, 120.0 / 255.0, 100.0 / 255.0)
 		diff_level = mini(5, maxi(1, int(mult * 2.5)))
 	elif diff == "easy":
-		diff_title = "MUDAH"
+		diff_title = _loc("lvl_diff_easy")
 		diff_color = UiTheme.CYAN
 		diff_level = 1
 	var lab := Label.new()
@@ -1296,7 +1331,7 @@ func _build_hero_shop() -> void:
 	desc_row.add_child(sec_desc)
 	var legend := Label.new()
 	UiTheme.style_label(legend,
-		"PHY = fisik kena armor  ·  MAG = sihir tembus armor  ·  TNK = badak",
+		_loc("hshop_legend"),
 		UiTheme.body_semibold(), 13, Color(150.0 / 255.0, 156.0 / 255.0, 180.0 / 255.0))
 	desc_row.add_child(legend)
 	var hline := HSeparator.new()
@@ -1343,8 +1378,7 @@ func _build_hero_shop() -> void:
 		# "kosong diam-diam"; tunjukkan penyebab + perbaikannya.
 		var no_data := HeroDB.heroes.is_empty()
 		UiTheme.style_label(empty,
-			"Tidak ada hero di kategori ini." if not no_data
-			else "heroes.json BELUM DIMUAT — jalankan dulu: python tools/convert_to_godot.py",
+			_loc("hshop_empty") if not no_data else _loc("hshop_json_missing"),
 			UiTheme.body_medium(), 18, COL_DIM if not no_data else COL_RED)
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		grid.add_child(empty)
@@ -1444,7 +1478,11 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	fsb.set_corner_radius_all(4)
 	frame.add_theme_stylebox_override("panel", fsb)
 	row.add_child(frame)
-	var port := HeroPortrait.new(hero_col, hero_col.darkened(0.45),
+	# ── KIRI: potret DIRENDER dari unit aslinya (port HeroPortraits.draw
+	# _bundle.py:215 — boss/hero renderer → crop bbox → scale 60x70 →
+	# grayscale untuk kartu terkunci; tanpa strip bake: fallback generik).
+	var port := UnitPortrait.new()
+	port.setup_unit(hero_type, hero_col, hero_col.darkened(0.45),
 		not boss_ready)
 	frame.add_child(port)
 
@@ -1534,7 +1572,7 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 	if owned:
 		st_row.add_child(VectorIcon.new("check", UiTheme.GREEN, 0.55))
 		var st_o := Label.new()
-		UiTheme.style_label(st_o, UiTheme.letter("DIMILIKI"),
+		UiTheme.style_label(st_o, UiTheme.letter(_loc("hshop_owned")),
 			UiTheme.body_bold(), 15, UiTheme.GREEN)
 		st_row.add_child(st_o)
 	elif not boss_ready:
@@ -1544,13 +1582,13 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 		var st_l := Label.new()
 		UiTheme.style_label(st_l,
 			UiTheme.fit_ellipsis(UiTheme.body_medium(), 15,
-				"Kalahkan: %s" % boss_name, HERO_INFO_W - 20.0),
+				_loc("hshop_defeat") % boss_name, HERO_INFO_W - 20.0),
 			UiTheme.body_medium(), 15,
 			Color(205.0 / 255.0, 150.0 / 255.0, 150.0 / 255.0))
 		st_row.add_child(st_l)
 	else:
 		st_row.add_child(VectorIcon.new("coin", UiTheme.GOLD, 0.55))
-		var cost_text := "GRATIS" if cost <= 0 \
+		var cost_text := _loc("hshop_free") if cost <= 0 \
 			else "%s G" % _format_grouped(cost)
 		var st_c := Label.new()
 		UiTheme.style_label(st_c, cost_text, UiTheme.body_bold(), 16,
@@ -1574,7 +1612,7 @@ func _hero_card(hero_type: String, d: Dictionary) -> Control:
 		lock_btn.disabled = true
 		right.add_child(lock_btn)
 	else:
-		var label := "GRATIS" if cost <= 0 else "BUKA"
+		var label := _loc("hshop_free") if cost <= 0 else _loc("hshop_unlock")
 		var btn := PygameButton.pill_button(label,
 			"gold" if affordable else "neutral", "coin", 104, 34, 15)
 		btn.disabled = not affordable
@@ -1685,7 +1723,7 @@ func _try_unlock_hero(hero_type: String) -> void:
 ## (_core.py:6321-6329) hidup lewat port localization.py — lihat
 ## _language_row() + docs/LOCALIZATION_GODOTPP.md.
 func _build_settings() -> void:
-	_screen_header("PENGATURAN")
+	_screen_header(_loc("set_title"))
 
 	var center := HBoxContainer.new()
 	center.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -1714,10 +1752,10 @@ func _build_settings() -> void:
 	# paritas: kategori 'voice' ada di SoundManager pygame (_system.py:599-604)
 	# tapi repo tidak punya file voice — di KEDUA engine slider-nya tidak
 	# mengubah bunyi apa pun; yang diport adalah persist setting-nya.
-	left.add_child(_volume_slider("Volume Master", "master", 0.7))
-	left.add_child(_volume_slider("Volume SFX", "sfx", 0.6))
-	left.add_child(_volume_slider("Volume Musik (BGM)", "bgm", 0.35))
-	left.add_child(_volume_slider("Volume Voice", "voice", 0.5))
+	left.add_child(_volume_slider(_loc("set_volume_master"), "master", 0.7))
+	left.add_child(_volume_slider(_loc("set_volume_sfx"), "sfx", 0.6))
+	left.add_child(_volume_slider(_loc("set_volume_bgm"), "bgm", 0.35))
+	left.add_child(_volume_slider(_loc("set_volume_voice"), "voice", 0.5))
 
 	left.add_child(_settings_header("CLOUD SAVE", "cloud",
 		UiTheme.CYAN_SOFT))
@@ -1726,16 +1764,16 @@ func _build_settings() -> void:
 	# status. Plugin Play Games belum di-port — tombol inert dengan umpan
 	# balik status, perilaku yang sama seperti PC pygame.
 	left.add_child(PygameButton.pill_button(
-		"CLOUD: OFF (PC / belum diset)", "locked", "cloud", 340, 32, 15))
+		_loc("set_cloud_off"), "locked", "cloud", 340, 32, 15))
 	var cloud_up := PygameButton.pill_button(
-		"UPLOAD SAVE KE CLOUD", "neutral", "upload", 340, 32, 15)
+		_loc("set_cloud_upload"), "neutral", "upload", 340, 32, 15)
 	var cloud_down := PygameButton.pill_button(
-		"DOWNLOAD SAVE DARI CLOUD", "success", "download", 340, 32, 15)
+		_loc("set_cloud_download"), "success", "download", 340, 32, 15)
 	left.add_child(cloud_up)
 	left.add_child(cloud_down)
 	var cloud_note := Label.new()
 	UiTheme.style_label(cloud_note,
-		"Cloud disinkronkan via akun Google (Android)",
+		_loc("set_cloud_note"),
 		UiTheme.body_medium(), 12, Color(0.55, 0.59, 0.69))
 	cloud_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	left.add_child(cloud_note)
@@ -1761,7 +1799,7 @@ func _build_settings() -> void:
 	right.add_child(_difficulty_row())
 	var diff_note := Label.new()
 	UiTheme.style_label(diff_note,
-		"Dipilih di layar PILIH LEVEL, sebelum match dimulai.",
+		_loc("set_diff_note"),
 		UiTheme.body_medium(), 11, UiTheme.TEXT_DIM)
 	right.add_child(diff_note)
 
@@ -1797,11 +1835,11 @@ func _build_settings() -> void:
 	right.add_child(gp_pad)
 
 	# ── PROGRESI (paritas DANGER ZONE: RESET SAVE SLOT) ──
-	right.add_child(_settings_header("PROGRESI", "warn", UiTheme.RED))
+	right.add_child(_settings_header(_loc("set_progression"), "warn", UiTheme.RED))
 	# Hapus SLOT AKTIF (paritas tombol RESET SAVE _core.py:7012-7016)
 	# lengkap dengan dialog konfirmasinya.
 	var del_btn := PygameButton.pill_button(
-		"HAPUS SAVE GAME %d" % SaveManager.get_current_slot(),
+		_loc("set_delete_save") % SaveManager.get_current_slot(),
 		"danger", "warn", 340, 40, 18)
 	del_btn.pressed.connect(_open_slot_delete_dialog.bind(
 		SaveManager.get_current_slot()))
@@ -1809,8 +1847,7 @@ func _build_settings() -> void:
 	var note := Label.new()
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	UiTheme.style_label(note,
-		"Volume, toggle & bahasa disimpan di SaveManager.data[\"settings\"] " \
-		+ "per slot dan langsung berlaku.",
+		_loc("set_store_note"),
 		UiTheme.body_medium(), 11, UiTheme.TEXT_DIM)
 	right.add_child(note)
 
@@ -1907,7 +1944,8 @@ func _cycler_label(key: String, v: float) -> String:
 	if key == "game_speed":
 		return "%.1fx" % v
 	if key == "fps_limit":
-		return "TANPA BATAS" if int(v) == 0 else "%d FPS" % int(v)
+		return _loc("set_fps_unlimited") if int(v) == 0 else \
+			"%d FPS" % int(v)
 	return str(v)
 
 
@@ -1962,15 +2000,16 @@ func _cycle_language(direction: int) -> void:
 	if idx < 0:
 		idx = 0
 	idx = (idx + direction + options.size()) % options.size()
+	# set_language memancarkan language_changed -> _on_language_changed
+	# membangun ulang layar AKTIF (semua state, bukan hanya SETTINGS), jadi
+	# tidak perlu `_show(State.SETTINGS)` eksplisit lagi di sini.
 	GameManager.set_language(str(options[idx]))
-	_show(State.SETTINGS)
 
 
 ## Umpan balik tombol cloud di PC pygame: status berubah, tanpa akses
 ## (mobile/cloud_save.py hanya aktif dengan Play Games di Android).
 func _cloud_unavailable(note: Label) -> void:
-	note.text = "Cloud tidak tersedia di build ini " \
-		+ "(hanya Android + Play Games)"
+	note.text = _loc("set_cloud_unavailable")
 
 
 ## Baris toggle (paritas _draw_toggle_setting pygame): label + sakelar pil.
@@ -2072,7 +2111,7 @@ func _on_volume_drag_ended(_changed: bool, key: String, slider: HSlider) -> void
 # ══════════════════════════════════════════════════════════
 
 func _build_how_to_play() -> void:
-	_screen_header("CARA MAIN", true)
+	_screen_header(_loc("howto_title"), true)
 	var center := HBoxContainer.new()
 	center.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -2094,30 +2133,22 @@ func _build_how_to_play() -> void:
 	scroll.add_child(box)
 	# Terjemahan bebas dari sections pygame, disesuaikan kontrol port Godot.
 	var sections: Array = [
-		["TUJUAN", "shield", [
-			"Hancurkan Nexus (castle) Dire sebelum Nexus Radiant hancur.",
-			"Menang = meta gold untuk membuka hero di HERO SHOP."]],
-		["MEMBANGUN MENARA", "gem", [
-			"Klik lingkaran slot kosong (+) di lane lalu bangun menara (100 gold).",
-			"4 jalur: Archer / Cannon / Ice / Mage. Upgrade Lv1→Lv2 memilih jalur."]],
-		["HERO & SKILL", "crown", [
-			"Mulai tanpa hero. Buka H → HERO untuk membeli hero yang sudah di-unlock.",
-			"Maksimal 5 hero unik. Hero mati respawn setelah 10 detik dengan level/item tetap.",
-			"Klik hero Radiant untuk memilihnya, lalu Q/W/E/R untuk skill (R = ultimate).",
-			"Hero yang tidak dipilih bertarung sendiri (auto-cast)."]],
-		["WAVE MINION", "swords", [
-			"Wave pertama setelah 5 detik. Minion keluar bertahap di ketiga lane.",
-			"Wave berikutnya menunggu 25 detik dan semua minion wave lama habis."]],
-		["TOKO (B)", "coin", [
-			"4 tab: MENARA / ITEM / HERO / NEXUS. Item = 6 slot per hero.",
-			"Upgrade nexus menaikkan HP + skala minion timmu."]],
-		["PROGRESI", "plus", [
-			"Menang pertama: 3000 meta gold. Replay menang: 1500 (sekali), lalu 200.",
-			"Boss yang dikalahkan + castle jatuh = heronya terbuka GRATIS.",
-			"ENTER setelah menang = lanjut level berikutnya (tema & boss baru)."]],
-		["MODE SULIT", "skull", [
-			"Hard: musuh +15% HP, +10% damage, castle Dire mulai lebih tinggi.",
-			"Gold income lebih kecil (x0.75). Mudah: x1.25."]],
+		[_loc("howto_goal"), "shield", [
+			_loc("howto_goal_1"), _loc("howto_goal_2")]],
+		[_loc("howto_towers"), "gem", [
+			_loc("howto_towers_1"), _loc("howto_towers_2")]],
+		[_loc("howto_heroes"), "crown", [
+			_loc("howto_heroes_1"), _loc("howto_heroes_2"),
+			_loc("howto_heroes_3"), _loc("howto_heroes_4")]],
+		[_loc("howto_waves"), "swords", [
+			_loc("howto_waves_1"), _loc("howto_waves_2")]],
+		[_loc("howto_shop"), "coin", [
+			_loc("howto_shop_1"), _loc("howto_shop_2")]],
+		[_loc("howto_progress"), "plus", [
+			_loc("howto_progress_1"), _loc("howto_progress_2"),
+			_loc("howto_progress_3")]],
+		[_loc("howto_hard"), "skull", [
+			_loc("howto_hard_1"), _loc("howto_hard_2")]],
 	]
 	for section in sections:
 		var head := HBoxContainer.new()
@@ -2129,7 +2160,11 @@ func _build_how_to_play() -> void:
 		UiTheme.style_label(h, UiTheme.letter(str(section[0])),
 			UiTheme.body_bold(), 21, UiTheme.GOLD_TEXT)
 		head.add_child(h)
-		for line in section[1]:
+		# section = [judul, ikon, baris]. Bug lama: loop ini memakai
+		# section[1] (Nama IKON) sehingga yang tergambar satu bullet per
+		# huruf ikon ("· s", "· h", "· i", ...) dan isi CARA MAIN tidak
+		# pernah tampil sama sekali.
+		for line in section[2]:
 			var body := Label.new()
 			body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			UiTheme.style_label(body, "·  " + str(line),
@@ -2148,7 +2183,7 @@ func _build_how_to_play() -> void:
 # ══════════════════════════════════════════════════════════
 
 func _build_credits() -> void:
-	_screen_header("KREDIT", true)
+	_screen_header(_loc("menu_credits"), true)
 	var center := HBoxContainer.new()
 	center.alignment = BoxContainer.ALIGNMENT_CENTER
 	center.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -2264,10 +2299,10 @@ func _build_pause() -> void:
 	# Urutan paritas PAUSE_BUTTON_ORDER; label Indonesia disengaja (MainMenu
 	# Godot berbahasa Indonesia); ukuran 300x48 = pygame.
 	var buttons: Array = [
-		["PauseResume", "LANJUT MAIN (RESUME)", Color(100.0 / 255.0, 200.0 / 255.0, 100.0 / 255.0), _do_resume, "play"],
-		["PauseSettings", "PENGATURAN", Color(200.0 / 255.0, 180.0 / 255.0, 100.0 / 255.0), _show.bind(State.SETTINGS), "gear"],
-		["PauseMenu", "MENU UTAMA", Color(100.0 / 255.0, 180.0 / 255.0, 1.0), _do_main_menu, "back"],
-		["PauseQuit", "KELUAR GAME", Color(220.0 / 255.0, 80.0 / 255.0, 80.0 / 255.0), func(): get_tree().quit(), "quit"],
+		["PauseResume", _loc("pause_resume"), Color(100.0 / 255.0, 200.0 / 255.0, 100.0 / 255.0), _do_resume, "play"],
+		["PauseSettings", _loc("set_title"), Color(200.0 / 255.0, 180.0 / 255.0, 100.0 / 255.0), _show.bind(State.SETTINGS), "gear"],
+		["PauseMenu", _loc("pause_menu"), Color(100.0 / 255.0, 180.0 / 255.0, 1.0), _do_main_menu, "back"],
+		["PauseQuit", _loc("menu_quit"), Color(220.0 / 255.0, 80.0 / 255.0, 80.0 / 255.0), func(): get_tree().quit(), "quit"],
 	]
 	for pair in buttons:
 		var b := _make_button(str(pair[1]), pair[2], pair[3],
