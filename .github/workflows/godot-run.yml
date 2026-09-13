@@ -139,7 +139,9 @@ jobs:
       SCENE: ${{ inputs.scene || '' }}
       MOVIE: ${{ inputs.movie || 'false' }}
       TOUCH: ${{ inputs.touch || 'false' }}
-      EXTRA_ENGINE_ARGS: ${{ inputs.extra_engine_args || '' }}
+      # SEMENTARA (dicabut sebelum PR selesai): --verbose untuk membuktikan
+      # scene mana yang dijalankan engine saat harness tidak muncul di log.
+      EXTRA_ENGINE_ARGS: ${{ inputs.extra_engine_args || '--verbose' }}
       OUT_DIR: debug_out/${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
@@ -259,6 +261,21 @@ jobs:
           [ "$rc" != "0" ] && level=error
 
           anotasi "$level" "ringkasan" "$OUT_DIR/summary.md" 1800
+          # Perintah yang BENAR-BENAR dijalankan (baris pertama run.log) + ukuran
+          # berkas: dua hal pertama yang ditanya saat hasil tidak masuk akal.
+          anotasi "$level" "perintah" "$OUT_DIR/run.log" 700
+          if [ -f "$OUT_DIR/run.log" ]; then
+            {
+              echo "run.log: $(wc -l < "$OUT_DIR/run.log" | tr -d ' ') baris, "
+              echo "$(wc -c < "$OUT_DIR/run.log" | tr -d ' ') byte"
+              for f in trace.log import.log assets.log report.json; do
+                [ -f "$OUT_DIR/$f" ] && echo " · $f: $(wc -c < "$OUT_DIR/$f" | tr -d ' ') byte" \
+                  || echo " · $f: TIDAK ADA"
+              done
+              echo " · shots: $(ls "$OUT_DIR/shots" 2>/dev/null | wc -l | tr -d ' ') berkas"
+            } > /tmp/stats.txt
+            anotasi "$level" "statistik berkas" /tmp/stats.txt 600
+          fi
           # Jejak boot harness: menjawab "berhenti di tahap mana" walau engine
           # dibunuh paksa (stdout-nya bisa tertahan buffer).
           anotasi "$level" "trace harness" "$OUT_DIR/trace.log" 1200
@@ -285,8 +302,10 @@ jobs:
               echo "::error title=GODOT-DEBUG log::${line}"
             done < /tmp/penentu.txt
             if [ "$rc" != "0" ]; then
-              tail -60 "$OUT_DIR/run.log" > /tmp/run-log-ekor.txt
-              anotasi error "ekor run.log" /tmp/run-log-ekor.txt 4000
+              # tail -c: jendela baris bisa mulai jauh di awal berkas, dan yang
+              # dibutuhkan justru BARIS TERAKHIR (di situ kegagalan terjadi).
+              tail -c 3600 "$OUT_DIR/run.log" > /tmp/run-log-ekor.txt
+              anotasi error "ekor run.log (byte)" /tmp/run-log-ekor.txt 3700
             fi
           else
             echo "(run.log belum ada — harness tidak sampai dijalankan)"
