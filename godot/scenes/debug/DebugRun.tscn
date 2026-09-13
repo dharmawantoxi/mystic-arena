@@ -1,0 +1,12 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scenes/debug/DebugRun.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/debug/DebugProbe.gd" id="2"]
+
+[node name="DebugRun" type="Node"]
+process_mode = 3
+script = ExtResource("1")
+
+[node name="Probe" type="Node" parent="."]
+process_mode = 3
+script = ExtResource("2")

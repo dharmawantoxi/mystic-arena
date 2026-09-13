@@ -110,6 +110,14 @@ godot/**/*.import
 # ═══ Hasil export Godot (APK/AAB keluaran build-android-godot.yml / editor) ═══
 godot/build/
 
+# ═══ Hasil "Godot Debug Run" ═══
+# Keluaran tools/godot_debug_run.py + godot/scenes/debug/DebugRun.tscn:
+# shots/*.png, run.log, report.json, summary.md, movie.avi|mp4, userdata/
+# (save terisolasi). Ratusan PNG per run TIDAK boleh masuk git — di CI isinya
+# diunggah sebagai artifact .github/workflows/godot-run.yml, di lokal dilihat
+# langsung dari folder ini.
+debug_out/
+
 # ═══ Duplikat aset biner untuk project Godot (hasil
 # tools/convert_to_godot.py [--assets]; sumber kebenaran tetap assets/ pygame,
 # ±19 MB tidak perlu 2x di git). res:// tidak bisa keluar dari root project

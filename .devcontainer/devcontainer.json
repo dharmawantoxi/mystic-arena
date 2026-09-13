@@ -1,0 +1,69 @@
+// Dev Container / GitHub Codespaces — "Godot jalan di repo GitHub" tanpa
+// memasang apa pun di komputer sendiri.
+//
+// Isinya:
+//   * desktop-lite  = Xvfb + fluxbox + noVNC. Ini yang membuat EDITOR Godot
+//     bisa dibuka dari browser (tab Ports → 6080), sesuatu yang tidak mungkin
+//     dengan container biasa.
+//   * python 3.11   = oracle paritas pygame (tools/test_*.py) + alat debug.
+//   * postCreateCommand = .devcontainer/setup.sh: memasang Godot 4.3 (versi
+//     yang sama dengan default .github/workflows/godot-run.yml), X11/Mesa,
+//     ffmpeg, dan venv python.
+//
+// Catatan jujur: tidak ada GPU di Codespaces, jadi renderer yang dipakai
+// llvmpipe (CPU). Editor + game jalan, tetapi lambat — pakai untuk DEBUG
+// (melihat layar, mengubah kode, menjalankan test), bukan untuk mengukur FPS.
+// Panduan lengkap: docs/GODOT_DEBUG_DI_GITHUB.md
+{
+  "name": "Mystic Arena — Godot",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
+
+  "features": {
+    // Layar maya + VNC di browser (port 6080). Tanpa ini Godot hanya bisa
+    // headless (tanpa gambar sama sekali).
+    "ghcr.io/devcontainers/features/desktop-lite:1": {
+      "password": "vscode",
+      "webPort": "6080"
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.11"
+    }
+  },
+
+  // DISPLAY diisi juga oleh setup.sh (dideteksi dari proses Xvfb milik
+  // desktop-lite) — nilai di sini hanya jaring pengaman pertama.
+  "remoteEnv": {
+    "DISPLAY": ":1"
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "forwardPorts": [6080],
+  "portsAttributes": {
+    "6080": {
+      "label": "Desktop (noVNC) — Godot Editor",
+      "onAutoForward": "openPreview"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "geequlim.godot-tools",
+        "ms-python.python"
+      ],
+      "settings": {
+        "godotTools.editorPath.godot4": "/usr/local/bin/godot",
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  },
+
+  // Build Godot 4.3 + import project 222 unit/54 map: 4 core / 8 GB sudah
+  // cukup, 2 core akan terasa sangat lambat.
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "8gb",
+    "storage": "32gb"
+  }
+}

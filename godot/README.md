@@ -108,6 +108,36 @@ godot godot/project.godot
 # Menang -> ENTER lanjut LEVEL 2 (tema desert, boss razak/khalros/gorath/alchemist).
 ```
 
+## Jalankan & debug tanpa memasang Godot (GitHub Actions / Codespaces)
+
+Port ini bisa dijalankan **dari repo** — berguna saat bug hanya muncul di
+lingkungan bersih, atau saat ingin melihat layarnya tanpa memasang Godot + GPU:
+
+```bash
+# Lokal (tanpa X11 pun jalan: layar virtual Xvfb; hasil di debug_out/)
+python3 tools/godot_debug_run.py --scenario battle --level 1 --seconds 30
+python3 tools/godot_debug_run.py --scenario shop --level 3 --seconds 25 --movie
+python3 tools/godot_debug_run.py --scenario scene \
+    --scene res://tests/BattleSmokeTest.tscn --display headless   # tes apa pun
+```
+
+* **Di GitHub**: tab Actions → **Godot Debug Run** → Run workflow (pilih
+  skenario/level/durasi). Artifact `godot-debug-*` berisi `shots/*.png` tiap N
+  detik, `run.log` apa adanya, `report.json` (state · wave · gold · hero per
+  tim · minion + FPS), `summary.md`, dan opsional `movie.mp4`. Memberi label
+  **`godot-debug`** pada PR menjalankan kode PR itu. Workflow ini **manual
+  saja** (kuota Actions tidak terpakai sampai dipanggil) dan tetap memakai
+  gerbang log yang sama dengan godot-check.yml.
+* **Di browser (editor Godot penuh)**: buka repo ini dengan Codespaces —
+  `.devcontainer/` memasang Godot 4.3 + desktop noVNC (port 6080), versi
+  engine-nya disamakan dengan workflow oleh `tools/test_godot_debug_runner.py`.
+
+Logikanya ada di `tools/godot_debug_run.py` + harness
+`scenes/debug/DebugRun.tscn` yang **membungkus `scenes/main.tscn` apa adanya**
+(tidak ada satu baris gameplay yang diubah; `main.tscn` tidak merujuk berkas
+debug ini). Panduan + troubleshooting:
+[`../docs/GODOT_DEBUG_DI_GITHUB.md`](../docs/GODOT_DEBUG_DI_GITHUB.md).
+
 ### Kontrol pemain
 
 | Input | Efek |

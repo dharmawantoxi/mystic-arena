@@ -1,0 +1,273 @@
+name: Godot Debug Run
+
+# ═══════════════════════════════════════════════════════════════════════
+# JALANKAN GAME GODOT DI GITHUB — tanpa memasang Godot di mesin sendiri.
+#
+# Bedanya dengan dua workflow Godot yang sudah ada:
+#   * godot-check.yml  = 60+ langkah PARITAS, headless, ±10 menit, tidak
+#     menampilkan apa pun. Gagal = "ada yang salah" tanpa gambar.
+#   * godot-gdext.yml  = build C++ (scons + godot-cpp).
+#   * godot-run.yml    = SATU run yang benar-benar MENJALANKAN game seperti
+#     pemain, di layar virtual (Xvfb), lalu mengunggah SCREENSHOT tiap N detik,
+#     report.json (state/wave/gold/hero/minion + FPS), run.log apa adanya,
+#     dan opsional VIDEO. Diagnosa jadi "lihat sendiri", bukan menebak.
+#
+# Hemat kuota seperti godot-check.yml: TIDAK ada trigger push/pull otomatis —
+# hanya manual (tab Actions → Run workflow) plus label `godot-debug` pada PR
+# kalau memang ingin menjalankan versi PR-nya.
+#
+# Cara pakai (manual):
+#   Actions → "Godot Debug Run" → Run workflow
+#     scenario   : menu | level | battle | shop | scene
+#     level      : 1-54
+#     seconds    : lama run (default 30)
+#     shot_every : jarak screenshot detik (0 = tanpa screenshot)
+#     display    : auto | xvfb | headless
+#     scene      : scene res:// lain (mis. res://tests/BattleSmokeTest.tscn;
+#                  pakai bersama skenario `scene` — harness tidak menuntut
+#                  baris PASS-nya sendiri kalau scene uji keluar sendiri)
+#     movie      : rekam video (--write-movie) → movie.mp4
+#     touch      : MYSTIC_FORCE_TOUCH=1 (tata letak HP di desktop)
+#     godot_version : 4.3 (versi minimum feature project) | 4.7.2 (versi export)
+#     extra_engine_args : flag engine tambahan, mis. --debug-collisions
+#   Renderer di CI SELALU opengl3 + llvmpipe (tidak ada GPU di runner);
+#   `--renderer vulkan` (Forward+ sungguhan) ada di alatnya untuk lokal /
+#   Codespace yang punya lavapipe.
+#   Hasil: artifact `godot-debug-*` (shots/, run.log, report.json, summary.md,
+#   movie.mp4) + ringkasan run di tab Summary.
+#
+# Panduan + troubleshooting: docs/GODOT_DEBUG_DI_GITHUB.md
+# ═══════════════════════════════════════════════════════════════════════
+
+on:
+  workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Skenario'
+        required: true
+        default: 'battle'
+        type: choice
+        options: [menu, level, battle, shop, scene]
+      level:
+        description: 'Nomor level (1-54)'
+        required: true
+        default: '1'
+        type: string
+      seconds:
+        description: 'Lama run (detik)'
+        required: true
+        default: '30'
+        type: string
+      shot_every:
+        description: 'Screenshot tiap N detik (0 = mati)'
+        required: true
+        default: '1'
+        type: string
+      display:
+        description: 'Layar: auto | xvfb | headless (headless = tanpa gambar)'
+        required: true
+        default: 'auto'
+        type: choice
+        options: [auto, xvfb, headless]
+      scene:
+        description: 'Scene res:// (kosong = res://scenes/main.tscn). Untuk menjalankan scene uji, pakai skenario `scene`'
+        required: false
+        default: ''
+        type: string
+      movie:
+        description: 'Rekam video (movie.mp4)?'
+        required: true
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      touch:
+        description: 'Paksa tata letak sentuh (MYSTIC_FORCE_TOUCH=1)?'
+        required: true
+        default: 'false'
+        type: choice
+        options: ['false', 'true']
+      godot_version:
+        description: 'Versi engine'
+        required: true
+        default: '4.3'
+        type: choice
+        options: ['4.3', '4.7.2']
+      extra_engine_args:
+        description: 'Flag engine tambahan (dipisah spasi), mis. --debug-collisions'
+        required: false
+        default: ''
+        type: string
+
+  # Menjalankan versi PR dengan memberi label `godot-debug` pada PR itu.
+  # (Label dari fork tetap aman: job ini hanya butuh contents: read.)
+  pull_request:
+    types: [labeled]
+
+# Run baru membatalkan run lama pada ref yang sama — antar-run debug tidak
+# pernah perlu jalan bersamaan.
+concurrency:
+  group: godot-debug-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: Jalankan + rekam
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name != 'pull_request' || github.event.label.name == 'godot-debug'
+
+    env:
+      # Versi default 4.3 = versi minimum feature project (sama dengan
+      # godot-check.yml). 4.7.2 = versi yang dipakai export Android, berguna
+      # saat memburu bug yang hanya muncul di jalur rilis.
+      GODOT_VERSION: ${{ inputs.godot_version || '4.3' }}
+      GODOT_RELEASE: 'stable'
+      SCENARIO: ${{ inputs.scenario || 'battle' }}
+      LEVEL: ${{ inputs.level || '1' }}
+      SECONDS: ${{ inputs.seconds || '30' }}
+      SHOT_EVERY: ${{ inputs.shot_every || '1' }}
+      DISPLAY_MODE: ${{ inputs.display || 'auto' }}
+      SCENE: ${{ inputs.scene || '' }}
+      MOVIE: ${{ inputs.movie || 'false' }}
+      TOUCH: ${{ inputs.touch || 'false' }}
+      EXTRA_ENGINE_ARGS: ${{ inputs.extra_engine_args || '' }}
+      OUT_DIR: debug_out/${{ github.run_id }}-${{ github.run_attempt }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # ── Layar virtual + OpenGL software ──
+      # Runner GitHub tidak punya GPU dan tidak punya $DISPLAY. Xvfb memberi
+      # layar maya 1280x720; Mesa llvmpipe menggambar lewat CPU. Kalau apt
+      # gagal (mis. mirror sedang sibuk) job TIDAK dihentikan di sini — jalur
+      # headless tetap bisa dipakai, dan langkah run yang akan melaporkannya.
+      - name: Siapkan Xvfb + Mesa (software GL)
+        run: |
+          set +e
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            xvfb libgl1-mesa-dri libglx-mesa0 libegl-mesa0 x11-utils \
+            mesa-vulkan-drivers ffmpeg
+          echo "--- tersedia? ---"
+          command -v xvfb-run || echo "xvfb-run TIDAK ADA (jalur headless saja)"
+          command -v ffmpeg || echo "ffmpeg TIDAK ADA (video dibiarkan .avi)"
+          exit 0
+
+      - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux-x86_64
+
+      - name: Unduh Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          V="${GODOT_VERSION}-${GODOT_RELEASE}"
+          URL="https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_linux.x86_64.zip"
+          mkdir -p ~/godot-bin
+          curl -fsSL -o /tmp/godot.zip "$URL"
+          unzip -q -o /tmp/godot.zip -d /tmp/godot
+          mv /tmp/godot/Godot_v${V}_linux.x86_64 ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+
+      - name: Versi Godot
+        run: ~/godot-bin/godot --headless --version
+
+      # ── Gerbang statis jalur debug ──
+      # Milidetik, tanpa engine: memastikan dropdown di workflow ini, argparse
+      # tools/godot_debug_run.py, dan ARG_KEYS/SCENARIOS DebugRun.gd masih
+      # sepakat. Salah ketik argumen TIDAK error di Godot (argumen tak dikenal
+      # diabaikan dalam diam) — lebih baik ketahuan sebelum 4 menit run.
+      - name: Gate statis jalur debug
+        run: python3 tools/test_godot_debug_runner.py
+
+      # ── Jalankan harness ──
+      # Semua logika ada di tools/godot_debug_run.py supaya perintah yang sama
+      # bisa dipakai di laptop (tidak ada logika debug yang hanya hidup di CI).
+      # Step ini SENGAJA tidak menggagalkan job di sini: artifact + ringkasan
+      # diunggah dulu, status akhir ditentukan langkah terakhir — supaya
+      # kegagalan selalu datang bersama buktinya.
+      - name: Jalankan Godot (harness debug)
+        id: run
+        run: |
+          set +e
+          ARGS=(--godot "$HOME/godot-bin/godot"
+                --scenario "$SCENARIO"
+                --level "$LEVEL"
+                --seconds "$SECONDS"
+                --shot-every "$SHOT_EVERY"
+                --display "$DISPLAY_MODE"
+                --label "ci-${SCENARIO}-l${LEVEL}"
+                --out "$OUT_DIR")
+          [ -n "$SCENE" ] && ARGS+=(--scene "$SCENE")
+          [ "$MOVIE" = "true" ] && ARGS+=(--movie)
+          [ "$TOUCH" = "true" ] && ARGS+=(--touch)
+          for word in $EXTRA_ENGINE_ARGS; do ARGS+=(--extra "$word"); done
+          python3 tools/godot_debug_run.py "${ARGS[@]}"
+          echo "rc=$?" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Ringkasan run (tab Summary)
+        if: always()
+        run: |
+          set +e
+          if [ -f "$OUT_DIR/summary.md" ]; then
+            cat "$OUT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "# Godot Debug Run — tidak ada summary.md"
+              echo ""
+              echo "Harness tidak sampai menulis laporan (gagal di langkah awal?)."
+              echo "Lihat log langkah \"Jalankan Godot (harness debug)\" di atas."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          # Baris penting dipantulkan sebagai anotasi supaya terbaca di tab
+          # Checks tanpa membuka log panjang.
+          if [ -f "$OUT_DIR/run.log" ]; then
+            grep -n "SCRIPT ERROR\|Parse Error\|Compile Error\|\[DebugRun\] FAIL" "$OUT_DIR/run.log" \
+              | head -10 | while IFS= read -r line; do echo "::error::GODOT-DEBUG: $line"; done
+            echo "--- 40 baris terakhir run.log ---"
+            tail -40 "$OUT_DIR/run.log"
+          fi
+          exit 0
+
+      - name: Unggah artifact (screenshot + log + laporan)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-debug-${{ env.SCENARIO }}-${{ github.run_number }}
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            debug_out/*/shots
+            debug_out/*/run.log
+            debug_out/*/import.log
+            debug_out/*/assets.log
+            debug_out/*/report.json
+            debug_out/*/summary.md
+            debug_out/*/movie.*
+            debug_out/*/userdata/godot/app_userdata/*/crash_log.txt
+
+      - name: Status akhir
+        if: always()
+        run: |
+          set +e
+          rc="${{ steps.run.outputs.rc }}"
+          if [ -z "$rc" ]; then
+            echo "::error::Langkah run tidak menghasilkan status (job dibatalkan?)"
+            exit 1
+          fi
+          if [ "$rc" != "0" ]; then
+            echo "::error::Godot debug run GAGAL (exit $rc) — buka artifact 'godot-debug-${SCENARIO}-${{ github.run_number }}': run.log + shots/ menjelaskan sebabnya."
+            exit 1
+          fi
+          echo "Godot debug run selesai tanpa error (gerbang log lulus)."

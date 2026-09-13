@@ -2,6 +2,12 @@
 
 Tiga langkah: **uji di PC → unggah ke GitHub → build APK**.
 
+> **Mau versi Godot (port GPU) dan tidak mau memasang apa pun?**
+> Tab **Actions → Godot Debug Run** menjalankan game di layar virtual lalu
+> mengunggah screenshot + `run.log` + `report.json`; buka repo ini dengan
+> **Codespaces** kalau ingin editor Godot di browser. Panduan:
+> [docs/GODOT_DEBUG_DI_GITHUB.md](docs/GODOT_DEBUG_DI_GITHUB.md).
+
 ---
 
 ## 1. Uji dulu di PC (5 menit, tanpa Android sama sekali)
