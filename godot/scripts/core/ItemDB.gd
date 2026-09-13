@@ -317,6 +317,28 @@ func item_class(item_id: String) -> String:
 	return HeroItems.get_item_class(items, item_id)
 
 
+## Deskripsi item dalam BAHASA AKTIF — paritas `ItemShopUI._localized_desc`
+## (hero_items.py:3894-3899): `en` -> desc_en dengan fallback desc, `id` ->
+## desc. Pemakai: kartu ITEM FORGE (ItemForgeCard.gd).
+func item_desc_localized(item_id: String) -> String:
+	if MysticLocalization.is_english():
+		var en := str(get_item(item_id).get("desc_en", ""))
+		return en if not en.is_empty() else item_desc(item_id)
+	return item_desc(item_id)
+
+
+## [label, warna] badge kelas kartu — ITEM_CLASS_INFO[get_item_class()]
+## (hero_items.py:1370-1417). Warna disimpan sebagai [r,g,b] 0-255 di
+## HeroItems (padanan tuple Python) dan dikonversi di sini.
+func item_class_badge(item_id: String) -> Array:
+	var cls := item_class(item_id)
+	var info: Variant = HeroItems.ITEM_CLASS_INFO.get(cls)
+	if info is Array and (info as Array).size() >= 2:
+		return [str((info as Array)[0]),
+			_color_from((info as Array)[1], Color(1.0, 0.588, 0.314))]
+	return [cls.to_upper(), Color(1.0, 0.588, 0.314)]
+
+
 ## Label badge kelas item ("PHYSICAL"/"MAGIC"/"TANK") — ITEM_CLASS_INFO[cls][0].
 func item_class_label(item_id: String) -> String:
 	var cls := item_class(item_id)

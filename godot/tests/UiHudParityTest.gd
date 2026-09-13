@@ -6,6 +6,8 @@ extends Node
 const MainScene = preload("res://scenes/main.tscn")
 const LevelIntroScript = preload("res://scenes/ui/LevelIntro.gd")
 const ShopPanelScript = preload("res://scenes/ui/ShopPanel.gd")
+const ItemForgeCardScript = preload("res://scenes/ui/widgets/ItemForgeCard.gd")
+const HeroShopCardScript = preload("res://scenes/ui/widgets/HeroShopCard.gd")
 const MinionScene = preload("res://scenes/minion/Minion.tscn")
 const TowerScene = preload("res://scenes/tower/Tower.tscn")
 const FIXTURE := "res://tests/fixtures/match_parity.json"
@@ -446,9 +448,27 @@ func _test_shop_heroes() -> void:
 	GameManager.gold = 100000
 	_expect("100,000" in _shop._gold_label.text,
 		"gold label ribuan (got %s)" % _shop._gold_label.text)
+	# ── RENDERER kartu hero (permintaan user: Hero Shop digambar seperti
+	# pygame). Modal 900 px -> grid 2 kolom -> kartu HeroShopCard 340x120
+	# (port `_draw_compact_card`): pill kanan kartu yang menampilkan
+	# ACTIVE/MAX/harga, bukan suffix "· DIMILIKI" di label baris. Kontrak
+	# kontrol (ui_key + ui_data + disabled) tetap di Button anak kartu.
 	var kb := _button_by_key("buy_hero_kaizen")
-	_expect(kb != null and kb.disabled and kb.text.ends_with("· DIMILIKI"),
-		"kaizen DIMILIKI (got %s)" % (kb.text if kb else "?"))
+	var hcard := _hero_card("kaizen")
+	_expect(hcard != null, "kartu HeroShopCard untuk kaizen")
+	_expect(kb != null and kb.disabled, "kartu hero owned: tombol mati")
+	_expect(hcard != null and str(hcard.state) == "ACTIVE",
+		"kaizen ACTIVE di kartu (got %s)" % str(hcard.state if hcard else "?"))
+	# Art kartu = potret DIRENDER dari unit aslinya (port
+	# HeroPortraits._try_auto_render + _crop_and_scale lewat UnitPortrait).
+	# `null == null` saat aset bake belum disalin (CI menyalinnya, checkout
+	# tipis tidak) — assertion ini mengunci RANTAI-nya, bukan memaksa
+	# asetnya ada.
+	_expect(hcard != null and hcard.portrait
+		== UnitPortrait.portrait_texture("kaizen",
+			HeroShopCardScript.PORTRAIT_ART_W,
+			HeroShopCardScript.PORTRAIT_ART_H, false),
+		"potret kartu hero = render unit (UnitPortrait)")
 	_expect(str(kb.get_meta("ui_data").get("blocked")) == "OWNED", "OWNED reason")
 	SaveManager.data["unlocked_heroes"] = ["kaizen", "grimjaw", "sylara",
 		"thorne", "vex", "zephyr"]
@@ -459,6 +479,9 @@ func _test_shop_heroes() -> void:
 	var gb := _button_by_key("buy_hero_grimjaw")
 	_expect(gb != null and gb.disabled
 		and str(gb.get_meta("ui_data").get("blocked")) == "POOR", "grimjaw POOR")
+	var gcard := _hero_card("grimjaw")
+	_expect(gcard != null and str(gcard.state) == "POOR",
+		"kartu grimjaw = state POOR")
 	# Beli menutup toko (shop_buy still_open=false).
 	GameManager.gold = 1000000
 	var before := GameManager.owned_heroes().size()
@@ -476,9 +499,17 @@ func _test_shop_heroes() -> void:
 	# shop_max_case: roster 5/5 -> hero ke-6 MAX + FULL.
 	_shop.open_tab("hero")
 	var zb := _button_by_key("buy_hero_zephyr")
-	_expect(zb != null and zb.disabled and zb.text.ends_with("· MAX"),
-		"zephyr MAX (got %s)" % (zb.text if zb else "?"))
+	_expect(zb != null and zb.disabled, "zephyr: tombol mati")
 	_expect(str(zb.get_meta("ui_data").get("blocked")) == "FULL", "FULL reason")
+	var zcard := _hero_card("zephyr")
+	_expect(zcard != null and str(zcard.state) == "MAX",
+		"kartu zephyr = state MAX (got %s)" % str(
+			zcard.state if zcard else "?"))
+	# Mode baris (rail sempit) TIDAK dihapus — ambangnya dikunci supaya
+	# kartu 340 px tidak pernah dipaksa masuk panel 268 px.
+	_expect(ShopPanelScript.HERO_CARD_MIN_COLS == 2
+		and ShopPanelScript.HERO_ROW_ICON == 22,
+		"baris hero tetap 22 px di < 2 kolom")
 	# shop_tab analog: tombol tab memindahkan _tab.
 	_press("to_item")
 	_expect(_shop._tab == "item", "tab -> item")
@@ -666,23 +697,47 @@ func _test_shop_item() -> void:
 	_expect(GameManager.gold == 100000 - 4500, "item -4500")
 	_expect(GameManager.shop_open, "forge tetap buka")
 	_expect(kaizen.items.has("dead_edge"), "dead_edge dimiliki")
+	# ── RENDERER kartu item (permintaan user: ITEM FORGE digambar) ──
+	# Panel tes selebar modal 900 px -> _grid_columns() 3 -> kartu, BUKAN
+	# baris. Yang diaudit: kartu ItemForgeCard sungguh dipakai, Button +
+	# ui_key + ui_data-nya tetap utuh (kontrak kontrol tidak berubah), dan
+	# ikonnya digambar kartu 56 px (paritas get_icon(sid, 56) di
+	# _draw_item_card) — bukan ikon baris 20 px.
 	var db := _button_by_key("item_buy_dead_edge")
-	_expect(db != null and db.disabled and db.text.ends_with("— dimiliki"),
-		"owned label (got %s)" % (db.text if db else "?"))
-	# Ikon item (port get_icon hero_items.py:1661-1699): baris toko memakai
-	# Button.icon + expand_icon, dan clip_text supaya label panjang yang
-	# terdorong ikon dipangkas elipsis alih-alih meluber keluar kotak.
-	_expect(db != null and db.icon != null and db.expand_icon and db.clip_text,
-		"baris toko berikon item")
-	# Ikonnya dari cache ItemIcons dan SUDAH seukuran tampilan (bukan tekstur
-	# sumber 256 px apa adanya — lihat komentar VRAM di ItemIcons.gd).
-	var row_px := ShopPanelScript.ITEM_ROW_ICON
+	var card = _item_card("dead_edge")
+	_expect(card != null, "kartu ItemForgeCard untuk dead_edge")
+	_expect(db != null and db.disabled, "kartu owned: tombol mati")
 	_expect(db != null
-		and db.icon == ItemIcons.texture("dead_edge", row_px),
-		"ikon baris toko = cache ItemIcons")
-	_expect(db != null and db.icon is ImageTexture
-		and db.icon.get_size() == Vector2(row_px, row_px),
-		"ikon baris toko %d px" % row_px)
+		and str(db.get_meta("ui_key")) == "item_buy_dead_edge"
+		and int(db.get_meta("ui_data").get("cost"))
+			== int(ItemDB.item_cost("dead_edge"))
+		and str(db.get_meta("ui_data").get("blocked")) == "OWNED",
+		"kontrak kontrol kartu utuh")
+	_expect(card != null and int(card.owned_count) == 1
+		and not card.can_buy and str(card.blocked) == "OWNED",
+		"state kartu owned")
+	# Label pill dibaca dari kartu: PygameButton menggambar label_text-nya
+	# sendiri dan mengosongkan Button.text (lihat PygameButton._init).
+	_expect(card != null and str(card.pill_label)
+		== MysticLocalization.tr_text("shop_reason_owned"),
+		"pill kartu owned = label alasan (got %s)" % str(
+			card.pill_label if card != null else "?"))
+	_expect(card != null and card.icon_texture != null,
+		"kartu punya ikon 56 px")
+	_expect(card != null
+		and card.icon_texture == ItemIcons.texture("dead_edge",
+			ItemForgeCardScript.ICON_SIZE),
+		"ikon kartu = cache ItemIcons ukuran kartu")
+	_expect(card != null and card.icon_texture is ImageTexture
+		and card.icon_texture.get_size()
+			== Vector2(ItemForgeCardScript.ICON_SIZE,
+				ItemForgeCardScript.ICON_SIZE),
+		"ikon kartu %d px" % ItemForgeCardScript.ICON_SIZE)
+	# Path baris sempit (rail) TIDAK dihapus: konstantanya dikunci supaya
+	# angka 20 px + ambang kartu tidak meliuk sendiri.
+	_expect(ShopPanelScript.ITEM_ROW_ICON == 20
+		and ShopPanelScript.ITEM_CARD_MIN_COLS == 2,
+		"mode baris < 2 kolom, ikon baris 20 px")
 	# Chip slot item SkillBar (paritas hero_items.py:3026-3095): bg gelap,
 	# border warna katalog 2 px, ikon 26 px di tengah.
 	_bar._sync_items(["dead_edge"])
@@ -1124,6 +1179,27 @@ func _find_button_in(node: Node, ui_key: String) -> Button:
 		var found := _find_button_in(c, ui_key)
 		if found != null:
 			return found
+	return null
+
+
+## Kartu HeroShopCard milik satu hero (mode kartu; null saat rail sempit).
+func _hero_card(hero_type: String) -> Control:
+	for node in _shop.find_children("*", "Control", true, false):
+		if node.get_script() == HeroShopCardScript \
+				and str(node.get("hero_type")) == hero_type:
+			return node
+	return null
+
+
+## Kartu ItemForgeCard milik satu item di dalam body toko (kartunya kontrol
+## digambar; tombol aksinya anak kartu).
+func _item_card(item_id: String) -> Control:
+	for node in _shop.find_children("*", "Control", true, false):
+		# Perbandingan SKRIPT (bukan `is` dengan konstanta preload) supaya
+		# analis GDScript tidak perlu mengenal kelas named-nya.
+		if node.get_script() == ItemForgeCardScript \
+				and str(node.get("item_id")) == item_id:
+			return node
 	return null
 
 

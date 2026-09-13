@@ -2,12 +2,15 @@
 
 > **Status:** DONE (2026-09-11, FASE 30) — port 1:1 tabel teks + API + jalur
 > setting bahasa, lalu **DILANJUTKAN 2026-09-13**: bahasa yang dipilih sekarang
-> benar-benar berlaku DI DALAM GAME. Tabel tumbuh dari 24 kunci pygame jadi
-> **106 kunci × 2 bahasa**: 81 kunci pygame yang sebelumnya hard-code di
-> Godot + chrome panel Godot, semuanya kini lewat tabel. 81 kunci sudah punya
-> pemakai (HUD, ShopPanel, SkillBar, GameOverOverlay, MainMenu, ItemDB);
-> 25 sisanya masih diport sebagai DATA dan menunggu permukaan UI-nya (daftar
-> di bawah).
+> benar-benar berlaku DI DALAM GAME **dan di SEMUA layar menu**. Tabel tumbuh
+> dari 24 kunci pygame jadi **209 kunci × 2 bahasa**: 82 kunci in-match (81
+> pygame yang sebelumnya hard-code di Godot + chrome panel Godot) + 103 kunci
+> layar MENU (Main, SLOT_SELECT, LEVEL_SELECT, HERO SHOP, SETTINGS,
+> HOW_TO_PLAY, CREDITS, PAUSE + tooltip rail/taktis/top-up + label kartu ITEM
+> FORGE). 179 kunci sudah punya pemakai (MainMenu, HUD, ShopPanel,
+> ItemForgeCard, SkillBar, TacticalBar, TopupDialog, SidePanel,
+> GameOverOverlay, ItemDB); 30 sisanya masih diport sebagai DATA dan menunggu
+> permukaan UI-nya (daftar di bawah).
 
 ## Ringkasan localization.py (Python)
 
@@ -20,10 +23,16 @@
   bahasa** saat FASE 30 (label setelan, status hero mati + antrean item, notifikasi Item
   Forge (beli/antre/kirim), banner & halaman toko, pelepasan item, dan 7 kunci
   popup detail item (DESKRIPSI / STAT & EFEK / RIWAYAT / DIMILIKI / hint));
-  sejak 2026-09-13 **106 kunci** — 82 kunci in-match ditambahkan mengikuti
-  string yang di pygame di-`tr()` atau teks Indonesia buatan port Godot
-  (baris hint HUD, empat tab toko + konteksnya, alasan kartu item, nexus,
-  SkillBar, layar menang/kalah). Sumber kebenaran tetap `localization.py`;
+  sejak 2026-09-13 **209 kunci** — 82 kunci in-match mengikuti string yang di
+  pygame di-`tr()` atau teks Indonesia buatan port Godot (baris hint HUD, empat
+  tab toko + konteksnya, alasan kartu item, nexus, SkillBar, layar
+  menang/kalah), lalu **103 kunci menu** mengikuti SEMUA string yang selama ini
+  di-hardcode Indonesia di `MainMenu.gd` (judul layar, tombol, kartu slot,
+  kartu level, legenda + status HERO SHOP, label PENGATURAN, tujuh seksi CARA
+  MAIN, layar PAUSE, tooltip) + label kartu ITEM FORGE. Permintaan user: "saat
+  ganti ke English, semuanya Inggris, starting dari main menu" — karena kolom
+  `id` persis string lama, pemain Indonesia tidak melihat perubahan apa pun.
+  Sumber kebenaran tetap `localization.py`;
   `Localization.gd` salinan baris-per-baris dengan KUNCI PADA URUTAN SAMA.
 - `set_language(language)` (`:77-81`) — nilai tidak valid **aman jatuh ke
   "id"** dan bahasa aktif dikembalikan.
@@ -56,7 +65,10 @@ Pemakai Godot (setelah 2026-09-13) — semuanya membaca lewat
 
 | Panel Godot | Yang dibaca |
 |---|---|
-| `scenes/ui/MainMenu.gd` (`_language_row`) | `language` + `get_language_label` (baris Bahasa di PENGATURAN; layar dibangun ulang `_show(State.SETTINGS)`) |
+| `scenes/ui/MainMenu.gd` (`_loc` + `_language_row` + `_on_language_changed`) | SEMUANYA: 103 kunci `menu_*`/`slot_*`/`lvl_*`/`hshop_*`/`set_*`/`howto_*`/`pause_*` untuk delapan state layar, plus `language` + `get_language_label` di baris Bahasa. Ganti bahasa -> `_show(state)` — layar AKTIF yang dibangun ulang, bukan hanya SETTINGS |
+| `scenes/ui/widgets/ItemForgeCard.gd` | `shop_card_buy`/`shop_card_owned`/`shop_card_poor`/`shop_card_no_hero` + `shop_reason_*` — pill dan "Dimiliki: n" pada kartu yang digambar, ikut bahasa aktif |
+| `scenes/ui/TacticalBar.gd` (`TOOLTIPS` -> `tr_text`) | `tac_toggle_tip` + lima tooltip perintah (kunci dinamis lewat konstanta, sama seperti `TABS` ShopPanel) |
+| `scenes/ui/TopupDialog.gd` / `scenes/ui/SidePanel.gd` | `topup_subtitle` (dialog TOP UP) / `rail_pause_tip` (tooltip tombol pause rail) |
 | `scenes/ui/HUD.gd` (`_hint_rows`, `_on_language_changed`) | 10 kunci `hud_hint_*` untuk baris petunjuk keycap |
 | `scenes/ui/ShopPanel.gd` (`_loc`, `_apply_chrome_texts`, `_build_*_tab`) | judul/tutup/empat tab, konteks, strip BUY FOR, semua alasan kartu item, tab MENARA/NEXUS/HERO |
 | `scenes/ui/SkillBar.gd` (`_loc`, `_refresh_static`) | label "tidak ada hero", petunjuk beli, tooltip 6 slot item + AUTO-CAST + FORGE |
@@ -71,8 +83,8 @@ Pemakai Godot (setelah 2026-09-13) — semuanya membaca lewat
 | `godot/scripts/autoload/GameManager.gd` | Cermin `GameSettings.language`: `var language`, `apply_language()` (jalur load, tanpa tulis save), `set_language()` (validasi `("id","en")` → simpan → terapkan, paritas `_core.py:9272-9278`), `signal language_changed`, dan sinkronisasi di `_load_gameplay_settings()` (boot + tiap `start_level`). |
 | `godot/scripts/autoload/SaveManager.gd` | `get_setting_str()` / `set_setting_str()` — pasangan string untuk `get_setting`/`set_setting` yang float-only (kunci `settings.language`). |
 | `godot/scripts/autoload/AppShell.gd` | `_apply_interface_language()` saat boot (autoload PALING AKHIR, jadi `SaveManager` sudah selesai `load_save()`), kolom `bahasa` di banner boot, dan `lang=` di baris `SESSION START` `crash_log.txt`. |
-| `godot/scenes/ui/MainMenu.gd` | `_language_row()` + `_cycle_language()` — baris **Bahasa / Bahasa Indonesia** dengan tombol `<` `>` di layar PENGATURAN, posisinya persis pygame: setelah Game Speed, sebelum seksi GRAPHICS. Layar dibangun ulang setelah bahasa berubah karena label barisnya sendiri terlokalisasi. |
-| `godot/scripts/core/ItemDB.gd` | `item_mechanics_localized(item_id)` — padanan `en = get_language() == "en"` (`hero_items.py:1632`) untuk popup mekanik item. |
+| `godot/scenes/ui/MainMenu.gd` | Delapan state layar dibangun 100% lewat `_loc(kunci)`; `_language_row()` + `_cycle_language()` tetap baris **Bahasa / Bahasa Indonesia** dengan tombol `<` `>` persis posisi pygame (setelah Game Speed, sebelum seksi GRAPHICS). `_on_language_changed()` -> `_show(state)` membangun ulang layar yang sedang tampil, jadi CONTINUE/MULAI GAME/PILIH SLOT/PILIH LEVEL/HERO SHOP/PENGATURAN/CARA MAIN/KREDIT/PAUSE ikut bahasa tanpa menutup lalu membuka menu. |
+| `godot/scripts/core/ItemDB.gd` | `item_mechanics_localized(item_id)` — padanan `en = get_language() == "en"` (`hero_items.py:1632`) untuk popup mekanik item; `item_desc_localized(item_id)` — padanan `ItemShopUI._localized_desc` (`hero_items.py:3894-3899`: `desc_en` untuk English, fallback `desc`) yang dipakai kartu ITEM FORGE; `item_class_badge(item_id)` — `[label, warna]` badge kelas dari `ITEM_CLASS_INFO`. |
 | `godot/tests/LocalizationParityTest.gd` + `.tscn` | Replay fixture di engine betulan (tabel, fallback, format, plumbing, baris SETTINGS). |
 | `godot/tests/fixtures/localization.json` | Oracle: dihasilkan dari `localization.py` ASLI. |
 | `tools/test_godot_localization_parity.py` | Oracle tanpa pygame/Godot: baca tabel GDScript → bandingkan baris demi baris, audit placeholder, cek kunci yang dipakai kode Godot, jaga fixture tetap segar. |
@@ -110,19 +122,33 @@ Pemakai Godot (setelah 2026-09-13) — semuanya membaca lewat
 8. **`signal language_changed`.** pygame menggambar ulang seluruh UI tiap
    frame, jadi tidak butuh sinyal; Godot membangun Control sekali per layar,
    jadi layar yang teksnya terlokalisasi menyegarkan diri lewat sinyal ini:
-   `MainMenu` memanggil `_show(State.SETTINGS)` langsung setelah cycler, dan
-   sejak 2026-09-13 empat panel in-match punya penyegaran tertarget —
-   `HUD` (baris hint), `SkillBar` (`_refresh_static`), `ShopPanel`
-   (`_apply_chrome_texts` + rebuild isi), `GameOverOverlay` (hint + tombol
-   aksi, tanpa mengulang animasi intro).
+   `MainMenu` memanggil `_show(state)` untuk SEMUA state (dulu hanya
+   `_show(State.SETTINGS)` setelah cycler), dan panel in-match punya penyegaran
+   tertarget — `HUD` (baris hint), `SkillBar` (`_refresh_static`), `ShopPanel`
+   (`_apply_chrome_texts` + rebuild isi, termasuk kartu ITEM FORGE),
+   `GameOverOverlay` (hint + tombol aksi, tanpa mengulang animasi intro),
+   `TacticalBar` (tooltip dibangun ulang; label tombol perintah sudah Inggris
+   di kedua bahasa). `TopupDialog` tidak menyambung sinyal — dialognya dibuat
+   ulang tiap dibuka; `SidePanel` membangun rail tiap `_ready`/perubahan state,
+   jadi tooltipnya ikut tanpa handler khusus.
 9. **Yang TIDAK ikut diterjemahkan.** pygame sendiri menyimpan beberapa teks
    apa adanya, dan port mengikutinya: `ITEM FORGE  (%d/6)`, `TIER I/II`,
    `SHIELD n%` di atas kastil, `AUTO-CAST ON`, `MAX LEVEL`, `Lv.%d`, baris
    `VICTORY!`/`DEFEAT` + lima nama statistik layar hasil, dan judul badge HUD
    `LEVEL n`/`WAVE n` (dikunci `UiHudParityTest` + `HudLayout.wave_title`).
-   Satu-satunya teks Godot yang sengaja diberi pasangan id/en padahal pygame
-   tidak men-`tr()`-nya adalah `shop_buy_for` ("BELI UNTUK:" / "BUY FOR:") —
-   supaya perpindahan bahasa kelihatan hasilnya di tab ITEM.
+   Dari sisi menu, yang TIDAK diberi kunci karena memang sudah Inggris di kedua
+   bahasa: "MYSTIC ARENA", "v2.0 • MOBA Tower Defense", "BATTLE ARENA",
+   "INPUT", "HERO SHOP", "TOP UP", "HERO GOLD", "BOSSES DEFEATED", "SAVE GAME",
+   "LV. %d", "%s Gold", "Hero: %d", "Boss: %d", "LEVEL %d", "ATTEMPT",
+   "WIN RATE", "PAUSED", badge OWNED/LOCKED kartu hero, "TRUE BOSS"/"MINI
+   BOSS"/"STARTER", dan blok teks CREDITS. Dua label kartu ITEM FORGE yang di
+   pygame juga literal — "MELEE ONLY"/"MAGIC ONLY" — sengaja tetap literal
+   (`ShopPanel._item_card_label`).
+   Teks Godot yang diberi pasangan id/en padahal pygame tidak men-`tr()`-nya:
+   `shop_buy_for` ("BELI UNTUK:" / "BUY FOR:"), `shop_card_*`, `pause_*`,
+   `howto_*`, `slot_*`, `lvl_*`, `hshop_*`, `set_*`, `tac_*`, `topup_*`,
+   `rail_pause_tip` — permukaan itu teks Indonesia buatan port yang harus ikut
+   English.
 
 ## Kunci yang sudah punya pemakai vs yang masih menunggu
 
@@ -130,13 +156,17 @@ Dilaporkan oracle setiap run (baris `[oracle] pemakai tr_text()/loc() di
 Godot:` — audit closed-world yang juga menangkap pintasan `_loc()` per panel,
 jadi kunci salah ketik di jalur itu tetap gagal di CI):
 
-- **Hidup sekarang (81):** `language` (baris BAHASA di PENGATURAN) + seluruh
-  teks ShopPanel, baris hint HUD, label/tooltip SkillBar, tombol + hint
-  GameOverOverlay, dan `dead`/`shop_no_hero_banner` di tab ITEM. Ditambah
-  jalur non-kunci: `is_english()` untuk `ItemDB.item_mechanics_localized`.
-  Empat kunci tab (`shop_tab_*`) dipakai lewat konstanta `TABS` (kunci
-  dinamis, jadi tidak terlihat sebagai literal oleh audit — sengaja, karena
-  label tab harus berganti bahasa bersama tab-nya).
+- **Hidup sekarang (179):** SELURUH menu utama (103 kunci `menu_*`, `slot_*`,
+  `lvl_*`, `hshop_*`, `set_*`, `howto_*`, `pause_*`) + seluruh teks ShopPanel
+  dan label kartu `ItemForgeCard`, baris hint HUD, label/tooltip SkillBar,
+  tombol + hint GameOverOverlay, subtitle TopupDialog, tooltip pause rail, dan
+  `dead`/`shop_no_hero_banner` di tab ITEM. Ditambah jalur non-kunci:
+  `is_english()` untuk `ItemDB.item_mechanics_localized` dan
+  `ItemDB.item_desc_localized`. Kunci yang dipakai lewat konstanta —
+  `shop_tab_*` (ShopPanel `TABS`) dan `tac_*` (TacticalBar `TOOLTIPS`) — muncul
+  sebagai "belum ada pemakainya" di audit literal: sengaja, karena labelnya
+  harus berganti bersama tab/aksinya, dan keabsahannya tetap dijaga fixture +
+  tes di engine.
 - **Diport sebagai data, pemakainya belum ada di Godot (25):**
   `queued`, `delivery_after_respawn`, `dead_delivery_hint`,
   `queued_item_count`, `no_hero`, `inventory_full`, `magic_only_denied`,
@@ -177,15 +207,29 @@ godot --headless --path godot res://tests/LocalizationParityTest.tscn --quit-aft
 #    wajib: "[LocalizationParityTest] PASS" tanpa SCRIPT ERROR / Parse Error
 ```
 
+Gate "semua layar menu ikut bahasa" (`_test_menu_surfaces_localized`,
+FASE 40): tiap state `MainMenu` — MAIN, SLOT_SELECT, LEVEL_SELECT, HERO_SHOP,
+SETTINGS, HOW_TO_PLAY, CREDITS, PAUSE — dibangun dua kali (`en` lalu `id`) di
+atas instance baru, SEMUA teks yang tergambar dikumpulkan dari `_root` +
+panel PAUSE (Label/Button/RichTextLabel), dinormalisasi (huruf besar, spasi
+dibuang — supaya `UiTheme.letter()` tidak mengecoh), lalu
+
+- sentinel per layar harus ADA di bahasa yang benar. Sentinelnya literal di
+  dalam tes, BUKKAN dibaca dari tabel — jadi "menerjemahkan" tabel dengan
+  memindahkan teks Indonesia ke kolom `en` tetap gagal; dan
+- di mode `en` tidak boleh ada satu pun teks yang sama persis dengan nilai
+  `id` yang beda dari nilai `en` (himpunan larangan dibangun dari fixture;
+  kunci ber-placeholder dilewati karena teksnya terformat).
+
 Isi fixture `localization.json` (semuanya dievaluasi `localization.py` ASLI,
 bukan salinan):
 
 | Seksi | Isi |
 |---|---|
-| `text` / `key_order` | 106 kunci × 2 bahasa + urutannya (urutannya ikut dikunci: sisip kunci di satu file saja = gagal) |
+| `text` / `key_order` | 209 kunci × 2 bahasa + urutannya (urutannya ikut dikunci: sisip kunci di satu file saja = gagal) |
 | `languages` / `labels` / `default_language` | `LANGUAGES`, `LANGUAGE_LABELS`, `"id"` |
 | `placeholders` | daftar `{nama}` per kunci (kontrak subset `_py_format`) |
-| `tr_cases` | 212 = setiap kunci × setiap bahasa dengan nilai contoh (`hero`/`item`/`items`/`count`/`page`) |
+| `tr_cases` | 418 = setiap kunci × setiap bahasa dengan nilai contoh (`hero`/`item`/`items`/`count`/`page`) |
 | `edge_cases` | 8 = kunci tak dikenal → kunci mentah, nilai hilang → template mentah, sebagian nilai hilang, nilai berlebih diabaikan, `count=0`, tanpa placeholder |
 | `fallback_cases` | kunci yang hanya ada di satu bahasa → fallback tabel `id` (kosong selama tabel simetris; otomatis terisi kalau pygame menambah kunci sepihak) |
 | `set_language_cases` | 7 = `id`/`en`/`invalid`/`""`/`"ID"`/`"en-US"`/`null` → bahasa aktif + nilai balik |

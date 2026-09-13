@@ -10,9 +10,10 @@
 #   1. boot sync — bahasa aktif == bahasa tersimpan di save, GameManager
 #      mengaca Localization (paritas GameSettings.__new__/_load yang
 #      memanggil localization.set_language, _core.py:9116/9170).
-#   2. tabel teks: 2 bahasa x SETIAP kunci fixture (106 kunci sejak
-#      2026-09-13: 24 kunci pygame + 82 kunci in-match), ISI + URUTAN kunci
-#      (urutan dipakai diff manusia terhadap localization.py).
+#   2. tabel teks: 2 bahasa x SETIAP kunci fixture (209 kunci sejak
+#      2026-09-13: 24 kunci pygame + 82 kunci in-match + 103 kunci layar
+#      MENU), ISI + URUTAN kunci (urutan dipakai diff manusia terhadap
+#      localization.py).
 #   3. LANGUAGES (urutan cycler _core.py:7297-7303) + LANGUAGE_LABELS.
 #   4. set_language: 7 masukan (id/en/invalid/""/"ID"/"en-US"/null) —
 #      semuanya aman jatuh ke "id" (localization.py:80).
@@ -35,6 +36,11 @@
 #      GameOverOverlay menyambung language_changed dan membaca ulang
 #      labelnya) dikunci UiHudParityTest._test_language_in_game — di sana
 #      panel-panelnya benar-benar hidup.
+#  10. SEMUA layar MENU ikut bahasa (permintaan user 2026-09-13): tiap state
+#      MainMenu dibangun di `en` dan `id`, teks yang tergambar dikumpulkan,
+#      sentinel per layar dicek, dan di mode `en` TIDAK BOLEH ada satu pun
+#      nilai Indonesia dari tabel tersisa (audit closed-world, tanpa daftar
+#      kata manual).
 #
 # Save TIDAK boleh berubah: data + berkas slot di-snapshot dan dipulihkan
 # (pola SaveSlotParityTest), dan CI menjalankan scene ini dengan
@@ -91,6 +97,7 @@ func _boot() -> void:
 		_test_helpers()
 		_test_settings_plumbing()
 		_test_settings_screen_row()
+		_test_menu_surfaces_localized()
 	_finish()
 
 
@@ -397,6 +404,129 @@ func _test_settings_screen_row() -> void:
 	_expect(MysticLocalization.get_language() == "en",
 		"cycler < dari id membungkus ke en (modulo negatif Python)")
 	GameManager.apply_language("id")
+
+
+# ══════════════════════════════════════════════════════════
+#  9d. SEMUA LAYAR MENU IKUT BAHASA (permintaan user 2026-09-13:
+#      "ganti ke English harus membuat SEMUANYA Inggris, starting dari
+#      main menu")
+# ══════════════════════════════════════════════════════════
+
+## Teks yang WAJIB muncul di tiap state, per bahasa. Ditulis sebagai literal
+## di sini (BUKAN dibaca dari tabel) supaya tes tetap gagal kalau seseorang
+## "menerjemahkan" kolom en dengan mengembalikan isinya ke bahasa Indonesia.
+## Pencocokan substring setelah spasi dibuang, jadi label yang di-letter()
+## ("P I L I H   S L O T   S A V E") dan yang diformat tetap kena.
+const MENU_SURFACES := {
+	"MAIN": {
+		"id": ["MULAI GAME", "CARA MAIN", "KELUAR GAME"],
+		"en": ["PLAY GAME", "HOW TO PLAY", "QUIT GAME"],
+	},
+	"SLOT_SELECT": {
+		"id": ["PILIH SLOT SAVE", "PILIH SLOT UNTUK LANJUT"],
+		"en": ["SELECT SAVE SLOT", "PICK A SLOT TO CONTINUE"],
+	},
+	"LEVEL_SELECT": {
+		"id": ["PILIH LEVEL", "SELESAI:"],
+		"en": ["SELECT LEVEL", "COMPLETED:"],
+	},
+	"HERO_SHOP": {
+		"id": ["PHY = FISIK KENA ARMOR"],
+		"en": ["PHY = PHYSICAL HITS ARMOR"],
+	},
+	"SETTINGS": {
+		"id": ["PENGATURAN", "PROGRESI", "VOLUME MASTER", "CLOUD: OFF"],
+		"en": ["SETTINGS", "PROGRESSION", "MASTER VOLUME", "CLOUD: OFF"],
+	},
+	"HOW_TO_PLAY": {
+		"id": ["CARA MAIN", "WAVE MINION", "MEMBANGUN MENARA"],
+		"en": ["HOW TO PLAY", "MINION WAVES", "BUILDING TOWERS"],
+	},
+	"CREDITS": {"id": ["KREDIT"], "en": ["CREDITS"]},
+	"PAUSE": {
+		"id": ["LANJUT MAIN", "MENU UTAMA", "PAUSED"],
+		"en": ["RESUME GAME", "MAIN MENU", "PAUSED"],
+	},
+}
+
+
+func _test_menu_surfaces_localized() -> void:
+	var texts: Dictionary = _fx["text"]
+	# Hanya nilai yang BENAR-BENAR Indonesia: beda antar bahasa dan tanpa
+	# placeholder (yang terformat tidak bisa dibandingkan apa-adanya).
+	var forbidden := {}
+	for key in (texts["id"] as Dictionary):
+		var idv := str((texts["id"] as Dictionary)[key])
+		var env := str((texts["en"] as Dictionary)[key])
+		if idv == env or "%" in idv or "{" in idv:
+			continue
+		forbidden[_flat(idv)] = str(key)
+	var menu = null
+	var menus: Array = []
+	for lang in ["en", "id"]:
+		GameManager.apply_language(lang)
+		menu = MainMenuScript.new()
+		add_child(menu)
+		menus.append(menu)
+		var want_key := "id" if str(lang) == "id" else "en"
+		for state_name in MENU_SURFACES:
+			menu._show(int(menu.State[state_name]))
+			var got := _surface_texts(menu)
+			_expect(not got.is_empty(),
+				"%s/%s: layar menghasilkan teks" % [lang, state_name])
+			var flat := {}
+			for t in got:
+				flat[_flat(str(t))] = true
+			for sentinel in (MENU_SURFACES[state_name] as Dictionary)[want_key]:
+				var needle := _flat(str(sentinel))
+				var hit := false
+				for f in flat:
+					if String(f).contains(needle):
+						hit = true
+						break
+				_expect(hit, "%s/%s: memuat '%s'" % [
+					lang, state_name, sentinel])
+			if str(lang) == "en":
+				# Gate intisari permintaan user: TIDAK ADA satu pun label
+				# Indonesia yang tersisa di layar berbahasa Inggris.
+				for f in flat:
+					_expect(not forbidden.has(f),
+						"en/%s: label masih Indonesia '%s' (kunci %s)" % [
+							state_name, f, forbidden[f]])
+	for m in menus:
+		m.queue_free()
+	GameManager.apply_language("id")
+
+
+## Semua teks yang tergambar di satu layar menu (Label biasa, Button,
+## RichTextLabel) — root state aktif + panel PAUSE (yang bukan anak _root).
+func _surface_texts(menu) -> Array:
+	var out: Array = []
+	var roots: Array = []
+	if menu._root != null and is_instance_valid(menu._root):
+		roots.append(menu._root)
+	if menu._pause_panel != null and is_instance_valid(menu._pause_panel):
+		roots.append(menu._pause_panel)
+	for r in roots:
+		_collect_texts(r, out)
+	return out
+
+
+func _collect_texts(node: Node, out: Array) -> void:
+	if node is Label:
+		out.append((node as Label).text)
+	elif node is Button:
+		out.append((node as Button).text)
+	elif node is RichTextLabel:
+		out.append((node as RichTextLabel).text)
+	for c in node.get_children():
+		_collect_texts(c, out)
+
+
+## Normalisasi pembanding: huruf besar + buang SEMUA spasi (label menu
+## banyak yang lewat UiTheme.letter, yang menyisipkan spasi antar glif).
+func _flat(t: String) -> String:
+	return t.replace("\t", " ").replace(" ", "").to_upper()
 
 
 func _row_label_texts(row: Node) -> Array:

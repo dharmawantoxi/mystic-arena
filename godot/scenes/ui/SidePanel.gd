@@ -178,7 +178,7 @@ func _make_pause_button() -> Button:
 	var b := Button.new()
 	b.name = "RailPause"
 	b.text = "II"
-	b.tooltip_text = "Jeda (P / ESC)"
+	b.tooltip_text = MysticLocalization.tr_text("rail_pause_tip")
 	b.focus_mode = Control.FOCUS_NONE
 	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	b.custom_minimum_size = Vector2(58, 58)

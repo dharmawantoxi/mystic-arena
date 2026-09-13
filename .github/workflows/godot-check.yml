@@ -181,8 +181,9 @@ jobs:
           # map_clutter_lint.py untuk alasan + cermin _entity.py pygame).
           python3 godot/tools/map_clutter_lint.py godot
           python3 godot/tools/test_godot_log_gate.py
-          # localization.py -> Localization.gd: tabel teks id/en (106 kunci x 2
-          # bahasa) dibandingkan baris demi baris dengan modul pygame ASLI,
+          # localization.py -> Localization.gd: tabel teks id/en (209 kunci x
+          # 2 bahasa — 103 di antaranya layar MENU sejak 2026-09-13)
+          # dibandingkan baris demi baris dengan modul pygame ASLI,
           # placeholder + pemakai tr_text()/loc() diaudit closed-world, dan
           # fixture LocalizationParityTest diperiksa segar. Tidak butuh pygame
           # maupun Godot — drift satu tanda baca pun gagal di sini, sebelum

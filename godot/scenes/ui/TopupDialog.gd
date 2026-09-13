@@ -158,7 +158,7 @@ func _rebuild() -> void:
 	title.position = Vector2(0, 10)
 	title.size = Vector2(DW, 48)
 	_body.add_child(title)
-	var sub_text := "Top up gold untuk membuka hero di HERO SHOP"
+	var sub_text := MysticLocalization.tr_text("topup_subtitle")
 	if phase == "redeem":
 		sub_text = "REDEEM CODE - enter the code you received from admin after paying"
 	elif phase == "processing":

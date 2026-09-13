@@ -424,7 +424,110 @@
       "over_next_button",
       "over_reward_first_win",
       "over_reward_first_replay",
-      "over_reward_replay"
+      "over_reward_replay",
+      "menu_continue",
+      "menu_play",
+      "menu_how_to_play",
+      "menu_settings",
+      "menu_credits",
+      "menu_quit",
+      "menu_back",
+      "menu_meta_summary",
+      "menu_exit_question",
+      "menu_exit_yes",
+      "menu_cancel",
+      "slot_title",
+      "slot_subtitle",
+      "slot_empty",
+      "slot_empty_hint",
+      "slot_highest",
+      "slot_no_levels",
+      "slot_last_played",
+      "slot_start_new",
+      "slot_continue",
+      "slot_delete",
+      "slot_delete_title",
+      "slot_delete_question",
+      "slot_delete_warning",
+      "slot_delete_yes",
+      "lvl_title",
+      "lvl_diff_easy",
+      "lvl_diff_normal",
+      "lvl_diff_hard",
+      "lvl_diff_hard_pct",
+      "lvl_progress",
+      "lvl_json_missing",
+      "lvl_badge_done",
+      "lvl_badge_locked",
+      "lvl_badge_ready",
+      "lvl_theme_line",
+      "lvl_stat_score",
+      "lvl_stat_time",
+      "lvl_stat_none",
+      "lvl_play",
+      "lvl_replay",
+      "lvl_locked_hint",
+      "hshop_legend",
+      "hshop_empty",
+      "hshop_json_missing",
+      "hshop_owned",
+      "hshop_defeat",
+      "hshop_free",
+      "hshop_unlock",
+      "set_title",
+      "set_volume_master",
+      "set_volume_sfx",
+      "set_volume_bgm",
+      "set_volume_voice",
+      "set_cloud_off",
+      "set_cloud_upload",
+      "set_cloud_download",
+      "set_cloud_note",
+      "set_cloud_unavailable",
+      "set_diff_note",
+      "set_fps_unlimited",
+      "set_progression",
+      "set_delete_save",
+      "set_store_note",
+      "howto_title",
+      "howto_goal",
+      "howto_goal_1",
+      "howto_goal_2",
+      "howto_towers",
+      "howto_towers_1",
+      "howto_towers_2",
+      "howto_heroes",
+      "howto_heroes_1",
+      "howto_heroes_2",
+      "howto_heroes_3",
+      "howto_heroes_4",
+      "howto_waves",
+      "howto_waves_1",
+      "howto_waves_2",
+      "howto_shop",
+      "howto_shop_1",
+      "howto_shop_2",
+      "howto_progress",
+      "howto_progress_1",
+      "howto_progress_2",
+      "howto_progress_3",
+      "howto_hard",
+      "howto_hard_1",
+      "howto_hard_2",
+      "pause_resume",
+      "pause_menu",
+      "rail_pause_tip",
+      "tac_toggle_tip",
+      "tac_gather_tip",
+      "tac_protect_tower_tip",
+      "tac_protect_castle_tip",
+      "tac_attack_boss_tip",
+      "tac_attack_dd_tip",
+      "topup_subtitle",
+      "shop_card_buy",
+      "shop_card_owned",
+      "shop_card_poor",
+      "shop_card_no_hero"
     ],
     "id": [
       "language",
@@ -532,7 +635,110 @@
       "over_next_button",
       "over_reward_first_win",
       "over_reward_first_replay",
-      "over_reward_replay"
+      "over_reward_replay",
+      "menu_continue",
+      "menu_play",
+      "menu_how_to_play",
+      "menu_settings",
+      "menu_credits",
+      "menu_quit",
+      "menu_back",
+      "menu_meta_summary",
+      "menu_exit_question",
+      "menu_exit_yes",
+      "menu_cancel",
+      "slot_title",
+      "slot_subtitle",
+      "slot_empty",
+      "slot_empty_hint",
+      "slot_highest",
+      "slot_no_levels",
+      "slot_last_played",
+      "slot_start_new",
+      "slot_continue",
+      "slot_delete",
+      "slot_delete_title",
+      "slot_delete_question",
+      "slot_delete_warning",
+      "slot_delete_yes",
+      "lvl_title",
+      "lvl_diff_easy",
+      "lvl_diff_normal",
+      "lvl_diff_hard",
+      "lvl_diff_hard_pct",
+      "lvl_progress",
+      "lvl_json_missing",
+      "lvl_badge_done",
+      "lvl_badge_locked",
+      "lvl_badge_ready",
+      "lvl_theme_line",
+      "lvl_stat_score",
+      "lvl_stat_time",
+      "lvl_stat_none",
+      "lvl_play",
+      "lvl_replay",
+      "lvl_locked_hint",
+      "hshop_legend",
+      "hshop_empty",
+      "hshop_json_missing",
+      "hshop_owned",
+      "hshop_defeat",
+      "hshop_free",
+      "hshop_unlock",
+      "set_title",
+      "set_volume_master",
+      "set_volume_sfx",
+      "set_volume_bgm",
+      "set_volume_voice",
+      "set_cloud_off",
+      "set_cloud_upload",
+      "set_cloud_download",
+      "set_cloud_note",
+      "set_cloud_unavailable",
+      "set_diff_note",
+      "set_fps_unlimited",
+      "set_progression",
+      "set_delete_save",
+      "set_store_note",
+      "howto_title",
+      "howto_goal",
+      "howto_goal_1",
+      "howto_goal_2",
+      "howto_towers",
+      "howto_towers_1",
+      "howto_towers_2",
+      "howto_heroes",
+      "howto_heroes_1",
+      "howto_heroes_2",
+      "howto_heroes_3",
+      "howto_heroes_4",
+      "howto_waves",
+      "howto_waves_1",
+      "howto_waves_2",
+      "howto_shop",
+      "howto_shop_1",
+      "howto_shop_2",
+      "howto_progress",
+      "howto_progress_1",
+      "howto_progress_2",
+      "howto_progress_3",
+      "howto_hard",
+      "howto_hard_1",
+      "howto_hard_2",
+      "pause_resume",
+      "pause_menu",
+      "rail_pause_tip",
+      "tac_toggle_tip",
+      "tac_gather_tip",
+      "tac_protect_tower_tip",
+      "tac_protect_castle_tip",
+      "tac_attack_boss_tip",
+      "tac_attack_dd_tip",
+      "topup_subtitle",
+      "shop_card_buy",
+      "shop_card_owned",
+      "shop_card_poor",
+      "shop_card_no_hero"
     ]
   },
   "label_cases": [
@@ -596,6 +802,38 @@
       "item",
       "hero"
     ],
+    "howto_goal": [],
+    "howto_goal_1": [],
+    "howto_goal_2": [],
+    "howto_hard": [],
+    "howto_hard_1": [],
+    "howto_hard_2": [],
+    "howto_heroes": [],
+    "howto_heroes_1": [],
+    "howto_heroes_2": [],
+    "howto_heroes_3": [],
+    "howto_heroes_4": [],
+    "howto_progress": [],
+    "howto_progress_1": [],
+    "howto_progress_2": [],
+    "howto_progress_3": [],
+    "howto_shop": [],
+    "howto_shop_1": [],
+    "howto_shop_2": [],
+    "howto_title": [],
+    "howto_towers": [],
+    "howto_towers_1": [],
+    "howto_towers_2": [],
+    "howto_waves": [],
+    "howto_waves_1": [],
+    "howto_waves_2": [],
+    "hshop_defeat": [],
+    "hshop_empty": [],
+    "hshop_free": [],
+    "hshop_json_missing": [],
+    "hshop_legend": [],
+    "hshop_owned": [],
+    "hshop_unlock": [],
     "hud_hint_buy": [],
     "hud_hint_click": [],
     "hud_hint_close": [],
@@ -626,9 +864,37 @@
     ],
     "item_inventory_hint": [],
     "language": [],
+    "lvl_badge_done": [],
+    "lvl_badge_locked": [],
+    "lvl_badge_ready": [],
+    "lvl_diff_easy": [],
+    "lvl_diff_hard": [],
+    "lvl_diff_hard_pct": [],
+    "lvl_diff_normal": [],
+    "lvl_json_missing": [],
+    "lvl_locked_hint": [],
+    "lvl_play": [],
+    "lvl_progress": [],
+    "lvl_replay": [],
+    "lvl_stat_none": [],
+    "lvl_stat_score": [],
+    "lvl_stat_time": [],
+    "lvl_theme_line": [],
+    "lvl_title": [],
     "magic_only_denied": [
       "hero"
     ],
+    "menu_back": [],
+    "menu_cancel": [],
+    "menu_continue": [],
+    "menu_credits": [],
+    "menu_exit_question": [],
+    "menu_exit_yes": [],
+    "menu_how_to_play": [],
+    "menu_meta_summary": [],
+    "menu_play": [],
+    "menu_quit": [],
+    "menu_settings": [],
     "no_hero": [],
     "over_defeat_note": [],
     "over_menu": [],
@@ -641,13 +907,35 @@
     "over_reward_first_replay": [],
     "over_reward_first_win": [],
     "over_reward_replay": [],
+    "pause_menu": [],
+    "pause_resume": [],
     "queued": [
       "count"
     ],
     "queued_item_count": [
       "count"
     ],
+    "rail_pause_tip": [],
+    "set_cloud_download": [],
+    "set_cloud_note": [],
+    "set_cloud_off": [],
+    "set_cloud_unavailable": [],
+    "set_cloud_upload": [],
+    "set_delete_save": [],
+    "set_diff_note": [],
+    "set_fps_unlimited": [],
+    "set_progression": [],
+    "set_store_note": [],
+    "set_title": [],
+    "set_volume_bgm": [],
+    "set_volume_master": [],
+    "set_volume_sfx": [],
+    "set_volume_voice": [],
     "shop_buy_for": [],
+    "shop_card_buy": [],
+    "shop_card_no_hero": [],
+    "shop_card_owned": [],
+    "shop_card_poor": [],
     "shop_close": [],
     "shop_context_none": [],
     "shop_dead_no_forge": [],
@@ -711,7 +999,28 @@
     "skillbar_close_tip": [],
     "skillbar_forge_tip": [],
     "skillbar_no_hero": [],
-    "skillbar_slot_empty": []
+    "skillbar_slot_empty": [],
+    "slot_continue": [],
+    "slot_delete": [],
+    "slot_delete_question": [],
+    "slot_delete_title": [],
+    "slot_delete_warning": [],
+    "slot_delete_yes": [],
+    "slot_empty": [],
+    "slot_empty_hint": [],
+    "slot_highest": [],
+    "slot_last_played": [],
+    "slot_no_levels": [],
+    "slot_start_new": [],
+    "slot_subtitle": [],
+    "slot_title": [],
+    "tac_attack_boss_tip": [],
+    "tac_attack_dd_tip": [],
+    "tac_gather_tip": [],
+    "tac_protect_castle_tip": [],
+    "tac_protect_tower_tip": [],
+    "tac_toggle_tip": [],
+    "topup_subtitle": []
   },
   "py_str_cases": [
     {
@@ -825,6 +1134,38 @@
       "forge_delivered": "Forge items delivered to {hero}: {items}!",
       "forge_purchase": "{hero} purchased {item}!",
       "forge_queued": "{item} for {hero} will be delivered after respawn!",
+      "howto_goal": "GOAL",
+      "howto_goal_1": "Destroy the Dire Nexus (castle) before the Radiant Nexus falls.",
+      "howto_goal_2": "Winning pays meta gold that unlocks heroes in the HERO SHOP.",
+      "howto_hard": "HARD MODE",
+      "howto_hard_1": "Hard: enemies +15% HP, +10% damage, the Dire castle starts higher.",
+      "howto_hard_2": "Gold income is smaller (x0.75). Easy: x1.25.",
+      "howto_heroes": "HEROES & SKILLS",
+      "howto_heroes_1": "You start without heroes. Open H → HERO to buy one you already unlocked.",
+      "howto_heroes_2": "Up to 5 unique heroes. A dead hero respawns after 10 seconds keeping its level and items.",
+      "howto_heroes_3": "Click a Radiant hero to select it, then Q/W/E/R for skills (R = ultimate).",
+      "howto_heroes_4": "Heroes you do not select fight on their own (auto-cast).",
+      "howto_progress": "PROGRESSION",
+      "howto_progress_1": "First win: 3000 meta gold. A winning replay: 1500 (once), then 200.",
+      "howto_progress_2": "A boss defeated plus its castle fallen unlocks that hero for FREE.",
+      "howto_progress_3": "ENTER after a win moves on to the next level (new theme & boss).",
+      "howto_shop": "SHOP (B)",
+      "howto_shop_1": "4 tabs: TOWERS / ITEMS / HERO / NEXUS. Items use 6 slots per hero.",
+      "howto_shop_2": "Upgrading the nexus raises its HP and your team's minion scale.",
+      "howto_title": "HOW TO PLAY",
+      "howto_towers": "BUILDING TOWERS",
+      "howto_towers_1": "Click an empty slot circle (+) on a lane and build a tower (100 gold).",
+      "howto_towers_2": "4 paths: Archer / Cannon / Ice / Mage. The Lv1→Lv2 upgrade picks the path.",
+      "howto_waves": "MINION WAVES",
+      "howto_waves_1": "The first wave arrives after 5 seconds. Minions trickle out on all three lanes.",
+      "howto_waves_2": "The next wave waits 25 seconds and for every minion of the old wave to fall.",
+      "hshop_defeat": "Defeat: %s",
+      "hshop_empty": "There are no heroes in this category.",
+      "hshop_free": "FREE",
+      "hshop_json_missing": "heroes.json NOT LOADED YET — run it first: python tools/convert_to_godot.py",
+      "hshop_legend": "PHY = physical hits armor  ·  MAG = magic pierces armor  ·  TNK = wall",
+      "hshop_owned": "OWNED",
+      "hshop_unlock": "UNLOCK",
       "hud_hint_buy": "buy",
       "hud_hint_click": "click",
       "hud_hint_close": "close",
@@ -847,7 +1188,35 @@
       "item_dropped_short": "Dropped {item}",
       "item_inventory_hint": "(tap: info  •  hold/right-click: drop)",
       "language": "Language",
+      "lvl_badge_done": "DONE",
+      "lvl_badge_locked": "LOCKED",
+      "lvl_badge_ready": "READY TO PLAY",
+      "lvl_diff_easy": "EASY",
+      "lvl_diff_hard": "HARD",
+      "lvl_diff_hard_pct": "HARD (+%d%%)",
+      "lvl_diff_normal": "NORMAL",
+      "lvl_json_missing": "LEVELS JSON NOT LOADED YET — run it first:\npython tools/convert_to_godot.py",
+      "lvl_locked_hint": "Complete Level %d first to unlock",
+      "lvl_play": "PLAY",
+      "lvl_progress": "COMPLETED: %d / %d  ·  hard = enemies +15%% HP, +10%% damage (scaling on)",
+      "lvl_replay": "PLAY AGAIN",
+      "lvl_stat_none": "No stats yet",
+      "lvl_stat_score": "BEST SCORE",
+      "lvl_stat_time": "BEST TIME",
+      "lvl_theme_line": "Theme: %s  ·  Mini boss: %s  ·  True boss: %s",
+      "lvl_title": "SELECT LEVEL",
       "magic_only_denied": "{hero} is not a Magic-attribute hero - this item cannot be equipped.",
+      "menu_back": "BACK",
+      "menu_cancel": "CANCEL",
+      "menu_continue": "CONTINUE — LEVEL %d",
+      "menu_credits": "CREDITS",
+      "menu_exit_question": "Leave Mystic Arena?",
+      "menu_exit_yes": "YES, QUIT",
+      "menu_how_to_play": "HOW TO PLAY",
+      "menu_meta_summary": "Meta gold: %d  ·  %d / %d levels completed  ·  %d heroes owned",
+      "menu_play": "PLAY GAME",
+      "menu_quit": "QUIT GAME",
+      "menu_settings": "SETTINGS",
       "no_hero": "There is no hero to receive this item.",
       "over_defeat_note": "Radiant Nexus destroyed — a defeat pays nothing.",
       "over_menu": "MAIN MENU  (ESC)",
@@ -860,9 +1229,31 @@
       "over_reward_first_replay": "first replay",
       "over_reward_first_win": "first win",
       "over_reward_replay": "repeat replay",
+      "pause_menu": "MAIN MENU",
+      "pause_resume": "RESUME GAME",
       "queued": "+{count} queued",
       "queued_item_count": "({count} item(s) queued)",
+      "rail_pause_tip": "Pause (P / ESC)",
+      "set_cloud_download": "DOWNLOAD SAVE FROM CLOUD",
+      "set_cloud_note": "Cloud syncs through your Google account (Android)",
+      "set_cloud_off": "CLOUD: OFF (PC / not configured)",
+      "set_cloud_unavailable": "Cloud is not available in this build (Android + Play Games only)",
+      "set_cloud_upload": "UPLOAD SAVE TO CLOUD",
+      "set_delete_save": "DELETE SAVE GAME %d",
+      "set_diff_note": "Picked on the SELECT LEVEL screen, before the match starts.",
+      "set_fps_unlimited": "UNLIMITED",
+      "set_progression": "PROGRESSION",
+      "set_store_note": "Volume, toggles and language live in SaveManager.data[\"settings\"] per slot and apply right away.",
+      "set_title": "SETTINGS",
+      "set_volume_bgm": "Music Volume (BGM)",
+      "set_volume_master": "Master Volume",
+      "set_volume_sfx": "SFX Volume",
+      "set_volume_voice": "Voice Volume",
       "shop_buy_for": "BUY FOR:",
+      "shop_card_buy": "BUY",
+      "shop_card_no_hero": "SELECT HERO",
+      "shop_card_owned": "Owned: %d",
+      "shop_card_poor": "NOT AFFORDABLE",
       "shop_close": "CLOSE  (H)",
       "shop_context_none": "nothing selected",
       "shop_dead_no_forge": "DEAD - no Item Forge queue in this build",
@@ -924,7 +1315,28 @@
       "skillbar_close_tip": "Close panel (deselect hero)",
       "skillbar_forge_tip": "Open ITEM FORGE for this hero",
       "skillbar_no_hero": "no hero selected",
-      "skillbar_slot_empty": "item slot %d empty"
+      "skillbar_slot_empty": "item slot %d empty",
+      "slot_continue": "CONTINUE",
+      "slot_delete": "DELETE SAVE",
+      "slot_delete_question": "Delete SAVE GAME %d?",
+      "slot_delete_title": "DELETE SLOT?",
+      "slot_delete_warning": "This action cannot be undone!",
+      "slot_delete_yes": "YES, DELETE",
+      "slot_empty": "EMPTY",
+      "slot_empty_hint": "Tap to start a new game",
+      "slot_highest": "HIGHEST LEVEL COMPLETED",
+      "slot_last_played": "LAST PLAYED",
+      "slot_no_levels": "No levels completed yet",
+      "slot_start_new": "START NEW",
+      "slot_subtitle": "Pick a slot to continue, or start a new game",
+      "slot_title": "SELECT SAVE SLOT",
+      "tac_attack_boss_tip": "All heroes attack the boss (hold to keep it active)",
+      "tac_attack_dd_tip": "Focus the enemy hero with the biggest damage (hold to keep it active)",
+      "tac_gather_tip": "All heroes gather and attack together (hold to keep it active)",
+      "tac_protect_castle_tip": "All heroes defend the castle (hold to keep it active)",
+      "tac_protect_tower_tip": "At least 2 heroes guard the tower (hold to keep it active)",
+      "tac_toggle_tip": "Open the tactical command panel (hold a key to keep the command active)",
+      "topup_subtitle": "Buy gold to unlock heroes in the HERO SHOP"
     },
     "id": {
       "dead": "MATI",
@@ -933,6 +1345,38 @@
       "forge_delivered": "Item Forge dikirim ke {hero}: {items}!",
       "forge_purchase": "{hero} membeli {item}!",
       "forge_queued": "{item} untuk {hero} dikirim setelah respawn!",
+      "howto_goal": "TUJUAN",
+      "howto_goal_1": "Hancurkan Nexus (castle) Dire sebelum Nexus Radiant hancur.",
+      "howto_goal_2": "Menang = meta gold untuk membuka hero di HERO SHOP.",
+      "howto_hard": "MODE SULIT",
+      "howto_hard_1": "Hard: musuh +15% HP, +10% damage, castle Dire mulai lebih tinggi.",
+      "howto_hard_2": "Gold income lebih kecil (x0.75). Mudah: x1.25.",
+      "howto_heroes": "HERO & SKILL",
+      "howto_heroes_1": "Mulai tanpa hero. Buka H → HERO untuk membeli hero yang sudah di-unlock.",
+      "howto_heroes_2": "Maksimal 5 hero unik. Hero mati respawn setelah 10 detik dengan level/item tetap.",
+      "howto_heroes_3": "Klik hero Radiant untuk memilihnya, lalu Q/W/E/R untuk skill (R = ultimate).",
+      "howto_heroes_4": "Hero yang tidak dipilih bertarung sendiri (auto-cast).",
+      "howto_progress": "PROGRESI",
+      "howto_progress_1": "Menang pertama: 3000 meta gold. Replay menang: 1500 (sekali), lalu 200.",
+      "howto_progress_2": "Boss yang dikalahkan + castle jatuh = heronya terbuka GRATIS.",
+      "howto_progress_3": "ENTER setelah menang = lanjut level berikutnya (tema & boss baru).",
+      "howto_shop": "TOKO (B)",
+      "howto_shop_1": "4 tab: MENARA / ITEM / HERO / NEXUS. Item = 6 slot per hero.",
+      "howto_shop_2": "Upgrade nexus menaikkan HP + skala minion timmu.",
+      "howto_title": "CARA MAIN",
+      "howto_towers": "MEMBANGUN MENARA",
+      "howto_towers_1": "Klik lingkaran slot kosong (+) di lane lalu bangun menara (100 gold).",
+      "howto_towers_2": "4 jalur: Archer / Cannon / Ice / Mage. Upgrade Lv1→Lv2 memilih jalur.",
+      "howto_waves": "WAVE MINION",
+      "howto_waves_1": "Wave pertama setelah 5 detik. Minion keluar bertahap di ketiga lane.",
+      "howto_waves_2": "Wave berikutnya menunggu 25 detik dan semua minion wave lama habis.",
+      "hshop_defeat": "Kalahkan: %s",
+      "hshop_empty": "Tidak ada hero di kategori ini.",
+      "hshop_free": "GRATIS",
+      "hshop_json_missing": "heroes.json BELUM DIMUAT — jalankan dulu: python tools/convert_to_godot.py",
+      "hshop_legend": "PHY = fisik kena armor  ·  MAG = sihir tembus armor  ·  TNK = badak",
+      "hshop_owned": "DIMILIKI",
+      "hshop_unlock": "BUKA",
       "hud_hint_buy": "beli",
       "hud_hint_click": "klik",
       "hud_hint_close": "tutup",
@@ -955,7 +1399,35 @@
       "item_dropped_short": "Melepas {item}",
       "item_inventory_hint": "(ketuk: info  •  tahan/kanan: drop)",
       "language": "Bahasa",
+      "lvl_badge_done": "SELESAI",
+      "lvl_badge_locked": "TERKUNCI",
+      "lvl_badge_ready": "SIAP MAIN",
+      "lvl_diff_easy": "MUDAH",
+      "lvl_diff_hard": "SULIT",
+      "lvl_diff_hard_pct": "SULIT (+%d%%)",
+      "lvl_diff_normal": "NORMAL",
+      "lvl_json_missing": "LEVELS JSON BELUM DIMUAT — jalankan dulu:\npython tools/convert_to_godot.py",
+      "lvl_locked_hint": "Selesaikan Level %d dulu untuk membuka",
+      "lvl_play": "MAIN",
+      "lvl_progress": "SELESAI: %d / %d  ·  hard = musuh +15%% HP, +10%% damage (scaling aktif)",
+      "lvl_replay": "MAIN LAGI",
+      "lvl_stat_none": "Belum ada statistik",
+      "lvl_stat_score": "SKOR TERBAIK",
+      "lvl_stat_time": "WAKTU TERBAIK",
+      "lvl_theme_line": "Tema: %s  ·  Mini boss: %s  ·  True boss: %s",
+      "lvl_title": "PILIH LEVEL",
       "magic_only_denied": "{hero} bukan hero beratribut Magic - item ini tidak bisa dipakai.",
+      "menu_back": "KEMBALI",
+      "menu_cancel": "BATAL",
+      "menu_continue": "LANJUTKAN — LEVEL %d",
+      "menu_credits": "KREDIT",
+      "menu_exit_question": "Keluar dari Mystic Arena?",
+      "menu_exit_yes": "YA, KELUAR",
+      "menu_how_to_play": "CARA MAIN (HOW TO PLAY)",
+      "menu_meta_summary": "Meta gold: %d  ·  %d / %d level selesai  ·  %d hero dimiliki",
+      "menu_play": "MULAI GAME",
+      "menu_quit": "KELUAR GAME",
+      "menu_settings": "PENGATURAN (SETTINGS)",
       "no_hero": "Tidak ada hero untuk menerima item.",
       "over_defeat_note": "Nexus Radiant hancur — kalah tidak dibayar.",
       "over_menu": "MENU UTAMA  (ESC)",
@@ -968,9 +1440,31 @@
       "over_reward_first_replay": "replay pertama",
       "over_reward_first_win": "menang pertama",
       "over_reward_replay": "replay berulang",
+      "pause_menu": "MENU UTAMA",
+      "pause_resume": "LANJUT MAIN (RESUME)",
       "queued": "+{count} antrean",
       "queued_item_count": "({count} item diantrikan)",
+      "rail_pause_tip": "Jeda (P / ESC)",
+      "set_cloud_download": "DOWNLOAD SAVE DARI CLOUD",
+      "set_cloud_note": "Cloud disinkronkan via akun Google (Android)",
+      "set_cloud_off": "CLOUD: OFF (PC / belum diset)",
+      "set_cloud_unavailable": "Cloud tidak tersedia di build ini (hanya Android + Play Games)",
+      "set_cloud_upload": "UPLOAD SAVE KE CLOUD",
+      "set_delete_save": "HAPUS SAVE GAME %d",
+      "set_diff_note": "Dipilih di layar PILIH LEVEL, sebelum match dimulai.",
+      "set_fps_unlimited": "TANPA BATAS",
+      "set_progression": "PROGRESI",
+      "set_store_note": "Volume, toggle & bahasa disimpan di SaveManager.data[\"settings\"] per slot dan langsung berlaku.",
+      "set_title": "PENGATURAN",
+      "set_volume_bgm": "Volume Musik (BGM)",
+      "set_volume_master": "Volume Master",
+      "set_volume_sfx": "Volume SFX",
+      "set_volume_voice": "Volume Voice",
       "shop_buy_for": "BELI UNTUK:",
+      "shop_card_buy": "BELI",
+      "shop_card_no_hero": "PILIH HERO",
+      "shop_card_owned": "Dimiliki: %d",
+      "shop_card_poor": "GOLD KURANG",
       "shop_close": "TUTUP  (H)",
       "shop_context_none": "tidak ada yang dipilih",
       "shop_dead_no_forge": "DEAD - belum ada antrean Item Forge di build ini",
@@ -1032,7 +1526,28 @@
       "skillbar_close_tip": "Tutup panel (batal pilih hero)",
       "skillbar_forge_tip": "Buka ITEM FORGE untuk hero ini",
       "skillbar_no_hero": "tidak ada hero dipilih",
-      "skillbar_slot_empty": "slot item %d kosong"
+      "skillbar_slot_empty": "slot item %d kosong",
+      "slot_continue": "LANJUTKAN",
+      "slot_delete": "HAPUS SAVE",
+      "slot_delete_question": "Hapus SAVE GAME %d?",
+      "slot_delete_title": "HAPUS SLOT?",
+      "slot_delete_warning": "Tindakan ini tidak bisa dibatalkan!",
+      "slot_delete_yes": "YA, HAPUS",
+      "slot_empty": "KOSONG",
+      "slot_empty_hint": "Ketuk untuk mulai permainan baru",
+      "slot_highest": "LEVEL TERTINGGI SELESAI",
+      "slot_last_played": "TERAKHIR DIMAINKAN",
+      "slot_no_levels": "Belum ada level selesai",
+      "slot_start_new": "MULAI BARU",
+      "slot_subtitle": "Pilih slot untuk lanjut, atau mulai permainan baru",
+      "slot_title": "PILIH SLOT SAVE",
+      "tac_attack_boss_tip": "Semua hero serang boss (tahan untuk terus aktif)",
+      "tac_attack_dd_tip": "Fokus hero musuh damage terbesar (tahan untuk terus aktif)",
+      "tac_gather_tip": "Semua hero kumpul & serang bersama (tahan untuk terus aktif)",
+      "tac_protect_castle_tip": "Semua hero lindungi castle (tahan untuk terus aktif)",
+      "tac_protect_tower_tip": "Min 2 hero lindungi tower (tahan untuk terus aktif)",
+      "tac_toggle_tip": "Buka panel perintah taktis (hold tombol untuk menahan perintah)",
+      "topup_subtitle": "Top up gold untuk membuka hero di HERO SHOP"
     }
   },
   "tr_cases": [
@@ -1754,6 +2269,624 @@
       "values": []
     },
     {
+      "key": "menu_continue",
+      "lang": "id",
+      "out": "LANJUTKAN — LEVEL %d",
+      "values": []
+    },
+    {
+      "key": "menu_play",
+      "lang": "id",
+      "out": "MULAI GAME",
+      "values": []
+    },
+    {
+      "key": "menu_how_to_play",
+      "lang": "id",
+      "out": "CARA MAIN (HOW TO PLAY)",
+      "values": []
+    },
+    {
+      "key": "menu_settings",
+      "lang": "id",
+      "out": "PENGATURAN (SETTINGS)",
+      "values": []
+    },
+    {
+      "key": "menu_credits",
+      "lang": "id",
+      "out": "KREDIT",
+      "values": []
+    },
+    {
+      "key": "menu_quit",
+      "lang": "id",
+      "out": "KELUAR GAME",
+      "values": []
+    },
+    {
+      "key": "menu_back",
+      "lang": "id",
+      "out": "KEMBALI",
+      "values": []
+    },
+    {
+      "key": "menu_meta_summary",
+      "lang": "id",
+      "out": "Meta gold: %d  ·  %d / %d level selesai  ·  %d hero dimiliki",
+      "values": []
+    },
+    {
+      "key": "menu_exit_question",
+      "lang": "id",
+      "out": "Keluar dari Mystic Arena?",
+      "values": []
+    },
+    {
+      "key": "menu_exit_yes",
+      "lang": "id",
+      "out": "YA, KELUAR",
+      "values": []
+    },
+    {
+      "key": "menu_cancel",
+      "lang": "id",
+      "out": "BATAL",
+      "values": []
+    },
+    {
+      "key": "slot_title",
+      "lang": "id",
+      "out": "PILIH SLOT SAVE",
+      "values": []
+    },
+    {
+      "key": "slot_subtitle",
+      "lang": "id",
+      "out": "Pilih slot untuk lanjut, atau mulai permainan baru",
+      "values": []
+    },
+    {
+      "key": "slot_empty",
+      "lang": "id",
+      "out": "KOSONG",
+      "values": []
+    },
+    {
+      "key": "slot_empty_hint",
+      "lang": "id",
+      "out": "Ketuk untuk mulai permainan baru",
+      "values": []
+    },
+    {
+      "key": "slot_highest",
+      "lang": "id",
+      "out": "LEVEL TERTINGGI SELESAI",
+      "values": []
+    },
+    {
+      "key": "slot_no_levels",
+      "lang": "id",
+      "out": "Belum ada level selesai",
+      "values": []
+    },
+    {
+      "key": "slot_last_played",
+      "lang": "id",
+      "out": "TERAKHIR DIMAINKAN",
+      "values": []
+    },
+    {
+      "key": "slot_start_new",
+      "lang": "id",
+      "out": "MULAI BARU",
+      "values": []
+    },
+    {
+      "key": "slot_continue",
+      "lang": "id",
+      "out": "LANJUTKAN",
+      "values": []
+    },
+    {
+      "key": "slot_delete",
+      "lang": "id",
+      "out": "HAPUS SAVE",
+      "values": []
+    },
+    {
+      "key": "slot_delete_title",
+      "lang": "id",
+      "out": "HAPUS SLOT?",
+      "values": []
+    },
+    {
+      "key": "slot_delete_question",
+      "lang": "id",
+      "out": "Hapus SAVE GAME %d?",
+      "values": []
+    },
+    {
+      "key": "slot_delete_warning",
+      "lang": "id",
+      "out": "Tindakan ini tidak bisa dibatalkan!",
+      "values": []
+    },
+    {
+      "key": "slot_delete_yes",
+      "lang": "id",
+      "out": "YA, HAPUS",
+      "values": []
+    },
+    {
+      "key": "lvl_title",
+      "lang": "id",
+      "out": "PILIH LEVEL",
+      "values": []
+    },
+    {
+      "key": "lvl_diff_easy",
+      "lang": "id",
+      "out": "MUDAH",
+      "values": []
+    },
+    {
+      "key": "lvl_diff_normal",
+      "lang": "id",
+      "out": "NORMAL",
+      "values": []
+    },
+    {
+      "key": "lvl_diff_hard",
+      "lang": "id",
+      "out": "SULIT",
+      "values": []
+    },
+    {
+      "key": "lvl_diff_hard_pct",
+      "lang": "id",
+      "out": "SULIT (+%d%%)",
+      "values": []
+    },
+    {
+      "key": "lvl_progress",
+      "lang": "id",
+      "out": "SELESAI: %d / %d  ·  hard = musuh +15%% HP, +10%% damage (scaling aktif)",
+      "values": []
+    },
+    {
+      "key": "lvl_json_missing",
+      "lang": "id",
+      "out": "LEVELS JSON BELUM DIMUAT — jalankan dulu:\npython tools/convert_to_godot.py",
+      "values": []
+    },
+    {
+      "key": "lvl_badge_done",
+      "lang": "id",
+      "out": "SELESAI",
+      "values": []
+    },
+    {
+      "key": "lvl_badge_locked",
+      "lang": "id",
+      "out": "TERKUNCI",
+      "values": []
+    },
+    {
+      "key": "lvl_badge_ready",
+      "lang": "id",
+      "out": "SIAP MAIN",
+      "values": []
+    },
+    {
+      "key": "lvl_theme_line",
+      "lang": "id",
+      "out": "Tema: %s  ·  Mini boss: %s  ·  True boss: %s",
+      "values": []
+    },
+    {
+      "key": "lvl_stat_score",
+      "lang": "id",
+      "out": "SKOR TERBAIK",
+      "values": []
+    },
+    {
+      "key": "lvl_stat_time",
+      "lang": "id",
+      "out": "WAKTU TERBAIK",
+      "values": []
+    },
+    {
+      "key": "lvl_stat_none",
+      "lang": "id",
+      "out": "Belum ada statistik",
+      "values": []
+    },
+    {
+      "key": "lvl_play",
+      "lang": "id",
+      "out": "MAIN",
+      "values": []
+    },
+    {
+      "key": "lvl_replay",
+      "lang": "id",
+      "out": "MAIN LAGI",
+      "values": []
+    },
+    {
+      "key": "lvl_locked_hint",
+      "lang": "id",
+      "out": "Selesaikan Level %d dulu untuk membuka",
+      "values": []
+    },
+    {
+      "key": "hshop_legend",
+      "lang": "id",
+      "out": "PHY = fisik kena armor  ·  MAG = sihir tembus armor  ·  TNK = badak",
+      "values": []
+    },
+    {
+      "key": "hshop_empty",
+      "lang": "id",
+      "out": "Tidak ada hero di kategori ini.",
+      "values": []
+    },
+    {
+      "key": "hshop_json_missing",
+      "lang": "id",
+      "out": "heroes.json BELUM DIMUAT — jalankan dulu: python tools/convert_to_godot.py",
+      "values": []
+    },
+    {
+      "key": "hshop_owned",
+      "lang": "id",
+      "out": "DIMILIKI",
+      "values": []
+    },
+    {
+      "key": "hshop_defeat",
+      "lang": "id",
+      "out": "Kalahkan: %s",
+      "values": []
+    },
+    {
+      "key": "hshop_free",
+      "lang": "id",
+      "out": "GRATIS",
+      "values": []
+    },
+    {
+      "key": "hshop_unlock",
+      "lang": "id",
+      "out": "BUKA",
+      "values": []
+    },
+    {
+      "key": "set_title",
+      "lang": "id",
+      "out": "PENGATURAN",
+      "values": []
+    },
+    {
+      "key": "set_volume_master",
+      "lang": "id",
+      "out": "Volume Master",
+      "values": []
+    },
+    {
+      "key": "set_volume_sfx",
+      "lang": "id",
+      "out": "Volume SFX",
+      "values": []
+    },
+    {
+      "key": "set_volume_bgm",
+      "lang": "id",
+      "out": "Volume Musik (BGM)",
+      "values": []
+    },
+    {
+      "key": "set_volume_voice",
+      "lang": "id",
+      "out": "Volume Voice",
+      "values": []
+    },
+    {
+      "key": "set_cloud_off",
+      "lang": "id",
+      "out": "CLOUD: OFF (PC / belum diset)",
+      "values": []
+    },
+    {
+      "key": "set_cloud_upload",
+      "lang": "id",
+      "out": "UPLOAD SAVE KE CLOUD",
+      "values": []
+    },
+    {
+      "key": "set_cloud_download",
+      "lang": "id",
+      "out": "DOWNLOAD SAVE DARI CLOUD",
+      "values": []
+    },
+    {
+      "key": "set_cloud_note",
+      "lang": "id",
+      "out": "Cloud disinkronkan via akun Google (Android)",
+      "values": []
+    },
+    {
+      "key": "set_cloud_unavailable",
+      "lang": "id",
+      "out": "Cloud tidak tersedia di build ini (hanya Android + Play Games)",
+      "values": []
+    },
+    {
+      "key": "set_diff_note",
+      "lang": "id",
+      "out": "Dipilih di layar PILIH LEVEL, sebelum match dimulai.",
+      "values": []
+    },
+    {
+      "key": "set_fps_unlimited",
+      "lang": "id",
+      "out": "TANPA BATAS",
+      "values": []
+    },
+    {
+      "key": "set_progression",
+      "lang": "id",
+      "out": "PROGRESI",
+      "values": []
+    },
+    {
+      "key": "set_delete_save",
+      "lang": "id",
+      "out": "HAPUS SAVE GAME %d",
+      "values": []
+    },
+    {
+      "key": "set_store_note",
+      "lang": "id",
+      "out": "Volume, toggle & bahasa disimpan di SaveManager.data[\"settings\"] per slot dan langsung berlaku.",
+      "values": []
+    },
+    {
+      "key": "howto_title",
+      "lang": "id",
+      "out": "CARA MAIN",
+      "values": []
+    },
+    {
+      "key": "howto_goal",
+      "lang": "id",
+      "out": "TUJUAN",
+      "values": []
+    },
+    {
+      "key": "howto_goal_1",
+      "lang": "id",
+      "out": "Hancurkan Nexus (castle) Dire sebelum Nexus Radiant hancur.",
+      "values": []
+    },
+    {
+      "key": "howto_goal_2",
+      "lang": "id",
+      "out": "Menang = meta gold untuk membuka hero di HERO SHOP.",
+      "values": []
+    },
+    {
+      "key": "howto_towers",
+      "lang": "id",
+      "out": "MEMBANGUN MENARA",
+      "values": []
+    },
+    {
+      "key": "howto_towers_1",
+      "lang": "id",
+      "out": "Klik lingkaran slot kosong (+) di lane lalu bangun menara (100 gold).",
+      "values": []
+    },
+    {
+      "key": "howto_towers_2",
+      "lang": "id",
+      "out": "4 jalur: Archer / Cannon / Ice / Mage. Upgrade Lv1→Lv2 memilih jalur.",
+      "values": []
+    },
+    {
+      "key": "howto_heroes",
+      "lang": "id",
+      "out": "HERO & SKILL",
+      "values": []
+    },
+    {
+      "key": "howto_heroes_1",
+      "lang": "id",
+      "out": "Mulai tanpa hero. Buka H → HERO untuk membeli hero yang sudah di-unlock.",
+      "values": []
+    },
+    {
+      "key": "howto_heroes_2",
+      "lang": "id",
+      "out": "Maksimal 5 hero unik. Hero mati respawn setelah 10 detik dengan level/item tetap.",
+      "values": []
+    },
+    {
+      "key": "howto_heroes_3",
+      "lang": "id",
+      "out": "Klik hero Radiant untuk memilihnya, lalu Q/W/E/R untuk skill (R = ultimate).",
+      "values": []
+    },
+    {
+      "key": "howto_heroes_4",
+      "lang": "id",
+      "out": "Hero yang tidak dipilih bertarung sendiri (auto-cast).",
+      "values": []
+    },
+    {
+      "key": "howto_waves",
+      "lang": "id",
+      "out": "WAVE MINION",
+      "values": []
+    },
+    {
+      "key": "howto_waves_1",
+      "lang": "id",
+      "out": "Wave pertama setelah 5 detik. Minion keluar bertahap di ketiga lane.",
+      "values": []
+    },
+    {
+      "key": "howto_waves_2",
+      "lang": "id",
+      "out": "Wave berikutnya menunggu 25 detik dan semua minion wave lama habis.",
+      "values": []
+    },
+    {
+      "key": "howto_shop",
+      "lang": "id",
+      "out": "TOKO (B)",
+      "values": []
+    },
+    {
+      "key": "howto_shop_1",
+      "lang": "id",
+      "out": "4 tab: MENARA / ITEM / HERO / NEXUS. Item = 6 slot per hero.",
+      "values": []
+    },
+    {
+      "key": "howto_shop_2",
+      "lang": "id",
+      "out": "Upgrade nexus menaikkan HP + skala minion timmu.",
+      "values": []
+    },
+    {
+      "key": "howto_progress",
+      "lang": "id",
+      "out": "PROGRESI",
+      "values": []
+    },
+    {
+      "key": "howto_progress_1",
+      "lang": "id",
+      "out": "Menang pertama: 3000 meta gold. Replay menang: 1500 (sekali), lalu 200.",
+      "values": []
+    },
+    {
+      "key": "howto_progress_2",
+      "lang": "id",
+      "out": "Boss yang dikalahkan + castle jatuh = heronya terbuka GRATIS.",
+      "values": []
+    },
+    {
+      "key": "howto_progress_3",
+      "lang": "id",
+      "out": "ENTER setelah menang = lanjut level berikutnya (tema & boss baru).",
+      "values": []
+    },
+    {
+      "key": "howto_hard",
+      "lang": "id",
+      "out": "MODE SULIT",
+      "values": []
+    },
+    {
+      "key": "howto_hard_1",
+      "lang": "id",
+      "out": "Hard: musuh +15% HP, +10% damage, castle Dire mulai lebih tinggi.",
+      "values": []
+    },
+    {
+      "key": "howto_hard_2",
+      "lang": "id",
+      "out": "Gold income lebih kecil (x0.75). Mudah: x1.25.",
+      "values": []
+    },
+    {
+      "key": "pause_resume",
+      "lang": "id",
+      "out": "LANJUT MAIN (RESUME)",
+      "values": []
+    },
+    {
+      "key": "pause_menu",
+      "lang": "id",
+      "out": "MENU UTAMA",
+      "values": []
+    },
+    {
+      "key": "rail_pause_tip",
+      "lang": "id",
+      "out": "Jeda (P / ESC)",
+      "values": []
+    },
+    {
+      "key": "tac_toggle_tip",
+      "lang": "id",
+      "out": "Buka panel perintah taktis (hold tombol untuk menahan perintah)",
+      "values": []
+    },
+    {
+      "key": "tac_gather_tip",
+      "lang": "id",
+      "out": "Semua hero kumpul & serang bersama (tahan untuk terus aktif)",
+      "values": []
+    },
+    {
+      "key": "tac_protect_tower_tip",
+      "lang": "id",
+      "out": "Min 2 hero lindungi tower (tahan untuk terus aktif)",
+      "values": []
+    },
+    {
+      "key": "tac_protect_castle_tip",
+      "lang": "id",
+      "out": "Semua hero lindungi castle (tahan untuk terus aktif)",
+      "values": []
+    },
+    {
+      "key": "tac_attack_boss_tip",
+      "lang": "id",
+      "out": "Semua hero serang boss (tahan untuk terus aktif)",
+      "values": []
+    },
+    {
+      "key": "tac_attack_dd_tip",
+      "lang": "id",
+      "out": "Fokus hero musuh damage terbesar (tahan untuk terus aktif)",
+      "values": []
+    },
+    {
+      "key": "topup_subtitle",
+      "lang": "id",
+      "out": "Top up gold untuk membuka hero di HERO SHOP",
+      "values": []
+    },
+    {
+      "key": "shop_card_buy",
+      "lang": "id",
+      "out": "BELI",
+      "values": []
+    },
+    {
+      "key": "shop_card_owned",
+      "lang": "id",
+      "out": "Dimiliki: %d",
+      "values": []
+    },
+    {
+      "key": "shop_card_poor",
+      "lang": "id",
+      "out": "GOLD KURANG",
+      "values": []
+    },
+    {
+      "key": "shop_card_no_hero",
+      "lang": "id",
+      "out": "PILIH HERO",
+      "values": []
+    },
+    {
       "key": "language",
       "lang": "en",
       "out": "Language",
@@ -2468,6 +3601,624 @@
       "key": "over_reward_replay",
       "lang": "en",
       "out": "repeat replay",
+      "values": []
+    },
+    {
+      "key": "menu_continue",
+      "lang": "en",
+      "out": "CONTINUE — LEVEL %d",
+      "values": []
+    },
+    {
+      "key": "menu_play",
+      "lang": "en",
+      "out": "PLAY GAME",
+      "values": []
+    },
+    {
+      "key": "menu_how_to_play",
+      "lang": "en",
+      "out": "HOW TO PLAY",
+      "values": []
+    },
+    {
+      "key": "menu_settings",
+      "lang": "en",
+      "out": "SETTINGS",
+      "values": []
+    },
+    {
+      "key": "menu_credits",
+      "lang": "en",
+      "out": "CREDITS",
+      "values": []
+    },
+    {
+      "key": "menu_quit",
+      "lang": "en",
+      "out": "QUIT GAME",
+      "values": []
+    },
+    {
+      "key": "menu_back",
+      "lang": "en",
+      "out": "BACK",
+      "values": []
+    },
+    {
+      "key": "menu_meta_summary",
+      "lang": "en",
+      "out": "Meta gold: %d  ·  %d / %d levels completed  ·  %d heroes owned",
+      "values": []
+    },
+    {
+      "key": "menu_exit_question",
+      "lang": "en",
+      "out": "Leave Mystic Arena?",
+      "values": []
+    },
+    {
+      "key": "menu_exit_yes",
+      "lang": "en",
+      "out": "YES, QUIT",
+      "values": []
+    },
+    {
+      "key": "menu_cancel",
+      "lang": "en",
+      "out": "CANCEL",
+      "values": []
+    },
+    {
+      "key": "slot_title",
+      "lang": "en",
+      "out": "SELECT SAVE SLOT",
+      "values": []
+    },
+    {
+      "key": "slot_subtitle",
+      "lang": "en",
+      "out": "Pick a slot to continue, or start a new game",
+      "values": []
+    },
+    {
+      "key": "slot_empty",
+      "lang": "en",
+      "out": "EMPTY",
+      "values": []
+    },
+    {
+      "key": "slot_empty_hint",
+      "lang": "en",
+      "out": "Tap to start a new game",
+      "values": []
+    },
+    {
+      "key": "slot_highest",
+      "lang": "en",
+      "out": "HIGHEST LEVEL COMPLETED",
+      "values": []
+    },
+    {
+      "key": "slot_no_levels",
+      "lang": "en",
+      "out": "No levels completed yet",
+      "values": []
+    },
+    {
+      "key": "slot_last_played",
+      "lang": "en",
+      "out": "LAST PLAYED",
+      "values": []
+    },
+    {
+      "key": "slot_start_new",
+      "lang": "en",
+      "out": "START NEW",
+      "values": []
+    },
+    {
+      "key": "slot_continue",
+      "lang": "en",
+      "out": "CONTINUE",
+      "values": []
+    },
+    {
+      "key": "slot_delete",
+      "lang": "en",
+      "out": "DELETE SAVE",
+      "values": []
+    },
+    {
+      "key": "slot_delete_title",
+      "lang": "en",
+      "out": "DELETE SLOT?",
+      "values": []
+    },
+    {
+      "key": "slot_delete_question",
+      "lang": "en",
+      "out": "Delete SAVE GAME %d?",
+      "values": []
+    },
+    {
+      "key": "slot_delete_warning",
+      "lang": "en",
+      "out": "This action cannot be undone!",
+      "values": []
+    },
+    {
+      "key": "slot_delete_yes",
+      "lang": "en",
+      "out": "YES, DELETE",
+      "values": []
+    },
+    {
+      "key": "lvl_title",
+      "lang": "en",
+      "out": "SELECT LEVEL",
+      "values": []
+    },
+    {
+      "key": "lvl_diff_easy",
+      "lang": "en",
+      "out": "EASY",
+      "values": []
+    },
+    {
+      "key": "lvl_diff_normal",
+      "lang": "en",
+      "out": "NORMAL",
+      "values": []
+    },
+    {
+      "key": "lvl_diff_hard",
+      "lang": "en",
+      "out": "HARD",
+      "values": []
+    },
+    {
+      "key": "lvl_diff_hard_pct",
+      "lang": "en",
+      "out": "HARD (+%d%%)",
+      "values": []
+    },
+    {
+      "key": "lvl_progress",
+      "lang": "en",
+      "out": "COMPLETED: %d / %d  ·  hard = enemies +15%% HP, +10%% damage (scaling on)",
+      "values": []
+    },
+    {
+      "key": "lvl_json_missing",
+      "lang": "en",
+      "out": "LEVELS JSON NOT LOADED YET — run it first:\npython tools/convert_to_godot.py",
+      "values": []
+    },
+    {
+      "key": "lvl_badge_done",
+      "lang": "en",
+      "out": "DONE",
+      "values": []
+    },
+    {
+      "key": "lvl_badge_locked",
+      "lang": "en",
+      "out": "LOCKED",
+      "values": []
+    },
+    {
+      "key": "lvl_badge_ready",
+      "lang": "en",
+      "out": "READY TO PLAY",
+      "values": []
+    },
+    {
+      "key": "lvl_theme_line",
+      "lang": "en",
+      "out": "Theme: %s  ·  Mini boss: %s  ·  True boss: %s",
+      "values": []
+    },
+    {
+      "key": "lvl_stat_score",
+      "lang": "en",
+      "out": "BEST SCORE",
+      "values": []
+    },
+    {
+      "key": "lvl_stat_time",
+      "lang": "en",
+      "out": "BEST TIME",
+      "values": []
+    },
+    {
+      "key": "lvl_stat_none",
+      "lang": "en",
+      "out": "No stats yet",
+      "values": []
+    },
+    {
+      "key": "lvl_play",
+      "lang": "en",
+      "out": "PLAY",
+      "values": []
+    },
+    {
+      "key": "lvl_replay",
+      "lang": "en",
+      "out": "PLAY AGAIN",
+      "values": []
+    },
+    {
+      "key": "lvl_locked_hint",
+      "lang": "en",
+      "out": "Complete Level %d first to unlock",
+      "values": []
+    },
+    {
+      "key": "hshop_legend",
+      "lang": "en",
+      "out": "PHY = physical hits armor  ·  MAG = magic pierces armor  ·  TNK = wall",
+      "values": []
+    },
+    {
+      "key": "hshop_empty",
+      "lang": "en",
+      "out": "There are no heroes in this category.",
+      "values": []
+    },
+    {
+      "key": "hshop_json_missing",
+      "lang": "en",
+      "out": "heroes.json NOT LOADED YET — run it first: python tools/convert_to_godot.py",
+      "values": []
+    },
+    {
+      "key": "hshop_owned",
+      "lang": "en",
+      "out": "OWNED",
+      "values": []
+    },
+    {
+      "key": "hshop_defeat",
+      "lang": "en",
+      "out": "Defeat: %s",
+      "values": []
+    },
+    {
+      "key": "hshop_free",
+      "lang": "en",
+      "out": "FREE",
+      "values": []
+    },
+    {
+      "key": "hshop_unlock",
+      "lang": "en",
+      "out": "UNLOCK",
+      "values": []
+    },
+    {
+      "key": "set_title",
+      "lang": "en",
+      "out": "SETTINGS",
+      "values": []
+    },
+    {
+      "key": "set_volume_master",
+      "lang": "en",
+      "out": "Master Volume",
+      "values": []
+    },
+    {
+      "key": "set_volume_sfx",
+      "lang": "en",
+      "out": "SFX Volume",
+      "values": []
+    },
+    {
+      "key": "set_volume_bgm",
+      "lang": "en",
+      "out": "Music Volume (BGM)",
+      "values": []
+    },
+    {
+      "key": "set_volume_voice",
+      "lang": "en",
+      "out": "Voice Volume",
+      "values": []
+    },
+    {
+      "key": "set_cloud_off",
+      "lang": "en",
+      "out": "CLOUD: OFF (PC / not configured)",
+      "values": []
+    },
+    {
+      "key": "set_cloud_upload",
+      "lang": "en",
+      "out": "UPLOAD SAVE TO CLOUD",
+      "values": []
+    },
+    {
+      "key": "set_cloud_download",
+      "lang": "en",
+      "out": "DOWNLOAD SAVE FROM CLOUD",
+      "values": []
+    },
+    {
+      "key": "set_cloud_note",
+      "lang": "en",
+      "out": "Cloud syncs through your Google account (Android)",
+      "values": []
+    },
+    {
+      "key": "set_cloud_unavailable",
+      "lang": "en",
+      "out": "Cloud is not available in this build (Android + Play Games only)",
+      "values": []
+    },
+    {
+      "key": "set_diff_note",
+      "lang": "en",
+      "out": "Picked on the SELECT LEVEL screen, before the match starts.",
+      "values": []
+    },
+    {
+      "key": "set_fps_unlimited",
+      "lang": "en",
+      "out": "UNLIMITED",
+      "values": []
+    },
+    {
+      "key": "set_progression",
+      "lang": "en",
+      "out": "PROGRESSION",
+      "values": []
+    },
+    {
+      "key": "set_delete_save",
+      "lang": "en",
+      "out": "DELETE SAVE GAME %d",
+      "values": []
+    },
+    {
+      "key": "set_store_note",
+      "lang": "en",
+      "out": "Volume, toggles and language live in SaveManager.data[\"settings\"] per slot and apply right away.",
+      "values": []
+    },
+    {
+      "key": "howto_title",
+      "lang": "en",
+      "out": "HOW TO PLAY",
+      "values": []
+    },
+    {
+      "key": "howto_goal",
+      "lang": "en",
+      "out": "GOAL",
+      "values": []
+    },
+    {
+      "key": "howto_goal_1",
+      "lang": "en",
+      "out": "Destroy the Dire Nexus (castle) before the Radiant Nexus falls.",
+      "values": []
+    },
+    {
+      "key": "howto_goal_2",
+      "lang": "en",
+      "out": "Winning pays meta gold that unlocks heroes in the HERO SHOP.",
+      "values": []
+    },
+    {
+      "key": "howto_towers",
+      "lang": "en",
+      "out": "BUILDING TOWERS",
+      "values": []
+    },
+    {
+      "key": "howto_towers_1",
+      "lang": "en",
+      "out": "Click an empty slot circle (+) on a lane and build a tower (100 gold).",
+      "values": []
+    },
+    {
+      "key": "howto_towers_2",
+      "lang": "en",
+      "out": "4 paths: Archer / Cannon / Ice / Mage. The Lv1→Lv2 upgrade picks the path.",
+      "values": []
+    },
+    {
+      "key": "howto_heroes",
+      "lang": "en",
+      "out": "HEROES & SKILLS",
+      "values": []
+    },
+    {
+      "key": "howto_heroes_1",
+      "lang": "en",
+      "out": "You start without heroes. Open H → HERO to buy one you already unlocked.",
+      "values": []
+    },
+    {
+      "key": "howto_heroes_2",
+      "lang": "en",
+      "out": "Up to 5 unique heroes. A dead hero respawns after 10 seconds keeping its level and items.",
+      "values": []
+    },
+    {
+      "key": "howto_heroes_3",
+      "lang": "en",
+      "out": "Click a Radiant hero to select it, then Q/W/E/R for skills (R = ultimate).",
+      "values": []
+    },
+    {
+      "key": "howto_heroes_4",
+      "lang": "en",
+      "out": "Heroes you do not select fight on their own (auto-cast).",
+      "values": []
+    },
+    {
+      "key": "howto_waves",
+      "lang": "en",
+      "out": "MINION WAVES",
+      "values": []
+    },
+    {
+      "key": "howto_waves_1",
+      "lang": "en",
+      "out": "The first wave arrives after 5 seconds. Minions trickle out on all three lanes.",
+      "values": []
+    },
+    {
+      "key": "howto_waves_2",
+      "lang": "en",
+      "out": "The next wave waits 25 seconds and for every minion of the old wave to fall.",
+      "values": []
+    },
+    {
+      "key": "howto_shop",
+      "lang": "en",
+      "out": "SHOP (B)",
+      "values": []
+    },
+    {
+      "key": "howto_shop_1",
+      "lang": "en",
+      "out": "4 tabs: TOWERS / ITEMS / HERO / NEXUS. Items use 6 slots per hero.",
+      "values": []
+    },
+    {
+      "key": "howto_shop_2",
+      "lang": "en",
+      "out": "Upgrading the nexus raises its HP and your team's minion scale.",
+      "values": []
+    },
+    {
+      "key": "howto_progress",
+      "lang": "en",
+      "out": "PROGRESSION",
+      "values": []
+    },
+    {
+      "key": "howto_progress_1",
+      "lang": "en",
+      "out": "First win: 3000 meta gold. A winning replay: 1500 (once), then 200.",
+      "values": []
+    },
+    {
+      "key": "howto_progress_2",
+      "lang": "en",
+      "out": "A boss defeated plus its castle fallen unlocks that hero for FREE.",
+      "values": []
+    },
+    {
+      "key": "howto_progress_3",
+      "lang": "en",
+      "out": "ENTER after a win moves on to the next level (new theme & boss).",
+      "values": []
+    },
+    {
+      "key": "howto_hard",
+      "lang": "en",
+      "out": "HARD MODE",
+      "values": []
+    },
+    {
+      "key": "howto_hard_1",
+      "lang": "en",
+      "out": "Hard: enemies +15% HP, +10% damage, the Dire castle starts higher.",
+      "values": []
+    },
+    {
+      "key": "howto_hard_2",
+      "lang": "en",
+      "out": "Gold income is smaller (x0.75). Easy: x1.25.",
+      "values": []
+    },
+    {
+      "key": "pause_resume",
+      "lang": "en",
+      "out": "RESUME GAME",
+      "values": []
+    },
+    {
+      "key": "pause_menu",
+      "lang": "en",
+      "out": "MAIN MENU",
+      "values": []
+    },
+    {
+      "key": "rail_pause_tip",
+      "lang": "en",
+      "out": "Pause (P / ESC)",
+      "values": []
+    },
+    {
+      "key": "tac_toggle_tip",
+      "lang": "en",
+      "out": "Open the tactical command panel (hold a key to keep the command active)",
+      "values": []
+    },
+    {
+      "key": "tac_gather_tip",
+      "lang": "en",
+      "out": "All heroes gather and attack together (hold to keep it active)",
+      "values": []
+    },
+    {
+      "key": "tac_protect_tower_tip",
+      "lang": "en",
+      "out": "At least 2 heroes guard the tower (hold to keep it active)",
+      "values": []
+    },
+    {
+      "key": "tac_protect_castle_tip",
+      "lang": "en",
+      "out": "All heroes defend the castle (hold to keep it active)",
+      "values": []
+    },
+    {
+      "key": "tac_attack_boss_tip",
+      "lang": "en",
+      "out": "All heroes attack the boss (hold to keep it active)",
+      "values": []
+    },
+    {
+      "key": "tac_attack_dd_tip",
+      "lang": "en",
+      "out": "Focus the enemy hero with the biggest damage (hold to keep it active)",
+      "values": []
+    },
+    {
+      "key": "topup_subtitle",
+      "lang": "en",
+      "out": "Buy gold to unlock heroes in the HERO SHOP",
+      "values": []
+    },
+    {
+      "key": "shop_card_buy",
+      "lang": "en",
+      "out": "BUY",
+      "values": []
+    },
+    {
+      "key": "shop_card_owned",
+      "lang": "en",
+      "out": "Owned: %d",
+      "values": []
+    },
+    {
+      "key": "shop_card_poor",
+      "lang": "en",
+      "out": "NOT AFFORDABLE",
+      "values": []
+    },
+    {
+      "key": "shop_card_no_hero",
+      "lang": "en",
+      "out": "SELECT HERO",
       "values": []
     }
   ]

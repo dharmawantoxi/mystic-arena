@@ -8,6 +8,38 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## Menu ikut bahasa + renderer Item Forge / potret hero — 13 September 2026 (FASE 40)
+
+Dua permintaan user lanjutan atas build Godot, keduanya "seperti di pygame":
+
+| # | Keluhan | Acuan pygame | Yang berubah di Godot |
+|---|---|---|---|
+| 1 | "Saat ganti ke **English**, semuanya harus Inggris — starting dari main menu" | `localization.py` dipakai di mana pun teks ditulis; layar pygame digambar ulang tiap frame dari state, jadi satu bahasa berlaku untuk SEMUA permukaan (label baris bahasa = `_core.py:6321-6329`) | `MainMenu.gd` tidak lagi menyimpan string Indonesia: **103 kunci layar menu** masuk `localization.py` + `Localization.gd` (209 kunci × 2 bahasa) dan SEMUA label delapan state dibangun lewat `_loc(kunci)`; `GameManager.language_changed` -> `_show(state)` membangun ulang layar yang sedang tampil. Nilai `id` = string lama persis, jadi bahasa Indonesia tidak berubah. Tooltip lain ikut: `TacticalBar` (`TOOLTIPS` -> `tr_text`), `SidePanel` (`rail_pause_tip`), `TopupDialog` (`topup_subtitle`). Bug lama ikut diberesi: `CARA MAIN` membaca `section[1]` (NAMA IKON) alih-alih `section[2]` (baris isi), jadi badan panduannya tidak pernah tergambar |
+| 2 | "Item Forge dan Hero Shop harus pakai renderer seperti pygame" | `ItemShopUI._draw_item_card` (`hero_items.py:3790-3892`) + `_draw_item_grid` (`:3731-3789`) = kartu 250x200 yang DIGAMBAR; potret kartu hero = `HeroPortraits.draw` (`ui_components/hero_portraits.py`) yang me-render unit sungguhan, crop bbox alpha, scale ke 60x70, grayscale saat terkunci — pygame TIDAK punya berkas gambar portrait | **Baru:** `godot/scenes/ui/widgets/ItemForgeCard.gd` (kartu ITEM FORGE: gradasi/`cheap_alpha`, border warna kelas 2 px, `corner_ticks` emas saat bisa dibeli, ikon 56 px, badge PHYSICAL/MAGIC/TANK, nama glow 24 px, kategori 17 px, harga `400G`, "Dimiliki: n", deskripsi ter-wrap 4 baris + `…` lewat `_wrap_text` pygame, pill BUY/alasan `(10, h-34, w-20, 26)`) dan `godot/scenes/ui/widgets/UnitPortrait.gd` (memperluas `HeroPortrait`: frame idle pertama strip bake `assets/units/` dari `BakedUnitDB` di-crop bbox (scan 2 px, alpha>10, pad 4) lalu `min(sx, sy, 1.0)` + Lanczos = padanan `smoothscale`; grayscale 0.299/0.587/0.114 saat terkunci; cache per `(unit, WxH, dimmed)`; fallback ke `_draw_generic` bawaan `HeroPortrait` bila strip belum dibake). `ShopPanel`: tab ITEM memakai kartu saat modal luas (`_grid_columns() >= 2`), rail sempit tetap baris + ikon 20 px; tab HERO memakai `UnitPortrait` sebagai ikon baris. `MainMenu._hero_card`: bingkai 78 px kini diisi `UnitPortrait`, persis `HeroPortraits.draw(..., owned=(not boss_ready))` di `_draw_meta_hero_card` (`_core.py:5119`). **Baru juga:** `godot/scenes/ui/widgets/HeroShopCard.gd` — tab HERO toko in-match memakai kartu 340x120 port `HeroShop._draw_compact_card` (`_bundle.py:1958-2130`): shadow, glow hover, border hijau saat dimiliki, potret 60 px berbingkai, nama 22 / judul 16 / chip ROLE / baris HP·DMG·RNG, dan pill 90x30 di kanan berisi `400G` / `ACTIVE` / `MAX` (label pill literal Inggris di kedua bahasa, persis pygame) |
+
+Kontrak kontrol TIDAK berubah di jalur mana pun: kartu Item Forge dan kartu
+hero memuat `Button` dengan `ui_key` `item_buy_<item>` / `buy_hero_<hero>` +
+`ui_data` `{cost, blocked}` + tooltip alasan seperti baris lama, jadi
+`HudLayout.shop_ui_keys()`, audit keyboard/controller, dan
+`GameManager.try_buy_item()`/`try_buy_hero()` tetap jalur yang sama — hanya
+CARA kartunya digambar yang berubah. Rail sempit (toko di panel kanan, 1
+kolom) sengaja TETAP baris: kartu 250/340 px tidak muat di 268 px, dan pygame
+memang hanya punya satu tata letak karena panelnya selalu luas.
+`UiHudParityTest` disesuaikan ke kontrak kartu (state `ACTIVE`/`MAX`/`POOR`,
+ikon 56 px dari cache ItemIcons, potret render unit) dan
+`LocalizationParityTest` dapat gerbang baru: tiap state menu dibangun di `en`
+dan `id`, teks yang tergambar dikumpulkan, dan di mode `en` tidak boleh ada
+satu pun nilai Indonesia dari tabel yang tersisa (plus sentinel per layar).
+
+```bash
+python3 tools/test_godot_localization_parity.py          # 209 kunci x 2 bahasa, fixture 418 kasus
+gdparse $(find godot -name '*.gd')                        # parser GDScript 4
+godot --headless --path godot res://tests/LocalizationParityTest.tscn
+godot --headless --path godot res://tests/UiHudParityTest.tscn
+godot --headless --path godot res://tests/MobileSidePanelParityTest.tscn
+```
+
+
 ## UI in-match pygame: peta bersih, item tanpa hero, bahasa benar-benar aktif — 13 September 2026 (FASE 39)
 
 Empat permintaan user atas build Godot, semuanya "seperti di pygame":
@@ -16,7 +48,7 @@ Empat permintaan user atas build Godot, semuanya "seperti di pygame":
 |---|---|---|---|
 | 1 | "castle HP menghalangi map" | `Castle.draw` (`_entity.py:1855-1889`) hanya memanggil `_draw_castle_shield` (`:1892-1916`) + `_draw_hp_bar` (`:1918-1946`), dan `_draw_hp_bar` itu **hanya** menggambar bar SHIELD 60x6 di `y-80` + label `SHIELD n%` (Barlow-Bold 10 px, (200,220,255)) di `y-92`. Tidak ada bar HP kastil di atas peta — HP dibaca lewat popup/panel | `Nexus.gd::_draw_overlays` ditulis ulang: crest armor dipindah ke `y-111` (pusat kanvas bake == origin `Castle.draw`, lihat `_bake_nexus_frames` di `tools/convert_to_godot.py:2373`), bar SHIELD kini **kotak 60x6 di `y-80` dengan border hitam** seperti pygame, label `SHIELD n%` di atasnya. DIHAPUS: bar HP 84x7 + backing hitam + border putih + pip level emas di `y-80`. `Tower.gd` TIDAK disentuh — pygame memang masih menggambar bar HP menara (`Tower.draw`) |
 | 2 | item harus tetap terlihat walau belum beli hero | `ItemShopUI.draw` (`hero_items.py:3190-3200`) menulis alasannya sendiri: "Grid item SELALU ditampilkan, walau pemain belum meng-klik hero di peta"; `_draw_item_grid` (`:3735-3783`) tetap menggambar 33 kartu dengan `inv is None -> can_buy=False`, dan banner-nya (`:3216-3228`) bilang `item di bawah tetap bisa dilihat` | `ShopPanel.gd::_build_item_tab()` tidak lagi `return` lebih awal saat roster kosong: banner `shop_no_hero_banner` (merah, COL_WARN) + katalog 33 item tetap dibangun, hanya BUY yang mati. Strip "BELI UNTUK:" (`_build_buy_for_strip`) = padanan `_draw_hero_strip` (`:3241-3295`): satu chip per hero roster (hidup **maupun** mati, mengikuti `_player_heroes` `:3133-3135`), chip target diberi border emas, klik memanggil `GameManager.select_hero` |
-| 3 | "English" tidak berlaku di dalam game | FASE 30 memport tabel + API tapi hanya baris SETTINGS yang membacanya; teks in-match Godot ditulis hard-code Indonesia | 82 kunci in-match ditambahkan ke `localization.py` + `Localization.gd` (24 -> **106 kunci x 2 bahasa**), dan empat panel in-match sekarang membaca lewat `tr_text()`: `HUD` (10 baris hint), `ShopPanel` (judul, tutup, 4 tab, konteks, isi 4 tab), `SkillBar` (label + tooltip), `GameOverOverlay` (3 tombol + 3 hint + catatan hasil). Empat-empatnya tersambung ke `GameManager.language_changed` jadi teks berganti tanpa menutup layar. Rincian + daftar kunci: [LOCALIZATION_GODOTPP.md](LOCALIZATION_GODOTPP.md) |
+| 3 | "English" tidak berlaku di dalam game | FASE 30 memport tabel + API tapi hanya baris SETTINGS yang membacanya; teks in-match Godot ditulis hard-code Indonesia | 82 kunci in-match ditambahkan ke `localization.py` + `Localization.gd` (24 -> **106 kunci x 2 bahasa**; lanjut ke FASE 40: **209** dengan seluruh layar menu), dan empat panel in-match sekarang membaca lewat `tr_text()`: `HUD` (10 baris hint), `ShopPanel` (judul, tutup, 4 tab, konteks, isi 4 tab), `SkillBar` (label + tooltip), `GameOverOverlay` (3 tombol + 3 hint + catatan hasil). Empat-empatnya tersambung ke `GameManager.language_changed` jadi teks berganti tanpa menutup layar. Rincian + daftar kunci: [LOCALIZATION_GODOTPP.md](LOCALIZATION_GODOTPP.md) |
 | 4 | hapus info di bawah badge LEVEL/WAVE | HUD pygame = chip emas (`_draw_gold_hud`) + badge level/wave + banner wave (`WaveAnnouncer`) saja; tidak ada baris "medan:" atau "difficulty:" | `HUD.tscn`: node `FieldStatus` DIHAPUS. `HUD.gd`: `_difficulty_label` (`_build_difficulty_label` + `_on_difficulty_changed`) dan seluruh pakan `FieldStatus` (`_refresh_field`, `_on_field_changed`, `_on_minion_died`, `_on_boss_spawned`, `_on_nexus_destroyed`, timer 0.33 s yang memindai tree) DIHAPUS. Angka nexus tetap tersedia di tab NEXUS ShopPanel, sama seperti pygame yang menyimpannya di popup |
 
 **Deviasi yang disengaja (jangan "diperbaiki" tanpa membaca ini):**
