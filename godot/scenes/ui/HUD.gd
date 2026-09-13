@@ -2,14 +2,22 @@
 # menang/kalah.
 # Di Pygame: chip emas dan banner digambar manual tiap frame. Di Godot:
 # Control statis untuk angka yang jarang berubah; bagian yang baru
-# (difficulty, banner victory/defeat, SkillBar, ShopPanel) dibangun dari
-# kode supaya HUD.tscn tidak perlu dirombak.
+# (banner victory/defeat, SkillBar, ShopPanel) dibangun dari kode supaya
+# HUD.tscn tidak perlu dirombak.
 #
-# CATATAN: port ini dulu menambahkan bar HP "RADIANT/DIRE NEXUS" di
-# tengah-atas arena (_draw_castle_bars) — pygame TIDAK punya elemen itu,
-# dan blok 600x60-nya menutupi peta. DIHAPUS (permintaan user): HP/shield
-# nexus cukup digambar di atas masing-masing castle oleh Nexus.gd
-# (_draw_overlays), seperti informasi nexus pygame yang hidup di castle.
+# DUA DIHAPUS (permintaan user, 2026-09-13) — keduanya penemuan port, bukan
+# pygame:
+#   1. bar HP "RADIANT/DIRE NEXUS" tengah-atas arena (_draw_castle_bars,
+#      blok 600x60 menutupi peta). HP/shield nexus hidup di castle masing-
+#      masing (Nexus.gd) seperti pygame, yang hanya menggambar bar SHIELD
+#      kecil + crest di atas kastil — lihat Nexus._draw_overlays.
+#   2. baris teks DI BAWAH badge LEVEL/WAVE: "medan: n hero · n minion · …"
+#      (FieldStatus) dan "difficulty: … · gold x…" (DifficultyLabel).
+#      pygame tidak punya dua baris itu; chip emas + badge level/wave +
+#      banner wave adalah seluruh HUD-nya.
+#
+# Teks HUD (baris hint) dibaca lewat MysticLocalization supaya pilihan
+# "English" di SETTINGS berlaku di dalam game.
 extends Control
 
 const SkillBarScript = preload("res://scenes/ui/SkillBar.gd")
@@ -27,8 +35,6 @@ var _wave_sub: Label = null
 ## bayangan teks +2/+2 — keduanya ikut tween slide/alpha banner.
 var _wave_plate: Control = null
 var _wave_shadow: Label = null
-var _field_timer: float = 0.0
-var _difficulty_label: Label = null
 var _over_root: GameOverOverlay = null
 var _over_panel: PanelContainer = null
 var _over_title: Label = null
@@ -47,7 +53,6 @@ var _debug_overlay: Label = null
 @onready var level_label: Label = $TopLeft/LevelBadge/LevelRow/LevelValue
 @onready var wave_label: Label = $TopLeft/LevelBadge/LevelRow/WaveValue
 @onready var wave_banner: Label = $WaveBanner
-@onready var field_label: Label = $TopLeft/FieldStatus
 
 func _ready():
 	wave_banner.modulate.a = 0.0
@@ -57,17 +62,15 @@ func _ready():
 	GameManager.gold_changed.connect(_on_gold_changed)
 	GameManager.wave_started.connect(_on_wave_started)
 	GameManager.level_started.connect(_on_level_started)
-	GameManager.hero_died.connect(_on_field_changed)
 	# FASE 24 — ControllerRouter mencari HUD lewat grup ini untuk aksi
 	# stick_left/F8 (pygame: fps_counter.toggle()).
 	add_to_group("hud")
-	GameManager.minion_died.connect(_on_minion_died)
-	GameManager.boss_spawned.connect(_on_boss_spawned)
 	GameManager.game_over.connect(_on_game_over)
 	GameManager.shop_changed.connect(_on_shop_changed)
-	GameManager.difficulty_changed.connect(_on_difficulty_changed)
-	GameManager.nexus_destroyed.connect(_on_nexus_destroyed)
-	_build_difficulty_label()
+	# Bahasa antarmuka berganti -> baris hint dibangun ulang (satu-satunya
+	# teks HUD yang punya padanan Indonesia/Inggris; "LEVEL"/"WAVE" dan
+	# label banner mengikuti pygame dan identik di kedua bahasa).
+	GameManager.language_changed.connect(_on_language_changed)
 	_build_game_over_panel()
 	_build_hint_bar()
 	# ── Z-ORDER HUD (bawah -> atas) ──
@@ -106,15 +109,9 @@ func _ready():
 		_achievement_popup.unlock)
 	GameManager.boss_reward_effects_tick.connect(_achievement_popup.tick)
 	refresh()
-	_refresh_field()
 
 
-# Hitungan unit di medan — di-update ~3x/detik (bukan tiap frame) biar murah.
-func _process(delta: float) -> void:
-	_field_timer += delta
-	if _field_timer >= 0.33:
-		_field_timer = 0.0
-		_refresh_field()
+func _process(_delta: float) -> void:
 	if _debug_overlay != null and _debug_overlay.visible:
 		_refresh_debug_overlay()
 	_sync_hint_visibility()
@@ -206,6 +203,8 @@ func _refresh_debug_overlay() -> void:
 # Sinkronkan seluruh HUD dari state GameManager (dipakai saat _ready + level_started)
 func refresh():
 	_on_gold_changed(GameManager.gold)
+	# "LEVEL"/"WAVE" dipakai apa adanya di kedua bahasa — persis teks
+	# `WaveAnnouncer`/badge pygame (kata serapan, bukan terjemahan).
 	level_label.text = "LEVEL %d" % GameManager.level_number
 	wave_label.text = "WAVE %d" % GameManager.wave_number
 
@@ -221,35 +220,6 @@ func _on_level_started(_level_num: int):
 		_over_root.hide_overlay()
 	_refresh_hints()
 	refresh()
-	_refresh_field()
-
-func _on_field_changed(_hero: Node) -> void:
-	_refresh_field()
-
-func _on_minion_died(_minion: Node, _killer_team: String) -> void:
-	_refresh_field()
-
-func _on_boss_spawned(_boss_type: String) -> void:
-	_refresh_field()
-
-func _refresh_field() -> void:
-	if field_label == null:
-		return
-	var tree := get_tree()
-	var heroes := 0
-	for h in tree.get_nodes_in_group("heroes"):
-		if is_instance_valid(h) and not bool(h.get("is_dead")):
-			heroes += 1
-	var minions := 0
-	for m in tree.get_nodes_in_group("minions"):
-		if is_instance_valid(m) and not bool(m.get("is_dead")):
-			minions += 1
-	var bosses := 0
-	for b in tree.get_nodes_in_group("bosses"):
-		if is_instance_valid(b) and not bool(b.get("is_dead")):
-			bosses += 1
-	field_label.text = "medan: %d hero · %d minion · %d boss · %d fps" % [
-		heroes, minions, bosses, int(Engine.get_frames_per_second())]
 
 func _on_wave_started(wave_num: int):
 	wave_label.text = "WAVE %d" % wave_num
@@ -379,31 +349,8 @@ static func _format_gold_rate(rate: float) -> String:
 
 
 # ══════════════════════════════════════════════════════════
-#  DIFFICULTY + BANNER MENANG/KALAH
+#  BANNER MENANG/KALAH
 # ══════════════════════════════════════════════════════════
-
-func _build_difficulty_label() -> void:
-	_difficulty_label = Label.new()
-	_difficulty_label.name = "DifficultyLabel"
-	_difficulty_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_difficulty_label.offset_left = 18.0
-	_difficulty_label.offset_top = 112.0
-	_difficulty_label.offset_right = 420.0
-	_difficulty_label.offset_bottom = 132.0
-	UiTheme.style_label(_difficulty_label, "", UiTheme.body_medium(), 12,
-		Color(0.82, 0.86, 0.98, 0.9))
-	_difficulty_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.08, 0.85))
-	_difficulty_label.add_theme_constant_override("outline_size", 3)
-	add_child(_difficulty_label)
-	_on_difficulty_changed(GameManager.difficulty)
-
-
-func _on_difficulty_changed(d: String) -> void:
-	if _difficulty_label == null:
-		return
-	_difficulty_label.text = "difficulty: %s  ·  gold x%.2f" % [
-		str(d).to_upper(), GameManager.difficulty_mult(d)]
-
 
 func _build_game_over_panel() -> void:
 	# Overlay VICTORY/DEFEAT penuh (port Overlay.draw) — dibangun &
@@ -438,9 +385,6 @@ func _on_game_over(victory: bool) -> void:
 	# Panel stat & tombol next dibuat ulang tiap result — alias ulang.
 	_over_panel = _over_root.stats_panel
 	_next_button = _over_root.next_button
-func _on_nexus_destroyed(team: String, _killer_team: String) -> void:
-	if field_label != null:
-		field_label.text = "nexus %s hancur" % ("Radiant" if team == "blue" else "Dire")
 
 
 # ══════════════════════════════════════════════════════════
@@ -473,20 +417,23 @@ func _hint_rows(context: String) -> Array:
 		for h in mgr.get_hints(context):
 			rows.append([str(h[0]), str(h[1])])
 		return rows
+	var click := _loc("hud_hint_click")
+	var right_click := _loc("hud_hint_right_click")
 	match context:
 		"victory":
-			return [["ENTER", "lanjut"], ["R", "ulangi"], ["ESC", "menu"]]
+			return [["ENTER", _loc("hud_hint_next")],
+				["R", _loc("hud_hint_replay")], ["ESC", _loc("hud_hint_menu")]]
 		"defeat":
-			return [["R", "ulangi"], ["ESC", "menu"]]
+			return [["R", _loc("hud_hint_replay")], ["ESC", _loc("hud_hint_menu")]]
 		"shop":
-			return [["klik", "beli"], ["H", "tutup"]]
+			return [[click, _loc("hud_hint_buy")], ["H", _loc("hud_hint_close")]]
 		_:
 			return [
-				["klik", "pilih"],
-				["QWER", "skill"],
-				["H", "toko"],
-				["klik kanan", "tutup"],
-				["P", "jeda"],
+				[click, _loc("hud_hint_select")],
+				["QWER", _loc("hud_hint_skill")],
+				["H", _loc("hud_hint_shop")],
+				[right_click, _loc("hud_hint_close")],
+				["P", _loc("hud_hint_pause")],
 			]
 
 
@@ -512,6 +459,16 @@ func _refresh_hints() -> void:
 
 func _on_shop_changed() -> void:
 	_refresh_hints()
+
+
+## Bahasa berganti -> baris hint ditulis ulang (panel lain punya hook sendiri).
+func _on_language_changed(_language: String) -> void:
+	_refresh_hints()
+
+
+## Pintu teks HUD ke tabel teks bersama (localization.py <-> Localization.gd).
+func _loc(key: String) -> String:
+	return MysticLocalization.tr_text(key)
 
 
 func _build_hint_bar() -> void:

@@ -8,10 +8,21 @@
 #
 # Semua aksi membeli lewat GameManager.try_*() — panel ini TIDAK memegang gold
 # maupun state unit, jadi keyboard dan mouse memakai jalur yang sama.
+#
+# DUA hal yang disetel mengikuti pygame pada 2026-09-13:
+#   * TAB ITEM SELALU menampilkan katalog 33 item, juga saat pemain belum
+#     punya/memilih hero — persis `ItemShopUI` ("Grid item SELALU
+#     ditampilkan, walau pemain belum meng-klik hero di peta",
+#     hero_items.py:3190-3200). Penerima pembelian dipilih lewat strip
+#     "BUY FOR" seperti pygame; tanpa hero kartu tetap terlihat tapi mati.
+#   * Seluruh teks panel lewat `MysticLocalization` sehingga pilihan
+#     "English" di SETTINGS benar-benar berlaku di dalam game. Nilai "id"
+#     sama persis dengan teks lama, jadi tampilan Indonesia tidak berubah.
 extends Control
 
-const TABS: Array = [["tower", "MENARA"], ["item", "ITEM"],
-	["hero", "HERO"], ["nexus", "NEXUS"]]
+## [id tab, kunci teks]. Label tab dibaca lewat tabel teks (paritas bahasa).
+const TABS: Array = [["tower", "shop_tab_tower"], ["item", "shop_tab_item"],
+	["hero", "shop_tab_hero"], ["nexus", "shop_tab_nexus"]]
 const ITEM_COLUMNS := 3
 ## Ukuran ikon item di baris toko (px). Barisnya 30 px dengan margin isi 2x5
 ## (UiTheme.apply_row_button) jadi engine menggambar ikonnya ±18-20 px;
@@ -27,6 +38,9 @@ const COL_BORDER := Color(1.0, 0.804, 0.333, 0.9)
 const COL_TEXT := Color(0.86, 0.9, 1.0)
 const COL_DIM := Color(0.68, 0.73, 0.85, 0.85)
 const COL_GOLD := Color(1.0, 0.87, 0.38)
+## Warna banner peringatan "belum ada hero" — padanan (200,90,90)/(255,190,190)
+## `_draw_no_hero_banner` pygame.
+const COL_WARN := Color(1.0, 0.745, 0.745)
 
 var _panel: PanelContainer = null
 var _scrim: ColorRect = null
@@ -57,7 +71,35 @@ func _ready() -> void:
 	GameManager.tower_built.connect(_on_tower_built)
 	GameManager.nexus_upgraded.connect(_on_nexus_upgraded)
 	GameManager.difficulty_changed.connect(_on_difficulty_changed)
+	GameManager.language_changed.connect(_on_language_changed)
 	_on_shop_changed()
+
+
+## Satu-satunya pintu teks panel: kunci tabel -> string bahasa aktif.
+## (Dinamai `_loc`, bukan ditulis `MysticLocalization.tr_text` di 60 tempat,
+## supaya pemanggil bisa memakai `%` GDScript untuk angkanya.)
+func _loc(key: String) -> String:
+	return MysticLocalization.tr_text(key)
+
+
+## Bahasa berganti (SETTINGS/pause) -> chrome + isi tab dibangun ulang.
+func _on_language_changed(_language: String) -> void:
+	_apply_chrome_texts()
+	_layout_panel()      # label tombol tutup (compact) ikut bahasa aktif
+	if visible:
+		_update_gold_label()
+		_rebuild_body()
+
+
+## Label chrome yang tidak ikut `_rebuild_body`: judul + 4 tab. Isi tab
+## dibangun ulang sendiri, jadi teksnya selalu dibaca ulang per bahasa.
+func _apply_chrome_texts() -> void:
+	if _title != null:
+		_title.text = _loc("shop_title")
+	for pair in TABS:
+		var b: Button = _tab_buttons.get(str(pair[0]))
+		if b != null and b.has_method("set_label"):
+			b.set_label(_loc(str(pair[1])))
 
 
 # ══════════════════════════════════════════════════════════
@@ -117,7 +159,7 @@ func _build() -> void:
 	vbox.add_child(header)
 
 	_title = Label.new()
-	UiTheme.style_label(_title, "TOKO", UiTheme.title_font(), 24,
+	UiTheme.style_label(_title, _loc("shop_title"), UiTheme.title_font(), 24,
 		COL_GOLD)
 	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_title.clip_text = true
@@ -130,7 +172,7 @@ func _build() -> void:
 
 	# Tombol tutup TIDAK boleh menyusut/terpotong: ukuran minimum tetap dan
 	# selalu di dalam margin panel.
-	var close_btn := PygameButton.pill_button("TUTUP  (H)", "neutral",
+	var close_btn := PygameButton.pill_button(_loc("shop_close"), "neutral",
 		"", 104, 28, 13)
 	close_btn.name = "ShopClose"
 	close_btn.custom_minimum_size = Vector2(104, 28)
@@ -151,7 +193,7 @@ func _build() -> void:
 		"item": UiTheme.VIOLET, "hero": UiTheme.GREEN, "nexus": COL_GOLD}
 	for pair in TABS:
 		var tab_id := str(pair[0])
-		var b := PygameButton.tab_button(str(pair[1]),
+		var b := PygameButton.tab_button(_loc(str(pair[1])),
 			tab_accents.get(tab_id, COL_GOLD), 110, 30, 15)
 		b.button_group = group
 		b.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -229,7 +271,10 @@ func _apply_compact(compact: bool) -> void:
 		_gold_label.add_theme_font_size_override("font_size",
 			12 if compact else 17)
 	if _close_button != null:
-		_close_button.text = "X" if compact else "TUTUP  (H)"
+		# PygameButton menggambar `label_text` (Button.text sengaja dikosongkan
+		# di widget itu), jadi label compact HARUS lewat set_label — `text =`
+		# tidak pernah terlihat dan membuat tombol "X" tetap selebar 104 px.
+		_close_button.set_label("X" if compact else _loc("shop_close"))
 		_close_button.custom_minimum_size = Vector2(
 			34 if compact else 104, 28)
 	if _tab_box != null:
@@ -348,9 +393,12 @@ func _sync_tab_buttons() -> void:
 	for key in _tab_buttons:
 		var b: Button = _tab_buttons[key]
 		b.set_pressed_no_signal(str(key) == _tab)
+	_apply_chrome_texts()
 
 
 func _update_gold_label() -> void:
+	# "gold" + angka + laju — format sama persis dengan chip HUD pygame
+	# (`f"{gold:,}"` + "+" + format_gold_rate + "/s"), labelnya via tabel.
 	_gold_label.text = "%s gold  (+%s/s)" % [
 		HudLayout.format_thousands(GameManager.gold),
 		GameManager.format_gold_rate(GameManager.gold_per_second)]
@@ -384,16 +432,18 @@ func _update_context() -> void:
 		parts.append("hero: %s Lv.%d" % [str(h.get("hero_type")), int(h.get("level"))])
 	var t = GameManager.selected_tower
 	if t != null and is_instance_valid(t):
-		parts.append("menara: %s" % str(t.get("display_name")))
+		parts.append("%s: %s" % [_loc("shop_label_tower"), str(t.get("display_name"))])
 	var s: Dictionary = GameManager.slot(GameManager.selected_slot)
 	if not s.is_empty():
-		parts.append("slot: lane %s (%s)" % [str(s["lane"]),
+		parts.append("%s: lane %s (%s)" % [_loc("shop_label_slot"), str(s["lane"]),
 			"Radiant" if str(s["team"]) == "blue" else "Dire"])
 	var nx = GameManager.blue_nexus
 	if nx != null and is_instance_valid(nx):
 		parts.append("nexus: Lv.%d" % int(nx.get("level")))
+	var joiner := " | "
+	var none_text := _loc("shop_context_none")
 	_context.text = "[%s]  %s · gold %d · AI %d · difficulty %s" % [
-		_tab.to_upper(), " | ".join(parts) if not parts.is_empty() else "tidak ada yang dipilih",
+		_tab.to_upper(), joiner.join(parts) if not parts.is_empty() else none_text,
 		GameManager.gold, GameManager.ai_gold, GameManager.difficulty.to_upper()]
 
 
@@ -407,14 +457,14 @@ func _build_tower_tab() -> void:
 	var s: Dictionary = GameManager.slot(GameManager.selected_slot)
 	if not s.is_empty():
 		if str(s["team"]) != "blue":
-			_add_label("Slot ini milik Dire — tidak bisa dibangun.", COL_DIM)
+			_add_label(_loc("shop_tower_slot_dire"), COL_DIM)
 			return
 		if bool(s["taken"]):
-			_add_label("Slot sudah terisi menara.", COL_DIM)
+			_add_label(_loc("shop_tower_slot_taken"), COL_DIM)
 			return
 		var cost := TowerDB.build_cost()
-		_add_label("Slot kosong di lane %s — bangun menara Lv1 (%d gold)" % [
-			str(s["lane"]).to_upper(), cost], COL_TEXT, 15)
+		_add_label(_loc("shop_tower_slot_empty") % [str(s["lane"]).to_upper(), cost],
+			COL_TEXT, 15)
 		var grid := GridContainer.new()
 		grid.columns = _pair_columns()
 		grid.add_theme_constant_override("h_separation", 6)
@@ -425,21 +475,20 @@ func _build_tower_tab() -> void:
 			var afford := GameManager.gold >= cost
 			var b := _make_button("%s %s — %d g" % [
 					str(ti.get("icon", "")), str(ti.get("name", tt)), cost],
-				"%s\n%s\nCatatan: stat Lv1 semua jalur sama (Archer Lv1); "
-				% [str(ti.get("desc", "")), str(ti.get("special", ""))]
-				+ "kekuatannya baru muncul setelah upgrade ke Lv2.",
+				"%s\n%s\n%s" % [str(ti.get("desc", "")), str(ti.get("special", "")),
+					_loc("shop_tower_build_note")],
 				_build_tower.bind(str(tt)), afford, "build_" + str(tt),
 				{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 			b.custom_minimum_size = Vector2(_row_width(_pair_columns()), 34)
 			grid.add_child(b)
-		_add_label("Upgrade Lv1 -> Lv2 memilih jalur dan menaikkan HP x%.2f."
-			% TowerDB.hp_multiplier(), COL_DIM, 11)
+		_add_label(_loc("shop_tower_path_note") % TowerDB.hp_multiplier(),
+			COL_DIM, 11)
 		return
-	_add_label("Klik lingkaran slot di lane untuk membangun menara.", COL_TEXT, 14)
-	_add_label("Slot kosong: Radiant %d · Dire %d  (3 slot per lane per tim)" % [
-		GameManager.free_slots_for("blue").size(), GameManager.free_slots_for("red").size()],
-		COL_DIM)
-	_add_label("Klik menara milikmu untuk upgrade / jual / Regen Shield.", COL_DIM)
+	_add_label(_loc("shop_tower_hint"), COL_TEXT, 14)
+	_add_label(_loc("shop_tower_free_slots") % [
+		GameManager.free_slots_for("blue").size(),
+		GameManager.free_slots_for("red").size()], COL_DIM)
+	_add_label(_loc("shop_tower_click_upgrade"), COL_DIM)
 
 
 func _tower_detail(t) -> void:
@@ -450,14 +499,15 @@ func _tower_detail(t) -> void:
 		int(t.get("hp")), int(t.get("max_hp")), int(t.get("shield")), int(t.get("shield_max")),
 		int(t.get("damage")), str(t.get("dmg_school")), int(t.get("attack_range")),
 		float(t.get("attack_cooldown")), int(t.get("armor"))], COL_DIM, 11)
-	_add_label("Spesial: %s" % str(info.get("special", "-")), COL_DIM, 11)
+	_add_label("%s: %s" % [_loc("shop_tower_special"), str(info.get("special", "-"))],
+		COL_DIM, 11)
 	if not bool(t.get("is_player_built")):
-		_add_label("Menara Dire — tidak bisa di-upgrade atau dijual.", COL_DIM)
+		_add_label(_loc("shop_tower_dire_locked"), COL_DIM)
 		return
 
 	if t.can_upgrade():
 		if TowerDB.can_choose_path(int(t.get("level"))):
-			_add_label("Pilih jalur upgrade ke Lv2:", COL_TEXT, 13)
+			_add_label(_loc("shop_tower_pick_path"), COL_TEXT, 13)
 			var grid := GridContainer.new()
 			grid.columns = _pair_columns()
 			grid.add_theme_constant_override("h_separation", 6)
@@ -476,36 +526,35 @@ func _tower_detail(t) -> void:
 		else:
 			var cost: int = t.upgrade_cost(str(t.get("tower_type")))
 			var afford := GameManager.gold >= cost
-			_add_button("Upgrade ke Lv.%d — %d gold" % [int(t.get("level")) + 1, cost],
-				"HP x%.2f, damage & jangkauan naik." % TowerDB.hp_multiplier(),
+			_add_button(_loc("shop_upgrade_to") % [int(t.get("level")) + 1, cost],
+				_loc("shop_upgrade_stat_note") % TowerDB.hp_multiplier(),
 				# ui_upgrade 0.5 — paritas _core.py:2481 / 7243 / 7341
 				func(): _run(func(): GameManager.try_upgrade_tower(""), "ui_upgrade", 0.5),
 				afford, "upgrade_tower",
 				{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 	else:
-		_add_label("Level maksimum (%d) tercapai." % TowerDB.max_level(), COL_DIM)
+		_add_label(_loc("shop_max_level_count") % TowerDB.max_level(), COL_DIM)
 
 	if bool(t.get("regen_shield_active")):
-		_add_label("Regen Shield: AKTIF (shield pulih setelah 3 detik tidak kena damage)",
-			Color(0.55, 0.95, 0.65))
+		_add_label(_loc("shop_regen_active"), Color(0.55, 0.95, 0.65))
 	elif t.has_method("can_activate_regen_shield") and t.can_activate_regen_shield():
 		var rcost := int(t.regen_shield_cost())
 		var afford := GameManager.gold >= rcost
-		_add_button("Beli Regen Shield — %d gold" % rcost,
-			"Shield menara ikut regen (paritas Tower.activate_regen_shield).",
+		_add_button(_loc("shop_regen_buy") % rcost,
+			_loc("shop_regen_note"),
 			# ui_upgrade 0.5 — paritas _try_activate_regen_shield _core.py:8240
 			func(): _run(func(): GameManager.try_buy_tower_regen_shield(), "ui_upgrade", 0.5),
 			afford, "tower_regen",
 			{"cost": rcost, "blocked": "" if afford else "POOR"}, "cyan")
 	else:
-		_add_label("Regen Shield terbuka di Lv.%d+ (harga %d gold)" % [
+		_add_label(_loc("shop_regen_locked") % [
 			TowerDB.regen_shield_min_level(), TowerDB.regen_shield_cost()], COL_DIM, 11)
 
 	# Popup tower Lv1 pygame TAK punya tombol jual (refund +50 fallback cuma
 	# terjangkau via handler) — tombol disembunyikan di Lv1.
 	if int(t.get("level")) > 1:
-		_add_button("Jual menara (+%d gold)" % int(t.sell_value()),
-			"Refund 50% dari total biaya upgrade yang sudah dibayar.",
+		_add_button(_loc("shop_tower_sell") % int(t.sell_value()),
+			_loc("shop_tower_sell_note"),
 			# ui_sell 1.0 — paritas _try_sell_tower _core.py:8219
 			func(): _run(func(): GameManager.try_sell_tower(), "ui_sell"), true,
 			"sell_tower", {"refund": int(t.sell_value())}, "danger")
@@ -522,28 +571,43 @@ func _pick_path(t, target_type: String) -> void:
 
 
 # ── TAB ITEM ──────────────────────────────────────────────
+#
+# SELALU menampilkan katalog, juga tanpa hero — paritas `ItemShopUI.draw`
+# ("Grid item SELALU ditampilkan, walau pemain belum meng-klik hero di peta",
+# hero_items.py:3191-3200) dan `_draw_item_grid` (`hero is None` -> kartu
+# digambar, hanya BELI-nya yang mati karena `can_buy` butuh inventory).
+# Penerima item = target strip "BUY FOR" (padanan `_resolve_shop_target`
+# hero_items.py:3169-3186): target tersimpan -> hero terseleksi -> hero hidup
+# pertama -> hero mati pertama.
 
 func _build_item_tab() -> void:
-	var h = _player_hero()
-	if h == null:
-		_add_label("Pilih hero Radiant dulu (klik hero biru di arena).", COL_TEXT, 14)
-		_add_label("Item dibeli per hero: 6 slot, harga 4500-6000 gold per tier.", COL_DIM)
-		return
-	var items = h.get("items")
-	var hdata: Dictionary = HeroDB.get_hero(str(h.get("hero_type")))
-	_add_label("%s — %d/%d slot item" % [
-		str(hdata.get("name", h.get("hero_type"))),
-		items.count() if items != null else 0, ItemDB.max_slots()], COL_GOLD, 15)
-	_add_label("Tipe serangan: %s · %s — item bertanda hanya untuk tipe itu." % [
-		str(h.get("dmg_school")), "MELEE" if bool(h.get("is_melee_hero")) else "RANGED"], COL_DIM, 11)
-	# baris item yang sudah dimiliki
-	var owned: Array = items.item_ids() if items != null else []
-	var owned_text: Array = []
-	for id in owned:
-		if str(id) != "":
-			owned_text.append(ItemDB.item_name(str(id)))
-	_add_label("Dimiliki: %s" % (", ".join(owned_text) if not owned_text.is_empty() else "-"),
-		Color(0.6, 0.9, 0.7), 11)
+	var heroes := _roster_heroes()
+	var items = null
+	var h = _item_target()
+	if h != null:
+		items = h.get("items")
+	if heroes.is_empty():
+		# Banner merah pygame: barang tetap bisa dilihat, hanya belum ada
+		# penerimanya. Bukan layar kosong + suruhan "klik hero dulu".
+		_add_label(MysticLocalization.tr_text("shop_no_hero_banner"), COL_WARN, 13)
+	_add_label(_loc("shop_item_note"), COL_DIM)
+	_build_buy_for_strip(heroes, h)
+	if h != null:
+		var hdata: Dictionary = HeroDB.get_hero(str(h.get("hero_type")))
+		_add_label(_loc("shop_item_slots") % [
+			str(hdata.get("name", h.get("hero_type"))),
+			items.count() if items != null else 0, ItemDB.max_slots()], COL_GOLD, 15)
+		_add_label(_loc("shop_item_attack_type") % [
+			str(h.get("dmg_school")),
+			"MELEE" if bool(h.get("is_melee_hero")) else "RANGED"], COL_DIM, 11)
+		# baris item yang sudah dimiliki
+		var owned: Array = items.item_ids() if items != null else []
+		var owned_text: Array = []
+		for id in owned:
+			if str(id) != "":
+				owned_text.append(ItemDB.item_name(str(id)))
+		_add_label(_loc("shop_item_owned") % (", ".join(owned_text)
+			if not owned_text.is_empty() else "-"), Color(0.6, 0.9, 0.7), 11)
 
 	var grouped: Dictionary = ItemDB.grouped()
 	for cat in grouped:
@@ -568,8 +632,8 @@ func _build_item_tab() -> void:
 			var label := "[%s] %s — %d g" % [ItemDB.item_class_label(iid),
 				ItemDB.item_name(iid), cost]
 			if have:
-				label = "[%s] %s — dimiliki" % [ItemDB.item_class_label(iid),
-					ItemDB.item_name(iid)]
+				label = "[%s] %s — %s" % [ItemDB.item_class_label(iid),
+					ItemDB.item_name(iid), _loc("shop_item_owned_suffix")]
 			var tip := "%s\n%s" % [ItemDB.item_desc(iid), _item_reason_tip(reason)]
 			var b := _make_button(label, tip, _buy_item.bind(iid),
 				can and not have and afford, "item_buy_" + iid,
@@ -594,19 +658,66 @@ func _build_item_tab() -> void:
 			grid.add_child(b)
 
 
+## Strip "BUY FOR:" — padanan `_draw_hero_strip` (hero_items.py:3241-3295).
+## Chip per hero roster (hidup maupun mati, sama seperti `_player_heroes`),
+## hero target diberi border warna hero + teks status dari tabel teks.
+## Tanpa hero: strip tidak dibangun; banner di atas sudah menjelaskan.
+func _build_buy_for_strip(heroes: Array, target) -> void:
+	if heroes.is_empty():
+		return
+	var row := HBoxContainer.new()
+	row.name = "BuyForRow"
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 6)
+	_body.add_child(row)
+	var lab := Label.new()
+	lab.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiTheme.style_label(lab, _loc("shop_buy_for"), UiTheme.body_semibold(), 15,
+		Color(1.0, 220.0 / 255.0, 100.0 / 255.0))
+	lab.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(lab)
+	for i in heroes.size():
+		var hero = heroes[i]
+		var dead := bool(hero.get("is_dead"))
+		var inv = hero.get("items")
+		var used: int = inv.count() if inv != null else 0
+		var hname := str(HeroDB.get_hero(str(hero.get("hero_type")))
+			.get("name", hero.get("hero_type")))
+		var status := MysticLocalization.tr_text("dead") if dead \
+			else "Lv.%d" % int(hero.get("level"))
+		var b := PygameButton.pill_button("%s  %s  Item %d/%d" % [
+				hname, status, used, ItemDB.max_slots()],
+			"gold" if hero == target else "neutral", "", 0, 30, 12)
+		b.mouse_filter = Control.MOUSE_FILTER_STOP
+		# ui_key stabil untuk audit closed-world UiHudParityTest; hero dipilih
+		# lewat GameManager supaya SkillBar + tab lain ikut sinkron.
+		b.set_meta("ui_key", "itemshop_hero_%d" % i)
+		if dead:
+			# Hero MATI tetap tampil di strip (paritas `hero_strip` pygame),
+			# tapi tidak bisa dijadikan penerima: port Godot belum punya
+			# antrean `pending_forge_items` (hero_items.py:3143), jadi item
+			# untuk hero mati akan hilang saat respawn, bukan terkirim.
+			b.disabled = true
+			b.tooltip_text = _loc("shop_dead_no_forge")
+		else:
+			b.tooltip_text = _loc("shop_buy_for")
+			b.pressed.connect(func(): GameManager.select_hero(hero))
+		row.add_child(b)
+
+
 ## Teks alasan disabled item (MELEE ONLY/MAGIC ONLY = label kartu pygame).
-static func _item_reason_tip(reason: String) -> String:
+func _item_reason_tip(reason: String) -> String:
 	match reason:
 		"OWNED":
-			return "Sudah dimiliki"
+			return _loc("shop_reason_owned")
 		"FULL":
-			return "Slot penuh (6/6)"
+			return _loc("shop_reason_full")
 		"MELEE ONLY":
-			return "MELEE ONLY — hero ini ranged"
+			return _loc("shop_reason_melee")
 		"MAGIC ONLY":
-			return "MAGIC ONLY — hero ini bukan magic"
+			return _loc("shop_reason_magic")
 		"POOR":
-			return "Gold kurang"
+			return _loc("shop_reason_poor")
 	return ""
 
 
@@ -632,7 +743,7 @@ func _build_hero_tab() -> void:
 			var cost: int = h.upgrade_cost()
 			var next: Dictionary = HeroDB.level_data(int(h.get("level")) + 1)
 			var afford := GameManager.gold >= cost
-			_add_button("Upgrade ke Lv.%d — %d gold" % [int(h.get("level")) + 1, cost],
+			_add_button(_loc("shop_upgrade_to") % [int(h.get("level")) + 1, cost],
 				"HP x%.2f · damage x%.2f · skill x%.2f" % [
 					float(next.get("hp_mult", 1.0)), float(next.get("dmg_mult", 1.0)),
 					float(next.get("skill_mult", 1.0))],
@@ -641,12 +752,13 @@ func _build_hero_tab() -> void:
 				afford, "upgrade_hero",
 				{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 		else:
-			_add_label("Level maksimum tercapai.", COL_DIM)
+			_add_label(_loc("shop_max_level"), COL_DIM)
 	else:
-		_add_label("Pilih hero Radiant untuk melihat status & upgrade.", COL_TEXT, 14)
+		_add_label(_loc("shop_hero_select_hint"), COL_TEXT, 14)
 
-	_add_label("Beli hero (%d/%d dimiliki, termasuk yang respawn):" % [
-		GameManager.owned_heroes().size(), GameManager.max_heroes_owned], COL_TEXT, 13)
+	_add_label(_loc("shop_hero_buy_list") % [
+		GameManager.owned_heroes().size(), GameManager.max_heroes_owned],
+		COL_TEXT, 13)
 	var unlocked = SaveManager.data.get("unlocked_heroes", [])
 	if not (unlocked is Array):
 		unlocked = []
@@ -680,14 +792,13 @@ func _build_hero_tab() -> void:
 			_buy_hero.bind(htype), can, "buy_hero_" + htype,
 			{"cost": cost, "blocked": blocked}, "gold")
 		if blocked == "OWNED":
-			b.text += " · DIMILIKI"
+			b.text += _loc("shop_hero_owned_badge")
 		elif blocked == "FULL":
 			b.text += " · MAX"
 		b.custom_minimum_size = Vector2(_row_width(_pair_columns()), 30)
 		grid.add_child(b)
-	_add_label("Hero lain (%d total di heroes.json) terbuka lewat progres level — "
-		% HeroDB.get_all_types().size()
-		+ "lihat SaveManager.unlocked_heroes.", COL_DIM, 11)
+	_add_label(_loc("shop_hero_others") % HeroDB.get_all_types().size(),
+		COL_DIM, 11)
 
 
 func _buy_hero(hero_type: String) -> void:
@@ -701,7 +812,7 @@ func _buy_hero(hero_type: String) -> void:
 func _build_nexus_tab() -> void:
 	var nx = GameManager.blue_nexus
 	if nx == null or not is_instance_valid(nx) or bool(nx.get("is_dead")):
-		_add_label("Radiant Nexus sudah hancur.", Color(1, 0.5, 0.5), 14)
+		_add_label(_loc("shop_nexus_dead"), Color(1, 0.5, 0.5), 14)
 		return
 	_add_label("Radiant Nexus — %s Lv.%d / %d" % [
 		HudLayout.castle_name(int(nx.get("level"))), int(nx.get("level")),
@@ -714,7 +825,7 @@ func _build_nexus_tab() -> void:
 		var cost: int = nx.upgrade_cost()
 		var nxt: Dictionary = TowerDB.nexus_stats(int(nx.get("level")) + 1)
 		var afford := GameManager.gold >= cost
-		_add_button("Upgrade Nexus ke Lv.%d — %d gold" % [int(nx.get("level")) + 1, cost],
+		_add_button(_loc("shop_nexus_upgrade") % [int(nx.get("level")) + 1, cost],
 			"HP %d · DMG %d · RNG %d · shield ratio HP naik" % [
 				int(nxt.get("hp", 0)), int(nxt.get("damage", 0)), int(nxt.get("range", 0))],
 			# ui_upgrade 0.5 — paritas try_upgrade_nexus _core.py:2668
@@ -722,37 +833,40 @@ func _build_nexus_tab() -> void:
 			afford, "upgrade_nexus",
 			{"cost": cost, "blocked": "" if afford else "POOR"}, "gold")
 	else:
-		_add_label("Nexus sudah level maksimum.", COL_DIM)
+		_add_label(_loc("shop_nexus_max"), COL_DIM)
 	if bool(nx.get("shield_active")) and bool(nx.get("free_shield_active")):
-		_add_label("Castle Shield GRATIS aktif (sampai wave 10) — damage tersisa "
-			+ "dikurangi %.0f%%." % (float(nx.get("shield_damage_reduction")) * 100.0),
+		_add_label(_loc("shop_nexus_free_shield")
+			% (float(nx.get("shield_damage_reduction")) * 100.0),
 			Color(0.6, 0.85, 1.0), 11)
 	if nx.can_buy_shield():
 		var cost: int = nx.shield_cost()
 		var afford := GameManager.gold >= cost
-		_add_button("Beli Castle Shield — %d gold" % cost,
-			"Shield permanen: menyerap damage 1:1, sisanya dimitigasi %.0f%%."
+		_add_button(_loc("shop_nexus_shield_buy") % cost,
+			_loc("shop_nexus_shield_note")
 			% (float(nx.get("shield_damage_reduction")) * 100.0),
 			# ui_upgrade 0.5 — paritas try_activate_castle_shield _core.py:2652
 			func(): _run(func(): GameManager.try_buy_nexus_shield(), "ui_upgrade", 0.5),
 			afford, "nexus_shield",
 			{"cost": cost, "blocked": "" if afford else "POOR"}, "cyan")
 	elif bool(nx.get("castle_shield_purchased")):
-		_add_label("Castle Shield sudah dibeli.", Color(0.6, 0.95, 0.7))
+		_add_label(_loc("shop_nexus_shield_owned"), Color(0.6, 0.95, 0.7))
 
 	var enemy = GameManager.red_nexus
 	if enemy != null and is_instance_valid(enemy):
-		_add_label("Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — hancurkan untuk MENANG." % [
+		_add_label(_loc("shop_nexus_enemy") % [
 			int(enemy.get("level")), int(enemy.get("hp")), int(enemy.get("max_hp")),
 			int(enemy.get("shield")), int(enemy.get("shield_max"))],
 			Color(1.0, 0.62, 0.62), 12)
+
 
 
 # ══════════════════════════════════════════════════════════
 #  WIDGET HELPER
 # ══════════════════════════════════════════════════════════
 
-## Hero Radiant yang sedang dipilih (masih hidup)
+## Hero Radiant yang sedang dipilih (masih hidup) — pemakai: tab HERO dan
+## upgrade panel. TAB ITEM TIDAK memakai ini: katalog item selalu terlihat
+## dan penerima item dihitung lewat `_item_target()` di bawah.
 func _player_hero():
 	var h = GameManager.selected_hero
 	if h == null or not is_instance_valid(h) or bool(h.get("is_dead")):
@@ -760,6 +874,22 @@ func _player_hero():
 	if str(h.get("team")) != "blue":
 		return null
 	return h
+
+
+## Semua hero pemain, hidup MAUPUN mati — padanan `_player_heroes(game)`
+## (hero_items.py:3133-3135) yang menjadi isi strip "BUY FOR".
+func _roster_heroes() -> Array:
+	return GameManager.owned_heroes("blue")
+
+
+## Penerima item — delegasi ke `GameManager.itemshop_target_hero()` supaya
+## klik mouse, papan ketik, dan controller memakai aturan yang sama
+## (`_resolve_shop_target` hero_items.py:3169-3186: hero terseleksi -> hero
+## hidup pertama -> tidak ada). Hero mati ikut muncul di strip "BUY FOR"
+## seperti pygame, tapi port Godot belum punya antrean Item Forge
+## (`pending_forge_items`), jadi hero mati tidak dijadikan penerima.
+func _item_target():
+	return GameManager.itemshop_target_hero()
 
 
 ## Jalankan aksi beli lalu segarkan panel (signal GameManager bisa tidak muncul

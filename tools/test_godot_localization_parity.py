@@ -21,9 +21,10 @@ dalam hitungan milidetik. Yang dikerjakan:
      berlebih, bahasa invalid, label fallback) dan ditulis ke
      `godot/tests/fixtures/localization.json` untuk diputar ulang
      `godot/tests/LocalizationParityTest.tscn` di CI (engine betulan).
-  4. Closed-world kunci: setiap `tr_text("...")` di godot/**/*.gd harus ada
-     di tabel (typo kunci di sisi Godot ketahuan tanpa menjalankan engine),
-     dan kunci yang belum punya pemakai dilaporkan apa adanya.
+  4. Closed-world kunci: setiap `tr_text("...")` / `loc("...")` di
+     godot/**/*.gd harus ada di tabel (typo kunci di sisi Godot ketahuan
+     tanpa menjalankan engine), dan kunci yang belum punya pemakai
+     dilaporkan apa adanya.
 
 Regenerasi fixture HANYA bila localization.py berubah — pygame tidak pernah
 disetel mengikuti Godot (aturan docs/MIGRASI_1_1.md).
@@ -600,11 +601,19 @@ def check_gdscript(fixture: dict) -> None:
           "%d label" % (len(gd_text), len(gd_text["id"]), len(gd_labels)))
 
 
+## Pemanggil teks di Godot: `MysticLocalization.tr_text("kunci")` dan pintasan
+## per-panel `_loc("kunci")` / `loc("kunci")` (mis. ShopPanel._loc, yang
+## membungkus tr_text supaya situs pemanggil tidak memanjang dua baris).
+## Ketiganya diaudit — tanpa pola kedua, kunci salah ketik di jalur pintasan
+## lolos tanpa suara dan cuma kelihatan sebagai teks mentah di layar.
+TEXT_CALL_PATTERN = r'(?:\btr_text|\b_?loc)\(\s*"([^"]+)"'
+
+
 def check_call_sites(fixture: dict) -> None:
     """Setiap kunci yang dipakai kode Godot harus ada di tabel (closed world)."""
     known = set(fixture["text"]["id"])
     used = {}
-    pattern = re.compile(r'tr_text\(\s*"([^"]+)"')
+    pattern = re.compile(TEXT_CALL_PATTERN)
     for path in sorted((ROOT / "godot").rglob("*.gd")):
         rel = path.relative_to(ROOT).as_posix()
         if rel.startswith("godot/tests/"):
@@ -621,10 +630,10 @@ def check_call_sites(fixture: dict) -> None:
     unknown = {k: v for k, v in used.items() if k not in known}
     if unknown:
         raise AssertionError(
-            "Kunci tr_text() tak dikenal di kode Godot (typo?): %s"
+            "Kunci tr_text()/loc() tak dikenal di kode Godot (typo?): %s"
             % json.dumps(unknown, ensure_ascii=False))
     silent = sorted(known - set(used))
-    print("[oracle] pemakai tr_text() di Godot: %s"
+    print("[oracle] pemakai tr_text()/loc() di Godot: %s"
           % (", ".join(sorted(used)) or "-"))
     print("[oracle] kunci diport tapi belum ada pemakainya di Godot (%d): %s"
           % (len(silent), ", ".join(silent)))

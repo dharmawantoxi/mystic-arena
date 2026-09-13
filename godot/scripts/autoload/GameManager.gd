@@ -1621,12 +1621,35 @@ func try_upgrade_hero() -> bool:
 	return true
 
 
+## Hero pemain yang MENERIMA item — padanan `_resolve_shop_target`
+## (hero_items.py:3169-3186), TIDAK lagi "hero yang kebetulan diklik":
+## hero terseleksi (kalau masih hidup) -> hero Radiant hidup pertama -> null.
+## Pemakai: ShopPanel tab ITEM dan `try_buy_item` di bawah, jadi klik dari
+## papan ketik, sentuh, dan mode controller jatuh ke aturan yang sama.
+func itemshop_target_hero():
+	var heroes := owned_heroes("blue")
+	if heroes.is_empty():
+		return null
+	var sel = selected_hero
+	if sel != null and is_instance_valid(sel) and not bool(sel.get("is_dead")) \
+			and heroes.has(sel):
+		return sel
+	for h in heroes:
+		if is_instance_valid(h) and not bool(h.get("is_dead")):
+			return h
+	return null
+
+
 func try_buy_item(item_id: String) -> bool:
 	if state != "playing":
 		return false
-	var h = selected_hero
-	if h == null or not is_instance_valid(h) or bool(h.get("is_dead")):
-		print("[Shop] pilih hero Radiant dulu untuk membeli item")
+	var h = itemshop_target_hero()
+	if h == null:
+		# Paritas `_try_buy` hero_items.py:4049-4053: tanpa hero pembelian
+		# DITOLAK (ui_error + notifikasi `no_hero` yang di pygame modern
+		# diam, karena `add_notification` sudah di-no-op-kan _core.py:8680)
+		# — tapi katalog item tetap boleh dilihat.
+		print("[Shop] tidak ada hero untuk menerima item (tr(\"no_hero\"))")
 		return false
 	if str(h.get("team")) != "blue":
 		return false

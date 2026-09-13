@@ -8,6 +8,14 @@
 # Teks audit test (MatchScoringParityTest/UiHudParityTest) dipertahankan
 # PERSIS di label tersembunyi title_label/stats_label/body_label; HUD
 # mengalasinya sebagai _over_title/_over_stats/_over_body.
+#
+# Teks yang DITAMPILKAN (baris petunjuk keycap + tiga tombol aksi) dibaca dari
+# MysticLocalization sejak 2026-09-13 supaya bahasa yang dipilih di SETTINGS
+# berlaku sampai layar hasil. "id" = teks lama (Indonesia), "en" = padanan
+# Inggris. Label audit tetap bahasa Inggris ("VICTORY! LV.1", "Final Score:
+# …", "NEW LEVEL UNLOCKED!") karena itulah string yang digambar pygame apa
+# adanya — judul hasil, 5 nama statistik, dan baris unlock tidak di-tr() di
+# pygame, jadi tetap identik di kedua bahasa.
 extends Control
 class_name GameOverOverlay
 
@@ -28,6 +36,10 @@ var stats_label: Label = null   # audit (tersembunyi)
 var body_label: Label = null    # audit (tersembunyi)
 var stats_panel: PygamePanel = null
 var next_button: PygameButton = null
+## Level yang ditawarkan tombol LANJUT — disimpan supaya baris hint + aksi
+## bisa dibangun ulang saat bahasa berganti tanpa memanggil show_result
+## (yang akan mengulang animasi intro).
+var _nxt: int = -1
 
 var _fx: _BackFx = null
 var _title_fx: _TitleFx = null
@@ -49,6 +61,22 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_build()
+	# Layar hasil bisa sedang tampil saat pemain membuka pause -> SETTINGS.
+	# Kalau bahasa berganti di situ, cukup dua blok teks yang dibangun ulang
+	# (hint + tombol) — TIDAK lewat show_result, yang mengulang animasi intro.
+	GameManager.language_changed.connect(_on_language_changed)
+
+
+func _on_language_changed(_language: String) -> void:
+	if not visible or _nxt < 0:
+		return   # layar tidak tampil: show_result berikutnya sudah membaca ulang
+	_build_hint(_nxt)
+	_build_actions(_nxt)
+
+
+## Pintu ke tabel teks bersama (localization.py <-> Localization.gd).
+func _loc(key: String) -> String:
+	return MysticLocalization.tr_text(key)
 
 
 func _build() -> void:
@@ -90,6 +118,7 @@ func _build() -> void:
 
 func hide_overlay() -> void:
 	visible = false
+	_nxt = -1
 	_popup_frame = 0
 	_popup_shown = false
 	if _popup_tween != null and _popup_tween.is_valid():
@@ -148,16 +177,16 @@ func show_result(p_victory: bool) -> void:
 	var replay_txt := ""
 	if victory:
 		if reward >= 3000:
-			replay_txt = "menang pertama"
+			replay_txt = _loc("over_reward_first_win")
 		elif reward >= 1500:
-			replay_txt = "replay pertama"
+			replay_txt = _loc("over_reward_first_replay")
 		else:
-			replay_txt = "replay berulang"
+			replay_txt = _loc("over_reward_replay")
 	var lines: Array = []
 	if victory:
-		lines.append("Meta reward: +%d gold (%s) tersimpan ke save." % [reward, replay_txt])
+		lines.append(_loc("over_meta_reward") % [reward, replay_txt])
 	else:
-		lines.append("Nexus Radiant hancur — kalah tidak dibayar.")
+		lines.append(_loc("over_defeat_note"))
 	var nxt := GameManager.next_level_number()
 	if victory and nxt > 0 and not SaveManager.is_level_completed(nxt):
 		lines.append("NEW LEVEL UNLOCKED!")
@@ -169,6 +198,7 @@ func show_result(p_victory: bool) -> void:
 		lines.append("NEW HERO: %s" % ", ".join(names))
 	body_label.text = "\n".join(lines)
 
+	_nxt = nxt
 	# ── bangun ulang visual dinamis ──
 	_build_stats_panel(rows)
 	_build_popup(nxt)
@@ -441,9 +471,9 @@ func _build_hint(nxt: int) -> void:
 	_hint_row.offset_bottom = 200.0 + 18.0
 	add_child(_hint_row)
 	if victory and nxt > 0:
-		_hint_row.add_child(_key_hint("ENTER", "lanjut level"))
-	_hint_row.add_child(_key_hint("R", "ulangi"))
-	_hint_row.add_child(_key_hint("ESC", "menu utama"))
+		_hint_row.add_child(_key_hint("ENTER", _loc("over_next_hint")))
+	_hint_row.add_child(_key_hint("R", _loc("over_replay_hint")))
+	_hint_row.add_child(_key_hint("ESC", _loc("over_menu_hint")))
 	if victory and nxt <= 0:
 		var plain := Label.new()
 		UiTheme.style_label(plain, "(You cleared all levels!)",
@@ -531,16 +561,16 @@ func _build_actions(nxt: int) -> void:
 	row.offset_bottom = 292.0 + 18.0
 	add_child(row)
 	next_button = PygameButton.pill_button(
-		"LANJUT KE LEVEL %d  (ENTER)" % maxi(nxt, 1), "success", "play",
+		_loc("over_next_button") % maxi(nxt, 1), "success", "play",
 		260, 36, 17)
 	next_button.visible = victory and nxt > 0
 	next_button.pressed.connect(func(): GameManager.next_level())
 	row.add_child(next_button)
-	var replay := PygameButton.pill_button("ULANGI  (R)", "gold", "",
+	var replay := PygameButton.pill_button(_loc("over_replay"), "gold", "",
 		150, 36, 17)
 	replay.pressed.connect(func(): GameManager.restart_match())
 	row.add_child(replay)
-	var menu_btn := PygameButton.pill_button("MENU UTAMA  (ESC)",
+	var menu_btn := PygameButton.pill_button(_loc("over_menu"),
 		"neutral", "", 190, 36, 17)
 	menu_btn.pressed.connect(func(): menu_requested.emit())
 	row.add_child(menu_btn)

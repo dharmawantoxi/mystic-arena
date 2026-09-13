@@ -73,6 +73,8 @@ func _run() -> void:
 	await _test_shop_tower()
 	_test_shop_nexus()
 	_test_shop_item()
+	_test_shop_item_no_hero()
+	_test_language_in_game()
 	_test_clicks()
 	_test_hotkeys_playing()
 	await _test_gameover()
@@ -262,12 +264,28 @@ func _test_structure() -> void:
 	for path in ["TopLeft", "GoldChip", "LevelBadge",
 			"WaveBanner", "HintLabel", "SkillBar", "ShopPanel"]:
 		_expect(_hud.find_child(path, true, false) != null, "HUD has %s" % path)
+	# Angka kastil TIDAK digambar di atas peta (FASE 39): padanan
+	# `Castle.draw` = crest + bar SHIELD saja. Gerbang statis
+	# godot/tools/map_clutter_lint.py menjaga isi _draw_overlays; yang bisa
+	# dites dari sini adalah HUD tidak punya pengganti blok 600x60 lama.
+	_expect(_hud.find_child("CastleBars", true, false) == null,
+		"blok HP nexus tengah-atas tidak pernah ada lagi")
 	# Hint bar disembunyikan (paritas _draw_input_hints _core.py:2709-2714:
 	# pygame hanya menggambar di mode controller legacy — keyboard/Android
 	# tidak pernah melihatnya; Godot belum punya lapisan gamepad).
 	var hint_host := _hud.find_child("HintLabel", true, false) as Control
 	_expect(hint_host != null and not hint_host.visible,
 		"hint bar disembunyikan (parity pygame controller-only)")
+	# FASE 39: dua baris teks DI BAWAH badge LEVEL/WAVE dihapus — pygame tidak
+	# punya "medan: …" maupun "difficulty: …" di petanya (chip emas + badge +
+	# banner wave adalah seluruh HUD in-match).
+	_expect(_hud.find_child("FieldStatus", true, false) == null,
+		"baris 'medan: …' hilang dari peta")
+	_expect(_hud.find_child("DifficultyLabel", true, false) == null,
+		"baris 'difficulty: …' hilang dari peta")
+	_expect(not _hud.has_method("_refresh_field")
+		and not _hud.has_method("_on_field_changed"),
+		"pakan FieldStatus (pindai tree 3x/detik) ikut hilang")
 	_expect(_shop.find_child("Panel", true, false) != null, "ShopPanel has Panel")
 	_expect(_shop.find_child("Panel", true, false).mouse_filter == Control.MOUSE_FILTER_STOP,
 		"panel menelan klik (itemshop_empty_swallow)")
@@ -966,6 +984,110 @@ func _test_gameover() -> void:
 
 
 # ══════════════════════════════════════════════════════════
+#  TAB ITEM TANPA HERO + BAHASA IN-MATCH (FASE 39)
+# ══════════════════════════════════════════════════════════
+
+## Katalog item TETAP penuh saat tidak ada hero — paritas `ItemShopUI.draw`
+## (hero_items.py:3190-3200: "Grid item SELALU ditampilkan, walau pemain belum
+## meng-klik hero di peta") dan `_draw_item_grid` (`inv is None` -> kartu tetap
+## digambar, hanya BELI yang mati). Roster "dikosongkan" dengan mengeluarkan
+## hero dari grup "heroes" (sumber `GameManager.owned_heroes`) lalu
+## dipasang kembali, supaya sisa tes masih punya match yang hidup.
+func _test_shop_item_no_hero() -> void:
+	var roster: Array = GameManager.owned_heroes()
+	var prev_sel = GameManager.selected_hero
+	var prev_gold: int = GameManager.gold
+	for h in roster:
+		h.remove_from_group("heroes")
+	GameManager.select_hero(null)
+	GameManager.gold = 100000
+	_shop.open_tab("item")
+	_audit_keys("item")
+	var keys: Array = _shop.collect_ui_keys()
+	var item_keys: Array = keys.filter(
+		func(k): return str(k).begins_with("item_buy_"))
+	_expect(item_keys.size() == 33,
+		"33 item tetap ada tanpa hero (got %d)" % item_keys.size())
+	_expect(_find_label_with_text(_shop,
+			MysticLocalization.tr_text("shop_no_hero_banner")) != null,
+		"banner 'item di bawah tetap bisa dilihat' tampil")
+	var blocked := 0
+	for sid in ItemDB.items.keys():
+		var b := _button_by_key("item_buy_" + str(sid))
+		if b != null and b.disabled:
+			blocked += 1
+	_expect(blocked == 33, "33 kartu mati tanpa hero (got %d)" % blocked)
+	# Strip BUY FOR tidak dibangun tanpa hero (pygame: `if not heroes: return`),
+	# dan pembelian DITOLAK tanpa target — gold utuh (deviasi: tidak ada
+	# antrean Item Forge, jadi tidak ada "dibeli untuk hero mati").
+	_expect(not keys.has("itemshop_hero_0"), "tanpa hero: strip BUY FOR kosong")
+	_press("item_buy_dead_edge")
+	_expect(GameManager.gold == 100000, "beli tanpa hero ditolak (gold utuh)")
+	# Kembalikan roster + seleksi, dan tab dibangun ulang untuk tes berikutnya.
+	for h in roster:
+		h.add_to_group("heroes")
+	GameManager.select_hero(prev_sel)
+	GameManager.gold = prev_gold
+	_shop.open_tab("item")
+	var keys2: Array = _shop.collect_ui_keys()
+	_expect(keys2.has("itemshop_hero_0") and keys2.has("itemshop_hero_1")
+		and keys2.has("itemshop_hero_2"),
+		"strip BUY FOR kembali dengan roster (%s)" % str(keys2))
+
+
+## Bahasa aktif harus berlaku DI DALAM GAME (permintaan user; FASE 30 hanya
+## sampai baris SETTINGS). Diuji pada keempat permukaan: chrome ShopPanel,
+## tab, baris hint HUD, label SkillBar, dan tombol layar menang/kalah.
+func _test_language_in_game() -> void:
+	# id = nilai bawaan (yang dipakai seluruh tes lain).
+	_expect(_shop._title.text == "TOKO", "judul toko id (got %s)" % _shop._title.text)
+	_expect(str(_shop._tab_buttons["item"].label_text) == "ITEM",
+		"label tab id")
+	GameManager.set_language("en")
+	_expect(_shop._title.text == "SHOP", "judul toko en (got %s)" % _shop._title.text)
+	_expect(str(_shop._tab_buttons["tower"].label_text) == "TOWERS",
+		"label tab en (got %s)" % str(_shop._tab_buttons["tower"].label_text))
+	_expect(str(_bar._close_btn.tooltip_text)
+			== MysticLocalization.tr_text("skillbar_close_tip"),
+		"tooltip SkillBar ikut bahasa (got %s)"
+		% str(_bar._close_btn.tooltip_text))
+	# Baris hint HUD ikut (ditulis ulang lewat _refresh_hints). Kata "klik"
+	# dipakai sebagai KEYCAP di kedua konteks hint (game dan shop), jadi ini
+	# tidak sensitif terhadap tab apa yang sedang terbuka.
+	_expect(_find_label_with_text(_hud, "klik") == null
+		and _find_label_with_text(_hud, "click") != null,
+		"baris hint HUD berganti bahasa")
+	# Isi tab dibangun ulang (bukan cuma chrome): tombol tutup modalCompact
+	# memakai label dari tabel lewat set_label().
+	_shop.open_tab("item")
+	var close_lbl := str(_shop._close_button.label_text)
+	_expect(close_lbl == MysticLocalization.tr_text("shop_close")
+		or close_lbl == "X", "tombol tutup EN rebuilt (got %s)" % close_lbl)
+	_expect(_find_label_with_text(_shop, "BELI UNTUK:") == null
+		and _find_label_with_text(_shop, "BUY FOR:") != null,
+		"strip BUY FOR ikut bahasa")
+	GameManager.set_language("id")
+	_expect(_shop._title.text == "TOKO", "judul toko kembali id")
+	_expect(str(_shop._tab_buttons["tower"].label_text) == "MENARA",
+		"label tab kembali id (got %s)"
+		% str(_shop._tab_buttons["tower"].label_text))
+	_expect(_find_label_with_text(_hud, "klik") != null
+		and _find_label_with_text(_hud, "click") == null,
+		"baris hint HUD kembali Indonesia")
+	_shop.open_tab("item")
+
+
+func _find_label_with_text(node: Node, wanted: String) -> Label:
+	for c in node.get_children():
+		if c is Label and str((c as Label).text) == wanted:
+			return c as Label
+		var found := _find_label_with_text(c, wanted)
+		if found != null:
+			return found
+	return null
+
+
+# ══════════════════════════════════════════════════════════
 #  HELPER
 # ══════════════════════════════════════════════════════════
 
@@ -978,7 +1100,8 @@ func _audit_keys(context: String) -> void:
 		_universe.append_array(spec["hero_selected"])
 		_universe.append_array(spec["tower_selected"])
 		_universe.append_array(spec["nexus"])
-		for group in ["heroes", "tower_build", "tower_repath", "item"]:
+		for group in ["heroes", "tower_build", "tower_repath", "item",
+				"item_buy_for"]:
 			var g: Dictionary = spec[group]
 			for entry in g["source"]:
 				_universe.append(str(g["prefix"]) + str(entry))
