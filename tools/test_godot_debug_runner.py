@@ -45,7 +45,12 @@ YANG DIKUNCI
          log yang dibutuhkan justru hilang saat proses dibunuh,
      (c) harness wajib punya jejak boot (trace.log, di-flush) + batas boot,
      (d) ketiganya harus ikut terunggah sebagai artifact;
-  9. rem darurat diuji dengan stub pembungkus shell (bukan Godot, ~2 detik).
+  9. rem darurat diuji dengan stub pembungkus shell (bukan Godot, ~2 detik);
+ 10. tidak ada panggilan method di luar Node pada variabel hasil
+     `get_first_node_in_group()` tanpa `has_method(...)` — analyzer GDScript
+     menolaknya SAAT KOMPILASI, dan skrip yang gagal dikompilasi membuat
+     harness bisu total (tidak ada `[DebugRun]`, tidak ada report.json; run
+     hanya berakhir karena rem darurat). gdparse tidak menangkap ini.
 """
 from __future__ import annotations
 
@@ -385,6 +390,38 @@ def check_watchdog() -> None:
           "tanpa proses yatim)" % (2.0, elapsed))
 
 
+def check_panggilan_dinamis() -> None:
+    """Trap yang pernah benar-benar menggigit: `Node` + method di luar Node.
+
+    `get_first_node_in_group()` bertipe `Node`. `var c := …` lalu `c.start_match()`
+    ditolak analyzer GDScript ("Function not found in base 'Node'") — skripnya
+    tidak dikompilasi, scene tetap dimuat tanpa satu baris pun keluaran, dan
+    satu-satunya gejala adalah run yang mati di rem darurat. `gdparse` lolos
+    karena ini bukan kesalahan sintaks. Pola repo (tests/*.gd) adalah
+    `has_method(...)` lebih dulu; cek ini menegakkannya di jalur debug.
+    """
+    node_methods = {"has_method"}
+    for berkas in (RUN_GD, PROBE_GD):
+        source = read(berkas)
+        # Perhatikan: RHS-nya `get_tree().get_first_node_in_group(...)`, jadi
+        # polanya tidak boleh menempel ketat setelah `:=`.
+        for var in re.findall(
+                r"var\s+(\w+)\s*:=\s*[^\n]*get_first_node_in_group\(",
+                source):
+            dipanggil = set(re.findall(r"\b%s\.(\w+)\(" % re.escape(var),
+                                       source)) - node_methods
+            kurang = sorted(m for m in dipanggil
+                            if 'has_method("%s")' % m not in source)
+            if kurang:
+                raise AssertionError(
+                    "%s: %s.%s() dipanggil tanpa has_method(...) — analyzer "
+                    "GDScript akan menolak seluruh skrip, dan harness jadi "
+                    "bisu tanpa pesan yang jelas"
+                    % (berkas.name, var, kurang[0]))
+    print("[kompilasi] panggilan dynamic dari get_first_node_in_group selalu "
+          "lewat has_method (trap 'Function not found in base Node')")
+
+
 def check_wiring() -> None:
     workflow = read(CHECK_WORKFLOW)
     if "tools/test_godot_debug_runner.py" not in workflow:
@@ -411,6 +448,7 @@ def main() -> int:
     check_docs()
     check_wiring()
     check_resiliensi()
+    check_panggilan_dinamis()
     check_watchdog()
     print("Godot debug runner: OK")
     return 0

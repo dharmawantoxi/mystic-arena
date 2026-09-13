@@ -456,9 +456,27 @@ def load_report(out_dir: Path) -> dict:
         return {}
 
 
+def harness_started(log_path: Path) -> bool:
+    """Apakah skrip harness di dalam engine pernah jalan?
+
+    Bedanya penting: `[DebugRun] PASS` yang hilang karena harness gagal
+    DIKOMPILASI (analyzer GDScript menolak panggilan method di luar Node tanpa
+    `has_method`) terlihat sama saja dengan harness yang macet. Kalau satu baris
+    pun tidak ada, penyebabnya bukan skenario/level — dan itu harus dikatakan.
+    """
+    if not log_path.exists():
+        return False
+    try:
+        return "[DebugRun]" in log_path.read_text(encoding="utf-8",
+                                                   errors="replace")
+    except OSError:
+        return False
+
+
 def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
                   shots: list[Path], video: str, gate_ok: bool, rc: int,
                   seconds_run: float) -> Path:
+    started = harness_started(out_dir / "run.log")
     ok = gate_ok and rc == 0
     head = "LULUS" if ok else "GAGAL"
     lines = [
@@ -483,8 +501,25 @@ def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
         f"| video | {video or '—'} |",
         f"| gerbang log | {'lulus' if gate_ok else 'GAGAL'} |",
         f"| exit engine | {rc} |",
+        f"| harness | {'jalan' if started else 'TIDAK PERNAH JALAN'} |",
         "",
     ]
+    if not started:
+        lines += [
+            "> **Harness tidak mencetak satu baris pun.** Artinya masalahnya ada",
+            "> SEBELUM skenario dijalankan — bukan level/skenario:",
+            ">",
+            "> 1. skrip `scenes/debug/DebugRun.gd` gagal dikompilasi oleh engine:",
+            ">    cari `Parse Error` / `SCRIPT ERROR` di `run.log`. Analyzer",
+            ">    GDScript menolak panggilan method di luar `Node` tanpa",
+            ">    `has_method(...)` (lihat komentar di `_start_match()`);",
+            "> 2. scene tidak dijalankan sama sekali: lihat baris `$ …` pertama",
+            ">    `run.log` (perintah yang benar-benar dipakai engine).",
+            ">",
+            f"> `trace.log` {'ada' if (out_dir / 'trace.log').exists() else 'tidak ada'}"
+            " — kalau ada, baris terakhirnya menyebut tahap boot terakhir.",
+            "",
+        ]
     samples = report.get("samples") or []
     if samples:
         lines += ["## Cuplikan keadaan", "",
@@ -645,6 +680,11 @@ def main(argv: list[str] | None = None) -> int:
     shots = sorted((out_dir / "shots").glob("*.png"))
     video = make_video(out_dir) if args.movie else ""
     report = load_report(out_dir)
+    if not harness_started(out_dir / "run.log"):
+        print("[jalan] PERINGATAN: skrip harness tidak mencetak satu baris pun "
+              "— engine mungkin menolak mengompilasi skrip debug (cari "
+              "'Parse Error'/'SCRIPT ERROR' di run.log) atau scene tidak "
+              "dijalankan (lihat baris '$ …' pertama run.log).")
     gate_ok = True
     if not args.no_gate:
         gate_ok = run_gate(out_dir / "run.log", args.label or args.scenario,

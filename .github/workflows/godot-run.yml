@@ -103,12 +103,6 @@ on:
   pull_request:
     types: [labeled]
 
-  # SEMENTARA — dipakai sekali untuk membuktikan harness ini benar-benar jalan
-  # di runner (tidak bisa diuji di mesin pengembang), lalu DIHAPUS sebelum PR
-  # selesai. Jangan disisakan: jalur normalnya workflow_dispatch + label.
-  push:
-    branches: [arena/01a09be7-mystic-arena]
-
 # Run baru membatalkan run lama pada ref yang sama — antar-run debug tidak
 # pernah perlu jalan bersamaan.
 concurrency:
@@ -139,9 +133,7 @@ jobs:
       SCENE: ${{ inputs.scene || '' }}
       MOVIE: ${{ inputs.movie || 'false' }}
       TOUCH: ${{ inputs.touch || 'false' }}
-      # SEMENTARA (dicabut sebelum PR selesai): --verbose untuk membuktikan
-      # scene mana yang dijalankan engine saat harness tidak muncul di log.
-      EXTRA_ENGINE_ARGS: ${{ inputs.extra_engine_args || '--verbose' }}
+      EXTRA_ENGINE_ARGS: ${{ inputs.extra_engine_args || '' }}
       OUT_DIR: debug_out/${{ github.run_id }}-${{ github.run_attempt }}
 
     steps:
