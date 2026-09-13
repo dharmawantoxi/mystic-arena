@@ -39,6 +39,15 @@ const ARG_KEYS: Array = ["scenario", "scene", "level", "seconds", "shot-every",
 ## berkas debug yang tercecer di repo kalau dijalankan manual.
 const DEFAULT_OUT := "user://debug"
 
+## Batas boot (detik nyata). Kalau tahap persiapan tidak selesai sampai sini,
+## harness MELAPOR dan keluar sendiri — jangan pernah menggantung sampai rem
+## darurat luar (dulu: langkah CI 30 detik berjalan 9 menit lalu dibunuh tanpa
+## satu pun petunjuk). Longgar karena CI tanpa GPU bisa ~4 fps.
+const BOOT_DEADLINE := 60.0
+## Jejak boot: ditulis ke berkas + flush tiap baris, jadi tetap ada walau
+## engine dibunuh paksa (stdout-nya bisa tertahan buffer blok).
+const TRACE_FILE := "trace.log"
+
 var scenario: String = "menu"
 var scene_path: String = MAIN_SCENE
 var level: int = 1
@@ -61,6 +70,10 @@ var _failures: Array = []
 var _notes: Array = []
 var _running: bool = false
 var _done: bool = false
+var _booted: bool = false
+var _boot_ms: int = 0
+var _stage: String = "belum mulai"
+var _trace_file: FileAccess = null
 ## Detik JAM GAME (jumlah delta) dan detik JAM DINDING (Time.get_ticks_msec()).
 ## Batas run memakai jam dinding: Engine.time_scale milik game (hit-stop hero/boss
 ## menyetelnya ke 0.05, setting Game Speed 0.5x-2x) mengalikan `delta`, jadi
@@ -77,8 +90,13 @@ func _ready() -> void:
 	# ALWAYS: intro level mem-pause SceneTree, dan run 30 detik yang bekunya
 	# sendiri hanya menghasilkan satu screenshot.
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_boot_ms = Time.get_ticks_msec()
 	_parse_args(OS.get_cmdline_user_args())
-	set_process(false)
+	# proses TETAP aktif selama boot: itu yang menjalankan watchdog boot di
+	# _process() — kalau _boot() menggantung (menunggu frame yang tidak datang,
+	# sinyal yang tidak pernah dipancarkan, input yang tidak ada), kita berhenti
+	# dengan pesan yang menyebut TAHAP terakhir, bukan mati dibunuh dari luar.
+	set_process(true)
 	_boot.call_deferred()
 
 
@@ -147,8 +165,11 @@ func _boot() -> void:
 		_hard_fail("tidak bisa membuat direktori keluaran %s (error %d)"
 				% [out_dir, err])
 		return
+	_open_trace()
+	_trace("boot: direktori keluaran siap")
 	_print_banner()
 
+	_trace("memuat scene %s" % scene_path)
 	var packed := load(scene_path) as PackedScene
 	if packed == null:
 		_hard_fail("scene %s tidak bisa dimuat" % scene_path)
@@ -160,16 +181,21 @@ func _boot() -> void:
 	# proses PAUSABLE eksplisit: root harness ini ALWAYS (lihat _ready), dan
 	# tanpa baris ini seluruh gameplay ikut mengabaikan pause intro/pause menu.
 	_world.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_trace("menambahkan world ke tree")
 	add_child(_world)
 	await _wait_frames(3)
+	_trace("world sudah 3 frame di dalam tree")
 
 	if scenario in ["level", "battle", "shop"]:
+		_trace("skenario %s: mulai match" % scenario)
 		await _start_match()
 		if _done:
 			return
+		_trace("match siap (state=%s)" % GameManager.state)
 	elif scenario == "scene":
 		print("[DebugRun] skenario scene: %s apa adanya (tanpa match)"
 				% scene_path)
+		_trace("skenario scene: apa adanya")
 
 	if fps_limit > 0 and not AppShell.headless():
 		# Satu-satunya penulis Engine.max_fps tetap AppShell.apply_fps_limit
@@ -179,9 +205,10 @@ func _boot() -> void:
 	if _probe != null and _probe.has_method("configure"):
 		_probe.configure(out_dir, shot_every, max_shots)
 	_running = true
+	_booted = true
 	_start_ms = Time.get_ticks_msec()
 	_next_status = 1.0
-	set_process(true)
+	_trace("probe aktif — batas run dimulai")
 	print("[DebugRun] mulai · skenario=%s · level=%d · batas %.1f detik NYATA / "
 			% [scenario, level, seconds]
 			+ "%d frame (time_scale=%.2f — batas detik memakai jam dinding)"
@@ -249,7 +276,18 @@ func _print_banner() -> void:
 # ══════════════════════════════════════════════════════════════════════════
 
 func _process(delta: float) -> void:
-	if not _running or _done:
+	if _done:
+		return
+	if not _booted:
+		# Watchdog boot (lihat BOOT_DEADLINE). Tahap terakhir ada di pesan +
+		# trace.log, jadi kegagalan selalu menunjuk baris yang salah.
+		var boot_s := float(Time.get_ticks_msec() - _boot_ms) / 1000.0
+		if boot_s >= BOOT_DEADLINE:
+			_hard_fail(("persiapan tidak selesai dalam %.0f detik — tahap "
+					+ "terakhir: %s (lihat %s)")
+					% [BOOT_DEADLINE, _stage, out_dir.path_join(TRACE_FILE)])
+		return
+	if not _running:
 		return
 	_t += delta
 	_frames += 1
@@ -272,6 +310,10 @@ func _finish(reason: String) -> void:
 	_done = true
 	_running = false
 	set_process(false)
+	_trace("selesai: %s" % reason)
+	if _trace_file != null:
+		_trace_file.close()
+		_trace_file = null
 	if _probe != null:
 		_probe.enabled = false
 	var report := {}
@@ -328,6 +370,25 @@ func _write_report(report: Dictionary) -> void:
 #  UTIL
 # ══════════════════════════════════════════════════════════════════════════
 
+## Jejak boot: satu baris per tahap, LANGSUNG di-flush. stdout engine bisa
+## tertahan di buffer blok (dan hilang saat proses dibunuh), jadi berkas inilah
+## yang menjawab "harness berhenti di mana" tanpa perlu mengunduh apa pun.
+func _open_trace() -> void:
+	_trace_file = FileAccess.open(out_dir.path_join(TRACE_FILE), FileAccess.WRITE)
+	if _trace_file == null:
+		print("[DebugRun] PERINGATAN: %s tidak bisa ditulis" % TRACE_FILE)
+
+
+func _trace(stage: String) -> void:
+	_stage = stage
+	var seconds := float(Time.get_ticks_msec() - _boot_ms) / 1000.0
+	print("[DebugRun] %.2fs · %s" % [seconds, stage])
+	if _trace_file == null:
+		return
+	_trace_file.store_line("%.3f	%s" % [seconds, stage])
+	_trace_file.flush()
+
+
 func _note(message: String) -> void:
 	_notes.append(message)
 	print("[DebugRun] catatan: %s" % message)
@@ -338,6 +399,12 @@ func _hard_fail(message: String) -> void:
 	_done = true
 	_running = false
 	print("[DebugRun] FAIL: %s" % message)
+	if _trace_file != null:
+		_trace_file.store_line("%.3f\tGAGAL: %s"
+				% [float(Time.get_ticks_msec() - _boot_ms) / 1000.0, message])
+		_trace_file.flush()
+		_trace_file.close()
+		_trace_file = null
 	get_tree().quit(1)
 
 

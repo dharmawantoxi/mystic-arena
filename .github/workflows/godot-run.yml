@@ -259,6 +259,9 @@ jobs:
           [ "$rc" != "0" ] && level=error
 
           anotasi "$level" "ringkasan" "$OUT_DIR/summary.md" 1800
+          # Jejak boot harness: menjawab "berhenti di tahap mana" walau engine
+          # dibunuh paksa (stdout-nya bisa tertahan buffer).
+          anotasi "$level" "trace harness" "$OUT_DIR/trace.log" 1200
           if [ -f "$OUT_DIR/report.json" ]; then
             tr -d '\n' < "$OUT_DIR/report.json" > /tmp/report-satu-baris.json
             anotasi "$level" "report.json" /tmp/report-satu-baris.json 900
@@ -316,6 +319,7 @@ jobs:
             debug_out/*/assets.log
             debug_out/*/report.json
             debug_out/*/summary.md
+            debug_out/*/trace.log
             debug_out/*/movie.*
             debug_out/*/userdata/godot/app_userdata/*/crash_log.txt
 

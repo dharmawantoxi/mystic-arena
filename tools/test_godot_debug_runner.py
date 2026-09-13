@@ -38,10 +38,14 @@ YANG DIKUNCI
      tidak berbeda antara workflow dan devcontainer;
   7. gate ini tidak bisa dihapus diam-diam: godot-check.yml harus tetap
      memanggilnya dan tetap memantau berkas baru ini di filter `paths`;
-  8. rem darurat (`--timeout`) benar-benar mematikan SELURUH process group —
-     satu-satunya cek di sini yang menjalankan proses (stub pembungkus, bukan
-     Godot). Tanpa ini, mode xvfb bisa "membunuh" xvfb-run sementara Godot
-     terus berjalan: run 30 detik pernah menjadi 9 menit di CI.
+  8. jalur debug ini punya satu mode kegagalan yang mahal — MENGGANTUNG:
+     (a) rem darurat harus mematikan SELURUH process group (mode xvfb: pembunuh
+         proc.kill() hanya mengenai skrip xvfb-run, Godot-nya lanjut hidup),
+     (b) stdout engine tidak boleh tertahan buffer blok (stdbuf), kalau tidak
+         log yang dibutuhkan justru hilang saat proses dibunuh,
+     (c) harness wajib punya jejak boot (trace.log, di-flush) + batas boot,
+     (d) ketiganya harus ikut terunggah sebagai artifact;
+  9. rem darurat diuji dengan stub pembungkus shell (bukan Godot, ~2 detik).
 """
 from __future__ import annotations
 
@@ -306,6 +310,33 @@ def check_docs() -> None:
           % DOC.name)
 
 
+def check_resiliensi() -> None:
+    """Kegagalan "menggantung" harus selalu meninggalkan bukti yang bisa dibaca."""
+    source = read(TOOL)
+    run_gd = read(RUN_GD)
+    workflow = read(WORKFLOW)
+
+    if "start_new_session" not in source or "killpg" not in source:
+        raise AssertionError(
+            "alat tidak membunuh seluruh process group saat rem darurat aktif — "
+            "di mode xvfb, `proc.kill()` hanya membunuh skrip xvfb-run")
+    if "stdbuf" not in source:
+        raise AssertionError(
+            "alat tidak menjalankan engine dengan stdbuf: stdout Godot "
+            "ter-buffer blok, jadi log hilang begitu proses dibunuh")
+    for token, why in (("trace.log", "jejak boot yang di-flush ke berkas"),
+                       ("BOOT_DEADLINE", "batas boot di dalam engine"),
+                       ("flush()", "flush tiap baris jejak")):
+        if token not in run_gd:
+            raise AssertionError("DebugRun.gd tidak punya %s (%s)" % (token, why))
+    if "trace.log" not in workflow:
+        raise AssertionError("artifact workflow tidak mengunggah trace.log — "
+                             "jejak boot hilang bersama runner")
+    print("[ketahanan] process group dibunuh · stdbuf (log tak tertahan) · "
+          "trace.log + batas boot ikut artifact")
+    return
+
+
 def check_watchdog() -> None:
     """Rem darurat harus membunuh pembungkus + enginenya, bukan cuma pembungkus.
 
@@ -379,6 +410,7 @@ def main() -> int:
     check_files_and_devcontainer()
     check_docs()
     check_wiring()
+    check_resiliensi()
     check_watchdog()
     print("Godot debug runner: OK")
     return 0

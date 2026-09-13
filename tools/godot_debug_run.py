@@ -325,6 +325,13 @@ def build_command(args: argparse.Namespace, godot: Path, out_dir: Path,
               "(tanpa vsync, batas FPS hanya memperlambat run berbasis frame)")
 
     opts: list[str] = [str(godot), "--path", "godot"]
+    # stdbuf: Godot menulis lewat stdio, dan saat stdout-nya pipa (CI), libc
+    # memakai buffer BLOK. Akibatnya: kalau proses dibunuh (rem darurat/CI
+    # cancel), semua yang belum menembus 4 KB hilang dari run.log — persis
+    # kejadian yang membuat kegagalan pertama sulit dibaca. Buffer baris
+    # membuat setiap baris sampai ke berkas/log CI saat ditulis.
+    if shutil.which("stdbuf"):
+        opts = ["stdbuf", "-oL", "-eL"] + opts
     if display == "headless":
         opts.append("--headless")
     elif args.renderer == "vulkan":
