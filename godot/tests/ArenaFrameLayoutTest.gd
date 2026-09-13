@@ -204,6 +204,16 @@ func _test_game_over_overlay() -> void:
 				% [tag, sim, overlay.size])
 		overlay.show_result(true)
 		await _settle()
+		# Intro panel stat (fade + scale BACK OUT 0.85 -> 1.0 selama 0.35 s)
+		# belum selesai dalam dua frame; yang diuji TATA LETAK akhir, jadi
+		# animasinya dimatikan dulu (pola yang sama dipakai _recenter() untuk
+		# popup unlock) — kalau tidak, `scale` membuat rect terukur mengecil
+		# dan tepi atas panel meleset dari `pusat frame - 100`.
+		if overlay._intro_tween != null and overlay._intro_tween.is_valid():
+			overlay._intro_tween.kill()
+		if overlay.stats_panel != null and is_instance_valid(overlay.stats_panel):
+			overlay.stats_panel.scale = Vector2.ONE
+		await _settle()
 		_expect_overlay_inside_frame(overlay, sim)
 		# Langkah 4: jendela diubah SELAGI layar hasil tampil.
 		var resized := Vector2(maxf(1280.0, sim.x - 100.0),
