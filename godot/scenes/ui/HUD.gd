@@ -1,9 +1,15 @@
-# HUD.gd — Port _core.py Game._draw_gold_hud + _render.WaveAnnouncer + bar HP
-# Castle (_draw_castle_bars) + banner menang/kalah.
-# Di Pygame: chip emas, bar nexus, dan banner digambar manual tiap frame.
-# Di Godot: Control statis untuk angka yang jarang berubah; bagian yang baru
-# (bar nexus, difficulty, banner victory/defeat, SkillBar, ShopPanel) dibangun
-# dari kode supaya HUD.tscn tidak perlu dirombak.
+# HUD.gd — Port _core.py Game._draw_gold_hud + _render.WaveAnnouncer + banner
+# menang/kalah.
+# Di Pygame: chip emas dan banner digambar manual tiap frame. Di Godot:
+# Control statis untuk angka yang jarang berubah; bagian yang baru
+# (difficulty, banner victory/defeat, SkillBar, ShopPanel) dibangun dari
+# kode supaya HUD.tscn tidak perlu dirombak.
+#
+# CATATAN: port ini dulu menambahkan bar HP "RADIANT/DIRE NEXUS" di
+# tengah-atas arena (_draw_castle_bars) — pygame TIDAK punya elemen itu,
+# dan blok 600x60-nya menutupi peta. DIHAPUS (permintaan user): HP/shield
+# nexus cukup digambar di atas masing-masing castle oleh Nexus.gd
+# (_draw_overlays), seperti informasi nexus pygame yang hidup di castle.
 extends Control
 
 const SkillBarScript = preload("res://scenes/ui/SkillBar.gd")
@@ -14,8 +20,6 @@ const TacticalBarScript = preload("res://scenes/ui/TacticalBar.gd")
 const SidePanelScript = preload("res://scenes/ui/SidePanel.gd")
 const WavePlateScript = preload("res://scenes/ui/widgets/WavePlate.gd")
 const TouchHUDScript = preload("res://scenes/ui/TouchHUD.gd")
-## Seberapa sering bar nexus/disability disegarkan (5 Hz cukup, hemat draw call)
-const BAR_REFRESH := 0.2
 
 var _banner_tween: Tween
 var _wave_sub: Label = null
@@ -24,9 +28,6 @@ var _wave_sub: Label = null
 var _wave_plate: Control = null
 var _wave_shadow: Label = null
 var _field_timer: float = 0.0
-var _bar_timer: float = 0.0
-## team -> {panel, hp: ProgressBar, shield: ProgressBar, label: Label}
-var _nexus_bars: Dictionary = {}
 var _difficulty_label: Label = null
 var _over_root: GameOverOverlay = null
 var _over_panel: PanelContainer = null
@@ -66,7 +67,6 @@ func _ready():
 	GameManager.shop_changed.connect(_on_shop_changed)
 	GameManager.difficulty_changed.connect(_on_difficulty_changed)
 	GameManager.nexus_destroyed.connect(_on_nexus_destroyed)
-	_build_nexus_bars()
 	_build_difficulty_label()
 	_build_game_over_panel()
 	_build_hint_bar()
@@ -105,39 +105,9 @@ func _ready():
 	GameManager.achievement_unlocked.connect(
 		_achievement_popup.unlock)
 	GameManager.boss_reward_effects_tick.connect(_achievement_popup.tick)
-	MobileLayout.layout_changed.connect(_layout_hud)
-	_layout_hud()
 	refresh()
 	_refresh_field()
-	_refresh_bars()
 
-
-## Elemen HUD yang "di tengah layar" (bar nexus, banner wave, hint bar) harus
-## berada di tengah AREA ARENA, bukan tengah viewport — kalau tidak, panel
-## kanan menutupinya di layar landscape (paritas arena rata kiri pygame).
-## HintLabel SENGAJA tidak digeser: host-nya left-anchored di HUD.tscn
-## (offset 18..1262, bukan anchor 0.5), jadi shift tengah justru menggeser
-## host keluar pusat arena di layar lebar — PanelContainer di dalamnya sudah
-## menengahkan diri terhadap host.
-func _layout_hud() -> void:
-	var content := MobileLayout.content_width()
-	if content <= 0.0:
-		content = MobileLayout.viewport_size.x
-	var shift := -(MobileLayout.viewport_size.x - content) * 0.5
-	# WaveBanner/WaveSub SENGAJA tidak digeser: kurva slide-nya dikunci
-	# fixture paritas pygame (UiHudParityTest wave_slide_x).
-	for node_name in ["NexusBars"]:
-		var n := find_child(node_name, true, false) as Control
-		if n == null:
-			continue
-		if not n.has_meta("center_shift"):
-			n.set_meta("base_center_l", n.offset_left)
-			n.set_meta("base_center_r", n.offset_right)
-			n.set_meta("center_shift", true)
-		var bl := float(n.get_meta("base_center_l"))
-		var br := float(n.get_meta("base_center_r"))
-		n.offset_left = bl + shift
-		n.offset_right = br + shift
 
 # Hitungan unit di medan — di-update ~3x/detik (bukan tiap frame) biar murah.
 func _process(delta: float) -> void:
@@ -145,10 +115,6 @@ func _process(delta: float) -> void:
 	if _field_timer >= 0.33:
 		_field_timer = 0.0
 		_refresh_field()
-	_bar_timer += delta
-	if _bar_timer >= BAR_REFRESH:
-		_bar_timer = 0.0
-		_refresh_bars()
 	if _debug_overlay != null and _debug_overlay.visible:
 		_refresh_debug_overlay()
 	_sync_hint_visibility()
@@ -410,103 +376,6 @@ static func _format_thousands(n: int) -> String:
 # 3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" — kanon HudLayout, delegasi tipis.
 static func _format_gold_rate(rate: float) -> String:
 	return HudLayout.format_gold_rate(rate)
-
-
-# ══════════════════════════════════════════════════════════
-#  BAR NEXUS (port _core.Game._draw_castle_bars)
-# ══════════════════════════════════════════════════════════
-
-func _build_nexus_bars() -> void:
-	var row := HBoxContainer.new()
-	row.name = "NexusBars"
-	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.anchor_left = 0.5
-	row.anchor_right = 0.5
-	row.offset_left = -300.0
-	row.offset_right = 300.0
-	row.offset_top = 14.0
-	row.offset_bottom = 74.0
-	row.add_theme_constant_override("separation", 24)
-	row.alignment = BoxContainer.ALIGNMENT_CENTER
-	add_child(row)
-	for team in ["blue", "red"]:
-		row.add_child(_make_nexus_bar(row, str(team)))
-
-
-func _make_nexus_bar(_owner: Control, team: String) -> Control:
-	var is_blue := team == "blue"
-	var accent := Color(0.36, 0.62, 1.0) if is_blue else Color(0.95, 0.35, 0.35)
-	var panel := PygamePanel.new(
-		Color(accent.r, accent.g, accent.b, 0.85), 2.0, 9.0)
-	panel.name = "NexusBar_%s" % team
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.custom_minimum_size = Vector2(264, 0)
-	panel.show_ticks = false
-	panel.set_margins(9, 5, 9, 5)
-
-	var vbox := VBoxContainer.new()
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_theme_constant_override("separation", 2)
-	panel.add_child(vbox)
-
-	var label := Label.new()
-	label.text = ("RADIANT NEXUS" if is_blue else "DIRE NEXUS") + "  Lv1"
-	label.add_theme_font_override("font", UiTheme.body_bold())
-	label.add_theme_font_size_override("font_size", 11)
-	label.add_theme_color_override("font_color", accent.lightened(0.35))
-	vbox.add_child(label)
-
-	var hp := ProgressBar.new()
-	hp.custom_minimum_size = Vector2(0, 11)
-	hp.max_value = 100.0
-	hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UiTheme.style_progress_bar(hp,
-		Color(0.35, 0.87, 0.45) if is_blue else Color(0.9, 0.4, 0.35),
-		Color(0.13, 0.05, 0.06, 0.95), 5)
-	vbox.add_child(hp)
-
-	var shield := ProgressBar.new()
-	shield.custom_minimum_size = Vector2(0, 6)
-	shield.max_value = 100.0
-	shield.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UiTheme.style_progress_bar(shield, Color(0.45, 0.78, 1.0, 0.95),
-		Color(0.07, 0.09, 0.14, 0.95), 3)
-	vbox.add_child(shield)
-
-	_nexus_bars[team] = {"panel": panel, "hp": hp, "shield": shield, "label": label}
-	return panel
-
-
-func _refresh_bars() -> void:
-	for team in ["blue", "red"]:
-		var bars: Dictionary = _nexus_bars.get(str(team), {})
-		if bars.is_empty():
-			continue
-		var nexus = GameManager.blue_nexus if team == "blue" else GameManager.red_nexus
-		var has_nexus := nexus != null and is_instance_valid(nexus)
-		# Nexus belum ada (menu / sebelum match) = bar DISEMBUYIKAN, bukan
-		# menampilkan fallback menyesatkan "Lv0 · 0/1 HP".
-		(bars["panel"] as Control).visible = has_nexus
-		if not has_nexus:
-			continue
-		var data: Array = GameManager.nexus_hp(str(team))
-		var hp := float(data[0])
-		var max_hp := maxf(1.0, float(data[1]))
-		var shield := float(data[2])
-		var shield_max := float(data[3])
-		var hp_bar: ProgressBar = bars["hp"]
-		var sh_bar: ProgressBar = bars["shield"]
-		var label: Label = bars["label"]
-		hp_bar.value = clampf(100.0 * hp / max_hp, 0.0, 100.0)
-		if shield_max > 0.0:
-			sh_bar.value = clampf(100.0 * shield / shield_max, 0.0, 100.0)
-		else:
-			sh_bar.value = 0.0
-		sh_bar.visible = shield_max > 0.0
-		label.text = "%s  Lv%d  ·  %d/%d HP%s" % [
-			"RADIANT NEXUS" if team == "blue" else "DIRE NEXUS",
-			int(nexus.get("level")), int(hp), int(max_hp),
-			"" if shield_max <= 0.0 else "  ·  shield %d" % int(shield)]
 
 
 # ══════════════════════════════════════════════════════════
