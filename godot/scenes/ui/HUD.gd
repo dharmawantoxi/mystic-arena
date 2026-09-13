@@ -25,8 +25,12 @@ var _wave_plate: Control = null
 var _wave_shadow: Label = null
 var _field_timer: float = 0.0
 var _bar_timer: float = 0.0
-## team -> {panel, hp: ProgressBar, shield: ProgressBar, label: Label}
+## team -> {panel, hp: ProgressBar, shield: ProgressBar, label: Label,
+## hp_text: Label}
 var _nexus_bars: Dictionary = {}
+## Emblem pedang menyilang di antara dua kapsul nexus (ikut sembunyi
+## saat tidak ada nexus).
+var _nexus_vs: Control = null
 var _difficulty_label: Label = null
 var _over_root: GameOverOverlay = null
 var _over_panel: PanelContainer = null
@@ -413,7 +417,13 @@ static func _format_gold_rate(rate: float) -> String:
 
 
 # ══════════════════════════════════════════════════════════
-#  BAR NEXUS (port _core.Game._draw_castle_bars)
+#  BAR NEXUS (versi ringkas — tidak menutupi peta)
+#
+#  Dulu: dua panel PygamePanel 264 px + bayangan (total 600x60) di
+#  tengah-atas arena — blok besar yang MENUTUPI peta. Sekarang: dua
+#  kapsul ramping (184 px) + emblem pedang menyilang, menempel tepi
+#  atas (total ±410x36, latar tembus pandang tanpa bayangan) — info
+#  HP/shield nexus tetap terbaca sekali lirik tanpa menutupi arena.
 # ══════════════════════════════════════════════════════════
 
 func _build_nexus_bars() -> void:
@@ -422,73 +432,107 @@ func _build_nexus_bars() -> void:
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.anchor_left = 0.5
 	row.anchor_right = 0.5
-	row.offset_left = -300.0
-	row.offset_right = 300.0
-	row.offset_top = 14.0
-	row.offset_bottom = 74.0
-	row.add_theme_constant_override("separation", 24)
+	row.offset_left = -212.0
+	row.offset_right = 212.0
+	row.offset_top = 8.0
+	row.offset_bottom = 48.0
+	row.add_theme_constant_override("separation", 8)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(row)
-	for team in ["blue", "red"]:
-		row.add_child(_make_nexus_bar(row, str(team)))
+	row.add_child(_make_nexus_bar("blue"))
+	_nexus_vs = VectorIcon.new("swords", UiTheme.GOLD, 0.7)
+	_nexus_vs.name = "NexusVs"
+	_nexus_vs.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_nexus_vs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(_nexus_vs)
+	row.add_child(_make_nexus_bar("red"))
 
 
-func _make_nexus_bar(_owner: Control, team: String) -> Control:
+func _make_nexus_bar(team: String) -> Control:
 	var is_blue := team == "blue"
 	var accent := Color(0.36, 0.62, 1.0) if is_blue else Color(0.95, 0.35, 0.35)
-	var panel := PygamePanel.new(
-		Color(accent.r, accent.g, accent.b, 0.85), 2.0, 9.0)
+	var panel := PanelContainer.new()
 	panel.name = "NexusBar_%s" % team
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.custom_minimum_size = Vector2(264, 0)
-	panel.show_ticks = false
-	panel.set_margins(9, 5, 9, 5)
+	panel.custom_minimum_size = Vector2(184, 0)
+	# Kapsul kaca tembus pandang: terlihat sebagai HUD, peta di belakangnya
+	# tetap terbaca (bukan panel solid + bayangan seperti dulu).
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.06, 0.11, 0.72)
+	sb.border_color = Color(accent.r, accent.g, accent.b, 0.55)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(8)
+	sb.content_margin_left = 9.0
+	sb.content_margin_top = 4.0
+	sb.content_margin_right = 9.0
+	sb.content_margin_bottom = 5.0
+	panel.add_theme_stylebox_override("panel", sb)
 
 	var vbox := VBoxContainer.new()
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_theme_constant_override("separation", 2)
+	vbox.add_theme_constant_override("separation", 1)
 	panel.add_child(vbox)
 
+	# Baris judul: nama + level tim (kiri), angka HP (kanan, redup).
+	var title_row := HBoxContainer.new()
+	title_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_row.add_theme_constant_override("separation", 6)
+	vbox.add_child(title_row)
+
 	var label := Label.new()
-	label.text = ("RADIANT NEXUS" if is_blue else "DIRE NEXUS") + "  Lv1"
+	label.text = ("RADIANT  Lv1" if is_blue else "DIRE  Lv1")
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_override("font", UiTheme.body_bold())
 	label.add_theme_font_size_override("font_size", 11)
 	label.add_theme_color_override("font_color", accent.lightened(0.35))
-	vbox.add_child(label)
+	title_row.add_child(label)
+
+	var hp_text := Label.new()
+	hp_text.text = "4000/4000"
+	hp_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_text.add_theme_font_override("font", UiTheme.body_semibold())
+	hp_text.add_theme_font_size_override("font_size", 10)
+	hp_text.add_theme_color_override("font_color", Color(0.78, 0.82, 0.92))
+	hp_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	title_row.add_child(hp_text)
 
 	var hp := ProgressBar.new()
-	hp.custom_minimum_size = Vector2(0, 11)
+	hp.custom_minimum_size = Vector2(0, 8)
 	hp.max_value = 100.0
 	hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UiTheme.style_progress_bar(hp,
-		Color(0.35, 0.87, 0.45) if is_blue else Color(0.9, 0.4, 0.35),
-		Color(0.13, 0.05, 0.06, 0.95), 5)
+	UiTheme.style_progress_bar(hp, accent, Color(0.08, 0.09, 0.14, 0.92), 4)
 	vbox.add_child(hp)
 
 	var shield := ProgressBar.new()
-	shield.custom_minimum_size = Vector2(0, 6)
+	shield.custom_minimum_size = Vector2(0, 3)
 	shield.max_value = 100.0
 	shield.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	UiTheme.style_progress_bar(shield, Color(0.45, 0.78, 1.0, 0.95),
-		Color(0.07, 0.09, 0.14, 0.95), 3)
+	var cfg: Dictionary = TowerDB.shield_cfg()
+	var sh_col: Color = cfg.get("color_blue", Color(0.39, 0.78, 1.0)) if is_blue \
+		else cfg.get("color_red", Color(1.0, 0.47, 0.47))
+	UiTheme.style_progress_bar(shield, sh_col, Color(0.05, 0.07, 0.11, 0.92), 2)
 	vbox.add_child(shield)
 
-	_nexus_bars[team] = {"panel": panel, "hp": hp, "shield": shield, "label": label}
+	_nexus_bars[team] = {"panel": panel, "hp": hp, "shield": shield,
+		"label": label, "hp_text": hp_text}
 	return panel
 
 
 func _refresh_bars() -> void:
+	var any_visible := false
 	for team in ["blue", "red"]:
 		var bars: Dictionary = _nexus_bars.get(str(team), {})
 		if bars.is_empty():
 			continue
 		var nexus = GameManager.blue_nexus if team == "blue" else GameManager.red_nexus
 		var has_nexus := nexus != null and is_instance_valid(nexus)
-		# Nexus belum ada (menu / sebelum match) = bar DISEMBUYIKAN, bukan
+		# Nexus belum ada (menu / sebelum match) = bar DISEMBUNYIKAN, bukan
 		# menampilkan fallback menyesatkan "Lv0 · 0/1 HP".
 		(bars["panel"] as Control).visible = has_nexus
 		if not has_nexus:
 			continue
+		any_visible = true
 		var data: Array = GameManager.nexus_hp(str(team))
 		var hp := float(data[0])
 		var max_hp := maxf(1.0, float(data[1]))
@@ -503,10 +547,14 @@ func _refresh_bars() -> void:
 		else:
 			sh_bar.value = 0.0
 		sh_bar.visible = shield_max > 0.0
-		label.text = "%s  Lv%d  ·  %d/%d HP%s" % [
-			"RADIANT NEXUS" if team == "blue" else "DIRE NEXUS",
-			int(nexus.get("level")), int(hp), int(max_hp),
-			"" if shield_max <= 0.0 else "  ·  shield %d" % int(shield)]
+		label.text = "%s  Lv%d" % [
+			"RADIANT" if team == "blue" else "DIRE",
+			int(nexus.get("level"))]
+		(bars["hp_text"] as Label).text = "%s/%s" % [
+			_format_thousands(int(hp)), _format_thousands(int(max_hp))]
+	# Emblem "VS" di tengah ikut sembunyi saat keduanya tidak ada.
+	if _nexus_vs != null:
+		_nexus_vs.visible = any_visible
 
 
 # ══════════════════════════════════════════════════════════

@@ -608,27 +608,139 @@ func _follow_action() -> void:
 #  GAMBAR SLOT BANGUN
 # ══════════════════════════════════════════════════════════
 
+# ── Warna marker slot — port 1:1 ui_components BuildSlots ──
+# (_render_blue_slot_surface / _render_red_slot_surface pygame:
+#  platform batu berlapis + tanda plus menyala + chip harga "100G";
+#  slot merah = segel gelap bertanda X.)
+const SLOT_PLAT_DARK := Color(80.0 / 255.0, 80.0 / 255.0, 90.0 / 255.0)
+const SLOT_PLAT_MID := Color(120.0 / 255.0, 120.0 / 255.0, 130.0 / 255.0)
+const SLOT_PLAT_TOP := Color(160.0 / 255.0, 160.0 / 255.0, 170.0 / 255.0)
+const SLOT_PLAT_RIM := Color(100.0 / 255.0, 100.0 / 255.0, 110.0 / 255.0)
+const SLOT_PLAT_INNER := Color(140.0 / 255.0, 140.0 / 255.0, 150.0 / 255.0)
+const SLOT_PLAT_SHINE := Color(180.0 / 255.0, 180.0 / 255.0, 190.0 / 255.0)
+const SLOT_GLOW := Color(100.0 / 255.0, 200.0 / 255.0, 255.0 / 255.0, 0.24)
+const SLOT_PLUS_DARK := Color(30.0 / 255.0, 60.0 / 255.0, 120.0 / 255.0)
+const SLOT_PLUS_FILL := Color(100.0 / 255.0, 200.0 / 255.0, 255.0 / 255.0)
+const SLOT_PLUS_SHINE := Color(200.0 / 255.0, 240.0 / 255.0, 255.0 / 255.0)
+const SLOT_RED_DARK := Color(60.0 / 255.0, 20.0 / 255.0, 20.0 / 255.0)
+const SLOT_RED_MID := Color(100.0 / 255.0, 40.0 / 255.0, 40.0 / 255.0)
+const SLOT_RED_CORE := Color(140.0 / 255.0, 60.0 / 255.0, 60.0 / 255.0)
+const SLOT_RED_X := Color(200.0 / 255.0, 80.0 / 255.0, 80.0 / 255.0)
+const SLOT_GOLD := Color(1.0, 0.87, 0.35)
+## Chip harga di bawah slot biru — dibuat sekali lalu dipakai ulang.
+var _slot_chip_style: StyleBoxFlat = null
+
 func _draw_slots() -> void:
 	if _slot_layer == null:
 		return
-	var slot_r := maxf(14.0, TowerDB.slot_size())
+	# Pulse bilangan bulat -2..2 (pygame: int(sin(t*0.08)*2)) — mendorong
+	# ukuran tanda plus dan radius glow pelan-pelan.
+	var pk := int(round(sin(_slot_pulse * 2.6) * 2.0))
 	var pulse := 0.5 + 0.5 * sin(_slot_pulse * 3.2)
 	for i in range(GameManager.build_slots.size()):
 		var s: Dictionary = GameManager.build_slots[i]
 		if bool(s["taken"]):
 			continue # menara yang berdiri sudah menggambar dirinya sendiri
 		var pos: Vector2 = s["pos"]
-		var is_blue := str(s["team"]) == "blue"
-		var col := Color(0.35, 0.68, 1.0, 0.55) if is_blue else Color(1.0, 0.35, 0.35, 0.4)
-		_slot_layer.draw_arc(pos, slot_r, 0.0, TAU, 24, col, 2.0)
-		# tanda "+" supaya jelas ini slot kosong, bukan dekorasi
-		_slot_layer.draw_line(pos + Vector2(-slot_r * 0.5, 0), pos + Vector2(slot_r * 0.5, 0), col, 2.0)
-		_slot_layer.draw_line(pos + Vector2(0, -slot_r * 0.5), pos + Vector2(0, slot_r * 0.5), col, 2.0)
+		if str(s["team"]) == "blue":
+			_draw_blue_slot(pos, pk)
+		else:
+			_draw_red_slot(pos)
 		if i == GameManager.selected_slot:
-			var glow := Color(1.0, 0.87, 0.35, 0.25 + 0.25 * pulse)
-			_slot_layer.draw_circle(pos, slot_r + 3.0, glow)
-			_slot_layer.draw_arc(pos, slot_r + 3.0, 0.0, TAU, 28,
-				Color(1.0, 0.87, 0.35, 0.9), 2.5)
+			_draw_slot_selected(pos, pulse)
+
+
+## Slot biru (interaktif): platform batu bulat berlapis + plus menyala +
+## chip harga — geometri persis _render_blue_slot_surface pygame (surface
+## 40x38 di-blit di (sx-20, sy-17) → offset platform (0, +5), plus (0, -1)).
+func _draw_blue_slot(pos: Vector2, pk: int) -> void:
+	var d := _slot_layer
+	var plat := pos + Vector2(0.0, 5.0)   # pusat platform batu
+	var core := pos + Vector2(0.0, 3.0)   # pusat pola dalam + glow
+	# Bayangan tanah (ellipse 36x8 di bawah platform)
+	d.draw_colored_polygon(_slot_ellipse(pos + Vector2(0.0, 16.0), 18.0, 4.0),
+		Color(0, 0, 0, 100.0 / 255.0))
+	# Platform batu — tiga lingkaran bertumpuk (rim gelap → terang)
+	d.draw_circle(plat, 16.0, SLOT_PLAT_DARK)
+	d.draw_circle(pos + Vector2(0.0, 4.0), 15.0, SLOT_PLAT_MID)
+	d.draw_circle(core, 13.0, SLOT_PLAT_TOP)
+	d.draw_arc(core, 13.0, 0.0, TAU, 26, SLOT_PLAT_RIM, 1.0)
+	# Pola dalam (lingkaran ganda + kilau kiri-atas)
+	d.draw_circle(core, 10.0, SLOT_PLAT_INNER)
+	d.draw_circle(pos + Vector2(-2.0, 1.0), 5.0, SLOT_PLAT_SHINE)
+	# Glow biru berdenyut (radius ikut pulse pygame 15 + pk)
+	d.draw_circle(core, 15.0 + float(pk), SLOT_GLOW)
+	# Tanda plus: outline gelap → isi cyan → kilau (plus_size = 8 + pk)
+	var ps := 8 + pk
+	var half := int(ps * 0.5)
+	d.draw_rect(Rect2(pos + Vector2(-half - 1.0, -2.0), Vector2(ps + 2.0, 4.0)),
+		SLOT_PLUS_DARK, true)
+	d.draw_rect(Rect2(pos + Vector2(-2.0, -half - 1.0), Vector2(4.0, ps + 2.0)),
+		SLOT_PLUS_DARK, true)
+	d.draw_rect(Rect2(pos + Vector2(-half, -1.0), Vector2(ps, 2.0)),
+		SLOT_PLUS_FILL, true)
+	d.draw_rect(Rect2(pos + Vector2(-1.0, -half), Vector2(2.0, ps)),
+		SLOT_PLUS_FILL, true)
+	d.draw_rect(Rect2(pos + Vector2(-half, -1.0), Vector2(half, 1.0)),
+		SLOT_PLUS_SHINE, true)
+	d.draw_rect(Rect2(pos + Vector2(-1.0, -half), Vector2(1.0, half)),
+		SLOT_PLUS_SHINE, true)
+	# Chip harga "100G" (36x14, radius 3, border emas — persis pygame)
+	var chip := Rect2(pos + Vector2(-18.0, 17.0), Vector2(36.0, 14.0))
+	d.draw_style_box(_chip_style(), chip)
+	var txt := "%dG" % TowerDB.build_cost()
+	var font := UiTheme.body_bold()
+	var ts: Vector2 = font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12)
+	d.draw_string(font,
+		Vector2(chip.position.x + (chip.size.x - ts.x) * 0.5,
+			chip.position.y + chip.size.y * 0.5 + font.get_ascent(12) * 0.5 - 0.5),
+		txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, UiTheme.GOLD_TEXT)
+
+
+## Slot merah (visual saja): segel gelap bertanda X — port
+## _render_red_slot_surface pygame.
+func _draw_red_slot(pos: Vector2) -> void:
+	var d := _slot_layer
+	var core := pos + Vector2(0.0, 3.0)
+	d.draw_circle(core, 10.0, SLOT_RED_DARK)
+	d.draw_circle(core, 9.0, SLOT_RED_MID)
+	d.draw_circle(pos + Vector2(-1.0, 2.0), 6.0, SLOT_RED_CORE)
+	d.draw_line(pos + Vector2(-3.0, -1.0), pos + Vector2(3.0, 5.0), SLOT_RED_X, 1.0)
+	d.draw_line(pos + Vector2(3.0, -1.0), pos + Vector2(-3.0, 5.0), SLOT_RED_X, 1.0)
+
+
+## Ring seleksi slot: glow emas + cincin putus yang berputar pelan.
+func _draw_slot_selected(pos: Vector2, pulse: float) -> void:
+	var d := _slot_layer
+	var plat := pos + Vector2(0.0, 3.0)
+	d.draw_circle(plat, 20.0, Color(SLOT_GOLD.r, SLOT_GOLD.g, SLOT_GOLD.b,
+		0.12 + 0.10 * pulse))
+	var rot := _slot_pulse * 1.1
+	for k in range(8):
+		var a0 := rot + TAU * float(k) / 8.0
+		d.draw_arc(plat, 21.0, a0, a0 + 0.42, 6, SLOT_GOLD, 2.0)
+
+
+## Ellipse poligon (16 segmen) — padanan pygame.draw.ellipse untuk bayangan
+## tanah slot (Godot tidak punya draw_ellipse).
+func _slot_ellipse(center: Vector2, rx: float, ry: float) -> PackedVector2Array:
+	var pts := PackedVector2Array()
+	for i in range(16):
+		var a := TAU * float(i) / 16.0
+		pts.append(center + Vector2(cos(a) * rx, sin(a) * ry))
+	return pts
+
+
+## StyleBox chip harga (dibuat malas sekali, dipakai semua slot biru).
+func _chip_style() -> StyleBoxFlat:
+	if _slot_chip_style == null:
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0, 0, 0, 0.85)
+		sb.border_color = UiTheme.GOLD
+		sb.set_border_width_all(1)
+		sb.set_corner_radius_all(3)
+		_slot_chip_style = sb
+	return _slot_chip_style
 
 # ══════════════════════════════════════════════════════════
 #  SELEKSI (klik) + INPUT

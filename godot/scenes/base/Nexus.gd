@@ -275,10 +275,14 @@ func die(killer_team: String = "") -> void:
 func _draw() -> void:
 	var team_col := Color(0.30, 0.55, 1.0) if team == "blue" else Color(0.92, 0.30, 0.28)
 	var cfg: Dictionary = TowerDB.shield_cfg()
-	# halaman batu (lapisan dasar; pygame tidak menggambar tanah di kastil)
-	draw_circle(Vector2.ZERO, radius * 1.55, Color(0.22, 0.21, 0.2, 0.85))
-	draw_arc(Vector2.ZERO, radius * 1.55, 0.0, TAU, 44,
-		Color(team_col.r, team_col.g, team_col.b, 0.45), 2.0)
+	# BAYANGAN LEMBUT di kaki kastil — pengganti "halaman batu" lama
+	# (piringan batu pekat radius*1.55 + cincin warna tim) yang menutupi
+	# peta di sekeliling kastil. Pygame sendiri tidak menggambar tanah di
+	# kastil (_entity._draw_castle_ground = no-op), jadi kastil cukup
+	# "mendarat" di peta lewat bayangan pipih halus ini.
+	draw_set_transform(Vector2(0.0, 13.0), 0.0, Vector2(1.0, 0.36))
+	draw_circle(Vector2.ZERO, 46.0, Color(0, 0, 0, 0.22))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	# ── Fase 7: badan kastil dari bake renderer pygame (seni asli) ──
 	# pygame menggambar kastil lewat _render_castle_full (5 level, ~1.600
 	# baris: tembok, gerbang, menara, obor, aura). Turret/gerigi/kristal
