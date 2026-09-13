@@ -10,14 +10,15 @@
 #   1. boot sync — bahasa aktif == bahasa tersimpan di save, GameManager
 #      mengaca Localization (paritas GameSettings.__new__/_load yang
 #      memanggil localization.set_language, _core.py:9116/9170).
-#   2. tabel teks: 2 bahasa x 24 kunci, ISI + URUTAN kunci (urutan dipakai
-#      diff manusia terhadap localization.py:15-74).
+#   2. tabel teks: 2 bahasa x SETIAP kunci fixture (106 kunci sejak
+#      2026-09-13: 24 kunci pygame + 82 kunci in-match), ISI + URUTAN kunci
+#      (urutan dipakai diff manusia terhadap localization.py).
 #   3. LANGUAGES (urutan cycler _core.py:7297-7303) + LANGUAGE_LABELS.
 #   4. set_language: 7 masukan (id/en/invalid/""/"ID"/"en-US"/null) —
 #      semuanya aman jatuh ke "id" (localization.py:80).
 #   5. get_language_label: bahasa aktif (None Python == "" GDScript),
 #      eksplisit, dan tak dikenal -> label Indonesia (localization.py:89).
-#   6. tr_text: 48 kasus (setiap kunci x setiap bahasa dengan nilai contoh)
+#   6. tr_text: 212 kasus (setiap kunci x setiap bahasa dengan nilai contoh)
 #      + 8 kasus tepi (kunci tak dikenal -> kunci mentah, nilai hilang ->
 #      template mentah, nilai berlebih diabaikan) (localization.py:92-100).
 #   7. placeholder tiap template == `{nama}` polos yang tercatat oracle —
@@ -30,6 +31,10 @@
 #      SaveManager.get/set_setting_str, ItemDB.item_mechanics_localized
 #      mengikuti bahasa aktif (paritas hero_items.py:1632), baris BAHASA di
 #      layar PENGATURAN + cyclernya (paritas _core.py:6321-6329/7295-7303).
+#      Yang dilakukan teks itu DI DALAM GAME (HUD/ShopPanel/SkillBar/
+#      GameOverOverlay menyambung language_changed dan membaca ulang
+#      labelnya) dikunci UiHudParityTest._test_language_in_game — di sana
+#      panel-panelnya benar-benar hidup.
 #
 # Save TIDAK boleh berubah: data + berkas slot di-snapshot dan dipulihkan
 # (pola SaveSlotParityTest), dan CI menjalankan scene ini dengan

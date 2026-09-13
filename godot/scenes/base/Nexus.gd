@@ -9,6 +9,13 @@
 # NEXUS_LEVELS pygame): L1 4000 HP / 35 dmg / 150 range / 45f cd ... L5 15000 HP.
 # Castle Shield: gratis sampai wave 10, sesudah itu harus dibeli (850 gold),
 # menyerap 1:1 lalu memotong sisa damage 88%.
+#
+# ATURAN TAMPIL DI PETA: tidak ada satu pun angka HP yang digambar di atas
+# kastil. pygame hanya menggantung crest armor + bar SHIELD 60x6 di atas
+# badannya (`_draw_castle_shield` + `_draw_hp_bar`), dan itu yang diport di
+# `_draw_overlays`. Bar HP kastil (84x7) + pip level yang pernah ditambah port
+# menutupi peta dan DIHAPUS (permintaan user 2026-09-13) — HP dibaca lewat
+# tab NEXUS ShopPanel, sama seperti pygame membaca `castle.hp` lewat popup.
 extends Node2D
 
 const TowerBulletScript = preload("res://scenes/tower/TowerBullet.gd")
@@ -337,46 +344,63 @@ func _draw_geometric_castle(team_col: Color) -> void:
 		Color(color_accent.r, color_accent.g, color_accent.b, glow))
 
 
-## Lapisan di atas badan kastil: gelembung shield, bar HP, pip level,
-## ring seleksi, overlay mati. pygame menggambar semua ini di luar
-## _render_castle_full(), jadi tidak ikut bake di kedua jalur.
-func _draw_overlays(team_col: Color, cfg: Dictionary) -> void:
+## Lapisan di atas badan kastil: crest armor + bar SHIELD + ring seleksi +
+## overlay mati. pygame menggambar semua ini di luar `_render_castle_full()`,
+## jadi tidak ikut bake di kedua jalur.
+##
+## TIDAK ADA BAR HP di atas kastil — dan itu bukan kekurangan port:
+## `Castle.draw` `_entity.py:1855-1889` memanggil `_draw_castle_shield` +
+## `_draw_hp_bar`, dan `_draw_hp_bar` `_entity.py:1918-1946` satu-satunya
+## menggambar bar SHIELD 60x6 di `y-80` + label "SHIELD n%" di atasnya.
+## HP kastil pygame tidak pernah ditumpangkan ke peta (angka aslinya hidup di
+## popup/panel nexus — tab NEXUS ShopPanel — dan di overlay debug).
+## Bar HP 84x7 + pip level yang dulu digambar port Godot DIHAPUS
+## (permintaan user 2026-09-13: "castle HP menghalangi map").
+func _draw_overlays(_team_col: Color, cfg: Dictionary) -> void:
 	var sc: Color = cfg.get("color_blue", Color("#64c8ff")) if team == "blue" \
 		else cfg.get("color_red", Color("#ff7878"))
-	# Armor crest — `_draw_castle_shield` `_entity.py:1892-1916`
-	if shield_active and shield > 0.0 and shield_max > 0.0:
-		var ratio := clampf(shield / shield_max, 0.0, 1.0)
-		var bob := sin(pulse * 1.2) * 2.0
-		ArmorCrestScript.draw(self, Vector2(0.0, -62.0 + bob), 18.0,
-			sc, ratio, shield_regen_flash > 0.0)
 	# Obor gerbang L4+ + aura L6 — `_render_dynamic_effects` `:3063-3080`
 	if level >= 4:
 		_draw_gate_torch(Vector2(-16.0, 8.0), 0.0)
 		_draw_gate_torch(Vector2(16.0, 8.0), 5.0)
 	if level >= 6:
 		_draw_magic_aura()
-	# bar HP + shield di atas castle
-	var w := 84.0
-	var hp_ratio := clampf(hp / maxf(1.0, max_hp), 0.0, 1.0)
-	draw_rect(Rect2(Vector2(-w * 0.5, -56), Vector2(w, 7)), Color(0, 0, 0, 0.6), true)
-	draw_rect(Rect2(Vector2(-w * 0.5, -56), Vector2(w * hp_ratio, 7)), team_col, true)
-	draw_rect(Rect2(Vector2(-w * 0.5, -56), Vector2(w, 7)), Color(1, 1, 1, 0.25), false, 1.0)
-	if shield_max > 0.0 and shield_active:
-		var sh_ratio := clampf(shield / shield_max, 0.0, 1.0)
-		draw_rect(Rect2(Vector2(-w * 0.5, -62), Vector2(w * sh_ratio, 4)),
-			sc, true)
-		# pygame memakai get_font(10, 'body_bold') = Barlow-Bold 10 px
-		# (_entity.py:1940) — bukan font fallback engine yang kasar.
+	# ── ARMOR CREST — `_draw_castle_shield` `_entity.py:1892-1916` ──
+	# pygame memusatkan crest di (castle.x, canvas_atas-10); dengan kanvas
+	# 180x160 diskala 0.85 itu y = -111 dari origin node (anchor bake sama
+	# dengan (castle.x, castle.y), lihat tools/convert_to_godot.py
+	# _bake_nexus_frames). Hanya terlihat kalau shield masih ada.
+	if shield_active and shield > 0.0 and shield_max > 0.0:
+		var ratio := clampf(shield / shield_max, 0.0, 1.0)
+		var bob := sin(pulse * 1.2) * 2.0
+		ArmorCrestScript.draw(self, Vector2(0.0, -111.0 + bob), 18.0,
+			sc, ratio, shield_regen_flash > 0.0)
+	# ── bar SHIELD — `_draw_hp_bar` `_entity.py:1918-1946` ──
+	# rect (x-30, y-80, 60, 6), latar (30,30,50), isi seukuran rasio warna
+	# shield, outline hitam 1 px (pygame border_radius=3; Godot kotak), dan
+	# label "SHIELD n%" 10 px Barlow-Bold di (x-30, y-92) warna (200,220,255).
+	# `blit` pygame menaruh UJUNG ATAS teks; draw_string Godot memakai
+	# BASELINE, jadi tinggi ascent font ditambahkan.
+	if shield_active and shield_max > 0.0:
+		var bar_w := 60.0
+		var bar_h := 6.0
+		var top := Vector2(-bar_w * 0.5, -80.0)
+		var sh_ratio := clampf(shield / maxf(1.0, shield_max), 0.0, 1.0)
+		var bar := Rect2(top, Vector2(bar_w, bar_h))
+		draw_rect(bar, Color(30.0 / 255.0, 30.0 / 255.0, 50.0 / 255.0), true)
+		var fill := bar_w * sh_ratio
+		if fill > 0.0:
+			draw_rect(Rect2(top, Vector2(fill, bar_h)), sc, true)
+		draw_rect(bar, Color(0, 0, 0, 1), false, 1.0)
+		# pygame memakai get_font(10, 'body_bold') = Barlow-Bold 10 px —
+		# bukan font fallback engine yang kasar.
 		var font: Font = UiTheme.body_bold()
 		if font != null:
 			var pct := int(round(sh_ratio * 100.0))
-			draw_string(font, Vector2(-w * 0.5, -74.0),
-				"SHIELD %d%%" % pct, HORIZONTAL_ALIGNMENT_LEFT, w, 10,
-				Color(200.0 / 255.0, 220.0 / 255.0, 1.0))
-	# pip level castle
-	for i in range(level):
-		draw_circle(Vector2(-w * 0.5 + 6.0 + float(i) * 9.0, -80), 2.6,
-			Color(1, 0.85, 0.35, 0.95))
+			var label_top := top.y - 12.0
+			draw_string(font, Vector2(top.x, label_top + font.get_ascent(10)),
+				"SHIELD %d%%" % pct, HORIZONTAL_ALIGNMENT_LEFT, bar_w, 10,
+				Color(200.0 / 255.0, 220.0 / 255.0, 255.0 / 255.0))
 	if selected:
 		draw_arc(Vector2.ZERO, radius * 1.7, 0.0, TAU, 40, Color(1, 0.92, 0.5, 0.85), 2.0)
 	if is_dead:

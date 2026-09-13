@@ -138,6 +138,11 @@ static func shop_ui_keys() -> Dictionary:
 		"nexus": ["upgrade_nexus", "nexus_shield"],
 		"item": {"prefix": "item_buy_",
 			"source": ItemDB.items.keys()},
+		# Strip "BUY FOR" tab ITEM (padanan `game.ui_buttons["itemshop_hero_%d"]`
+		# hero_items.py:3295). Sumbernya indeks roster, bukan tipe: maksimum
+		# roster in-match = max_heroes_owned (economy.json, default 5).
+		"item_buy_for": {"prefix": "itemshop_hero_",
+			"source": range(GameManager.max_heroes_owned)},
 	}
 
 

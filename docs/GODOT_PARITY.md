@@ -8,6 +8,60 @@ Dokumen ini membedakan koreksi yang diuji dari bagian port yang masih parsial.
 Roadmap lama di `GODOT_MIGRATION.md` mencatat implementasi komponen, bukan
 sertifikasi paritas seluruh game.
 
+## UI in-match pygame: peta bersih, item tanpa hero, bahasa benar-benar aktif — 13 September 2026 (FASE 39)
+
+Empat permintaan user atas build Godot, semuanya "seperti di pygame":
+
+| # | Keluhan | Acuan pygame | Yang berubah di Godot |
+|---|---|---|---|
+| 1 | "castle HP menghalangi map" | `Castle.draw` (`_entity.py:1855-1889`) hanya memanggil `_draw_castle_shield` (`:1892-1916`) + `_draw_hp_bar` (`:1918-1946`), dan `_draw_hp_bar` itu **hanya** menggambar bar SHIELD 60x6 di `y-80` + label `SHIELD n%` (Barlow-Bold 10 px, (200,220,255)) di `y-92`. Tidak ada bar HP kastil di atas peta — HP dibaca lewat popup/panel | `Nexus.gd::_draw_overlays` ditulis ulang: crest armor dipindah ke `y-111` (pusat kanvas bake == origin `Castle.draw`, lihat `_bake_nexus_frames` di `tools/convert_to_godot.py:2373`), bar SHIELD kini **kotak 60x6 di `y-80` dengan border hitam** seperti pygame, label `SHIELD n%` di atasnya. DIHAPUS: bar HP 84x7 + backing hitam + border putih + pip level emas di `y-80`. `Tower.gd` TIDAK disentuh — pygame memang masih menggambar bar HP menara (`Tower.draw`) |
+| 2 | item harus tetap terlihat walau belum beli hero | `ItemShopUI.draw` (`hero_items.py:3190-3200`) menulis alasannya sendiri: "Grid item SELALU ditampilkan, walau pemain belum meng-klik hero di peta"; `_draw_item_grid` (`:3735-3783`) tetap menggambar 33 kartu dengan `inv is None -> can_buy=False`, dan banner-nya (`:3216-3228`) bilang `item di bawah tetap bisa dilihat` | `ShopPanel.gd::_build_item_tab()` tidak lagi `return` lebih awal saat roster kosong: banner `shop_no_hero_banner` (merah, COL_WARN) + katalog 33 item tetap dibangun, hanya BUY yang mati. Strip "BELI UNTUK:" (`_build_buy_for_strip`) = padanan `_draw_hero_strip` (`:3241-3295`): satu chip per hero roster (hidup **maupun** mati, mengikuti `_player_heroes` `:3133-3135`), chip target diberi border emas, klik memanggil `GameManager.select_hero` |
+| 3 | "English" tidak berlaku di dalam game | FASE 30 memport tabel + API tapi hanya baris SETTINGS yang membacanya; teks in-match Godot ditulis hard-code Indonesia | 82 kunci in-match ditambahkan ke `localization.py` + `Localization.gd` (24 -> **106 kunci x 2 bahasa**), dan empat panel in-match sekarang membaca lewat `tr_text()`: `HUD` (10 baris hint), `ShopPanel` (judul, tutup, 4 tab, konteks, isi 4 tab), `SkillBar` (label + tooltip), `GameOverOverlay` (3 tombol + 3 hint + catatan hasil). Empat-empatnya tersambung ke `GameManager.language_changed` jadi teks berganti tanpa menutup layar. Rincian + daftar kunci: [LOCALIZATION_GODOTPP.md](LOCALIZATION_GODOTPP.md) |
+| 4 | hapus info di bawah badge LEVEL/WAVE | HUD pygame = chip emas (`_draw_gold_hud`) + badge level/wave + banner wave (`WaveAnnouncer`) saja; tidak ada baris "medan:" atau "difficulty:" | `HUD.tscn`: node `FieldStatus` DIHAPUS. `HUD.gd`: `_difficulty_label` (`_build_difficulty_label` + `_on_difficulty_changed`) dan seluruh pakan `FieldStatus` (`_refresh_field`, `_on_field_changed`, `_on_minion_died`, `_on_boss_spawned`, `_on_nexus_destroyed`, timer 0.33 s yang memindai tree) DIHAPUS. Angka nexus tetap tersedia di tab NEXUS ShopPanel, sama seperti pygame yang menyimpannya di popup |
+
+**Deviasi yang disengaja (jangan "diperbaiki" tanpa membaca ini):**
+
+1. **Tidak ada antrean Item Forge.** pygame membeli item untuk hero MATI dan
+   mengantrekannya (`pending_forge_items`, `hero_items.py:3143`, dikirim saat
+   `Hero.respawn`). Port Godot tidak punya wiring pengiriman itu (catatan
+   FASE 29 di dokumen ini masih berlaku: `_update_hero_respawns` belum
+   memanggil `HeroItems.deliver_pending_forge_items`), jadi hero mati
+   ditampilkan di strip "BELI UNTUK" tetapi chip-nya `disabled` dengan tooltip
+   `shop_dead_no_forge`, dan `Hero.buy_item` tetap menolak. Membeli untuk hero
+   mati TIDAK lagi diam-diam kehilangan gold.
+2. **Target pembelian = seleksi, bukan state kedua.** pygame menyimpan
+   `resolve_itemshop_target` tersendiri (klik chip tidak harus mengubah hero
+   terpilih). Godot memakai satu sumber kebenaran:
+   `GameManager.itemshop_target_hero()` = hero terpilih (kalau hidup) -> hero
+   hidup pertama -> `null`, dan `try_buy_item` memanggil fungsi yang SAMA, jadi
+   klik mouse, papan ketik, dan controller tidak bisa berbeda penerima.
+3. **Teks yang pygame sendiri tidak terjemahkan tetap satu bahasa.**
+   `ITEM FORGE  (%d/6)`, `TIER I/II`, `SHIELD n%` di atas kastil, `AUTO-CAST
+   ON`, `MAX LEVEL`, `Lv.%d`, `VICTORY!`/`DEFEAT`, lima nama statistik layar
+   hasil, dan badge `LEVEL n`/`WAVE n` (dikunci `UiHudParityTest` +
+   `HudLayout.wave_title`) identik di id dan en, persis pygame. Satu-satunya
+   pasangan id/en yang tidak ada di pygame adalah `shop_buy_for`.
+4. **Gerbang statis baru: `godot/tools/map_clutter_lint.py`.** Kedua keluhan
+   (1 dan 4) adalah kelas bug yang sama — port menggambar readout yang tidak
+   ada di pygame sampai menutupi peta — jadi kuncinya dibuat di CI sebelum
+   engine: badan `Nexus._draw_overlays` tidak boleh menyentuh `hp`/`max_hp`
+   atau `draw_circle` (pip), wajib mempertahankan crest + bar SHIELD `y-80` +
+   label `SHIELD %d%%`, dan nama `FieldStatus`/`DifficultyLabel`/
+   `_refresh_field`/`_draw_castle_bars` dilarang di seluruh `godot/scenes/`.
+   Linter juga membaca `_entity.py` ASLI: kalau pygame sampai menambah bar HP
+   kastil, linter yang menyuruh port menimbang ulang.
+
+**Validasi:** `tools/test_godot_localization_parity.py` (tabel 106 kunci x 2
+bahasa + audit placeholder + closed-world `tr_text()`/`loc()` + fixture
+segar), `tools/test_godot_match_parity.py` (33 item x 6 halaman toko, 13
+target toko, 6 kirim forge), `godot/tools/map_clutter_lint.py`, `gdparse`
+seluruh `godot/**/*.gd`, `tscn_lint` + `check_refs` untuk `HUD.tscn`, lalu di
+engine: `UiHudParityTest` (kasus baru: katalog item dengan roster KOSONG,
+pergantian bahasa judul/tab toko, tidak ada `FieldStatus`/`DifficultyLabel`,
+strip `itemshop_hero_%d` di alam semesta kunci tertutup
+`HudLayout.shop_ui_keys()`), `LocalizationParityTest` (212 kasus `tr`),
+`HeroItemsParityTest`, `BattleSmokeTest`.
+
 ## Splashscreen `splash_screen.py` — jalur native C++ (godot++) — 13 September 2026 (FASE 38)
 
 `splash_screen.py` (371 baris: logo + judul `MYSTIC ARENA` + tagline + 46
@@ -288,11 +342,11 @@ berkasnya (parser sadar-string + continuasi `\`), membandingkan **isi dan
 urutan** 24 kunci × 2 bahasa dengan `localization._TEXT`, `LANGUAGES`,
 `LANGUAGE_LABELS`, dan bahasa bawaan; mengaudit setiap template supaya hanya
 memakai `{nama}` polos (kontrak subset `_py_format`); memeriksa closed-world
-kunci `tr_text()` di `godot/**/*.gd`; dan menjaga `localization.json` tetap
-segar. (2) `godot --headless --path godot
+kunci `tr_text()`/`loc()` di `godot/**/*.gd`; dan menjaga `localization.json`
+tetap segar. (2) `godot --headless --path godot
 res://tests/LocalizationParityTest.tscn --quit-after 120` — replay fixture di
-engine: 48 kasus `tr` (setiap kunci × bahasa), 8 kasus tepi, 21 kasus
-`str.format`, 13 kasus `str()`, 7 `set_language`, 7 label, placeholder 48
+engine: 212 kasus `tr` (setiap kunci × bahasa), 8 kasus tepi, 21 kasus
+`str.format`, 13 kasus `str()`, 7 `set_language`, 7 label, placeholder 106
 template, plus plumbing (`GameManager.set_language`/`apply_language` + sinyal,
 `SaveManager` setting string, `ItemDB.item_mechanics_localized`, baris BAHASA
 + cycler di layar PENGATURAN yang dibangun `MainMenu` produksi). Harness
@@ -320,6 +374,12 @@ pengiriman pesanan forge saat respawn, chip hero mati/antrean + halaman di
 toko item, dan popup detail item). Selama permukaan itu belum ada, teksnya
 sengaja TIDAK dipasang di UI mana pun supaya tidak ada string yang mengambang
 tanpa perilaku.
+
+> **Diperbarui 13 September 2026 (FASE 39):** angka "24 kunci" dan "23 kunci
+tanpa pemakai" di atas adalah keadaan saat FASE 30. Tabel sekarang **106 kunci
+× 2 bahasa** dan 81 kuncinya hidup di dalam game (HUD, ShopPanel, SkillBar,
+GameOverOverlay) — lihat bagian FASE 39 di atas dan
+[LOCALIZATION_GODOTPP.md](LOCALIZATION_GODOTPP.md).
 
 ## Entry point `main.py` (boot, loop, siklus hidup) — 11 September 2026 (FASE 27)
 
@@ -743,7 +803,7 @@ milik bucket piksel).
 | Skill hero (222) | `SkillBook.gd` tabel efek generik per-detik; 6 starter hand-written belum diaudit koefisien/target/timing; SEMUA boss-hero memakai substitusi generik | `HeroSkillKit.gd` di-transpile 1:1 dari `hero_skills/_bundle.py` oleh `tools/gen_hero_skill_kit.py`: dispatch registry 66 resep `_cast_*` + `_generic_cast`/`_fallback_cast` untuk sisanya — koefisien, guard jangkauan (slack 1.15 hanya di acquire), prioritas auto-cast R→E(2+)→W(hp<0.4%)→Q, CDR+spell-vamp, dan urutan timer frame persis `Hero.update`. `SkillBook.gd` jadi facade UI tipis (tanpa state sendiri). Fixture oracle `hero_skills` = 222 hero × 4 skenario (118.293 event) diputar ulang `HeroSkillParityTest`; `gen_hero_skill_kit.py --check` + scope-check dijaga CI. |
 | Catch-up stat hero | Buff melee normalisasi hp/damage di `get_balanced_stats` + koreksi starter saja | `HeroDB.catchup_base` mirror `hero_balance.starter_catchup_stats`: MENIMPA stat dasar SEMUA hero dari katalog MENTAH, `k = 1 + 0.32 × (1 − min(1, unlocks/12)) × sisa-hp`; hpK=1+(k−1)·1,25, dmgK=1+(k−1)·0,85; level-1/no-save → ×1,40/×1,272. `get_balanced_stats` tidak lagi mem-buff hp/damage melee (speed/cd tetap dinormalisasi ke px/s dan detik). |
 | Kalkulator balance hero (FASE 28) | Godot hanya membaca ANGKA bake `heroes.json` tanpa logika kalibrasinya: rumus catch-up/hitung unlock hidup sebagai mirror terpisah di `HeroDB`/`GameManager`, dan tidak ada yang membuktikan bake bisa dihitung ulang | `hero_balance.py` diport utuh 1:1 ke `HeroBalance.gd` (semua static, satu dependensi `HeroArchetypes`): `metrics`, re-budget (`hero_target`/`stat_multipliers`), paritas sel IPF 18 iterasi + paritas sekolah per kelas boss, jangkar rata-rata pool, fixpoint akhir, `starter_catchup(_stats)`, `boss_unlocks_for_purchases`, `calibrate_boss_resistances`, `apply_to_catalog`. Adaptasi yang dikunci: tuple→Array/kunci `"A|B"`, `round()` banker's + `round(x,n)` koreksi TwoProd (killer double rounding 1.46475/1.32975), `statistics.fmean` via penjumlahan exact gaya `math.fsum` (bit-identik di 157 set pipeline nyata + fuzz 400rb), `median` polos, data mentah boss disuntik (`pristine`/`boss_tables`) supaya murni, dan `__main__.game_instance` menjadi parameter `boss_unlocks`/`level` eksplisit. `HeroDB.starter_catchup_mults`/`catchup_base` + `GameManager.boss_unlocks_for_purchases` kini mendelegasikan ke modul ini (perilaku tak berubah). Dikunci seksi fixture `hero_balance` (katalog mentah replika `_core` yang kesetiaannya di-assert `apply(replika)==inner`, tabel + stat final + `LAST`, grid catch-up 512 mult, kalibrasi 216 baris, baterai numerik, varian resolve/fallback/fix-sel) + `HeroBalanceParityTest`: hitung-ulang Godot == oracle DAN == bake `heroes.json` untuk 216 hero (beda `unlock_cost` inner-vs-wrapper dikunci eksplisit). |
-| Logika murni item (FASE 29) | `get_item_class` (badge/tab kelas ITEM FORGE), `SHOP_PAGES`/`SHOP_PAGE_META`/`ITEM_SHOP_ORDER`, popup detail mekanik `_build_item_mechanics`, pesanan forge tertunda (`pending_forge_items`/`deliver_pending_forge_items`), target toko `_resolve_shop_target`, dan `_hero_level_mult` hanya hidup di pygame; sisi Godot hanya membaca `items.json` | `hero_items.py` (bagian logika murni yang belum punya pembaca) diport 1:1 ke `HeroItems.gd` (semua static, data disuntik): `get_item_class` (+ `ITEM_CLASS_INFO`/`_ITEM_CLASS_OVERRIDES`/`_MAP_CATEGORY_TO_CLASS`), `build_shop_pages` (+ `CLASS_ITEM_ORDER`/`ITEMS_PER_PAGE`), `fmt_mech_value`/`build_item_mechanics` (+ label/group/pct/frame keys), `pending_forge_items`/`deliver_pending_forge_items`, `resolve_shop_target`, `hero_level_mult`. Adaptasi yang dikunci: `f"{x:g}"` Python → `_py_g` (eksponen via loop + `String.num` + buang nol — termasuk float "kotor" 0.022×100 → "2.2%"), `str(float)` Python yang mempertahankan ".0" (3.0 → "3.0") → `_py_str` (asal int-vs-float dipulihkan lewat `_FLOAT_MECH_FIELDS` + flag `float` fixture, sebab `JSON.parse_string` Godot mengubah semua angka jadi float), dan `hero.alive` → fallback `not is_dead` (Godot Hero.gd memakai is_dead). `ItemDB` mendelegasikan `item_class`/`item_class_label`/`item_mechanics`/`shop_pages` (badge kelas kartu toko kini tampil di ShopPanel). Dikunci seksi fixture `hero_items` (33 item: kelas, 6 halaman, mekanik id+en, baterai format 116 nilai, 13 target toko, 6 kirim forge, 18 pengali level) + `HeroItemsParityTest`. Catatan: logika `pending_forge_items`/`deliver_pending_forge_items`/`resolve_shop_target` sudah di-port & dikunci, tapi antrian BELI-UNTUK-HERO-MATI belum di-wire ke `GameManager.try_buy_item` (yang kini masih menolak hero mati) + pengiriman saat respawn di `_update_hero_respawns` — celah runtime ini ditutup terpisah setelah shop-target state (strip BUY FOR) di-ShopPanel ikut diport. |
+| Logika murni item (FASE 29) | `get_item_class` (badge/tab kelas ITEM FORGE), `SHOP_PAGES`/`SHOP_PAGE_META`/`ITEM_SHOP_ORDER`, popup detail mekanik `_build_item_mechanics`, pesanan forge tertunda (`pending_forge_items`/`deliver_pending_forge_items`), target toko `_resolve_shop_target`, dan `_hero_level_mult` hanya hidup di pygame; sisi Godot hanya membaca `items.json` | `hero_items.py` (bagian logika murni yang belum punya pembaca) diport 1:1 ke `HeroItems.gd` (semua static, data disuntik): `get_item_class` (+ `ITEM_CLASS_INFO`/`_ITEM_CLASS_OVERRIDES`/`_MAP_CATEGORY_TO_CLASS`), `build_shop_pages` (+ `CLASS_ITEM_ORDER`/`ITEMS_PER_PAGE`), `fmt_mech_value`/`build_item_mechanics` (+ label/group/pct/frame keys), `pending_forge_items`/`deliver_pending_forge_items`, `resolve_shop_target`, `hero_level_mult`. Adaptasi yang dikunci: `f"{x:g}"` Python → `_py_g` (eksponen via loop + `String.num` + buang nol — termasuk float "kotor" 0.022×100 → "2.2%"), `str(float)` Python yang mempertahankan ".0" (3.0 → "3.0") → `_py_str` (asal int-vs-float dipulihkan lewat `_FLOAT_MECH_FIELDS` + flag `float` fixture, sebab `JSON.parse_string` Godot mengubah semua angka jadi float), dan `hero.alive` → fallback `not is_dead` (Godot Hero.gd memakai is_dead). `ItemDB` mendelegasikan `item_class`/`item_class_label`/`item_mechanics`/`shop_pages` (badge kelas kartu toko kini tampil di ShopPanel). Dikunci seksi fixture `hero_items` (33 item: kelas, 6 halaman, mekanik id+en, baterai format 116 nilai, 13 target toko, 6 kirim forge, 18 pengali level) + `HeroItemsParityTest`. Catatan FASE 39: strip BELI FOR sudah ikut diport ke `ShopPanel` (chip per hero roster, hidup maupun mati, mengunci ui_key `itemshop_hero_%d`) dan `GameManager.itemshop_target_hero()` adalah padanan `resolve_shop_target`, jadi target pembelian sudah satu jalur untuk mouse/papan ketik/controller. Yang MASIH terbuka: antrian BELI-UNTUK-HERO-MATI (`pending_forge_items`) belum di-wire ke `GameManager.try_buy_item` (hero mati tetap ditolak, chip-nya `disabled`) dan pengiriman saat respawn di `_update_hero_respawns` belum ada — `deliver_pending_forge_items` tetap diport + dikunci sebagai data, celah runtime ditutup terpisah. |
 | Sumber unlock catch-up (progresi) | `_catchup_unlocks()` Godot hard-code **0**: GameManager tidak menyimpan daftar hero yang dibeli/di-unlock lintas-save, jadi tiap save memakai bonus starter PENUH (×1,40 HP / ×1,272 dmg) — identik save BARU pygame walau roster pemain sudah penuh | Rantai sumber pygame diport utuh: save `purchased_heroes` (`_system.SaveManager.load`/`get_empty_save`) → `Game.reset` (_core.py:1596-1604, termasuk AUTO-GRANT `kaizen` untuk save kosong) → `__main__.game_instance` → `Hero.__init__` (`hero_balance.boss_unlocks_for_purchases` = `len()` hero BUKAN starter). Di Godot: `SaveManager.data["unlocked_heroes"]` (kunci lama Godot = padanan `purchased_heroes`) → `GameManager.purchased_heroes` (REFERENSI ke array save; diikat `bind_purchased_heroes()` di `start_level`, **dilepas dengan mengganti binding — bukan `clear()`** di `return_to_menu`, paritas `game_instance = None` main.py:587) → `GameManager.catchup_unlocks()` → `Hero._catchup_unlocks()`. Berlaku untuk hero KEDUA tim (pygame membaca daftar yang sama untuk hero AI). Unlock yang masuk di tengah match (boss dikalahkan) langsung terhitung karena array-nya dibagi referensi; hero yang SUDAH berdiri tidak dihitung ulang (sama seperti pygame). Save pemain tidak dimigrasi/dihapus: unlock lama dipakai apa adanya, penulisan hanya saat starter benar-benar baru di-grant. Dikunci fixture `hero_catchup_unlocks` + `HeroCatchupUnlockParityTest`. |
 | Kaizen | Rig buatan ulang selalu mengalahkan sprite Pygame | Arena normal memakai bake renderer Pygame. Rig alternatif tetap ada di `KaizenDemo.tscn`, atau opt-in `mystic/rendering/experimental_hero_rigs`. |
 | Kontrol demo | D/F1/T/SPACE mengubah match normal | Dinonaktifkan default; hanya aktif dengan `Main.enable_debug_controls`. Pilih difficulty di menu sebelum bermain. |
@@ -1216,7 +1276,7 @@ Regenerasi fixture HANYA bila `hero_items.py` berubah.
 `LocalizationParityTest` memutar ulang **seluruh** `localization.json` (objek
 JSON) pada `Localization.gd` + jalur produksi `GameManager`/`SaveManager`/
 `ItemDB`/`MainMenu`. Oracle-nya `localization.py` yang dijalankan apa adanya:
-tabel 24 kunci × 2 bahasa, 48 hasil `tr()` (setiap kunci × bahasa dengan nilai
+tabel 106 kunci × 2 bahasa, 212 hasil `tr()` (setiap kunci × bahasa dengan nilai
 contoh), 8 kasus tepi (kunci tak dikenal → kunci mentah, nilai hilang →
 template mentah), 21 kasus `str.format` (escape `{{`, kurung tunggal →
 `ValueError` → mentah, float `3.0` → `"3.0"`), 13 kasus `str()`, 7

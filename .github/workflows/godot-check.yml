@@ -173,12 +173,20 @@ jobs:
           python3 godot/tools/tscn_lint.py $(find godot -name '*.tscn' -o -name '*.tres')
           python3 godot/tools/check_refs.py godot
           python3 godot/tools/particles_lint.py godot
+          # Dua kali port menambahkan readout di atas arena yang tidak ada di
+          # pygame (bar HP + pip level di kastil; baris "medan:" dan
+          # "difficulty:" di bawah badge LEVEL/WAVE) dan menutupi peta. Gate ini
+          # mengunci bentuk overlay nexus = crest + bar SHIELD saja, dan
+          # melarang node readout medan kembali (lihat godot/tools/
+          # map_clutter_lint.py untuk alasan + cermin _entity.py pygame).
+          python3 godot/tools/map_clutter_lint.py godot
           python3 godot/tools/test_godot_log_gate.py
-          # localization.py -> Localization.gd: tabel teks id/en (24 kunci x 2
+          # localization.py -> Localization.gd: tabel teks id/en (106 kunci x 2
           # bahasa) dibandingkan baris demi baris dengan modul pygame ASLI,
-          # placeholder diaudit, dan fixture LocalizationParityTest diperiksa
-          # segar. Tidak butuh pygame maupun Godot — drift satu tanda baca pun
-          # gagal di sini, sebelum engine diunduh.
+          # placeholder + pemakai tr_text()/loc() diaudit closed-world, dan
+          # fixture LocalizationParityTest diperiksa segar. Tidak butuh pygame
+          # maupun Godot — drift satu tanda baca pun gagal di sini, sebelum
+          # engine diunduh.
           python3 tools/test_godot_localization_parity.py
           # Aset biner project Godot adalah SALINAN yang di-gitignore
           # (sounds/ items/ presplash.png). Cek ini mengunci seluruh rantainya

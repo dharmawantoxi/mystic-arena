@@ -10,6 +10,11 @@
 # QWER memanggil jalur yang sama (hero.cast_q/w/e/r), jadi tidak ada
 # duplikasi logika. SEMUA teks + member + callback = 1:1 versi lama
 # (dikunci UiHudParityTest); yang berubah hanya visual & geometri.
+#
+# Teks panel (label "tidak ada hero", petunjuk, tooltip) sejak 2026-09-13
+# lewat MysticLocalization supaya pilihan bahasa di SETTINGS benar-benar
+# berlaku di dalam game. Nilai "id" tabel = teks lama, jadi tampilan
+# Indonesia tidak berubah; "en" adalah padanan Inggrisnya.
 extends Control
 
 const SkillButtonScript = preload("res://scenes/ui/SkillButton.gd")
@@ -57,6 +62,9 @@ func _ready() -> void:
 	GameManager.selection_changed.connect(_on_selection_changed)
 	GameManager.hero_died.connect(_on_hero_died)
 	GameManager.shop_changed.connect(_refresh_static)
+	# Bahasa aktif berganti (SETTINGS/pause) -> label + tooltip panel dibaca
+	# ulang; semua teks panel lewat _loc(), padanan tr() pygame.
+	GameManager.language_changed.connect(_on_language_changed)
 	_layout()
 	_on_selection_changed()
 
@@ -117,7 +125,7 @@ func _build() -> void:
 	_name_label.add_theme_color_override("font_color", UiTheme.TEXT_WHITE)
 	_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_name_label.clip_text = true
-	_name_label.text = "tidak ada hero dipilih"
+	_name_label.text = _loc("skillbar_no_hero")
 	name_row.add_child(_name_label)
 	_level_label = Label.new()
 	_level_label.add_theme_font_override("font", UiTheme.body_bold())
@@ -130,7 +138,7 @@ func _build() -> void:
 	_close_btn.text = "X"
 	_close_btn.custom_minimum_size = Vector2(22, 22)
 	_close_btn.focus_mode = Control.FOCUS_NONE
-	_close_btn.tooltip_text = "Tutup panel (batal pilih hero)"
+	_close_btn.tooltip_text = _loc("skillbar_close_tip")
 	_close_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	UiTheme.apply_row_button(_close_btn, "danger", 13, false)
 	_close_btn.pressed.connect(_on_close_pressed)
@@ -172,7 +180,7 @@ func _build() -> void:
 
 	# ── baris aksi panel (paritas tombol HeroPanel; tinggi 22) ──
 	_autocast_btn = _make_action_button("AUTO-CAST ON")
-	_autocast_btn.tooltip_text = "Auto-cast selalu ON (paritas v29: toggle no-op)"
+	_autocast_btn.tooltip_text = _loc("skillbar_autocast_tip")
 	_autocast_btn.pressed.connect(_on_autocast_pressed)
 	_info.add_child(_autocast_btn)
 
@@ -200,13 +208,13 @@ func _build() -> void:
 		chip.add_theme_stylebox_override("hover", csb)
 		chip.add_theme_stylebox_override("pressed", csb)
 		chip.add_theme_stylebox_override("disabled", csb)
-		chip.tooltip_text = "slot item %d kosong" % (i + 1)
+		chip.tooltip_text = _loc("skillbar_slot_empty") % (i + 1)
 		chip.pressed.connect(_open_forge)
 		_item_row.add_child(chip)
 		_item_chips.append(chip)
 
 	_forge_btn = _make_action_button("ITEM FORGE  (0/6)")
-	_forge_btn.tooltip_text = "Buka ITEM FORGE untuk hero ini"
+	_forge_btn.tooltip_text = _loc("skillbar_forge_tip")
 	_forge_btn.pressed.connect(_open_forge)
 	_info.add_child(_forge_btn)
 	_upgrade_btn = _make_action_button("")
@@ -228,6 +236,10 @@ func _on_selection_changed() -> void:
 		_hero = null
 	_refresh_static()
 	_refresh()
+
+
+func _on_language_changed(_language: String) -> void:
+	_refresh_static()
 
 
 func _on_hero_died(hero: Node) -> void:
@@ -291,6 +303,11 @@ func _refresh_static() -> void:
 	_close_btn.disabled = hero == null
 	_autocast_btn.disabled = hero == null
 	_forge_btn.disabled = hero == null
+	# Tooltip adalah teks statis yang dipasang di `_build()` — dibaca ulang di
+	# sini supaya pergantian bahasa berlaku tanpa membangun panel dari awal.
+	_close_btn.tooltip_text = _loc("skillbar_close_tip")
+	_autocast_btn.tooltip_text = _loc("skillbar_autocast_tip")
+	_forge_btn.tooltip_text = _loc("skillbar_forge_tip")
 	_upgrade_btn.disabled = hero == null
 	# Border panel = warna hero +30 (paritas HeroPanel pygame).
 	if hero == null:
@@ -302,9 +319,9 @@ func _refresh_static() -> void:
 			minf(1.0, hc.b + 30.0 / 255.0))
 	_root.queue_redraw()
 	if hero == null:
-		_name_label.text = "tidak ada hero dipilih"
+		_name_label.text = _loc("skillbar_no_hero")
 		_level_label.text = ""
-		_stats_label.text = "H → HERO: beli hero, lalu klik untuk memilih"
+		_stats_label.text = _loc("skillbar_buy_hint")
 		_hp_bar.value = 0.0
 		_hp_label.text = ""
 		_forge_btn.text = "ITEM FORGE  (0/6)"
@@ -334,6 +351,11 @@ func _refresh_static() -> void:
 		_upgrade_btn.disabled = true
 	for k in SKILL_KEYS:
 		_buttons[k].update_state(hero)
+
+
+## Pintu teks panel ke tabel teks bersama (localization.py <-> Localization.gd).
+func _loc(key: String) -> String:
+	return MysticLocalization.tr_text(key)
 
 
 func _make_action_button(label_text: String) -> Button:
@@ -374,7 +396,7 @@ func _sync_items(ids: Array) -> void:
 				sb.border_color = SLOT_BORDER_EMPTY
 				sb.set_border_width_all(1)
 			chip.icon = null
-			chip.tooltip_text = "slot item %d kosong" % (i + 1)
+			chip.tooltip_text = _loc("skillbar_slot_empty") % (i + 1)
 		# StyleBoxFlat yang di-mutate tidak otomatis memicu redraw Panel
 		chip.queue_redraw()
 

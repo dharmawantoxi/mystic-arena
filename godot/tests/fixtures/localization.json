@@ -342,7 +342,89 @@
       "item_detail_flavor",
       "item_detail_owned",
       "item_detail_close_hint",
-      "item_inventory_hint"
+      "item_inventory_hint",
+      "hud_hint_select",
+      "hud_hint_skill",
+      "hud_hint_shop",
+      "hud_hint_click",
+      "hud_hint_right_click",
+      "hud_hint_pause",
+      "hud_hint_close",
+      "hud_hint_buy",
+      "hud_hint_replay",
+      "hud_hint_next",
+      "hud_hint_menu",
+      "shop_title",
+      "shop_close",
+      "shop_tab_tower",
+      "shop_tab_item",
+      "shop_tab_hero",
+      "shop_tab_nexus",
+      "shop_context_none",
+      "shop_label_tower",
+      "shop_label_slot",
+      "shop_buy_for",
+      "shop_dead_no_forge",
+      "shop_item_note",
+      "shop_item_slots",
+      "shop_item_attack_type",
+      "shop_item_owned",
+      "shop_item_owned_suffix",
+      "shop_reason_owned",
+      "shop_reason_full",
+      "shop_reason_melee",
+      "shop_reason_magic",
+      "shop_reason_poor",
+      "shop_hero_select_hint",
+      "shop_hero_buy_list",
+      "shop_hero_others",
+      "shop_hero_owned_badge",
+      "shop_max_level",
+      "shop_max_level_count",
+      "shop_upgrade_to",
+      "shop_upgrade_stat_note",
+      "shop_tower_hint",
+      "shop_tower_free_slots",
+      "shop_tower_click_upgrade",
+      "shop_tower_slot_dire",
+      "shop_tower_slot_taken",
+      "shop_tower_slot_empty",
+      "shop_tower_build_note",
+      "shop_tower_path_note",
+      "shop_tower_special",
+      "shop_tower_dire_locked",
+      "shop_tower_pick_path",
+      "shop_regen_active",
+      "shop_regen_buy",
+      "shop_regen_note",
+      "shop_regen_locked",
+      "shop_tower_sell",
+      "shop_tower_sell_note",
+      "shop_nexus_dead",
+      "shop_nexus_max",
+      "shop_nexus_upgrade",
+      "shop_nexus_free_shield",
+      "shop_nexus_shield_buy",
+      "shop_nexus_shield_note",
+      "shop_nexus_shield_owned",
+      "shop_nexus_enemy",
+      "skillbar_no_hero",
+      "skillbar_buy_hint",
+      "skillbar_close_tip",
+      "skillbar_autocast_tip",
+      "skillbar_slot_empty",
+      "skillbar_forge_tip",
+      "over_replay",
+      "over_menu",
+      "over_replay_hint",
+      "over_next_hint",
+      "over_menu_hint",
+      "over_defeat_note",
+      "over_meta_reward",
+      "over_next_button",
+      "over_reward_first_win",
+      "over_reward_first_replay",
+      "over_reward_replay"
     ],
     "id": [
       "language",
@@ -368,7 +450,89 @@
       "item_detail_flavor",
       "item_detail_owned",
       "item_detail_close_hint",
-      "item_inventory_hint"
+      "item_inventory_hint",
+      "hud_hint_select",
+      "hud_hint_skill",
+      "hud_hint_shop",
+      "hud_hint_click",
+      "hud_hint_right_click",
+      "hud_hint_pause",
+      "hud_hint_close",
+      "hud_hint_buy",
+      "hud_hint_replay",
+      "hud_hint_next",
+      "hud_hint_menu",
+      "shop_title",
+      "shop_close",
+      "shop_tab_tower",
+      "shop_tab_item",
+      "shop_tab_hero",
+      "shop_tab_nexus",
+      "shop_context_none",
+      "shop_label_tower",
+      "shop_label_slot",
+      "shop_buy_for",
+      "shop_dead_no_forge",
+      "shop_item_note",
+      "shop_item_slots",
+      "shop_item_attack_type",
+      "shop_item_owned",
+      "shop_item_owned_suffix",
+      "shop_reason_owned",
+      "shop_reason_full",
+      "shop_reason_melee",
+      "shop_reason_magic",
+      "shop_reason_poor",
+      "shop_hero_select_hint",
+      "shop_hero_buy_list",
+      "shop_hero_others",
+      "shop_hero_owned_badge",
+      "shop_max_level",
+      "shop_max_level_count",
+      "shop_upgrade_to",
+      "shop_upgrade_stat_note",
+      "shop_tower_hint",
+      "shop_tower_free_slots",
+      "shop_tower_click_upgrade",
+      "shop_tower_slot_dire",
+      "shop_tower_slot_taken",
+      "shop_tower_slot_empty",
+      "shop_tower_build_note",
+      "shop_tower_path_note",
+      "shop_tower_special",
+      "shop_tower_dire_locked",
+      "shop_tower_pick_path",
+      "shop_regen_active",
+      "shop_regen_buy",
+      "shop_regen_note",
+      "shop_regen_locked",
+      "shop_tower_sell",
+      "shop_tower_sell_note",
+      "shop_nexus_dead",
+      "shop_nexus_max",
+      "shop_nexus_upgrade",
+      "shop_nexus_free_shield",
+      "shop_nexus_shield_buy",
+      "shop_nexus_shield_note",
+      "shop_nexus_shield_owned",
+      "shop_nexus_enemy",
+      "skillbar_no_hero",
+      "skillbar_buy_hint",
+      "skillbar_close_tip",
+      "skillbar_autocast_tip",
+      "skillbar_slot_empty",
+      "skillbar_forge_tip",
+      "over_replay",
+      "over_menu",
+      "over_replay_hint",
+      "over_next_hint",
+      "over_menu_hint",
+      "over_defeat_note",
+      "over_meta_reward",
+      "over_next_button",
+      "over_reward_first_win",
+      "over_reward_first_replay",
+      "over_reward_replay"
     ]
   },
   "label_cases": [
@@ -432,6 +596,17 @@
       "item",
       "hero"
     ],
+    "hud_hint_buy": [],
+    "hud_hint_click": [],
+    "hud_hint_close": [],
+    "hud_hint_menu": [],
+    "hud_hint_next": [],
+    "hud_hint_pause": [],
+    "hud_hint_replay": [],
+    "hud_hint_right_click": [],
+    "hud_hint_select": [],
+    "hud_hint_shop": [],
+    "hud_hint_skill": [],
     "inventory_full": [
       "hero"
     ],
@@ -455,17 +630,88 @@
       "hero"
     ],
     "no_hero": [],
+    "over_defeat_note": [],
+    "over_menu": [],
+    "over_menu_hint": [],
+    "over_meta_reward": [],
+    "over_next_button": [],
+    "over_next_hint": [],
+    "over_replay": [],
+    "over_replay_hint": [],
+    "over_reward_first_replay": [],
+    "over_reward_first_win": [],
+    "over_reward_replay": [],
     "queued": [
       "count"
     ],
     "queued_item_count": [
       "count"
     ],
+    "shop_buy_for": [],
+    "shop_close": [],
+    "shop_context_none": [],
+    "shop_dead_no_forge": [],
+    "shop_hero_buy_list": [],
+    "shop_hero_others": [],
+    "shop_hero_owned_badge": [],
+    "shop_hero_select_hint": [],
+    "shop_item_attack_type": [],
+    "shop_item_note": [],
+    "shop_item_owned": [],
+    "shop_item_owned_suffix": [],
+    "shop_item_slots": [],
+    "shop_label_slot": [],
+    "shop_label_tower": [],
+    "shop_max_level": [],
+    "shop_max_level_count": [],
+    "shop_nexus_dead": [],
+    "shop_nexus_enemy": [],
+    "shop_nexus_free_shield": [],
+    "shop_nexus_max": [],
+    "shop_nexus_shield_buy": [],
+    "shop_nexus_shield_note": [],
+    "shop_nexus_shield_owned": [],
+    "shop_nexus_upgrade": [],
     "shop_no_hero_banner": [],
     "shop_no_hero_yet": [],
     "shop_page_label": [
       "page"
-    ]
+    ],
+    "shop_reason_full": [],
+    "shop_reason_magic": [],
+    "shop_reason_melee": [],
+    "shop_reason_owned": [],
+    "shop_reason_poor": [],
+    "shop_regen_active": [],
+    "shop_regen_buy": [],
+    "shop_regen_locked": [],
+    "shop_regen_note": [],
+    "shop_tab_hero": [],
+    "shop_tab_item": [],
+    "shop_tab_nexus": [],
+    "shop_tab_tower": [],
+    "shop_title": [],
+    "shop_tower_build_note": [],
+    "shop_tower_click_upgrade": [],
+    "shop_tower_dire_locked": [],
+    "shop_tower_free_slots": [],
+    "shop_tower_hint": [],
+    "shop_tower_path_note": [],
+    "shop_tower_pick_path": [],
+    "shop_tower_sell": [],
+    "shop_tower_sell_note": [],
+    "shop_tower_slot_dire": [],
+    "shop_tower_slot_empty": [],
+    "shop_tower_slot_taken": [],
+    "shop_tower_special": [],
+    "shop_upgrade_stat_note": [],
+    "shop_upgrade_to": [],
+    "skillbar_autocast_tip": [],
+    "skillbar_buy_hint": [],
+    "skillbar_close_tip": [],
+    "skillbar_forge_tip": [],
+    "skillbar_no_hero": [],
+    "skillbar_slot_empty": []
   },
   "py_str_cases": [
     {
@@ -579,6 +825,17 @@
       "forge_delivered": "Forge items delivered to {hero}: {items}!",
       "forge_purchase": "{hero} purchased {item}!",
       "forge_queued": "{item} for {hero} will be delivered after respawn!",
+      "hud_hint_buy": "buy",
+      "hud_hint_click": "click",
+      "hud_hint_close": "close",
+      "hud_hint_menu": "menu",
+      "hud_hint_next": "next",
+      "hud_hint_pause": "pause",
+      "hud_hint_replay": "replay",
+      "hud_hint_right_click": "right-click",
+      "hud_hint_select": "select",
+      "hud_hint_shop": "shop",
+      "hud_hint_skill": "skill",
       "inventory_full": "{hero}'s inventory is full.",
       "item_card_detail_hint": "TAP AN ITEM CARD = FULL INFO",
       "item_detail_close_hint": "Tap outside the box to close details",
@@ -592,11 +849,82 @@
       "language": "Language",
       "magic_only_denied": "{hero} is not a Magic-attribute hero - this item cannot be equipped.",
       "no_hero": "There is no hero to receive this item.",
+      "over_defeat_note": "Radiant Nexus destroyed — a defeat pays nothing.",
+      "over_menu": "MAIN MENU  (ESC)",
+      "over_menu_hint": "main menu",
+      "over_meta_reward": "Meta reward: +%d gold (%s) saved to the save file.",
+      "over_next_button": "NEXT LEVEL %d  (ENTER)",
+      "over_next_hint": "next level",
+      "over_replay": "REPLAY  (R)",
+      "over_replay_hint": "replay",
+      "over_reward_first_replay": "first replay",
+      "over_reward_first_win": "first win",
+      "over_reward_replay": "repeat replay",
       "queued": "+{count} queued",
       "queued_item_count": "({count} item(s) queued)",
+      "shop_buy_for": "BUY FOR:",
+      "shop_close": "CLOSE  (H)",
+      "shop_context_none": "nothing selected",
+      "shop_dead_no_forge": "DEAD - no Item Forge queue in this build",
+      "shop_hero_buy_list": "Buy heroes (%d/%d owned, including the ones waiting to respawn):",
+      "shop_hero_others": "Other heroes (%d total in heroes.json) unlock through level progress — see SaveManager.unlocked_heroes.",
+      "shop_hero_owned_badge": " · OWNED",
+      "shop_hero_select_hint": "Select a Radiant hero to see its stats & upgrades.",
+      "shop_item_attack_type": "Attack type: %s · %s — tagged items only fit that type.",
+      "shop_item_note": "Items are bought per hero: 6 slots, priced 4500-6000 gold per tier.",
+      "shop_item_owned": "Owned: %s",
+      "shop_item_owned_suffix": "owned",
+      "shop_item_slots": "%s — %d/%d item slots",
+      "shop_label_slot": "slot",
+      "shop_label_tower": "tower",
+      "shop_max_level": "Maximum level reached.",
+      "shop_max_level_count": "Maximum level (%d) reached.",
+      "shop_nexus_dead": "The Radiant Nexus is already destroyed.",
+      "shop_nexus_enemy": "Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — destroy it to WIN.",
+      "shop_nexus_free_shield": "FREE Castle Shield is active (until wave 10) — leftover damage is reduced by %.0f%%.",
+      "shop_nexus_max": "The Nexus is already at maximum level.",
+      "shop_nexus_shield_buy": "Buy Castle Shield — %d gold",
+      "shop_nexus_shield_note": "Permanent shield: it absorbs damage 1:1, the rest is mitigated by %.0f%%.",
+      "shop_nexus_shield_owned": "Castle Shield already purchased.",
+      "shop_nexus_upgrade": "Upgrade Nexus to Lv.%d — %d gold",
       "shop_no_hero_banner": "NO HEROES ALIVE - summon a hero at HERO SHOP first; items below can still be browsed.",
       "shop_no_hero_yet": "(no heroes yet - summon one at HERO SHOP first)",
-      "shop_page_label": "PAGE {page}"
+      "shop_page_label": "PAGE {page}",
+      "shop_reason_full": "Inventory full (6/6)",
+      "shop_reason_magic": "MAGIC ONLY — this hero is not magic",
+      "shop_reason_melee": "MELEE ONLY — this hero is ranged",
+      "shop_reason_owned": "Already owned",
+      "shop_reason_poor": "Not enough gold",
+      "shop_regen_active": "Regen Shield: ACTIVE (shield recovers after 3 seconds without damage)",
+      "shop_regen_buy": "Buy Regen Shield — %d gold",
+      "shop_regen_locked": "Regen Shield unlocks at Lv.%d+ (costs %d gold)",
+      "shop_regen_note": "The tower shield regenerates too (parity Tower.activate_regen_shield).",
+      "shop_tab_hero": "HERO",
+      "shop_tab_item": "ITEMS",
+      "shop_tab_nexus": "NEXUS",
+      "shop_tab_tower": "TOWERS",
+      "shop_title": "SHOP",
+      "shop_tower_build_note": "Note: Lv1 stats are the same on every path (Archer Lv1); its strength only appears after upgrading to Lv2.",
+      "shop_tower_click_upgrade": "Click one of your towers to upgrade / sell / Regen Shield.",
+      "shop_tower_dire_locked": "Dire tower — it cannot be upgraded or sold.",
+      "shop_tower_free_slots": "Empty slots: Radiant %d · Dire %d  (3 slots per lane per team)",
+      "shop_tower_hint": "Click a slot circle on a lane to build a tower.",
+      "shop_tower_path_note": "Upgrading Lv1 -> Lv2 picks the path and raises HP by x%.2f.",
+      "shop_tower_pick_path": "Pick the Lv2 upgrade path:",
+      "shop_tower_sell": "Sell tower (+%d gold)",
+      "shop_tower_sell_note": "Refunds 50% of the upgrade costs already paid.",
+      "shop_tower_slot_dire": "This slot belongs to Dire — it cannot be built.",
+      "shop_tower_slot_empty": "Empty slot on lane %s — build a Lv1 tower (%d gold)",
+      "shop_tower_slot_taken": "This slot already holds a tower.",
+      "shop_tower_special": "Special: %s",
+      "shop_upgrade_stat_note": "HP x%.2f, damage and range go up.",
+      "shop_upgrade_to": "Upgrade to Lv.%d — %d gold",
+      "skillbar_autocast_tip": "Auto-cast is always ON (parity v29: toggle no-op)",
+      "skillbar_buy_hint": "H → HERO: buy a hero, then click it to select",
+      "skillbar_close_tip": "Close panel (deselect hero)",
+      "skillbar_forge_tip": "Open ITEM FORGE for this hero",
+      "skillbar_no_hero": "no hero selected",
+      "skillbar_slot_empty": "item slot %d empty"
     },
     "id": {
       "dead": "MATI",
@@ -605,6 +933,17 @@
       "forge_delivered": "Item Forge dikirim ke {hero}: {items}!",
       "forge_purchase": "{hero} membeli {item}!",
       "forge_queued": "{item} untuk {hero} dikirim setelah respawn!",
+      "hud_hint_buy": "beli",
+      "hud_hint_click": "klik",
+      "hud_hint_close": "tutup",
+      "hud_hint_menu": "menu",
+      "hud_hint_next": "lanjut",
+      "hud_hint_pause": "jeda",
+      "hud_hint_replay": "ulangi",
+      "hud_hint_right_click": "klik kanan",
+      "hud_hint_select": "pilih",
+      "hud_hint_shop": "toko",
+      "hud_hint_skill": "skill",
       "inventory_full": "Inventory {hero} penuh.",
       "item_card_detail_hint": "TAP KARTU ITEM = INFO LENGKAP",
       "item_detail_close_hint": "Ketuk di luar kotak untuk menutup detail",
@@ -618,11 +957,82 @@
       "language": "Bahasa",
       "magic_only_denied": "{hero} bukan hero beratribut Magic - item ini tidak bisa dipakai.",
       "no_hero": "Tidak ada hero untuk menerima item.",
+      "over_defeat_note": "Nexus Radiant hancur — kalah tidak dibayar.",
+      "over_menu": "MENU UTAMA  (ESC)",
+      "over_menu_hint": "menu utama",
+      "over_meta_reward": "Meta reward: +%d gold (%s) tersimpan ke save.",
+      "over_next_button": "LANJUT KE LEVEL %d  (ENTER)",
+      "over_next_hint": "lanjut level",
+      "over_replay": "ULANGI  (R)",
+      "over_replay_hint": "ulangi",
+      "over_reward_first_replay": "replay pertama",
+      "over_reward_first_win": "menang pertama",
+      "over_reward_replay": "replay berulang",
       "queued": "+{count} antrean",
       "queued_item_count": "({count} item diantrikan)",
+      "shop_buy_for": "BELI UNTUK:",
+      "shop_close": "TUTUP  (H)",
+      "shop_context_none": "tidak ada yang dipilih",
+      "shop_dead_no_forge": "DEAD - belum ada antrean Item Forge di build ini",
+      "shop_hero_buy_list": "Beli hero (%d/%d dimiliki, termasuk yang respawn):",
+      "shop_hero_others": "Hero lain (%d total di heroes.json) terbuka lewat progres level — lihat SaveManager.unlocked_heroes.",
+      "shop_hero_owned_badge": " · DIMILIKI",
+      "shop_hero_select_hint": "Pilih hero Radiant untuk melihat status & upgrade.",
+      "shop_item_attack_type": "Tipe serangan: %s · %s — item bertanda hanya untuk tipe itu.",
+      "shop_item_note": "Item dibeli per hero: 6 slot, harga 4500-6000 gold per tier.",
+      "shop_item_owned": "Dimiliki: %s",
+      "shop_item_owned_suffix": "dimiliki",
+      "shop_item_slots": "%s — %d/%d slot item",
+      "shop_label_slot": "slot",
+      "shop_label_tower": "menara",
+      "shop_max_level": "Level maksimum tercapai.",
+      "shop_max_level_count": "Level maksimum (%d) tercapai.",
+      "shop_nexus_dead": "Radiant Nexus sudah hancur.",
+      "shop_nexus_enemy": "Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — hancurkan untuk MENANG.",
+      "shop_nexus_free_shield": "Castle Shield GRATIS aktif (sampai wave 10) — damage tersisa dikurangi %.0f%%.",
+      "shop_nexus_max": "Nexus sudah level maksimum.",
+      "shop_nexus_shield_buy": "Beli Castle Shield — %d gold",
+      "shop_nexus_shield_note": "Shield permanen: menyerap damage 1:1, sisanya dimitigasi %.0f%%.",
+      "shop_nexus_shield_owned": "Castle Shield sudah dibeli.",
+      "shop_nexus_upgrade": "Upgrade Nexus ke Lv.%d — %d gold",
       "shop_no_hero_banner": "TIDAK ADA HERO HIDUP - summon hero di HERO SHOP dulu; item di bawah tetap bisa dilihat.",
       "shop_no_hero_yet": "(belum ada hero - summon dulu di HERO SHOP)",
-      "shop_page_label": "HAL {page}"
+      "shop_page_label": "HAL {page}",
+      "shop_reason_full": "Slot penuh (6/6)",
+      "shop_reason_magic": "MAGIC ONLY — hero ini bukan magic",
+      "shop_reason_melee": "MELEE ONLY — hero ini ranged",
+      "shop_reason_owned": "Sudah dimiliki",
+      "shop_reason_poor": "Gold kurang",
+      "shop_regen_active": "Regen Shield: AKTIF (shield pulih setelah 3 detik tidak kena damage)",
+      "shop_regen_buy": "Beli Regen Shield — %d gold",
+      "shop_regen_locked": "Regen Shield terbuka di Lv.%d+ (harga %d gold)",
+      "shop_regen_note": "Shield menara ikut regen (paritas Tower.activate_regen_shield).",
+      "shop_tab_hero": "HERO",
+      "shop_tab_item": "ITEM",
+      "shop_tab_nexus": "NEXUS",
+      "shop_tab_tower": "MENARA",
+      "shop_title": "TOKO",
+      "shop_tower_build_note": "Catatan: stat Lv1 semua jalur sama (Archer Lv1); kekuatannya baru muncul setelah upgrade ke Lv2.",
+      "shop_tower_click_upgrade": "Klik menara milikmu untuk upgrade / jual / Regen Shield.",
+      "shop_tower_dire_locked": "Menara Dire — tidak bisa di-upgrade atau dijual.",
+      "shop_tower_free_slots": "Slot kosong: Radiant %d · Dire %d  (3 slot per lane per tim)",
+      "shop_tower_hint": "Klik lingkaran slot di lane untuk membangun menara.",
+      "shop_tower_path_note": "Upgrade Lv1 -> Lv2 memilih jalur dan menaikkan HP x%.2f.",
+      "shop_tower_pick_path": "Pilih jalur upgrade ke Lv2:",
+      "shop_tower_sell": "Jual menara (+%d gold)",
+      "shop_tower_sell_note": "Refund 50% dari total biaya upgrade yang sudah dibayar.",
+      "shop_tower_slot_dire": "Slot ini milik Dire — tidak bisa dibangun.",
+      "shop_tower_slot_empty": "Slot kosong di lane %s — bangun menara Lv1 (%d gold)",
+      "shop_tower_slot_taken": "Slot sudah terisi menara.",
+      "shop_tower_special": "Spesial: %s",
+      "shop_upgrade_stat_note": "HP x%.2f, damage & jangkauan naik.",
+      "shop_upgrade_to": "Upgrade ke Lv.%d — %d gold",
+      "skillbar_autocast_tip": "Auto-cast selalu ON (paritas v29: toggle no-op)",
+      "skillbar_buy_hint": "H → HERO: beli hero, lalu klik untuk memilih",
+      "skillbar_close_tip": "Tutup panel (batal pilih hero)",
+      "skillbar_forge_tip": "Buka ITEM FORGE untuk hero ini",
+      "skillbar_no_hero": "tidak ada hero dipilih",
+      "skillbar_slot_empty": "slot item %d kosong"
     }
   },
   "tr_cases": [
@@ -852,6 +1262,498 @@
       "values": []
     },
     {
+      "key": "hud_hint_select",
+      "lang": "id",
+      "out": "pilih",
+      "values": []
+    },
+    {
+      "key": "hud_hint_skill",
+      "lang": "id",
+      "out": "skill",
+      "values": []
+    },
+    {
+      "key": "hud_hint_shop",
+      "lang": "id",
+      "out": "toko",
+      "values": []
+    },
+    {
+      "key": "hud_hint_click",
+      "lang": "id",
+      "out": "klik",
+      "values": []
+    },
+    {
+      "key": "hud_hint_right_click",
+      "lang": "id",
+      "out": "klik kanan",
+      "values": []
+    },
+    {
+      "key": "hud_hint_pause",
+      "lang": "id",
+      "out": "jeda",
+      "values": []
+    },
+    {
+      "key": "hud_hint_close",
+      "lang": "id",
+      "out": "tutup",
+      "values": []
+    },
+    {
+      "key": "hud_hint_buy",
+      "lang": "id",
+      "out": "beli",
+      "values": []
+    },
+    {
+      "key": "hud_hint_replay",
+      "lang": "id",
+      "out": "ulangi",
+      "values": []
+    },
+    {
+      "key": "hud_hint_next",
+      "lang": "id",
+      "out": "lanjut",
+      "values": []
+    },
+    {
+      "key": "hud_hint_menu",
+      "lang": "id",
+      "out": "menu",
+      "values": []
+    },
+    {
+      "key": "shop_title",
+      "lang": "id",
+      "out": "TOKO",
+      "values": []
+    },
+    {
+      "key": "shop_close",
+      "lang": "id",
+      "out": "TUTUP  (H)",
+      "values": []
+    },
+    {
+      "key": "shop_tab_tower",
+      "lang": "id",
+      "out": "MENARA",
+      "values": []
+    },
+    {
+      "key": "shop_tab_item",
+      "lang": "id",
+      "out": "ITEM",
+      "values": []
+    },
+    {
+      "key": "shop_tab_hero",
+      "lang": "id",
+      "out": "HERO",
+      "values": []
+    },
+    {
+      "key": "shop_tab_nexus",
+      "lang": "id",
+      "out": "NEXUS",
+      "values": []
+    },
+    {
+      "key": "shop_context_none",
+      "lang": "id",
+      "out": "tidak ada yang dipilih",
+      "values": []
+    },
+    {
+      "key": "shop_label_tower",
+      "lang": "id",
+      "out": "menara",
+      "values": []
+    },
+    {
+      "key": "shop_label_slot",
+      "lang": "id",
+      "out": "slot",
+      "values": []
+    },
+    {
+      "key": "shop_buy_for",
+      "lang": "id",
+      "out": "BELI UNTUK:",
+      "values": []
+    },
+    {
+      "key": "shop_dead_no_forge",
+      "lang": "id",
+      "out": "DEAD - belum ada antrean Item Forge di build ini",
+      "values": []
+    },
+    {
+      "key": "shop_item_note",
+      "lang": "id",
+      "out": "Item dibeli per hero: 6 slot, harga 4500-6000 gold per tier.",
+      "values": []
+    },
+    {
+      "key": "shop_item_slots",
+      "lang": "id",
+      "out": "%s — %d/%d slot item",
+      "values": []
+    },
+    {
+      "key": "shop_item_attack_type",
+      "lang": "id",
+      "out": "Tipe serangan: %s · %s — item bertanda hanya untuk tipe itu.",
+      "values": []
+    },
+    {
+      "key": "shop_item_owned",
+      "lang": "id",
+      "out": "Dimiliki: %s",
+      "values": []
+    },
+    {
+      "key": "shop_item_owned_suffix",
+      "lang": "id",
+      "out": "dimiliki",
+      "values": []
+    },
+    {
+      "key": "shop_reason_owned",
+      "lang": "id",
+      "out": "Sudah dimiliki",
+      "values": []
+    },
+    {
+      "key": "shop_reason_full",
+      "lang": "id",
+      "out": "Slot penuh (6/6)",
+      "values": []
+    },
+    {
+      "key": "shop_reason_melee",
+      "lang": "id",
+      "out": "MELEE ONLY — hero ini ranged",
+      "values": []
+    },
+    {
+      "key": "shop_reason_magic",
+      "lang": "id",
+      "out": "MAGIC ONLY — hero ini bukan magic",
+      "values": []
+    },
+    {
+      "key": "shop_reason_poor",
+      "lang": "id",
+      "out": "Gold kurang",
+      "values": []
+    },
+    {
+      "key": "shop_hero_select_hint",
+      "lang": "id",
+      "out": "Pilih hero Radiant untuk melihat status & upgrade.",
+      "values": []
+    },
+    {
+      "key": "shop_hero_buy_list",
+      "lang": "id",
+      "out": "Beli hero (%d/%d dimiliki, termasuk yang respawn):",
+      "values": []
+    },
+    {
+      "key": "shop_hero_others",
+      "lang": "id",
+      "out": "Hero lain (%d total di heroes.json) terbuka lewat progres level — lihat SaveManager.unlocked_heroes.",
+      "values": []
+    },
+    {
+      "key": "shop_hero_owned_badge",
+      "lang": "id",
+      "out": " · DIMILIKI",
+      "values": []
+    },
+    {
+      "key": "shop_max_level",
+      "lang": "id",
+      "out": "Level maksimum tercapai.",
+      "values": []
+    },
+    {
+      "key": "shop_max_level_count",
+      "lang": "id",
+      "out": "Level maksimum (%d) tercapai.",
+      "values": []
+    },
+    {
+      "key": "shop_upgrade_to",
+      "lang": "id",
+      "out": "Upgrade ke Lv.%d — %d gold",
+      "values": []
+    },
+    {
+      "key": "shop_upgrade_stat_note",
+      "lang": "id",
+      "out": "HP x%.2f, damage & jangkauan naik.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_hint",
+      "lang": "id",
+      "out": "Klik lingkaran slot di lane untuk membangun menara.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_free_slots",
+      "lang": "id",
+      "out": "Slot kosong: Radiant %d · Dire %d  (3 slot per lane per tim)",
+      "values": []
+    },
+    {
+      "key": "shop_tower_click_upgrade",
+      "lang": "id",
+      "out": "Klik menara milikmu untuk upgrade / jual / Regen Shield.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_slot_dire",
+      "lang": "id",
+      "out": "Slot ini milik Dire — tidak bisa dibangun.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_slot_taken",
+      "lang": "id",
+      "out": "Slot sudah terisi menara.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_slot_empty",
+      "lang": "id",
+      "out": "Slot kosong di lane %s — bangun menara Lv1 (%d gold)",
+      "values": []
+    },
+    {
+      "key": "shop_tower_build_note",
+      "lang": "id",
+      "out": "Catatan: stat Lv1 semua jalur sama (Archer Lv1); kekuatannya baru muncul setelah upgrade ke Lv2.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_path_note",
+      "lang": "id",
+      "out": "Upgrade Lv1 -> Lv2 memilih jalur dan menaikkan HP x%.2f.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_special",
+      "lang": "id",
+      "out": "Spesial: %s",
+      "values": []
+    },
+    {
+      "key": "shop_tower_dire_locked",
+      "lang": "id",
+      "out": "Menara Dire — tidak bisa di-upgrade atau dijual.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_pick_path",
+      "lang": "id",
+      "out": "Pilih jalur upgrade ke Lv2:",
+      "values": []
+    },
+    {
+      "key": "shop_regen_active",
+      "lang": "id",
+      "out": "Regen Shield: AKTIF (shield pulih setelah 3 detik tidak kena damage)",
+      "values": []
+    },
+    {
+      "key": "shop_regen_buy",
+      "lang": "id",
+      "out": "Beli Regen Shield — %d gold",
+      "values": []
+    },
+    {
+      "key": "shop_regen_note",
+      "lang": "id",
+      "out": "Shield menara ikut regen (paritas Tower.activate_regen_shield).",
+      "values": []
+    },
+    {
+      "key": "shop_regen_locked",
+      "lang": "id",
+      "out": "Regen Shield terbuka di Lv.%d+ (harga %d gold)",
+      "values": []
+    },
+    {
+      "key": "shop_tower_sell",
+      "lang": "id",
+      "out": "Jual menara (+%d gold)",
+      "values": []
+    },
+    {
+      "key": "shop_tower_sell_note",
+      "lang": "id",
+      "out": "Refund 50% dari total biaya upgrade yang sudah dibayar.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_dead",
+      "lang": "id",
+      "out": "Radiant Nexus sudah hancur.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_max",
+      "lang": "id",
+      "out": "Nexus sudah level maksimum.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_upgrade",
+      "lang": "id",
+      "out": "Upgrade Nexus ke Lv.%d — %d gold",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_free_shield",
+      "lang": "id",
+      "out": "Castle Shield GRATIS aktif (sampai wave 10) — damage tersisa dikurangi %.0f%%.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_shield_buy",
+      "lang": "id",
+      "out": "Beli Castle Shield — %d gold",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_shield_note",
+      "lang": "id",
+      "out": "Shield permanen: menyerap damage 1:1, sisanya dimitigasi %.0f%%.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_shield_owned",
+      "lang": "id",
+      "out": "Castle Shield sudah dibeli.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_enemy",
+      "lang": "id",
+      "out": "Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — hancurkan untuk MENANG.",
+      "values": []
+    },
+    {
+      "key": "skillbar_no_hero",
+      "lang": "id",
+      "out": "tidak ada hero dipilih",
+      "values": []
+    },
+    {
+      "key": "skillbar_buy_hint",
+      "lang": "id",
+      "out": "H → HERO: beli hero, lalu klik untuk memilih",
+      "values": []
+    },
+    {
+      "key": "skillbar_close_tip",
+      "lang": "id",
+      "out": "Tutup panel (batal pilih hero)",
+      "values": []
+    },
+    {
+      "key": "skillbar_autocast_tip",
+      "lang": "id",
+      "out": "Auto-cast selalu ON (paritas v29: toggle no-op)",
+      "values": []
+    },
+    {
+      "key": "skillbar_slot_empty",
+      "lang": "id",
+      "out": "slot item %d kosong",
+      "values": []
+    },
+    {
+      "key": "skillbar_forge_tip",
+      "lang": "id",
+      "out": "Buka ITEM FORGE untuk hero ini",
+      "values": []
+    },
+    {
+      "key": "over_replay",
+      "lang": "id",
+      "out": "ULANGI  (R)",
+      "values": []
+    },
+    {
+      "key": "over_menu",
+      "lang": "id",
+      "out": "MENU UTAMA  (ESC)",
+      "values": []
+    },
+    {
+      "key": "over_replay_hint",
+      "lang": "id",
+      "out": "ulangi",
+      "values": []
+    },
+    {
+      "key": "over_next_hint",
+      "lang": "id",
+      "out": "lanjut level",
+      "values": []
+    },
+    {
+      "key": "over_menu_hint",
+      "lang": "id",
+      "out": "menu utama",
+      "values": []
+    },
+    {
+      "key": "over_defeat_note",
+      "lang": "id",
+      "out": "Nexus Radiant hancur — kalah tidak dibayar.",
+      "values": []
+    },
+    {
+      "key": "over_meta_reward",
+      "lang": "id",
+      "out": "Meta reward: +%d gold (%s) tersimpan ke save.",
+      "values": []
+    },
+    {
+      "key": "over_next_button",
+      "lang": "id",
+      "out": "LANJUT KE LEVEL %d  (ENTER)",
+      "values": []
+    },
+    {
+      "key": "over_reward_first_win",
+      "lang": "id",
+      "out": "menang pertama",
+      "values": []
+    },
+    {
+      "key": "over_reward_first_replay",
+      "lang": "id",
+      "out": "replay pertama",
+      "values": []
+    },
+    {
+      "key": "over_reward_replay",
+      "lang": "id",
+      "out": "replay berulang",
+      "values": []
+    },
+    {
       "key": "language",
       "lang": "en",
       "out": "Language",
@@ -1074,6 +1976,498 @@
       "key": "item_inventory_hint",
       "lang": "en",
       "out": "(tap: info  •  hold/right-click: drop)",
+      "values": []
+    },
+    {
+      "key": "hud_hint_select",
+      "lang": "en",
+      "out": "select",
+      "values": []
+    },
+    {
+      "key": "hud_hint_skill",
+      "lang": "en",
+      "out": "skill",
+      "values": []
+    },
+    {
+      "key": "hud_hint_shop",
+      "lang": "en",
+      "out": "shop",
+      "values": []
+    },
+    {
+      "key": "hud_hint_click",
+      "lang": "en",
+      "out": "click",
+      "values": []
+    },
+    {
+      "key": "hud_hint_right_click",
+      "lang": "en",
+      "out": "right-click",
+      "values": []
+    },
+    {
+      "key": "hud_hint_pause",
+      "lang": "en",
+      "out": "pause",
+      "values": []
+    },
+    {
+      "key": "hud_hint_close",
+      "lang": "en",
+      "out": "close",
+      "values": []
+    },
+    {
+      "key": "hud_hint_buy",
+      "lang": "en",
+      "out": "buy",
+      "values": []
+    },
+    {
+      "key": "hud_hint_replay",
+      "lang": "en",
+      "out": "replay",
+      "values": []
+    },
+    {
+      "key": "hud_hint_next",
+      "lang": "en",
+      "out": "next",
+      "values": []
+    },
+    {
+      "key": "hud_hint_menu",
+      "lang": "en",
+      "out": "menu",
+      "values": []
+    },
+    {
+      "key": "shop_title",
+      "lang": "en",
+      "out": "SHOP",
+      "values": []
+    },
+    {
+      "key": "shop_close",
+      "lang": "en",
+      "out": "CLOSE  (H)",
+      "values": []
+    },
+    {
+      "key": "shop_tab_tower",
+      "lang": "en",
+      "out": "TOWERS",
+      "values": []
+    },
+    {
+      "key": "shop_tab_item",
+      "lang": "en",
+      "out": "ITEMS",
+      "values": []
+    },
+    {
+      "key": "shop_tab_hero",
+      "lang": "en",
+      "out": "HERO",
+      "values": []
+    },
+    {
+      "key": "shop_tab_nexus",
+      "lang": "en",
+      "out": "NEXUS",
+      "values": []
+    },
+    {
+      "key": "shop_context_none",
+      "lang": "en",
+      "out": "nothing selected",
+      "values": []
+    },
+    {
+      "key": "shop_label_tower",
+      "lang": "en",
+      "out": "tower",
+      "values": []
+    },
+    {
+      "key": "shop_label_slot",
+      "lang": "en",
+      "out": "slot",
+      "values": []
+    },
+    {
+      "key": "shop_buy_for",
+      "lang": "en",
+      "out": "BUY FOR:",
+      "values": []
+    },
+    {
+      "key": "shop_dead_no_forge",
+      "lang": "en",
+      "out": "DEAD - no Item Forge queue in this build",
+      "values": []
+    },
+    {
+      "key": "shop_item_note",
+      "lang": "en",
+      "out": "Items are bought per hero: 6 slots, priced 4500-6000 gold per tier.",
+      "values": []
+    },
+    {
+      "key": "shop_item_slots",
+      "lang": "en",
+      "out": "%s — %d/%d item slots",
+      "values": []
+    },
+    {
+      "key": "shop_item_attack_type",
+      "lang": "en",
+      "out": "Attack type: %s · %s — tagged items only fit that type.",
+      "values": []
+    },
+    {
+      "key": "shop_item_owned",
+      "lang": "en",
+      "out": "Owned: %s",
+      "values": []
+    },
+    {
+      "key": "shop_item_owned_suffix",
+      "lang": "en",
+      "out": "owned",
+      "values": []
+    },
+    {
+      "key": "shop_reason_owned",
+      "lang": "en",
+      "out": "Already owned",
+      "values": []
+    },
+    {
+      "key": "shop_reason_full",
+      "lang": "en",
+      "out": "Inventory full (6/6)",
+      "values": []
+    },
+    {
+      "key": "shop_reason_melee",
+      "lang": "en",
+      "out": "MELEE ONLY — this hero is ranged",
+      "values": []
+    },
+    {
+      "key": "shop_reason_magic",
+      "lang": "en",
+      "out": "MAGIC ONLY — this hero is not magic",
+      "values": []
+    },
+    {
+      "key": "shop_reason_poor",
+      "lang": "en",
+      "out": "Not enough gold",
+      "values": []
+    },
+    {
+      "key": "shop_hero_select_hint",
+      "lang": "en",
+      "out": "Select a Radiant hero to see its stats & upgrades.",
+      "values": []
+    },
+    {
+      "key": "shop_hero_buy_list",
+      "lang": "en",
+      "out": "Buy heroes (%d/%d owned, including the ones waiting to respawn):",
+      "values": []
+    },
+    {
+      "key": "shop_hero_others",
+      "lang": "en",
+      "out": "Other heroes (%d total in heroes.json) unlock through level progress — see SaveManager.unlocked_heroes.",
+      "values": []
+    },
+    {
+      "key": "shop_hero_owned_badge",
+      "lang": "en",
+      "out": " · OWNED",
+      "values": []
+    },
+    {
+      "key": "shop_max_level",
+      "lang": "en",
+      "out": "Maximum level reached.",
+      "values": []
+    },
+    {
+      "key": "shop_max_level_count",
+      "lang": "en",
+      "out": "Maximum level (%d) reached.",
+      "values": []
+    },
+    {
+      "key": "shop_upgrade_to",
+      "lang": "en",
+      "out": "Upgrade to Lv.%d — %d gold",
+      "values": []
+    },
+    {
+      "key": "shop_upgrade_stat_note",
+      "lang": "en",
+      "out": "HP x%.2f, damage and range go up.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_hint",
+      "lang": "en",
+      "out": "Click a slot circle on a lane to build a tower.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_free_slots",
+      "lang": "en",
+      "out": "Empty slots: Radiant %d · Dire %d  (3 slots per lane per team)",
+      "values": []
+    },
+    {
+      "key": "shop_tower_click_upgrade",
+      "lang": "en",
+      "out": "Click one of your towers to upgrade / sell / Regen Shield.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_slot_dire",
+      "lang": "en",
+      "out": "This slot belongs to Dire — it cannot be built.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_slot_taken",
+      "lang": "en",
+      "out": "This slot already holds a tower.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_slot_empty",
+      "lang": "en",
+      "out": "Empty slot on lane %s — build a Lv1 tower (%d gold)",
+      "values": []
+    },
+    {
+      "key": "shop_tower_build_note",
+      "lang": "en",
+      "out": "Note: Lv1 stats are the same on every path (Archer Lv1); its strength only appears after upgrading to Lv2.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_path_note",
+      "lang": "en",
+      "out": "Upgrading Lv1 -> Lv2 picks the path and raises HP by x%.2f.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_special",
+      "lang": "en",
+      "out": "Special: %s",
+      "values": []
+    },
+    {
+      "key": "shop_tower_dire_locked",
+      "lang": "en",
+      "out": "Dire tower — it cannot be upgraded or sold.",
+      "values": []
+    },
+    {
+      "key": "shop_tower_pick_path",
+      "lang": "en",
+      "out": "Pick the Lv2 upgrade path:",
+      "values": []
+    },
+    {
+      "key": "shop_regen_active",
+      "lang": "en",
+      "out": "Regen Shield: ACTIVE (shield recovers after 3 seconds without damage)",
+      "values": []
+    },
+    {
+      "key": "shop_regen_buy",
+      "lang": "en",
+      "out": "Buy Regen Shield — %d gold",
+      "values": []
+    },
+    {
+      "key": "shop_regen_note",
+      "lang": "en",
+      "out": "The tower shield regenerates too (parity Tower.activate_regen_shield).",
+      "values": []
+    },
+    {
+      "key": "shop_regen_locked",
+      "lang": "en",
+      "out": "Regen Shield unlocks at Lv.%d+ (costs %d gold)",
+      "values": []
+    },
+    {
+      "key": "shop_tower_sell",
+      "lang": "en",
+      "out": "Sell tower (+%d gold)",
+      "values": []
+    },
+    {
+      "key": "shop_tower_sell_note",
+      "lang": "en",
+      "out": "Refunds 50% of the upgrade costs already paid.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_dead",
+      "lang": "en",
+      "out": "The Radiant Nexus is already destroyed.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_max",
+      "lang": "en",
+      "out": "The Nexus is already at maximum level.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_upgrade",
+      "lang": "en",
+      "out": "Upgrade Nexus to Lv.%d — %d gold",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_free_shield",
+      "lang": "en",
+      "out": "FREE Castle Shield is active (until wave 10) — leftover damage is reduced by %.0f%%.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_shield_buy",
+      "lang": "en",
+      "out": "Buy Castle Shield — %d gold",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_shield_note",
+      "lang": "en",
+      "out": "Permanent shield: it absorbs damage 1:1, the rest is mitigated by %.0f%%.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_shield_owned",
+      "lang": "en",
+      "out": "Castle Shield already purchased.",
+      "values": []
+    },
+    {
+      "key": "shop_nexus_enemy",
+      "lang": "en",
+      "out": "Dire Nexus: Lv%d · HP %d/%d · shield %d/%d — destroy it to WIN.",
+      "values": []
+    },
+    {
+      "key": "skillbar_no_hero",
+      "lang": "en",
+      "out": "no hero selected",
+      "values": []
+    },
+    {
+      "key": "skillbar_buy_hint",
+      "lang": "en",
+      "out": "H → HERO: buy a hero, then click it to select",
+      "values": []
+    },
+    {
+      "key": "skillbar_close_tip",
+      "lang": "en",
+      "out": "Close panel (deselect hero)",
+      "values": []
+    },
+    {
+      "key": "skillbar_autocast_tip",
+      "lang": "en",
+      "out": "Auto-cast is always ON (parity v29: toggle no-op)",
+      "values": []
+    },
+    {
+      "key": "skillbar_slot_empty",
+      "lang": "en",
+      "out": "item slot %d empty",
+      "values": []
+    },
+    {
+      "key": "skillbar_forge_tip",
+      "lang": "en",
+      "out": "Open ITEM FORGE for this hero",
+      "values": []
+    },
+    {
+      "key": "over_replay",
+      "lang": "en",
+      "out": "REPLAY  (R)",
+      "values": []
+    },
+    {
+      "key": "over_menu",
+      "lang": "en",
+      "out": "MAIN MENU  (ESC)",
+      "values": []
+    },
+    {
+      "key": "over_replay_hint",
+      "lang": "en",
+      "out": "replay",
+      "values": []
+    },
+    {
+      "key": "over_next_hint",
+      "lang": "en",
+      "out": "next level",
+      "values": []
+    },
+    {
+      "key": "over_menu_hint",
+      "lang": "en",
+      "out": "main menu",
+      "values": []
+    },
+    {
+      "key": "over_defeat_note",
+      "lang": "en",
+      "out": "Radiant Nexus destroyed — a defeat pays nothing.",
+      "values": []
+    },
+    {
+      "key": "over_meta_reward",
+      "lang": "en",
+      "out": "Meta reward: +%d gold (%s) saved to the save file.",
+      "values": []
+    },
+    {
+      "key": "over_next_button",
+      "lang": "en",
+      "out": "NEXT LEVEL %d  (ENTER)",
+      "values": []
+    },
+    {
+      "key": "over_reward_first_win",
+      "lang": "en",
+      "out": "first win",
+      "values": []
+    },
+    {
+      "key": "over_reward_first_replay",
+      "lang": "en",
+      "out": "first replay",
+      "values": []
+    },
+    {
+      "key": "over_reward_replay",
+      "lang": "en",
+      "out": "repeat replay",
       "values": []
     }
   ]

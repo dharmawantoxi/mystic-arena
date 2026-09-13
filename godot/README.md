@@ -23,6 +23,45 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
 
 **Map kini bake dari renderer pygame sendiri** (Fase 3, 2026-09-07): `tools/convert_to_godot.py --maps-png` membake 6 layer `static_map` (terrain+details, river, 3 lane, dekor, shop, border wall) jadi SATU tekstur 1280×720 per tema — 54 tema, ±3,2 MB di `assets/maps/` — lalu `ArenaMap` menampilkannya lewat Sprite2D (padanan persis arsitektur cache `static_map` + blit pygame). Gambar statik bersumber dari renderer asli; cuaca/lighting live tetap implementasi Godot. Fallback prosedural hidup kalau bake belum ada. Lihat bagian "Bake map statik (Fase 3)" di bawah.
 
+## Koreksi UI in-match (2026-09-13 — mengikuti pygame)
+
+Empat perilaku UI in-match disetel ulang supaya persis seperti versi pygame;
+dua di antaranya MENGHAPUS elemen yang tidak pernah ada di pygame karena
+menutupi peta:
+
+- **Kastil tidak menumpuk angka ke peta.** `Nexus._draw_overlays` kini hanya
+  menggambar crest armor + bar SHIELD 60×6 di `y-80` dengan label `SHIELD n%`
+  di atasnya — padanan persis `Castle._draw_castle_shield` +
+  `Castle._draw_hp_bar` (`_entity.py:1892-1946`, yang fungsi keduanya memang
+  hanya menggambar shield). Bar HP kastil 84×7, border putih, dan pip level
+  emas di atas kastil DIHAPUS. HP/level nexus tetap terbaca di **tab NEXUS**
+  toko, sama seperti pygame yang menyimpannya di popup. Menara TIDAK berubah —
+  `Tower.draw` pygame memang masih menggambar bar HP.
+- **Baris teks di bawah badge LEVEL/WAVE DIHAPUS.** `FieldStatus`
+  ("medan: n hero · n minion · n boss · n fps") dan `DifficultyLabel`
+  ("difficulty: … · gold x…") adalah penemuan port; HUD pygame = chip emas +
+  badge level/wave + banner wave. Bersamanya ikut hilang pemindaian tree tiap
+  0,33 s. Gerbang statis `python3 godot/tools/map_clutter_lint.py godot`
+  menjaga keduanya tidak balik (juga membandingkan bentuk overlay dengan
+  `_entity.py` asli).
+- **Tab ITEM selalu bisa dilihat.** Tanpa hero (belum summon, atau semuanya
+  mati) katalog 33 item TETAP dibangun — persis `ItemShopUI.draw`
+  ("Grid item SELALU ditampilkan, walau pemain belum meng-klik hero di peta",
+  `hero_items.py:3190-3200`) — hanya tombol BELI yang mati, plus banner
+  merah `shop_no_hero_banner`. Strip **BELI UNTUK:** menampilkan tiap hero
+  roster (hidup maupun mati, paritas `_draw_hero_strip` `:3241-3295`);
+  penerimanya `GameManager.itemshop_target_hero()` (padanan
+  `_resolve_shop_target` `:3169-3186`) sehingga mouse, papan ketik, dan
+  controller memakai aturan yang sama. Deviasi tercatat: port belum punya
+  antrean Item Forge (`pending_forge_items`), jadi chip hero MATI disabled —
+  pygame mengantrekan item untuk hero mati, Godot menolaknya daripada
+  kehilangan gold.
+- **Bahasa benar-benar berlaku di dalam game.** HUD, ShopPanel, SkillBar, dan
+  GameOverOverlay membaca dari tabel teks bersama (`Localization.gd`,
+  106 kunci × 2 bahasa) dan menyambung `GameManager.language_changed`, jadi
+  "English" di PENGATURAN langsung mengubah teks in-match. Rincian: bagian
+  "Lokalisasi teks UI" dan `docs/LOCALIZATION_GODOTPP.md`.
+
 ## Koreksi paritas pertandingan (2026-09-07)
 
 - Match mulai tanpa hero. Buka **B → HERO** untuk membeli; save baru membuka
@@ -677,13 +716,13 @@ Uji regresinya: `tests/RenderFxParityTest.tscn` — fixture
 ledakan, 4 skenario `add_hit_particles` + batas 500/80, 130 frame + 490 polygon
 panah lane, wiring `spark_fx`).
 
-## Lokalisasi teks UI (Fase 30 — port `localization.py`)
+## Lokalisasi teks UI (Fase 30 — port `localization.py`; aktif in-match sejak 2026-09-13)
 
 ```
-godot/scripts/utils/Localization.gd   — class_name MysticLocalization (semua static): TEXT 24 kunci × 2 bahasa, LANGUAGES, LANGUAGE_LABELS, set_language/get_language/get_language_label/tr_text/is_english, _py_format/_py_str (semantik str.format + str() Python)
+godot/scripts/utils/Localization.gd   — class_name MysticLocalization (semua static): TEXT 106 kunci × 2 bahasa, LANGUAGES, LANGUAGE_LABELS, set_language/get_language/get_language_label/tr_text/is_english, _py_format/_py_str (semantik str.format + str() Python)
 godot/tests/LocalizationParityTest.gd — replay fixture di engine + plumbing (GameManager/SaveManager/ItemDB/MainMenu)
 godot/tests/fixtures/localization.json — oracle: dihasilkan localization.py ASLI
-tools/test_godot_localization_parity.py — oracle TANPA pygame/Godot: tabel GDScript == localization.py, audit placeholder, fixture segar
+tools/test_godot_localization_parity.py — oracle TANPA pygame/Godot: tabel GDScript == localization.py (isi + URUTAN kunci), audit placeholder, audit closed-world pemakai `tr_text()`/`_loc()`, fixture segar
 ```
 
 Pakai `MysticLocalization.tr_text("kunci", {"nama": nilai})` untuk teks UI
@@ -699,10 +738,26 @@ Bahasa aktif disinkronkan saat boot oleh `AppShell._apply_interface_language()`
 mengembalikan mekanik item dalam bahasa aktif (padanan
 `en = get_language() == "en"` di `hero_items.py:1632`).
 
-Catatan jujur: baru kunci `language` yang punya pemakai UI. 23 kunci lain
-(notifikasi forge, chip hero MATI/antrean, banner + halaman toko item, popup
-detail item) diport sebagai DATA dan menunggu permukaan UI-nya — oracle
-mencetak daftarnya setiap run, dan alasan per kelompok ada di
+**Berlaku di dalam game (2026-09-13).** Empat panel in-match membaca tabel ini
+bukan teks hard-code — `HUD` (10 baris hint keycap), `ShopPanel` (judul TOKO/
+SHOP, tombol tutup, 4 tab, konteks, isi tab MENARA/ITEM/HERO/NEXUS termasuk
+alasan kartu item), `SkillBar` (label + tooltip), dan `GameOverOverlay`
+(tombol ULANGI/MENU UTAMA/LANJUT + baris hint + catatan hasil). Keempatnya
+menyambung `GameManager.language_changed`, jadi berpindah bahasa di PENGATURAN
+(termasuk lewat menu pause) langsung terlihat tanpa menutup layar: ShopPanel
+menyegarkan chrome + membangun ulang isinya, HUD/SkillBar menulis ulang
+labelnya, GameOverOverlay membangun ulang baris hint + tombol (tanpa mengulang
+animasi intro).
+
+Yang TIDAK diterjemahkan karena pygame juga tidak menerjemahkannya:
+`ITEM FORGE  (%d/6)`, `TIER I/II`, `SHIELD n%` di atas kastil, `AUTO-CAST ON`,
+`MAX LEVEL`, `Lv.%d`, `VICTORY!`/`DEFEAT`, lima nama statistik layar hasil, dan
+badge `LEVEL n`/`WAVE n`.
+
+Catatan jujur: 25 kunci masih diport sebagai DATA (notifikasi forge, antrean
+item + `queued_item_count`, `shop_no_hero_yet`, label halaman toko, popup
+detail item) dan menunggu permukaan UI-nya — oracle mencetak daftarnya setiap
+run, dan alasan per kelompok ada di
 [`../docs/LOCALIZATION_GODOTPP.md`](../docs/LOCALIZATION_GODOTPP.md).
 
 ```bash
