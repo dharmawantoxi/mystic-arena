@@ -16,6 +16,19 @@
 # …", "NEW LEVEL UNLOCKED!") karena itulah string yang digambar pygame apa
 # adanya — judul hasil, 5 nama statistik, dan baris unlock tidak di-tr() di
 # pygame, jadi tetap identik di kedua bahasa.
+#
+# TATA LETAK = FRAME ARENA, BUKAN VIEWPORT (perbaikan 2026-09-14, laporan user
+# "victory/defeat berada di luar frame"). Seluruh koordinat pygame memakai
+# surface 1280x720 (cx = 640, cy = 360) sehingga hasilnya selalu di tengah
+# peta. Port Godot lama memakai Control ber-anchor 0.5 = pusat VIEWPORT; di
+# jendela desktop yang lebih tinggi/lebar dari 16:9 (16:10, ultrawide, maximize
+# dengan taskbar) kamera arena terkunci di limit 0..1280 x 0..720 sehingga
+# pusat viewport jatuh di LUAR peta — overlay pun tampak melayang di area
+# panel kanan. Semua elemen di bawah sekarang dipasang lewat
+# MobileLayout.place_in_arena() (titik acuan = pusat frame arena) dan dipasang
+# ulang saat ukuran jendela berubah (_recenter), termasuk lapisan gelap yang
+# menutup frame arena saja — paritas pygame yang tidak pernah menggelapkan
+# panel kanan.
 extends Control
 class_name GameOverOverlay
 
@@ -43,6 +56,7 @@ var _nxt: int = -1
 
 var _fx: _BackFx = null
 var _title_fx: _TitleFx = null
+var _dim: ColorRect = null
 var _stats_box: VBoxContainer = null
 var _popup: PygamePanel = null
 var _popup_body: Control = null
@@ -53,6 +67,10 @@ var _hint_row: HBoxContainer = null
 var _ach_row: HBoxContainer = null
 var _intro_tween: Tween = null
 var _badge_tweens: Array = []
+## Elemen yang dipasang relatif pusat FRAME ARENA: [Control, offset, size].
+## Disimpan supaya bisa dipasang ulang setiap ukuran jendela berubah
+## (_recenter) — Control ber-anchor 0.5 sendirian selalu terpusat di viewport.
+var _centered: Array = []
 
 
 func _ready() -> void:
@@ -65,6 +83,38 @@ func _ready() -> void:
 	# Kalau bahasa berganti di situ, cukup dua blok teks yang dibangun ulang
 	# (hint + tombol) — TIDAK lewat show_result, yang mengulang animasi intro.
 	GameManager.language_changed.connect(_on_language_changed)
+	# Resize/maximize/rotasi saat layar hasil tampil: semua elemen dihitung
+	# ulang terhadap frame arena (bukan viewport).
+	MobileLayout.layout_changed.connect(_recenter)
+
+
+## Pasang elemen relatif pusat FRAME ARENA + catat untuk dipasang ulang saat
+## ukuran jendela berubah. `arena_offset` = jarak pusat elemen dari pusat peta
+## (angka pygame apa adanya: cx = 640, cy = 360 -> offset terhadap titik itu).
+func _center_in_arena(c: Control, arena_offset: Vector2, size: Vector2) -> void:
+	MobileLayout.place_in_arena(c, arena_offset, size)
+	_centered.append([c, arena_offset, size])
+
+
+## Ukuran jendela berubah -> hitung ulang posisi SEMUA elemen terhadap pusat
+## frame arena, lalu pasang ulang lapisan latar (dim + ray/glow/sparkle).
+func _recenter() -> void:
+	MobileLayout.cover_arena(_dim)
+	MobileLayout.cover_arena(_fx)
+	var live: Array = []
+	for e in _centered:
+		var c := e[0] as Control
+		if c == null or not is_instance_valid(c) or c.is_queued_for_deletion():
+			continue   # elemen dibangun ulang (show_result terakhir)
+		MobileLayout.place_in_arena(c, e[1] as Vector2, e[2] as Vector2)
+		live.append(e)
+	_centered = live
+	# Popup unlock: tween slide-in lama mendarat di posisi hasil hitungan
+	# pusat viewport yang sudah usang -> hentikan dan langsung ke keadaan akhir.
+	if _popup != null and is_instance_valid(_popup) and _popup_shown:
+		if _popup_tween != null and _popup_tween.is_valid():
+			_popup_tween.kill()
+		_popup.modulate.a = 1.0
 
 
 func _on_language_changed(_language: String) -> void:
@@ -80,29 +130,28 @@ func _loc(key: String) -> String:
 
 
 func _build() -> void:
-	var dim := ColorRect.new()
-	dim.color = Color(10.0 / 255.0, 10.0 / 255.0, 20.0 / 255.0,
+	_dim = ColorRect.new()
+	_dim.name = "Dim"
+	_dim.color = Color(10.0 / 255.0, 10.0 / 255.0, 20.0 / 255.0,
 		180.0 / 255.0)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(dim)
+	_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_dim)
+	MobileLayout.cover_arena(_dim)
 
 	_fx = _BackFx.new()
-	_fx.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_fx)
+	# Ray/glow/sparkle digambar relatif pusat control ini -> control-nya
+	# direkatkan ke frame arena, sama seperti pygame yang menggambar ke
+	# surface 1280x720.
+	MobileLayout.cover_arena(_fx)
 
+	# Judul berdenyut: pusat peta - 180 px (paritas _draw_title center=(cx,
+	# cy - 180)), kotak 1000x140 seperti pygame (glow 760x190 di tengahnya).
 	_title_fx = _TitleFx.new()
 	_title_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_title_fx.anchor_left = 0.5
-	_title_fx.anchor_right = 0.5
-	_title_fx.anchor_top = 0.5
-	_title_fx.anchor_bottom = 0.5
-	_title_fx.offset_left = -500.0
-	_title_fx.offset_right = 500.0
-	_title_fx.offset_top = -180.0 - 70.0
-	_title_fx.offset_bottom = -180.0 + 70.0
 	add_child(_title_fx)
+	_center_in_arena(_title_fx, Vector2(0.0, -180.0), Vector2(1000.0, 140.0))
 
 	# Label audit tersembunyi (teks PERSIS format lama).
 	title_label = Label.new()
@@ -205,6 +254,10 @@ func show_result(p_victory: bool) -> void:
 	_build_hint(nxt)
 	_build_achievements()
 	_build_actions(nxt)
+	# Semua elemen baru dipasang terhadap frame arena; kalau ukuran jendela
+	# berubah SELAGI layar ini tersembunyi, sinyal layout_changed sudah lewat
+	# sebelum node-nya ada -> pasang ulang sekali lagi di sini.
+	_recenter()
 
 	visible = true
 	set_process(victory and _popup != null)
@@ -252,15 +305,11 @@ func _build_stats_panel(rows: Array) -> void:
 	stats_panel = PygamePanel.new(accent, 2.0, 10.0)
 	stats_panel.name = "GameOverPanel"
 	stats_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	stats_panel.anchor_left = 0.5
-	stats_panel.anchor_right = 0.5
-	stats_panel.anchor_top = 0.5
-	stats_panel.anchor_bottom = 0.5
 	var h := rows.size() * ROW_H + 24.0
-	stats_panel.offset_left = -STATS_W * 0.5
-	stats_panel.offset_right = STATS_W * 0.5
-	stats_panel.offset_top = -100.0
-	stats_panel.offset_bottom = -100.0 + h
+	# Pusat frame arena - 100 px + setengah tinggi panel (pygame:
+	# `cy - 100` sebagai tepi ATAS panel di surface 1280x720).
+	_center_in_arena(stats_panel, Vector2(0.0, -100.0 + h * 0.5),
+		Vector2(STATS_W, h))
 	stats_panel.configure(Color(30.0 / 255.0, 34.0 / 255.0, 58.0 / 255.0),
 		Color(14.0 / 255.0, 16.0 / 255.0, 30.0 / 255.0),
 		accent, 2.0, 10.0, true, true)
@@ -346,14 +395,10 @@ func _build_popup(nxt: int) -> void:
 		3.0, 12.0)
 	_popup.visible = false
 	_popup.mouse_filter = Control.MOUSE_FILTER_STOP
-	_popup.anchor_left = 0.5
-	_popup.anchor_right = 0.5
-	_popup.anchor_top = 0.5
-	_popup.anchor_bottom = 0.5
-	_popup.offset_left = 220.0
-	_popup.offset_right = 220.0 + POPUP_W
-	_popup.offset_top = -100.0
-	_popup.offset_bottom = -100.0 + POPUP_H
+	# Kanan-bawah pusat arena (pygame: Rect(cx + 220, cy - 100, 340, 220)).
+	_center_in_arena(_popup,
+		Vector2(220.0 + POPUP_W * 0.5, -100.0 + POPUP_H * 0.5),
+		Vector2(POPUP_W, POPUP_H))
 	_popup.configure(Color(40.0 / 255.0, 30.0 / 255.0, 10.0 / 255.0),
 		Color(60.0 / 255.0, 45.0 / 255.0, 15.0 / 255.0),
 		Color(1.0, 220.0 / 255.0, 100.0 / 255.0), 3.0, 12.0, false, true)
@@ -461,15 +506,9 @@ func _build_hint(nxt: int) -> void:
 	_hint_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_hint_row.add_theme_constant_override("separation", 16)
 	_hint_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hint_row.anchor_left = 0.5
-	_hint_row.anchor_right = 0.5
-	_hint_row.anchor_top = 0.5
-	_hint_row.anchor_bottom = 0.5
-	_hint_row.offset_left = -500.0
-	_hint_row.offset_right = 500.0
-	_hint_row.offset_top = 200.0 - 18.0
-	_hint_row.offset_bottom = 200.0 + 18.0
 	add_child(_hint_row)
+	# Pusat arena + 200 px (paritas baris keycap pygame), lebar 1000 terpusat.
+	_center_in_arena(_hint_row, Vector2(0.0, 200.0), Vector2(1000.0, 36.0))
 	if victory and nxt > 0:
 		_hint_row.add_child(_key_hint("ENTER", _loc("over_next_hint")))
 	_hint_row.add_child(_key_hint("R", _loc("over_replay_hint")))
@@ -519,13 +558,9 @@ func _build_achievements() -> void:
 	_ach_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_ach_row.add_theme_constant_override("separation", 8)
 	_ach_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ach_row.anchor_left = 0.0
-	_ach_row.anchor_right = 1.0
-	_ach_row.anchor_top = 0.5
-	_ach_row.anchor_bottom = 0.5
-	_ach_row.offset_top = 250.0 - 14.0
-	_ach_row.offset_bottom = 250.0 + 14.0
 	add_child(_ach_row)
+	# Pusat arena + 250 px (paritas hitungan achievement pygame).
+	_center_in_arena(_ach_row, Vector2(0.0, 250.0), Vector2(1000.0, 28.0))
 	var n_ach := 0
 	if GameManager.achievements_unlocked is Dictionary:
 		n_ach = (GameManager.achievements_unlocked as Dictionary).size()
@@ -553,13 +588,9 @@ func _build_actions(nxt: int) -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 10)
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.anchor_left = 0.0
-	row.anchor_right = 1.0
-	row.anchor_top = 0.5
-	row.anchor_bottom = 0.5
-	row.offset_top = 292.0 - 18.0
-	row.offset_bottom = 292.0 + 18.0
 	add_child(row)
+	# Pusat arena + 292 px (paritas baris tombol aksi pygame).
+	_center_in_arena(row, Vector2(0.0, 292.0), Vector2(1000.0, 36.0))
 	next_button = PygameButton.pill_button(
 		_loc("over_next_button") % maxi(nxt, 1), "success", "play",
 		260, 36, 17)

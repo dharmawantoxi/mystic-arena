@@ -23,6 +23,64 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
 
 **Map kini bake dari renderer pygame sendiri** (Fase 3, 2026-09-07): `tools/convert_to_godot.py --maps-png` membake 6 layer `static_map` (terrain+details, river, 3 lane, dekor, shop, border wall) jadi SATU tekstur 1280×720 per tema — 54 tema, ±3,2 MB di `assets/maps/` — lalu `ArenaMap` menampilkannya lewat Sprite2D (padanan persis arsitektur cache `static_map` + blit pygame). Gambar statik bersumber dari renderer asli; cuaca/lighting live tetap implementasi Godot. Fallback prosedural hidup kalau bake belum ada. Lihat bagian "Bake map statik (Fase 3)" di bawah.
 
+## Koreksi tata letak di jendela desktop (2026-09-14 — UI modal di dalam frame)
+
+Laporan pemain: **layar VICTORY/DEFEAT dan dialog TOP UP muncul di luar frame**
+saat dimainkan di Godot desktop. Akarnya bukan koordinat isinya, tapi titik acu
+yang dipakai.
+
+**Sebabnya.** Kamera arena dipasang `Main._frame_camera()` dengan
+`position = (640, 360)` + limit `0..1280` × `0..720` + zoom 1, dan Camera2D
+MENGUNCI rect layar ke limit itu (`scene/2d/camera_2d.cpp:172-186`, `:225-241`):
+arena tidak pernah melebar mengikuti jendela. Di jendela 16:10 / ultrawide /
+maximize-dengan-taskbar, sisa kanan-bawah viewport ada DI LUAR peta — jadi titik
+`anchor = 0.5` (= pusat viewport) bukan lagi pusat arena. Seluruh UI modal port
+ini memakai anchor itu, padahal pygame menggambar semuanya ke surface 1280×720
+(`cx, cy = SCREEN_WIDTH//2, SCREEN_HEIGHT//2`) sehingga hasilnya selalu di tengah
+peta. Di jendela yang LEBIH KECIL dari 1280×720 masalahnya cerminannya: kamera
+terpotong rata tengah, dan baris tombol di bawah (`cy + 292`) bisa lewat tepi
+layar.
+
+**Perbaikannya** — satu sumber angka baru di `MobileLayout` (`arena_frame_rect`,
+`arena_center`, `arena_center_offset`, `arena_visible_rect`, `arena_fit_scale`,
+`place_in_arena`, `cover_arena`), lalu pemakainya:
+
+- `GameOverOverlay`: judul, panel stat, popup NEW LEVEL UNLOCKED, baris keycap,
+  hitungan achievement, dan baris tombol NEXT/REPLAY/MENU dipasang lewat
+  `place_in_arena` (offset desain pygame apa adanya terhadap pusat peta) dan
+  dipasang ulang tiap `MobileLayout.layout_changed` — resize saat layar hasil
+  tampil tidak lagi meninggalkan elemen di posisi lama.
+- Lapisan gelap + ray/glow/sparkle overlay kini menutup **frame arena saja**
+  (`cover_arena`), bukan seluruh jendela: paritas pygame yang tidak pernah
+  menggelapkan panel kanan.
+- `TopupDialog`: panel 920×580 dipusatkan di frame arena, dan skala fit-nya
+  dihitung dari **bagian frame yang terlihat** (`arena_fit_scale`, margin 24 px)
+  — di jendela kecil dialog mengecil proporsional alih-alih terpotong.
+- `MobileLayout.modal_rect` (HERO SHOP / ITEM FORGE in-match) juga dipusatkan ke
+  frame arena, dan chip TACTICAL tanpa rail (`TacticalBar`) menempel di
+  kanan-bawah frame — bukan kanan-bawah viewport.
+
+**Invarian penting:** di viewport 1280×720 `arena_center_offset()` = nol,
+sehingga offset yang dihasilkan **identik** dengan kode lama — semua test paritas
+yang berjalan di 1280×720 (UiHudParityTest, MatchScoringParityTest,
+MobileSidePanelParityTest) tidak berubah sedikit pun; koreksi ini hanya berlaku
+di jendela yang bukan 16:9.
+
+**Pengaman kedua (desktop).** `AppShell._fit_window_to_screen()` (knob
+`FIT_WINDOW_TO_SCREEN`, batas bawah 960×540) mengecilkan jendela saat boot kalau
+jendela tidak muat di rect berguna layar (taskbar/dock sudah dikurangi) lalu
+memusatkannya — jendela 1280×720 + title bar tidak muat di layar kecil atau pada
+display scaling Windows 125-150% (yang membuatnya setara 1600×900), dan bagian
+bawah jendela itulah yang memuat baris tombol NEXT LEVEL / PAY NOW. Tidak pernah
+memperbesar, tidak menyentuh perangkat sentuh, dan tidak memanggil DisplayServer
+sama sekali kalau jendelanya sudah muat.
+
+Dikunci `tests/ArenaFrameLayoutTest.tscn` (CI: langkah 4z3) yang mensimulasikan
+16:9, 1624×720 (HP landscape), 1866×1050 (16:10), 1000×600, dan 800×500 lewat
+`MobileLayout.viewport_size` + Control pembungkus, lalu memeriksa aritmetika
+frame, posisi semua blok overlay, lapisan gelap, tata ulang saat jendela diubah,
+dan panel dialog TOP UP (terpusat + muat).
+
 ## Koreksi UI in-match (2026-09-13 — mengikuti pygame)
 
 Empat perilaku UI in-match disetel ulang supaya persis seperti versi pygame;

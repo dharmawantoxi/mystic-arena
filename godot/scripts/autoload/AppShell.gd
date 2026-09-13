@@ -67,6 +67,13 @@ const BOOT_BGM_FADE := 3.0
 const BOOT_AMBIENT := "ambient_forest"
 const BOOT_AMBIENT_MULT := 0.8
 
+## ══ UKURAN JENDELA DESKTOP ══
+## Saklar perilaku (false = jangan sentuh jendela sama sekali).
+const FIT_WINDOW_TO_SCREEN := true
+## Batas bawah saat jendela dikecilkan supaya tidak jadi tidak terbaca.
+const WINDOW_MIN_SIZE := Vector2i(960, 540)
+
+
 ## ══ CRASH LOG (paritas mobile/debug.py:427-450 + main.py:86-105) ══
 ## pygame menulis crash_log.txt ke direktori writable supaya bug di HP tetap
 ## terbaca tanpa adb. Godot tidak punya sys.excepthook, TETAPI juga tidak
@@ -111,6 +118,7 @@ func _ready() -> void:
 	_detect_quality()
 	if not headless():
 		_apply_fps_limit()
+		_fit_window_to_screen()
 	_start_boot_audio()
 	_apply_interface_language()
 	_write_session_log()
@@ -169,6 +177,45 @@ func _check_loop_policy() -> void:
 ## pemain bisa menaikkan di SETTINGS), desktop HIGH.
 func _detect_quality() -> void:
 	quality_level = QUALITY_LOW if touch_mode() else QUALITY_HIGH
+
+
+## Laporan user 2026-09-14: "jendela game keluar layar" di desktop. Jendela
+## 1280x720 + title bar tidak muat di layar kecil / pada display scaling tinggi
+## (Windows 125-150% membuatnya 1600x900), dan WM tidak selalu mengecilkannya
+## sendiri — bagian bawah jendela (baris tombol NEXT LEVEL / PAY NOW di dialog
+## TOP UP) tertutup taskbar atau keluar layar.
+##
+## Karena itu saat boot jendela DIJEPIT ke rect BERGUNA layar
+## (`screen_get_usable_rect`: sudah dikurangi taskbar/dock) lalu dipusatkan.
+## Sifatnya: hanya mengecil (tidak pernah memperbesar), hanya kalau memang
+## tidak muat, dan tidak menyentuh perangkat sentuh (di Android jendela =
+## layar). Kalau jendela sudah muat, tidak ada satu pun panggilan ke
+## DisplayServer — jadi perilaku desktop normal tidak berubah.
+func _fit_window_to_screen() -> void:
+	if not FIT_WINDOW_TO_SCREEN or touch_mode():
+		return
+	var screen := DisplayServer.screen_get_usable_rect(
+		DisplayServer.window_get_current_screen())
+	if screen.size.x <= 0 or screen.size.y <= 0:
+		return
+	var win := DisplayServer.window_get_size()
+	if win.x <= 0 or win.y <= 0:
+		return
+	var fit := Vector2i(mini(win.x, screen.size.x), mini(win.y, screen.size.y))
+	fit.x = maxi(fit.x, mini(WINDOW_MIN_SIZE.x, screen.size.x))
+	fit.y = maxi(fit.y, mini(WINDOW_MIN_SIZE.y, screen.size.y))
+	if fit != win:
+		DisplayServer.window_set_size(fit)
+		print("[SHELL] jendela %dx%d tidak muat di area layar %dx%d -> %dx%d"
+			% [win.x, win.y, screen.size.x, screen.size.y, fit.x, fit.y])
+	# Jendela yang (setelah di-fit) tidak seluruhnya di dalam area layar
+	# dipusatkan: title bar yang keluar layar tidak bisa dijangkau mouse.
+	var pos := DisplayServer.window_get_position()
+	if Rect2i(pos, fit).intersection(screen) == Rect2i(pos, fit):
+		return
+	DisplayServer.window_set_position(
+		screen.position + (screen.size - fit) / 2)
+	print("[SHELL] jendela dipusatkan di area layar")
 
 
 func touch_mode() -> bool:

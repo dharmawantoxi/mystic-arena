@@ -1304,6 +1304,37 @@ jobs:
             exit 1
           fi
 
+      # ── 4z3. ArenaFrameLayoutTest (2026-09-14): UI modal di dalam FRAME ──
+      # Laporan user: "victory & defeat berada di luar frame, begitu juga pop
+      # up top up" di Godot desktop. Sebabnya: kamera arena dikunci limit
+      # 0..1280 x 0..720 (Main._frame_camera) sehingga di jendela yang lebih
+      # tinggi/lebar dari 16:9 pusat VIEWPORT jatuh di luar peta, sedangkan
+      # overlay VICTORY/DEFEAT + dialog TOP UP memakai Control ber-anchor 0.5
+      # (= pusat viewport). Scene ini mensimulasikan 16:9, HP 1624x720,
+      # desktop 1866x1050, dan jendela lebih kecil (1000x600) lewat
+      # MobileLayout.viewport_size + Control pembungkus, lalu mengunci:
+      # aritmetika frame arena, posisi SEMUA blok overlay hasil (panel stat,
+      # popup unlock, keycap, achievement, tombol aksi) di dalam frame,
+      # lapisan gelap = frame arena saja, tata ulang saat jendela diubah
+      # selagi layar hasil tampil, dan panel dialog TOP UP terpusat di frame
+      # + menyusut supaya tidak terpotong.
+      - name: "ArenaFrameLayoutTest (UI modal di dalam frame arena)"
+        run: |
+          set -o pipefail
+          isolated=$(mktemp -d)
+          trap 'rm -rf "$isolated"' EXIT
+          export XDG_DATA_HOME="$isolated"
+          godot --headless --path godot res://tests/ArenaFrameLayoutTest.tscn --quit-after 240 2>&1 | tee /tmp/arenaframe.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/arenaframe.log --label "ArenaFrameLayoutTest" \
+              --require "[ArenaFrameLayoutTest] PASS" > /tmp/arenaframe.gate 2>&1; then
+            cat /tmp/arenaframe.gate
+          else
+            cat /tmp/arenaframe.gate
+            echo "::error::ARENA-FRAME-FAIL-TAIL: $(tail -40 /tmp/arenaframe.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::ARENA-FRAME-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/arenaframe.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
       # ── 5. Test paritas sisi pygame yang mengunci konstanta Godot ──
       - name: Test paritas pygame
         run: |

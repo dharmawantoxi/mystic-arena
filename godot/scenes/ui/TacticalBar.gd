@@ -102,13 +102,19 @@ func _layout() -> void:
 		_box.size = rect.size
 		_apply_visibility(true)
 		return
-	var vp := MobileLayout.viewport_size
-	var chip := Vector2(maxf(8.0, vp.x - TOGGLE_W - 8.0),
-		maxf(8.0, vp.y - TOGGLE_BOTTOM_INSET - TOGGLE_H))
+	# Tanpa rail: chip menempel di kanan-bawah FRAME ARENA (bukan kanan-bawah
+	# viewport) — di jendela desktop yang lebih tinggi/lebar dari 16:9 pusat
+	# dan tepi viewport ada di luar peta, jadi chip-nya tampak melayang di
+	# area kosong kalau memakai viewport (lihat catatan MobileLayout).
+	var frame := MobileLayout.arena_frame_rect()
+	var chip := Vector2(maxf(frame.position.x + 8.0,
+		frame.position.x + frame.size.x - TOGGLE_W - 8.0),
+		maxf(frame.position.y + 8.0,
+			frame.position.y + frame.size.y - TOGGLE_BOTTOM_INSET - TOGGLE_H))
 	_toggle.position = chip
 	_toggle.size = Vector2(TOGGLE_W, TOGGLE_H)
-	var w := minf(220.0, maxf(120.0, vp.x - 16.0))
-	var h := minf(MobileLayout.TACTICAL_HEIGHT, maxf(90.0, vp.y - 32.0))
+	var w := minf(220.0, maxf(120.0, frame.size.x - 16.0))
+	var h := minf(MobileLayout.TACTICAL_HEIGHT, maxf(90.0, frame.size.y - 32.0))
 	_box.position = Vector2(chip.x + TOGGLE_W - w,
 		maxf(8.0, chip.y - TOGGLE_GAP - h))
 	_box.size = Vector2(w, h)

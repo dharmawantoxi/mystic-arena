@@ -241,7 +241,9 @@ func _uses_rail_popup() -> bool:
 
 ## Tempatkan panel: popup di panel kanan (tower/castle) atau modal tengah
 ## (hero/item). Semua koordinat dijepit ke dalam viewport supaya tombol tidak
-## pernah keluar frame.
+## pernah keluar frame — modal tengah sendiri sudah dipusatkan ke FRAME ARENA
+## oleh MobileLayout.modal_rect (pusat viewport bisa ada di luar peta kalau
+## jendela lebih tinggi/lebar dari 16:9).
 func _layout_panel() -> void:
 	if _panel == null:
 		return
