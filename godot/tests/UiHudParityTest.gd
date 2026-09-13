@@ -719,7 +719,7 @@ func _test_shop_item() -> void:
 	# Label pill dibaca dari kartu: PygameButton menggambar label_text-nya
 	# sendiri dan mengosongkan Button.text (lihat PygameButton._init).
 	_expect(card != null and str(card.pill_label)
-		== tr_text("shop_reason_owned"),
+		== MysticLocalization.tr_text("shop_reason_owned"),
 		"pill kartu owned = label alasan (got %s)" % str(
 			card.pill_label if card != null else "?"))
 	_expect(card != null and card.icon_texture != null,
