@@ -76,11 +76,30 @@ func _finish() -> void:
 		get_tree().quit(1)
 
 
-## Ganti ukuran jendela yang disimulasikan: MobileLayout + ukuran pembungkus.
-func _simulate(sim: Vector2, holder: Control) -> void:
+## Ganti ukuran jendela yang disimulasikan: MobileLayout + rect pembungkus +
+## rect widget.
+##
+## Rect widget DIPATOK eksplisit (anchor tetap + offset), TIDAK bergantung
+## pada ukuran pembungkus: di production overlay/dialog ini full-rect di dalam
+## HUD/MainMenu yang berukuran jendela, jadi rect-nya = ukuran jendela. Kalau
+## mengandalkan container/pembungkus saja, Control bisa tetap 0x0 di headless
+## (terbukti di CI: seluruh elemen lalu menempel di offset mentah) sehingga
+## yang diukur bukan rumus produksi. Ukurannya diperiksa di test masing-masing.
+func _simulate(sim: Vector2, holder: Control, widget: Control) -> void:
 	MobileLayout.viewport_size = sim
+	_pin_rect(holder, sim)
+	_pin_rect(widget, sim)
 	MobileLayout.layout_changed.emit()
-	holder.size = sim
+
+
+## Rect Control = (0,0,sim) lewat anchor tetap + offset eksplisit (bukan
+## `size =`, yang bisa ditimpa parent/container).
+func _pin_rect(c: Control, sim: Vector2) -> void:
+	c.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	c.offset_left = 0.0
+	c.offset_top = 0.0
+	c.offset_right = sim.x
+	c.offset_bottom = sim.y
 
 
 func _run() -> void:
@@ -169,21 +188,27 @@ func _test_frame_math() -> void:
 func _test_game_over_overlay() -> void:
 	for sim in [Vector2(1280.0, 720.0), Vector2(1624.0, 720.0),
 			Vector2(1866.0, 1050.0), Vector2(1000.0, 600.0)]:
+		var tag := "overlay @%dx%d" % [int(sim.x), int(sim.y)]
 		var holder := Control.new()
 		holder.name = "Holder"
 		add_child(holder)
-		_simulate(sim, holder)
+		MobileLayout.viewport_size = sim
+		MobileLayout.layout_changed.emit()
 		var overlay: GameOverOverlay = GameOverOverlayScript.new()
 		overlay.name = "GameOverOverlay"
 		holder.add_child(overlay)
+		_simulate(sim, holder, overlay)
 		await get_tree().process_frame
+		_expect(_approx(overlay.size.x, sim.x) and _approx(overlay.size.y, sim.y),
+			"%s: overlay berukuran jendela %s (got %s)"
+				% [tag, sim, overlay.size])
 		overlay.show_result(true)
 		await _settle()
 		_expect_overlay_inside_frame(overlay, sim)
 		# Langkah 4: jendela diubah SELAGI layar hasil tampil.
 		var resized := Vector2(maxf(1280.0, sim.x - 100.0),
 			maxf(720.0, sim.y - 100.0))
-		_simulate(resized, holder)
+		_simulate(resized, holder, overlay)
 		await _settle()
 		_expect_overlay_inside_frame(overlay, resized)
 		holder.queue_free()
@@ -264,12 +289,16 @@ func _test_topup_dialog() -> void:
 		var holder := Control.new()
 		holder.name = "Holder"
 		add_child(holder)
-		_simulate(sim, holder)
+		MobileLayout.viewport_size = sim
+		MobileLayout.layout_changed.emit()
 		var dlg: TopupDialog = TopupDialogScript.new()
 		dlg.name = "TopupDialog"
 		holder.add_child(dlg)
+		_simulate(sim, holder, dlg)
 		await _settle()
 		var tag := "topup @%dx%d" % [int(sim.x), int(sim.y)]
+		_expect(_approx(dlg.size.x, sim.x) and _approx(dlg.size.y, sim.y),
+			"%s: dialog berukuran jendela %s (got %s)" % [tag, sim, dlg.size])
 		var panel := dlg.find_child("TopupPanel", false, false) as PygamePanel
 		_expect(panel != null, "%s: panel dialog ada" % tag)
 		if panel != null:
