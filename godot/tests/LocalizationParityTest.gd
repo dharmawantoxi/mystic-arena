@@ -490,9 +490,14 @@ func _test_menu_surfaces_localized() -> void:
 				# Gate intisari permintaan user: TIDAK ADA satu pun label
 				# Indonesia yang tersisa di layar berbahasa Inggris.
 				for f in flat:
+					# `forbidden.get()` — BUKAN `forbidden[f]`: GDScript
+					# mengevaluasi SEMUA argumen sebelum _expect() dipanggil,
+					# jadi `forbidden[f]` meledak (Invalid access to property
+					# or key) justru pada label yang SAH (tidak ada di tabel
+					# Indonesia) dan membatalkan sisa audit layar.
 					_expect(not forbidden.has(f),
 						"en/%s: label masih Indonesia '%s' (kunci %s)" % [
-							state_name, f, forbidden[f]])
+							state_name, f, forbidden.get(f, "")])
 	for m in menus:
 		m.queue_free()
 	GameManager.apply_language("id")
@@ -515,6 +520,14 @@ func _surface_texts(menu) -> Array:
 func _collect_texts(node: Node, out: Array) -> void:
 	if node is Label:
 		out.append((node as Label).text)
+	elif node is PygameButton:
+		# PygameButton mengosongkan `Button.text` (visual digambar sendiri di
+		# _draw) dan menyimpan label yang BENAR-BENAR tergambar di
+		# `label_text`. Tanpa cabang ini seluruh tombol menu tidak terlihat
+		# oleh audit: sentinel `en/MAIN` "PLAY GAME"/"HOW TO PLAY"/"QUIT GAME"
+		# selalu dianggap hilang — persis penyebab LocalizationParityTest
+		# merah di CI sejak renderer kartu/UI #239.
+		out.append((node as PygameButton).label_text)
 	elif node is Button:
 		out.append((node as Button).text)
 	elif node is RichTextLabel:
