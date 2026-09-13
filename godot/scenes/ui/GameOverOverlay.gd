@@ -71,6 +71,9 @@ var _badge_tweens: Array = []
 ## Disimpan supaya bisa dipasang ulang setiap ukuran jendela berubah
 ## (_recenter) — Control ber-anchor 0.5 sendirian selalu terpusat di viewport.
 var _centered: Array = []
+## Tinggi panel statistik yang terakhir dipakai untuk offset (lihat
+## _reanchor_stats_panel) — penjaga supaya `resized` tidak memasang berulang.
+var _stats_panel_h: float = 0.0
 
 
 func _ready() -> void:
@@ -93,6 +96,14 @@ func _ready() -> void:
 ## (angka pygame apa adanya: cx = 640, cy = 360 -> offset terhadap titik itu).
 func _center_in_arena(c: Control, arena_offset: Vector2, size: Vector2) -> void:
 	MobileLayout.place_in_arena(c, arena_offset, size)
+	# Satu entri per Control: elemen yang diukur ULANG (mis. panel statistik
+	# yang tingginya tumbuh setelah baris isinya di-layout) tidak menumpuk
+	# entri basi — _recenter() selalu memakai ukuran terakhir.
+	for e in _centered:
+		if e[0] == c:
+			e[1] = arena_offset
+			e[2] = size
+			return
 	_centered.append([c, arena_offset, size])
 
 
@@ -306,10 +317,17 @@ func _build_stats_panel(rows: Array) -> void:
 	stats_panel.name = "GameOverPanel"
 	stats_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	var h := rows.size() * ROW_H + 24.0
+	_stats_panel_h = h
 	# Pusat frame arena - 100 px + setengah tinggi panel (pygame:
 	# `cy - 100` sebagai tepi ATAS panel di surface 1280x720).
 	_center_in_arena(stats_panel, Vector2(0.0, -100.0 + h * 0.5),
 		Vector2(STATS_W, h))
+	# Tinggi NYATA panel baru final setelah baris isinya di-layout dan bisa
+	# lebih besar dari tebakan `h` (tinggi minimum konten menang). Tanpa
+	# ukur ulang, offset yang tersimpan memakai setengah tinggi yang salah
+	# sehingga tepi atas panel meleset di jendela non-16:9 (terukur +20 px
+	# di CI). `resized` -> hitung ulang offset dari tepi atas yang sama.
+	stats_panel.resized.connect(_reanchor_stats_panel)
 	stats_panel.configure(Color(30.0 / 255.0, 34.0 / 255.0, 58.0 / 255.0),
 		Color(14.0 / 255.0, 16.0 / 255.0, 30.0 / 255.0),
 		accent, 2.0, 10.0, true, true)
@@ -323,6 +341,23 @@ func _build_stats_panel(rows: Array) -> void:
 	for row in rows:
 		_stats_box.add_child(_stat_row(str(row[0]), str(row[1]),
 			bool(row[2])))
+
+
+## Panel statistik berubah ukuran (tinggi konten menang atas tebakan ROW_H)
+## -> hitung ulang offset terhadap pusat frame arena. Acuannya TETAP tepi atas
+## pygame `cy - 100`, jadi rumusnya sama seperti saat dibangun — hanya `h`-nya
+## kini tinggi nyata panel.
+func _reanchor_stats_panel() -> void:
+	if stats_panel == null or not is_instance_valid(stats_panel):
+		return
+	if stats_panel.is_queued_for_deletion():
+		return
+	var h := stats_panel.size.y
+	if h <= 0.0 or absf(h - _stats_panel_h) < 0.5:
+		return
+	_stats_panel_h = h
+	_center_in_arena(stats_panel, Vector2(0.0, -100.0 + h * 0.5),
+		Vector2(STATS_W, h))
 
 
 func _stat_row(label: String, value: String, is_new_best: bool) -> Control:

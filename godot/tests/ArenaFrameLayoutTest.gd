@@ -230,9 +230,11 @@ func _expect_overlay_inside_frame(overlay: GameOverOverlay, sim: Vector2) -> voi
 		_expect(_approx(r.get_center().x, center.x),
 			"%s: panel statistik terpusat di frame (x=%.1f, seharusnya %.1f)"
 				% [tag, r.get_center().x, center.x])
-		_expect(_approx(r.position.y, center.y - 100.0),
-			"%s: tepi atas panel statistik = pusat frame - 100 (y=%.1f)"
-				% [tag, r.position.y])
+		# Toleransi 2 px: offset Control dibulatkan engine dan tinggi baris
+		# ditentukan metrik font, bukan cuma angka desain.
+		_expect(absf(r.position.y - (center.y - 100.0)) <= 2.0,
+			"%s: tepi atas panel statistik = pusat frame - 100 (y=%.1f, panel %s)"
+				% [tag, r.position.y, r.size])
 		_expect(_contains(frame, r),
 			"%s: panel statistik masuk frame (got %s)" % [tag, r])
 		# Bukti bug lama: dulu panel ini terpusat di VIEWPORT. Di jendela
