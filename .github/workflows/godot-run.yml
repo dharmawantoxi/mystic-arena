@@ -226,6 +226,23 @@ jobs:
         if: always()
         run: |
           set +e
+          # ── Anotasi = kanal diagnosa kedua ──
+          # Log mentah hanya hidup di langkah atas + artifact. Tab Checks harus
+          # tetap bisa menjawab "gagal kenapa?" tanpa membuka keduanya, dan
+          # anotasi satu-satunya bagian run yang bisa dibaca dari API/checks.
+          # Karena itu ringkasan, report.json, dan (saat gagal) ekor run.log
+          # dipantulkan sebagai anotasi. Panjangnya dibatasi: satu anotasi
+          # raksasa lebih buruk daripada lima baris penentu.
+          anotasi() {  # $1=level $2=judul $3=berkas $4=maks byte
+            [ -f "$3" ] || return 0
+            local isi
+            isi=$(head -c "$4" "$3" | tr -d '\r')
+            [ -n "$isi" ] || return 0
+            isi=${isi//%/\%25}       # '%' dulu, supaya tidak menabrak escape
+            isi=${isi//$'\n'/%0A}
+            echo "::$1 title=GODOT-DEBUG $2::$isi"
+          }
+
           if [ -f "$OUT_DIR/summary.md" ]; then
             cat "$OUT_DIR/summary.md" >> "$GITHUB_STEP_SUMMARY"
           else
@@ -236,13 +253,52 @@ jobs:
               echo "Lihat log langkah \"Jalankan Godot (harness debug)\" di atas."
             } >> "$GITHUB_STEP_SUMMARY"
           fi
-          # Baris penting dipantulkan sebagai anotasi supaya terbaca di tab
-          # Checks tanpa membuka log panjang.
+
+          rc="${{ steps.run.outputs.rc }}"
+          level=notice
+          [ "$rc" != "0" ] && level=error
+
+          anotasi "$level" "ringkasan" "$OUT_DIR/summary.md" 1800
+          if [ -f "$OUT_DIR/report.json" ]; then
+            tr -d '\n' < "$OUT_DIR/report.json" > /tmp/report-satu-baris.json
+            anotasi "$level" "report.json" /tmp/report-satu-baris.json 900
+          fi
+
           if [ -f "$OUT_DIR/run.log" ]; then
-            grep -n "SCRIPT ERROR\|Parse Error\|Compile Error\|\[DebugRun\] FAIL" "$OUT_DIR/run.log" \
-              | head -10 | while IFS= read -r line; do echo "::error::GODOT-DEBUG: $line"; done
             echo "--- 40 baris terakhir run.log ---"
             tail -40 "$OUT_DIR/run.log"
+            # Urutan penting: keputusan gerbang dan baris harness didahulukan,
+            # baru ERROR mesin — supaya anotasi pertama sudah menjawab "kenapa".
+            {
+              grep -n "\[gerbang\]" "$OUT_DIR/run.log" | head -4
+              grep -n "\[DebugRun\]" "$OUT_DIR/run.log" | tail -8
+              grep -n "SCRIPT ERROR\|Parse Error\|Compile Error" "$OUT_DIR/run.log" | head -6
+              grep -ni "crash\|signal 11\|segfault\|Aborted" "$OUT_DIR/run.log" | head -4
+              grep -n "ERROR:" "$OUT_DIR/run.log" | head -8
+            } 2>/dev/null | head -20 > /tmp/penentu.txt
+            echo "--- baris penentu ---"
+            cat /tmp/penentu.txt
+            while IFS= read -r line; do
+              echo "::error title=GODOT-DEBUG log::${line}"
+            done < /tmp/penentu.txt
+            if [ "$rc" != "0" ]; then
+              tail -60 "$OUT_DIR/run.log" > /tmp/run-log-ekor.txt
+              anotasi error "ekor run.log" /tmp/run-log-ekor.txt 4000
+            fi
+          else
+            echo "(run.log belum ada — harness tidak sampai dijalankan)"
+          fi
+
+          # Jejak crash (AppShell menulis user://crash_log.txt) sering satu-satunya
+          # penjelasan saat engine mati tanpa SCRIPT ERROR.
+          for crash in "$OUT_DIR"/userdata/godot/app_userdata/*/crash_log.txt; do
+            [ -f "$crash" ] || continue
+            echo "--- crash log: $crash ---"
+            cat "$crash"
+            anotasi error "crash log" "$crash" 1200
+          done
+          if [ -f "$OUT_DIR/movie.avi" ] || [ -f "$OUT_DIR/movie.mp4" ]; then
+            ls -l "$OUT_DIR"/movie.* 2>/dev/null
           fi
           exit 0
 

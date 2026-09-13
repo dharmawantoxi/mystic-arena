@@ -61,7 +61,15 @@ var _failures: Array = []
 var _notes: Array = []
 var _running: bool = false
 var _done: bool = false
+## Detik JAM GAME (jumlah delta) dan detik JAM DINDING (Time.get_ticks_msec()).
+## Batas run memakai jam dinding: Engine.time_scale milik game (hit-stop hero/boss
+## menyetelnya ke 0.05, setting Game Speed 0.5x-2x) mengalikan `delta`, jadi
+## batas berbasis delta bisa molor 20x — run "30 detik" pernah berjalan 9 menit
+## di CI karena itu. Batas game-time tetap dicatat di laporan sebagai info.
 var _t: float = 0.0
+var _wall: float = 0.0
+var _start_ms: int = 0
+var _next_status: float = 0.0
 var _frames: int = 0
 
 
@@ -171,9 +179,13 @@ func _boot() -> void:
 	if _probe != null and _probe.has_method("configure"):
 		_probe.configure(out_dir, shot_every, max_shots)
 	_running = true
+	_start_ms = Time.get_ticks_msec()
+	_next_status = 1.0
 	set_process(true)
-	print("[DebugRun] mulai · skenario=%s · level=%d · batas %.1f detik / %d frame"
-			% [scenario, level, seconds, max_frames])
+	print("[DebugRun] mulai · skenario=%s · level=%d · batas %.1f detik NYATA / "
+			% [scenario, level, seconds]
+			+ "%d frame (time_scale=%.2f — batas detik memakai jam dinding)"
+			% [max_frames, Engine.time_scale])
 
 
 func _start_match() -> void:
@@ -241,14 +253,17 @@ func _process(delta: float) -> void:
 		return
 	_t += delta
 	_frames += 1
+	_wall = float(Time.get_ticks_msec() - _start_ms) / 1000.0
 	if max_frames > 0 and _frames >= max_frames:
 		_finish("batas %d frame tercapai" % max_frames)
 		return
-	if seconds > 0.0 and _t >= seconds:
+	if seconds > 0.0 and _wall >= seconds:
 		_finish("batas %.1f detik tercapai" % seconds)
 		return
-	if _probe != null and int(_t) != int(_t - delta):
-		print(_probe.status_line())
+	if _wall >= _next_status:
+		_next_status = _wall + 1.0
+		if _probe != null:
+			print(_probe.status_line())
 
 
 func _finish(reason: String) -> void:
@@ -269,6 +284,9 @@ func _finish(reason: String) -> void:
 	report["seconds_requested"] = seconds
 	report["max_frames"] = max_frames
 	report["harness_frames"] = _frames
+	report["harness_seconds_wall"] = snappedf(_wall, 0.1)
+	report["harness_seconds_game"] = snappedf(_t, 0.1)
+	report["time_scale"] = snappedf(Engine.time_scale, 0.01)
 	if _probe != null and shot_every > 0.0 and not _probe.is_headless() \
 			and _probe.shots().is_empty():
 		# Diminta screenshot tetapi tidak ada satu berkas pun: hampir selalu
@@ -282,16 +300,17 @@ func _finish(reason: String) -> void:
 	_write_report(report)
 
 	if _failures.is_empty():
-		print("[DebugRun] PASS — %s · %d frame · %d screenshot · laporan: %s"
-				% [reason, _frames, report.get("shots", []).size(),
-				out_dir.path_join("report.json")])
+		print("[DebugRun] PASS — %s · %d frame · %.1f s nyata · %d screenshot "
+				% [reason, _frames, _wall]
+				+ "· laporan: %s" % out_dir.path_join("report.json"))
 		for note in _notes:
 			print("[DebugRun] catatan: %s" % note)
 		get_tree().quit(0)
 	else:
 		for failure in _failures:
 			print("[DebugRun] FAIL: %s" % failure)
-		print("[DebugRun] FAIL — %s · %d frame" % [reason, _frames])
+		print("[DebugRun] FAIL — %s · %d frame · %.1f s nyata"
+				% [reason, _frames, _wall])
 		get_tree().quit(1)
 
 

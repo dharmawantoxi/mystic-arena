@@ -3,9 +3,10 @@
 
     python3 tools/test_godot_debug_runner.py
 
-TIDAK butuh pygame dan TIDAK butuh Godot — semuanya dibaca dari berkas, jadi
-cek ini jalan di langkah "Linter statis" godot-check.yml sebelum engine
-diunduh (hitungan milidetik).
+TIDAK butuh pygame dan TIDAK butuh Godot — hampir semuanya dibaca dari berkas,
+jadi cek ini jalan di langkah "Linter statis" godot-check.yml sebelum engine
+diunduh (hitungan milidetik). Pengecualiannya cek terakhir: rem darurat diuji
+dengan stub pembungkus shell (bukan Godot) selama ~2 detik.
 
 KENAPA PERLU
 ============
@@ -36,14 +37,23 @@ YANG DIKUNCI
   6. berkas scene/probe/devcontainer benar-benar ada dan versi Godot-nya
      tidak berbeda antara workflow dan devcontainer;
   7. gate ini tidak bisa dihapus diam-diam: godot-check.yml harus tetap
-     memanggilnya dan tetap memantau berkas baru ini di filter `paths`.
+     memanggilnya dan tetap memantau berkas baru ini di filter `paths`;
+  8. rem darurat (`--timeout`) benar-benar mematikan SELURUH process group —
+     satu-satunya cek di sini yang menjalankan proses (stub pembungkus, bukan
+     Godot). Tanpa ini, mode xvfb bisa "membunuh" xvfb-run sementara Godot
+     terus berjalan: run 30 detik pernah menjadi 9 menit di CI.
 """
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
+import os
 import re
 import sys
+import tempfile
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -296,6 +306,54 @@ def check_docs() -> None:
           % DOC.name)
 
 
+def check_watchdog() -> None:
+    """Rem darurat harus membunuh pembungkus + enginenya, bukan cuma pembungkus.
+
+    Bentuk `xvfb-run` = skrip shell yang menjalankan perintah sebagai ANAK.
+    `Popen.kill()` biasa hanya membunuh skripnya; anaknya tetap menulis ke pipa
+    stdout kita, jadi `run_engine` ikut menunggu sampai anak itu selesai sendiri
+    (inilah kenapa run 30 detik pernah berjalan 9 menit di CI). Stub di bawah
+    meniru bentuk itu tanpa Godot: anaknya hidup 40 detik kalau tidak dibunuh.
+    """
+    tool = load_tool()
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        wrapper = tmp_path / "wrap.sh"
+        wrapper.write_text(
+            "#!/usr/bin/env bash\n"
+            "# Meniru xvfb-run: pembungkus + anak yang menulis ke stdout.\n"
+            "$0-child &\n"
+            "wait\n",
+            encoding="utf-8")
+        child = tmp_path / "wrap.sh-child"
+        child.write_text(
+            "#!/usr/bin/env bash\n"
+            "for i in $(seq 1 40); do echo \"anak masih hidup $i\"; sleep 1; done\n",
+            encoding="utf-8")
+        wrapper.chmod(0o755)
+        child.chmod(0o755)
+
+        out = tmp_path / "out"
+        out.mkdir()
+        started = time.time()
+        # Keluaran stub ditelan: yang penting waktunya, bukan echo-nya di log CI.
+        with contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()):
+            rc = tool.run_engine([str(wrapper)], out, os.environ.copy(),
+                                 timeout=2.0)
+        elapsed = time.time() - started
+
+    if rc != 124:
+        raise AssertionError("rem darurat tidak melaporkan 124 (rc=%s)" % rc)
+    if elapsed > 20.0:
+        raise AssertionError(
+            "rem darurat tidak membunuh seluruh process group: dibutuhkan "
+            "%.1f detik untuk timeout 2 detik — anak pembungkus (seperti Godot "
+            "di dalam xvfb-run) masih hidup" % elapsed)
+    print("[watchdog] --timeout %.0fs → berhenti %.1fs (process group dibunuh, "
+          "tanpa proses yatim)" % (2.0, elapsed))
+
+
 def check_wiring() -> None:
     workflow = read(CHECK_WORKFLOW)
     if "tools/test_godot_debug_runner.py" not in workflow:
@@ -321,6 +379,7 @@ def main() -> int:
     check_files_and_devcontainer()
     check_docs()
     check_wiring()
+    check_watchdog()
     print("Godot debug runner: OK")
     return 0
 

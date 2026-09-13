@@ -30,7 +30,14 @@ var shot_every: float = 1.0
 var max_shots: int = 40
 
 var _headless: bool = false
+## `_elapsed` = detik JAM DINDING (Time.get_ticks_msec()); `_game_time` = jumlah
+## delta (jam game). Keduanya dicatat karena Engine.time_scale milik game
+## (hit-stop hero/boss = 0.05, Game Speed 0.5x-2x) membuat delta jauh lebih
+## kecil dari waktu nyata — tanpa kolom waktu nyata, "probe tidak pernah
+## sampling" dan "run 30 detik jadi 9 menit" terlihat seperti bug misterius.
 var _elapsed: float = 0.0
+var _game_time: float = 0.0
+var _start_ms: int = 0
 var _frames: int = 0
 var _next_shot: float = 0.0
 var _next_sample: float = 0.0
@@ -54,7 +61,9 @@ func configure(dir: String, every: float, shots_max: int) -> void:
 	max_shots = shots_max
 	_headless = DisplayServer.get_name().to_lower().contains("headless") \
 			or DisplayServer.get_name().to_lower().contains("dummy")
+	_start_ms = Time.get_ticks_msec()
 	_elapsed = 0.0
+	_game_time = 0.0
 	_frames = 0
 	_next_shot = 0.0
 	_next_sample = SAMPLE_EVERY
@@ -75,7 +84,8 @@ func configure(dir: String, every: float, shots_max: int) -> void:
 func _process(delta: float) -> void:
 	if not enabled:
 		return
-	_elapsed += delta
+	_game_time += delta
+	_elapsed = float(Time.get_ticks_msec() - _start_ms) / 1000.0
 	_frames += 1
 	_fps.append(int(Engine.get_frames_per_second()))
 	if _elapsed >= _next_sample:
@@ -150,6 +160,8 @@ func _note_shot_failure(reason: String) -> void:
 func _sample() -> Dictionary:
 	return {
 		"t": snappedf(_elapsed, 0.1),
+		"t_game": snappedf(_game_time, 0.1),
+		"time_scale": snappedf(Engine.time_scale, 0.01),
 		"fps": int(Engine.get_frames_per_second()),
 		"state": str(GameManager.state),
 		"wave": int(GameManager.wave_number),
@@ -180,9 +192,10 @@ func _count_group(group: String) -> int:
 
 ## Baris status untuk log (dibaca di tab Actions tanpa mengunduh apa pun).
 func status_line() -> String:
-	return ("[DebugRun] t=%.1fs frame=%d fps=%d state=%s wave=%d gold=%d "
-			+ "hero=%d/%d minion=%d shot=%d") % [
-		_elapsed, _frames, int(Engine.get_frames_per_second()),
+	return ("[DebugRun] t=%.1fs (game %.1fs, time_scale %.2f) frame=%d fps=%d "
+			+ "state=%s wave=%d gold=%d hero=%d/%d minion=%d shot=%d") % [
+		_elapsed, _game_time, Engine.time_scale, _frames,
+		int(Engine.get_frames_per_second()),
 		str(GameManager.state), int(GameManager.wave_number),
 		int(GameManager.gold),
 		GameManager.owned_heroes("blue").size(),
@@ -231,13 +244,17 @@ func build_report() -> Dictionary:
 		"engine": str(Engine.get_version_info().get("string", "?")),
 		"headless": _headless,
 		"display_driver": DisplayServer.get_name(),
-		"rendering_method": str(ProjectSettings.get_setting(
+		"rendering_driver": RenderingServer.get_current_rendering_driver_name(),
+		"rendering_method": RenderingServer.get_current_rendering_method(),
+		"rendering_setting": str(ProjectSettings.get_setting(
 				"rendering/renderer/rendering_method", "?")),
 		"video_adapter": RenderingServer.get_video_adapter_name(),
 		"video_api": RenderingServer.get_video_adapter_api_version(),
 		"out_dir": out_dir,
 		"frames": _frames,
 		"elapsed": snappedf(_elapsed, 0.1),
+		"elapsed_game": snappedf(_game_time, 0.1),
+		"time_scale": snappedf(Engine.time_scale, 0.01),
 		"shot_every": shot_every,
 		"shots": _shots.duplicate(),
 		"samples": _samples.duplicate(true),

@@ -189,6 +189,8 @@ sistem apa pun. Kalau butuh match yang dipercepat, itu urusan scene uji
 | Ukuran artifact besar | 30 detik × 1 screenshot ≈ 10 MB; video 15 fps ± 5 MB/menit | turunkan `seconds`, naikkan `shot_every`, atau `max_shots` |
 | Unduhan Godot gagal | URL hanya untuk **linux x86_64** (yang dipakai CI) | Windows/macOS: pasang Godot sendiri lalu `--godot /path/ke/godot` |
 | Run berhenti sendiri di tengah | itu memang desainnya (`--seconds`/`--max-frames`) | perbesar `seconds` |
+| Run **jauh lebih lama** dari `seconds` | game mengubah `Engine.time_scale` (hit-stop hero/boss = 0.05, setting Game Speed 0.5x-2x): `delta` bukan waktu nyata | batas run sudah memakai jam dinding (`harness_seconds_wall`), jadi ini hanya terjadi pada versi lama; bandingkan kolom `detik nyata` vs `jam game` di `summary.md` |
+| Run mati sendiri tepat di batas `--timeout` | harness/engine tidak keluar setelah `seconds` (mis. menunggu input) | lihat 40 baris terakhir `run.log`; rem darurat membunuh **seluruh process group** (termasuk pembungkus `xvfb-run`), jadi tidak ada proses yatim yang menahan langkah |
 
 ---
 

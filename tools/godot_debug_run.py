@@ -57,8 +57,12 @@ CATATAN JUJUR
     runner tidak punya GPU. Tata letak UI, teks, dan posisi sama; pencampuran
     cahaya/glow bisa sedikit berbeda dari Forward+ desktop. Untuk bug "render
     meleset", jalankan lokal dengan `--renderer vulkan`.
-  * `--seconds` dihitung dari jam dinding KECUALI saat `--movie` (Movie Maker
-    memaksa `--fixed-fps`, jadi batasnya frame, bukan detik nyata).
+  * `--seconds` SELALU detik jam dinding. Game-nya sendiri bisa lebih lambat:
+    `Engine.time_scale` (hit-stop hero/boss 0.05, setting Game Speed 0.5x-2x)
+    mengalikan `delta`, jadi "30 detik game" bisa jauh lebih panjang dari 30
+    detik nyata — laporan menulis kedua angka (`elapsed` vs `elapsed_game`).
+    `--fixed-fps` (movie) tidak mengubah batas ini: video bisa jadi lebih
+    pendek dari `--seconds` kalau mesinnya lambat.
 
 KONTRAK
 =======
@@ -73,6 +77,7 @@ import argparse
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -189,7 +194,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--force-import", action="store_true",
                    help="jalankan `godot --import` apa pun keadaannya")
     p.add_argument("--timeout", type=float, default=0.0,
-                   help="rem darurat detik (default: --seconds + 120)")
+                   help="rem darurat detik (default: max(--seconds*4 + 120, "
+                        "300) — harness keluar sendiri jauh sebelum ini)")
     p.add_argument("--extra", action="append", default=[], metavar="ARG",
                    help="argumen tambahan untuk engine (boleh diulang)")
     p.add_argument("--dry-run", action="store_true",
@@ -309,7 +315,8 @@ def build_command(args: argparse.Namespace, godot: Path, out_dir: Path,
     """Kembalikan (perintah, max_frames, fps yang benar-benar dikirim)."""
     max_frames = 0
     if args.movie and args.seconds > 0:
-        # Movie Maker memaksa --fixed-fps: batasnya frame, bukan detik nyata.
+        # Movie Maker memaksa --fixed-fps: batas frame dipakai sebagai jaring
+        # kedua, tetapi batas utama tetap detik jam dinding (harness).
         max_frames = int(args.seconds * args.fixed_fps) + args.fixed_fps
 
     fps = args.fps if (args.fps > 0 and display != "headless") else 0
@@ -351,15 +358,23 @@ def run_engine(cmd: list[str], out_dir: Path, env: dict, timeout: float) -> int:
     with log_path.open("w", encoding="utf-8") as log:
         log.write("$ " + " ".join(cmd) + "\n\n")
         log.flush()
+        # start_new_session: perintah dijalankan di process group sendiri.
+        # Penting untuk mode xvfb — di sana argv[0] adalah skrip `xvfb-run`,
+        # jadi `proc.kill()` hanya membunuh pembungkusnya, dan Godot yang
+        # masih hidup terus menulis ke pipa kita (rem darurat jadi tidak
+        # berfungsi: run 30 detik bisa berjalan 9 menit).
         proc = subprocess.Popen(cmd, cwd=str(ROOT), env=env,
                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                 text=True, encoding="utf-8", errors="replace",
-                                bufsize=1)
+                                bufsize=1, start_new_session=True)
 
         def _watchdog() -> None:
             if proc.poll() is None:
                 killed["by"] = "timeout"
-                proc.kill()
+                try:
+                    os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+                except (ProcessLookupError, PermissionError):
+                    proc.kill()
 
         timer = threading.Timer(timeout, _watchdog)
         timer.daemon = True
@@ -452,7 +467,9 @@ def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
         f"{report.get('rendering_driver', '?')}"
         f"{' · HEADLESS' if report.get('headless') else ''} |",
         f"| engine | {report.get('engine', '?')} |",
-        f"| lama | {seconds_run:.1f} detik · {report.get('frames', '?')} frame |",
+        f"| lama | {seconds_run:.1f} detik nyata · {report.get('frames', '?')} "
+        f"frame · jam game {report.get('elapsed_game', '?')} detik "
+        f"(time_scale {report.get('time_scale', '?')}) |",
         f"| fps | rata-rata {report.get('fps_avg', '?')} · "
         f"min {report.get('fps_min', '?')} · maks {report.get('fps_max', '?')} |",
         f"| screenshot | {len(shots)} berkas |",
@@ -464,16 +481,16 @@ def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
     samples = report.get("samples") or []
     if samples:
         lines += ["## Cuplikan keadaan", "",
-                  "| detik | fps | state | wave | gold | hero biru | "
-                  "hero merah | minion |",
-                  "|---|---|---|---|---|---|---|---|"]
+                  "| detik nyata | jam game | time_scale | fps | state | wave | "
+                  "gold | hero biru | hero merah | minion |",
+                  "|---|---|---|---|---|---|---|---|---|---|"]
         for s in samples[:60]:
             lines.append(
-                "| {t} | {fps} | {state} | {wave} | {gold} | {blue} | {red} "
-                "| {minions} |".format(**{k: s.get(k, "")
-                                          for k in ("t", "fps", "state", "wave",
-                                                    "gold", "blue", "red",
-                                                    "minions")}))
+                "| {t} | {t_game} | {time_scale} | {fps} | {state} | {wave} "
+                "| {gold} | {blue} | {red} | {minions} |".format(
+                    **{k: s.get(k, "")
+                       for k in ("t", "t_game", "time_scale", "fps", "state",
+                                 "wave", "gold", "blue", "red", "minions")}))
         lines.append("")
     if shots:
         lines += ["## Berkas", ""]
@@ -489,7 +506,10 @@ def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
         + ("`movie.mp4`, " if video else "") + "`summary.md`.",
         "2. `run.log` = keluaran engine apa adanya; baris `SCRIPT ERROR`, "
         "`Parse Error`, `[DebugRun] FAIL` adalah petunjuk pertama.",
-        "3. Ulangi dengan skenario/level lain: tab Actions → "
+        "3. Kolom `jam game` vs `detik nyata` menerangkan `Engine.time_scale` "
+        "game (hit-stop/game speed): run bisa lebih lambat dari jam dinding, "
+        "tapi batas run selalu dihitung dari jam dinding.",
+        "4. Ulangi dengan skenario/level lain: tab Actions → "
         "**Godot Debug Run** → Run workflow.",
         "",
     ]
@@ -582,24 +602,38 @@ def main(argv: list[str] | None = None) -> int:
         print("      * unduh        : --download", file=sys.stderr)
         return 2
 
+    t0 = time.time()
     if not args.no_assets:
         copy_assets(out_dir)
 
     env = environment(args, out_dir, display)
-    timeout = args.timeout if args.timeout > 0 else (
-        args.seconds + 120 if args.seconds else 900)
+    # Rem darurat DIHITUNG DARI WAKTU NYATA, bukan dari janji harness: harness
+    # keluar sendiri setelah `--seconds` jam dinding, jadi batas ini hanya jaring
+    # kalau harness/engine macet. Rentangnya dilebihkan untuk CI tanpa GPU
+    # (llvmpipe bisa ~4 fps) dan untuk movie mode yang menyimpan tiap frame.
+    # Catatan sejarah: `--seconds + 120` pernah memicu kill pada run sehat,
+    # tetapi kill-nya hanya mengenai skrip pembungkus xvfb-run — Godot terus
+    # hidup sampai `--quit-after` dan langkah 30 detik itu berjalan 9 menit.
+    # Sekarang kill memakai os.killpg (lihat run_engine).
+    timeout = args.timeout if args.timeout > 0 else max(args.seconds * 4 + 120,
+                                                        300.0)
 
     if not args.no_import:
         import_project(godot, out_dir, env, args.force_import)
+    prep_s = time.time() - t0
 
     cmd, _max_frames, _fps = build_command(args, godot, out_dir, scene, display)
     if args.dry_run:
         print("[kering] " + " ".join(cmd))
         return 0
 
+    print(f"[waktu] aset + import: {prep_s:.0f} detik · rem darurat: "
+          f"{timeout:.0f} detik")
     started = time.time()
     rc = run_engine(cmd, out_dir, env, timeout)
     elapsed = time.time() - started
+    print(f"[waktu] engine: {elapsed:.0f} detik (exit {rc}) · "
+          f"total {prep_s + elapsed:.0f} detik")
 
     shots = sorted((out_dir / "shots").glob("*.png"))
     video = make_video(out_dir) if args.movie else ""
