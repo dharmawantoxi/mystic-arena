@@ -365,7 +365,9 @@ func _draw_overlays(team_col: Color, cfg: Dictionary) -> void:
 		var sh_ratio := clampf(shield / shield_max, 0.0, 1.0)
 		draw_rect(Rect2(Vector2(-w * 0.5, -62), Vector2(w * sh_ratio, 4)),
 			sc, true)
-		var font: Font = ThemeDB.fallback_font
+		# pygame memakai get_font(10, 'body_bold') = Barlow-Bold 10 px
+		# (_entity.py:1940) — bukan font fallback engine yang kasar.
+		var font: Font = UiTheme.body_bold()
 		if font != null:
 			var pct := int(round(sh_ratio * 100.0))
 			draw_string(font, Vector2(-w * 0.5, -74.0),
