@@ -98,6 +98,56 @@ permainan), disimpan di properti `reason`, dan itulah yang masuk ke
 `ui_data.blocked`. Visual pill tetap memakai `state` — tidak ada perubahan
 tampilan.
 
+### Audit teks menu: widget yang menggambar teksnya sendiri
+
+`LocalizationParityTest` (gate "SEMUA layar menu ikut bahasa") juga merah di
+`main` setelah #239, dan kegagalan itu ikut menahan langkah CI berikutnya.
+Sebabnya bukan teksnya, tapi **cara audit membaca teks**: widget proyek ini
+menggambar teksnya sendiri di `_draw()` dan mengosongkan properti bawaan
+Godot, jadi `_collect_texts()` tidak menemukan apa pun:
+
+| widget | properti yang digambar | dibaca audit dari |
+|---|---|---|
+| `PygameButton` | `label_text` (`Button.text` = `""`) | `label_text` |
+| `PygameChip` | `label_text` + `value_text` | keduanya |
+| `OptionCycler` | `label_text` + `value_text()` | keduanya |
+| `ScreenTitle` | `text` + `sub_text` | keduanya |
+
+Tanpa cabang-cabang itu, sentinel `en/MAIN` (`PLAY GAME`/`HOW TO PLAY`/
+`QUIT GAME`) dan SEMUA sentinel judul layar (`SELECT SAVE SLOT`, `PILIH LEVEL`,
+… ) selalu dianggap hilang, dan gate closed-world "tak boleh ada label
+Indonesia di layar `en`" ikut buta terhadap tombol. Satu bug kecil lagi di
+audit yang sama: `forbidden[f]` di dalam argumen `_expect(...)` — GDScript
+mengevaluasi SEMUA argumen, jadi lookup itu meledak justru pada label yang
+SAH dan membatalkan sisa audit satu layar; kini `forbidden.get(f, "")`.
+
+### Panel statistik VICTORY/DEFEAT: acuan tepi atas, bukan setengah tinggi
+
+Tinggi panel statistik ditentukan tinggi minimum isinya (VBox 5 baris), bukan
+tebakan `rows * ROW_H + 24 = 214 px` (nyatanya ~308 px). Karena acuan pygame
+adalah tepi ATAS (`cy - 100`), setengah tinggi yang salah langsung menggeser
+panel di jendela non-16:9 (terukur +20 px di CI). `_build_stats_panel()`
+menyambung sinyal `resized` ke `_reanchor_stats_panel()` yang menghitung ulang
+offset dari tepi atas yang sama memakai tinggi nyata, dan `_center_in_arena()`
+menyimpan satu entri per Control supaya `_recenter()` selalu memakai ukuran
+terakhir.
+
+### Catatan verifikasi (2026-09-14)
+
+`ArenaFrameLayoutTest` sudah benar-benar dijalankan CI (bukan sekadar parse):
+aritmetika frame, lapisan gelap, dan dialog TOP UP untuk 5 ukuran jendela
+LULUS; sisa kegagalan terakhir adalah tween intro panel statistik yang belum
+selesai saat diukur (rect terukur 450x277 = skala 0.8999 dari 500x308), dan
+test kini mematikan tween itu sebelum mengukur. Run yang memverifikasi commit
+terakhir TIDAK jalan karena GitHub Actions menolak start job ("recent account
+payments have failed or your spending limit needs to be increased") — jadi
+tiga commit terakhir (kontrak blocked, audit teks, reanchor panel) baru
+terverifikasi statis (`gdparse`, `gdlint`, `tools/tscn_lint.py`,
+`tools/check_refs.py`) plus dua run CI sebelumnya, belum lewat run CI penuh.
+Cara memverifikasi ulang setelah billing beres: jalankan workflow "Godot Check"
+(atau `godot --headless --path godot res://tests/ArenaFrameLayoutTest.tscn
+--quit-after 240`).
+
 ## Koreksi UI in-match (2026-09-13 — mengikuti pygame)
 
 Empat perilaku UI in-match disetel ulang supaya persis seperti versi pygame;
