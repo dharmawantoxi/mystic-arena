@@ -81,6 +81,23 @@ Dikunci `tests/ArenaFrameLayoutTest.tscn` (CI: langkah 4z3) yang mensimulasikan
 frame, posisi semua blok overlay, lapisan gelap, tata ulang saat jendela diubah,
 dan panel dialog TOP UP (terpusat + muat).
 
+### Kontrak `ui_data.blocked` kartu Hero Shop (ikut diperbaiki di PR yang sama)
+
+`UiHudParityTest` di `main` sudah merah sebelum PR ini (2 cek: `OWNED reason`,
+`FULL reason`), dan kegagalan itu men-skip SEMUA langkah CI sesudahnya —
+termasuk test baru di atas. Sebabnya commit renderer kartu (#239):
+`HeroShopCard.configure()` menuliskan **state kartu** (`"ACTIVE"`/`"MAX"`) ke
+`ui_data.blocked`, padahal `blocked` adalah **alasan** dalam kosakata baris
+toko pygame (`""`/`OWNED`/`FULL`/`POOR`/`LOCKED`). Dua hal itu memang berbeda:
+kartu ber-state `ACTIVE` alasannya `OWNED`, kartu ber-state `MAX` alasannya
+`FULL`, dan alasan `LOCKED` justru string kosong di baris toko.
+
+Perbaikannya: `HeroShopCard.configure()` menerima `p_reason` **wajib** dari
+pemanggil (`ShopPanel._make_hero_card()` sudah menghitung alasan itu dari state
+permainan), disimpan di properti `reason`, dan itulah yang masuk ke
+`ui_data.blocked`. Visual pill tetap memakai `state` — tidak ada perubahan
+tampilan.
+
 ## Koreksi UI in-match (2026-09-13 — mengikuti pygame)
 
 Empat perilaku UI in-match disetel ulang supaya persis seperti versi pygame;

@@ -770,6 +770,8 @@ func _item_card_label(reason: String, can_buy: bool,
 ## Kartu HERO toko in-match (HeroShopCard.gd). `blocked` peta ke state kartu
 ## persis percabangan `_draw_compact_card` pygame (owned -> ACTIVE, roster
 ## penuh -> MAX, gold kurang -> harga bergaya "tak mampu", sisanya BUY).
+## Alasannya (`blocked`) IKUT dikirim ke kartu — `ui_data.blocked` wajib tetap
+## berisi kosakata baris toko (OWNED/FULL/POOR/LOCKED), bukan nama state.
 func _make_hero_card(hero_type: String, d: Dictionary, cost: int,
 		blocked: String, can: bool, tip: String) -> Control:
 	var card_state := "POOR"
@@ -786,7 +788,7 @@ func _make_hero_card(hero_type: String, d: Dictionary, cost: int,
 			card_state = "LOCKED"
 	var card := HeroShopCard.new()
 	card.configure(hero_type, d, cost, card_state, _buy_hero.bind(hero_type),
-		tip)
+		tip, blocked)
 	return card
 
 
