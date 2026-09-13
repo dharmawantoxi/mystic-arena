@@ -91,6 +91,8 @@ PROJECT = ROOT / "godot"
 CONVERTER = ROOT / "tools" / "convert_to_godot.py"
 LOG_GATE = ROOT / "godot" / "tools" / "godot_log_gate.py"
 DEBUG_SCENE = "res://scenes/debug/DebugRun.tscn"
+## Scene penanda preflight — sengaja tanpa API game (lihat DebugMarker.gd).
+MARKER_SCENE = "res://scenes/debug/DebugMarker.tscn"
 MAIN_SCENE = "res://scenes/main.tscn"
 
 ## Nama skenario — HARUS sama dengan DebugRun.gd SCENARIOS + dropdown workflow.
@@ -180,6 +182,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="direktori keluaran (default debug_out/<stempel waktu>)")
     p.add_argument("--expect", default=DEFAULT_EXPECT,
                    help="baris wajib di log (kosong = hanya cek error)")
+    p.add_argument("--no-preflight", action="store_true",
+                   help="lewati uji penanda (engine+scene dari repo) sebelum "
+                        "run sungguhan")
     p.add_argument("--no-gate", action="store_true",
                    help="jangan jalankan gerbang log (untuk menguji alat ini)")
     p.add_argument("--touch", action="store_true",
@@ -286,6 +291,53 @@ def import_project(godot: Path, out_dir: Path, env: dict, force: bool) -> None:
     print("[import] selesai — log: import.log")
     # Exit code import tidak bisa dipercaya (lihat komentar godot-check.yml):
     # yang menilai adalah gerbang log pada log run-nya nanti.
+
+
+# ══════════════════════════════════════════════════════════════════════════
+#  PREFLIGHT (engine + scene dari repo)
+# ══════════════════════════════════════════════════════════════════════════
+
+## Rem preflight: scene penanda hanya butuh beberapa detik; angka ini jaring
+## kalau engine menggantung SEBELUM run sungguhan dimulai.
+PREFLIGHT_TIMEOUT = 90.0
+
+
+def preflight(godot: Path, out_dir: Path, env: dict,
+              timeout: float = PREFLIGHT_TIMEOUT) -> bool:
+    """Buktikan dulu engine ini bisa menjalankan scene dari repo.
+
+    Hanya butuh satu start headless beberapa detik, tetapi memisahkan tiga
+    penyebab yang di artifact terlihat sama (harness sunyi lalu mati di rem
+    darurat): skrip debug gagal dikompilasi, scene tidak dijalankan engine, atau
+    engine tidak bisa membuka project. Dijalankan TANPA Xvfb supaya tetap murah.
+    """
+    marker = out_dir / "marker.txt"
+    marker.unlink(missing_ok=True)
+    cmd = [str(godot), "--headless", "--path", "godot", MARKER_SCENE, "--",
+           f"--out={out_dir}"]
+    if shutil.which("stdbuf"):
+        cmd = ["stdbuf", "-oL", "-eL"] + cmd
+    print("[preflight] " + " ".join(cmd))
+    try:
+        res = subprocess.run(cmd, cwd=str(ROOT), env=env, capture_output=True,
+                             text=True, timeout=timeout)
+        out = (res.stdout or "") + (res.stderr or "")
+    except subprocess.TimeoutExpired as exc:
+        out = (exc.stdout or "") + (exc.stderr or "") if isinstance(
+            exc.stdout, str) else ""
+        out += "\n[preflight] TIMEOUT %.0f detik\n" % timeout
+    except OSError as exc:
+        out = "[preflight] gagal menjalankan engine: %s\n" % exc
+    (out_dir / "preflight.log").write_text(out, encoding="utf-8")
+    ok = marker.exists() and "[DebugMarker] PASS" in out
+    if ok:
+        print("[preflight] OK — engine menjalankan scene dari repo")
+    else:
+        print("[preflight] GAGAL — engine tidak menyelesaikan penanda; "
+              "lihat preflight.log")
+        for line in out.splitlines()[-12:]:
+            print("       | " + line)
+    return ok
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -475,9 +527,9 @@ def harness_started(log_path: Path) -> bool:
 
 def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
                   shots: list[Path], video: str, gate_ok: bool, rc: int,
-                  seconds_run: float) -> Path:
+                  seconds_run: float, marker_ok: bool = True) -> Path:
     started = harness_started(out_dir / "run.log")
-    ok = gate_ok and rc == 0
+    ok = gate_ok and rc == 0 and marker_ok
     head = "LULUS" if ok else "GAGAL"
     lines = [
         f"# Godot Debug Run — {head}",
@@ -501,9 +553,20 @@ def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
         f"| video | {video or '—'} |",
         f"| gerbang log | {'lulus' if gate_ok else 'GAGAL'} |",
         f"| exit engine | {rc} |",
+        f"| preflight (engine+scene) | "
+        f"{'OK' if marker_ok else 'GAGAL — lihat preflight.log'} |",
         f"| harness | {'jalan' if started else 'TIDAK PERNAH JALAN'} |",
         "",
     ]
+    if not marker_ok:
+        lines += [
+            "> **Preflight GAGAL**: engine tidak bisa menjalankan scene",
+            "> `scenes/debug/DebugMarker.tscn` (tanpa satu pun API game).",
+            "> Jadi penyebabnya ada di engine/project, bukan di skenario debug:",
+            "> lihat `preflight.log` (mis. `Parse Error`, project tidak",
+            "> termuat, atau dependensi GL/X11 tidak ada).",
+            "",
+        ]
     if not started:
         lines += [
             "> **Harness tidak mencetak satu baris pun.** Artinya masalahnya ada",
@@ -671,6 +734,11 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[waktu] aset + import: {prep_s:.0f} detik · rem darurat: "
           f"{timeout:.0f} detik")
+    marker_ok = True
+    if not args.no_preflight:
+        marker_ok = preflight(godot, out_dir, env,
+                              min(PREFLIGHT_TIMEOUT, args.timeout)
+                              if args.timeout > 0 else PREFLIGHT_TIMEOUT)
     started = time.time()
     rc = run_engine(cmd, out_dir, env, timeout)
     elapsed = time.time() - started
@@ -691,15 +759,17 @@ def main(argv: list[str] | None = None) -> int:
                            expect)
 
     summary = write_summary(out_dir, args, report, shots, video, gate_ok, rc,
-                            elapsed)
+                            elapsed, marker_ok)
 
     print("-" * 72)
     print(f"  screenshot : {len(shots)} → {out_dir / 'shots'}")
     print(f"  log        : {out_dir / 'run.log'}")
     print(f"  laporan    : {out_dir / 'report.json'} · {summary.name}")
-    print(f"  hasil      : {'PASS' if (gate_ok and rc == 0) else 'FAIL'}")
+    passed = gate_ok and rc == 0 and marker_ok
+    print(f"  preflight  : {'OK' if marker_ok else 'GAGAL'}")
+    print(f"  hasil      : {'PASS' if passed else 'FAIL'}")
     print("-" * 72)
-    return 0 if (gate_ok and rc == 0) else 1
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

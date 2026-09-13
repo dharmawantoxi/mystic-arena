@@ -55,6 +55,7 @@ Isi artifact:
 | `report.json` | engine, driver, jumlah frame, FPS min/avg/maks, dan cuplikan keadaan tiap 0,5 s (state · wave · gold · hero per tim · minion) |
 | `summary.md` | tabel ringkas + cuplikan keadaan + daftar berkas (juga tampil di Summary) |
 | `trace.log` | jejak boot harness (satu baris per tahap, di-`flush` langsung) — penunjuk "berhenti di mana" kalau run macet/dibunuh |
+| `preflight.log` + `marker.txt` | hasil uji penanda SEBELUM run sungguhan: engine menjalankan `scenes/debug/DebugMarker.tscn` (tanpa satu pun API game) dan menulis berkas. Lulus = engine+scene+berkas jalan; gagal = masalahnya di engine/project, bukan di skenario |
 | `movie.mp4` | kalau `movie=true` (AVI dari Movie Maker diubah ffmpeg; kalau ffmpeg tidak ada, `.avi` dibiarkan) |
 | `userdata/.../crash_log.txt` | log sesi yang sama dengan yang ditulis AppShell tiap boot |
 
@@ -185,7 +186,8 @@ sistem apa pun. Kalau butuh match yang dipercepat, itu urusan scene uji
 | Artifact tidak berisi `shots/` | `display=headless` (driver dummy memang tidak bisa menggambar), atau Xvfb/GL gagal | pakai `display=xvfb`; di log cari `Unable to create an OpenGL context` → pastikan `libgl1-mesa-dri` terpasang (workflow & Codespace sudah memasangnya) |
 | Status run **FAIL** | ada `SCRIPT ERROR`/`Parse Error`/`[DebugRun] FAIL` di `run.log` | tab Checks menampilkan baris itu sebagai anotasi `::error::GODOT-DEBUG:`; log lengkap ada di artifact |
 | `report.json` tidak ada | harness tidak selesai (mis. scene uji memanggil `quit()` sendiri, atau engine dihentikan timeout) | normal untuk scene uji; untuk skenario lain lihat `run.log` + naikkan `--timeout` |
-| `summary.md` menulis **harness TIDAK PERNAH JALAN** | skrip `scenes/debug/DebugRun.gd` gagal dikompilasi (analyzer GDScript menolak panggilan method di luar `Node` tanpa `has_method(...)`) atau scene tidak dijalankan engine | cari `Parse Error`/`SCRIPT ERROR` di `run.log` dan periksa baris `$ …` pertama (perintah yang benar-benar dipakai). Trap ini dikunci `tools/test_godot_debug_runner.py`, yang juga menolak panggilan tanpa `has_method` |
+| `summary.md` menulis **harness TIDAK PERNAH JALAN** | skrip `scenes/debug/DebugRun.gd` gagal dikompilasi (analyzer GDScript menolak panggilan method di luar `Node` tanpa `has_method(...)`) atau scene tidak dijalankan engine | bandingkan dengan `preflight.log`: kalau penanda (`DebugMarker`) lulus, masalahnya di skrip harness → cari `Parse Error`/`SCRIPT ERROR` di `run.log`. Trap ini dikunci `tools/test_godot_debug_runner.py`, yang menolak panggilan tanpa `has_method` |
+| `summary.md` menulis **preflight GAGAL** | engine tidak bisa menjalankan bahkan scene penanda yang tidak memakai API game | lihat `preflight.log`: `Parse Error` (skrip penanda), project tidak termuat, atau dependensi GL/X11 tidak ada |
 | Video tidak ada | `movie=false`, atau `ffmpeg` tidak ada | pakai `movie=true`; kalau `ffmpeg` tidak ada, `movie.avi` tetap diunggah (buka dengan VLC) |
 | Screenshot/lampu terlihat beda dari desktop | CI memakai **gl_compatibility + llvmpipe**, bukan Forward+ | untuk urusan piksel: jalankan lokal `--renderer vulkan` |
 | Ukuran artifact besar | 30 detik × 1 screenshot ≈ 10 MB; video 15 fps ± 5 MB/menit | turunkan `seconds`, naikkan `shot_every`, atau `max_shots` |

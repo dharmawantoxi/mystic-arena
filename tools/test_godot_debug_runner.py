@@ -45,8 +45,11 @@ YANG DIKUNCI
          log yang dibutuhkan justru hilang saat proses dibunuh,
      (c) harness wajib punya jejak boot (trace.log, di-flush) + batas boot,
      (d) ketiganya harus ikut terunggah sebagai artifact;
-  9. rem darurat diuji dengan stub pembungkus shell (bukan Godot, ~2 detik);
- 10. tidak ada panggilan method di luar Node pada variabel hasil
+  9. preflight (scene penanda `DebugMarker`) ada, TIDAK memakai satu pun API
+     game, dan hasilnya ikut artifact — supaya 'harness sunyi' bisa dipisahkan
+     dari 'engine tidak bisa menjalankan scene';
+ 10. rem darurat diuji dengan stub pembungkus shell (bukan Godot, ~2 detik);
+ 11. tidak ada panggilan method di luar Node pada variabel hasil
      `get_first_node_in_group()` tanpa `has_method(...)` — analyzer GDScript
      menolaknya SAAT KOMPILASI, dan skrip yang gagal dikompilasi membuat
      harness bisu total (tidak ada `[DebugRun]`, tidak ada report.json; run
@@ -72,6 +75,8 @@ CHECK_WORKFLOW = ROOT / ".github" / "workflows" / "godot-check.yml"
 RUN_GD = ROOT / "godot" / "scenes" / "debug" / "DebugRun.gd"
 PROBE_GD = ROOT / "godot" / "scenes" / "debug" / "DebugProbe.gd"
 RUN_TSCN = ROOT / "godot" / "scenes" / "debug" / "DebugRun.tscn"
+MARKER_GD = ROOT / "godot" / "scenes" / "debug" / "DebugMarker.gd"
+MARKER_TSCN = ROOT / "godot" / "scenes" / "debug" / "DebugMarker.tscn"
 DEVCONTAINER = ROOT / ".devcontainer" / "devcontainer.json"
 DEVCONTAINER_SETUP = ROOT / ".devcontainer" / "setup.sh"
 DOC = ROOT / "docs" / "GODOT_DEBUG_DI_GITHUB.md"
@@ -301,6 +306,42 @@ def check_files_and_devcontainer() -> None:
           "devcontainer == workflow (%s)" % version.group(1))
 
 
+def check_preflight() -> None:
+    """Scene penanda harus benar-benar bebas dari API game.
+
+    Preflight hanya berguna sebagai pembanding kalau ia TIDAK bisa gagal karena
+    alasan yang sama dengan harness: tanpa autoload, tanpa grup, tanpa panggilan
+    dinamis. Kalau suatu hari ia memakai GameManager, preflight kehilangan
+    maknanya (dua-duanya gagal bersamaan, dan penyebabnya kembali ambigu).
+    """
+    tool = load_tool()
+    scene = tool.MARKER_SCENE  # res://…
+    on_disk = ROOT / "godot" / scene.replace("res://", "")
+    if not on_disk.exists():
+        raise AssertionError("MARKER_SCENE %s tidak ada di disk" % scene)
+    tscn = read(MARKER_TSCN)
+    if "res://scenes/debug/DebugMarker.gd" not in tscn:
+        raise AssertionError("%s tidak menunjuk DebugMarker.gd"
+                             % MARKER_TSCN.name)
+    # Komentar boleh menyebut API game (mis. "tanpa get_first_node_in_group");
+    # yang diperiksa adalah kodenya.
+    gd = "\n".join(line.split("#", 1)[0]
+                   for line in read(MARKER_GD).splitlines())
+    for terlarang, kenapa in (("GameManager", "autoload game"),
+                              ("get_first_node_in_group", "panggilan dynamic"),
+                              ("get_tree().get_first_node", "grup node game"),
+                              ("AppShell", "autoload game")):
+        if terlarang in gd:
+            raise AssertionError(
+                "DebugMarker.gd memakai %s (%s) — preflight jadi ikut gagal "
+                "saat masalahnya justru di skrip game" % (terlarang, kenapa))
+    if "[DebugMarker] PASS" not in gd:
+        raise AssertionError("DebugMarker.gd tidak mencetak baris PASS yang "
+                             "dicari preflight")
+    print("[preflight] scene penanda ada, tanpa API game, baris PASS cocok "
+          "dengan yang dicari alat")
+
+
 def check_docs() -> None:
     doc = read(DOC)
     for needle in (".github/workflows/godot-run.yml",
@@ -334,9 +375,11 @@ def check_resiliensi() -> None:
                        ("flush()", "flush tiap baris jejak")):
         if token not in run_gd:
             raise AssertionError("DebugRun.gd tidak punya %s (%s)" % (token, why))
-    if "trace.log" not in workflow:
-        raise AssertionError("artifact workflow tidak mengunggah trace.log — "
-                             "jejak boot hilang bersama runner")
+    for berkas in ("trace.log", "preflight.log"):
+        if berkas not in workflow:
+            raise AssertionError("artifact workflow tidak mengunggah %s — "
+                                 "jejak kegagalan hilang bersama runner"
+                                 % berkas)
     print("[ketahanan] process group dibunuh · stdbuf (log tak tertahan) · "
           "trace.log + batas boot ikut artifact")
     return
@@ -448,6 +491,7 @@ def main() -> int:
     check_docs()
     check_wiring()
     check_resiliensi()
+    check_preflight()
     check_panggilan_dinamis()
     check_watchdog()
     print("Godot debug runner: OK")

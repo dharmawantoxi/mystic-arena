@@ -271,6 +271,9 @@ jobs:
           # Jejak boot harness: menjawab "berhenti di tahap mana" walau engine
           # dibunuh paksa (stdout-nya bisa tertahan buffer).
           anotasi "$level" "trace harness" "$OUT_DIR/trace.log" 1200
+          # Preflight: bukti engine bisa menjalankan scene dari repo (pendek,
+          # jadi seluruh isinya muat sebagai anotasi).
+          anotasi "$level" "preflight" "$OUT_DIR/preflight.log" 1500
           if [ -f "$OUT_DIR/report.json" ]; then
             tr -d '\n' < "$OUT_DIR/report.json" > /tmp/report-satu-baris.json
             anotasi "$level" "report.json" /tmp/report-satu-baris.json 900
@@ -287,6 +290,7 @@ jobs:
               grep -n "SCRIPT ERROR\|Parse Error\|Compile Error" "$OUT_DIR/run.log" | head -6
               grep -ni "crash\|signal 11\|segfault\|Aborted" "$OUT_DIR/run.log" | head -4
               grep -n "ERROR:" "$OUT_DIR/run.log" | head -8
+              grep -n "DebugMarker\|preflight" "$OUT_DIR/run.log" | head -4
             } 2>/dev/null | head -20 > /tmp/penentu.txt
             echo "--- baris penentu ---"
             cat /tmp/penentu.txt
@@ -331,6 +335,8 @@ jobs:
             debug_out/*/report.json
             debug_out/*/summary.md
             debug_out/*/trace.log
+            debug_out/*/preflight.log
+            debug_out/*/marker.txt
             debug_out/*/movie.*
             debug_out/*/userdata/godot/app_userdata/*/crash_log.txt
 
