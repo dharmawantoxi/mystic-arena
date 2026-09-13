@@ -783,8 +783,11 @@ func _make_hero_card(hero_type: String, d: Dictionary, cost: int,
 		"LOCKED":
 			card_state = "LOCKED"
 	var card := HeroShopCard.new()
-	card.configure(hero_type, d, cost, card_state, _buy_hero.bind(hero_type),
-		tip)
+	# `card_state` untuk pill yang digambar, `blocked` untuk ui_data kontrol —
+	# dua kosakata berbeda, keduanya sengaja dikirim supaya baris (rail) dan
+	# kartu (modal) tetap punya kontrak kontrol yang identik.
+	card.configure(hero_type, d, cost, card_state, blocked,
+		_buy_hero.bind(hero_type), tip)
 	return card
 
 

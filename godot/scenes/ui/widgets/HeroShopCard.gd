@@ -5,8 +5,11 @@
 # kiri, info (nama 22 / judul 16 / chip ROLE 14 / baris HP·DMG·RNG) di tengah,
 # dan pill 90x30 di kanan yang isinya HARGA — bukan baris `Button` berlabel
 # panjang seperti sebelumnya. Sama seperti ItemForgeCard, kartu ini hanya
-# mengubah CARA menampilkan; kontrak kontrol (ui_key, ui_data, tooltip,
-# callback beli) tetap ada pada Button anak yang transparan.
+# mengubah CARA menampilkan; kontrak kontrol (ui_key, ui_data {cost,
+# blocked}, tooltip, callback beli) tetap ada pada Button anak yang
+# transparan — dan `blocked` memakai kosakata baris (OWNED / FULL / POOR /
+# LOCKED), BUKAN nama state kartu, supaya mode rail dan mode kartu diaudit
+# dengan aturan yang sama.
 #
 # Angka literal `_draw_compact_card`:
 #   kartu    340x120, radius 8, bg (25,40,30) bila dimiliki else (25,30,50)
@@ -88,7 +91,13 @@ const COL_BTN_OK_BD_HOVER := Color(130.0 / 255.0, 255.0 / 255.0, 130.0 / 255.0)
 
 ## "BUY" | "ACTIVE" | "MAX" | "POOR" | "LOCKED" — percabangan
 ## _draw_compact_card pygame, dihitung ShopPanel dari state permainan.
+## Hanya untuk RENDERING pill; kosakata kontrol tetap `blocked` di bawah.
 var state: String = "BUY"
+## Alasan tak-bisa-beli versi KONTROL: "" | OWNED | FULL | POOR | LOCKED —
+## sama persis seperti `ui_data.blocked` pada baris `Button` (mode rail) dan
+## pada kartu ItemForgeCard, jadi `HudLayout`/audit keyboard/controller dan
+## UiHudParityTest membaca kosakata yang sama di kedua tata letak.
+var blocked: String = ""
 var hero_type: String = ""
 var cost: int = 0
 var stats: Dictionary = {}
@@ -115,11 +124,13 @@ func _init() -> void:
 
 ## `p_stats` = entri heroes.json (name/title/role/hp/damage/range/color).
 func configure(p_hero_type: String, p_stats: Dictionary, p_cost: int,
-		p_state: String, p_cb: Callable, p_tip: String) -> HeroShopCard:
+		p_state: String, p_blocked: String, p_cb: Callable,
+		p_tip: String) -> HeroShopCard:
 	hero_type = p_hero_type
 	stats = p_stats
 	cost = p_cost
 	state = p_state
+	blocked = p_blocked
 	portrait = UnitPortrait.portrait_texture(p_hero_type,
 		PORTRAIT_ART_W, PORTRAIT_ART_H, false)
 	_build_button(p_cb, p_tip)
@@ -141,7 +152,7 @@ func _build_button(cb: Callable, tip: String) -> void:
 	for s in ["normal", "hover", "pressed", "disabled", "focus"]:
 		b.add_theme_stylebox_override(s, StyleBoxEmpty.new())
 	b.set_meta("ui_key", "buy_hero_" + hero_type)
-	b.set_meta("ui_data", {"cost": cost, "blocked": state,
+	b.set_meta("ui_data", {"cost": cost, "blocked": blocked,
 		"owned": state == "ACTIVE"})
 	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	# disabled = kartu tidak bisa dibeli (ACTIVE/MAX/POOR/LOCKED) — sama
