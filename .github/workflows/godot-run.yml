@@ -103,6 +103,12 @@ on:
   pull_request:
     types: [labeled]
 
+  # SEMENTARA — dipakai sekali untuk membuktikan harness ini benar-benar jalan
+  # di runner (tidak bisa diuji di mesin pengembang), lalu DIHAPUS sebelum PR
+  # selesai. Jangan disisakan: jalur normalnya workflow_dispatch + label.
+  push:
+    branches: [arena/01a09be7-mystic-arena]
+
 # Run baru membatalkan run lama pada ref yang sama — antar-run debug tidak
 # pernah perlu jalan bersamaan.
 concurrency:
