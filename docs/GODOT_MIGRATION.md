@@ -76,6 +76,12 @@ godot/
                          # scenes/hero/HeroSkillKit.gd — transpile hero_skills/_bundle.py
                          # (tools/gen_hero_skill_kit.py), dipilih backend-nya oleh
                          # scenes/hero/HeroSkillKitLoader.gd (GDScript | C++ MysticHeroSkills)
+    ui/SplashModel.gd    # Port MODEL splash_screen.py (62 fungsi: timing/fade, alpha judul,
+                         # gerak partikel per frame + wrap, 48 batang gradien + 70 bingkai
+                         # vignette, geometri logo + 64 cincin glow, glow judul + garis aksen,
+                         # hint; FASE 38 — dikunci SplashParityTest + oracle pygame)
+    ui/SplashBackend.gd  # saklar backend splash (GDScript SplashModel | C++ MysticSplash),
+                         # dipakai scenes/ui/SplashScreen.gd; flag mystic/splash/use_gdext_splash
     systems/CombatSystem.gd # Pipeline damage penuh + heal + aura + damage number
     systems/StatusEffects.gd # Port TowerDebuffMixin/buff: slow, burn, stun, blind, buff skill
     systems/AIPlayer.gd     # Port _entity.AIPlayer (Dire): brain/elite, 6 prioritas aksi, beli hero/item, lane assignment
@@ -90,6 +96,13 @@ godot/
     mystic_skills/src/   # port hero_skills/_bundle.py (GENERATED tools/gen_hero_skills_cpp.py)
                          # + addons/mystic_skills/mystic_skills.gdextension; FASE 33,
                          # dikunci tests/HeroSkillGdextParityTest + workflow godot-gdext.yml
+    mystic_levels/src/   # port levels/level_data.py (GENERATED tools/gen_levels_cpp.py); FASE 34
+    mystic_maps/src/     # port map_components/_bundle.py (GENERATED tools/gen_maps_cpp.py); FASE 35
+    mystic_ui/src/       # port ui_components/_bundle.py (GENERATED tools/gen_ui_cpp.py); FASE 36
+    mystic_splash/src/   # port splash_screen.py (GENERATED tools/gen_splash_cpp.py); FASE 38
+                         # tiap ekstensi: SConstruct + selftest/ (stub Variant, jalankan .cpp
+                         # di luar engine) + addons/<nama>/<nama>.gdextension; saklar backend
+                         # <Nama>Loader.gd/<Nama>Backend.gd, flag mystic/*/use_gdext_* default false
   tools/                 # tscn_lint.py + check_refs.py + particles_lint.py (verifikasi tanpa binary Godot)
   assets/
     shaders/outline.gdshader  # 1-pass outline + hit flash + rim (ganti 5 blit pygame)
@@ -287,6 +300,8 @@ ini salah satu celah visual yang belum ditutup.
 - `localization.py` → `godot/scripts/utils/Localization.gd` port 1:1 (FASE 30): tabel teks 24 kunci × 2 bahasa, bahasa aktif `static var`, `set_language`/`get_language`/`get_language_label`, dan `tr()` → `tr_text(key, Dictionary)` (nama `tr` dihindari karena `Object.tr()` native engine). Semantik fallback Python dipertahankan lewat `_py_format`/`_py_str` (kunci tak dikenal → kunci mentah, nilai placeholder hilang → template mentah, `3.0` → `"3.0"`). Pemakai: baris BAHASA di `MainMenu` PENGATURAN (+cycler), `GameManager.language`/`set_language`/`apply_language`/`language_changed`, `SaveManager.get_setting_str`/`set_setting_str`, boot sync `AppShell._apply_interface_language`, dan `ItemDB.item_mechanics_localized`. Dikunci `tools/test_godot_localization_parity.py` (oracle tanpa engine) + fixture `localization.json` + `LocalizationParityTest`. Rincian: `docs/LOCALIZATION_GODOTPP.md`.
 - `bosses/base_boss.py` (lapisan overlay `Boss.draw` `:6124-6430`) → `godot/scripts/render/BossOverlay.gd` + `godot/scenes/boss/BossPlate.gd` (FASE 32): entrance eksklusif, aura ability/enrage/true boss (model **pita annulus** karena `pygame.draw.circle` MENIMPA, `draw_circle` Godot mem-blend), bayangan ellipse, indikator debuff menara (`_core.py:1037`), badan generik fallback, HP bar + papan nama ter-clamp. `Boss.gd` menyuplai `overlay_state()` dan menggambar lapisan bawah badan; `Plate` (anak sesudah `Visual`) menggambar lapisan atas — node statis `UI`/`ProgressBar`/`Label` lama dihapus. Dikunci `tools/test_boss_draw_parity.py` (oracle: menjalankan `Boss.draw` pygame ASLI, 50 skenario → 647 op kanonik, diverifikasi piksel + profil alpha), `tools/test_boss_overlay_model_parity.py` (kembaran Python, konstanta dibaca dari `.gd`), `tools/test_boss_true_aura_parity.py` (ditulis ulang), dan replay engine `tests/BossDrawParityTest.tscn`. Rincian + deviasi: `docs/BOSS_OVERLAY_GODOTPP.md`.
 - `bosses/boss_data.py` (pipeline saat-import `:11452-11841`) → `godot/scripts/core/BossData.gd` (FASE 32): kelima langkah yang menimpa tabelnya sendiri — rebalance piecewise, smoothing monoton per slot wave mini (`w10`/`w18`/`w25`) + per level true, curve override, normalisasi stat `hero_unlock` (least-squares `_hero_unlock_trend` + clamp outlier + running-max 15%), normalisasi range melee/ranged — dihitung ulang Godot dari `godot/data/boss_pristine.json` (tabel mentah hasil ekstraksi AST converter). Angka final tetap di-bake `bosses.json`/`boss_stats_full.json`; `BossDB.rebuild_from_pristine()` menggantikan fallback 3 baris hardcode lama. Gotcha GDScript (`_py_round` banker's, `_py_int`, `float()/float()`, `pow(d, 2.0)`, sort stabil dengan tie-break indeks, truthiness dict kosong) dikunci probe fixture. Dikunci `tools/test_boss_data_parity.py` (2515 cek: model vs modul asli 3024 field, vs baker 3024 field, invariant, struktural) + replay engine `tests/BossDataParityTest.tscn`.
+
+- `splash_screen.py` → `godot/scripts/ui/SplashModel.gd` + `godot/scripts/ui/SplashBackend.gd` + **C++ `MysticSplash`** (GDExtension `mystic_splash`, FASE 38): 62 fungsi model splash (timing/fade, alpha judul, gerak partikel per FRAME + wrap, 48 batang gradien + 70 bingkai vignette, geometri logo + kuantisasi grow `round()` half-even + 64 cincin glow langkah −3, 3 lapisan glow judul + fill `int(alpha*0.28)` + garis aksen, hint) dibangkitkan dari AST oleh `tools/gen_splash_cpp.py`; `scenes/ui/SplashScreen.gd` tinggal renderer yang mengambil SEMUA angka lewat `SplashBackend` (saklar `mystic/splash/use_gdext_splash`, default **false**). Dua deviasi produksi ditutup: latar **hitam pekat + rim 2 px** (alpha vignette pygame menjenuh 255 pada `i <= 24`) dan skip memakai **elapsed TOTAL** (`skip()` hanya menyetel bendera; `done` dihitung `update()` frame berikut). Dikunci `tools/test_godot_splash_parity.py` (oracle: MENJALANKAN pygame ASLI dengan SDL dummy + font palsu + `TrackSurface` → fixture 141 KB berisi timeline 4×200 frame, rantai 46 partikel × 120 langkah + nilai respawn RNG yang di-spy, latar + 9 probe piksel, logo, glow judul, hint, dan urutan blit/draw 2 skenario; 613 cek + audit arity `Backend.*` + semantik argumen sweep + ruang lingkup identifier GDScript), `tools/test_splash_cpp_selftest.py` (eksekusi `.cpp` di luar engine, 1.585 cek dengan checkout godot-cpp / 1.580 tanpa, 6.524 perintah), `tests/SplashParityTest.tscn` + `tests/SplashGdextParityTest.tscn` (backend GDScript vs DIPAKSA C++ + A/B seluruh API). Deviasi disengaja: RNG partikel (pygame tak ber-seed → Godot seed 777) dan piksel glow (`draw_arc`/`UiTheme.draw_glow`). Rincian: [SPLASH_GODOTPP.md](SPLASH_GODOTPP.md).
 
 ### Verifikasi tanpa binary Godot
 

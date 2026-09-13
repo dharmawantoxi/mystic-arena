@@ -15,11 +15,15 @@ name: Godot GDExtension (godot++)
 #     (54 level × 17 field + 4 helper) lewat MysticLevels, dan
 #     MapDataGdextParityTest memutar ulang oracle map_components/_bundle.py
 #     (54 tema + PathGenerator + DecorationGenerator + derive) lewat
-#     MysticMaps. Tanpa workflow ini, "sudah dimigrasikan ke C++" hanya
+#     MysticMaps, dan SplashGdextParityTest memutar ulang oracle
+#     splash_screen.py (timeline 4x200 frame + rantai 46 partikel x 120
+#     langkah + 48 batang gradien + 70 bingkai vignette + 9 probe piksel +
+#     logo/glow judul/hint + urutan blit) lewat MysticSplash. Tanpa workflow
+#     ini, "sudah dimigrasikan ke C++" hanya
 #     klaim: kode yang tidak pernah dikompilasi/dijalankan bisa basi
 #     diam-diam.
 #   * godot-cpp di-clone SEKALI ke godot/gdext/godot-cpp lalu di-symlink ke
-#     tiap ekstensi: objek compile-nya dipakai bersama, jadi tiga lib hanya
+#     tiap ekstensi: objek compile-nya dipakai bersama, jadi enam lib hanya
 #     membayar satu compile godot-cpp.
 #
 # HEMAT KUOTA:
@@ -71,6 +75,19 @@ on:
       - 'tools/gen_mobile_cpp.py'
       - 'tools/test_mobile_cpp_selftest.py'
       - 'godot/addons/mystic_mobile/**'
+      - 'splash_screen.py'
+      - 'tools/gen_splash_cpp.py'
+      - 'tools/test_godot_splash_parity.py'
+      - 'tools/test_splash_cpp_selftest.py'
+      - 'godot/addons/mystic_splash/**'
+      - 'godot/scripts/ui/SplashModel.gd'
+      - 'godot/scripts/ui/SplashBackend.gd'
+      - 'godot/scenes/ui/SplashScreen.gd'
+      - 'godot/tests/SplashParityTest.gd'
+      - 'godot/tests/SplashParityTest.tscn'
+      - 'godot/tests/SplashGdextParityTest.gd'
+      - 'godot/tests/SplashGdextParityTest.tscn'
+      - 'godot/tests/fixtures/splash_parity.json'
       - 'godot/scripts/core/MapDB.gd'
       - 'godot/scripts/core/MapDBLoader.gd'
       - 'godot/scenes/map/ArenaMap.gd'
@@ -121,6 +138,19 @@ on:
       - 'tools/gen_mobile_cpp.py'
       - 'tools/test_mobile_cpp_selftest.py'
       - 'godot/addons/mystic_mobile/**'
+      - 'splash_screen.py'
+      - 'tools/gen_splash_cpp.py'
+      - 'tools/test_godot_splash_parity.py'
+      - 'tools/test_splash_cpp_selftest.py'
+      - 'godot/addons/mystic_splash/**'
+      - 'godot/scripts/ui/SplashModel.gd'
+      - 'godot/scripts/ui/SplashBackend.gd'
+      - 'godot/scenes/ui/SplashScreen.gd'
+      - 'godot/tests/SplashParityTest.gd'
+      - 'godot/tests/SplashParityTest.tscn'
+      - 'godot/tests/SplashGdextParityTest.gd'
+      - 'godot/tests/SplashGdextParityTest.tscn'
+      - 'godot/tests/fixtures/splash_parity.json'
       - 'godot/scripts/core/MapDB.gd'
       - 'godot/scripts/core/MapDBLoader.gd'
       - 'godot/scenes/map/ArenaMap.gd'
@@ -152,9 +182,16 @@ env:
 
 jobs:
   build:
-    name: Build mystic_skills + mystic_levels + mystic_maps + mystic_ui + mystic_mobile + paritas C++ vs oracle
+    name: Build mystic_skills + mystic_levels + mystic_maps + mystic_ui + mystic_mobile + mystic_splash + paritas C++ vs oracle
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # 75 menit, bukan 45: job ini membangun ENAM lib berurutan (±8-10 menit
+    # per lib walaupun objek godot-cpp di-cache) + unduh Godot + 10 langkah
+    # engine. Dengan lima lib (FASE 37) totalnya ±39 menit sehingga cap 45
+    # masih muat; begitu mystic_splash masuk (FASE 38) run pertama DIBATALKAN
+    # GitHub di menit 45 saat "Build mystic_mobile" baru berjalan — bukan
+    # kegagalan kode, kehabisan waktu. 75 memberi kepala ruang ±10 menit
+    # tanpa membiarkan job nyangkut berjam-jam kalau scons benar-benar macet.
+    timeout-minutes: 75
 
     steps:
       - uses: actions/checkout@v4
@@ -244,6 +281,30 @@ jobs:
           python3 tools/gen_mobile_cpp.py --check
           python3 tools/test_mobile_cpp_selftest.py
 
+      # ── 0f. Self-test C++ di luar engine (splash, FASE 38) ──
+      # test_splash_cpp_selftest.py: MENG-EXECUTE splash_processor.cpp apa
+      # adanya lewat stub Variant (godot/gdext/mystic_splash/selftest) — 1585
+      # cek (1580 tanpa checkout godot-cpp) / 6524 perintah vs
+      # godot/tests/fixtures/splash_parity.json (direkam
+      # SplashScreen pygame ASLI oleh tools/test_godot_splash_parity.py, yang
+      # jalan di godot-check.yml karena butuh pygame): konstanta + timing,
+      # timeline 4 skenario x 200 frame (title_alpha/overall_alpha/done + dua
+      # bendera skip + varian semantik Godot lama), RANTAI 46 partikel x 120
+      # langkah (posisi akhir bit-dekat + nilai respawn RNG pygame), 48 batang
+      # gradien + 70 bingkai vignette (alpha menjenuh 255 -> interior hitam),
+      # tabel grow logo + 64 cincin glow, 3 lapisan glow judul + fill + garis
+      # aksen, hint, dan closed-world (tabel perintah == bind_static_method ==
+      # deklarasi .h; setiap fungsi ter-bind diuji). Butuh g++ saja dan
+      # sengaja SEBELUM build godot-cpp yang ±10 menit. Kalau checkout
+      # godot-cpp ada (mis. lokal), skrip juga compile+link+strip .so probe
+      # lalu mengulang cek langkah 2f di bawah: entry via `nm -D`, isi modul
+      # via string khas yang tahan strip.
+      - name: Self-test C++ tanpa engine (splash, FASE 38)
+        run: |
+          python3 tools/gen_splash_cpp.py --check
+          python3 tools/test_splash_cpp_selftest.py
+
+
       # ── 1. godot-cpp: sumber + objek build di-cache per commit SHA ──
       - name: Resolve commit godot-cpp
         id: cpp-ref
@@ -279,13 +340,13 @@ jobs:
       # SConstruct tiap ekstensi mengharapkan godot-cpp DI DALAM direktorinya
       # sendiri; symlink ke checkout bersama adalah jembatannya. Objek compile
       # godot-cpp (±950 berkas) hidup di dalam direktori itu, jadi mystic_skills,
-      # mystic_levels, mystic_maps, dan mystic_ui memakai ulang hasil compile
-      # yang sama — satu compile godot-cpp untuk empat lib. Semua symlink
-      # di-gitignore.
+      # mystic_levels, mystic_maps, mystic_ui, mystic_mobile, dan mystic_splash
+      # memakai ulang hasil compile yang sama — satu compile godot-cpp untuk
+      # enam lib. Semua symlink di-gitignore.
       - name: Symlink godot-cpp ke tiap ekstensi
         run: |
           set -euo pipefail
-          for lib in mystic_skills mystic_levels mystic_maps mystic_ui mystic_mobile; do
+          for lib in mystic_skills mystic_levels mystic_maps mystic_ui mystic_mobile mystic_splash; do
             link="godot/gdext/$lib/godot-cpp"
             rm -rf "$link"
             ln -s ../godot-cpp "$link"
@@ -414,6 +475,41 @@ jobs:
             *) echo "::error::nama kelas MysticMobile tidak ada di $SO"; exit 1 ;;
           esac
           echo "[gdext] isi modul mobile ada di $SO (api_signature + kelas MysticMobile)"
+          echo "[gdext] OK: $SO + symbol entry ada"
+
+      # ── 2f. Build mystic_splash (splash_screen.py -> godot++, FASE 38) ──
+      # Output: godot/addons/mystic_splash/bin/libmystic_splash.linux.template_debug.x86_64.so
+      # (suffix scons = nama berkas; kunci .gdextension-nya linux.debug.x86_64.)
+      - name: Build mystic_splash (linux x86_64)
+        working-directory: godot/gdext/mystic_splash
+        run: |
+          set -euo pipefail
+          # shellcheck disable=SC2086
+          scons $SCONS_FLAGS -j"$(nproc)"
+          SO=../../addons/mystic_splash/bin/libmystic_splash.linux.template_debug.x86_64.so
+          ls -lh ../../addons/mystic_splash/bin/
+          test -s "$SO" || { echo "::error::$SO tidak dihasilkan scons"; exit 1; }
+          # entry_symbol di mystic_splash.gdextension harus benar-benar ada,
+          # kalau tidak Godot menolak memuat lib tanpa pesan yang jelas.
+          nm -D --defined-only "$SO" | grep -q " T mystic_splash_library_init" \
+            || { echo "::error::symbol mystic_splash_library_init tidak diekspor"; exit 1; }
+          # Isi modul splash harus benar-benar ada di .so. Seperti catatan
+          # langkah mystic_ui: `nm -D | grep MysticSplash` MUSTAHIL cocok
+          # (-fvisibility=hidden) dan `nm -C` juga (debug_symbols=no -> .so
+          # di-strip). Yang tahan strip = string khas generator: api_signature()
+          # + nama kelas di tabel bind. Ditampung ke variabel dulu, BUKAN
+          # disalurkan ke `grep -q`: keluaran strings besar bikin grep -q
+          # menutup pipe lebih dulu -> strings kena SIGPIPE -> gagal palsu.
+          STRINGS=$(strings -a "$SO")
+          case "$STRINGS" in
+            *splash_v1:1mod:62fn:*) ;;
+            *) echo "::error::api_signature splash_v1:1mod:62fn: tidak ada di $SO"; exit 1 ;;
+          esac
+          case "$STRINGS" in
+            *MysticSplash*) ;;
+            *) echo "::error::nama kelas MysticSplash tidak ada di $SO"; exit 1 ;;
+          esac
+          echo "[gdext] isi modul splash ada di $SO (api_signature + kelas MysticSplash)"
           echo "[gdext] OK: $SO + symbol entry ada"
 
       # ── 3. Godot binary (di-cache; pola sama dengan godot-check.yml) ──
@@ -604,6 +700,56 @@ jobs:
           else
             cat /tmp/maps.gate
             echo "::error::MAPS-GDSCRIPT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/maps.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 12. UJI UTAMA FASE 38: splash C++ vs oracle Pygame ──
+      # SplashGdextParityTest memaksa backend SplashBackend ke "gdext" lalu:
+      #   (a) A/B backend untuk SELURUH permukaan API (62 fungsi): konstanta +
+      #       timing, timeline 4 x 200 baris (title_alpha, overall_alpha, done,
+      #       varian semantik Godot lama), rantai 46 partikel x 120 langkah +
+      #       triplet gambar, 48 batang gradien + 70 bingkai vignette +
+      #       kompositor 9 probe piksel, tabel grow logo + 64 cincin glow, rect
+      #       glow judul + fill + garis aksen, hint — dibandingkan lewat
+      #       str(Variant) sehingga urutan kunci Dictionary, tipe, dan presisi
+      #       double ikut terkunci;
+      #   (b) replay godot/tests/fixtures/splash_parity.json (direkam
+      #       splash_screen.py ASLI: SDL dummy + font palsu + TrackSurface)
+      #       lewat MysticSplash (C++), ditutup smoke test scene SplashScreen
+      #       asli (fade in -> skip -> signal finished).
+      # Require dua penanda: PASS dari test DAN baris loader yang membuktikan
+      # jalur C++ benar-benar dipakai (bukan diam-diam fallback GDScript).
+      - name: "SplashGdextParityTest (splash_screen.py C++ ↔ oracle Pygame)"
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/SplashGdextParityTest.tscn --quit-after 400 2>&1 \
+            | tee /tmp/splashgdext.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/splashgdext.log --label "SplashGdextParityTest" \
+              --require "[SplashGdextParityTest] PASS" \
+              --require "GDExtension MysticSplash aktif" > /tmp/splashgdext.gate 2>&1; then
+            cat /tmp/splashgdext.gate
+          else
+            cat /tmp/splashgdext.gate
+            echo "::error::SPLASH-GDEXT-FAIL-TAIL: $(tail -40 /tmp/splashgdext.log | tr '\n' ' | ' | cut -c1-3000)"
+            echo "::error::SPLASH-GDEXT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/splashgdext.log | tr '\n' ' | ' | cut -c1-8000)"
+            exit 1
+          fi
+
+      # ── 13. Regresi jalur GDScript (lib splash TERPASANG, flag tetap false) ──
+      # Scene yang sama dengan godot-check.yml, tapi di sini
+      # libmystic_splash.so ada di addons/: fallback GDScript tidak boleh rusak
+      # hanya karena lib-nya terpasang (pola langkah 7/9/11).
+      - name: "SplashParityTest (baseline GDScript, lib terpasang)"
+        run: |
+          set -o pipefail
+          godot --headless --path godot res://tests/SplashParityTest.tscn --quit-after 400 2>&1 \
+            | tee /tmp/splash.log || true
+          if python3 godot/tools/godot_log_gate.py /tmp/splash.log --label "SplashParityTest" \
+              --require "[SplashParityTest] PASS" > /tmp/splash.gate 2>&1; then
+            cat /tmp/splash.gate
+          else
+            cat /tmp/splash.gate
+            echo "::error::SPLASH-GDSCRIPT-FAIL-LINES: $(grep -m40 'FAIL\|SCRIPT ERROR\|Parse Error' /tmp/splash.log | tr '\n' ' | ' | cut -c1-8000)"
             exit 1
           fi
 

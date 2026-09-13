@@ -170,3 +170,8 @@ levels/use_gdext_levels=false
 ; MapDB.gd + data/themes_raw.json.
 ; true kalau sudah build lib di addons/mystic_maps/bin/ (SConstruct di godot/gdext/mystic_maps/)
 maps/use_gdext_maps=false
+; Fase Splash (port splash_screen.py -> godot++): lapisan MODEL splash (timing,
+; fade, partikel, gradien+vignette, geometri logo, glow judul, hint) dari C++
+; (MysticSplash) menggantikan SplashModel.gd.
+; true kalau sudah build lib di addons/mystic_splash/bin/ (SConstruct di godot/gdext/mystic_splash/)
+splash/use_gdext_splash=false

@@ -395,6 +395,53 @@ toolchain tetap normal. Paritas dijaga tiga lapis: `tools/test_godot_level_data_
 kedua memaksa backend C++ + A/B) di workflow `godot-gdext.yml`. Rincian:
 `docs/LEVELS_GODOTPP.md`.
 
+## Splashscreen: GDScript (default) atau C++ godot++ (opt-in)
+
+`splash_screen.py` (logo + judul + tagline + 46 partikel + latar gradien/vignette
++ glow judul + hint skip) punya **dua** port model dari satu sumber, dan
+`scenes/ui/SplashScreen.gd` tidak tahu mana yang jalan — berkas itu tinggal
+renderer yang mengambil SEMUA angka lewat `SplashBackend`:
+
+```
+splash_screen.py
+  ├─ (oracle) tools/test_godot_splash_parity.py -> tests/fixtures/splash_parity.json
+  ├─ scripts/ui/SplashModel.gd              (GDScript, default)
+  └─ tools/gen_splash_cpp.py -> gdext/mystic_splash/src/*.cpp (C++ GDExtension)
+                                        │ scons + godot-cpp
+                                        ▼
+                     addons/mystic_splash/bin/libmystic_splash.<platform>.<target>.<arch>.so
+                                        │
+                       scripts/ui/SplashBackend.gd  <- const Backend di SplashScreen.gd
+```
+
+Default `mystic/splash/use_gdext_splash=false`: splash jalan lewat GDScript,
+**tanpa butuh compiler**. Untuk mencoba jalur native:
+
+```bash
+cd godot/gdext/mystic_splash
+ln -s ../godot-cpp godot-cpp   # atau: git clone -b godot-4.3-stable --depth 1 \
+                               #   https://github.com/godotengine/godot-cpp godot-cpp
+scons platform=linux target=template_debug -j"$(nproc)"
+# lalu set mystic/splash/use_gdext_splash=true di project.godot (atau
+# SplashBackend.force_backend("gdext") dari kode/harness)
+```
+
+Kalau lib tidak ada, backend jatuh ke GDScript tanpa error (satu baris log) —
+F5 di mesin tanpa toolchain tetap normal. FASE 38 juga menutup dua deviasi
+splash yang sudah ada di produksi: latar kini **hitam pekat + rim 2 px**
+(alpha vignette pygame menjenuh ke 255 pada `i <= 24`, jadi 48 batang gradien +
+70 bingkai vignette digambar apa adanya), dan skip memakai **elapsed TOTAL**
+(`skip()` pygame hanya menyetel bendera; `done` dihitung `update()` frame
+berikutnya) — bukan timer sejak tombol ditekan. Paritas dijaga empat lapis:
+`tools/gen_splash_cpp.py --check` (transpile segar),
+`tools/test_godot_splash_parity.py` (oracle: MENJALANKAN pygame ASLI, 613 cek +
+audit wiring/arity/semantik argumen sweep/ruang lingkup identifier GDScript), `tools/test_splash_cpp_selftest.py` (**menjalankan**
+`splash_processor.cpp` lewat stub Variant — butuh g++ saja, 1.585 cek dengan
+checkout godot-cpp / 1.580 tanpa, 6.524 perintah), dan `tests/SplashParityTest.tscn` / `tests/SplashGdextParityTest.tscn`
+(replay fixture di engine; yang kedua memaksa backend C++ + A/B seluruh API) di
+workflow `godot-gdext.yml`. Rincian: `docs/SPLASH_GODOTPP.md` +
+`gdext/mystic_splash/README.md`.
+
 ## Asset Pipeline
 
 - `godot/data/*.json` — hasil convert, dibaca `HeroDB`/`BossDB`/`ArenaMap`. Ikut repo (bukan

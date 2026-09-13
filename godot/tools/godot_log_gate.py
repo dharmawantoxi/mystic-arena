@@ -86,6 +86,13 @@ ALLOWED_PATTERNS = [
     # mystic_mobile (FASE 37) pola SEMPIT yang sama.
     r"libmystic_mobile",
     r"addons/mystic_mobile",
+    # mystic_splash (FASE 38) ikut pola SEMPIT yang sama: lib .so tidak ada di
+    # repo, jadi import headless selalu mencetak
+    # "Failed loading resource: res://addons/mystic_splash/..." +
+    # "GDExtension dynamic library not found ... libmystic_splash...". Jangan
+    # diganti r"mystic_splash" telanjang: itu memaafkan baris FAIL harness.
+    r"libmystic_splash",
+    r"addons/mystic_splash",
     r"FileAccess::exists",
     r"open_dynamic_library",
     r"open_library",
@@ -96,6 +103,7 @@ ALLOWED_PATTERNS = [
     r"Failed loading resource.*mystic_maps",
     r"Failed loading resource.*mystic_ui",
     r"Failed loading resource.*mystic_mobile",
+    r"Failed loading resource.*mystic_splash",
     r"addons/mystic_lighting",
     r"addons/mystic_skills",
 ]
