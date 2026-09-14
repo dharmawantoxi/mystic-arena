@@ -97,7 +97,9 @@ class TouchHUD:
         # Kalau panel kanan tersedia, tombol jeda & FPS pindah ke sana
         self._panel_ada = plat.get_panel_rect() is not None
         _bx = max(22, safe.left + 6)
-        _by = 76
+        # Posisi ditukar dengan badge LEVEL/WAVE (badge naik ke bawah chip
+        # emas, tombol jeda/FPS turun) supaya badge tidak menutupi jalur.
+        _by = 158
         self.buttons["pause"] = TouchButton(
             "pause", pygame.Rect(_bx, _by, 52, 52),
             "II", shape="round", font_size=22)

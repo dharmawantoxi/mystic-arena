@@ -58,7 +58,7 @@ layout_mode = 0
 offset_left = 18.0
 offset_top = 22.0
 offset_right = 418.0
-offset_bottom = 206.0
+offset_bottom = 140.0
 mouse_filter = 2
 theme_override_constants/separation = 6
 
@@ -105,11 +105,6 @@ theme_override_fonts/font = ExtResource("3")
 theme_override_font_sizes/font_size = 17
 text = "+2/s"
 vertical_alignment = 1
-
-[node name="PauseGap" type="Control" parent="TopLeft"]
-custom_minimum_size = Vector2(0, 66)
-layout_mode = 2
-mouse_filter = 2
 
 [node name="LevelBadge" type="PanelContainer" parent="TopLeft"]
 layout_mode = 2
