@@ -107,7 +107,7 @@ text = "+2/s"
 vertical_alignment = 1
 
 [node name="PauseGap" type="Control" parent="TopLeft"]
-custom_minimum_size = Vector2(0, 84)
+custom_minimum_size = Vector2(0, 66)
 layout_mode = 2
 mouse_filter = 2
 

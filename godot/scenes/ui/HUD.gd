@@ -52,10 +52,13 @@ var _debug_overlay: Label = null
 @onready var income_label: Label = $TopLeft/GoldChip/GoldRow/IncomeValue
 ## LEVEL/WAVE rata kiri di x=18 (posisi asli — PR #245 yang menggesernya ke
 ## kanan lewat spacer 78px dibalik) dan DITURUNKAN ke bawah tombol PAUSE
-## lewat node PauseGap 84px (lihat HUD.tscn): badge mulai di y=158, 16px di
-## bawah area sentuh PAUSE (62..142), tidak lagi beririsan. Rect tombol
-## PAUSE sendiri TIDAK boleh digeser: itu kanon pygame mobile/hud.py
-## (_by = 76) yang dikunci fixture touchhud + UiHudParityTest.
+## lewat node PauseGap (lihat HUD.tscn): badge mulai di y=158, 16px di
+## bawah area sentuh PAUSE (62..142), tidak lagi beririsan. Tinggi gap =
+## 136 - tinggi_chip - 2*separation = 66px, karena chip emas Godot
+## me-render 58px (margins+label), bukan 40px seperti pygame — jadi gap
+## BUKAN 84px. Rect tombol PAUSE sendiri TIDAK boleh digeser: itu kanon
+## pygame mobile/hud.py (_by = 76) yang dikunci fixture touchhud +
+## UiHudParityTest.
 @onready var level_label: Label = $TopLeft/LevelBadge/LevelRow/LevelValue
 @onready var wave_label: Label = $TopLeft/LevelBadge/LevelRow/WaveValue
 @onready var wave_banner: Label = $WaveBanner

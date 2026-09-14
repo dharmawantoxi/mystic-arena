@@ -12,8 +12,10 @@
 #   * tombol SKIP dihapus dari render — mati permanen di gerbang
 #     _sync_visibility (data HudLayout tetap utuh, hanya render dipotong);
 #   * badge LEVEL/WAVE dikembalikan rata kiri x=18 dan DITURUNKAN ke bawah
-#     tombol PAUSE lewat PauseGap 84px (badge mulai y=158, 16px di bawah
-#     area sentuh PAUSE 62..142).
+#     tombol PAUSE lewat PauseGap (badge mulai y=158, 16px di bawah area
+#     sentuh PAUSE 62..142). Tinggi gap 66px, bukan 84px: chip emas Godot
+#     me-render 58px (margins+label) vs 40px pygame, jadi gap = 136 - 58 -
+#     2*separation(6) = 66.
 #
 # godot --headless --path godot res://tests/TouchHudParityTest.tscn --quit-after 300
 extends Node
@@ -236,14 +238,15 @@ func _run() -> void:
 	# Keluhan pemain: badge LEVEL/WAVE tertutup tombol PAUSE. PR #245 salah
 	# arah (menggeser badge KE KANAN lewat spacer 78px, x=96), padahal posisi
 	# rata kiri aslinya sudah pas. Yang benar = TURUNKAN badge ke bawah tombol
-	# PAUSE lewat PauseGap 84px. Rect tombol PAUSE kanon pygame
-	# (mobile/hud.py _by=76) dan TIDAK boleh digeser.
+	# PAUSE lewat PauseGap. Rect tombol PAUSE kanon pygame (mobile/hud.py
+	# _by=76) dan TIDAK boleh digeser.
 	var badge := _hud.find_child("LevelBadge", true, false) as Control
 	var top_left := _hud.find_child("TopLeft", true, false) as Control
 	var pause_gap := _hud.find_child("PauseGap", true, false) as Control
+	var chip := _hud.find_child("GoldChip", true, false) as Control
 	_expect(badge != null, "LevelBadge tetap ada (rata kiri)")
-	_expect(pause_gap != null and int(pause_gap.custom_minimum_size.y) == 84,
-		"PauseGap 84px ada (badge diturunkan)")
+	_expect(pause_gap != null and int(pause_gap.custom_minimum_size.y) == 66,
+		"PauseGap 66px ada (badge diturunkan)")
 	_expect(_hud.find_child("LevelBadgeRow", true, false) == null,
 		"LevelBadgeRow (PR #245) dihapus")
 	_expect(_hud.find_child("PauseSpacer", true, false) == null,
@@ -263,6 +266,10 @@ func _run() -> void:
 		# node (dihitung dari node, bukan angka ajaib): 22 + 136 = 158.
 		var badge_x := top_left.offset_left + badge.position.x
 		var badge_y := top_left.offset_top + badge.position.y
+		print("[TouchHudParityTest] debug badge: badge.pos=%s chip.size=%s gap.size=%s tl.top=%s badge_y=%f"
+			% [badge.position, chip.size if chip != null else Vector2.ZERO,
+				pause_gap.size if pause_gap != null else Vector2.ZERO,
+				top_left.offset_top, badge_y])
 		_expect(int(badge_x) == 18,
 			"badge rata kiri di x=18 — got %.0f" % badge_x)
 		_expect(badge_y >= pause_hit.end.y,
