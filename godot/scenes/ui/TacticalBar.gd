@@ -51,6 +51,15 @@ const TOGGLE_H := 32.0
 const TOGGLE_GAP := 6.0
 ## Jarak dasar dari sisi bawah (di atas tombol SKIP TouchHUD 646..704).
 const TOGGLE_BOTTOM_INSET := 78.0
+## LIPAT-OTOMATIS: panel yang dibuka lalu dibiarkan tetap menutupi pojok
+## kanan-bawah arena (dan tombol SKIP di bawahnya) sampai akhir wave — pemain
+## yang sudah selesai memilih perintah tidak pernah menutupnya sendiri.
+## Delapan detik tanpa interaksi = lipat lagi. Cukup panjang untuk membaca
+## kelima perintah dan menahan satu perintah, cukup pendek supaya map tidak
+## ditinggal tertutup. Hanya berlaku untuk panel MENGAMBANG (tanpa rail):
+## kotak di dalam rail kanan adalah paritas pygame dan tidak pernah menutupi
+## map, jadi tidak boleh ikut dilipat.
+const AUTO_COLLAPSE_SEC := 8.0
 
 var _box: PanelContainer = null
 var _toggle: Button = null
@@ -67,6 +76,8 @@ var _btn_base: Dictionary = {}
 ## claimed-touch pygame (hold_end nama salah = no-op di manajer).
 var _held: Dictionary = {}
 var _timer: float = 0.0
+## Sudah berapa detik panel mengambang terbuka (lihat AUTO_COLLAPSE_SEC).
+var _expand_time: float = 0.0
 ## Feedback command menggantikan TacticalCommandManager.draw_ui pygame.
 ## Node ini full-rect dan mouse-transparent, jadi tetap tampil saat rail
 ## dilipat tanpa mengganggu hit-test map/panel.
@@ -146,6 +157,8 @@ func _apply_visibility(has_rail: bool) -> void:
 ## harness paritas).
 func set_expanded(value: bool) -> void:
 	_expanded = value
+	# Jam lipat-otomatis mulai dari nol setiap kali panel dibuka/ditutup.
+	_expand_time = 0.0
 	_refresh()
 
 
@@ -157,6 +170,12 @@ func _process(delta: float) -> void:
 	# Feedback harus disinkronkan tiap frame agar fade tidak tersendat
 	# walau visibilitas tombol cukup diperbarui 5 Hz.
 	_sync_feedback()
+	# Panel MENGAMBANG yang dibiarkan terbuka lipat sendiri (lihat
+	# AUTO_COLLAPSE_SEC). Kotak di dalam rail kanan tidak pernah ikut.
+	if _expanded and MobileLayout.tactical_rect().size.x <= 0.0:
+		_expand_time += delta
+		if _expand_time >= AUTO_COLLAPSE_SEC:
+			_collapse_if_floating()
 	# Visibilitas tombol mengikuti kondisi medan (hero hidup / boss aktif).
 	# 5 Hz cukup (paritas draw per-frame pygame bukan target piksel).
 	_timer += delta

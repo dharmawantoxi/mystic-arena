@@ -62,6 +62,9 @@ class FakeCinematic:
 
 ## Host Node supaya cinematic palsu masuk grup "cinematic" seperti
 ## BossDeathFX produksi (dipakai Main._cinematic_kind/_cinematic_click).
+## Node ini MEMENUHI kontrak bukti-hidup Main._cine_live: benar-benar di tree
+## dan benar-benar memproses frame — cinematic produksi semuanya ber-_process,
+## jadi klaim tanpa _process akan (dengan benar) ditolak sebagai klaim basi.
 class FakeCinematicHost:
 	extends Node
 	var fake = null
@@ -69,11 +72,17 @@ class FakeCinematicHost:
 	func _ready() -> void:
 		add_to_group("cinematic")
 
+	func _process(_delta: float) -> void:
+		pass
+
 	func cinematic_active() -> bool:
 		return bool(fake.active)
 
 	func skip_click() -> bool:
 		return bool(fake.skip_click())
+
+	func finish() -> void:
+		fake.active = false
 
 
 func _ready() -> void:
@@ -461,13 +470,19 @@ func _route_case(router, controller, menu, scenario: Dictionary) -> void:
 	var fake_cine = null
 	if bool(spec.get("level_intro", false)):
 		fake_cine = FakeCinematic.new()
-		_main._level_intro = fake_cine
+		# Intro produksi = node HIDUP di tree + tree DIBEKUKAN (lihat
+		# Main._show_level_intro dan Main._level_intro_claims). Fake harus
+		# memenuhi kontrak yang sama, bukan state yang mustahil di produksi.
+		_main._level_intro = fake_cine_node(fake_cine)
+		get_tree().paused = true
 	elif bool(spec.get("boss_intro", false)):
 		fake_cine = FakeCinematic.new()
-		_main._boss_banner = fake_cine
+		_main._boss_banner = fake_cine_node(fake_cine)
 	elif bool(spec.get("boss_death", false)):
 		fake_cine = FakeCinematic.new()
-		add_child(fake_cine_node(fake_cine))
+		# fake_cine_node() sudah add_child (dulu dobel -> error "sudah punya
+		# parent" di log CI).
+		fake_cine_node(fake_cine)
 	router.state_override = str(spec["state"])
 	router.ui_buttons_override = _rects(spec.get("menu_buttons",
 		spec.get("ui_buttons", {})))
