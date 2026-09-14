@@ -17,6 +17,7 @@
 class_name KaizenRenderer
 extends Node2D
 
+const HALF_PI := PI * 0.5
 const Pal = preload("res://scenes/hero/kaizen/KaizenPalette.gd")
 
 # ── Metrik tubuh (pixel lokal; anchor = tanah di antara dua kaki) ──

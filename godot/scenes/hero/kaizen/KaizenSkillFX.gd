@@ -13,6 +13,7 @@
 class_name KaizenSkillFX
 extends Node2D
 
+const HALF_PI := PI * 0.5
 const Pal = preload("res://scenes/hero/kaizen/KaizenPalette.gd")
 
 ## Posisi frame sebelumnya (diisi root) — untuk deteksi teleport dash Q2.
