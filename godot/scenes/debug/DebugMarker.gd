@@ -6,8 +6,8 @@
 # Kegagalan "harness tidak mencetak satu baris pun" pernah memakan beberapa run
 # CI untuk dijelaskan, karena tiga sebab yang sangat berbeda tampak sama saja di
 # artifact:
-#   * skrip `DebugRun.gd` gagal DIKOMPILASI (analyzer GDScript menolak panggilan
-#     method di luar `Node` tanpa `has_method`),
+#   * skrip `DebugRun.gd`/`DebugProbe.gd` tidak bisa dikompilasi versi engine
+#     yang dipakai (mis. memanggil API yang baru ada di 4.4 memakai engine 4.3),
 #   * scene tidak ditemukan/dijalankan engine,
 #   * konteks render (Xvfb/GL) tidak siap sehingga scene mati sebelum _ready.
 # Scene ini sengaja TIDAK memakai satu pun API game (tanpa autoload, tanpa

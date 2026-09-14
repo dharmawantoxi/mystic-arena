@@ -294,50 +294,129 @@ def import_project(godot: Path, out_dir: Path, env: dict, force: bool) -> None:
 
 
 # ══════════════════════════════════════════════════════════════════════════
-#  PREFLIGHT (engine + scene dari repo)
+#  PREFLIGHT (skrip + engine + scene dari repo)
 # ══════════════════════════════════════════════════════════════════════════
 
-## Rem preflight: scene penanda hanya butuh beberapa detik; angka ini jaring
-## kalau engine menggantung SEBELUM run sungguhan dimulai.
+## Rem preflight: dua langkah di bawah masing-masing hanya butuh beberapa detik;
+## angka ini jaring kalau engine menggantung SEBELUM run sungguhan dimulai.
 PREFLIGHT_TIMEOUT = 90.0
+
+## Skrip debug yang dikompilasi LEBIH DULU oleh engine yang sama dengan run
+## (`--check-only -s`). Ini menangkap kelas kegagalan yang paling mahal: memakai
+## API yang tidak ada di versi engine yang dipakai run (misalnya
+## `RenderingServer.get_current_rendering_method()` — baru ada di Godot 4.4,
+## sementara CI memakai 4.3). Akibatnya skrip bisu total; tanpa langkah ini
+## penyebabnya baru ketahuan setelah run panjang plus membaca run.log.
+CHECK_SCRIPTS = (
+    "res://scenes/debug/DebugRun.gd",
+    "res://scenes/debug/DebugProbe.gd",
+)
+
+## Hanya pola ini yang menggagalkan preflight. Perilaku `--check-only` untuk
+## skrip yang bukan MainLoop bisa berbeda antar versi engine, jadi exit code
+## non-nol TANPA salah satu pola ini dicatat "tidak konklusif" — bukan gagal.
+COMPILE_ERROR_MARKERS = ("Parse Error", "parse error", "Compile Error",
+                         "SCRIPT ERROR", "Failed to load script",
+                         "Nonexistent function")
+
+
+def check_scripts(godot: Path, env: dict,
+                  timeout: float) -> tuple[bool, list[str], list[str]]:
+    """Kompilasi skrip debug dengan engine yang akan dipakai run.
+
+    `--check-only -s <skrip>` hanya parse + kompilasi lalu keluar: hitungannya
+    detik, tidak butuh layar, dan memakai engine + project yang sama dengan run
+    (jadi beda versi API ketahuan di sini, bukan setelah 5 menit).
+
+    Kembalikan (lolos, baris log, daftar kegagalan).
+    """
+    log: list[str] = []
+    gagal: list[str] = []
+    for script in CHECK_SCRIPTS:
+        cmd = [str(godot), "--headless", "--path", "godot", "--check-only",
+               "-s", script]
+        if shutil.which("stdbuf"):
+            cmd = ["stdbuf", "-oL", "-eL"] + cmd
+        try:
+            res = subprocess.run(cmd, cwd=str(ROOT), env=env,
+                                 capture_output=True, text=True,
+                                 timeout=timeout)
+            out = (res.stdout or "") + (res.stderr or "")
+            rc = res.returncode
+        except subprocess.TimeoutExpired:
+            out, rc = "TIMEOUT %.0f detik\n" % timeout, 124
+        except OSError as exc:
+            out, rc = "gagal menjalankan engine: %s\n" % exc, 127
+        log.append("$ %s  → exit %d\n%s" % (" ".join(cmd), rc, out))
+        pola = next((m for m in COMPILE_ERROR_MARKERS if m in out), "")
+        if pola:
+            gagal.append("%s: %s" % (script.rsplit("/", 1)[-1], pola))
+            print("[preflight] skrip %s GAGAL dikompilasi (%s)"
+                  % (script.rsplit("/", 1)[-1], pola))
+        else:
+            print("[preflight] skrip %s terkompilasi (exit %d)"
+                  % (script.rsplit("/", 1)[-1], rc))
+    return (not gagal), log, gagal
 
 
 def preflight(godot: Path, out_dir: Path, env: dict,
-              timeout: float = PREFLIGHT_TIMEOUT) -> bool:
-    """Buktikan dulu engine ini bisa menjalankan scene dari repo.
+              timeout: float = PREFLIGHT_TIMEOUT) -> tuple[bool, str]:
+    """Buktikan dulu jalur debug ini bisa DIKOMPILASI dan DIJALANKAN engine.
 
-    Hanya butuh satu start headless beberapa detik, tetapi memisahkan tiga
-    penyebab yang di artifact terlihat sama (harness sunyi lalu mati di rem
-    darurat): skrip debug gagal dikompilasi, scene tidak dijalankan engine, atau
-    engine tidak bisa membuka project. Dijalankan TANPA Xvfb supaya tetap murah.
+    Dua langkah murah, tanpa Xvfb, sebelum run sungguhan:
+
+      1. `--check-only -s` pada skrip debug — menangkap skrip yang tidak bisa
+         dikompilasi versi engine yang dipakai (mis. API 4.4 di engine 4.3);
+      2. scene penanda `DebugMarker.tscn` (tanpa satu pun API game) yang menulis
+         berkas — menangkap engine/project yang tidak jalan sama sekali.
+
+    Tanpa itu, semua penyebab di atas tampak sama di artifact: harness sunyi,
+    tanpa report, dan run mati di rem darurat beberapa menit kemudian.
+
+    Kembalikan (lolos, catatan singkat untuk summary.md).
     """
     marker = out_dir / "marker.txt"
     marker.unlink(missing_ok=True)
+    scripts_ok, lines, gagal = check_scripts(godot, env, timeout)
+
     cmd = [str(godot), "--headless", "--path", "godot", MARKER_SCENE, "--",
            f"--out={out_dir}"]
     if shutil.which("stdbuf"):
         cmd = ["stdbuf", "-oL", "-eL"] + cmd
     print("[preflight] " + " ".join(cmd))
+    lines.append("$ %s" % " ".join(cmd))
+    out = ""
     try:
         res = subprocess.run(cmd, cwd=str(ROOT), env=env, capture_output=True,
                              text=True, timeout=timeout)
         out = (res.stdout or "") + (res.stderr or "")
+        lines.append(out + "→ exit %d" % res.returncode)
     except subprocess.TimeoutExpired as exc:
-        out = (exc.stdout or "") + (exc.stderr or "") if isinstance(
-            exc.stdout, str) else ""
+        out = exc.stdout if isinstance(exc.stdout, str) else ""
         out += "\n[preflight] TIMEOUT %.0f detik\n" % timeout
+        lines.append(out)
     except OSError as exc:
         out = "[preflight] gagal menjalankan engine: %s\n" % exc
-    (out_dir / "preflight.log").write_text(out, encoding="utf-8")
-    ok = marker.exists() and "[DebugMarker] PASS" in out
+        lines.append(out)
+    marker_ok = marker.exists() and "[DebugMarker] PASS" in out
+    (out_dir / "preflight.log").write_text(
+        "# preflight: (1) kompilasi skrip debug, (2) scene penanda\n"
+        + "\n".join(lines) + "\n", encoding="utf-8")
+
+    ok = scripts_ok and marker_ok
     if ok:
-        print("[preflight] OK — engine menjalankan scene dari repo")
-    else:
-        print("[preflight] GAGAL — engine tidak menyelesaikan penanda; "
-              "lihat preflight.log")
-        for line in out.splitlines()[-12:]:
-            print("       | " + line)
-    return ok
+        print("[preflight] OK — skrip debug terkompilasi + engine menjalankan "
+              "scene dari repo")
+        return True, "OK"
+    if not scripts_ok:
+        print("[preflight] GAGAL — skrip debug tidak bisa dikompilasi: "
+              + "; ".join(gagal))
+        return False, "GAGAL — skrip debug: " + "; ".join(gagal)
+    print("[preflight] GAGAL — engine tidak menyelesaikan penanda; "
+          "lihat preflight.log")
+    for line in out.splitlines()[-12:]:
+        print("       | " + line)
+    return False, "GAGAL — engine tidak menjalankan scene penanda"
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -511,10 +590,11 @@ def load_report(out_dir: Path) -> dict:
 def harness_started(log_path: Path) -> bool:
     """Apakah skrip harness di dalam engine pernah jalan?
 
-    Bedanya penting: `[DebugRun] PASS` yang hilang karena harness gagal
-    DIKOMPILASI (analyzer GDScript menolak panggilan method di luar Node tanpa
-    `has_method`) terlihat sama saja dengan harness yang macet. Kalau satu baris
-    pun tidak ada, penyebabnya bukan skenario/level — dan itu harus dikatakan.
+    Bedanya penting: `[DebugRun] PASS` yang hilang karena skrip harness tidak
+    bisa DIKOMPILASI versi engine yang dipakai (mis. API yang baru ada di 4.4
+    dipanggil di engine 4.3) terlihat sama saja dengan harness yang macet.
+    Kalau satu baris pun tidak ada, penyebabnya bukan skenario/level — dan itu
+    harus dikatakan, bukan ditebak.
     """
     if not log_path.exists():
         return False
@@ -527,9 +607,10 @@ def harness_started(log_path: Path) -> bool:
 
 def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
                   shots: list[Path], video: str, gate_ok: bool, rc: int,
-                  seconds_run: float, marker_ok: bool = True) -> Path:
+                  seconds_run: float, preflight_ok: bool = True,
+                  preflight_note: str = "OK") -> Path:
     started = harness_started(out_dir / "run.log")
-    ok = gate_ok and rc == 0 and marker_ok
+    ok = gate_ok and rc == 0 and preflight_ok
     head = "LULUS" if ok else "GAGAL"
     lines = [
         f"# Godot Debug Run — {head}",
@@ -553,29 +634,34 @@ def write_summary(out_dir: Path, args: argparse.Namespace, report: dict,
         f"| video | {video or '—'} |",
         f"| gerbang log | {'lulus' if gate_ok else 'GAGAL'} |",
         f"| exit engine | {rc} |",
-        f"| preflight (engine+scene) | "
-        f"{'OK' if marker_ok else 'GAGAL — lihat preflight.log'} |",
+        f"| preflight (skrip+engine+scene) | "
+        f"{preflight_note if preflight_ok else preflight_note + ' (lihat preflight.log)'} |",
         f"| harness | {'jalan' if started else 'TIDAK PERNAH JALAN'} |",
         "",
     ]
-    if not marker_ok:
+    if not preflight_ok:
         lines += [
-            "> **Preflight GAGAL**: engine tidak bisa menjalankan scene",
-            "> `scenes/debug/DebugMarker.tscn` (tanpa satu pun API game).",
-            "> Jadi penyebabnya ada di engine/project, bukan di skenario debug:",
-            "> lihat `preflight.log` (mis. `Parse Error`, project tidak",
-            "> termuat, atau dependensi GL/X11 tidak ada).",
+            "> **Preflight GAGAL** (`%s`): penyebabnya ada di engine/skrip" % preflight_note,
+            "> debug/project, BUKAN di skenario — run ini bahkan belum sampai",
+            "> ke gameplay. `preflight.log` memuat dua bagian: (1) kompilasi",
+            "> skrip debug lewat `--check-only -s` dan (2) jalannya scene",
+            "> penanda `scenes/debug/DebugMarker.tscn` (tanpa API game).",
+            "> Paling sering: API yang tidak ada di versi engine yang dipakai",
+            "> (CI default 4.3, devcontainer 4.3), project tidak termuat, atau",
+            "> dependensi GL/X11 tidak ada.",
             "",
         ]
     if not started:
         lines += [
             "> **Harness tidak mencetak satu baris pun.** Artinya masalahnya ada",
-            "> SEBELUM skenario dijalankan — bukan level/skenario:",
+            "> SEBELUM skenario dijalankan — bukan level/skenario. Urutan",
+            "> pemeriksaannya:",
             ">",
-            "> 1. skrip `scenes/debug/DebugRun.gd` gagal dikompilasi oleh engine:",
-            ">    cari `Parse Error` / `SCRIPT ERROR` di `run.log`. Analyzer",
-            ">    GDScript menolak panggilan method di luar `Node` tanpa",
-            ">    `has_method(...)` (lihat komentar di `_start_match()`);",
+            "> 1. `preflight.log` — kalau kompilasi skrip debug di sana GAGAL,",
+            ">    penyebabnya sudah ketemu (mis. API yang baru ada di 4.4",
+            ">    dipanggil memakai engine 4.3). Gate `--check-only` menangkap",
+            ">    ini sebelum run; kalau lolos di preflight tapi run tetap",
+            ">    sunyi, cari `Parse Error` / `SCRIPT ERROR` di `run.log`;",
             "> 2. scene tidak dijalankan sama sekali: lihat baris `$ …` pertama",
             ">    `run.log` (perintah yang benar-benar dipakai engine).",
             ">",
@@ -734,11 +820,12 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[waktu] aset + import: {prep_s:.0f} detik · rem darurat: "
           f"{timeout:.0f} detik")
-    marker_ok = True
+    preflight_ok, preflight_note = True, "dilewati (--no-preflight)"
     if not args.no_preflight:
-        marker_ok = preflight(godot, out_dir, env,
-                              min(PREFLIGHT_TIMEOUT, args.timeout)
-                              if args.timeout > 0 else PREFLIGHT_TIMEOUT)
+        preflight_ok, preflight_note = preflight(
+            godot, out_dir, env,
+            min(PREFLIGHT_TIMEOUT, args.timeout)
+            if args.timeout > 0 else PREFLIGHT_TIMEOUT)
     started = time.time()
     rc = run_engine(cmd, out_dir, env, timeout)
     elapsed = time.time() - started
@@ -750,23 +837,23 @@ def main(argv: list[str] | None = None) -> int:
     report = load_report(out_dir)
     if not harness_started(out_dir / "run.log"):
         print("[jalan] PERINGATAN: skrip harness tidak mencetak satu baris pun "
-              "— engine mungkin menolak mengompilasi skrip debug (cari "
-              "'Parse Error'/'SCRIPT ERROR' di run.log) atau scene tidak "
-              "dijalankan (lihat baris '$ …' pertama run.log).")
+              "— engine mungkin tidak bisa mengompilasi skrip debug (lihat "
+              "preflight.log dan cari 'Parse Error'/'SCRIPT ERROR' di run.log) "
+              "atau scene tidak dijalankan (lihat baris '$ …' pertama run.log).")
     gate_ok = True
     if not args.no_gate:
         gate_ok = run_gate(out_dir / "run.log", args.label or args.scenario,
                            expect)
 
     summary = write_summary(out_dir, args, report, shots, video, gate_ok, rc,
-                            elapsed, marker_ok)
+                            elapsed, preflight_ok, preflight_note)
 
     print("-" * 72)
     print(f"  screenshot : {len(shots)} → {out_dir / 'shots'}")
     print(f"  log        : {out_dir / 'run.log'}")
     print(f"  laporan    : {out_dir / 'report.json'} · {summary.name}")
-    passed = gate_ok and rc == 0 and marker_ok
-    print(f"  preflight  : {'OK' if marker_ok else 'GAGAL'}")
+    passed = gate_ok and rc == 0 and preflight_ok
+    print(f"  preflight  : {preflight_note}")
     print(f"  hasil      : {'PASS' if passed else 'FAIL'}")
     print("-" * 72)
     return 0 if passed else 1

@@ -239,17 +239,39 @@ func is_headless() -> bool:
 	return _headless
 
 
+## Ambil satu method dari singleton engine TANPA memanggilnya langsung.
+##
+## Kenapa tidak langsung saja: `RenderingServer.get_current_rendering_method()`
+## dan `…_driver_name()` baru ada di Godot 4.4, sementara project ini masih
+## mendukung 4.3 (versi di CI + devcontainer). Memanggil method yang tidak ada
+## di versi engine yang dipakai = error ("Invalid call"/parse error) yang bukan
+## cuma mengosongkan berkas ini, tapi juga mengotori log — dan gerbang log
+## menolak run yang log-nya berisi error. Lewat Variant + has_method, versi lama
+## hanya menuliskan "?" alih-alih gagal.
+func _server_field(server, method: String) -> Variant:
+	if server != null and server.has_method(method):
+		return server.call(method)
+	return "?"
+
+
+## Info renderer yang hanya bisa dijawab engine (dipakai laporan + ringkasan).
+func _server_info() -> Dictionary:
+	var rs = RenderingServer  # Variant: diverifikasi saat runtime, bukan compile
+	return {
+		"rendering_driver": _server_field(rs, "get_current_rendering_driver_name"),
+		"rendering_method": _server_field(rs, "get_current_rendering_method"),
+		"video_adapter": _server_field(rs, "get_video_adapter_name"),
+		"video_api": _server_field(rs, "get_video_adapter_api_version"),
+	}
+
+
 func build_report() -> Dictionary:
 	var report := {
 		"engine": str(Engine.get_version_info().get("string", "?")),
 		"headless": _headless,
 		"display_driver": DisplayServer.get_name(),
-		"rendering_driver": RenderingServer.get_current_rendering_driver_name(),
-		"rendering_method": RenderingServer.get_current_rendering_method(),
 		"rendering_setting": str(ProjectSettings.get_setting(
 				"rendering/renderer/rendering_method", "?")),
-		"video_adapter": RenderingServer.get_video_adapter_name(),
-		"video_api": RenderingServer.get_video_adapter_api_version(),
 		"out_dir": out_dir,
 		"frames": _frames,
 		"elapsed": snappedf(_elapsed, 0.1),
@@ -259,5 +281,6 @@ func build_report() -> Dictionary:
 		"shots": _shots.duplicate(),
 		"samples": _samples.duplicate(true),
 	}
+	report.merge(_server_info())
 	report.merge(fps_stats())
 	return report

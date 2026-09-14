@@ -220,13 +220,12 @@ func _start_match() -> void:
 		_hard_fail("skenario %s butuh scene utama (%s) — Main._on_key tidak ada "
 				+ "di %s" % [scenario, MAIN_SCENE, scene_path])
 		return
-	# `get_first_node_in_group` bertipe Node: memanggil method di luar Node
-	# LANGSUNG dari variabel ini bukan sekadar gagal di runtime — analyzer
-	# GDScript menolaknya saat skrip dikompilasi ("Function not found in base
-	# 'Node'"), dan skrip yang gagal dikompilasi membuat SELURUH harness bisu:
-	# scene tetap dimuat, `_ready` tidak pernah jalan, tidak ada report.json,
-	# dan run hanya berakhir karena rem darurat. Karena itu pola repo ini
-	# (lihat tests/BattleSmokeTest.gd) diikuti: cek `has_method` lebih dulu.
+	# `get_first_node_in_group` bertipe Node, jadi memanggil `start_match` di
+	# atasnya diperiksa engine saat RUNTIME: kalau method/scene-nya tidak cocok,
+	# yang muncul `Invalid call. Nonexistent function … in base Node` — satu
+	# baris SCRIPT ERROR yang membuat gerbang log menolak run, padahal yang diuji
+	# cuma jalur debug. Karena itu pola repo ini (lihat tests/BattleSmokeTest.gd
+	# dan Main.gd::_start_level) diikuti: cek `has_method` lebih dulu.
 	var connector := get_tree().get_first_node_in_group("game_connector")
 	if connector == null:
 		_hard_fail("GameManagerConnector tidak ada di grup 'game_connector' — "

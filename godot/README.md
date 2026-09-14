@@ -135,7 +135,13 @@ python3 tools/godot_debug_run.py --scenario scene \
 Logikanya ada di `tools/godot_debug_run.py` + harness
 `scenes/debug/DebugRun.tscn` yang **membungkus `scenes/main.tscn` apa adanya**
 (tidak ada satu baris gameplay yang diubah; `main.tscn` tidak merujuk berkas
-debug ini). Panduan + troubleshooting:
+debug ini). Sebelum run sungguhan alatnya **menguji dirinya lebih dulu**
+(preflight, beberapa detik): (1) engine yang sama mengompilasi
+`scenes/debug/*.gd` lewat `--check-only -s` — menangkap API yang tidak ada di
+versi engine (mis. API 4.4 dipakai di engine 4.3), lalu (2) menjalankan
+`scenes/debug/DebugMarker.tscn` yang tidak memakai satu pun API game. Jadi
+"skrip debug salah" tidak lagi menyamar sebagai "engine menggantung".
+Panduan + troubleshooting:
 [`../docs/GODOT_DEBUG_DI_GITHUB.md`](../docs/GODOT_DEBUG_DI_GITHUB.md).
 
 ### Kontrol pemain

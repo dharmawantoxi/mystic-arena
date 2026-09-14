@@ -45,15 +45,19 @@ YANG DIKUNCI
          log yang dibutuhkan justru hilang saat proses dibunuh,
      (c) harness wajib punya jejak boot (trace.log, di-flush) + batas boot,
      (d) ketiganya harus ikut terunggah sebagai artifact;
-  9. preflight (scene penanda `DebugMarker`) ada, TIDAK memakai satu pun API
-     game, dan hasilnya ikut artifact — supaya 'harness sunyi' bisa dipisahkan
-     dari 'engine tidak bisa menjalankan scene';
- 10. rem darurat diuji dengan stub pembungkus shell (bukan Godot, ~2 detik);
- 11. tidak ada panggilan method di luar Node pada variabel hasil
-     `get_first_node_in_group()` tanpa `has_method(...)` — analyzer GDScript
-     menolaknya SAAT KOMPILASI, dan skrip yang gagal dikompilasi membuat
-     harness bisu total (tidak ada `[DebugRun]`, tidak ada report.json; run
-     hanya berakhir karena rem darurat). gdparse tidak menangkap ini.
+  9. preflight punya DUA bagian: kompilasi skrip debug dengan engine yang
+     sama dengan run (`--check-only -s`) dan scene penanda `DebugMarker` yang
+     TIDAK memakai satu pun API game. Hasilnya ikut artifact — supaya 'harness
+     sunyi' bisa dipisahkan dari 'engine tidak bisa menjalankan scene/project';
+ 10. tidak ada API yang baru ada SETELAH 4.3 (versi CI + devcontainer) yang
+     dipanggil langsung dari skrip debug: di engine 4.3 panggilan itu jadi
+     parse error / `Invalid call` — skrip bisu dan log kotor, sementara gdparse
+     (sintaks saja) tidak bisa melihatnya;
+ 11. panggilan dinamis pada hasil `get_first_node_in_group()` (bertipe `Node`)
+     wajib lewat `has_method(...)` seperti `scenes/main/Main.gd`; kalau tidak,
+     salah nama method = `Invalid call. Nonexistent function … in base Node`,
+     satu baris SCRIPT ERROR yang membuat gerbang log menolak run;
+ 12. rem darurat diuji dengan stub pembungkus shell (bukan Godot, ~2 detik).
 """
 from __future__ import annotations
 
@@ -306,6 +310,11 @@ def check_files_and_devcontainer() -> None:
           "devcontainer == workflow (%s)" % version.group(1))
 
 
+def documentasi_cek_ok(sumber: str) -> bool:
+    """Apakah hasil kompilasi skrip benar-benar ikut menentukan lulus/gagal?"""
+    return "    ok = scripts_ok and marker_ok" in sumber
+
+
 def check_preflight() -> None:
     """Scene penanda harus benar-benar bebas dari API game.
 
@@ -315,6 +324,32 @@ def check_preflight() -> None:
     maknanya (dua-duanya gagal bersamaan, dan penyebabnya kembali ambigu).
     """
     tool = load_tool()
+    sumber = read(TOOL)
+    # Preflight bagian 1: kompilasi skrip debug oleh engine yang sama dengan
+    # run. Tanpa langkah ini, API yang tidak ada di versi engine (4.4 di 4.3)
+    # baru ketahuan setelah run berjalan menit-menit lalu mati.
+    # Dicari dengan tanda kutip supaya yang terdeteksi adalah PERINTAH yang
+    # benar-benar dijalankan, bukan penyebutan di komentar/dokstring.
+    if '"--check-only"' not in sumber or 'scripts_ok, lines, gagal = check_scripts(' not in sumber:
+        raise AssertionError("preflight tidak mengompilasi skrip debug "
+                             "(--check-only) — trap versi API kembali tak "
+                             "terjaga")
+    if not documentasi_cek_ok(sumber):
+        raise AssertionError("preflight tidak menjadikan hasil kompilasi "
+                             "sebagai syarat lulus (scripts_ok)")
+    for script in tool.CHECK_SCRIPTS:
+        berkas = ROOT / "godot" / script.replace("res://", "")
+        if not berkas.exists():
+            raise AssertionError("preflight memeriksa %s, yang tidak ada di "
+                                 "disk" % script)
+    wajib = {"res://scenes/debug/DebugRun.gd", "res://scenes/debug/DebugProbe.gd"}
+    hilang = sorted(wajib - set(tool.CHECK_SCRIPTS))
+    if hilang:
+        raise AssertionError("CHECK_SCRIPTS tidak memeriksa %s — skrip itu bisa "
+                             "bisu tanpa ketahuan" % ", ".join(hilang))
+    if "passed = gate_ok and rc == 0 and preflight_ok" not in sumber:
+        raise AssertionError("hasil preflight tidak ikut menentukan PASS/FAIL "
+                             "run — preflight yang gagal bisa lolos diam-diam")
     scene = tool.MARKER_SCENE  # res://…
     on_disk = ROOT / "godot" / scene.replace("res://", "")
     if not on_disk.exists():
@@ -338,8 +373,8 @@ def check_preflight() -> None:
     if "[DebugMarker] PASS" not in gd:
         raise AssertionError("DebugMarker.gd tidak mencetak baris PASS yang "
                              "dicari preflight")
-    print("[preflight] scene penanda ada, tanpa API game, baris PASS cocok "
-          "dengan yang dicari alat")
+    print("[preflight] 2 bagian terkunci: kompilasi skrip (--check-only) + "
+          "scene penanda tanpa API game; hasilnya menentukan PASS/FAIL")
 
 
 def check_docs() -> None:
@@ -433,15 +468,56 @@ def check_watchdog() -> None:
           "tanpa proses yatim)" % (2.0, elapsed))
 
 
-def check_panggilan_dinamis() -> None:
-    """Trap yang pernah benar-benar menggigit: `Node` + method di luar Node.
+## API engine yang BARU ada setelah 4.3 — versi yang dipakai CI
+## (godot-check.yml) dan devcontainer. Memanggilnya langsung dari skrip debug
+## membuat run gagal di engine 4.3 (parse error atau "Invalid call"), dan
+## gejalanya persis "harness bisu": gdparse tidak melihatnya karena
+## sintaksnya benar.
+API_TERLALU_BARU = {
+    "get_current_rendering_method": "4.4",
+    "get_current_rendering_driver_name": "4.4",
+}
 
-    `get_first_node_in_group()` bertipe `Node`. `var c := …` lalu `c.start_match()`
-    ditolak analyzer GDScript ("Function not found in base 'Node'") — skripnya
-    tidak dikompilasi, scene tetap dimuat tanpa satu baris pun keluaran, dan
-    satu-satunya gejala adalah run yang mati di rem darurat. `gdparse` lolos
-    karena ini bukan kesalahan sintaks. Pola repo (tests/*.gd) adalah
-    `has_method(...)` lebih dulu; cek ini menegakkannya di jalur debug.
+
+def check_api_versi() -> None:
+    """Skrip debug tidak boleh memanggil API yang belum ada di engine CI (4.3).
+
+    Info renderer yang hanya ada di versi baru (mis. RenderingServer
+    .get_current_rendering_method) harus diambil lewat helper yang memeriksa
+    `has_method` dulu — lihat `DebugProbe._server_field()`. Di 4.3 helper itu
+    hanya menuliskan "?" alih-alih menggagalkan seluruh skrip.
+    """
+    for berkas in (RUN_GD, PROBE_GD, MARKER_GD):
+        kode = "\n".join(line.split("#", 1)[0]
+                         for line in read(berkas).splitlines())
+        for api, versi in API_TERLALU_BARU.items():
+            if re.search(r"RenderingServer\s*\.\s*%s\s*\(" % api, kode):
+                raise AssertionError(
+                    "%s memanggil RenderingServer.%s() langsung — API itu baru "
+                    "ada di Godot %s, sedangkan CI memakai 4.3: skripnya tidak "
+                    "bisa dikompilasi / gagal saat runtime. Pakai helper "
+                    "has_method + call (lihat DebugProbe._server_field)"
+                    % (berkas.name, api, versi))
+    probe = read(PROBE_GD)
+    if "_server_field" not in probe or "has_method(method)" not in probe:
+        raise AssertionError(
+            "DebugProbe.gd tidak mengambil info renderer lewat helper "
+            "has_method — penjaga versi API hilang")
+    print("[api] tidak ada API 4.4+ yang dipanggil langsung; info renderer "
+          "lewat has_method + call (aman di 4.3 dan 4.4+)")
+
+
+def check_panggilan_dinamis() -> None:
+    """Konvensi jalur debug: panggilan dinamis lewat `has_method(...)` dulu.
+
+    `get_first_node_in_group()` bertipe `Node`, jadi memanggil method di luar
+    Node BUKAN kesalahan sintaks (gdparse lolos) — dan bukan pula kesalahan
+    kompilasi: `scenes/main/Main.gd` memakai pola bertipe sama dan lolos CI.
+    Yang benar-benar terjadi kalau nama method-nya salah (atau scene-nya bukan
+    main.tscn): engine mencetak `Invalid call. Nonexistent function … in base
+    Node` — satu baris SCRIPT ERROR yang membuat gerbang log menolak run,
+    padahal yang diuji cuma jalur debug. Karena itu pola tests/*.gd
+    (`has_method(...)` lebih dulu) diwajibkan di sini.
     """
     node_methods = {"has_method"}
     for berkas in (RUN_GD, PROBE_GD):
@@ -457,12 +533,13 @@ def check_panggilan_dinamis() -> None:
                             if 'has_method("%s")' % m not in source)
             if kurang:
                 raise AssertionError(
-                    "%s: %s.%s() dipanggil tanpa has_method(...) — analyzer "
-                    "GDScript akan menolak seluruh skrip, dan harness jadi "
-                    "bisu tanpa pesan yang jelas"
+                    "%s: %s.%s() dipanggil tanpa has_method(...) — kalau "
+                    "method-nya tidak ada, engine menulis SCRIPT ERROR "
+                    "('Invalid call. Nonexistent function') yang membuat "
+                    "gerbang log menolak run"
                     % (berkas.name, var, kurang[0]))
     print("[kompilasi] panggilan dynamic dari get_first_node_in_group selalu "
-          "lewat has_method (trap 'Function not found in base Node')")
+          "lewat has_method (konvensi Main.gd/tests)")
 
 
 def check_wiring() -> None:
@@ -492,6 +569,7 @@ def main() -> int:
     check_wiring()
     check_resiliensi()
     check_preflight()
+    check_api_versi()
     check_panggilan_dinamis()
     check_watchdog()
     print("Godot debug runner: OK")
