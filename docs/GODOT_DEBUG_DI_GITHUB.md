@@ -115,6 +115,12 @@ untuk melihat layar + mengubah kode, bukan untuk mengukur FPS.
 
 ## 3. Lokal (satu perintah)
 
+> **Khusus GDExtension C++ (`godot/gdext/`)** — jangan tunggu
+> `godot-gdext.yml` (±40 menit karena compile godot-cpp + 6 lib berurutan).
+> Sebagian besar pemeriksaannya jalan di lokal dalam **±40 detik** tanpa
+> godot-cpp: `tools/gdext_local_check.sh`. Panduan berlapis + bukti penangkapan
+> bug: [docs/GDEXT_VERIFIKASI_LOKAL.md](GDEXT_VERIFIKASI_LOKAL.md).
+
 ```bash
 # sekali saja: taruh binary Godot di PATH, atau biarkan alatnya mengunduh
 python3 tools/godot_debug_run.py --scenario battle --seconds 30 --download

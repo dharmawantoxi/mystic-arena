@@ -122,8 +122,19 @@ DEFAULT_EXPECT = "[DebugRun] PASS"
 ## Cadangan frame sebelum engine menyerah sendiri kalau harness macet.
 QUIT_AFTER_SLACK = 300
 
+# Tag rilis Godot SELALU berbentuk "<versi>-<release>" (4.3-stable, 4.4-rc1),
+# dan nama berkas zip mengikutinya — pola yang sama dipakai
+# .github/workflows/godot-check.yml (V="${GODOT_VERSION}-${GODOT_RELEASE}").
+# URL dengan tag telanjang ".../download/4.3/Godot_v4.3_linux.x86_64.zip"
+# menjawab 404, jadi --download tidak pernah berhasil sebelum ini diperbaiki.
 ENGINE_URL = ("https://github.com/godotengine/godot/releases/download/"
-              "{version}/Godot_v{version}_linux.x86_64.zip")
+              "{tag}/Godot_v{tag}_linux.x86_64.zip")
+ENGINE_RELEASE = "stable"
+
+
+def engine_tag(version: str) -> str:
+    """'4.3' -> '4.3-stable'; '4.4-rc1' dibiarkan apa adanya."""
+    return version if "-" in version else f"{version}-{ENGINE_RELEASE}"
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -229,7 +240,7 @@ def download_godot(version: str) -> Path:
         print(f"[aset] Godot {version} sudah ada: {target}")
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
-    url = ENGINE_URL.format(version=version)
+    url = ENGINE_URL.format(tag=engine_tag(version))
     print(f"[aset] unduh {url}")
     zip_path = target.parent / "godot.zip"
     with urllib.request.urlopen(url, timeout=300) as resp, zip_path.open("wb") as fh:

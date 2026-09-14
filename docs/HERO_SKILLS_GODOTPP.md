@@ -280,6 +280,16 @@ CI: `.github/workflows/godot-gdext.yml` menjalankan 1→4 (godot-cpp + binary
 Godot di-cache; ±10 menit cache-hit, ±25 menit cold), lalu `godot-check.yml`
 menjalankan langkah 1 + baseline GDScript tanpa compiler.
 
+> **Keempat langkah di atas tidak perlu menunggu CI.** Semuanya dibungkus satu
+> skrip lokal berlapis (±40 detik untuk langkah 1 + self-test C++ tanpa
+> godot-cpp, ±6 menit sekali untuk compile+link sungguhan, ±5 menit untuk
+> paritas runtime di engine): [`docs/GDEXT_VERIFIKASI_LOKAL.md`](GDEXT_VERIFIKASI_LOKAL.md)
+>
+> ```bash
+> tools/gdext_local_check.sh              # langkah 1 + 2 versi repo (L0-L2)
+> tools/gdext_local_check.sh --lapis 5    # setara penuh 1→4 (L0-L5)
+> ```
+
 ---
 
 ## Batas yang disengaja
