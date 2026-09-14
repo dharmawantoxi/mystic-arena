@@ -58,9 +58,25 @@ var _last_sync: String = ""
 ## selamanya di kanan-bawah dan PAUSE tak pernah kembali. Di situ klaimnya
 ## diputus di sini supaya tombol normal lagi — self-healing, bukan menebak
 ## node mana yang nyangkut.
-const CINE_WATCHDOG_SEC := 10.0
+##
+## LATCH + COOLDOWN (keluhan "SKIP menempel selama wave"): memutus sekali
+## saja tidak cukup kalau node yang sama terus mengklaim tiap frame — watchdog
+## lama menghitung ulang dari nol, membiarkan SKIP kembali selama 10 detik,
+## lalu memutus lagi, dan seterusnya: tombolnya berkedip nyala-mati sepanjang
+## wave. Sekarang klaim basi di-LATCH (tetap diputus) sampai klaim itu
+## benar-benar hilang selama CINE_COOLDOWN_SEC, dan sehabis memutus watchdog
+## tidak mempersenjatai diri lagi selama CINE_COOLDOWN_SEC (anti-chatter).
+## Latch 6 detik: lebih panjang dari cinematic sungguhan mana pun yang tidak
+## memegang pause (banner boss 1,7 dtk, perayaan 2 dtk), tapi cukup pendek
+## supaya gelombang pertama yang terkena tidak menunggu lama.
+const CINE_WATCHDOG_SEC := 6.0
+const CINE_COOLDOWN_SEC := 2.0
 var _cine_watch := 0.0
 var _cine_stuck := false
+## Sisa waktu sebelum watchdog boleh mempersenjatai diri lagi.
+var _cine_cool := 0.0
+## Sudah berapa lama TIDAK ada klaim cinematic (pelepas latch).
+var _cine_absent := 0.0
 
 
 func _ready() -> void:
@@ -139,26 +155,44 @@ func sync_from_match(delta: float = 0.0) -> void:
 		_last_sync = "hidden"
 		_cine_watch = 0.0
 		_cine_stuck = false
+		_cine_cool = 0.0
+		_cine_absent = 0.0
 		return
 	var key := "menu"
 	var cine := _cinematic_active()
 	# Watchdog: cinematic sungguhan yang TIDAK membekukan tree cuma banner
-	# boss (±1,7 dtk) dan perayaan kematian (±2 dtk). Klaim aktif belasan
-	# detik tanpa pause = flag nyangkut -> putuskan supaya SKIP hilang dan
-	# PAUSE kembali (lihat CINE_WATCHDOG_SEC).
-	if cine and GameManager.state == "playing" and not get_tree().paused:
-		_cine_watch += delta
+	# boss (±1,7 dtk) dan perayaan kematian (±2 dtk). Klaim aktif berdetak
+	# tanpa pause = flag nyangkut -> putuskan + latch supaya SKIP hilang dan
+	# PAUSE kembali (lihat CINE_WATCHDOG_SEC / CINE_COOLDOWN_SEC).
+	if not cine:
+		# Klaim hilang. Latch baru benar-benar lepas setelah tidak ada klaim
+		# selama cooldown — klaim yang berkedip tiap frame tidak boleh
+		# menghidupkan SKIP lagi di sela kedipannya.
+		_cine_absent += delta
+		_cine_watch = 0.0
+		if _cine_absent >= CINE_COOLDOWN_SEC:
+			_cine_stuck = false
+			_cine_cool = 0.0
+	elif _cine_stuck:
+		# LATCH: klaim basi tetap diputus walau node-nya masih mengaku aktif.
+		cine = false
+		_cine_cool = maxf(0.0, _cine_cool - delta)
+	elif GameManager.state == "playing" and not get_tree().paused:
+		_cine_absent = 0.0
+		_cine_cool = maxf(0.0, _cine_cool - delta)
+		if _cine_cool <= 0.0:
+			_cine_watch += delta
+			if _cine_watch > CINE_WATCHDOG_SEC:
+				_cine_stuck = true
+				_cine_cool = CINE_COOLDOWN_SEC
+				cine = false
+				push_warning(("[TouchHUD] cinematic mengklaim aktif > %.0f dtk "
+					+ "tanpa pause — klaim diputus + dilatch %.0f dtk supaya "
+					+ "SKIP/PAUSE normal") % [CINE_WATCHDOG_SEC,
+						CINE_COOLDOWN_SEC])
 	else:
 		_cine_watch = 0.0
-	if _cine_watch > CINE_WATCHDOG_SEC:
-		if not _cine_stuck:
-			_cine_stuck = true
-			push_warning(("[TouchHUD] cinematic mengklaim aktif > %.0f dtk "
-				+ "tanpa pause — klaim diputus supaya SKIP/PAUSE normal")
-				% CINE_WATCHDOG_SEC)
-		cine = false
-	elif not cine:
-		_cine_stuck = false
+		_cine_absent = 0.0
 	match GameManager.state:
 		"playing":
 			key = "game_playing_cine" if cine else "game_playing"

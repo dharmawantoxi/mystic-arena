@@ -24,6 +24,29 @@ var _touch = null
 var _taps: Array = []
 
 
+## Cinematic palsu untuk uji watchdog: klaimnya bisa dinyalakan/dimatikan dan
+## node ini MEMENUHI kontrak bukti-hidup Main._cine_live (benar-benar di tree
+## + benar-benar memproses frame), supaya yang diuji adalah klaim basi dari
+## node hidup — persis keluhan "SKIP menempel selama wave".
+class FakeCine:
+	extends Node
+
+	var claim := false
+
+	func _ready() -> void:
+		add_to_group("cinematic")
+
+	func _process(_delta: float) -> void:
+		pass
+
+	func cinematic_active() -> bool:
+		return claim
+
+	func skip_click() -> bool:
+		claim = false
+		return true
+
+
 func _ready() -> void:
 	_run.call_deferred()
 
@@ -156,6 +179,49 @@ func _run() -> void:
 	_expect(_btn_visible("pause"), "pause tampil setelah intro")
 	_expect(_btn_visible("debug"), "debug tampil (flag uji)")
 	_expect(not _btn_visible("skip"), "SKIP hilang setelah intro")
+
+	_step("watchdog cinematic")
+	# Keluhan yang ditutup di sini: tombol SKIP menempel selama wave (PAUSE
+	# hilang) karena sesuatu mengklaim "cinematic aktif" tanpa pernah lepas.
+	# (1) Klaim dari node yang BERHENTI memproses frame = bukti hidupnya
+	#     hilang -> Main menolaknya, HUD tidak boleh pindah ke matriks cine.
+	var dead := FakeCine.new()
+	dead.name = "DeadCine"
+	_main.add_child(dead)
+	dead.claim = true
+	dead.set_process(false)
+	_expect(not _main._cinematic_active(),
+		"klaim cinematic node tak-diproses ditolak (bukti hidup)")
+	_touch.sync_from_match()
+	_expect(_btn_visible("pause") and not _btn_visible("skip"),
+		"PAUSE tetap tampil saat klaim datang dari node mati")
+	# (2) Node hidup + klaim aktif + tanpa pause = sah, tapi hanya sampai
+	#     latch watchdog (CINE_WATCHDOG_SEC).
+	dead.set_process(true)
+	_expect(_main._cinematic_active(),
+		"klaim node hidup yang memproses diterima")
+	_touch.sync_from_match()
+	_expect(_btn_visible("skip"), "SKIP tampil selama klaim cinematic sah")
+	for _i in range(int(_touch.CINE_WATCHDOG_SEC) + 2):
+		_touch.sync_from_match(1.0)
+	_expect(bool(_touch._cine_stuck),
+		"watchdog memutus + melatch klaim > %.0f dtk" % _touch.CINE_WATCHDOG_SEC)
+	_expect(_btn_visible("pause") and not _btn_visible("skip"),
+		"SKIP hilang + PAUSE kembali setelah watchdog memutus")
+	# (3) Latch bertahan selama klaim masih ada: SKIP tidak boleh berkedip
+	#     nyala lagi di wave yang sama (perilaku lama: putus-pasang berulang).
+	for _i in range(3):
+		_touch.sync_from_match(1.0)
+	_expect(not _btn_visible("skip"), "SKIP tidak kembali selama klaim basi")
+	# (4) Klaim benar-benar lepas -> latch reset setelah cooldown, jadi
+	#     cinematic berikutnya (intro level, perayaan) tetap dapat SKIP.
+	dead.claim = false
+	_touch.sync_from_match(_touch.CINE_COOLDOWN_SEC + 0.1)
+	_expect(not bool(_touch._cine_stuck),
+		"latch lepas setelah %.0f dtk tanpa klaim" % _touch.CINE_COOLDOWN_SEC)
+	dead.free()
+	_touch.sync_from_match()
+	_expect(_btn_visible("pause"), "PAUSE normal setelah watchdog selesai")
 
 	_step("tap->signal")
 	# Lepas router produksi selama uji tap (kalau tidak, tap pause
