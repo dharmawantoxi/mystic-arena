@@ -230,3 +230,13 @@ func finish() -> void:
 		return
 	active = false
 	queue_free()
+
+
+## Banner tidak pernah memegang pause, tapi klaim cinematic-nya tetap harus
+## lepas kalau node ini hilang dari tree TANPA finish() (mis. di-free()
+## langsung oleh _clear_field atau ikut terbuang bersama parent-nya). Klaim
+## basi = HUD terkunci di matriks cinematic: SKIP menempel, PAUSE hilang.
+func _exit_tree() -> void:
+	if not active:
+		return
+	active = false

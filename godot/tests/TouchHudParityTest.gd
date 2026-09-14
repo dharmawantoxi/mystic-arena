@@ -180,6 +180,74 @@ func _run() -> void:
 	_expect(_btn_visible("debug"), "debug tampil (flag uji)")
 	_expect(not _btn_visible("skip"), "SKIP hilang setelah intro")
 
+	_step("SKIP hilang BERSAMAAN dengan intro (tanpa tick _process)")
+	# Keluhan pemain: tombol SKIP baru hilang setelah tekan ESC. Penyebabnya
+	# HUD hanya menghitung ulang matriksnya di tick _process berikutnya,
+	# sementara jalur ESC malah mencuri pause intro sehingga klaim cine tidak
+	# pernah lepas. Sekarang Main mem-resync TouchHUD SEKETIKA di dalam
+	# jalur skip, jadi buktinya: TANPA memanggil sync_from_match sendiri,
+	# tombolnya sudah benar.
+	GameManager.state = "playing"
+	_main._show_level_intro()
+	for _i in range(2):
+		await get_tree().process_frame
+	var intro_live = _main.get("_level_intro")
+	_expect(is_instance_valid(intro_live), "intro uji resync muncul")
+	_expect(_btn_visible("skip"), "SKIP menyala seketika bersama intro")
+	_expect(not _btn_visible("pause"), "pause sembunyi seketika saat intro")
+	# ESC selama intro: intro TIDAK ditutup (paritas handle_skip) dan pause
+	# intro tidak dicuri — tombol harus tetap di matriks cine, bukan macet.
+	var esc := InputEventKey.new()
+	esc.keycode = KEY_ESCAPE
+	esc.pressed = true
+	_main._on_key(esc)
+	_expect(get_tree().paused, "ESC selama intro tidak mencuri pause intro")
+	_expect(_btn_visible("skip"), "SKIP tetap tampil setelah ESC di intro")
+	# SPACE menutup intro -> SKIP hilang PADA SAAT ITU JUGA.
+	var spc := InputEventKey.new()
+	spc.keycode = KEY_SPACE
+	spc.pressed = true
+	_main._on_key(spc)
+	_expect(not get_tree().paused, "SPACE menutup intro + melepas pause")
+	_expect(not _btn_visible("skip"),
+		"SKIP hilang bersamaan dengan intro (resync seketika)")
+	_expect(_btn_visible("pause"), "PAUSE kembali bersamaan dengan intro usai")
+	for _i in range(2):
+		await get_tree().process_frame
+
+	_step("badge LEVEL/WAVE keluar dari area sentuh PAUSE")
+	# Keluhan kedua: tombol PAUSE menutupi badge LEVEL/WAVE. Rect tombolnya
+	# kanon pygame (mobile/hud.py _by=76) dan TIDAK boleh digeser — yang
+	# digeser barisan badge-nya lewat LevelBadgeRow + spacer 78px.
+	var badge_row := _hud.find_child("LevelBadgeRow", true, false) as Control
+	var badge := _hud.find_child("LevelBadge", true, false) as Control
+	var top_left := _hud.find_child("TopLeft", true, false) as Control
+	_expect(badge_row != null, "LevelBadgeRow ada")
+	_expect(badge != null, "LevelBadge tetap ada")
+	_expect(top_left != null and int(top_left.offset_left) == 18
+		and int(top_left.offset_top) == 22, "TopLeft tetap di (18,22)")
+	# Rect PAUSE tetap kanon; badge harus mulai di kanan area sentuhnya.
+	var pause_rect: Rect2 = _touch._buttons["pause"]["rect"]
+	var pause_hit: Rect2 = _touch._buttons["pause"]["hit"]
+	_expect(int(pause_rect.position.x) == 22 and int(pause_rect.position.y) == 76,
+		"rect PAUSE tetap kanon (22,76)")
+	if badge != null and top_left != null and badge_row != null:
+		await get_tree().process_frame
+		# x badge = offset TopLeft + lebar spacer (dihitung dari node, bukan
+		# angka ajaib kedua): 18 + 78 = 96, di luar hit PAUSE (8..88).
+		var badge_x := top_left.offset_left + badge.position.x \
+			+ badge_row.position.x
+		var spacer := _hud.find_child("PauseSpacer", true, false) as Control
+		_expect(spacer != null and int(spacer.custom_minimum_size.x) == 78,
+			"spacer PAUSE 78px ada")
+		_expect(badge_x >= pause_hit.end.x,
+			"badge LEVEL/WAVE mulai di kanan area sentuh PAUSE (badge %.0f, hit %.0f)"
+				% [badge_x, pause_hit.end.x])
+		_expect(int(badge_x) == 96,
+			"badge mulai di x=96 (18 + spacer 78) — got %.0f" % badge_x)
+		_expect(int(pause_rect.size.x) == 52 and int(pause_rect.size.y) == 52,
+			"ukuran rect PAUSE tetap 52x52 (kanon pygame)")
+
 	_step("watchdog cinematic")
 	# Keluhan yang ditutup di sini: tombol SKIP menempel selama wave (PAUSE
 	# hilang) karena sesuatu mengklaim "cinematic aktif" tanpa pernah lepas.
