@@ -26,12 +26,13 @@ Output:
     godot/data/economy.json           (gold/s, bonus level, multiplier difficulty, wave)
     godot/data/themes.json            (54 palet tema map + dekor; dibaca ArenaMap.gd)
 
-Aset biner yang ikut tersalin (semuanya DI-GITIGNORE — duplikat dari assets/
-pygame, sumber kebenaran tetap di sana; res:// tidak bisa keluar dari root
-project Godot jadi memang harus ada salinan di dalam godot/):
+Aset biner yang ikut tersalin (duplikat dari assets/ pygame, sumber kebenaran
+tetap di sana; res:// tidak bisa keluar dari root project Godot jadi memang
+harus ada salinan di dalam godot/). sounds/ dan presplash DI-GITIGNORE (CI
+menyalinnya); items/ IKUT REPO supaya ikon terbaca di semua lingkungan:
 
     godot/assets/sounds/*.wav         24 suara -> AudioManager.gd
-    godot/assets/items/*.png          33 ikon item -> ItemIcons.gd (port
+    godot/assets/items/*.png          33 ikon item -> ItemIcons.gd (ikut repo;
                                       hero_items.get_icon, hero_items.py:1661)
     godot/assets/presplash.png        boot splash Android -> project.godot
                                       application/boot_splash/image
@@ -985,10 +986,14 @@ def export_items_png():
     dari root project Godot, jadi PNG-nya harus diduplikasi ke
     `godot/assets/items/` (dibaca ItemIcons.gd lewat ItemDB.item_icon).
 
-    Folder tujuan di-gitignore seperti sounds: ±3 MB duplikat, sumber
-    kebenaran tetap assets/items/ pygame. TANPA ikon ini Godot tidak error —
-    ItemIcons.gd menggambar badge prosedural (warna + glow katalog), persis
-    cabang fallback `get_icon()` saat PNG-nya tidak ada.
+    Folder tujuan IKUT REPO (33 PNG ±3 MB di-commit) supaya ITEM FORGE
+    berikon asli di semua lingkungan — editor (F5 tanpa converter), export
+    desktop lokal, "Godot Debug Run", maupun AAB — bukan hanya di CI yang
+    menjalankan langkah salin ini. Sumber kebenaran tetap assets/items/
+    pygame; salinan di sini byte-identik sehingga commit-nya tidak berisik.
+    TANPA ikon ini Godot tidak error — ItemIcons.gd menggambar badge
+    prosedural (warna + glow katalog), persis cabang fallback `get_icon()`
+    saat PNG-nya tidak ada.
     """
     import shutil
     src_dir = os.path.join(ROOT, "assets", "items")

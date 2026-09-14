@@ -119,15 +119,20 @@ godot/build/
 debug_out/
 
 # ═══ Duplikat aset biner untuk project Godot (hasil
-# tools/convert_to_godot.py [--assets]; sumber kebenaran tetap assets/ pygame,
-# ±19 MB tidak perlu 2x di git). res:// tidak bisa keluar dari root project
-# Godot, jadi salinannya wajib ada di dalam godot/ saat runtime/export:
-#   sounds/     24 .wav  -> AudioManager.gd
-#   items/      33 ikon  -> ItemIcons.gd (port hero_items.get_icon)
+# tools/convert_to_godot.py [--assets]; sumber kebenaran tetap assets/ pygame).
+# res:// tidak bisa keluar dari root project Godot, jadi salinannya wajib ada
+# di dalam godot/ saat runtime/export:
+#   sounds/     24 .wav  -> AudioManager.gd   (di-gitignore, ±16 MB)
 #   presplash   boot splash Android -> application/boot_splash/image
-# CI menyalinnya sebelum `godot --import` / export AAB. ═══
+# CI menyalinnya sebelum `godot --import` / export AAB.
+#
+# Pengecualian: items/ (33 ikon ITEM FORGE, ±3 MB) SEKARANG IKUT REPO supaya
+# ikon terbaca di SEMUA lingkungan — editor (F5 tanpa converter), export
+# desktop lokal, "Godot Debug Run", maupun AAB — tanpa menunggu langkah
+# salin CI. Sebelumnya folder ini di-gitignore dan gejala "ikon item cuma
+# kotak warna" muncul tiap run yang lupa menjalankan converter. Converter
+# tetap menyalin ulang (byte identik) bila assets/items/ pygame berubah. ═══
 godot/assets/sounds/
-godot/assets/items/
 godot/assets/presplash.png
 godot/gdext/mystic_skills/.sconsign.dblite
 godot/gdext/mystic_skills/src/*.os

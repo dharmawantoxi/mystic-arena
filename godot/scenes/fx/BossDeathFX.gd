@@ -255,6 +255,13 @@ func _init_rising() -> void:
 func _process(delta: float) -> void:
 	if not active:
 		return
+	# Self-heal: fase kematian maupun perayaan sudah selesai tapi finish()
+	# tak pernah terpanggil (mis. build overlay putus di tengah) = node ikut
+	# grup "cinematic" selamanya dengan celebration_active basi. Tanpa salah
+	# satu fase aktif, tidak ada yang bisa ditampilkan — lepaskan klaimnya.
+	if not death_active and not celebration_active:
+		finish()
+		return
 	_time += delta
 	if death_active:
 		_frame += delta * 60.0

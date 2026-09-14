@@ -119,8 +119,15 @@ func _build() -> void:
 
 
 func _process(delta: float) -> void:
-	# _banner null = setup() belum dipanggil (frame antara add_child & setup)
-	if not active or _banner == null:
+	if not active:
+		return
+	# _banner null = setup() belum/tak pernah selesai (frame antara add_child
+	# & setup, atau setup putus di tengah). Node semacam ini tetap mengaku
+	# cinematic_active() == true selamanya tanpa menggambar apa pun — HUD
+	# terkunci di matriks "cine" (SKIP menempel, PAUSE hilang). Self-heal:
+	# langsung finish() supaya klaimnya lepas.
+	if _banner == null:
+		finish()
 		return
 	_frame += delta * 60.0
 	_time += delta

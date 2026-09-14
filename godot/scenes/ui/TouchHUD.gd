@@ -50,6 +50,17 @@ var _state_key: String = "menu"
 var show_debug_button: bool = false
 ## Stempel sync terakhir (kunci|panel|debug) — cegah tulis ulang tiap frame.
 var _last_sync: String = ""
+## WATCHDOG cinematic: SKIP (dan hilangnya PAUSE) hanya sah selama cinematic
+## sungguhan aktif — intro level (pause tree), banner boss ±1,7 dtk, perayaan
+## kematian ±2 dtk. Kalau sesuatu mengklaim "cinematic aktif" lebih lama dari
+## ini TANPA memegang pause, klaimnya basi (node nyangkut / flag tak pernah
+## dilepas) dan HUD terkunci di matriks game_playing_cine: SKIP menempel
+## selamanya di kanan-bawah dan PAUSE tak pernah kembali. Di situ klaimnya
+## diputus di sini supaya tombol normal lagi — self-healing, bukan menebak
+## node mana yang nyangkut.
+const CINE_WATCHDOG_SEC := 10.0
+var _cine_watch := 0.0
+var _cine_stuck := false
 
 
 func _ready() -> void:
@@ -116,7 +127,7 @@ func set_state_key(state_key: String) -> void:
 ## match — pygame menggambar hud HANYA di STATE_GAME (cabang menu/pause/
 ## splash main.py tidak memanggil hud.draw sama sekali). Tombol mengikuti
 ## matriks TOUCH_VISIBILITY berdasar state + cinematic + level.
-func sync_from_match() -> void:
+func sync_from_match(delta: float = 0.0) -> void:
 	var menu_open := false
 	var menu = get_tree().get_first_node_in_group("main_menu")
 	if menu != null and menu.has_method("is_open"):
@@ -126,9 +137,28 @@ func sync_from_match() -> void:
 		visible = in_game
 	if not in_game:
 		_last_sync = "hidden"
+		_cine_watch = 0.0
+		_cine_stuck = false
 		return
 	var key := "menu"
 	var cine := _cinematic_active()
+	# Watchdog: cinematic sungguhan yang TIDAK membekukan tree cuma banner
+	# boss (±1,7 dtk) dan perayaan kematian (±2 dtk). Klaim aktif belasan
+	# detik tanpa pause = flag nyangkut -> putuskan supaya SKIP hilang dan
+	# PAUSE kembali (lihat CINE_WATCHDOG_SEC).
+	if cine and GameManager.state == "playing" and not get_tree().paused:
+		_cine_watch += delta
+	else:
+		_cine_watch = 0.0
+	if _cine_watch > CINE_WATCHDOG_SEC:
+		if not _cine_stuck:
+			_cine_stuck = true
+			push_warning(("[TouchHUD] cinematic mengklaim aktif > %.0f dtk "
+				+ "tanpa pause — klaim diputus supaya SKIP/PAUSE normal")
+				% CINE_WATCHDOG_SEC)
+		cine = false
+	elif not cine:
+		_cine_stuck = false
 	match GameManager.state:
 		"playing":
 			key = "game_playing_cine" if cine else "game_playing"
@@ -178,7 +208,7 @@ func _sync_visibility() -> void:
 
 
 func _process(delta: float) -> void:
-	sync_from_match()
+	sync_from_match(delta)
 	var dirty := false
 	for action in _buttons:
 		var d: Dictionary = _buttons[action]

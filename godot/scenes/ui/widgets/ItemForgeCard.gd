@@ -115,8 +115,11 @@ func _init() -> void:
 	custom_minimum_size = Vector2(CARD_W, CARD_H)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	# Font/ikon tidak boleh memancing layout: kartu menggambar dirinya
-	# sendiri, tombol aksi di-anchor di bawah.
-	size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	# sendiri, tombol aksi di-anchor di bawah. SHRINK (bukan EXPAND_FILL):
+	# di GridContainer kartu harus tetap 250x200 pin supaya kolom grid
+	# seragam — EXPAND_FILL membuat kartu melebar berbeda-beda mengikuti
+	# sisa lebar panel (baris terlihat berantakan).
+	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 
