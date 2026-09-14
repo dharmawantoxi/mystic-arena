@@ -8,6 +8,17 @@ Tiga langkah: **uji di PC → unggah ke GitHub → build APK**.
 > **Codespaces** kalau ingin editor Godot di browser. Panduan:
 > [docs/GODOT_DEBUG_DI_GITHUB.md](docs/GODOT_DEBUG_DI_GITHUB.md).
 
+> **Menyentuh `godot/gdext/` (C++ GDExtension)?** Jangan tunggu Actions
+> (±40 menit). Cek di PC sendiri dalam **±40 detik** — cukup `python3` + `g++`,
+> tanpa godot-cpp:
+>
+> ```bash
+> tools/gdext_local_check.sh              # data + logika C++ (±27.000 cek)
+> tools/gdext_local_check.sh --lapis 5    # setara penuh CI: build .so + engine
+> ```
+>
+> Panduan: [docs/GDEXT_VERIFIKASI_LOKAL.md](docs/GDEXT_VERIFIKASI_LOKAL.md).
+
 ---
 
 ## 1. Uji dulu di PC (5 menit, tanpa Android sama sekali)
