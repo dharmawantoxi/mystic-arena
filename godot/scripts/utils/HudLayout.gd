@@ -93,8 +93,8 @@ const ACHIEVEMENT_DESC_COLOR := Color(205.0 / 255.0, 210.0 / 255.0, 225.0 / 255.
 
 ## Tombol MobileTouchHUD: id -> [x, y, w, h] + label (fixture touchhud).
 const TOUCH_BUTTONS := {
-	"pause": {"rect": [22, 76, 52, 52], "label": "II"},
-	"debug": {"rect": [106, 76, 52, 52], "label": "FPS"},
+	"pause": {"rect": [22, 158, 52, 52], "label": "II"},
+	"debug": {"rect": [106, 158, 52, 52], "label": "FPS"},
 	"skip": {"rect": [1110, 646, 160, 58], "label": "SKIP  >>"},
 	"replay": {"rect": [330, 620, 165, 62], "label": "REPLAY"},
 	"next_level": {"rect": [525, 620, 200, 62], "label": "NEXT LEVEL"},

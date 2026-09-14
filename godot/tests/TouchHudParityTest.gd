@@ -11,11 +11,9 @@
 # KELUHAN PEMAIN (2026-09-14):
 #   * tombol SKIP dihapus dari render — mati permanen di gerbang
 #     _sync_visibility (data HudLayout tetap utuh, hanya render dipotong);
-#   * badge LEVEL/WAVE dikembalikan rata kiri x=18 dan DITURUNKAN ke bawah
-#     tombol PAUSE lewat PauseGap (badge mulai y=158, 16px di bawah area
-#     sentuh PAUSE 62..142). Tinggi gap 66px, bukan 84px: chip emas Godot
-#     me-render 58px (margins+label) vs 40px pygame, jadi gap = 136 - 58 -
-#     2*separation(6) = 66.
+#   * posisi badge LEVEL/WAVE dan tombol PAUSE/FPS DITUKAR: badge naik
+#     langsung di bawah chip emas (rata kiri x=18), tombol PAUSE/FPS turun
+#     ke y=158 — badge tidak lagi menutupi jalur minion.
 #
 # godot --headless --path godot res://tests/TouchHudParityTest.tscn --quit-after 300
 extends Node
@@ -234,45 +232,41 @@ func _run() -> void:
 	for _i in range(2):
 		await get_tree().process_frame
 
-	_step("badge LEVEL/WAVE diturunkan di bawah area sentuh PAUSE")
-	# Keluhan pemain: badge LEVEL/WAVE tertutup tombol PAUSE. PR #245 salah
-	# arah (menggeser badge KE KANAN lewat spacer 78px, x=96), padahal posisi
-	# rata kiri aslinya sudah pas. Yang benar = TURUNKAN badge ke bawah tombol
-	# PAUSE lewat PauseGap. Rect tombol PAUSE kanon pygame (mobile/hud.py
-	# _by=76) dan TIDAK boleh digeser.
+	_step("posisi badge LEVEL/WAVE dan tombol PAUSE ditukar")
+	# Keluhan pemain (2026-09-14): badge LEVEL/WAVE menutupi jalur minion di
+	# kiri atas peta. Solusi: TUKAR posisi — badge naik ke bawah chip emas
+	# (PauseGap dihapus, badge mulai y=86) dan tombol PAUSE/FPS turun ke
+	# y=158 (HudLayout.TOUCH_BUTTONS + mobile/hud.py _by=158).
 	var badge := _hud.find_child("LevelBadge", true, false) as Control
 	var top_left := _hud.find_child("TopLeft", true, false) as Control
-	var pause_gap := _hud.find_child("PauseGap", true, false) as Control
 	_expect(badge != null, "LevelBadge tetap ada (rata kiri)")
-	_expect(pause_gap != null and int(pause_gap.custom_minimum_size.y) == 66,
-		"PauseGap 66px ada (badge diturunkan)")
+	_expect(_hud.find_child("PauseGap", true, false) == null,
+		"PauseGap dihapus (badge naik, tombol turun)")
 	_expect(_hud.find_child("LevelBadgeRow", true, false) == null,
 		"LevelBadgeRow (PR #245) dihapus")
 	_expect(_hud.find_child("PauseSpacer", true, false) == null,
 		"PauseSpacer (PR #245) dihapus")
 	_expect(top_left != null and int(top_left.offset_left) == 18
 		and int(top_left.offset_top) == 22, "TopLeft tetap di (18,22)")
-	_expect(top_left != null and int(top_left.offset_bottom) == 206,
-		"offset_bottom TopLeft 206 (memuat badge yang diturunkan)")
-	# Rect PAUSE tetap kanon; badge harus mulai DI BAWAH area sentuhnya.
+	_expect(top_left != null and int(top_left.offset_bottom) == 140,
+		"offset_bottom TopLeft 140 (tanpa gap)")
 	var pause_rect: Rect2 = _touch._buttons["pause"]["rect"]
 	var pause_hit: Rect2 = _touch._buttons["pause"]["hit"]
-	_expect(int(pause_rect.position.x) == 22 and int(pause_rect.position.y) == 76,
-		"rect PAUSE tetap kanon (22,76)")
+	_expect(int(pause_rect.position.x) == 22 and int(pause_rect.position.y) == 158,
+		"rect PAUSE turun ke (22,158)")
+	var debug_rect: Rect2 = _touch._buttons["debug"]["rect"]
+	_expect(int(debug_rect.position.x) == 106 and int(debug_rect.position.y) == 158,
+		"rect FPS turun ke (106,158)")
 	if badge != null and top_left != null:
 		await get_tree().process_frame
-		# x badge = rata kiri TopLeft (18); y badge = offset TopLeft + posisi
-		# node (dihitung dari node, bukan angka ajaib): 22 + 136 = 158.
 		var badge_x := top_left.offset_left + badge.position.x
 		var badge_y := top_left.offset_top + badge.position.y
+		var badge_bottom := badge_y + badge.size.y
 		_expect(int(badge_x) == 18,
 			"badge rata kiri di x=18 — got %.0f" % badge_x)
-		_expect(badge_y >= pause_hit.end.y,
-			"badge mulai di bawah area sentuh PAUSE (badge %.0f, hit %.0f)"
-				% [badge_y, pause_hit.end.y])
-		_expect(int(badge_y) == 158,
-			"badge mulai di y=158 (16px di bawah hit PAUSE 62..142) — got %.0f"
-				% badge_y)
+		_expect(badge_bottom <= pause_hit.position.y,
+			"badge berakhir di atas area sentuh PAUSE (badge %.0f, hit %.0f)"
+				% [badge_bottom, pause_hit.position.y])
 		_expect(int(pause_rect.size.x) == 52 and int(pause_rect.size.y) == 52,
 			"ukuran rect PAUSE tetap 52x52 (kanon pygame)")
 

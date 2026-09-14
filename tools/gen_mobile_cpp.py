@@ -403,7 +403,7 @@ def extract():
                      "hud._build_layout bx")
     h["PAUSE_X_MIN"] = bx[0]
     h["PAUSE_PAD"] = bx[1]
-    h["PAUSE_Y"] = stmt_const(fn_build, "_by = 76", 76)
+    h["PAUSE_Y"] = stmt_const(fn_build, "_by = 158", 158)
     h["DEBUG_DX"] = stmt_const(fn_build, "_bx + 84", 84)
     h["SKIP"] = tuple(stmt_const(fn_build, "right - 170", v)
                       for v in (170, 74, 160, 58))
