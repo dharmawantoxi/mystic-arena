@@ -19,6 +19,11 @@ name: Godot Debug Run
 # Cara pakai (manual):
 #   Actions → "Godot Debug Run" → Run workflow
 #     scenario   : menu | level | battle | shop | scene
+#   atau lewat PR: label `godot-debug` menjalankan versi PR dengan input
+#   default (battle), label berparameter `godot-debug/<scenario>[/<tab>]`
+#   memilih skenario (dan tab ShopPanel untuk skenario shop), mis.
+#   `godot-debug/shop/item` = buka toko langsung di tab ITEM (grid ITEM
+#   FORGE) — dipakai verifikasi visual tanpa klik manual.
 #     level      : 1-54
 #     seconds    : lama run (default 30)
 #     shot_every : jarak screenshot detik (0 = tanpa screenshot)
@@ -117,9 +122,14 @@ jobs:
     name: Jalankan + rekam
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    if: github.event_name != 'pull_request' || github.event.label.name == 'godot-debug'
+    if: github.event_name != 'pull_request'
+      || github.event.label.name == 'godot-debug'
+      || startsWith(github.event.label.name, 'godot-debug/')
 
     env:
+      # Label pemicu saat run datang dari PR ("" untuk dispatch manual).
+      # Bentuk `godot-debug/<scenario>[/<tab>]` memilih skenario + tab toko.
+      DEBUG_LABEL: ${{ github.event.label.name || '' }}
       # Versi default 4.3 = versi minimum feature project (sama dengan
       # godot-check.yml). 4.7.2 = versi yang dipakai export Android, berguna
       # saat memburu bug yang hanya muncul di jalur rilis.
@@ -200,14 +210,26 @@ jobs:
         id: run
         run: |
           set +e
+          # Skenario (dan tab toko) dari input dispatch, atau dari label PR
+          # bentuk `godot-debug/<scenario>[/<tab>]` (mis. godot-debug/shop/item).
+          SPEC="$SCENARIO"
+          if [ -n "$DEBUG_LABEL" ] && [ "$DEBUG_LABEL" != "godot-debug" ]; then
+            SPEC="${DEBUG_LABEL#godot-debug/}"
+          fi
+          SCEN="${SPEC%%/*}"
+          TAB="${SPEC#*/}"
+          echo "SCEN=$SCEN" >> "$GITHUB_ENV"
           ARGS=(--godot "$HOME/godot-bin/godot"
-                --scenario "$SCENARIO"
+                --scenario "$SCEN"
                 --level "$LEVEL"
                 --seconds "$SECONDS"
                 --shot-every "$SHOT_EVERY"
                 --display "$DISPLAY_MODE"
-                --label "ci-${SCENARIO}-l${LEVEL}"
+                --label "ci-${SCEN}-l${LEVEL}"
                 --out "$OUT_DIR")
+          if [ "$TAB" != "$SPEC" ] && [ -n "$TAB" ]; then
+            ARGS+=(--extra "--tab=$TAB")
+          fi
           [ -n "$SCENE" ] && ARGS+=(--scene "$SCENE")
           [ "$MOVIE" = "true" ] && ARGS+=(--movie)
           [ "$TOUCH" = "true" ] && ARGS+=(--touch)
@@ -324,7 +346,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: godot-debug-${{ env.SCENARIO }}-${{ github.run_number }}
+          name: godot-debug-${{ env.SCEN || env.SCENARIO }}-${{ github.run_number }}
           retention-days: 14
           if-no-files-found: warn
           path: |
@@ -350,7 +372,7 @@ jobs:
             exit 1
           fi
           if [ "$rc" != "0" ]; then
-            echo "::error::Godot debug run GAGAL (exit $rc) — buka artifact 'godot-debug-${SCENARIO}-${{ github.run_number }}': run.log + shots/ menjelaskan sebabnya."
+            echo "::error::Godot debug run GAGAL (exit $rc) — buka artifact 'godot-debug-${SCEN:-$SCENARIO}-${{ github.run_number }}': run.log + shots/ menjelaskan sebabnya."
             exit 1
           fi
           echo "Godot debug run selesai tanpa error (gerbang log lulus)."
