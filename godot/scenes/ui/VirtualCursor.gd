@@ -33,7 +33,7 @@ var _border_box: Panel = null
 func _ready() -> void:
 	name = "VirtualCursor"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 	z_index = 100
 	_build_boxes()
 	visible = false

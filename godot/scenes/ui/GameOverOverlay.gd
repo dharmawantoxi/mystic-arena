@@ -78,7 +78,7 @@ var _stats_panel_h: float = 0.0
 
 func _ready() -> void:
 	name = "GameOverOverlay"
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_build()

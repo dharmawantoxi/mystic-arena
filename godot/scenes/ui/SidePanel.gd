@@ -109,7 +109,7 @@ var _timer: float = 0.0
 
 func _ready() -> void:
 	name = "SidePanel"
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 	# Root tembus klik: hanya rail (dan tombolnya) yang menahan input.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build()
@@ -152,7 +152,7 @@ func _build() -> void:
 	# mengepas tiap anak ke seluruh area, jadi latar selalu pas ukuran rail.
 	var bg := StoneBG.new()
 	bg.name = "StoneBG"
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(bg)
 	_rail.add_child(bg)
 	_stone_bg = bg
 
@@ -161,7 +161,7 @@ func _build() -> void:
 	var host := Control.new()
 	host.name = "RailHost"
 	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	host.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(host)
 	_rail.add_child(host)
 
 	_pause_button = _make_pause_button()

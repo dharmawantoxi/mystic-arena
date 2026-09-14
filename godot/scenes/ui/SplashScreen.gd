@@ -65,7 +65,7 @@ func _ready() -> void:
 			"c": cols[rng.randi_range(0, cols.size() - 1)],
 		})
 	_view = _SplashView.new(self)
-	_view.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_view)
 	# STOP (bukan IGNORE): selama splash aktif, klik TIDAK boleh tembus ke
 	# tombol menu utama yang ada di baliknya — paritas STATE_SPLASH main.py
 	# (:461-464) yang tidak pernah meneruskan sentuhan ke menu. Kliknya

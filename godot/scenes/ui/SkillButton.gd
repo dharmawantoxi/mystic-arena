@@ -113,7 +113,7 @@ func _build_children() -> void:
 	_cd_label.add_theme_color_override("font_outline_color",
 		Color(0, 0, 0, 0.9))
 	_cd_label.add_theme_constant_override("outline_size", 3)
-	_cd_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_cd_label)
 	_cd_label.offset_top = -6.0
 	add_child(_cd_label)
 
