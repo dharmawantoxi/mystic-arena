@@ -50,13 +50,17 @@ var _debug_overlay: Label = null
 
 @onready var gold_label: Label = $TopLeft/GoldChip/GoldRow/GoldValue
 @onready var income_label: Label = $TopLeft/GoldChip/GoldRow/IncomeValue
-## LEVEL/WAVE dibungkus LevelBadgeRow + spacer 78px (lihat HUD.tscn):
-## badge-nya mulai di x=96, keluar dari area sentuh tombol PAUSE sentuh
-## (rect kanon 22,76,52,52 -> hit 8..88) yang selama ini menutupinya.
-## Rect tombolnya sendiri TIDAK boleh digeser: itu kanon pygame
-## mobile/hud.py (_by = 76) yang dikunci fixture touchhud + UiHudParityTest.
-@onready var level_label: Label = $TopLeft/LevelBadgeRow/LevelBadge/LevelRow/LevelValue
-@onready var wave_label: Label = $TopLeft/LevelBadgeRow/LevelBadge/LevelRow/WaveValue
+## LEVEL/WAVE rata kiri di x=18 (posisi asli — PR #245 yang menggesernya ke
+## kanan lewat spacer 78px dibalik) dan DITURUNKAN ke bawah tombol PAUSE
+## lewat node PauseGap (lihat HUD.tscn): badge mulai di y=158, 16px di
+## bawah area sentuh PAUSE (62..142), tidak lagi beririsan. Tinggi gap =
+## 136 - tinggi_chip - 2*separation = 66px, karena chip emas Godot
+## me-render 58px (margins+label), bukan 40px seperti pygame — jadi gap
+## BUKAN 84px. Rect tombol PAUSE sendiri TIDAK boleh digeser: itu kanon
+## pygame mobile/hud.py (_by = 76) yang dikunci fixture touchhud +
+## UiHudParityTest.
+@onready var level_label: Label = $TopLeft/LevelBadge/LevelRow/LevelValue
+@onready var wave_label: Label = $TopLeft/LevelBadge/LevelRow/WaveValue
 @onready var wave_banner: Label = $WaveBanner
 
 func _ready():

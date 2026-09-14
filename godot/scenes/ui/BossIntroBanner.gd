@@ -11,7 +11,8 @@
 # entrance_color, gelar dalam tanda kutip, HP bar preview mengisi selama
 # duration*0.85, sudut emas saat alpha>60.
 # Skip: SPACE / ESC / klik (handle_skip :2238) — klik DITELAN (return),
-# paritas Game.handle_click _core.py:2567-2569.
+# paritas Game.handle_click _core.py:2567-2569. Tombol SKIP layar (TouchHUD)
+# sudah dihapus dari render; banner tetap dilewati lewat SPACE/ESC/klik.
 extends CanvasLayer
 
 const SCREEN_W := 1280.0
@@ -124,7 +125,7 @@ func _process(delta: float) -> void:
 	# _banner null = setup() belum/tak pernah selesai (frame antara add_child
 	# & setup, atau setup putus di tengah). Node semacam ini tetap mengaku
 	# cinematic_active() == true selamanya tanpa menggambar apa pun — HUD
-	# terkunci di matriks "cine" (SKIP menempel, PAUSE hilang). Self-heal:
+	# terkunci di matriks "cine" (PAUSE hilang). Self-heal:
 	# langsung finish() supaya klaimnya lepas.
 	if _banner == null:
 		finish()
@@ -235,7 +236,7 @@ func finish() -> void:
 ## Banner tidak pernah memegang pause, tapi klaim cinematic-nya tetap harus
 ## lepas kalau node ini hilang dari tree TANPA finish() (mis. di-free()
 ## langsung oleh _clear_field atau ikut terbuang bersama parent-nya). Klaim
-## basi = HUD terkunci di matriks cinematic: SKIP menempel, PAUSE hilang.
+## basi = HUD terkunci di matriks cinematic: PAUSE hilang.
 func _exit_tree() -> void:
 	if not active:
 		return

@@ -318,7 +318,9 @@ func _show_level_intro() -> void:
 	_level_intro = intro
 	get_tree().paused = true
 	GameManager.set_paused(true)
-	# SKIP muncul BERSAMAAN dengan intro (bukan satu frame sesudahnya).
+	# HUD disinkronkan SEKETIKA (PAUSE tersembunyi selama intro), bukan satu
+	# frame sesudahnya. Tombol SKIP sudah dimatikan permanen di gerbang
+	# visibilitas TouchHUD; cinematic tetap dilewati SPACE/ENTER/klik.
 	_touch_hud_resync()
 	print("[Main] LEVEL INTRO — SPACE/ENTER/klik untuk mulai")
 
@@ -351,9 +353,9 @@ func _free_cinematics() -> void:
 			n.free()
 	_level_intro = null
 	_boss_banner = null
-	# HUD ikut disinkronkan SEKETIKA: tanpa ini tombol SKIP masih tergambar
-	# sampai tick _process TouchHUD berikutnya walau cinematic-nya sudah
-	# dibuang di frame ini.
+	# HUD ikut disinkronkan SEKETIKA: tanpa ini PAUSE tetap tersembunyi sampai
+	# tick _process TouchHUD berikutnya walau cinematic-nya sudah dibuang di
+	# frame ini.
 	_touch_hud_resync()
 
 func _reset_boss_schedule() -> void:
@@ -526,7 +528,8 @@ func _show_boss_banner(boss_type: String) -> void:
 	banner.setup(BossDB.get_boss(boss_type))
 	add_child(banner)
 	_boss_banner = banner
-	# Sama seperti intro: tombol SKIP menyala seketika bersama banner.
+	# Sama seperti intro: HUD disinkronkan seketika (PAUSE tersembunyi selama
+	# banner). Tombol SKIP sudah dimatikan permanen di TouchHUD.
 	_touch_hud_resync()
 
 # ══════════════════════════════════════════════════════════
@@ -774,8 +777,8 @@ func _unhandled_input(event: InputEvent) -> void:
 ## BUKTI HIDUP klaim cinematic. Node yang sudah keluar tree — atau yang
 ## berhenti memproses frame — tidak akan pernah memanggil finish()-nya
 ## sendiri, jadi klaim "cinematic aktif"-nya basi selamanya. Inilah jalur
-## yang membuat tombol SKIP menempel selama wave: HUD membaca klaim node
-## mati, mengunci matriks game_playing_cine, dan PAUSE tidak pernah kembali.
+## yang membuat PAUSE menghilang selama wave: HUD membaca klaim node mati,
+## mengunci matriks game_playing_cine, dan PAUSE tidak pernah kembali.
 ## Cinematic produksi (LevelIntro / BossIntroBanner / BossDeathFX) semuanya
 ## ber-_process dengan PROCESS_MODE_ALWAYS, jadi syarat ini tidak pernah
 ## menolak cinematic sungguhan — hanya klaim yang tidak bisa dipertanggung-
@@ -861,8 +864,9 @@ static func _cine_claim_alive(n) -> bool:
 ## akhir frame, jadi antara finish() dan pembebasannya `_level_intro` /
 ## `_boss_banner` masih menunjuk node yang klaimnya sudah mati. Selama itu
 ## rantai skip masih menyapa node tersebut dan HUD masih membaca sisa klaim —
-## inilah yang membuat tombol SKIP terlihat "tertinggal" setelah cinematic
-## ditutup. Dipanggil di semua jalur skip + pembacaan klaim.
+## inilah yang membuat PAUSE terlihat "tertinggal" (tetap tersembunyi)
+## setelah cinematic ditutup. Dipanggil di semua jalur skip + pembacaan
+## klaim.
 func _drop_finished_cine_refs() -> void:
 	if _level_intro != null and not _cine_claim_alive(_level_intro):
 		_level_intro = null
@@ -871,12 +875,13 @@ func _drop_finished_cine_refs() -> void:
 
 
 ## Sinkronkan TouchHUD SEKETIKA, tanpa menunggu tick _process berikutnya.
-## TouchHUD menghitung matriks tombolnya (SKIP lawan PAUSE) dari klaim
-## cinematic sekali per frame. Kalau cinematic berubah di dalam penanganan
-## input (ESC/klik/skip) dan HUD baru menyusul di frame berikutnya, pemain
-## melihat tombol SKIP yang tertinggal — dan pada jalur ESC tertinggal
-## selamanya, karena state terakhir HUD terlanjur dihitung dari klaim yang
-## sudah basi. Resync di sini membuat SKIP hilang BERSAMAAN dengan intronya.
+## TouchHUD menghitung matriks tombolnya (PAUSE tersembunyi saat cinematic)
+## dari klaim cinematic sekali per frame. Kalau cinematic berubah di dalam
+## penanganan input (ESC/klik/skip) dan HUD baru menyusul di frame
+## berikutnya, PAUSE tetap tersembunyi lebih lama dari seharusnya — dan pada
+## jalur ESC tertinggal selamanya, karena state terakhir HUD terlanjur
+## dihitung dari klaim yang sudah basi. Resync di sini membuat PAUSE kembali
+## BERSAMAAN dengan usainya intro.
 func _touch_hud_resync() -> void:
 	var tree := get_tree()
 	if tree == null:
@@ -937,8 +942,9 @@ func _cinematic_kind() -> String:
 
 
 ## Rantai yang SAMA dengan _cinematic_click/_cinematic_key, tanpa efek
-## samping — dibaca TouchHUD tiap frame untuk tombol SKIP (paritas
-## _cinematic_active main.py: intro/boss_intro + celebration).
+## samping — dibaca TouchHUD tiap frame untuk memilih matriks tombol
+## (PAUSE tersembunyi saat cinematic; paritas _cinematic_active main.py:
+## intro/boss_intro + celebration).
 func _cinematic_active() -> bool:
 	# Referensi cinematic yang klaimnya sudah mati dibuang DULU: kalau tidak,
 	# pembacaan ini (dipanggil TouchHUD tiap frame) masih bisa melihat sisa
@@ -1195,6 +1201,9 @@ func _apply_touch_action(action: String) -> void:
 		"skip":
 			# handle_skip(SPACE) ke level_intro/boss_intro/boss_death —
 			# rantai prioritas yang sama dengan klik cinematic di atas.
+			# Tombolnya sendiri sudah dimatikan di TouchHUD (tidak pernah
+			# digambar); cabang ini tetap ada sebagai padanan penuh
+			# apply_hud_action pygame.
 			if GameManager.in_menu:
 				return
 			_cinematic_click()
@@ -1390,7 +1399,7 @@ func _toggle_pause() -> void:
 	# take_pause_ownership dan hanya melepasnya lewat finish(); kalau ESC/P
 	# dibiarkan "resume" di sini, tree jalan lagi sementara intro masih
 	# tampil dan masih mengklaim cinematic — matriks HUD tinggal di
-	# game_playing_cine, jadi SKIP menempel dan PAUSE tidak pernah kembali.
+	# game_playing_cine, jadi PAUSE tidak pernah kembali.
 	# ESC saat intro: tidak mencuri pause, tidak mengubah apa pun.
 	if _intro_owns_pause():
 		return
