@@ -7,13 +7,15 @@ TIDAK butuh pygame dan TIDAK butuh Godot — semuanya dibaca dari berkas, jadi
 cek ini jalan di langkah "Linter statis" godot-check.yml sebelum engine
 diunduh (hitungan milidetik).
 
-Kenapa perlu: aset biner Godot adalah SALINAN yang di-gitignore
-(`godot/assets/sounds/`, `godot/assets/items/`, `godot/assets/presplash.png`)
-— sumber kebenarannya `assets/` pygame. Rantainya panjang dan setiap mata
-rantai bisa putus dalam diam:
+Kenapa perlu: aset biner Godot adalah SALINAN dari `assets/` pygame —
+`godot/assets/sounds/` dan `godot/assets/presplash.png` di-gitignore (CI
+menyalinnya), sedangkan `godot/assets/items/` (33 ikon ITEM FORGE, ±3 MB)
+ikut repo supaya ikon terbaca di semua lingkungan (editor, export lokal,
+debug run, AAB). Rantainya panjang dan setiap mata rantai bisa putus dalam
+diam:
 
     assets/items/*.png  --convert_to_godot.py --assets-->  godot/assets/items/
-                      --.gitignore (tidak ikut repo)-->    CI menyalin ulang
+                      --ikut repo (salinan tetap tersinkron)-->
                       --ItemIcons.gd (res://assets/items/)--> Button.icon
 
 Putus di mana pun, gejalanya baru kelihatan saat dimainkan: game sunyi, ikon
@@ -23,7 +25,9 @@ item jadi badge warna, atau boot splash bawaan Godot. Yang dikunci di sini:
      (item baru tanpa ikon, atau ikon yatim, gagal di sini);
   2. converter punya export_sounds/export_items_png/export_presplash dan mode
      `--assets` yang TIDAK menuntut numpy/pygame (dipanggil CI sebelum Godot);
-  3. .gitignore menutup ketiga salinan (±19 MB tidak boleh masuk git 2x);
+  3. .gitignore menutup salinan yang BESAR (sounds ±16 MB + presplash), dan
+     sebaliknya godot/assets/items/ (33 ikon, ±3 MB) WAJIB ikut repo supaya
+     ITEM FORGE berbendera ikon asli di editor/export lokal/debug run/AAB;
   4. kedua workflow Godot menyalin aset SEBELUM engine dijalankan/di-export
      (exporter hanya memaksa presplash.png ikut AAB kalau berkasnya ada —
      EditorExportPlatform::get_forced_export_files);
@@ -65,9 +69,10 @@ SOUND_RES = "res://assets/sounds/"
 PRESPLASH_RES = "res://assets/presplash.png"
 
 ## Salinan yang di-gitignore: folder/berkas -> sumber di assets/ pygame.
+## (godot/assets/items/ TIDAK di sini: 33 ikon ITEM FORGE ikut repo supaya
+## terbaca di semua lingkungan — lihat check_gitignore + check_item_icons.)
 DUPLICATES = {
     "godot/assets/sounds/": "assets/sounds/",
-    "godot/assets/items/": "assets/items/",
     "godot/assets/presplash.png": "assets/presplash.png",
 }
 
@@ -165,20 +170,29 @@ def check_item_icons() -> None:
     if off_convention:
         convention += " (penyimpangan: %s)" % ", ".join(off_convention)
 
-    # Kalau salinan Godot sudah dibuat (habis menjalankan converter), isinya
-    # harus lengkap — kalau belum ada, itu normal (folder di-gitignore).
+    # Salinan Godot WAJIB ada dan lengkap DI REPO (33 ikon ikut git supaya
+    # ITEM FORGE berikon asli di editor / export lokal / debug run / AAB
+    # tanpa menunggu converter). Regenerasi: python3 tools/convert_to_godot.py
+    # --assets (byte identik dengan assets/items/).
     dst = GODOT_ASSETS / "items"
-    if dst.is_dir():
-        copied = {p.name for p in dst.glob("*.png")}
-        missing = sorted(set(icons.values()) - copied)
-        if missing:
-            raise AssertionError("godot/assets/items/ tidak lengkap (%d "
-                                 "hilang: %s) — jalankan ulang python3 "
-                                 "tools/convert_to_godot.py --assets"
-                                 % (len(missing), ", ".join(missing[:6])))
-        status = "salinan Godot lengkap (%d PNG)" % len(copied)
-    else:
-        status = "salinan Godot belum dibuat (converter belum dijalankan)"
+    if not dst.is_dir():
+        raise AssertionError("godot/assets/items/ tidak ada — 33 ikon ITEM "
+                             "FORGE wajib ikut repo (jalankan python3 "
+                             "tools/convert_to_godot.py --assets lalu commit)")
+    copied = {p.name for p in dst.glob("*.png")}
+    missing = sorted(set(icons.values()) - copied)
+    if missing:
+        raise AssertionError("godot/assets/items/ tidak lengkap (%d "
+                             "hilang: %s) — jalankan ulang python3 "
+                             "tools/convert_to_godot.py --assets"
+                             % (len(missing), ", ".join(missing[:6])))
+    orphans_gd = sorted(copied - set(icons.values()))
+    if orphans_gd:
+        raise AssertionError("ikon yatim di godot/assets/items/ (tidak "
+                             "dirujuk items.json): %s — hapus atau daftarkan "
+                             "di hero_items.ITEM_CATALOG lalu regenerasi"
+                             % ", ".join(orphans_gd))
+    status = "salinan Godot lengkap (%d PNG, ikut repo)" % len(copied)
 
     print("[aset] ikon item: %d entri items.json == %d PNG assets/items/ · %s"
           % (len(icons), len(on_disk), convention))

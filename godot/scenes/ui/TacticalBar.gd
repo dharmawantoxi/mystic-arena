@@ -42,6 +42,10 @@ const COMMANDS: Array = [
 ## tertutup dan ketukan di sana tak sampai ke unit. Sekarang kotak itu
 ## DILIPAT default menjadi chip kecil "TACTICAL" di kanan-bawah arena:
 ## map bersih, tombol command tetap satu ketukan dari HP tanpa keyboard.
+## Tiga lapis supaya tidak pernah "menghalangi map": (1) kotak mengambang
+## CLICK-THROUGH — hanya tombol perintah yang menelan klik, sela panel tetap
+## milik map; (2) klik di luar kotak sekaligus melipatnya (kebiasaan
+## dropdown); (3) chip + kotak disembunyikan selama popup modal terbuka.
 const TOGGLE_W := 148.0
 const TOGGLE_H := 32.0
 const TOGGLE_GAP := 6.0
@@ -123,13 +127,18 @@ func _layout() -> void:
 
 ## Visibilitas kotak + chip. Pygame tidak punya padanan chip: ini lapisan
 ## Godot supaya map tidak tertutup saat rail tidak ada.
+## Popup modal (ShopPanel/TOP UP) menutup hampir seluruh arena: chip + kotak
+## mengambang ikut DILIPAT & disembunyikan supaya tidak menumpuk di atas
+## lapisan gelap dan tak sengaja tertekan saat pemain berbelanja (rail kanan
+## tetap tampil — paritas panel pygame yang memang hidup di luar peta).
 func _apply_visibility(has_rail: bool) -> void:
 	var playing := GameManager.state == "playing" and not GameManager.in_menu
-	if not playing:
-		# Keluar dari gameplay: panel kembali terlipat supaya match
-		# berikutnya mulai dengan map bersih.
+	var modal := GameManager.shop_open
+	if not playing or modal:
+		# Keluar dari gameplay / popup terbuka: panel kembali terlipat supaya
+		# match berikutnya mulai dengan map bersih.
 		_expanded = false
-	_toggle.visible = playing and not has_rail
+	_toggle.visible = playing and not has_rail and not modal
 	_box.visible = playing and (has_rail or _expanded)
 
 
@@ -158,7 +167,13 @@ func _process(delta: float) -> void:
 func _build() -> void:
 	_box = PygamePanel.new(Color(0.32, 0.38, 0.55, 0.9), 2.0, 9.0)
 	_box.name = "TacticalBox"
-	_box.mouse_filter = Control.MOUSE_FILTER_STOP
+	# CLICK-THROUGH: panel mengambang (tanpa rail) TIDAK boleh menelan klik
+	# yang jatuh di luar tombol perintah — dulu MOUSE_FILTER_STOP membuat
+	# seluruh kotak 220x210 "menghalangi map": ketukan di sela tombol tak
+	# sampai ke unit. PygamePanel default IGNORE; hanya tombol perintah yang
+	# STOP, jadi sela panel, judul, dan margin tetap milik map (klik di luar
+	# sekaligus melipat panel lewat _input — kebiasaan dropdown).
+	_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Posisi diatur _layout() dari MobileLayout.tactical_rect() (jalur dasar
 	# panel kanan). Anchor kiri-atas + offset absolut = tidak pernah keluar
 	# frame walau viewport berubah.
@@ -350,9 +365,10 @@ static func _tooltip(action: String) -> String:
 func _refresh() -> void:
 	var playing := GameManager.state == "playing" and not GameManager.in_menu
 	var has_rail := MobileLayout.tactical_rect().size.x > 0.0
-	if not playing:
+	var modal := GameManager.shop_open
+	if not playing or modal:
 		_expanded = false
-	_toggle.visible = playing and not has_rail
+	_toggle.visible = playing and not has_rail and not modal
 	_box.visible = playing and (has_rail or _expanded)
 	if not playing:
 		# pygame _tactical_sembunyikan: tombol tanpa gambar frame ini mati.

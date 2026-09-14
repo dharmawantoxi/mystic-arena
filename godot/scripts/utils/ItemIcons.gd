@@ -9,8 +9,10 @@
 #
 # Port ini mempertahankan DUA cabang itu:
 #   * PNG ada      -> ImageTexture hasil scale CPU ke ukuran tampilan, dari
-#                     res://assets/items/ (salinan assets/items/ pygame hasil
-#                     `tools/convert_to_godot.py --assets`; di-gitignore)
+#                     res://assets/items/ (33 PNG ikut repo supaya ikon asli
+#                     tampil di editor/export lokal/debug run/AAB; converter
+#                     `tools/convert_to_godot.py --assets` menyinkronkannya
+#                     dari assets/items/ pygame)
 #   * PNG tidak ada -> ImageTexture prosedural (badge warna + border glow),
 #                      digambar sendiri di sini — tanpa berkas gambar
 # Jadi toko item dan panel hero tetap punya ikon walau aset belum disalin,

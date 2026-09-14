@@ -290,8 +290,14 @@ static func _format_thousands(n: int) -> String:
 
 
 func _process(delta: float) -> void:
-	# _root null = setup() belum dipanggil (frame antara add_child & setup)
-	if not active or _root == null:
+	if not active:
+		return
+	# _root null = setup() belum/tak pernah selesai. Intro semacam itu tetap
+	# active == true (mengklaim cinematic + menahan pause) tanpa menggambar
+	# apa pun — self-heal supaya match tidak beku / HUD tidak terkunci mode
+	# cinematic selamanya.
+	if _root == null:
+		finish()
 		return
 	_frame += delta * 60.0
 	_time += delta

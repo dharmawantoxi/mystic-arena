@@ -33,7 +33,7 @@ const SCENARIOS: Array = ["menu", "level", "battle", "shop", "scene"]
 ## Kunci argumen setelah `--` (OS.get_cmdline_user_args()) — HARUS sama dengan
 ## tools/godot_debug_run.py (ENGINE_ARGS).
 const ARG_KEYS: Array = ["scenario", "scene", "level", "seconds", "shot-every",
-		"max-shots", "max-frames", "fps", "out", "label"]
+		"max-shots", "max-frames", "fps", "out", "label", "tab"]
 
 ## Default kalau tidak ada `--out=`: tetap di dalam user:// supaya tidak ada
 ## berkas debug yang tercecer di repo kalau dijalankan manual.
@@ -58,6 +58,9 @@ var max_frames: int = 0
 var fps_limit: int = 0
 var out_dir: String = DEFAULT_OUT
 var label: String = "debug"
+## Tab ShopPanel yang dibuka skenario `shop` setelah hotkey H ("" = default).
+## Dipakai verifikasi visual tab ITEM (grid ITEM FORGE) tanpa klik manual.
+var shop_tab: String = ""
 
 # SENGAJA tak bertipe (Variant): `_world._on_key(...)` dan
 # `_probe.configure(...)` adalah panggilan dinamis ke skrip lain — nilai
@@ -142,6 +145,8 @@ func _parse_args(argv: PackedStringArray) -> void:
 				out_dir = value if not value.is_empty() else DEFAULT_OUT
 			"label":
 				label = value
+			"tab":
+				shop_tab = value
 
 
 ## Path keluaran -> absolut. `res://` / `user://` diglobalisasi, path relatif
@@ -262,6 +267,15 @@ func _start_match() -> void:
 		_world._on_key(_key(KEY_H))
 		await _wait_frames(2)
 		print("[DebugRun] toko dibuka lewat hotkey H")
+		if shop_tab != "":
+			var shop = _world.find_child("ShopPanel", true, false)
+			if shop != null and shop.has_method("open_tab"):
+				shop.open_tab(shop_tab)
+				await _wait_frames(2)
+				print("[DebugRun] tab toko '%s' dibuka" % shop_tab)
+			else:
+				print("[DebugRun] PERINGATAN: ShopPanel tidak ditemukan "
+					+ "untuk --tab=%s" % shop_tab)
 
 
 func _print_banner() -> void:

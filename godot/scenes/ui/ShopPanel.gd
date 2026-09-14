@@ -620,19 +620,36 @@ func _build_item_tab() -> void:
 			if not owned_text.is_empty() else "-"), Color(0.6, 0.9, 0.7), 11)
 
 	var grouped: Dictionary = ItemDB.grouped()
-	# Kartu digambar 250x200 dengan gap 12/14 (paritas `_draw_item_grid`,
-	# hero_items.py:3731-3745); mode baris di rail sempit tetap 6/4.
-	var use_cards := _grid_columns() >= ITEM_CARD_MIN_COLS
+	# GRID KARTU KONTINU lintas kategori (paritas `_draw_item_grid` pygame,
+	# hero_items.py:3731-3745: 4 kolom x 2 baris per halaman, baris SELALU
+	# penuh sampai katalog habis). Grid per-kategori yang lama membuat baris
+	# putus-putus (1/2/3 kartu) karena tiap kategori memulai grid baru —
+	# identitas kategori tetap terbaca dari label + warna border DI DALAM
+	# kartu, persis pygame. Grid di-center dan kartu dipin 250x200 supaya
+	# kolomnya seragam, tidak melebar oleh VBox panel.
+	var cols := _item_columns()
+	var use_cards := cols >= ITEM_CARD_MIN_COLS
+	var card_grid: GridContainer = null
+	if use_cards:
+		card_grid = GridContainer.new()
+		card_grid.name = "ItemForgeGrid"
+		card_grid.columns = cols
+		card_grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		card_grid.add_theme_constant_override("h_separation", 12)
+		card_grid.add_theme_constant_override("v_separation", 14)
+		_body.add_child(card_grid)
 	for cat in grouped:
-		var col: Color = ItemDB.category_color(str(cat))
-		_add_label("%s" % ItemDB.category_label(str(cat)), col, 13)
-		var grid := GridContainer.new()
-		grid.columns = _grid_columns()
-		grid.add_theme_constant_override("h_separation",
-			12 if use_cards else 6)
-		grid.add_theme_constant_override("v_separation",
-			14 if use_cards else 4)
-		_body.add_child(grid)
+		var grid: GridContainer = card_grid
+		if not use_cards:
+			# Mode baris (rail sempit 1 kolom): judul kategori + baris tombol
+			# tetap per kategori — lebar baris sudah seragam penuh.
+			var col: Color = ItemDB.category_color(str(cat))
+			_add_label("%s" % ItemDB.category_label(str(cat)), col, 13)
+			grid = GridContainer.new()
+			grid.columns = 1
+			grid.add_theme_constant_override("h_separation", 6)
+			grid.add_theme_constant_override("v_separation", 4)
+			_body.add_child(grid)
 		for item_id in grouped[cat]:
 			var iid := str(item_id)
 			var cost := ItemDB.item_cost(iid)
@@ -1036,6 +1053,23 @@ func _grid_columns() -> int:
 	if _panel != null and _panel.size.x > 0.0 and _panel.size.x < 420.0:
 		return 1
 	return ITEM_COLUMNS
+
+
+## Kolom grid KARTU ITEM FORGE dari lebar panel nyata: kartu 250 px + gap
+## 12 px persis pygame (`_draw_item_grid`: 4 kolom muat PANEL_W 1100).
+## Panel modal Godot melebar/menyempit mengikuti viewport, jadi kolomnya
+## dihitung (maks 4 seperti halaman pygame), bukan konstanta — kartu tetap
+## 250x200 dan grid di-center, sehingga barisnya rapi seragam.
+func _item_columns() -> int:
+	var w := 0.0
+	if _panel != null and _panel.size.x > 0.0:
+		w = maxf(0.0, _panel.size.x - 40.0)
+	if w <= 0.0:
+		return ITEM_COLUMNS
+	if w < 420.0:
+		return 1
+	var cols := int(floor((w + 12.0) / (ItemForgeCard.CARD_W + 12.0)))
+	return clampi(cols, 1, 4)
 
 
 ## 2 kolom di modal, 1 kolom di popup panel kanan.
