@@ -402,6 +402,8 @@ jobs:
           else
             cat /tmp/parity.gate
             echo "::error::PARITY-FAIL-TAIL: $(tail -12 /tmp/parity.log | tr '\n' ' | ' | cut -c1-400)"
+            echo "::error::DIAG-FAILS: $(grep -aE 'GameplayParityTest|SCRIPT ERROR|Parse Error|Invalid |Attempt to call' /tmp/parity.log | tail -25 | tr '\n' ' | ' | cut -c1-2500)"
+            echo "::error::DIAG-LAST: $(tail -40 /tmp/parity.log | tr '\n' ' | ' | cut -c1-2500)"
             exit 1
           fi
 
