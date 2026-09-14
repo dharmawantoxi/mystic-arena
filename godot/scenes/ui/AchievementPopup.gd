@@ -35,7 +35,7 @@ func _ready() -> void:
 	# selama pause/intro/kematian boss (EffectManager.update pygame).
 	process_mode = Node.PROCESS_MODE_PAUSABLE
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 
 
 func _process(delta: float) -> void:

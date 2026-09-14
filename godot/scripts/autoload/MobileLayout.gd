@@ -154,6 +154,30 @@ func place_in_arena(c: Control, arena_offset: Vector2, size: Vector2) -> void:
 	c.offset_right = o.x + size.x * 0.5
 	c.offset_bottom = o.y + size.y * 0.5
 
+## Patok Control supaya benar-benar mengisi seluruh rect parent (atau
+## viewport, bila parent-nya bukan Control) — pengganti langsung pemanggilan
+## `set_anchors_preset(Control.PRESET_FULL_RECT)`.
+##
+## Jebakan yang memperbaiki bug 2026-09-14 ("pop up TOP UP & layar
+## VICTORY/DEFEAT keluar frame"): `set_anchors_preset` TIDAK mengosongkan
+## offset — dengan `keep_offsets` default (false) Godot MENGHITUNG ULANG
+## offset supaya rect Control tetap seperti sebelumnya, jadi Control yang
+## dibuat lewat kode (rect 0x0) TETAP 0x0 walau anchor-nya sudah 0..1.
+## Anak ber-anchor 0.5 pun terpusat di (0,0) = pojok kiri-atas jendela
+## (terpotong keluar layar) dan lapisan gelap full-rect tidak terlihat.
+## Offset dinolkan eksplisit di sini supaya anchor 0..1 benar-benar berarti.
+func fill_parent(c: Control) -> void:
+	if c == null:
+		return
+	c.anchor_left = 0.0
+	c.anchor_top = 0.0
+	c.anchor_right = 1.0
+	c.anchor_bottom = 1.0
+	c.offset_left = 0.0
+	c.offset_top = 0.0
+	c.offset_right = 0.0
+	c.offset_bottom = 0.0
+
 ## Rekatkan Control ke frame ARENA (bukan viewport) — dipakai lapisan gelap
 ## full-screen overlay hasil. Di luar frame (rail panel kanan / tepi kosong)
 ## peta tetap terlihat, persis pygame yang tidak pernah menutupi panel kanan.

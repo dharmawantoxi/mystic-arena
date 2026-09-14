@@ -56,7 +56,7 @@ var _timer: float = 0.0
 func _ready() -> void:
 	name = "SkillBar"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 	_build()
 	MobileLayout.layout_changed.connect(_layout)
 	GameManager.selection_changed.connect(_on_selection_changed)

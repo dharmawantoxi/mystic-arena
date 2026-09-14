@@ -69,7 +69,7 @@ func _ready() -> void:
 	# root tembus klik; yang menahan klik hanya _panel (biar arena tetap bisa
 	# diklik saat toko terbuka)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 	_build()
 	MobileLayout.layout_changed.connect(_layout_panel)
 	_layout_panel()
@@ -124,7 +124,7 @@ func _build() -> void:
 	_scrim = ColorRect.new()
 	_scrim.name = "Scrim"
 	_scrim.color = Color(0.02, 0.02, 0.04, 0.55)
-	_scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_scrim)
 	_scrim.mouse_filter = Control.MOUSE_FILTER_STOP
 	_scrim.visible = false
 	add_child(_scrim)
@@ -156,7 +156,7 @@ func _build() -> void:
 	var vbox := VBoxContainer.new()
 	vbox.name = "ShopBox"
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(vbox)
 	vbox.add_theme_constant_override("separation", 8)
 	clip.add_child(vbox)
 

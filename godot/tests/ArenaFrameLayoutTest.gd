@@ -19,7 +19,14 @@
 #      tidak pernah digelapkan),
 #   4. tata ulang saat ukuran jendela berubah SELAGI layar hasil tampil,
 #   5. TopupDialog: panel 920x580 terpusat di frame arena + diskalakan supaya
-#      selalu muat di bagian frame yang terlihat.
+#      selalu muat di bagian frame yang terlihat,
+#   6. Perbaikan KEDUA (2026-09-14): root overlay/dialog menata dirinya lewat
+#      MobileLayout.fill_parent — ukuran == jendela, posisi == (0,0), dan
+#      lapisan gelap `Dim` TOP UP menutupi seluruh jendela (bukan 0x0).
+#      Penyebab bug: set_anchors_preset(PRESET_FULL_RECT) TIDAK mengosongkan
+#      offset, jadi Control hasil kode tetap 0x0 walau anchor 0..1 — anak
+#      ber-anchor 0.5 terpusat di (0,0) = pojok kiri-atas jendela. Test ini
+#      TIDAK boleh mematok rect widget lagi; pembungkus saja yang dipatok.
 #
 # Cara mensimulasikan ukuran jendela di headless: satu Control pembungkus
 # berukuran tetap (parent anchor-0.5 memakai ukuran PARENT) + MobileLayout.
@@ -76,19 +83,18 @@ func _finish() -> void:
 		get_tree().quit(1)
 
 
-## Ganti ukuran jendela yang disimulasikan: MobileLayout + rect pembungkus +
-## rect widget.
+## Ganti ukuran jendela yang disimulasikan: MobileLayout + rect pembungkus.
 ##
-## Rect widget DIPATOK eksplisit (anchor tetap + offset), TIDAK bergantung
-## pada ukuran pembungkus: di production overlay/dialog ini full-rect di dalam
-## HUD/MainMenu yang berukuran jendela, jadi rect-nya = ukuran jendela. Kalau
-## mengandalkan container/pembungkus saja, Control bisa tetap 0x0 di headless
-## (terbukti di CI: seluruh elemen lalu menempel di offset mentah) sehingga
-## yang diukur bukan rumus produksi. Ukurannya diperiksa di test masing-masing.
-func _simulate(sim: Vector2, holder: Control, widget: Control) -> void:
+## HANYA pembungkus ("jendela") yang dipatok; widget (overlay/dialog) dibiarkan
+## menata dirinya sendiri lewat MobileLayout.fill_parent. Sebelumnya rect
+## widget juga dipatok eksplisit di sini — itu justru MENUTUPI bug kedua
+## (2026-09-14): `set_anchors_preset(PRESET_FULL_RECT)` tidak mengosongkan
+## offset sehingga Control hasil kode tetap 0x0, dan patokan test membuat
+## rect-nya benar walau produksi salah. Sekarang ukuran/posisi widget adalah
+## murni hasil tata letak produksi, dan tiap test memeriksa size == jendela.
+func _simulate(sim: Vector2, holder: Control) -> void:
 	MobileLayout.viewport_size = sim
 	_pin_rect(holder, sim)
-	_pin_rect(widget, sim)
 	MobileLayout.layout_changed.emit()
 
 
@@ -197,11 +203,17 @@ func _test_game_over_overlay() -> void:
 		var overlay: GameOverOverlay = GameOverOverlayScript.new()
 		overlay.name = "GameOverOverlay"
 		holder.add_child(overlay)
-		_simulate(sim, holder, overlay)
-		await get_tree().process_frame
+		_simulate(sim, holder)
+		# Dua frame: ukuran overlay kini hasil propagasi anchor dari
+		# pembungkus (bukan patokan test), sama seperti di topup.
+		await _settle()
 		_expect(_approx(overlay.size.x, sim.x) and _approx(overlay.size.y, sim.y),
 			"%s: overlay berukuran jendela %s (got %s)"
 				% [tag, sim, overlay.size])
+		_expect(_approx(overlay.position.x, 0.0)
+				and _approx(overlay.position.y, 0.0),
+			"%s: overlay di pojok (0,0) jendela (got %s)"
+				% [tag, overlay.position])
 		overlay.show_result(true)
 		await _settle()
 		# Intro panel stat (fade + scale BACK OUT 0.85 -> 1.0 selama 0.35 s)
@@ -218,7 +230,7 @@ func _test_game_over_overlay() -> void:
 		# Langkah 4: jendela diubah SELAGI layar hasil tampil.
 		var resized := Vector2(maxf(1280.0, sim.x - 100.0),
 			maxf(720.0, sim.y - 100.0))
-		_simulate(resized, holder, overlay)
+		_simulate(resized, holder)
 		await _settle()
 		_expect_overlay_inside_frame(overlay, resized)
 		holder.queue_free()
@@ -306,11 +318,25 @@ func _test_topup_dialog() -> void:
 		var dlg: TopupDialog = TopupDialogScript.new()
 		dlg.name = "TopupDialog"
 		holder.add_child(dlg)
-		_simulate(sim, holder, dlg)
+		_simulate(sim, holder)
 		await _settle()
 		var tag := "topup @%dx%d" % [int(sim.x), int(sim.y)]
 		_expect(_approx(dlg.size.x, sim.x) and _approx(dlg.size.y, sim.y),
 			"%s: dialog berukuran jendela %s (got %s)" % [tag, sim, dlg.size])
+		# Bug kedua (2026-09-14): root hanya di-anchor lewat
+		# set_anchors_preset(PRESET_FULL_RECT) tanpa offset nol — rect-nya
+		# tetap 0x0 sehingga panel ber-anchor 0.5 terpusat di (0,0).
+		_expect(_approx(dlg.position.x, 0.0) and _approx(dlg.position.y, 0.0),
+			"%s: dialog di pojok (0,0) jendela (got %s)" % [tag, dlg.position])
+		var dim := dlg.find_child("Dim", false, false) as Control
+		_expect(dim != null, "%s: lapisan gelap bernama Dim ada" % tag)
+		if dim != null:
+			_expect(_approx(dim.size.x, sim.x) and _approx(dim.size.y, sim.y),
+				"%s: Dim menutupi SELURUH jendela, bukan 0x0 (got %s)"
+					% [tag, dim.size])
+			_expect(_approx(dim.position.x, 0.0)
+					and _approx(dim.position.y, 0.0),
+				"%s: Dim di (0,0) (got %s)" % [tag, dim.position])
 		var panel := dlg.find_child("TopupPanel", false, false) as PygamePanel
 		_expect(panel != null, "%s: panel dialog ada" % tag)
 		if panel != null:

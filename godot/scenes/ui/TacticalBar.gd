@@ -74,7 +74,7 @@ func _ready() -> void:
 	name = "TacticalBar"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_to_group("tactical_bar")
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 	_build()
 	MobileLayout.layout_changed.connect(_layout)
 	_layout()

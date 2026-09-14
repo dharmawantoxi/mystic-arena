@@ -120,20 +120,20 @@ func _build() -> void:
 	_font_bold = load("res://assets/fonts/Barlow-Bold.ttf")
 
 	_root = Control.new()
-	_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_root)
 	# Klik ditangani Main._unhandled_input (paritas Game.handle_click yang
 	# mengecek intro sebelum InputHandler) — jangan telan event di sini.
 	_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_root)
 
 	_bg = ColorRect.new()
-	_bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_bg)
 	_bg.color = Color(0, 0, 0, 0)
 	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_bg)
 
 	_tint = ColorRect.new()
-	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_tint)
 	var theme := str(level_config.get("map_theme", "forest"))
 	var tint_c: Color = THEME_TINTS.get(theme, THEME_TINTS["forest"])
 	_tint.color = Color(tint_c.r, tint_c.g, tint_c.b, 0)
@@ -141,13 +141,13 @@ func _build() -> void:
 	_root.add_child(_tint)
 
 	_vignette = Control.new()
-	_vignette.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_vignette)
 	_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_vignette.draw.connect(_draw_vignette)
 	_root.add_child(_vignette)
 
 	_shapes = Control.new()
-	_shapes.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_shapes)
 	_shapes.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_shapes.draw.connect(_draw_shapes)
 	_root.add_child(_shapes)

@@ -128,34 +128,34 @@ func _build_overlay() -> void:
 	add_child(_layer)
 
 	_flash = ColorRect.new()
-	_flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_flash)
 	_flash.color = Color(1, 1, 1, 0)
 	_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_flash)
 
 	_overlay = ColorRect.new()
-	_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_overlay)
 	_overlay.color = Color(0, 0, 0, 0)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_overlay.visible = false
 	_layer.add_child(_overlay)
 
 	_tint = ColorRect.new()
-	_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_tint)
 	_tint.color = Color(80.0 / 255.0, 60.0 / 255.0, 20.0 / 255.0, 0)
 	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tint.visible = false
 	_layer.add_child(_tint)
 
 	_sparkles = Control.new()
-	_sparkles.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_sparkles)
 	_sparkles.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_sparkles.draw.connect(_draw_sparkles)
 	_sparkles.visible = false
 	_layer.add_child(_sparkles)
 
 	_celebration = Control.new()
-	_celebration.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_celebration)
 	_celebration.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_celebration.visible = false
 	_layer.add_child(_celebration)

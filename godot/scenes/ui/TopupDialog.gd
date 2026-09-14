@@ -13,6 +13,13 @@
 # kamera arena terkunci limit 0..1280 x 0..720 (lihat MobileLayout). Skala fit
 # juga dihitung dari bagian frame yang terlihat supaya isi dialog tidak pernah
 # terpotong.
+#
+# Perbaikan KEDUA hari yang sama (PR lanjutan #240): root, lapisan gelap, dan
+# _body dulu memakai set_anchors_preset(PRESET_FULL_RECT) yang TIDAK
+# mengosongkan offset — Control hasil kode tetap 0x0, jadi panel ber-anchor
+# 0.5 terpusat di (0,0) (dialog seperti keluar lewat pojok kiri-atas layar)
+# dan dim tidak terlihat. Semua lapisan full-rect kini memakai
+# MobileLayout.fill_parent (anchor 0..1 + offset nol eksplisit).
 extends Control
 class_name TopupDialog
 
@@ -53,11 +60,15 @@ var _body: Control = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var dim := ColorRect.new()
+	# Nama eksplisit: test tata letak (ArenaFrameLayoutTest) mencari lapisan
+	# ini lewat find_child("Dim") untuk memastikan ia benar-benar menutupi
+	# jendela (bukan 0x0 — kegagalan senyap sebelum fill_parent).
+	dim.name = "Dim"
 	dim.color = Color(0, 0, 0, 205.0 / 255.0)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(dim)
 	add_child(dim)
 	_panel = PygamePanel.new(Color("#ffc850"), 3.0, 16.0)
 	_panel.name = "TopupPanel"
@@ -151,7 +162,7 @@ func _clear_body() -> void:
 		_body.queue_free()
 	_body = Control.new()
 	_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_body.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(_body)
 	_panel.add_child(_body)
 
 

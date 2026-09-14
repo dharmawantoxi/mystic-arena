@@ -56,14 +56,14 @@ func _ready() -> void:
 	name = "TouchHUD"
 	add_to_group("touch_hud")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(self)
 	show_debug_button = OS.has_environment("MYSTIC_DEBUG") \
 		and OS.get_environment("MYSTIC_DEBUG") == "1"
 	_build_layout()
 	# TouchHUD digambar manual (satu _draw) — bukan kumpulan Button,
 	# supaya glow + cincin ganda + capsule highlight identik pygame.
 	var view := _TouchView.new(self)
-	view.set_anchors_preset(Control.PRESET_FULL_RECT)
+	MobileLayout.fill_parent(view)
 	view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(view)
 	sync_from_match()
