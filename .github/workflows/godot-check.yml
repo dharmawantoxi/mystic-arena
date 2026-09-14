@@ -38,6 +38,9 @@ on:
       - 'bosses/**'
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_asset_pipeline.py'
+      - 'tools/test_godot_debug_runner.py'
+      - 'tools/godot_debug_run.py'
+      - '.github/workflows/godot-run.yml'
       - 'tools/test_godot_match_parity.py'
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/gen_hero_skill_kit.py'
@@ -89,6 +92,9 @@ on:
       - 'bosses/**'
       - 'tools/convert_to_godot.py'
       - 'tools/test_godot_asset_pipeline.py'
+      - 'tools/test_godot_debug_runner.py'
+      - 'tools/godot_debug_run.py'
+      - '.github/workflows/godot-run.yml'
       - 'tools/test_godot_match_parity.py'
       - 'tools/gen_boss_smart_ai.py'
       - 'tools/gen_hero_skill_kit.py'
@@ -197,6 +203,14 @@ jobs:
           # workflow menyalin sebelum Godot jalan, dan path res:// di
           # project.godot/ItemIcons.gd/AudioManager.gd == tujuan converter.
           python3 tools/test_godot_asset_pipeline.py
+          # Jalur "Godot bisa dijalankan dari repo" (tools/godot_debug_run.py
+          # + godot/scenes/debug/DebugRun.tscn + workflow godot-run.yml +
+          # devcontainer Codespaces) punya EMPAT pemilik yang harus sepakat:
+          # skenario & kunci argumen di Python == GDScript == dropdown
+          # workflow. Salah ketik TIDAK error di Godot (argumen tak dikenal
+          # diabaikan dalam diam) dan gejalanya cuma screenshot layar menu —
+          # gate ini yang menolaknya, tanpa pygame maupun engine.
+          python3 tools/test_godot_debug_runner.py
           # BossKit.gd adalah HASIL GENERATE dari bosses/base_boss.py —
           # gagal di sini berarti ada perubahan smart-AI pygame yang belum
           # ditranspile (regenerasi: python3 tools/gen_boss_smart_ai.py).
