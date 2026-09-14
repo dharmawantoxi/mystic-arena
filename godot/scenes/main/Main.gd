@@ -763,17 +763,66 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey:
 		_on_key(event as InputEventKey)
 
+## BUKTI HIDUP klaim cinematic. Node yang sudah keluar tree — atau yang
+## berhenti memproses frame — tidak akan pernah memanggil finish()-nya
+## sendiri, jadi klaim "cinematic aktif"-nya basi selamanya. Inilah jalur
+## yang membuat tombol SKIP menempel selama wave: HUD membaca klaim node
+## mati, mengunci matriks game_playing_cine, dan PAUSE tidak pernah kembali.
+## Cinematic produksi (LevelIntro / BossIntroBanner / BossDeathFX) semuanya
+## ber-_process dengan PROCESS_MODE_ALWAYS, jadi syarat ini tidak pernah
+## menolak cinematic sungguhan — hanya klaim yang tidak bisa dipertanggung-
+## jawabkan.
+static func _cine_live(n) -> bool:
+	if not (n is Node) or not is_instance_valid(n):
+		return false
+	var node := n as Node
+	if not node.is_inside_tree():
+		return false
+	# Mengimplementasikan _process tetapi tidak diproses = tidak mungkin
+	# menyelesaikan dirinya sendiri (hitung mundurnya tidak berjalan).
+	if node.has_method("_process") and not node.is_processing():
+		return false
+	return true
+
+
+## Klaim intro level. Intro MEMBEKUKAN gameplay (_show_level_intro memasang
+## get_tree().paused bersamaan dengan intro-nya, dan LevelIntro memegang
+## pause lewat take_pause_ownership), jadi klaim intro TANPA tree pause =
+## klaim basi: pause-nya sudah dilepas (atau tak pernah dipegang) sementara
+## flag intro masih menyala.
+func _level_intro_claims() -> bool:
+	if not _cine_live(_level_intro):
+		return false
+	if not _level_intro.cinematic_active():
+		return false
+	return get_tree().paused
+
+
+## Klaim banner boss (±1,7 dtk, tidak pernah membekukan gameplay).
+func _boss_banner_claims() -> bool:
+	return _cine_live(_boss_banner) and _boss_banner.cinematic_active()
+
+
+## Cinematic grup ("cinematic") pertama yang klaimnya masih hidup — jalur
+## perayaan kematian boss (BossDeathFX mendaftar ke grup itu).
+func _cine_fx_live():
+	for fx in get_tree().get_nodes_in_group("cinematic"):
+		if _cine_live(fx) and fx.has_method("cinematic_active") \
+				and fx.cinematic_active():
+			return fx
+	return null
+
+
 ## Skip cinematic lewat klik, urutan paritas pygame: level intro -> banner
 ## boss -> perayaan kematian boss.
 func _cinematic_click() -> bool:
-	if is_instance_valid(_level_intro) and _level_intro.cinematic_active():
+	if _level_intro_claims():
 		return _level_intro.skip_click()
-	if is_instance_valid(_boss_banner) and _boss_banner.cinematic_active():
+	if _boss_banner_claims():
 		return _boss_banner.skip_click()
-	for fx in get_tree().get_nodes_in_group("cinematic"):
-		if is_instance_valid(fx) and fx.has_method("skip_click") \
-				and fx.cinematic_active():
-			return fx.skip_click()
+	var fx = _cine_fx_live()
+	if fx != null and fx.has_method("skip_click"):
+		return fx.skip_click()
 	return false
 
 ## STATE_SPLASH pygame (main_desktop_legacy.py:154-157): selama layar
@@ -797,14 +846,12 @@ func _skip_splash() -> void:
 ## (level_intro / boss_intro / boss_death) — dibaca ControllerRouter untuk
 ## jejak paritas aksi `confirm` (main_desktop_legacy.py:210-221).
 func _cinematic_kind() -> String:
-	if is_instance_valid(_level_intro) and _level_intro.cinematic_active():
+	if _level_intro_claims():
 		return "level_intro"
-	if is_instance_valid(_boss_banner) and _boss_banner.cinematic_active():
+	if _boss_banner_claims():
 		return "boss_intro"
-	for fx in get_tree().get_nodes_in_group("cinematic"):
-		if is_instance_valid(fx) and fx.has_method("cinematic_active") \
-				and fx.cinematic_active():
-			return "boss_death"
+	if _cine_fx_live() != null:
+		return "boss_death"
 	return ""
 
 
@@ -812,28 +859,20 @@ func _cinematic_kind() -> String:
 ## samping — dibaca TouchHUD tiap frame untuk tombol SKIP (paritas
 ## _cinematic_active main.py: intro/boss_intro + celebration).
 func _cinematic_active() -> bool:
-	if is_instance_valid(_level_intro) and _level_intro.cinematic_active():
-		return true
-	if is_instance_valid(_boss_banner) and _boss_banner.cinematic_active():
-		return true
-	for fx in get_tree().get_nodes_in_group("cinematic"):
-		if is_instance_valid(fx) and fx.has_method("cinematic_active") \
-				and fx.cinematic_active():
-			return true
-	return false
+	return _level_intro_claims() or _boss_banner_claims() \
+		or _cine_fx_live() != null
 
 ## Skip cinematic lewat tombol; true = event dikonsumsi (jangan lanjut ke
 ## pause/gameplay). Tombol yang tidak diterima cinematic jatuh ke handler
 ## normal — paritas handle_skip pygame mengembalikan False untuk tombol lain.
 func _cinematic_key(key: InputEventKey) -> bool:
-	if is_instance_valid(_level_intro) and _level_intro.cinematic_active():
+	if _level_intro_claims():
 		return _level_intro.skip_key(key)
-	if is_instance_valid(_boss_banner) and _boss_banner.cinematic_active():
+	if _boss_banner_claims():
 		return _boss_banner.skip_key(key)
-	for fx in get_tree().get_nodes_in_group("cinematic"):
-		if is_instance_valid(fx) and fx.has_method("skip_key") \
-				and fx.cinematic_active():
-			return fx.skip_key(key)
+	var fx = _cine_fx_live()
+	if fx != null and fx.has_method("skip_key"):
+		return fx.skip_key(key)
 	return false
 
 func _on_key(key: InputEventKey) -> void:
