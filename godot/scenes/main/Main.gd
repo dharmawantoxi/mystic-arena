@@ -773,7 +773,14 @@ func _unhandled_input(event: InputEvent) -> void:
 ## menolak cinematic sungguhan — hanya klaim yang tidak bisa dipertanggung-
 ## jawabkan.
 static func _cine_live(n) -> bool:
-	if not (n is Node) or not is_instance_valid(n):
+	# URUTAN WAJIB: is_instance_valid() LEBIH DULU. Godot menolak operator `is`
+	# pada instance yang sudah dibebaskan ("SCRIPT ERROR: Left operand of 'is'
+	# is a previously freed instance") — dan justru node cinematic yang baru
+	# saja di-free (intro selesai -> queue_free, referensi Main belum di-null)
+	# adalah kasus yang paling sering lewat sini tiap frame.
+	if not is_instance_valid(n):
+		return false
+	if not (n is Node):
 		return false
 	var node := n as Node
 	if not node.is_inside_tree():
