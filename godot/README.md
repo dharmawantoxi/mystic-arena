@@ -23,6 +23,131 @@ Lapisan gameplay MOBA-nya juga sudah diport (2026-09-06): **menara 4 jalur + 18 
 
 **Map kini bake dari renderer pygame sendiri** (Fase 3, 2026-09-07): `tools/convert_to_godot.py --maps-png` membake 6 layer `static_map` (terrain+details, river, 3 lane, dekor, shop, border wall) jadi SATU tekstur 1280×720 per tema — 54 tema, ±3,2 MB di `assets/maps/` — lalu `ArenaMap` menampilkannya lewat Sprite2D (padanan persis arsitektur cache `static_map` + blit pygame). Gambar statik bersumber dari renderer asli; cuaca/lighting live tetap implementasi Godot. Fallback prosedural hidup kalau bake belum ada. Lihat bagian "Bake map statik (Fase 3)" di bawah.
 
+## Koreksi tata letak di jendela desktop (2026-09-14 — UI modal di dalam frame)
+
+Laporan pemain: **layar VICTORY/DEFEAT dan dialog TOP UP muncul di luar frame**
+saat dimainkan di Godot desktop. Akarnya bukan koordinat isinya, tapi titik acu
+yang dipakai.
+
+**Sebabnya.** Kamera arena dipasang `Main._frame_camera()` dengan
+`position = (640, 360)` + limit `0..1280` × `0..720` + zoom 1, dan Camera2D
+MENGUNCI rect layar ke limit itu (`scene/2d/camera_2d.cpp:172-186`, `:225-241`):
+arena tidak pernah melebar mengikuti jendela. Di jendela 16:10 / ultrawide /
+maximize-dengan-taskbar, sisa kanan-bawah viewport ada DI LUAR peta — jadi titik
+`anchor = 0.5` (= pusat viewport) bukan lagi pusat arena. Seluruh UI modal port
+ini memakai anchor itu, padahal pygame menggambar semuanya ke surface 1280×720
+(`cx, cy = SCREEN_WIDTH//2, SCREEN_HEIGHT//2`) sehingga hasilnya selalu di tengah
+peta. Di jendela yang LEBIH KECIL dari 1280×720 masalahnya cerminannya: kamera
+terpotong rata tengah, dan baris tombol di bawah (`cy + 292`) bisa lewat tepi
+layar.
+
+**Perbaikannya** — satu sumber angka baru di `MobileLayout` (`arena_frame_rect`,
+`arena_center`, `arena_center_offset`, `arena_visible_rect`, `arena_fit_scale`,
+`place_in_arena`, `cover_arena`), lalu pemakainya:
+
+- `GameOverOverlay`: judul, panel stat, popup NEW LEVEL UNLOCKED, baris keycap,
+  hitungan achievement, dan baris tombol NEXT/REPLAY/MENU dipasang lewat
+  `place_in_arena` (offset desain pygame apa adanya terhadap pusat peta) dan
+  dipasang ulang tiap `MobileLayout.layout_changed` — resize saat layar hasil
+  tampil tidak lagi meninggalkan elemen di posisi lama.
+- Lapisan gelap + ray/glow/sparkle overlay kini menutup **frame arena saja**
+  (`cover_arena`), bukan seluruh jendela: paritas pygame yang tidak pernah
+  menggelapkan panel kanan.
+- `TopupDialog`: panel 920×580 dipusatkan di frame arena, dan skala fit-nya
+  dihitung dari **bagian frame yang terlihat** (`arena_fit_scale`, margin 24 px)
+  — di jendela kecil dialog mengecil proporsional alih-alih terpotong.
+- `MobileLayout.modal_rect` (HERO SHOP / ITEM FORGE in-match) juga dipusatkan ke
+  frame arena, dan chip TACTICAL tanpa rail (`TacticalBar`) menempel di
+  kanan-bawah frame — bukan kanan-bawah viewport.
+
+**Invarian penting:** di viewport 1280×720 `arena_center_offset()` = nol,
+sehingga offset yang dihasilkan **identik** dengan kode lama — semua test paritas
+yang berjalan di 1280×720 (UiHudParityTest, MatchScoringParityTest,
+MobileSidePanelParityTest) tidak berubah sedikit pun; koreksi ini hanya berlaku
+di jendela yang bukan 16:9.
+
+**Pengaman kedua (desktop).** `AppShell._fit_window_to_screen()` (knob
+`FIT_WINDOW_TO_SCREEN`, batas bawah 960×540) mengecilkan jendela saat boot kalau
+jendela tidak muat di rect berguna layar (taskbar/dock sudah dikurangi) lalu
+memusatkannya — jendela 1280×720 + title bar tidak muat di layar kecil atau pada
+display scaling Windows 125-150% (yang membuatnya setara 1600×900), dan bagian
+bawah jendela itulah yang memuat baris tombol NEXT LEVEL / PAY NOW. Tidak pernah
+memperbesar, tidak menyentuh perangkat sentuh, dan tidak memanggil DisplayServer
+sama sekali kalau jendelanya sudah muat.
+
+Dikunci `tests/ArenaFrameLayoutTest.tscn` (CI: langkah 4z3) yang mensimulasikan
+16:9, 1624×720 (HP landscape), 1866×1050 (16:10), 1000×600, dan 800×500 lewat
+`MobileLayout.viewport_size` + Control pembungkus, lalu memeriksa aritmetika
+frame, posisi semua blok overlay, lapisan gelap, tata ulang saat jendela diubah,
+dan panel dialog TOP UP (terpusat + muat).
+
+### Kontrak `ui_data.blocked` kartu Hero Shop (ikut diperbaiki di PR yang sama)
+
+`UiHudParityTest` di `main` sudah merah sebelum PR ini (2 cek: `OWNED reason`,
+`FULL reason`), dan kegagalan itu men-skip SEMUA langkah CI sesudahnya —
+termasuk test baru di atas. Sebabnya commit renderer kartu (#239):
+`HeroShopCard.configure()` menuliskan **state kartu** (`"ACTIVE"`/`"MAX"`) ke
+`ui_data.blocked`, padahal `blocked` adalah **alasan** dalam kosakata baris
+toko pygame (`""`/`OWNED`/`FULL`/`POOR`/`LOCKED`). Dua hal itu memang berbeda:
+kartu ber-state `ACTIVE` alasannya `OWNED`, kartu ber-state `MAX` alasannya
+`FULL`, dan alasan `LOCKED` justru string kosong di baris toko.
+
+Perbaikannya: `HeroShopCard.configure()` menerima `p_reason` **wajib** dari
+pemanggil (`ShopPanel._make_hero_card()` sudah menghitung alasan itu dari state
+permainan), disimpan di properti `reason`, dan itulah yang masuk ke
+`ui_data.blocked`. Visual pill tetap memakai `state` — tidak ada perubahan
+tampilan.
+
+### Audit teks menu: widget yang menggambar teksnya sendiri
+
+`LocalizationParityTest` (gate "SEMUA layar menu ikut bahasa") juga merah di
+`main` setelah #239, dan kegagalan itu ikut menahan langkah CI berikutnya.
+Sebabnya bukan teksnya, tapi **cara audit membaca teks**: widget proyek ini
+menggambar teksnya sendiri di `_draw()` dan mengosongkan properti bawaan
+Godot, jadi `_collect_texts()` tidak menemukan apa pun:
+
+| widget | properti yang digambar | dibaca audit dari |
+|---|---|---|
+| `PygameButton` | `label_text` (`Button.text` = `""`) | `label_text` |
+| `PygameChip` | `label_text` + `value_text` | keduanya |
+| `OptionCycler` | `label_text` + `value_text()` | keduanya |
+| `ScreenTitle` | `text` + `sub_text` | keduanya |
+
+Tanpa cabang-cabang itu, sentinel `en/MAIN` (`PLAY GAME`/`HOW TO PLAY`/
+`QUIT GAME`) dan SEMUA sentinel judul layar (`SELECT SAVE SLOT`, `PILIH LEVEL`,
+… ) selalu dianggap hilang, dan gate closed-world "tak boleh ada label
+Indonesia di layar `en`" ikut buta terhadap tombol. Satu bug kecil lagi di
+audit yang sama: `forbidden[f]` di dalam argumen `_expect(...)` — GDScript
+mengevaluasi SEMUA argumen, jadi lookup itu meledak justru pada label yang
+SAH dan membatalkan sisa audit satu layar; kini `forbidden.get(f, "")`.
+
+### Panel statistik VICTORY/DEFEAT: acuan tepi atas, bukan setengah tinggi
+
+Tinggi panel statistik ditentukan tinggi minimum isinya (VBox 5 baris), bukan
+tebakan `rows * ROW_H + 24 = 214 px` (nyatanya ~308 px). Karena acuan pygame
+adalah tepi ATAS (`cy - 100`), setengah tinggi yang salah langsung menggeser
+panel di jendela non-16:9 (terukur +20 px di CI). `_build_stats_panel()`
+menyambung sinyal `resized` ke `_reanchor_stats_panel()` yang menghitung ulang
+offset dari tepi atas yang sama memakai tinggi nyata, dan `_center_in_arena()`
+menyimpan satu entri per Control supaya `_recenter()` selalu memakai ukuran
+terakhir.
+
+### Catatan verifikasi (2026-09-14)
+
+`ArenaFrameLayoutTest` sudah benar-benar dijalankan CI (bukan sekadar parse):
+aritmetika frame, lapisan gelap, dan dialog TOP UP untuk 5 ukuran jendela
+LULUS; sisa kegagalan terakhir adalah tween intro panel statistik yang belum
+selesai saat diukur (rect terukur 450x277 = skala 0.8999 dari 500x308), dan
+test kini mematikan tween itu sebelum mengukur. Run yang memverifikasi commit
+terakhir TIDAK jalan karena GitHub Actions menolak start job ("recent account
+payments have failed or your spending limit needs to be increased") — jadi
+tiga commit terakhir (kontrak blocked, audit teks, reanchor panel) baru
+terverifikasi statis (`gdparse`, `gdlint`, `tools/tscn_lint.py`,
+`tools/check_refs.py`) plus dua run CI sebelumnya, belum lewat run CI penuh.
+Cara memverifikasi ulang setelah billing beres: jalankan workflow "Godot Check"
+(atau `godot --headless --path godot res://tests/ArenaFrameLayoutTest.tscn
+--quit-after 240`).
+
 ## Koreksi UI in-match (2026-09-13 — mengikuti pygame)
 
 Empat perilaku UI in-match disetel ulang supaya persis seperti versi pygame;

@@ -89,6 +89,9 @@ const COL_BTN_OK_BD_HOVER := Color(130.0 / 255.0, 255.0 / 255.0, 130.0 / 255.0)
 ## "BUY" | "ACTIVE" | "MAX" | "POOR" | "LOCKED" — percabangan
 ## _draw_compact_card pygame, dihitung ShopPanel dari state permainan.
 var state: String = "BUY"
+## Alasan disabled untuk `ui_data.blocked` ("", OWNED, FULL, POOR, LOCKED) —
+## kosakata baris toko pygame, BUKAN nama state kartu (lihat configure()).
+var reason: String = ""
 var hero_type: String = ""
 var cost: int = 0
 var stats: Dictionary = {}
@@ -114,12 +117,24 @@ func _init() -> void:
 
 
 ## `p_stats` = entri heroes.json (name/title/role/hp/damage/range/color).
+##
+## `p_state` (BUY/ACTIVE/MAX/POOR/LOCKED) hanya menentukan VISUAL pill —
+## sedangkan `ui_data.blocked` adalah ALASAN dalam kosakata baris toko pygame
+## ("", OWNED, FULL, POOR, LOCKED, sama seperti `_make_button(..., {"blocked":
+## blocked})`). Dua hal itu berbeda: kartu ACTIVE alasannya OWNED, kartu MAX
+## alasannya FULL — dan alasan LOCKED justru string KOSONG di baris toko.
+## Karena itu alasannya WAJIB dikirim pemanggil yang menghitungnya dari state
+## permainan (`ShopPanel._make_hero_card`), bukan diturunkan dari state kartu:
+## sebelum koreksi 2026-09-14 kartu menuliskan STATE ke `blocked` sehingga
+## audit kontrak UiHudParityTest gagal ("OWNED reason"/"FULL reason").
 func configure(p_hero_type: String, p_stats: Dictionary, p_cost: int,
-		p_state: String, p_cb: Callable, p_tip: String) -> HeroShopCard:
+		p_state: String, p_cb: Callable, p_tip: String,
+		p_reason: String) -> HeroShopCard:
 	hero_type = p_hero_type
 	stats = p_stats
 	cost = p_cost
 	state = p_state
+	reason = p_reason
 	portrait = UnitPortrait.portrait_texture(p_hero_type,
 		PORTRAIT_ART_W, PORTRAIT_ART_H, false)
 	_build_button(p_cb, p_tip)
@@ -141,7 +156,7 @@ func _build_button(cb: Callable, tip: String) -> void:
 	for s in ["normal", "hover", "pressed", "disabled", "focus"]:
 		b.add_theme_stylebox_override(s, StyleBoxEmpty.new())
 	b.set_meta("ui_key", "buy_hero_" + hero_type)
-	b.set_meta("ui_data", {"cost": cost, "blocked": state,
+	b.set_meta("ui_data", {"cost": cost, "blocked": reason,
 		"owned": state == "ACTIVE"})
 	b.mouse_filter = Control.MOUSE_FILTER_STOP
 	# disabled = kartu tidak bisa dibeli (ACTIVE/MAX/POOR/LOCKED) — sama

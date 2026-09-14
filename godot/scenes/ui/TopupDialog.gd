@@ -4,6 +4,15 @@
 # animasi proses 1.6 detik (processing), sukses (success), dan redeem
 # kode voucher dengan keypad on-screen (redeem). Pembayaran disimulasikan
 # seperti pygame (tanpa gateway); gold masuk ke SaveManager.meta_gold.
+#
+# TATA LETAK = PUSAT FRAME ARENA, BUKAN PUSAT VIEWPORT (perbaikan 2026-09-14,
+# laporan user "pop up top up berada di luar frame"). Pygame menggambar dialog
+# ke surface 1280x720 (`cx, cy = SCREEN_WIDTH//2, SCREEN_HEIGHT//2`), jadi di
+# Godot titik acuannya pusat frame arena — bukan pusat viewport, yang di
+# jendela desktop lebih tinggi/lebar dari 16:9 jatuh DI LUAR peta karena
+# kamera arena terkunci limit 0..1280 x 0..720 (lihat MobileLayout). Skala fit
+# juga dihitung dari bagian frame yang terlihat supaya isi dialog tidak pernah
+# terpotong.
 extends Control
 class_name TopupDialog
 
@@ -51,6 +60,7 @@ func _ready() -> void:
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(dim)
 	_panel = PygamePanel.new(Color("#ffc850"), 3.0, 16.0)
+	_panel.name = "TopupPanel"
 	_panel.configure(Color("#202642"), Color("#101426"), Color("#ffc850"),
 		3.0, 16.0, true, true)
 	# Margin konten NOL: seluruh isi dialog diposisikan absolut persis di
@@ -58,41 +68,41 @@ func _ready() -> void:
 	# (14/10/14/10) menggeser _body sehingga sisi kanan jadi mepet.
 	_panel.set_margins(0, 0, 0, 0)
 	_panel.ticks_color = UiTheme.GOLD_BRIGHT
-	_panel.anchor_left = 0.5
-	_panel.anchor_top = 0.5
-	_panel.anchor_right = 0.5
-	_panel.anchor_bottom = 0.5
-	_panel.offset_left = -DW * 0.5
-	_panel.offset_top = -DH * 0.5
-	_panel.offset_right = DW * 0.5
-	_panel.offset_bottom = DH * 0.5
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_panel)
-	_fit_to_viewport()
+	_place_panel()
 	_rebuild()
+	# Ukuran jendela berubah selagi dialog terbuka (resize/maximize/rotasi):
+	# MobileLayout.layout_changed selalu membawa ukuran viewport yang segar,
+	# jadi tata letak tidak bergantung urutan dengan NOTIFICATION_RESIZED.
+	MobileLayout.layout_changed.connect(_place_panel)
 
 
 func _notification(what: int) -> void:
 	# Root full-rect ikut berubah saat viewport di-resize selagi dialog
-	# terbuka (resize jendela / rotasi) — panel di-fit ulang.
+	# terbuka (resize jendela / rotasi) — panel diletakkan ulang seketika.
+	# Ukuran viewport-nya SENDIRI datang lewat MobileLayout.layout_changed
+	# (dari root.size_changed), jadi tidak perlu membaca ulang di sini:
+	# satu sumber angka, dan urutan notifikasi tidak jadi soal.
 	if what == NOTIFICATION_RESIZED:
-		_fit_to_viewport()
+		_place_panel()
 
 
-## Panel 920x580 diskalakan seragam dari tengah supaya SELALU muat di
-## viewport (margin FIT_MARGIN). Di 1280x720 skala = 1 (persis desain
-## pygame); di jendela lebih kecil / portrait / tanpa stretch, dialog
-## mengecil proporsional alih-alih terpotong keluar frame. Input mouse
-## tetap akurat (engine memetakan klik ke kontrol yang diskalakan).
-func _fit_to_viewport() -> void:
+## Panel 920x580 dipusatkan pada FRAME ARENA 1280x720 (pusat peta, paritas
+## `cx, cy = SCREEN_WIDTH//2, SCREEN_HEIGHT//2` pygame) dan diskalakan seragam
+## supaya SELALU muat di bagian frame yang terlihat (margin FIT_MARGIN).
+## Di 1280x720 skala = 1 (persis desain pygame); di jendela lebih kecil /
+## portrait / tanpa stretch dialog mengecil proporsional alih-alih terpotong
+## keluar frame. Input mouse tetap akurat (engine memetakan klik ke kontrol
+## yang diskalakan).
+func _place_panel() -> void:
 	if _panel == null:
 		return
-	var vp := get_viewport_rect().size
-	if vp.x <= 0.0 or vp.y <= 0.0:
+	if MobileLayout.viewport_size.x <= 0.0 or MobileLayout.viewport_size.y <= 0.0:
 		return
-	var s := minf(1.0, minf((vp.x - FIT_MARGIN) / DW,
-		(vp.y - FIT_MARGIN) / DH))
-	s = clampf(s, MIN_SCALE, 1.0)
+	MobileLayout.place_in_arena(_panel, Vector2.ZERO, Vector2(DW, DH))
+	var s := clampf(MobileLayout.arena_fit_scale(Vector2(DW, DH), FIT_MARGIN),
+		MIN_SCALE, 1.0)
 	_panel.pivot_offset = Vector2(DW * 0.5, DH * 0.5)
 	_panel.scale = Vector2(s, s)
 

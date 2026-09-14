@@ -490,9 +490,14 @@ func _test_menu_surfaces_localized() -> void:
 				# Gate intisari permintaan user: TIDAK ADA satu pun label
 				# Indonesia yang tersisa di layar berbahasa Inggris.
 				for f in flat:
+					# `forbidden.get()` — BUKAN `forbidden[f]`: GDScript
+					# mengevaluasi SEMUA argumen sebelum _expect() dipanggil,
+					# jadi `forbidden[f]` meledak (Invalid access to property
+					# or key) justru pada label yang SAH (tidak ada di tabel
+					# Indonesia) dan membatalkan sisa audit layar.
 					_expect(not forbidden.has(f),
 						"en/%s: label masih Indonesia '%s' (kunci %s)" % [
-							state_name, f, forbidden[f]])
+							state_name, f, forbidden.get(f, "")])
 	for m in menus:
 		m.queue_free()
 	GameManager.apply_language("id")
@@ -513,7 +518,26 @@ func _surface_texts(menu) -> Array:
 
 
 func _collect_texts(node: Node, out: Array) -> void:
-	if node is Label:
+	# Widget proyek ini menggambar teksnya SENDIRI di `_draw()` dan tidak
+	# memakai `Label`/`Button` bawaan (`Button.text` dikosongkan supaya font
+	# native tidak menimpa visual custom) — jadi audit wajib membaca sumber
+	# teksnya, bukan properti bawaan. Tanpa ini seluruh tombol menu dan
+	# SELURUH judul layar (`ScreenTitle`) tidak terlihat: sentinel `en/MAIN`
+	# "PLAY GAME"/"HOW TO PLAY"/"QUIT GAME" + `en|id/*` judul layar selalu
+	# "hilang" dan gate closed-world (tak boleh ada label Indonesia di layar
+	# `en`) ikut buta — penyebab LocalizationParityTest merah di CI.
+	if node is PygameButton:
+		out.append((node as PygameButton).label_text)
+	elif node is PygameChip:
+		out.append((node as PygameChip).label_text)
+		out.append((node as PygameChip).value_text)
+	elif node is OptionCycler:
+		out.append((node as OptionCycler).label_text)
+		out.append(str((node as OptionCycler).value_text()))
+	elif node is ScreenTitle:
+		out.append((node as ScreenTitle).text)
+		out.append((node as ScreenTitle).sub_text)
+	elif node is Label:
 		out.append((node as Label).text)
 	elif node is Button:
 		out.append((node as Button).text)
