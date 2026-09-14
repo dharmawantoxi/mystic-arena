@@ -1,307 +1,262 @@
-# KaizenSkeleton.gd — Godot Skeleton2D port dari _NS_kaizen (Pygame 2906 baris → GPU bones)
-# Ini adalah “Spine versi Godot native”: 19 tulang, bukan PNG.
-# Visual naik drastis: 2.9ms CPU pygame → 0.4ms GPU, 60fps tulang interpolasi, shader hamon + wind ribbon GPU.
+# KaizenSkeleton.gd — root controller karakter Kaizen (v4 rebuild).
+#
+# Arsitektur modular (satu script = satu tanggung jawab):
+#   KaizenSkeleton.gd  (root: state, blending, drive() API, sinyal)
+#   ├── KaizenAnimator.gd   (state → pose target)
+#   ├── KaizenRenderer.gd   (pose → gambar _draw() berlapis)
+#   └── KaizenSkillFX.gd    (skill key → urutan VFX pooled)
+#
+# Kontrak dengan Hero.gd (tidak berubah dari rig lama):
+#   * drive(phase, action, attack_progress, facing, is_moving, skill, delta)
+#     dipanggil Hero._drive_visual tiap physics frame.
+#   * Digambar menghadap +x; Hero mem-flip Visual.scale.x — rig TIDAK
+#     melakukan flip sendiri (menghindari double-flip).
+#   * handles_skill_fx() = true → Hero melewatkan FX skill generik supaya
+#     tidak dobel (NO VISUAL NOISE).
+#
+# Kontrak demo/showcase: play("hurt"/"death"/"victory"/"run", durasi)
+# memaksa state sementara di luar drive() Hero.
+class_name KaizenSkeleton
 extends Node2D
 
-# === KONFIGURASI RIG (paritas pygame RIG_SCALE=1.52) ===
-# Semua jarak dalam pixel lokal (hip = 0,0). Facing = 1 kanan, -1 kiri (scale.x).
-const RIG_SCALE := 1.52
-const ATTACK_WINDUP_END := 0.25
-const ATTACK_SWING_END := 0.62
-const ATTACK_ARC_START := -2.30
-const ATTACK_ARC_SWEEP := -3.05
-const ATTACK_ARC_END: float = ATTACK_ARC_START + ATTACK_ARC_SWEEP
+const AnimatorScript = preload("res://scenes/hero/kaizen/KaizenAnimator.gd")
 
-# Palette (menggantikan _NS_kaizen.PALETTE dict pygame → Color Godot)
-const PALETTE := {
-	"skin_dark": Color("#9e7256"), "skin_mid": Color("#c49670"), "skin_light": Color("#e2ba92"),
-	"hair_dark": Color("#342a22"), "hair_mid": Color("#566846"), "hair_light": Color("#8c6a46"),
-	"cloth_dark": Color("#263256"), "cloth_mid": Color("#3e5486"), "cloth_light": Color("#668ac2"),
-	"scarf_dark": Color("#2e4c94"), "scarf_mid": Color("#5482ce"), "scarf_light": Color("#88b6f2"),
-	"steel_dark": Color("#4c525e"), "steel_mid": Color("#7e8694"), "steel_light": Color("#b8beca"), "steel_shine": Color("#e6ecf6"),
-	"gold_mid": Color("#a87e2c"), "gold_light": Color("#e2ba52"),
-	"wind_mid": Color("#70b2e6"), "wind_light": Color("#b0defa"), "wind_bright": Color("#d8f2ff"),
-	"ink": Color("#141116"),
-}
+signal attack_started
+signal attack_impact
+signal skill_cast(skill_key: String)
 
-# State (di-drive oleh Hero.gd tiap frame)
-var facing: int = 1:
-	set(v):
-		facing = 1 if v >= 0 else -1
-		if skeleton:
-			skeleton.scale.x = facing
-var phase: float = 0.0 # pulse 0..T
-var action: String = "idle" # idle / walk / attack / skill_q/w/e/r
-var attack_progress: float = 0.0 # 0..1 dari Hero.attack_timer
-var skill: String = ""
-var is_moving: bool = false
+## Dipakai Hero.gd untuk memilih renderer; dipertahankan dari rig lama.
+const ATTACK_IMPACT_PROGRESS := 0.55
 
-# Bones (di-cache di _ready)
-var skeleton: Skeleton2D
-var bones: Dictionary = {} # name -> Bone2D
-var visuals: Dictionary = {} # name -> Polygon2D/Sprite2D
+@onready var renderer: KaizenRenderer = $Renderer
+@onready var skill_fx: KaizenSkillFX = $SkillFX
 
-# Inertia untuk scarf/ponytail (menggantikan _draw_floating_wind hash pygame)
-var scarf_vel := Vector2.ZERO
-var ponytail_vel := Vector2.ZERO
-# Trail buffer untuk wind ribbon (mirip pygame blade_trail 6 point)
-var katana_trail: Array = []
+var animator = null
+var pose_current = null
 
-func _ready():
-	skeleton = $Skeleton2D
-	_cache_bones()
-	_build_visuals() # buat Polygon2D placeholder HD (ganti dengan Texture nanti)
-	# Daftarkan ke group untuk debug
+## State override dari play() (demo / showcase).
+var _override_state := ""
+var _override_t := 0.0
+var _override_dur := 0.0
+
+## Lacak skill aktif untuk skill_t (detik sejak cast).
+var _skill_key := ""
+var _skill_time := 0.0
+var _attack_started_emitted := false
+var _impact_emitted := false
+var _prev_pos := Vector2.ZERO
+var _hero = null
+var _hero_hp := -1.0
+var facing: int = 1
+
+
+func _ready() -> void:
 	add_to_group("kaizen_skeleton")
+	animator = AnimatorScript.new()
+	pose_current = animator.compute("idle", 0.0, 0.0, 0.0, {})
+	_prev_pos = global_position
+	# Hero (kalau ada di arena) = kakek node: Hero/Visual/<rig>.
+	skill_fx.resolve_hero()
+	var n: Node = get_parent()
+	if n != null:
+		n = n.get_parent()
+	if n != null and "hp" in n and "kit" in n:
+		_hero = n
+		_hero_hp = float(_hero.hp)
 
-func _cache_bones():
-	for b in skeleton.get_children():
-		_cache_recursive(b)
 
-func _cache_recursive(node: Node):
-	if node is Bone2D:
-		bones[node.name] = node
-		# visuals adalah child Polygon2D/Sprite2D dari Bone2D
-		for child in node.get_children():
-			if child is Polygon2D or child is Sprite2D or child is Line2D:
-				visuals[node.name] = child
-	for child in node.get_children():
-		_cache_recursive(child)
+## API Hero.gd — dipanggil tiap physics frame.
+func drive(p_phase: float, p_action: String, p_attack_progress: float,
+		p_facing: int, p_moving: bool, p_skill: String,
+		p_delta: float = 0.016) -> void:
+	var delta := p_delta if p_delta > 0.0 else get_process_delta_time()
+	facing = 1 if p_facing >= 0 else -1
+	var phase := p_phase
+	var ap := clampf(p_attack_progress, 0.0, 1.0)
 
-# Dipanggil Hero.gd tiap _physics_process (menggantikan _update_attack_anim + draw_kaizen)
-func drive(p_phase: float, p_action: String, p_attack_progress: float, p_facing: int, p_moving: bool, p_skill: String, p_delta: float = 0.016):
-	phase = p_phase
-	action = p_action
-	attack_progress = clamp(p_attack_progress, 0.0, 1.0)
-	facing = p_facing
-	is_moving = p_moving
-	skill = p_skill
-	_update_bones()
-	_update_inertia(p_delta if p_delta > 0.0 else get_process_delta_time())
-	_update_katana_hamon() # shader hamon berkilau saat attack
-	_update_wind_ribbon() # scarf + ponytail ribbon
+	animator.tick(delta)
+	_watch_hero()
+	_track_skill(p_skill, delta)
 
-func _update_bones():
-	if bones.is_empty():
-		return
-	# === 1. ROOT MOTION: bob napas + lean ===
-	var breath = sin(phase * 0.78) * 2.2
-	var stride = sin(phase * 1.72) if action == "walk" else 0.0
-	var root_y = breath
-	var sway = 0.0
-	var lean = 0.0
-	if action == "walk":
-		root_y = sin(phase * 2.0) * 2.5 - 2.0
-		sway = sin(phase) * 3.0
-		lean = (4 + abs(stride)*2) * facing
-	elif action == "attack":
-		var ap = attack_progress
-		var pose = _attack_pose(ap)
-		root_y = pose["bob"]
-		lean = pose["lean"] * facing
-		sway = pose["sway"]
-	else: # idle
-		root_y = breath
-		sway = sin(phase * 0.5) * 2.0
-		lean = sin(phase * 0.5 + 1.2) * 1.5 * facing
+	# ── State efektif: override (play) > skill > attack > gerak > idle ──
+	var state := _derive_state(p_action, p_moving, p_skill)
+	var extra := {}
+	if _override_state != "":
+		_override_t += delta
+		extra["t"] = clampf(_override_t / maxf(0.001, _override_dur), 0.0, 1.0)
+		state = _override_state
+		if _override_t >= _override_dur:
+			_override_state = ""
 
-	# Apply ke Hips (root gerak)
-	if "Hips" in bones:
-		bones["Hips"].position.y = root_y
-		bones["Hips"].position.x = lean + sway
+	# ── Sinyal combat feel (dipakai demo; sistem lain boleh listen) ──
+	_emit_combat_signals(state, ap)
 
-	# === 2. HEAD BOB (kontra-rotasi, mirip _head_bob pygame) ===
-	if "Head" in bones:
-		var head_bob = sin(phase * 0.9 + 1.1) * 1.5
-		if action == "attack":
-			head_bob = -attack_progress * 6.0
-		bones["Head"].rotation_degrees = -lean * 0.35 + head_bob
-		bones["Head"].position.y = head_bob * 0.5
+	# ── Pose target + blending (transisi halus, anti-robotic) ──
+	var skill_t := _skill_time if p_skill != "" else 0.0
+	var target = animator.compute(state, phase, ap, skill_t, extra)
+	var rate := _blend_rate(state)
+	var k := 1.0 - exp(-rate * delta)
+	_blend_pose(pose_current, target, k)
 
-	# === 3. KAKI: foot solver (menapak/terangkat, mirip _draw_footfall_dust) ===
-	var front_step = int(stride * 8) if action == "walk" else 0
-	var rear_step = -front_step
-	var front_lift = int(max(0.0, cos(phase * 1.72)) * 10) if action == "walk" else 0
-	var rear_lift = int(max(0.0, -cos(phase * 1.72)) * 10) if action == "walk" else 0
-	if "LLegUpper" in bones and "RLegUpper" in bones:
-		bones["LLegUpper"].position.x = front_step * 0.5
-		bones["LLegLower"].position.y = -front_lift * 0.6
-		bones["RLegUpper"].position.x = rear_step * 0.5
-		bones["RLegLower"].position.y = -rear_lift * 0.6
-		# Foot stay planted: inverse kinematics sederhana
-		bones["LFoot"].rotation_degrees = -front_step * 0.8 + front_lift * 2.0
-		bones["RFoot"].rotation_degrees = -rear_step * 0.8 + rear_lift * 2.0
+	# ── Serahkan ke renderer + trail + skill FX ──
+	renderer.pose = pose_current
+	renderer.phase = phase
+	_update_trail(pose_current)
+	renderer.queue_redraw()
+	skill_fx.prev_pos = _prev_pos
+	skill_fx.notify_drive(p_skill, global_position, facing, delta)
+	_prev_pos = global_position
 
-	# === 4. LENGAN + KATANA: busur pose-driven (1 sumber kebenaran) ===
-	_update_arm_katana()
 
-	# === 5. PONTAIL & SCARF: inertia tail (lag physics) ===
-	# Rotasi tulang ekor di-update di _update_inertia (velocity based)
+## Showcase/demo: paksa state (hurt/death/victory/run) selama `dur` detik.
+func play(state: String, dur: float = 0.5) -> void:
+	_override_state = state
+	_override_t = 0.0
+	_override_dur = maxf(0.05, dur)
 
-func _attack_pose(ap: float) -> Dictionary:
-	# Keyframe sama persis dengan pygame _NS_kaizen._attack_pose
-	var keys = [
-		[0.00, 0, 1, 1.00, 0.0],
-		[0.12, 4, -6, 1.12, 0.0],
-		[0.26, 5, -7, 1.20, 1.0],
-		[0.42, -2, 7, 1.10, 0.0],
-		[0.55, 5, 9, 1.05, 0.0], # IMPACT HOLD 4-5 frame
-		[0.72, 1, 5, 1.02, 0.0],
-		[1.00, 0, 1, 1.00, 0.0],
-	]
-	ap = clamp(ap, 0.0, 1.0)
-	for i in range(keys.size() - 1):
-		var k0 = keys[i]
-		var k1 = keys[i+1]
-		if k0[0] <= ap and ap <= k1[0]:
-			var span = max(0.0001, k1[0] - k0[0])
-			var t = (ap - k0[0]) / span
-			t = t * t * (3 - 2 * t) # smoothstep
-			return {
-				"bob": int(round(k0[1] + (k1[1]-k0[1])*t)),
-				"lean": int(round(k0[2] + (k1[2]-k0[2])*t)),
-				"flare": k0[3] + (k1[3]-k0[3])*t,
-				"sway": 1 if (k0[4] == 1 and t < 0.9) else 0
-			}
-	return {"bob":0, "lean":1, "flare":1.0, "sway":0}
 
-func _katana_angle(ap: float) -> float:
-	# Busur katana: ATTACK_ARC_START -> ATTACK_ARC_END (negatif = ke depan)
-	if ap < ATTACK_WINDUP_END:
-		var t = ap / ATTACK_WINDUP_END
-		t = 1.0 - pow(1.0 - t, 2.0)
-		return -0.55 - t * 1.75
-	if ap < ATTACK_SWING_END:
-		var t = (ap - ATTACK_WINDUP_END) / (ATTACK_SWING_END - ATTACK_WINDUP_END)
-		t = pow(t, 1.35)
-		return ATTACK_ARC_START + ATTACK_ARC_SWEEP * t
-	if ap >= 1.0:
-		return 0.12
-	var t = (ap - ATTACK_SWING_END) / (1.0 - ATTACK_SWING_END)
-	t = t * t * (3.0 - 2.0 * t)
-	return (ATTACK_ARC_END + 2.0 * PI) - t * 0.813
+## Hero.gd melewatkan FX skill generik bila rig menanganinya sendiri.
+func handles_skill_fx(_key: String) -> bool:
+	return true
 
-func _update_arm_katana():
-	if "LArmUpper" in bones and "Katana" in bones:
-		var ap = attack_progress if action == "attack" else 0.0
-		var ang = _katana_angle(ap)
-		var grip_local = _katana_grip_local(ap)
-		# Simplified IK: rotasi lengan atas & bawah menuju grip (shoulder di bones["LArmUpper"])
-		bones["LArmUpper"].rotation = ang * 0.6
-		bones["LArmLower"].rotation = ang * 0.45
-		# Katana rotasi = sudut busur
-		bones["Katana"].rotation = ang
-		# Katana posisi = grip
-		bones["Katana"].position = Vector2(grip_local.x, grip_local.y) * 0.9
-		# RArm menopang saya (sarung) di pinggang
-		if "RArmUpper" in bones:
-			bones["RArmUpper"].rotation_degrees = -18 + sin(phase*0.7)*3
-			bones["RArmLower"].rotation_degrees = 12
 
-func _katana_grip_local(ap: float) -> Vector2:
-	if ap < ATTACK_WINDUP_END:
-		var t = ap / ATTACK_WINDUP_END
-		return Vector2(14 + 6*t, 1 - 28*t)
-	if ap < ATTACK_SWING_END:
-		var t = (ap - ATTACK_WINDUP_END) / (ATTACK_SWING_END - ATTACK_WINDUP_END)
-		if t < 0.45:
-			var u = t / 0.45
-			return Vector2(20 + 16*u, -27 + 6*u)
-		var u = (t - 0.45)/0.55
-		u = u*u
-		return Vector2(36 + 3*u, -21 + 30*u)
-	var t = (ap - ATTACK_SWING_END) / (1.0 - ATTACK_SWING_END)
-	return Vector2(39 - 22*t, 9 - 6*t)
+# ══════════════════════════════════════════════════════════
+#  INTERNAL
+# ══════════════════════════════════════════════════════════
 
-func _update_inertia(delta: float):
-	# Scarf & Ponytail lag physics: velocity mengejar target, rotasi = velocity.x
-	var target_scarf = Vector2(sin(phase*1.18)*4, 0)
-	var target_pony = Vector2(sin(phase*1.35)*3, sin(phase*0.9)*1)
-	scarf_vel = scarf_vel.lerp(target_scarf, delta * 6.0)
-	ponytail_vel = ponytail_vel.lerp(target_pony, delta * 7.0)
-	if "ScarfTip" in bones:
-		bones["ScarfMid"].rotation_degrees = scarf_vel.x * 4.0
-		bones["ScarfTip"].rotation_degrees = scarf_vel.x * 7.0
-	if "PonytailMid" in bones:
-		bones["PonytailMid"].rotation_degrees = ponytail_vel.x * 5.0
-		bones["PonytailTip"].rotation_degrees = ponytail_vel.x * 9.0
-	# Flare saat attack: ponytail flare
+func _derive_state(action: String, moving: bool, skill: String) -> String:
+	if skill != "":
+		match skill:
+			"q":
+				return "skill_dash" if _is_dash_variant() else "skill_q"
+			"w":
+				return "skill_w"
+			"e":
+				return "skill_e"
+			"r":
+				return "skill_r"
 	if action == "attack":
-		var flare = _attack_pose(attack_progress)["flare"]
-		if "PonytailBase" in bones:
-			bones["PonytailBase"].scale = Vector2(1, flare)
+		return "attack"
+	if action == "walk" or moving:
+		return "walk"
+	return "idle"
 
-func _update_katana_hamon():
-	# Hamon (garis temper) berkilau saat attack: shader param time
-	if "Katana" in visuals and visuals["Katana"] is Polygon2D:
-		var poly = visuals["Katana"] as Polygon2D
-		if poly.material and poly.material is ShaderMaterial:
-			var mat = poly.material as ShaderMaterial
-			mat.set_shader_parameter("time", phase * 2.0)
-			mat.set_shader_parameter("attack_t", attack_progress if action=="attack" else 0.0)
 
-func _update_wind_ribbon():
-	var ribbon = get_node_or_null("Skeleton2D/WindRibbon") as Line2D
-	if not ribbon:
+## Q2 Dash Strike vs Q1 Steel Wind: kit menandai dash; fallback = lompatan
+## posisi (teleport 70% jarak target terjadi di frame cast).
+func _is_dash_variant() -> bool:
+	if _hero != null and is_instance_valid(_hero):
+		if bool(_hero.kit.get("_is_dashing", false)):
+			return true
+	return _prev_pos.distance_to(global_position) > 24.0
+
+
+func _track_skill(skill: String, delta: float) -> void:
+	if skill == "":
+		_skill_key = ""
+		_skill_time = 0.0
 		return
-	# update trail buffer tiap frame saat attack
-	if action == "attack":
-		if "Katana" in bones:
-			var tip_global = bones["Katana"].to_global(Vector2(0.35, -52)) # ujung bilah
-			katana_trail.append(tip_global)
-			if katana_trail.size() > 6:
-				katana_trail.remove_at(0)
-		else:
-			katana_trail.clear()
+	if skill != _skill_key:
+		_skill_key = skill
+		_skill_time = 0.0
+		skill_cast.emit(skill)
 	else:
-		if katana_trail.size() > 0:
-			katana_trail.remove_at(0)
-		if katana_trail.is_empty():
-			ribbon.visible = false
-			return
+		_skill_time += delta
 
-	if action == "attack" and 0.30 < attack_progress and attack_progress < 0.88 and katana_trail.size() >= 2:
-		ribbon.visible = true
-		ribbon.width = 7.0 * (1.0 - abs(attack_progress - 0.55) * 1.2)
-		var pts: PackedVector2Array = []
-		for wp in katana_trail:
-			# ribbon is child of Skeleton2D → convert global → Skeleton2D local
-			pts.append(ribbon.to_local(wp))
-		ribbon.points = pts
-		ribbon.modulate.a = 0.85
+
+func _emit_combat_signals(state: String, ap: float) -> void:
+	if state == "attack":
+		if not _attack_started_emitted:
+			_attack_started_emitted = true
+			_impact_emitted = false
+			attack_started.emit()
+		if not _impact_emitted and ap >= ATTACK_IMPACT_PROGRESS:
+			_impact_emitted = true
+			attack_impact.emit()
 	else:
-		ribbon.visible = katana_trail.size() >= 2
-		if ribbon.visible:
-			var pts: PackedVector2Array = []
-			for wp in katana_trail:
-				pts.append(ribbon.to_local(wp))
-			ribbon.points = pts
-			ribbon.modulate.a = 0.35
-		else:
-			ribbon.modulate.a = 0.0
+		_attack_started_emitted = false
 
-func _katana_tip_local(ap: float) -> Vector2:
-	# Analytic fallback (untuk API get_katana_tip_global tanpa bone)
-	var ang = _katana_angle(ap)
-	var blade_len = 52.0 if ap < ATTACK_SWING_END else 58.0 - 6.0 * ((ap - ATTACK_SWING_END)/(1.0 - ATTACK_SWING_END))
-	return Vector2(sin(ang) * blade_len, cos(ang) * blade_len - 10.0)
 
-func _build_visuals():
-	# Buat Polygon2D placeholder untuk tiap tulang (jika belum ada).
-	# Nanti ganti dengan Sprite2D + Texture HD (Aseprite). Sekarang warna flat + shader.
-	# Dipanggil sekali di _ready. Jika scene sudah punya Polygon2D, skip.
-	if visuals.size() > 0:
+## Deteksi kena pukul dari HP hero → pose hurt singkat (tanpa coupling:
+## hanya baca properti, tanpa sinyal lintas-node).
+func _watch_hero() -> void:
+	if _hero == null or not is_instance_valid(_hero):
 		return
-	# Fallback: skeleton sudah lengkap via tscn Polygon2D, tidak perlu generate runtime.
+	var hp_now := float(_hero.hp)
+	if hp_now < _hero_hp - 0.5 and _override_state == "":
+		play("hurt", 0.3)
+	_hero_hp = hp_now
 
-# === API untuk Hero.gd: posisi ujung katana untuk spawn projectile / FX ===
+
+func _update_trail(p) -> void:
+	if p.trail:
+		renderer.trail_pts.append(
+			renderer.to_global(renderer.get_blade_tip_local()))
+		if renderer.trail_pts.size() > 9:
+			renderer.trail_pts.remove_at(0)
+	elif not renderer.trail_pts.is_empty():
+		renderer.trail_pts.remove_at(0)
+
+
+func _blend_rate(state: String) -> float:
+	match state:
+		"attack", "skill_q", "skill_dash":
+			return 26.0
+		"skill_e", "skill_r":
+			return 24.0
+		"hurt":
+			return 20.0
+		"death":
+			return 9.0
+		"walk", "run":
+			return 12.0
+	return 10.0
+
+
+## Lerp pose-ke-pose (sudut lewat lerp_angle). `k` sudah dihitung root.
+func _blend_pose(cur, tgt, k: float) -> void:
+	k = clampf(k, 0.0, 1.0)
+	cur.root_x = lerpf(cur.root_x, tgt.root_x, k)
+	cur.root_y = lerpf(cur.root_y, tgt.root_y, k)
+	cur.torso_lean = lerp_angle(cur.torso_lean, tgt.torso_lean, k)
+	cur.chest_flex = lerp_angle(cur.chest_flex, tgt.chest_flex, k)
+	cur.head_lean = lerp_angle(cur.head_lean, tgt.head_lean, k)
+	cur.arm_f_sh = lerp_angle(cur.arm_f_sh, tgt.arm_f_sh, k)
+	cur.arm_f_el = lerp_angle(cur.arm_f_el, tgt.arm_f_el, k)
+	cur.arm_b_sh = lerp_angle(cur.arm_b_sh, tgt.arm_b_sh, k)
+	cur.arm_b_el = lerp_angle(cur.arm_b_el, tgt.arm_b_el, k)
+	cur.leg_f_hip = lerp_angle(cur.leg_f_hip, tgt.leg_f_hip, k)
+	cur.leg_f_knee = lerpf(cur.leg_f_knee, tgt.leg_f_knee, k)
+	cur.leg_f_foot = lerpf(cur.leg_f_foot, tgt.leg_f_foot, k)
+	cur.leg_b_hip = lerp_angle(cur.leg_b_hip, tgt.leg_b_hip, k)
+	cur.leg_b_knee = lerpf(cur.leg_b_knee, tgt.leg_b_knee, k)
+	cur.leg_b_foot = lerpf(cur.leg_b_foot, tgt.leg_b_foot, k)
+	cur.weapon_angle = lerp_angle(cur.weapon_angle, tgt.weapon_angle, k)
+	cur.weapon_off = cur.weapon_off.lerp(tgt.weapon_off, k)
+	for i in 3:
+		cur.scarf[i] = lerp_angle(cur.scarf[i], tgt.scarf[i], k)
+		cur.pony[i] = lerp_angle(cur.pony[i], tgt.pony[i], k)
+	for i in 2:
+		cur.band[i] = lerp_angle(cur.band[i], tgt.band[i], k)
+	cur.skirt_flare = lerpf(cur.skirt_flare, tgt.skirt_flare, k)
+	cur.eye_blink = lerpf(cur.eye_blink, tgt.eye_blink, k)
+	cur.wind_glow = lerpf(cur.wind_glow, tgt.wind_glow, k)
+	cur.hurt_tint = lerpf(cur.hurt_tint, tgt.hurt_tint, k)
+	cur.alpha = lerpf(cur.alpha, tgt.alpha, k)
+	# trail: ambil dari target (keputusan animator), bukan diblend.
+	cur.trail = tgt.trail
+
+
+# ══════════════════════════════════════════════════════════
+#  API PUBLIK LAMA (dipakai KaizenDemo + sistem FX)
+# ══════════════════════════════════════════════════════════
+
 func get_katana_tip_global() -> Vector2:
-	if "Katana" in bones:
-		# Blade tip = local offset (0, -52) rotated by bone
-		return bones["Katana"].to_global(Vector2(0.35, -52))
-	return global_position
+	return renderer.to_global(renderer.get_blade_tip_local())
+
 
 func get_katana_grip_global() -> Vector2:
-	if "Katana" in bones:
-		return bones["Katana"].global_position
-	return global_position
+	if renderer.pose == null:
+		return global_position
+	var j := renderer._solve(renderer.pose)
+	return renderer.to_global(j["hand_f"])

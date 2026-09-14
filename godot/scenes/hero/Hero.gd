@@ -1187,6 +1187,12 @@ func _cast_skill(key: String) -> bool:
 
 ## FX skill: ring memancar + burst CPUParticles2D (warna mengikuti tombol)
 func play_skill_fx(key: String) -> void:
+	# Rig custom (Kaizen v4) menangani FX skill-nya sendiri lewat KaizenSkillFX
+	# + VFXManager — FX generik dilewati supaya tidak dobel (NO VISUAL NOISE).
+	if custom_visual != null and is_instance_valid(custom_visual) \
+			and custom_visual.has_method("handles_skill_fx") \
+			and custom_visual.handles_skill_fx(key):
+		return
 	var col := Color(1.0, 0.85, 0.4)
 	match key:
 		"w": col = Color(0.5, 0.9, 1.0)
