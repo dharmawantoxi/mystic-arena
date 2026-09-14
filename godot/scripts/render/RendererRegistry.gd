@@ -1,13 +1,17 @@
 # RendererRegistry.gd — daftar renderer CUSTOM per unit.
 #
-# Default arena mengutamakan strip bake renderer pygame. Rig hand-made
-# (Kaizen) adalah showcase/opt-in, bukan pengganti visual asli secara diam-diam.
-# Aktifkan mystic/rendering/experimental_hero_rigs untuk mencoba rig custom.
+# Default arena mengutamakan strip bake renderer pygame (kontrak paritas
+# dikunci GameplayParityTest). Rig Kaizen v4 (rebuild Godot native:
+# renderer prosedural berlapis + animator pose + KaizenSkillFX +
+# VFXManager pooled) adalah showcase/opt-in, bukan pengganti visual asli
+# secara diam-diam. Aktifkan mystic/rendering/experimental_hero_rigs
+# untuk memakainya di arena; KaizenDemo.tscn selalu memakai rig langsung.
 # Minion belum punya jalur bake (tetap silhouette).
 #
 # Scene custom boleh punya method drive(phase, action, attack_progress,
 # facing, is_moving, skill, delta) — kalau ada, Hero.gd memanggilnya
-# tiap frame (paritas KaizenSkeleton.gd).
+# tiap frame (paritas KaizenSkeleton.gd). Rig yang menangani FX skill
+# sendiri menyediakan handles_skill_fx(key) -> bool.
 extends Object
 
 const BakedUnitDB = preload("res://scripts/render/BakedUnitDB.gd")

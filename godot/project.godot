@@ -36,6 +36,7 @@ TowerDB="*res://scripts/core/TowerDB.gd"
 ItemDB="*res://scripts/core/ItemDB.gd"
 CombatSystem="*res://scripts/systems/CombatSystem.gd"
 AudioManager="*res://scripts/autoload/AudioManager.gd"
+VFXManager="*res://scripts/vfx/VFXManager.gd"
 MobileLayout="*res://scripts/autoload/MobileLayout.gd"
 AppShell="*res://scripts/autoload/AppShell.gd"
 
