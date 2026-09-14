@@ -8,6 +8,13 @@
 # (_apply_touch_action) mencapai efek pygame-nya (pause/skip/replay/
 # next/menu/debug/back) termasuk guard-nya.
 #
+# KELUHAN PEMAIN (2026-09-14):
+#   * tombol SKIP dihapus dari render — mati permanen di gerbang
+#     _sync_visibility (data HudLayout tetap utuh, hanya render dipotong);
+#   * badge LEVEL/WAVE dikembalikan rata kiri x=18 dan DITURUNKAN ke bawah
+#     tombol PAUSE lewat PauseGap 84px (badge mulai y=158, 16px di bawah
+#     area sentuh PAUSE 62..142).
+#
 # godot --headless --path godot res://tests/TouchHudParityTest.tscn --quit-after 300
 extends Node
 
@@ -27,7 +34,7 @@ var _taps: Array = []
 ## Cinematic palsu untuk uji watchdog: klaimnya bisa dinyalakan/dimatikan dan
 ## node ini MEMENUHI kontrak bukti-hidup Main._cine_live (benar-benar di tree
 ## + benar-benar memproses frame), supaya yang diuji adalah klaim basi dari
-## node hidup — persis keluhan "SKIP menempel selama wave".
+## node hidup — persis keluhan "PAUSE hilang selama wave".
 class FakeCine:
 	extends Node
 
@@ -135,13 +142,20 @@ func _run() -> void:
 		_expect(hit.encloses(r), "hit %s memuat rect" % action)
 
 	_step("matriks visibilitas")
-	# set_state_key = matriks MURNI (tanpa override panel — itu sync).
+	# set_state_key = matriks + DEVIASI SKIP: tombol skip sengaja dimatikan
+	# permanen di _sync_visibility (satu-satunya gerbang render), jadi untuk
+	# SEMUA kunci skip harus false — walau matriks kanon TOUCH_VISIBILITY
+	# masih mencantumkan skip=true di game_playing_cine (data sengaja
+	# dibiarkan utuh supaya fixture touchhud + UiHudParityTest tetap cocok).
 	_touch.show_debug_button = true
 	for key in HudLayout.TOUCH_VISIBILITY:
 		_touch.set_state_key(str(key))
 		var want: Dictionary = HudLayout.touch_visibility(str(key))
 		for action in HudLayout.TOUCH_BUTTONS:
-			_expect(_btn_visible(str(action)) == bool(want.get(action, false)),
+			var want_visible: bool = bool(want.get(action, false))
+			if str(action) == "skip":
+				want_visible = false
+			_expect(_btn_visible(str(action)) == want_visible,
 				"[%s] %s" % [key, action])
 
 	_step("sembunyi di menu")
@@ -168,9 +182,10 @@ func _run() -> void:
 		"intro aktif setelah start")
 	_touch.sync_from_match()
 	_expect(_touch.visible, "TouchHUD tampil di match")
-	_expect(_btn_visible("skip"), "SKIP tampil saat intro")
+	_expect(not _btn_visible("skip"), "SKIP tidak pernah tampil (dihapus dari render)")
 	_expect(not _btn_visible("pause"), "pause sembunyi saat intro")
-	# SKIP positif via router (paritas handle_skip SPACE).
+	# Aksi skip via router tetap diterjemahkan penuh (paritas
+	# apply_hud_action "skip" pygame) walau tombolnya tak pernah digambar.
 	_main._apply_touch_action("skip")
 	_expect(not get_tree().paused, "skip router membuka pause intro")
 	_expect(not is_instance_valid(intro) or not intro.cinematic_active(),
@@ -178,79 +193,92 @@ func _run() -> void:
 	_touch.sync_from_match()
 	_expect(_btn_visible("pause"), "pause tampil setelah intro")
 	_expect(_btn_visible("debug"), "debug tampil (flag uji)")
-	_expect(not _btn_visible("skip"), "SKIP hilang setelah intro")
+	_expect(not _btn_visible("skip"), "SKIP tetap tersembunyi setelah intro")
 
-	_step("SKIP hilang BERSAMAAN dengan intro (tanpa tick _process)")
-	# Keluhan pemain: tombol SKIP baru hilang setelah tekan ESC. Penyebabnya
+	_step("PAUSE kembali BERSAMAAN dengan usainya intro (tanpa tick _process)")
+	# Keluhan pemain lama: tombol baru pulih setelah tekan ESC. Penyebabnya
 	# HUD hanya menghitung ulang matriksnya di tick _process berikutnya,
 	# sementara jalur ESC malah mencuri pause intro sehingga klaim cine tidak
-	# pernah lepas. Sekarang Main mem-resync TouchHUD SEKETIKA di dalam
-	# jalur skip, jadi buktinya: TANPA memanggil sync_from_match sendiri,
-	# tombolnya sudah benar.
+	# pernah lepas. Sekarang Main mem-resync TouchHUD SEKETIKA di dalam jalur
+	# skip. Tombol SKIP sendiri sudah dimatikan permanen, jadi yang diuji di
+	# sini adalah PAUSE: TANPA memanggil sync_from_match sendiri, matriksnya
+	# sudah benar.
 	GameManager.state = "playing"
 	_main._show_level_intro()
 	for _i in range(2):
 		await get_tree().process_frame
 	var intro_live = _main.get("_level_intro")
 	_expect(is_instance_valid(intro_live), "intro uji resync muncul")
-	_expect(_btn_visible("skip"), "SKIP menyala seketika bersama intro")
+	_expect(not _btn_visible("skip"), "SKIP tetap tersembunyi selama intro")
 	_expect(not _btn_visible("pause"), "pause sembunyi seketika saat intro")
 	# ESC selama intro: intro TIDAK ditutup (paritas handle_skip) dan pause
-	# intro tidak dicuri — tombol harus tetap di matriks cine, bukan macet.
+	# intro tidak dicuri — matriks harus tetap di cine, bukan macet.
 	var esc := InputEventKey.new()
 	esc.keycode = KEY_ESCAPE
 	esc.pressed = true
 	_main._on_key(esc)
 	_expect(get_tree().paused, "ESC selama intro tidak mencuri pause intro")
-	_expect(_btn_visible("skip"), "SKIP tetap tampil setelah ESC di intro")
-	# SPACE menutup intro -> SKIP hilang PADA SAAT ITU JUGA.
+	_expect(not _btn_visible("skip"), "SKIP tetap tersembunyi setelah ESC di intro")
+	_expect(not _btn_visible("pause"), "PAUSE tetap sembunyi selama intro")
+	# SPACE menutup intro -> PAUSE kembali PADA SAAT ITU JUGA.
 	var spc := InputEventKey.new()
 	spc.keycode = KEY_SPACE
 	spc.pressed = true
 	_main._on_key(spc)
 	_expect(not get_tree().paused, "SPACE menutup intro + melepas pause")
 	_expect(not _btn_visible("skip"),
-		"SKIP hilang bersamaan dengan intro (resync seketika)")
+		"SKIP tetap tersembunyi bersamaan dengan usainya intro")
 	_expect(_btn_visible("pause"), "PAUSE kembali bersamaan dengan intro usai")
 	for _i in range(2):
 		await get_tree().process_frame
 
-	_step("badge LEVEL/WAVE keluar dari area sentuh PAUSE")
-	# Keluhan kedua: tombol PAUSE menutupi badge LEVEL/WAVE. Rect tombolnya
-	# kanon pygame (mobile/hud.py _by=76) dan TIDAK boleh digeser — yang
-	# digeser barisan badge-nya lewat LevelBadgeRow + spacer 78px.
-	var badge_row := _hud.find_child("LevelBadgeRow", true, false) as Control
+	_step("badge LEVEL/WAVE diturunkan di bawah area sentuh PAUSE")
+	# Keluhan pemain: badge LEVEL/WAVE tertutup tombol PAUSE. PR #245 salah
+	# arah (menggeser badge KE KANAN lewat spacer 78px, x=96), padahal posisi
+	# rata kiri aslinya sudah pas. Yang benar = TURUNKAN badge ke bawah tombol
+	# PAUSE lewat PauseGap 84px. Rect tombol PAUSE kanon pygame
+	# (mobile/hud.py _by=76) dan TIDAK boleh digeser.
 	var badge := _hud.find_child("LevelBadge", true, false) as Control
 	var top_left := _hud.find_child("TopLeft", true, false) as Control
-	_expect(badge_row != null, "LevelBadgeRow ada")
-	_expect(badge != null, "LevelBadge tetap ada")
+	var pause_gap := _hud.find_child("PauseGap", true, false) as Control
+	_expect(badge != null, "LevelBadge tetap ada (rata kiri)")
+	_expect(pause_gap != null and int(pause_gap.custom_minimum_size.y) == 84,
+		"PauseGap 84px ada (badge diturunkan)")
+	_expect(_hud.find_child("LevelBadgeRow", true, false) == null,
+		"LevelBadgeRow (PR #245) dihapus")
+	_expect(_hud.find_child("PauseSpacer", true, false) == null,
+		"PauseSpacer (PR #245) dihapus")
 	_expect(top_left != null and int(top_left.offset_left) == 18
 		and int(top_left.offset_top) == 22, "TopLeft tetap di (18,22)")
-	# Rect PAUSE tetap kanon; badge harus mulai di kanan area sentuhnya.
+	_expect(top_left != null and int(top_left.offset_bottom) == 206,
+		"offset_bottom TopLeft 206 (memuat badge yang diturunkan)")
+	# Rect PAUSE tetap kanon; badge harus mulai DI BAWAH area sentuhnya.
 	var pause_rect: Rect2 = _touch._buttons["pause"]["rect"]
 	var pause_hit: Rect2 = _touch._buttons["pause"]["hit"]
 	_expect(int(pause_rect.position.x) == 22 and int(pause_rect.position.y) == 76,
 		"rect PAUSE tetap kanon (22,76)")
-	if badge != null and top_left != null and badge_row != null:
+	if badge != null and top_left != null:
 		await get_tree().process_frame
-		# x badge = offset TopLeft + lebar spacer (dihitung dari node, bukan
-		# angka ajaib kedua): 18 + 78 = 96, di luar hit PAUSE (8..88).
-		var badge_x := top_left.offset_left + badge.position.x \
-			+ badge_row.position.x
-		var spacer := _hud.find_child("PauseSpacer", true, false) as Control
-		_expect(spacer != null and int(spacer.custom_minimum_size.x) == 78,
-			"spacer PAUSE 78px ada")
-		_expect(badge_x >= pause_hit.end.x,
-			"badge LEVEL/WAVE mulai di kanan area sentuh PAUSE (badge %.0f, hit %.0f)"
-				% [badge_x, pause_hit.end.x])
-		_expect(int(badge_x) == 96,
-			"badge mulai di x=96 (18 + spacer 78) — got %.0f" % badge_x)
+		# x badge = rata kiri TopLeft (18); y badge = offset TopLeft + posisi
+		# node (dihitung dari node, bukan angka ajaib): 22 + 136 = 158.
+		var badge_x := top_left.offset_left + badge.position.x
+		var badge_y := top_left.offset_top + badge.position.y
+		_expect(int(badge_x) == 18,
+			"badge rata kiri di x=18 — got %.0f" % badge_x)
+		_expect(badge_y >= pause_hit.end.y,
+			"badge mulai di bawah area sentuh PAUSE (badge %.0f, hit %.0f)"
+				% [badge_y, pause_hit.end.y])
+		_expect(int(badge_y) == 158,
+			"badge mulai di y=158 (16px di bawah hit PAUSE 62..142) — got %.0f"
+				% badge_y)
 		_expect(int(pause_rect.size.x) == 52 and int(pause_rect.size.y) == 52,
 			"ukuran rect PAUSE tetap 52x52 (kanon pygame)")
 
 	_step("watchdog cinematic")
-	# Keluhan yang ditutup di sini: tombol SKIP menempel selama wave (PAUSE
-	# hilang) karena sesuatu mengklaim "cinematic aktif" tanpa pernah lepas.
+	# Keluhan yang ditutup di sini: PAUSE menghilang selama wave karena
+	# sesuatu mengklaim "cinematic aktif" tanpa pernah lepas (dulu gejalanya
+	# tombol SKIP menempel; sekarang SKIP mati permanen, jadi watchdog ini
+	# menjaga PAUSE).
 	# (1) Klaim dari node yang BERHENTI memproses frame = bukti hidupnya
 	#     hilang -> Main menolaknya, HUD tidak boleh pindah ke matriks cine.
 	var dead := FakeCine.new()
@@ -269,20 +297,25 @@ func _run() -> void:
 	_expect(_main._cinematic_active(),
 		"klaim node hidup yang memproses diterima")
 	_touch.sync_from_match()
-	_expect(_btn_visible("skip"), "SKIP tampil selama klaim cinematic sah")
+	_expect(not _btn_visible("pause"),
+		"PAUSE sembunyi selama klaim cinematic sah")
+	_expect(not _btn_visible("skip"),
+		"SKIP tidak pernah tampil walau klaim cinematic sah")
 	for _i in range(int(_touch.CINE_WATCHDOG_SEC) + 2):
 		_touch.sync_from_match(1.0)
 	_expect(bool(_touch._cine_stuck),
 		"watchdog memutus + melatch klaim > %.0f dtk" % _touch.CINE_WATCHDOG_SEC)
 	_expect(_btn_visible("pause") and not _btn_visible("skip"),
-		"SKIP hilang + PAUSE kembali setelah watchdog memutus")
-	# (3) Latch bertahan selama klaim masih ada: SKIP tidak boleh berkedip
-	#     nyala lagi di wave yang sama (perilaku lama: putus-pasang berulang).
+		"PAUSE kembali setelah watchdog memutus (SKIP tetap mati)")
+	# (3) Latch bertahan selama klaim masih ada: PAUSE tidak boleh hilang
+	#     berkedip lagi di wave yang sama (perilaku lama: putus-pasang).
 	for _i in range(3):
 		_touch.sync_from_match(1.0)
-	_expect(not _btn_visible("skip"), "SKIP tidak kembali selama klaim basi")
+	_expect(_btn_visible("pause"), "PAUSE tidak hilang lagi selama klaim basi")
+	_expect(not _btn_visible("skip"), "SKIP tetap mati selama klaim basi")
 	# (4) Klaim benar-benar lepas -> latch reset setelah cooldown, jadi
-	#     cinematic berikutnya (intro level, perayaan) tetap dapat SKIP.
+	#     cinematic berikutnya (intro level, perayaan) tetap menyembunyikan
+	#     PAUSE lewat jalur normal.
 	dead.claim = false
 	_touch.sync_from_match(_touch.CINE_COOLDOWN_SEC + 0.1)
 	_expect(not bool(_touch._cine_stuck),

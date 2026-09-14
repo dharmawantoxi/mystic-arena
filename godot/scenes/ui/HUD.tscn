@@ -58,7 +58,7 @@ layout_mode = 0
 offset_left = 18.0
 offset_top = 22.0
 offset_right = 418.0
-offset_bottom = 110.0
+offset_bottom = 206.0
 mouse_filter = 2
 theme_override_constants/separation = 6
 
@@ -106,29 +106,23 @@ theme_override_font_sizes/font_size = 17
 text = "+2/s"
 vertical_alignment = 1
 
-[node name="LevelBadgeRow" type="HBoxContainer" parent="TopLeft"]
-layout_mode = 2
-size_flags_horizontal = 0
-mouse_filter = 2
-theme_override_constants/separation = 0
-
-[node name="PauseSpacer" type="Control" parent="TopLeft/LevelBadgeRow"]
-custom_minimum_size = Vector2(78, 0)
+[node name="PauseGap" type="Control" parent="TopLeft"]
+custom_minimum_size = Vector2(0, 84)
 layout_mode = 2
 mouse_filter = 2
 
-[node name="LevelBadge" type="PanelContainer" parent="TopLeft/LevelBadgeRow"]
+[node name="LevelBadge" type="PanelContainer" parent="TopLeft"]
 layout_mode = 2
 size_flags_horizontal = 0
 mouse_filter = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_level_badge")
 
-[node name="LevelRow" type="HBoxContainer" parent="TopLeft/LevelBadgeRow/LevelBadge"]
+[node name="LevelRow" type="HBoxContainer" parent="TopLeft/LevelBadge"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_constants/separation = 8
 
-[node name="ModeIcon" type="Control" parent="TopLeft/LevelBadgeRow/LevelBadge/LevelRow"]
+[node name="ModeIcon" type="Control" parent="TopLeft/LevelBadge/LevelRow"]
 custom_minimum_size = Vector2(18, 18)
 layout_mode = 2
 size_flags_vertical = 4
@@ -138,7 +132,7 @@ icon_name = "swords"
 icon_color = Color(0.470588, 0.901961, 0.588235, 1)
 icon_scale = 0.55
 
-[node name="LevelValue" type="Label" parent="TopLeft/LevelBadgeRow/LevelBadge/LevelRow"]
+[node name="LevelValue" type="Label" parent="TopLeft/LevelBadge/LevelRow"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(0.85, 0.9, 1, 1)
@@ -146,12 +140,12 @@ theme_override_fonts/font = ExtResource("4")
 theme_override_font_sizes/font_size = 13
 text = "LEVEL 1"
 
-[node name="Sep" type="VSeparator" parent="TopLeft/LevelBadgeRow/LevelBadge/LevelRow"]
+[node name="Sep" type="VSeparator" parent="TopLeft/LevelBadge/LevelRow"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_styles/separator = SubResource("StyleBoxLine_hairline")
 
-[node name="WaveValue" type="Label" parent="TopLeft/LevelBadgeRow/LevelBadge/LevelRow"]
+[node name="WaveValue" type="Label" parent="TopLeft/LevelBadge/LevelRow"]
 layout_mode = 2
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.92, 0.45, 1)

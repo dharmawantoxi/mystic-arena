@@ -4,6 +4,11 @@
 #   3. Boss mati -> BossDeathFX pause (fase kematian) -> perayaan true boss
 #      (BOSS DEFEATED! + gold reward) -> skip klik,
 #   4. Mini boss mati tanpa perayaan, FX selesai sendiri tanpa sisa pause.
+#
+# TOMBOL SKIP LAYAR (TouchHUD) sudah dihapus dari render — selama cinematic
+# mana pun ia tidak pernah tergambar; skip tetap lewat SPACE/ENTER/klik
+# (jalur pygame handle_skip yang sama, dites di bawah).
+#
 # godot --headless --path godot res://tests/CinematicTest.tscn --quit-after 240
 # Require "[CinematicTest] PASS" dan tanpa SCRIPT ERROR / Parse Error.
 extends Node
@@ -41,6 +46,12 @@ func _boot() -> void:
 	_expect(is_instance_valid(intro), "Level intro harus muncul setelah start_level")
 	_expect(get_tree().paused, "Level intro harus membekukan gameplay")
 	_expect(GameManager.is_paused, "Gold/wave harus ikut beku selama intro")
+	# ── TOMBOL SKIP LAYAR DIHAPUS (keluhan 3x): walau cinematic aktif, SKIP
+	# TouchHUD tidak pernah tergambar; skip tetap lewat SPACE/ENTER/klik.
+	var touch = get_tree().get_first_node_in_group("touch_hud")
+	if touch != null and touch.has_method("is_visible_button"):
+		_expect(not touch.is_visible_button("skip"),
+			"SKIP tidak pernah tergambar selama intro")
 	if is_instance_valid(intro):
 		# Tombol lain (mis. T) tidak boleh menutup intro — paritas handle_skip
 		# pygame hanya menerima SPACE/ENTER/klik.
@@ -51,7 +62,7 @@ func _boot() -> void:
 		# ESC/P SELAMA INTRO: pause milik intro, bukan milik menu. Kalau
 		# _toggle_pause boleh "resume" di sini, tree jalan lagi sementara
 		# intro masih tampil + masih mengklaim cinematic -> HUD terkunci di
-		# matriks cine (SKIP menempel, PAUSE tak pernah kembali).
+		# matriks cine (PAUSE tak pernah kembali).
 		for esc_code in [KEY_ESCAPE, KEY_P]:
 			_main._on_key(_key(esc_code))
 			_expect(get_tree().paused,
@@ -108,6 +119,9 @@ func _boot() -> void:
 	var banner = _main.get("_boss_banner")
 	_expect(is_instance_valid(banner), "Banner harus muncul saat mini boss spawn")
 	_expect(not get_tree().paused, "Banner boss TIDAK boleh pause gameplay")
+	if touch != null and touch.has_method("is_visible_button"):
+		_expect(not touch.is_visible_button("skip"),
+			"SKIP tidak pernah tergambar selama banner boss")
 	if is_instance_valid(banner):
 		_expect(banner.boss_name == "Gornak", "Banner harus membaca nama bosses.json")
 		_main._on_key(_key(KEY_ESCAPE))

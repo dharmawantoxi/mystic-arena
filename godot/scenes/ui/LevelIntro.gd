@@ -9,6 +9,8 @@
 #
 # Gameplay PAUSE selama intro aktif (update() pygame return lebih dulu,
 # _core.py:1978-1981); skip = SPACE / ENTER / klik (handle_skip :2752).
+# Tombol SKIP layar (TouchHUD) sudah dihapus dari render — intro tetap
+# dilewati lewat SPACE/ENTER/klik, jalur pygame yang sama.
 # Dibangun seluruhnya dari kode (tanpa .tscn) mengikuti pola MainMenu.gd.
 extends CanvasLayer
 
@@ -547,7 +549,7 @@ func take_pause_ownership() -> void:
 ## free() langsung dari _clear_field, scene diganti, atau parent-nya dibuang.
 ## Kalau itu terjadi klaimnya tidak pernah dilepas dan pause-nya tidak pernah
 ## dikembalikan: gameplay tetap beku dan HUD terkunci di matriks cinematic
-## (SKIP menempel, PAUSE hilang). Lepaskan keduanya di sini.
+## (PAUSE tersembunyi selamanya). Lepaskan keduanya di sini.
 func _exit_tree() -> void:
 	if not active:
 		return

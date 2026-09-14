@@ -1,9 +1,11 @@
 # TouchHUD.gd — HUD sentuh (port mobile/hud.py TouchHUD 1:1).
 #
 # Tombol layar pengganti keyboard: PAUSE (II) + FPS di kiri atas bawah
-# panel gold, SKIP saat cinematic, REPLAY / NEXT LEVEL / MENU setelah
-# match usai, BACK di menu. Geometri & visibilitas = kanon HudLayout
-# (TOUCH_BUTTONS / TOUCH_VISIBILITY) yang dikunci UiHudParityTest.
+# panel gold, REPLAY / NEXT LEVEL / MENU setelah match usai, BACK di menu.
+# Tombol SKIP sengaja DIMATIKAN di gerbang visibilitas (_sync_visibility)
+# — cinematic tetap bisa dilewati lewat tap di mana saja / SPACE/ENTER.
+# Geometri & visibilitas = kanon HudLayout (TOUCH_BUTTONS /
+# TOUCH_VISIBILITY) yang dikunci UiHudParityTest.
 #
 # Aksi diteruskan sebagai signal `hud_action(action)`; Main.gd
 # menerjemahkannya lewat _apply_touch_action (paritas apply_hud_action):
@@ -50,25 +52,25 @@ var _state_key: String = "menu"
 var show_debug_button: bool = false
 ## Stempel sync terakhir (kunci|panel|debug) — cegah tulis ulang tiap frame.
 var _last_sync: String = ""
-## WATCHDOG cinematic: SKIP (dan hilangnya PAUSE) hanya sah selama cinematic
-## sungguhan aktif — intro level (pause tree), banner boss ±1,7 dtk, perayaan
-## kematian ±2 dtk. Kalau sesuatu mengklaim "cinematic aktif" lebih lama dari
-## ini TANPA memegang pause, klaimnya basi (node nyangkut / flag tak pernah
-## dilepas) dan HUD terkunci di matriks game_playing_cine: SKIP menempel
-## selamanya di kanan-bawah dan PAUSE tak pernah kembali. Di situ klaimnya
-## diputus di sini supaya tombol normal lagi — self-healing, bukan menebak
-## node mana yang nyangkut.
+## WATCHDOG cinematic: PAUSE hanya boleh sembunyi selama cinematic sungguhan
+## aktif — intro level (pause tree), banner boss ±1,7 dtk, perayaan kematian
+## ±2 dtk. Kalau sesuatu mengklaim "cinematic aktif" lebih lama dari ini
+## TANPA memegang pause, klaimnya basi (node nyangkut / flag tak pernah
+## dilepas) dan HUD terkunci di matriks game_playing_cine: PAUSE tak pernah
+## kembali. Di situ klaimnya diputus supaya tombol normal lagi —
+## self-healing, bukan menebak node mana yang nyangkut. (Tombol SKIP sudah
+## dimatikan permanen di _sync_visibility, jadi watchdog ini khusus PAUSE.)
 ##
 ## LATCH + COOLDOWN (keluhan "SKIP menempel selama wave"): memutus sekali
 ## saja tidak cukup kalau node yang sama terus mengklaim tiap frame — watchdog
-## lama menghitung ulang dari nol, membiarkan SKIP kembali selama 10 detik,
-## lalu memutus lagi, dan seterusnya: tombolnya berkedip nyala-mati sepanjang
-## wave. Sekarang klaim basi di-LATCH (tetap diputus) sampai klaim itu
-## benar-benar hilang selama CINE_COOLDOWN_SEC, dan sehabis memutus watchdog
-## tidak mempersenjatai diri lagi selama CINE_COOLDOWN_SEC (anti-chatter).
-## Latch 6 detik: lebih panjang dari cinematic sungguhan mana pun yang tidak
-## memegang pause (banner boss 1,7 dtk, perayaan 2 dtk), tapi cukup pendek
-## supaya gelombang pertama yang terkena tidak menunggu lama.
+## lama menghitung ulang dari nol, membiarkan PAUSE hilang selama 10 detik,
+## lalu memutus lagi, dan seterusnya. Sekarang klaim basi di-LATCH (tetap
+## diputus) sampai klaim itu benar-benar hilang selama CINE_COOLDOWN_SEC, dan
+## sehabis memutus watchdog tidak mempersenjatai diri lagi selama
+## CINE_COOLDOWN_SEC (anti-chatter). Latch 6 detik: lebih panjang dari
+## cinematic sungguhan mana pun yang tidak memegang pause (banner boss 1,7
+## dtk, perayaan 2 dtk), tapi cukup pendek supaya gelombang pertama yang
+## terkena tidak menunggu lama.
 const CINE_WATCHDOG_SEC := 6.0
 const CINE_COOLDOWN_SEC := 2.0
 var _cine_watch := 0.0
@@ -162,12 +164,12 @@ func sync_from_match(delta: float = 0.0) -> void:
 	var cine := _cinematic_active()
 	# Watchdog: cinematic sungguhan yang TIDAK membekukan tree cuma banner
 	# boss (±1,7 dtk) dan perayaan kematian (±2 dtk). Klaim aktif berdetak
-	# tanpa pause = flag nyangkut -> putuskan + latch supaya SKIP hilang dan
-	# PAUSE kembali (lihat CINE_WATCHDOG_SEC / CINE_COOLDOWN_SEC).
+	# tanpa pause = flag nyangkut -> putuskan + latch supaya PAUSE kembali
+	# (lihat CINE_WATCHDOG_SEC / CINE_COOLDOWN_SEC).
 	if not cine:
 		# Klaim hilang. Latch baru benar-benar lepas setelah tidak ada klaim
 		# selama cooldown — klaim yang berkedip tiap frame tidak boleh
-		# menghidupkan SKIP lagi di sela kedipannya.
+		# menghidupkan mode cine lagi (PAUSE tersembunyi) di sela kedipannya.
 		_cine_absent += delta
 		_cine_watch = 0.0
 		if _cine_absent >= CINE_COOLDOWN_SEC:
@@ -188,7 +190,7 @@ func sync_from_match(delta: float = 0.0) -> void:
 				cine = false
 				push_warning(("[TouchHUD] cinematic mengklaim aktif > %.0f dtk "
 					+ "tanpa pause — klaim diputus + dilatch %.0f dtk supaya "
-					+ "SKIP/PAUSE normal") % [CINE_WATCHDOG_SEC,
+					+ "PAUSE normal") % [CINE_WATCHDOG_SEC,
 						CINE_COOLDOWN_SEC])
 	else:
 		_cine_watch = 0.0
@@ -239,6 +241,16 @@ func _sync_visibility() -> void:
 	# Tombol debug bisa disembunyikan permanen (paritas show_debug_button).
 	if not show_debug_button and _buttons.has("debug"):
 		(_buttons["debug"] as Dictionary)["visible"] = false
+	# ── SKIP DIHAPUS DARI RENDER (keluhan pemain berulang 3x) ──
+	# Satu-satunya gerbang visibilitas ada di sini: matriks
+	# `game_playing_cine`, `set_state_key` manual, override panel rail,
+	# maupun watchdog semuanya berakhir lewat fungsi ini. Mematikan skip di
+	# sini berarti tombolnya TIDAK PERNAH tergambar lewat jalur apa pun.
+	# DEVIASI SADAR dari oracle: HudLayout.TOUCH_BUTTONS / TOUCH_VISIBILITY
+	# sengaja DIBIARKAN utuh (fixture touchhud + UiHudParityTest tetap
+	# hijau); yang dipotong hanya jalur render. Cinematic tetap bisa
+	# dilewati: tap di mana saja (Main._cinematic_click) atau SPACE/ENTER.
+	(_buttons["skip"] as Dictionary)["visible"] = false
 
 
 func _process(delta: float) -> void:
