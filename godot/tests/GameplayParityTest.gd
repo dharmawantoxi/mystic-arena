@@ -79,8 +79,12 @@ func _run() -> void:
 
 func _test_startup() -> void:
 	var rules: Dictionary = _fixture["rules"]
+	_expect(RendererRegistry.hero_scene("kaizen") == RendererRegistry.HERO["kaizen"],
+		"Default Kaizen uses the v4 procedural rig")
+	ProjectSettings.set_setting("mystic/rendering/experimental_hero_rigs", false)
 	_expect(RendererRegistry.hero_scene("kaizen") == RendererRegistry.BakedSpriteScene,
-		"Default Kaizen uses the original Pygame bake, not the experimental rig")
+		"Flag off falls back to the original Pygame bake")
+	ProjectSettings.set_setting("mystic/rendering/experimental_hero_rigs", true)
 	_expect(GameManager.owned_heroes("blue").is_empty(), "No free player roster")
 	_expect(GameManager.owned_heroes("red").is_empty(), "AI must purchase its own roster")
 	_expect(get_tree().get_nodes_in_group("nexus").size() == 2, "Both nexuses exist before wave 1")
@@ -136,8 +140,11 @@ func _test_purchases_and_respawn() -> void:
 	_expect(GameManager.try_buy_hero("kaizen"), "Unlocked hero can be purchased")
 	_expect(GameManager.gold == balance - cost, "Purchase charges exact catalog cost")
 	var hero = GameManager.owned_heroes()[0]
-	_expect(hero.custom_visual != null and hero.custom_visual._built, "Purchased Kaizen has a loaded Pygame bake")
-	_expect(hero.custom_visual.sprite.sprite_frames.get_frame_count(&"idle") > 0, "Kaizen idle frames exist at runtime")
+	_expect(hero.custom_visual != null and hero.custom_visual.has_method("drive"),
+		"Purchased Kaizen runs the v4 procedural rig (drive API)")
+	_expect(hero.custom_visual.has_method("handles_skill_fx")
+		and hero.custom_visual.handles_skill_fx("q"),
+		"Kaizen rig owns its skill FX (no generic double)")
 	_expect(hero.global_position == _main._arena_map.radiant_shop_pos + Vector2(50, 10),
 		"First purchase spawns in front of the Radiant shop")
 	_expect(not GameManager.try_buy_hero("kaizen"), "Reject duplicate hero")
@@ -145,6 +152,11 @@ func _test_purchases_and_respawn() -> void:
 	for ht in ["grimjaw", "sylara", "thorne", "vex"]:
 		_expect(GameManager.try_buy_hero(ht), "Fill roster: " + ht)
 	_expect(GameManager.owned_heroes().size() == 5, "Five unique heroes purchased")
+	var baked_hero = GameManager.owned_heroes()[1]
+	_expect(baked_hero.custom_visual != null and baked_hero.custom_visual._built,
+		"Non-rig hero still loads the original Pygame bake")
+	_expect(baked_hero.custom_visual.sprite.sprite_frames.get_frame_count(&"idle") > 0,
+		"Baked idle frames exist at runtime")
 	_expect(not GameManager.try_buy_hero("zephyr"), "Reject sixth hero")
 
 	_expect(hero.upgrade(), "Hero upgrade available before death")

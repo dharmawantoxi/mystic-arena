@@ -689,10 +689,10 @@ memilikinya, **termasuk Kaizen** (`BakedSprite.tscn` + `baked_units.json`).
 `UnitSilhouette` tetap fallback jika bake dan scene custom tidak tersedia;
 minion masih memakai silhouette.
 
-Rig hand-made di `RendererRegistry.HERO` bisa dicoba dengan
-`Project Settings → mystic/rendering/experimental_hero_rigs = true`, atau
-jalankan `scenes/demo/KaizenDemo.tscn` langsung. Default **false** supaya
-visual Kaizen tidak diganti dengan desain lain ketika bermain normal.
+Rig hand-made v4 di `RendererRegistry.HERO` kini **default arena**
+(`mystic/rendering/experimental_hero_rigs=true` di project.godot; set
+`false` untuk kembali ke strip bake Pygame). Jalankan
+`scenes/demo/KaizenDemo.tscn` sebagai showcase isolasi.
 Renderer boss memakai strip bake kecuali ada override di `BOSS`.
 
 ## Strip bake 222 unit (Fase 5 — Opsi A)
@@ -1024,8 +1024,8 @@ godot/scenes/hero/kaizen/KaizenSkeleton.tscn  — 25 Bone2D (Root→Hips→Torso
 godot/scenes/hero/kaizen/KaizenSkeleton.gd   — drive(phase, action, attack_progress, facing) — busur 1 sumber kebenaran (ATTACK_ARC_*), inertia scarf/ponytail, hamon shader time, wind ribbon Line2D
 godot/scenes/demo/KaizenDemo.tscn/.gd       — showcase isolasi: F5 Run Current Scene untuk lihat 60fps bone interpolasi vs pygame 6-frame patah
 ```
-Rig Kaizen ada di `RendererRegistry.HERO`, tetapi arena default memakai bake asli.
-Aktifkan `mystic/rendering/experimental_hero_rigs` untuk mencoba rig di arena.
+Rig Kaizen ada di `RendererRegistry.HERO` dan sejak 2026-09-15 menjadi default
+arena (`mystic/rendering/experimental_hero_rigs=true`; set false untuk bake).
 Tip katana: `get_katana_tip_global()`.
 
 ## Android Build (Fase 6 — siap Play Store)

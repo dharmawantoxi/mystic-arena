@@ -118,11 +118,11 @@ Autoload baru (`scripts/vfx/VFXManager.gd`, terdaftar di project.godot):
 
 ## 7. Kontrak lama yang dipertahankan
 
-* `RendererRegistry.HERO["kaizen"]` tetap menunjuk
-  `KaizenSkeleton.tscn`; **default arena tetap bake pygame** (dikunci
-  `GameplayParityTest`) — rig aktif lewat
-  `mystic/rendering/experimental_hero_rigs=true` (project.godot) atau
-  langsung di KaizenDemo.
+* `RendererRegistry.HERO["kaizen"]` menunjuk `KaizenSkeleton.tscn` dan
+  sejak 2026-09-15 menjadi **default arena**
+  (`mystic/rendering/experimental_hero_rigs=true` di project.godot).
+  `GameplayParityTest` mengunci dua jalur: default = rig v4, flag false =
+  fallback bake pygame. KaizenDemo selalu memakai rig langsung.
 * `drive(phase, action, attack_progress, facing, is_moving, skill, delta)`
   dipanggil `Hero._drive_visual` persis seperti sebelumnya; rig digambar
   menghadap +x dan flip dilakukan parent (`Visual.scale.x`).
@@ -144,8 +144,9 @@ Autoload baru (`scripts/vfx/VFXManager.gd`, terdaftar di project.godot):
 # Showcase penuh (siklus otomatis + keyboard)
 godot --path godot res://scenes/demo/KaizenDemo.tscn
 
-# Di arena: set mystic/rendering/experimental_hero_rigs=true
-# (project.godot → [mystic]) lalu mainkan seperti biasa.
+# Di arena: rig v4 sudah DEFAULT sejak 2026-09-15 (project.godot →
+# [mystic] rendering/experimental_hero_rigs=true). Set false untuk
+# fallback bake pygame, lalu mainkan seperti biasa.
 ```
 
 Keyboard demo: `SPACE` attack · `1/2/3/4` skill Q/W/E/R (tekan `1` dua
