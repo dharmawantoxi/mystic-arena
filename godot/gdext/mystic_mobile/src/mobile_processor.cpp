@@ -195,11 +195,11 @@ return (int64_t)80;
 
 Dictionary MysticMobile::hud_button_rects(int64_t p_safe_left, int64_t p_safe_top, int64_t p_safe_right, int64_t p_safe_bottom) {
 
-// hud.py:91-128 TouchHUD._build_layout — rect tombol dalam koordinat logis.
+// hud.py:91-130 TouchHUD._build_layout — rect tombol dalam koordinat logis.
 // pause + debug kiri atas di bawah panel gold; skip/replay/next/menu
 // kontekstual di dasar safe area; back kiri atas (menu).
 const int64_t bx = std::max((int64_t)22, p_safe_left + 6);
-const int64_t by = 76;
+const int64_t by = 158;
 const int64_t mid = 1280 / 2;
 Dictionary out;
     out[Variant(String("pause"))] = Rect2((double)bx, (double)by, 52.0, 52.0);
@@ -256,7 +256,7 @@ return p_pos.x >= p_hit_rect.position.x &&
 
 Dictionary MysticMobile::hud_visibility(bool p_playing, bool p_ended, bool p_victory, bool p_has_next_level, bool p_cinematic_active, bool p_panel_ada, bool p_show_debug_button) {
 
-// hud.py:136-161 TouchHUD.sync — visibility tiap tombol. `has_next_level`
+// hud.py:138-163 TouchHUD.sync — visibility tiap tombol. `has_next_level`
 // pygame datang dari levels.get_next_level(level_number) is not None
 // (jalur engine, hanya ditanya saat ended+victory).
 Dictionary out;
