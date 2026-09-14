@@ -16,6 +16,7 @@
 #
 # Kontrak demo/showcase: play("hurt"/"death"/"victory"/"run", durasi)
 # memaksa state sementara di luar drive() Hero.
+class_name KaizenSkeleton
 extends Node2D
 
 const AnimatorScript = preload("res://scenes/hero/kaizen/KaizenAnimator.gd")
@@ -27,8 +28,8 @@ signal skill_cast(skill_key: String)
 ## Dipakai Hero.gd untuk memilih renderer; dipertahankan dari rig lama.
 const ATTACK_IMPACT_PROGRESS := 0.55
 
-@onready var renderer: Node2D = $Renderer
-@onready var skill_fx: Node2D = $SkillFX
+@onready var renderer: KaizenRenderer = $Renderer
+@onready var skill_fx: KaizenSkillFX = $SkillFX
 
 var animator = null
 var pose_current = null

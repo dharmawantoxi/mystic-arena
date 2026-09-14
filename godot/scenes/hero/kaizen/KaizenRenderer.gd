@@ -14,6 +14,7 @@
 # kamera zoom. Geometri = FK sederhana dari pose (bukan node per-bagian),
 # jadi biaya per-frame hanya satu CanvasItem + puluhan draw call kecil:
 # aman untuk Android.
+class_name KaizenRenderer
 extends Node2D
 
 const Pal = preload("res://scenes/hero/kaizen/KaizenPalette.gd")
@@ -94,7 +95,7 @@ static func _fwd(a: float) -> Vector2:
 	return Vector2(cos(a), -sin(a))
 
 
-func _solve(p) -> Dictionary:
+func _solve(p: KaizenPose) -> Dictionary:
 	var hip := Vector2(p.root_x, HIP_Y + p.root_y)
 	var up1 := Vector2(sin(p.torso_lean), -cos(p.torso_lean))
 	var chest := hip + up1 * SPINE_LEN
@@ -224,7 +225,7 @@ func _chain(origin: Vector2, angles: Array, segs: Array, widths: Array,
 #  BAGIAN TUBUH
 # ══════════════════════════════════════════════════════════
 
-func _draw_shadow(p, j: Dictionary) -> void:
+func _draw_shadow(p: KaizenPose, j: Dictionary) -> void:
 	var rx := 15.0 + absf(p.root_x) * 0.35 + p.skirt_flare * 0.5
 	var c := Vector2(p.root_x * 0.5, 1.5)
 	var pts := PackedVector2Array()
@@ -234,17 +235,17 @@ func _draw_shadow(p, j: Dictionary) -> void:
 	_poly(pts, Pal.SHADOW_GROUND)
 
 
-func _draw_ponytail(p, j: Dictionary) -> void:
+func _draw_ponytail(p: KaizenPose, j: Dictionary) -> void:
 	_chain(j["head"] + Vector2(-4.0, -3.0), p.pony, PONY_SEGS, PONY_W,
 		[Pal.HAIR, Pal.HAIR, Pal.HAIR_LIGHT])
 
 
-func _draw_scarf(p, j: Dictionary) -> void:
+func _draw_scarf(p: KaizenPose, j: Dictionary) -> void:
 	_chain(j["neck"] + Vector2(-3.0, 2.0), p.scarf, SCARF_SEGS, SCARF_W,
 		[Pal.SCARF_DARK, Pal.SCARF, Pal.SCARF_LIGHT])
 
 
-func _draw_saya(p, j: Dictionary) -> void:
+func _draw_saya(p: KaizenPose, j: Dictionary) -> void:
 	var hip: Vector2 = j["hip"]
 	var a := hip + Vector2(-3.0, -2.0)
 	var b := hip + Vector2(-20.0, 6.0)
@@ -257,7 +258,7 @@ func _draw_saya(p, j: Dictionary) -> void:
 		_c(Pal.SCARF_DARK), 1.2)
 
 
-func _draw_arm(p, j: Dictionary, is_back: bool) -> void:
+func _draw_arm(p: KaizenPose, j: Dictionary, is_back: bool) -> void:
 	var sh: Vector2 = j["sh_b"] if is_back else j["sh_f"]
 	var elb: Vector2 = j["elb_b"] if is_back else j["elb_f"]
 	var hand: Vector2 = j["hand_b"] if is_back else j["hand_f"]
@@ -274,7 +275,7 @@ func _draw_arm(p, j: Dictionary, is_back: bool) -> void:
 			_c(Color(Pal.SKIN_SHADOW.r, Pal.SKIN_SHADOW.g, Pal.SKIN_SHADOW.b, 0.7)), 1.2)
 
 
-func _draw_calf(p, j: Dictionary, is_back: bool) -> void:
+func _draw_calf(p: KaizenPose, j: Dictionary, is_back: bool) -> void:
 	var knee: Vector2 = j["knee_b"] if is_back else j["knee_f"]
 	var ankle: Vector2 = j["ankle_b"] if is_back else j["ankle_f"]
 	var col := Pal.HAKAMA_DARK if is_back else Pal.HAKAMA
@@ -285,7 +286,7 @@ func _draw_calf(p, j: Dictionary, is_back: bool) -> void:
 		_c(Pal.CLOTH_DARK), 1.4)
 
 
-func _draw_feet(p, j: Dictionary) -> void:
+func _draw_feet(p: KaizenPose, j: Dictionary) -> void:
 	# Belakang dulu, depan menimpa (tabi gelap).
 	_capsule(j["ankle_b"] + Vector2(0.5, 1.0), j["toe_b"] + Vector2(0.0, 1.0),
 		3.6, Color("#241f28"))
@@ -293,7 +294,7 @@ func _draw_feet(p, j: Dictionary) -> void:
 		3.6, Color("#332c38"))
 
 
-func _draw_hakama(p, j: Dictionary) -> void:
+func _draw_hakama(p: KaizenPose, j: Dictionary) -> void:
 	var hip: Vector2 = j["hip"]
 	var knee_f: Vector2 = j["knee_f"]
 	var knee_b: Vector2 = j["knee_b"]
@@ -327,7 +328,7 @@ func _draw_hakama(p, j: Dictionary) -> void:
 		Pal.HAKAMA_DARK.b, 0.6))
 
 
-func _draw_torso(p, j: Dictionary) -> void:
+func _draw_torso(p: KaizenPose, j: Dictionary) -> void:
 	var hip: Vector2 = j["hip"]
 	var chest: Vector2 = j["chest"]
 	var neck: Vector2 = j["neck"]
@@ -350,7 +351,7 @@ func _draw_torso(p, j: Dictionary) -> void:
 		_c(collar_col), 1.6)
 
 
-func _draw_obi(p, j: Dictionary) -> void:
+func _draw_obi(p: KaizenPose, j: Dictionary) -> void:
 	var hip: Vector2 = j["hip"]
 	_poly(PackedVector2Array([
 		hip + Vector2(-9.0, -3.5), hip + Vector2(9.0, -3.5),
@@ -367,7 +368,7 @@ func _draw_obi(p, j: Dictionary) -> void:
 	]), Pal.GOLD)
 
 
-func _draw_chest_plate(p, j: Dictionary) -> void:
+func _draw_chest_plate(p: KaizenPose, j: Dictionary) -> void:
 	var chest: Vector2 = j["chest"]
 	var up: Vector2 = j["up2"]
 	var n := Vector2(-up.y, up.x)
@@ -387,7 +388,7 @@ func _draw_chest_plate(p, j: Dictionary) -> void:
 		_c(Pal.GOLD_DARK), 1.2)
 
 
-func _draw_head(p, j: Dictionary) -> void:
+func _draw_head(p: KaizenPose, j: Dictionary) -> void:
 	var hc: Vector2 = j["head"]
 	var up: Vector2 = j["up2"]
 	# Kepala (kulit) — hexagon dengan rahang menyempit.
@@ -428,7 +429,7 @@ func _draw_head(p, j: Dictionary) -> void:
 	var knot := hc + Vector2(-5.8, -3.4)
 	var pos := knot
 	for i in 2:
-		var nxt := pos + _fwd(p.band[i]) * BAND_SEGS[i]
+		var nxt := pos + _fwd(p.band[i]) * float(BAND_SEGS[i])
 		_taper(pos, 1.8, nxt, 1.0, Pal.BAND_SHADOW if i == 1 else Pal.BAND, false)
 		pos = nxt
 	# Mata: amber tajam (satu jelas + satu sugestif untuk 3/4 view).
@@ -453,7 +454,7 @@ func _draw_head(p, j: Dictionary) -> void:
 		_c(Color(0.62, 0.38, 0.32, 0.95)), 1.0)
 
 
-func _draw_trail(p) -> void:
+func _draw_trail(p: KaizenPose) -> void:
 	# Jejak bilah saat tebasan: pita dua-nada (angin luar + inti terang).
 	if trail_pts.size() < 3:
 		return
@@ -484,7 +485,7 @@ func _draw_trail(p) -> void:
 			0.42 * fade * t1))
 
 
-func _draw_katana(p, j: Dictionary) -> void:
+func _draw_katana(p: KaizenPose, j: Dictionary) -> void:
 	var hand: Vector2 = j["hand_f"]
 	var bdir: Vector2 = j["bdir"]
 	var tip: Vector2 = j["tip"]
@@ -531,7 +532,7 @@ func _draw_katana(p, j: Dictionary) -> void:
 			_c(Color(1.0, 1.0, 1.0, 0.75)), 1.2)
 
 
-func _draw_rim(p, j: Dictionary) -> void:
+func _draw_rim(p: KaizenPose, j: Dictionary) -> void:
 	# Rim light dingin dari atas-kiri: 3 goresan tipis, biaya minimal.
 	var chest: Vector2 = j["chest"]
 	var head: Vector2 = j["head"]
@@ -547,7 +548,7 @@ func _draw_rim(p, j: Dictionary) -> void:
 		_c(Color(Pal.RIM.r, Pal.RIM.g, Pal.RIM.b, 0.25)), 1.0)
 
 
-func _draw_wind_wisps(p, j: Dictionary) -> void:
+func _draw_wind_wisps(p: KaizenPose, j: Dictionary) -> void:
 	if p.wind_glow <= 0.02:
 		return
 	# Tiga lidah angin kecil berputar di sekitar dada/bilah — AKSEN saja.

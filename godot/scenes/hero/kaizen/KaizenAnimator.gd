@@ -105,7 +105,7 @@ func compute(state: String, phase: float, attack_progress: float,
 #  STATE
 # ══════════════════════════════════════════════════════════
 
-func _idle(p: Object, phase: float) -> void:
+func _idle(p: KaizenPose, phase: float) -> void:
 	var br := sin(phase * 0.9)
 	p.root_y = br * 1.6
 	p.torso_lean = D(2.0) + sin(phase * 0.5) * 0.02
@@ -128,7 +128,7 @@ func _idle(p: Object, phase: float) -> void:
 	_secondary(p, phase, 1.0, 0.10)
 
 
-func _walk(p: Object, phase: float) -> void:
+func _walk(p: KaizenPose, phase: float) -> void:
 	var stride := sin(phase * 1.72)
 	var stride2 := sin(phase * 1.72 + PI)
 	p.root_y = sin(phase * 3.44) * 1.9 - 1.5
@@ -152,7 +152,7 @@ func _walk(p: Object, phase: float) -> void:
 	_secondary(p, phase, 2.2, 0.16)
 
 
-func _run(p: Object, phase: float) -> void:
+func _run(p: KaizenPose, phase: float) -> void:
 	var stride := sin(phase * 2.3)
 	var stride2 := sin(phase * 2.3 + PI)
 	p.root_y = sin(phase * 4.6) * 2.6 - 3.0
@@ -176,7 +176,7 @@ func _run(p: Object, phase: float) -> void:
 	_secondary(p, phase, 3.2, 0.42)
 
 
-func _attack(p: Object, ap: float, phase: float) -> void:
+func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 	ap = clampf(ap, 0.0, 1.0)
 	if ap < ATK_WINDUP_END:
 		# ANTICIPATION — tarik bilah ke belakang-atas, tubuh merendah.
@@ -253,7 +253,7 @@ func _attack(p: Object, ap: float, phase: float) -> void:
 
 
 ## Q1 Steel Wind — iai cepat: anticipation lebih pendek, tebasan lebih lebar.
-func _skill_q(p: Object, ap: float, phase: float) -> void:
+func _skill_q(p: KaizenPose, ap: float, phase: float) -> void:
 	_attack(p, ap, phase)
 	# Tambahkan karakter "steel wind": stance lebih rendah + bilah lebih turun.
 	p.root_y += 2.0
@@ -264,7 +264,7 @@ func _skill_q(p: Object, ap: float, phase: float) -> void:
 
 
 ## Q2 Dash Strike — pose melayang selama dash.
-func _skill_dash(p: Object, phase: float, skill_t: float) -> void:
+func _skill_dash(p: KaizenPose, phase: float, skill_t: float) -> void:
 	var settle := ss(minf(1.0, skill_t / 0.45))
 	p.root_x = lerp(9.0, 3.0, settle)
 	p.root_y = lerp(-4.0, 1.0, settle)
@@ -289,7 +289,7 @@ func _skill_dash(p: Object, phase: float, skill_t: float) -> void:
 
 
 ## W Wind Wall — dorongan telapak ke depan, kuda-kuda belakang.
-func _skill_w(p: Object, phase: float, skill_t: float) -> void:
+func _skill_w(p: KaizenPose, phase: float, skill_t: float) -> void:
 	var push := ss(minf(1.0, skill_t / 0.16))
 	var hold_wave := sin(phase * 2.6)
 	p.root_y = 2.0
@@ -313,7 +313,7 @@ func _skill_w(p: Object, phase: float, skill_t: float) -> void:
 
 
 ## E Whirlwind — putaran bilah dua kali di sekeliling tubuh.
-func _skill_e(p: Object, skill_t: float) -> void:
+func _skill_e(p: KaizenPose, skill_t: float) -> void:
 	var spin_dur := 0.55
 	var k := clampf(skill_t / spin_dur, 0.0, 1.0)
 	var wind_down := clampf((skill_t - spin_dur) / 0.25, 0.0, 1.0)
@@ -341,7 +341,7 @@ func _skill_e(p: Object, skill_t: float) -> void:
 
 
 ## R Tempest Fury — crouch dalam → tebasan naik menyilang.
-func _skill_r(p: Object, skill_t: float) -> void:
+func _skill_r(p: KaizenPose, skill_t: float) -> void:
 	if skill_t < 0.16:
 		# PRE-CAST: menarik napas, merendah, bilah ke belakang-bawah.
 		var t := ss(skill_t / 0.16)
@@ -396,7 +396,7 @@ func _skill_r(p: Object, skill_t: float) -> void:
 	_secondary(p, skill_t * 14.0, 3.0, 0.4)
 
 
-func _hurt(p: Object, t: float, phase: float) -> void:
+func _hurt(p: KaizenPose, t: float, phase: float) -> void:
 	var k := 1.0 - ss(t)  # kuat di awal, pulih di akhir
 	var shiver := sin(t * 42.0) * 1.4 * k
 	p.root_x = -3.0 * k + shiver
@@ -418,7 +418,7 @@ func _hurt(p: Object, t: float, phase: float) -> void:
 	_secondary(p, phase, 2.0, 0.2)
 
 
-func _death(p: Object, t: float) -> void:
+func _death(p: KaizenPose, t: float) -> void:
 	# Roboh ke belakang: pinggul turun, torso rebah, bilah terlepas.
 	var k := ss(t)
 	p.root_y = 19.0 * k
@@ -440,7 +440,7 @@ func _death(p: Object, t: float) -> void:
 	_secondary(p, 0.0, 0.4, 0.05)
 
 
-func _victory(p: Object, phase: float) -> void:
+func _victory(p: KaizenPose, phase: float) -> void:
 	var br := sin(phase * 1.4)
 	# Bilah ditegakkan ke atas (flourish), scarf berkibar bangga.
 	p.root_y = br * 1.2
@@ -466,7 +466,7 @@ func _victory(p: Object, phase: float) -> void:
 
 ## `speed_factor` = seberapa cepat kain harus berkibar (1 = idle, 4 = dash).
 ## `stream` = 0..1; 1 = ekor kain lurus terseret ke belakang (gerakan cepat).
-func _secondary(p: Object, phase: float, speed_factor: float, stream: float) -> void:
+func _secondary(p: KaizenPose, phase: float, speed_factor: float, stream: float) -> void:
 	var w1 := sin(phase * 1.35 * speed_factor)
 	var w2 := sin(phase * 1.35 * speed_factor + 0.9)
 	var w3 := sin(phase * 1.35 * speed_factor + 1.8)

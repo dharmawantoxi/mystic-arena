@@ -15,7 +15,7 @@ extends Node2D
 const DMG_NUMBER_SCENE := "res://scenes/fx/DamageNumber.tscn"
 const CYCLE_LEN := 21.6
 
-@onready var kaizen: Node2D = $KaizenRoot/KaizenSkeleton
+@onready var kaizen: KaizenSkeleton = $KaizenRoot/KaizenSkeleton
 @onready var label_mode: Label = $CanvasLayer/VBox/ModeLabel
 @onready var label_stats: Label = $CanvasLayer/VBox/StatsLabel
 @onready var phase_bar: ProgressBar = $CanvasLayer/VBox/PhaseBar

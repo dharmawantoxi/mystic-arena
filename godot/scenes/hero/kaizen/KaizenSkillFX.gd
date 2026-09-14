@@ -10,6 +10,7 @@
 #
 # Node ini TIDAK menjalankan _process: semua berjalan lewat
 # notify_drive() (dari root) + parameter `delay` di VFXActor.
+class_name KaizenSkillFX
 extends Node2D
 
 const Pal = preload("res://scenes/hero/kaizen/KaizenPalette.gd")

@@ -12,6 +12,7 @@
 #     (CCW di layar, karena y-down).
 #   * scarf/pony/band: arah absolut segmen, 0 = +x, PI = belakang,
 #     positif turun (y-down standar).
+class_name KaizenPose
 extends RefCounted
 
 # ── Root / tubuh ──
