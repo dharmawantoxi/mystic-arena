@@ -48,10 +48,57 @@ func _boot() -> void:
 		_main._on_key(wrong)
 		_expect(is_instance_valid(intro) and intro.cinematic_active(),
 			"Intro tidak boleh skip oleh tombol selain SPACE/ENTER")
+		# ESC/P SELAMA INTRO: pause milik intro, bukan milik menu. Kalau
+		# _toggle_pause boleh "resume" di sini, tree jalan lagi sementara
+		# intro masih tampil + masih mengklaim cinematic -> HUD terkunci di
+		# matriks cine (SKIP menempel, PAUSE tak pernah kembali).
+		for esc_code in [KEY_ESCAPE, KEY_P]:
+			_main._on_key(_key(esc_code))
+			_expect(get_tree().paused,
+				"ESC/P selama intro tidak boleh mencuri pause intro")
+			_expect(is_instance_valid(intro) and intro.cinematic_active(),
+				"ESC/P selama intro tidak boleh menutup intro")
+			_expect(_main._intro_owns_pause(),
+				"pause harus tetap milik intro setelah ESC/P")
 		_main._on_key(_key(KEY_SPACE))
 	await _wait_frames(3)
 	_expect(not get_tree().paused, "Skip intro harus melepas pause")
 	_expect(not GameManager.is_paused, "Skip intro harus melepas is_paused")
+	# Referensi intro yang sudah selesai dibuang seketika (bukan menunggu
+	# queue_free) — kalau tidak, klaim basi-nya menahan matriks cine.
+	_expect(not _main._cinematic_active(),
+		"Klaim cinematic harus hilang segera setelah intro di-skip")
+	_expect(_main.get("_level_intro") == null,
+		"Referensi intro selesai harus dibuang (_drop_finished_cine_refs)")
+	# Setelah intro benar-benar selesai, pause normal (menu PAUSE) kembali
+	# bekerja: jalur intro TIDAK boleh mematikan _toggle_pause selamanya.
+	_expect(not _main._intro_owns_pause(),
+		"pause tidak lagi milik intro setelah intro selesai")
+	_main._toggle_pause()
+	_expect(get_tree().paused, "pause normal harus bekerja setelah intro")
+	_main._toggle_pause()
+	await _wait_frames(1)
+	_expect(not get_tree().paused, "toggle kedua harus resume")
+	get_tree().paused = false
+	GameManager.set_paused(false)
+
+	print("[CinematicTest] tahap 1b: intro hilang dari tree tanpa finish()")
+	# Jaring pengaman LevelIntro._exit_tree: intro yang dibuang paksa
+	# (free() langsung, scene diganti) tidak boleh meninggalkan tree beku.
+	_main._show_level_intro()
+	await _wait_frames(2)
+	var intro_b = _main.get("_level_intro")
+	_expect(is_instance_valid(intro_b), "intro kedua harus muncul")
+	_expect(get_tree().paused, "intro kedua harus membekukan gameplay")
+	if is_instance_valid(intro_b):
+		intro_b.free()
+	await _wait_frames(2)
+	_expect(not get_tree().paused,
+		"_exit_tree intro harus melepas pause walau tanpa finish()")
+	_expect(not GameManager.is_paused,
+		"_exit_tree intro harus melepas is_paused")
+	_expect(not _main._cinematic_active(),
+		"klaim intro yang hilang dari tree tidak boleh tersisa")
 
 	print("[CinematicTest] tahap 2: banner mini boss")
 	# ── 2. BANNER MINI BOSS ──
@@ -67,6 +114,21 @@ func _boot() -> void:
 		await _wait_frames(2)
 		_expect(not is_instance_valid(banner) or not banner.cinematic_active(),
 			"ESC harus menutup banner")
+		_expect(not _main._cinematic_active(),
+			"klaim banner harus hilang segera setelah ESC")
+		_expect(_main.get("_boss_banner") == null,
+			"referensi banner selesai harus dibuang")
+	# Jaring pengaman BossIntroBanner._exit_tree: banner yang dibuang paksa
+	# tidak boleh meninggalkan klaim cinematic basi.
+	_main._show_boss_banner("gornak")
+	await _wait_frames(1)
+	var banner_b = _main.get("_boss_banner")
+	_expect(is_instance_valid(banner_b), "banner kedua harus muncul")
+	if is_instance_valid(banner_b):
+		banner_b.free()
+	await _wait_frames(1)
+	_expect(not _main._cinematic_active(),
+		"klaim banner yang hilang dari tree tidak boleh tersisa")
 	# Bersihkan boss mini supaya tidak mengganggu tes kematian di bawah.
 	if is_instance_valid(_main.active_boss):
 		_main.active_boss.free()

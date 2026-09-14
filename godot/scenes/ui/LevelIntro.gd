@@ -541,3 +541,20 @@ func finish() -> void:
 ## Dipanggil Main saat membekukan match: intro memegang kendali pause.
 func take_pause_ownership() -> void:
 	_owns_pause = true
+
+
+## Jaring pengaman: intro bisa hilang dari tree TANPA lewat finish() —
+## free() langsung dari _clear_field, scene diganti, atau parent-nya dibuang.
+## Kalau itu terjadi klaimnya tidak pernah dilepas dan pause-nya tidak pernah
+## dikembalikan: gameplay tetap beku dan HUD terkunci di matriks cinematic
+## (SKIP menempel, PAUSE hilang). Lepaskan keduanya di sini.
+func _exit_tree() -> void:
+	if not active:
+		return
+	active = false
+	if _owns_pause:
+		_owns_pause = false
+		var tree := get_tree()
+		if tree != null:
+			tree.paused = false
+		GameManager.set_paused(false)
