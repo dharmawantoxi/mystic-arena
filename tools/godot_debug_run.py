@@ -110,6 +110,7 @@ ENGINE_ARGS = (
     "fps",
     "out",
     "label",
+    "tab",
 )
 
 DEFAULT_GODOT_VERSION = "4.3"
@@ -155,6 +156,9 @@ def build_parser() -> argparse.ArgumentParser:
                    help="batas FPS lewat AppShell.apply_fps_limit (0 = "
                         "biarkan AppShell memutuskan; diabaikan saat headless)")
     p.add_argument("--label", default="", help="nama run untuk report.json")
+    p.add_argument("--tab", default="", metavar="ID_TAB",
+                   help="skenario shop: tab yang dibuka setelah hotkey H "
+                        "(tower/item/hero/nexus; kosong = tab default)")
     p.add_argument("--display", choices=("auto", "x11", "xvfb", "headless"),
                    default="auto",
                    help="auto (pakai $DISPLAY kalau ada, lalu Xvfb, lalu "
@@ -437,6 +441,7 @@ def engine_args(args: argparse.Namespace, out_dir: Path, scene: str,
         "fps": fps,
         "out": str(out_dir),
         "label": args.label or args.scenario,
+        "tab": args.tab,
     }
     return [f"--{key}={values[key]}" for key in ENGINE_ARGS]
 
