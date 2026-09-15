@@ -1,23 +1,12 @@
-[gd_scene load_steps=4 format=3 uid="uid://csylara_skel_01a075b2"]
+[gd_scene load_steps=3 format=3 uid="uid://sylara_sprite_01"]
 
-[ext_resource type="Script" path="res://scenes/hero/sylara/SylaraSkeleton.gd" id="1_sylara"]
-[ext_resource type="Script" path="res://scenes/hero/sylara/SylaraRenderer.gd" id="2_renderer"]
-[ext_resource type="Script" path="res://scenes/hero/sylara/SylaraSkillFX.gd" id="3_skillfx"]
+[ext_resource type="Script" path="res://scenes/hero/sylara/SylaraSkeleton.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/hero/sylara/SylaraSkillFX.gd" id="2"]
 
-; Sylara (Godot 4.x rebuild) — karakter modular:
-;   SylaraSkeleton (root: state + blending + drive API)
-;   ├── Renderer  — _draw() prosedural berlapis (SylaraRenderer.gd)
-;   └── SkillFX   — sequencer FX skill via VFXManager pooled (SylaraSkillFX.gd)
-; Animasi prosedural dihitung SylaraAnimator.gd (pose target per state);
-; tidak ada Polygon2D/node-per-tulang — satu CanvasItem per karakter
-; supaya ringan di Android. Flip facing dilakukan PARENT (Hero/Visual),
-; rig selalu digambar menghadap +x.
+[node name="SylaraSkeleton" type="Node2D" groups=["heroes"]]
+script = ExtResource("1")
 
-[node name="SylaraSkeleton" type="Node2D" groups=["sylara_skeleton"]]
-script = ExtResource("1_sylara")
-
-[node name="Renderer" type="Node2D" parent="."]
-script = ExtResource("2_renderer")
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 
 [node name="SkillFX" type="Node2D" parent="."]
-script = ExtResource("3_skillfx")
+script = ExtResource("2")
