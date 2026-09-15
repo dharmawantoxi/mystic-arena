@@ -67,18 +67,6 @@ const ANIMATIONS := {
 		"frames": 4,
 		"fps": 10.0,
 		"loop": false
-	},
-	"death": {
-		"strip": "res://assets/units/sylara_death_strip.png",
-		"frames": 8,
-		"fps": 8.0,
-		"loop": false
-	},
-	"victory": {
-		"strip": "res://assets/units/sylara_victory_strip.png",
-		"frames": 6,
-		"fps": 8.0,
-		"loop": false
 	}
 }
 

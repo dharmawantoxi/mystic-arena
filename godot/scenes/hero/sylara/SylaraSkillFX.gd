@@ -210,7 +210,8 @@ func _cast_r(pos: Vector2, facing: int) -> void:
 		VFXManager.ring(imp_pos, 14.0 + float(i) * 4.0, Pal.WIND_LIGHT,
 			release_delay + 0.15 + t * 0.2, 0.3, 2.0)
 	# Percikan di titik release.
-	VFXManager.sparks(fx_pos, facing > 0.0 ? 0.0 : PI, 8, 200.0,
+	var spark_dir := 0.0 if facing > 0.0 else PI
+	VFXManager.sparks(fx_pos, spark_dir, 8, 200.0,
 		Pal.WIND_LIGHT, release_delay, 0.35, 0.6)
 	# Camera shake tier 3 — Powershot adalah ultimate.
 	# (VFXManager.impact sudah menangani shake untuk tier 2+, tapi
