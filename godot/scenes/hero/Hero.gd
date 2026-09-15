@@ -109,6 +109,15 @@ var is_dead: bool = false
 ## respawn (paritas _core.py:2263-2265) supaya kematian berikutnya bayar.
 var reward_processed: bool = false
 var facing: int = 1
+## Kunci arah hadap selama ayunan serangan dasar (paritas _entity.py
+## _do_attack 4272-4286 & Boss.gd _attack_facing/_attack_lock_timer):
+## tanpa ini, hero yang bergerak/retreat/reposisi sambil menyerang bisa
+## membalik facing (dan flip visual_root.scale.x) di tengah animasi
+## swing — pose jadi terlihat "menyamping"/patah di tengah tebasan,
+## dilaporkan pemain sebagai gerakan kaku/stutter. _attack_facing = 0
+## adalah sentinel "tidak terkunci" (paritas None pygame).
+var _attack_facing: int = 0
+var _attack_lock_timer: float = 0.0
 var selected: bool = false
 var is_retreating: bool = false
 var combat_timer: float = 0.0        # di-reset CombatSystem saat kena damage
@@ -297,6 +306,13 @@ func _physics_process(delta):
 		status.tick(delta)
 	if is_dead:
 		return
+	# Kunci arah hadap selama ayunan serangan dasar (paritas Boss.gd
+	# _attack_lock_timer, base_boss.py:594-598): di-tick di atas supaya
+	# kunci tetap melepas walau hero terkena stun/status lain.
+	if _attack_lock_timer > 0.0:
+		_attack_lock_timer = maxf(0.0, _attack_lock_timer - delta)
+		if _attack_lock_timer <= 0.0:
+			_attack_facing = 0
 	# Item aktif auto-trigger (paritas inv.update(1, enemies) _entity.py:3801).
 	# 17 item "aktif" pygame tidak punya tombol — semuanya terpicu sendiri
 	# dari HP/jumlah musuh/target, jadi cukup dipanggil di sini.
@@ -380,8 +396,7 @@ func _physics_process(delta):
 		target = follow_target
 		var fpos := (follow_target as Node2D).global_position
 		var fdist := global_position.distance_to(fpos)
-		facing = 1 if fpos.x > global_position.x else -1
-		visual_root.scale.x = facing # flip sprite / skeleton
+		_face(fpos.x - global_position.x)
 		if fdist <= attack_range:
 			velocity = Vector2.ZERO
 			try_attack()
@@ -389,8 +404,7 @@ func _physics_process(delta):
 			is_moving = _move_to(fpos, eff_speed)
 	elif target != null:
 		var dist = global_position.distance_to(target.global_position)
-		facing = 1 if target.global_position.x > global_position.x else -1
-		visual_root.scale.x = facing # flip sprite / skeleton
+		_face(target.global_position.x - global_position.x)
 		if dist <= attack_range:
 			velocity = Vector2.ZERO
 			try_attack()
@@ -416,10 +430,25 @@ func _move_to(dest: Vector2, speed: float) -> bool:
 		velocity = Vector2.ZERO
 		return false
 	velocity = to.normalized() * speed
-	facing = 1 if velocity.x >= 0.0 else -1
-	visual_root.scale.x = facing
+	_face(velocity.x)
 	move_and_slide()
 	return true
+
+
+## Perbarui `facing` (dan flip visual), KECUALI sedang mengunci arah
+## hadap karena serangan dasar sedang berlangsung (paritas Boss.gd
+## `_face()` / pygame `_attack_facing`). Tanpa guard ini, hero yang
+## retreat/reposisi/berganti target sambil menyerang bisa membalik
+## pose swing di tengah animasi — terlihat patah/kaku.
+func _face(dx: float) -> void:
+	if _attack_lock_timer > 0.0 and _attack_facing != 0:
+		facing = _attack_facing
+		visual_root.scale.x = facing
+		return
+	if dx == 0.0:
+		return
+	facing = 1 if dx > 0.0 else -1
+	visual_root.scale.x = facing
 
 
 ## Posisi tujuan AI/pemain (paritas move_to(x, y, auto) _entity.py:
@@ -919,6 +948,17 @@ func try_attack():
 	if not target or not is_instance_valid(target) or bool(target.get("is_dead")):
 		return
 	attack_timer = _eff_attack_cd()
+	# ═══ KUNCI ARAH SERANGAN (anti swing kacau) — paritas _entity.py
+	# _do_attack 4272-4286 & Boss.gd try_attack 656-659. Hadapkan hero
+	# ke target DULU (kalau hero sedang retreat/reposisi, facing gerak
+	# bisa berbeda dari facing target), BARU kunci selama ayunan supaya
+	# pose serang tidak terbalik-balik ditimpa kode gerakan tiap frame.
+	var _atk_dx := target.global_position.x - global_position.x
+	if _atk_dx != 0.0:
+		facing = 1 if _atk_dx > 0.0 else -1
+		visual_root.scale.x = facing
+	_attack_facing = facing
+	_attack_lock_timer = clampf(attack_timer / 3.0, 6.0 / FPS, 15.0 / FPS)
 	# Animasi attack (5x lebih smooth dari pygame 6 frame)
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation("attack"):
 		sprite.play("attack")
