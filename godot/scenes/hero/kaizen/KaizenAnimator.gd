@@ -22,6 +22,23 @@ const ATK_REST_ANG := -32.0
 const ATK_RAISE_ANG := 148.0
 const ATK_END_ANG := -58.0
 
+# Sudut BAHU + SIKU lengan pedang (derajat, konvensi "down": 0 = lurus
+# bawah, + = memutar ke depan). Dulu hanya arm_f_el (siku/pergelangan)
+# yang disweep besar sedangkan arm_f_sh (bahu) nyaris diam (-56°..58°,
+# rentang kecil) → dari luar terlihat seperti "bahu tidak naik, cuma
+# pergelangan tangan yang bergerak". Sekarang BAHU ikut sweep besar,
+# sinkron dengan weapon_angle, supaya seluruh lengan atas terangkat saat
+# windup dan menebas sebagai satu unit saat action (bukan cuma FK ujung
+# lengan yang berputar sendiri).
+const ATK_SH_REST := 10.0
+const ATK_EL_REST := 30.0
+const ATK_SH_WINDUP := 190.0   # bahu terangkat penuh di atas kepala
+const ATK_EL_WINDUP := 60.0
+const ATK_SH_ACTION := -16.0   # bahu turun ke depan-bawah, searah tebasan
+const ATK_EL_ACTION := 18.0
+const ATK_SH_HOLD := -20.0
+const ATK_EL_HOLD := 24.0
+
 # Blink: jadwal kedip mandiri supaya wajah hidup.
 var _blink_cd := 2.3
 var _blink_t := -1.0
@@ -190,6 +207,10 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 	ap = clampf(ap, 0.0, 1.0)
 	if ap < ATK_WINDUP_END:
 		# ANTICIPATION — tarik bilah ke belakang-atas, tubuh merendah.
+		# Bahu HARUS naik/berputar mengikuti bilah (bukan cuma pergelangan
+		# tangan): sudut bahu disweep sampai ATK_SH_WINDUP (~190°, di atas
+		# kepala) supaya seluruh lengan atas ikut terangkat, sama seperti
+		# tarikan iai sungguhan.
 		var t := ss(ap / ATK_WINDUP_END)
 		p.root_y = 3.0 * t
 		p.root_x = -1.5 * t
@@ -199,8 +220,8 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 		p.leg_f_knee = D(-5.0) - D(14.0) * t
 		p.leg_b_hip = D(-8.0) - D(7.0) * t
 		p.leg_b_knee = D(-4.0) - D(10.0) * t
-		p.arm_f_sh = D(10.0) - D(66.0) * t
-		p.arm_f_el = D(30.0) + D(74.0) * t
+		p.arm_f_sh = sweep(ATK_SH_REST, ATK_SH_WINDUP, t)
+		p.arm_f_el = sweep(ATK_EL_REST, ATK_EL_WINDUP, t)
 		p.arm_b_sh = D(-9.0) + D(22.0) * t
 		p.arm_b_el = D(24.0) + D(18.0) * t
 		p.weapon_angle = sweep(ATK_REST_ANG, ATK_RAISE_ANG, t)
@@ -208,6 +229,10 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 		p.trail = false
 	elif ap < ATK_SWING_END:
 		# ACTION — tebasan cepat; kurva ease-in supaya ada "berat".
+		# Bahu berayun TURUN dari atas kepala ke depan-bawah bersamaan
+		# dengan bilah (sweep tanpa wrap, sinkron dengan weapon_angle):
+		# seluruh lengan (bahu→siku→bilah) menebas sebagai satu unit,
+		# bukan hanya pergelangan/siku yang berputar sendiri.
 		# Bilah MENEBAS TURUN dari belakang-atas lewat puncak kepala
 		# (148 → 90 → 0 → -58, sweep 206° searah jarum jam di layar).
 		var t := pow((ap - ATK_WINDUP_END) / (ATK_SWING_END - ATK_WINDUP_END), 1.45)
@@ -219,8 +244,8 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 		p.leg_f_knee = D(-19.0) + D(12.0) * t
 		p.leg_b_hip = D(-15.0) - D(12.0) * t
 		p.leg_b_knee = D(-14.0) + D(4.0) * t
-		p.arm_f_sh = lerp_angle(D(-56.0), D(58.0), t)
-		p.arm_f_el = lerp(D(104.0), D(16.0), t)
+		p.arm_f_sh = sweep(ATK_SH_WINDUP, ATK_SH_ACTION, t)
+		p.arm_f_el = sweep(ATK_EL_WINDUP, ATK_EL_ACTION, t)
 		p.arm_b_sh = D(13.0) - D(30.0) * t
 		p.arm_b_el = D(42.0)
 		p.weapon_angle = sweep(ATK_RAISE_ANG, ATK_END_ANG, t)
@@ -237,8 +262,8 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 		p.leg_f_knee = D(-7.0)
 		p.leg_b_hip = D(-27.0) + D(4.0) * t
 		p.leg_b_knee = D(-10.0)
-		p.arm_f_sh = D(58.0) - D(8.0) * t
-		p.arm_f_el = D(16.0) + D(4.0) * t
+		p.arm_f_sh = sweep(ATK_SH_ACTION, ATK_SH_HOLD, t)
+		p.arm_f_el = sweep(ATK_EL_ACTION, ATK_EL_HOLD, t)
 		p.arm_b_sh = D(-17.0)
 		p.arm_b_el = D(40.0)
 		p.weapon_angle = D(ATK_END_ANG) + 0.04 * sin(phase * 30.0) * (1.0 - t)
@@ -254,8 +279,8 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 		p.leg_f_knee = lerp(D(-7.0), D(-5.0), t)
 		p.leg_b_hip = lerp(D(-23.0), D(-8.0), t)
 		p.leg_b_knee = lerp(D(-10.0), D(-4.0), t)
-		p.arm_f_sh = lerp_angle(D(50.0), D(10.0), t)
-		p.arm_f_el = lerp(D(20.0), D(30.0), t)
+		p.arm_f_sh = sweep(ATK_SH_HOLD, ATK_SH_REST, t)
+		p.arm_f_el = sweep(ATK_EL_HOLD, ATK_EL_REST, t)
 		p.arm_b_sh = lerp(D(-17.0), D(-9.0), t)
 		p.arm_b_el = lerp(D(40.0), D(24.0), t)
 		p.weapon_angle = sweep(ATK_END_ANG, ATK_REST_ANG, t)
