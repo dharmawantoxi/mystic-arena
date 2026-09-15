@@ -26,6 +26,15 @@ const ATK_END_ANG := -58.0
 var _blink_cd := 2.3
 var _blink_t := -1.0
 
+# Kain (scarf/ponytail/hachimaki): fase diakumulasi di tick() dengan laju
+# variabel supaya KONTINU saat ganti state. Versi lama memakai
+# sin(phase*speed) dengan speed per-state, sehingga kain MELOMPAT setiap
+# serangan dimulai/berakhir (idle speed 1.0 -> attack 2.6 = lompatan fase
+# s/d 66% rentang penuh) dan setiap cast skill E/R (phase diganti
+# skill_t*12 dari nol) — terlihat sebagai stutter.
+var _cloth_phase := 0.0
+var _cloth_speed := 1.0
+
 
 static func D(deg: float) -> float:
 	return deg * PI / 180.0
@@ -46,8 +55,11 @@ static func sweep(from_deg: float, to_deg: float, t: float) -> float:
 	return D(lerpf(from_deg, to_deg, clampf(t, 0.0, 1.0)))
 
 
-## Dipanggil root tiap frame (delta asli). Mengatur kedip mata.
+## Dipanggil root tiap frame (delta asli). Mengatur kedip mata + fase kain.
 func tick(delta: float) -> void:
+	# Laju = phase global (6/dtk) x speed kain state terakhir: kecepatan
+	# berubah, posisi fase kontinu (1 frame lag, tak terlihat).
+	_cloth_phase += delta * 6.0 * _cloth_speed
 	if _blink_t >= 0.0:
 		_blink_t += delta
 		if _blink_t > 0.17:
@@ -135,7 +147,7 @@ func _idle(p: KaizenPose, phase: float) -> void:
 	p.arm_b_el = D(24.0)
 	p.weapon_angle = D(ATK_REST_ANG) + sin(phase * 0.9 + 0.4) * 0.03
 	p.skirt_flare = 0.6 + br * 0.4
-	_secondary(p, phase, 1.0, 0.10)
+	_secondary(p, 1.0, 0.10)
 
 
 func _walk(p: KaizenPose, phase: float) -> void:
@@ -159,7 +171,7 @@ func _walk(p: KaizenPose, phase: float) -> void:
 	p.arm_b_el = D(20.0)
 	p.weapon_angle = D(ATK_REST_ANG + 6.0) + stride2 * 0.06
 	p.skirt_flare = 1.5 + absf(stride) * 3.0
-	_secondary(p, phase, 2.2, 0.16)
+	_secondary(p, 2.2, 0.16)
 
 
 func _run(p: KaizenPose, phase: float) -> void:
@@ -183,85 +195,97 @@ func _run(p: KaizenPose, phase: float) -> void:
 	p.arm_b_el = D(38.0)
 	p.weapon_angle = D(172.0) + stride * 0.05
 	p.skirt_flare = 4.5 + absf(stride) * 2.5
-	_secondary(p, phase, 3.2, 0.42)
+	_secondary(p, 3.2, 0.42)
 
 
-func _attack(p: KaizenPose, ap: float, phase: float) -> void:
+func _attack(p: KaizenPose, ap: float, _phase: float) -> void:
 	ap = clampf(ap, 0.0, 1.0)
 	if ap < ATK_WINDUP_END:
-		# ANTICIPATION — tarik bilah ke belakang-atas, tubuh merendah.
+		# ANTICIPATION — tubuh merendah + mundur sementara TANGAN MENGANGKAT
+		# pedang dari depan paha, naik di depan dada, ke belakang kepala.
+		# Bahu 10 -> 220 derajat (220 sepadan -140): JANGAN "disederhanakan"
+		# jadi 10 -> -140 — jalur itu lewat belakang-bawah sehingga di tengah
+		# windup lengan menunjuk belakang-bawah sementara bilah menunjuk
+		# depan-atas = pergelangan terlipat ~178 derajat (bug "bahu tidak
+		# naik, hanya pergelangan tangan bergerak"). Lewat depan-atas,
+		# lengan + bilah naik BERSAMA (wrist < 25 derajat, tangan naik 26px).
 		var t := ss(ap / ATK_WINDUP_END)
-		p.root_y = 3.0 * t
-		p.root_x = -1.5 * t
-		p.torso_lean = D(2.0) - D(12.0) * t
-		p.head_lean = -D(4.0) * t
+		p.root_y = 4.5 * t
+		p.root_x = -2.5 * t
+		p.torso_lean = D(2.0) - D(16.0) * t
+		p.head_lean = -D(6.0) * t
 		p.leg_f_hip = D(7.0) + D(9.0) * t
 		p.leg_f_knee = D(-5.0) - D(14.0) * t
 		p.leg_b_hip = D(-8.0) - D(7.0) * t
 		p.leg_b_knee = D(-4.0) - D(10.0) * t
-		p.arm_f_sh = D(10.0) - D(66.0) * t
-		p.arm_f_el = D(30.0) + D(74.0) * t
+		p.arm_f_sh = sweep(10.0, 220.0, t)
+		p.arm_f_el = D(30.0) + D(10.0) * t
 		p.arm_b_sh = D(-9.0) + D(22.0) * t
 		p.arm_b_el = D(24.0) + D(18.0) * t
 		p.weapon_angle = sweep(ATK_REST_ANG, ATK_RAISE_ANG, t)
 		p.skirt_flare = 0.6 + t * 1.4
 		p.trail = false
 	elif ap < ATK_SWING_END:
-		# ACTION — tebasan cepat; kurva ease-in supaya ada "berat".
-		# Bilah MENEBAS TURUN dari belakang-atas lewat puncak kepala
-		# (148 → 90 → 0 → -58, sweep 206° searah jarum jam di layar).
+		# ACTION — tebasan overhead: lengan menyapu dari belakang kepala
+		# melewati ATAS (-140 -> -302 lewat -180; -302 sepadan 58) turun ke
+		# depan, BERSAMA bilah (148 -> 90 -> 0 -> -58, sweep 206° searah
+		# jarum jam di layar). Badan melenting naik di tengah ayunan lalu
+		# menghantam turun saat impact (wrist 25-38 derajat sepanjang swing).
 		var t := pow((ap - ATK_WINDUP_END) / (ATK_SWING_END - ATK_WINDUP_END), 1.45)
-		p.root_y = lerp(3.0, -1.0, t)
-		p.root_x = lerp(-1.5, 7.0, t)
-		p.torso_lean = lerp_angle(D(-10.0), D(13.0), t)
-		p.head_lean = D(3.0) * t
+		p.root_y = lerp(4.5, 3.0, t) - sin(t * PI) * 5.0
+		p.root_x = lerp(-2.5, 8.0, t)
+		p.torso_lean = lerp_angle(D(-14.0), D(14.0), t)
+		p.head_lean = lerp(D(-6.0), D(3.0), t)
 		p.leg_f_hip = D(16.0) + D(20.0) * t
 		p.leg_f_knee = D(-19.0) + D(12.0) * t
 		p.leg_b_hip = D(-15.0) - D(12.0) * t
 		p.leg_b_knee = D(-14.0) + D(4.0) * t
-		p.arm_f_sh = lerp_angle(D(-56.0), D(58.0), t)
-		p.arm_f_el = lerp(D(104.0), D(16.0), t)
+		p.arm_f_sh = sweep(-140.0, -302.0, t)
+		p.arm_f_el = lerp(D(40.0), D(12.0), t)
 		p.arm_b_sh = D(13.0) - D(30.0) * t
 		p.arm_b_el = D(42.0)
 		p.weapon_angle = sweep(ATK_RAISE_ANG, ATK_END_ANG, t)
 		p.skirt_flare = 2.0 + t * 4.0
 		p.trail = true
 	elif ap < ATK_HOLD_END:
-		# IMPACT HOLD — brief settle; jejak bilah masih terlihat.
+		# IMPACT HOLD — settle: bilah menekan 4 derajat lalu kembali.
+		# (Dulu jitter sin(phase*30) = 28.6 Hz yang ter-aliasing di 60fps
+		# menjadi getaran acak +-2.3 derajat — salah satu sumber stutter.)
 		var t := ss((ap - ATK_SWING_END) / (ATK_HOLD_END - ATK_SWING_END))
-		p.root_y = lerp(-1.0, 0.5, t)
-		p.root_x = lerp(7.0, 5.5, t)
-		p.torso_lean = D(13.0) - D(3.0) * t
+		p.root_y = lerp(3.0, 1.5, t)
+		p.root_x = lerp(8.0, 6.5, t)
+		p.torso_lean = D(14.0) - D(3.0) * t
 		p.head_lean = D(3.0) - D(1.0) * t
 		p.leg_f_hip = D(36.0) - D(6.0) * t
 		p.leg_f_knee = D(-7.0)
 		p.leg_b_hip = D(-27.0) + D(4.0) * t
 		p.leg_b_knee = D(-10.0)
 		p.arm_f_sh = D(58.0) - D(8.0) * t
-		p.arm_f_el = D(16.0) + D(4.0) * t
+		p.arm_f_el = D(12.0) + D(6.0) * t
 		p.arm_b_sh = D(-17.0)
-		p.arm_b_el = D(40.0)
-		p.weapon_angle = D(ATK_END_ANG) + 0.04 * sin(phase * 30.0) * (1.0 - t)
+		p.arm_b_el = D(42.0)
+		p.weapon_angle = D(ATK_END_ANG) - D(4.0) * sin(t * PI)
 		p.skirt_flare = 6.0 - t * 1.5
 		p.trail = true
 	else:
 		# RECOVERY — kembali ke siaga (dipotong halus oleh blending root).
 		var t := ss((ap - ATK_HOLD_END) / (1.0 - ATK_HOLD_END))
-		p.root_y = lerp(0.5, 0.0, t)
-		p.root_x = lerp(5.5, 0.0, t)
-		p.torso_lean = lerp_angle(D(10.0), D(2.0), t)
+		p.root_y = lerp(1.5, 0.0, t)
+		p.root_x = lerp(6.5, 0.0, t)
+		p.torso_lean = lerp_angle(D(11.0), D(2.0), t)
+		p.head_lean = lerp(D(2.0), D(0.0), t)
 		p.leg_f_hip = lerp(D(30.0), D(7.0), t)
 		p.leg_f_knee = lerp(D(-7.0), D(-5.0), t)
 		p.leg_b_hip = lerp(D(-23.0), D(-8.0), t)
 		p.leg_b_knee = lerp(D(-10.0), D(-4.0), t)
 		p.arm_f_sh = lerp_angle(D(50.0), D(10.0), t)
-		p.arm_f_el = lerp(D(20.0), D(30.0), t)
+		p.arm_f_el = lerp(D(18.0), D(30.0), t)
 		p.arm_b_sh = lerp(D(-17.0), D(-9.0), t)
-		p.arm_b_el = lerp(D(40.0), D(24.0), t)
+		p.arm_b_el = lerp(D(42.0), D(24.0), t)
 		p.weapon_angle = sweep(ATK_END_ANG, ATK_REST_ANG, t)
 		p.skirt_flare = lerp(4.5, 0.6, t)
 		p.trail = t < 0.4
-	_secondary(p, phase, 2.6, 0.24)
+	_secondary(p, 2.6, 0.24)
 
 
 ## Q1 Steel Wind — iai cepat: anticipation lebih pendek, tebasan lebih lebar.
@@ -272,11 +296,11 @@ func _skill_q(p: KaizenPose, ap: float, phase: float) -> void:
 	p.torso_lean += D(3.0)
 	p.weapon_angle -= D(10.0)
 	p.wind_glow = 0.8
-	_secondary(p, phase, 3.0, 0.30)
+	_secondary(p, 3.0, 0.30)
 
 
 ## Q2 Dash Strike — pose melayang selama dash.
-func _skill_dash(p: KaizenPose, phase: float, skill_t: float) -> void:
+func _skill_dash(p: KaizenPose, _phase: float, skill_t: float) -> void:
 	var settle := ss(minf(1.0, skill_t / 0.45))
 	p.root_x = lerp(9.0, 3.0, settle)
 	p.root_y = lerp(-4.0, 1.0, settle)
@@ -297,7 +321,7 @@ func _skill_dash(p: KaizenPose, phase: float, skill_t: float) -> void:
 	p.skirt_flare = 5.0
 	p.wind_glow = 1.0
 	p.trail = settle < 0.6
-	_secondary(p, phase, 4.0, 0.85)
+	_secondary(p, 4.0, 0.85)
 
 
 ## W Wind Wall — dorongan telapak ke depan, kuda-kuda belakang.
@@ -321,7 +345,7 @@ func _skill_w(p: KaizenPose, phase: float, skill_t: float) -> void:
 	p.weapon_angle = D(-118.0) - D(8.0) * hold_wave * push
 	p.skirt_flare = 2.0 + push * 1.5
 	p.wind_glow = 0.5 + 0.3 * push + 0.2 * maxf(0.0, hold_wave)
-	_secondary(p, phase, 2.8, 0.34)
+	_secondary(p, 2.8, 0.34)
 
 
 ## E Whirlwind — putaran bilah dua kali di sekeliling tubuh.
@@ -349,7 +373,7 @@ func _skill_e(p: KaizenPose, skill_t: float) -> void:
 	p.skirt_flare = 4.0 + sin(k * PI) * 3.0
 	p.wind_glow = 0.9 * (1.0 - wind_down)
 	p.trail = k < 1.0
-	_secondary(p, skill_t * 12.0, 3.4, 0.5)
+	_secondary(p, 3.4, 0.5)
 
 
 ## R Tempest Fury — crouch dalam → tebasan naik menyilang.
@@ -364,17 +388,19 @@ func _skill_r(p: KaizenPose, skill_t: float) -> void:
 		p.leg_f_knee = D(-5.0) - D(30.0) * t
 		p.leg_b_hip = D(-8.0) - D(16.0) * t
 		p.leg_b_knee = D(-4.0) - D(26.0) * t
-		p.arm_f_sh = D(10.0) - D(70.0) * t
-		p.arm_f_el = D(30.0) + D(40.0) * t
+		p.arm_f_sh = D(10.0) - D(90.0) * t
+		p.arm_f_el = D(30.0) + D(25.0) * t
 		p.arm_b_sh = D(-9.0) + D(14.0) * t
 		p.arm_b_el = D(24.0) + D(16.0) * t
 		p.weapon_angle = D(-32.0) - D(120.0) * t
 		p.wind_glow = t
 	elif skill_t < 0.42:
 		# RELEASE: meledak ke atas, bilah naik vertikal.
-		# Sweep naik lewat DEPAN tubuh (-152 → -90 → 0 → 104) — lerp_angle
+		# Sweep naik lewat DEPAN tubuh (-152 → -90 → 0 → 70) — lerp_angle
 		# di sini dulu membalik arahnya (lewat belakang) sehingga ultimate
-		# tampak "menebas ke bawah dari bawah".
+		# tampak "menebas ke bawah dari bawah". Bilah berakhir depan-atas
+		# (70, bukan 104) supaya sejajar lengan depan-atas (wrist 58 derajat,
+		# bukan 92) — pedang terangkat ke langit dari tangan depan.
 		var t := pow((skill_t - 0.16) / 0.26, 1.35)
 		p.root_y = lerp(6.0, -5.0, t)
 		p.root_x = 3.0 * t
@@ -384,11 +410,11 @@ func _skill_r(p: KaizenPose, skill_t: float) -> void:
 		p.leg_f_knee = lerp(D(-35.0), D(-8.0), t)
 		p.leg_b_hip = lerp(D(-24.0), D(-18.0), t)
 		p.leg_b_knee = lerp(D(-30.0), D(-12.0), t)
-		p.arm_f_sh = lerp_angle(D(-60.0), D(96.0), t)
-		p.arm_f_el = lerp(D(70.0), D(6.0), t)
+		p.arm_f_sh = lerp_angle(D(-80.0), D(96.0), t)
+		p.arm_f_el = lerp(D(55.0), D(6.0), t)
 		p.arm_b_sh = D(5.0) - D(30.0) * t
 		p.arm_b_el = D(40.0)
-		p.weapon_angle = sweep(-152.0, 104.0, t)
+		p.weapon_angle = sweep(-152.0, 70.0, t)
 		p.skirt_flare = 3.0 + t * 4.0
 		p.wind_glow = 1.0
 		p.trail = true
@@ -406,12 +432,12 @@ func _skill_r(p: KaizenPose, skill_t: float) -> void:
 		p.arm_f_el = lerp(D(6.0), D(30.0), t)
 		p.arm_b_sh = lerp(D(-25.0), D(-9.0), t)
 		p.arm_b_el = lerp(D(40.0), D(24.0), t)
-		p.weapon_angle = sweep(104.0, ATK_REST_ANG, t)
+		p.weapon_angle = sweep(70.0, ATK_REST_ANG, t)
 		p.wind_glow = 1.0 - t * 0.75
-	_secondary(p, skill_t * 14.0, 3.0, 0.4)
+	_secondary(p, 3.0, 0.4)
 
 
-func _hurt(p: KaizenPose, t: float, phase: float) -> void:
+func _hurt(p: KaizenPose, t: float, _phase: float) -> void:
 	var k := 1.0 - ss(t)  # kuat di awal, pulih di akhir
 	var shiver := sin(t * 42.0) * 1.4 * k
 	p.root_x = -3.0 * k + shiver
@@ -430,7 +456,7 @@ func _hurt(p: KaizenPose, t: float, phase: float) -> void:
 	p.leg_b_knee = D(-4.0) - D(14.0) * k
 	p.hurt_tint = k
 	p.skirt_flare = 1.0 + k
-	_secondary(p, phase, 2.0, 0.2)
+	_secondary(p, 2.0, 0.2)
 
 
 func _death(p: KaizenPose, t: float) -> void:
@@ -472,7 +498,7 @@ func _death(p: KaizenPose, t: float) -> void:
 	# Memudar HANYA setelah badan selesai rebah (dulu fade bareng jatuh →
 	# mayat tampak "menguap" di udara).
 	p.alpha = 1.0 - 0.38 * settle
-	_secondary(p, t * 6.0, 1.6, 0.45 * k_torso)
+	_secondary(p, 1.6, 0.45 * k_torso)
 
 
 func _victory(p: KaizenPose, phase: float) -> void:
@@ -492,7 +518,7 @@ func _victory(p: KaizenPose, phase: float) -> void:
 	p.leg_b_knee = D(-5.0)
 	p.skirt_flare = 1.5 + br * 0.5
 	p.wind_glow = 0.35 + 0.15 * maxf(0.0, br)
-	_secondary(p, phase, 2.4, 0.22)
+	_secondary(p, 2.4, 0.22)
 
 
 # ══════════════════════════════════════════════════════════
@@ -501,25 +527,30 @@ func _victory(p: KaizenPose, phase: float) -> void:
 
 ## `speed_factor` = seberapa cepat kain harus berkibar (1 = idle, 4 = dash).
 ## `stream` = 0..1; 1 = ekor kain lurus terseret ke belakang (gerakan cepat).
-func _secondary(p: KaizenPose, phase: float, speed_factor: float, stream: float) -> void:
-	var w1 := sin(phase * 1.35 * speed_factor)
-	var w2 := sin(phase * 1.35 * speed_factor + 0.9)
-	var w3 := sin(phase * 1.35 * speed_factor + 1.8)
+## Kibaran memakai _cloth_phase (diakumulasi di tick), BUKAN phase global
+## dikali speed — hanya kecepatan yang berubah saat ganti state, posisi fase
+## kontinu sehingga kain tidak menyentak (anti-stutter).
+func _secondary(p: KaizenPose, speed_factor: float, stream: float) -> void:
+	_cloth_speed = speed_factor
+	var cp := _cloth_phase
+	var w1 := sin(cp * 1.35)
+	var w2 := sin(cp * 1.35 + 0.9)
+	var w3 := sin(cp * 1.35 + 1.8)
 	var amp := 0.16 * (1.0 - stream * 0.6)
 	# Scarf: tiga segmen, makin ke ujung makin liar.
 	p.scarf[0] = lerp(2.98, PI, stream) + w1 * amp
 	p.scarf[1] = lerp(3.10, PI + 0.06, stream) + w2 * amp * 1.4
 	p.scarf[2] = lerp(2.86, PI - 0.05, stream) + w3 * amp * 1.8
 	# Ponytail: lebih berat, frekuensi sedikit berbeda.
-	var q1 := sin(phase * 1.15 * speed_factor + 0.5)
-	var q2 := sin(phase * 1.15 * speed_factor + 1.4)
-	var q3 := sin(phase * 1.15 * speed_factor + 2.2)
+	var q1 := sin(cp * 1.15 + 0.5)
+	var q2 := sin(cp * 1.15 + 1.4)
+	var q3 := sin(cp * 1.15 + 2.2)
 	p.pony[0] = lerp(3.05, PI + 0.1, stream) + q1 * amp * 0.8
 	p.pony[1] = lerp(3.18, PI + 0.14, stream) + q2 * amp * 1.2
 	p.pony[2] = lerp(2.95, PI + 0.02, stream) + q3 * amp * 1.6
 	# Tali hachimaki: pendek, responsif.
-	var b1 := sin(phase * 1.7 * speed_factor + 0.3)
-	var b2 := sin(phase * 1.7 * speed_factor + 1.2)
+	var b1 := sin(cp * 1.7 + 0.3)
+	var b2 := sin(cp * 1.7 + 1.2)
 	p.band[0] = lerp(2.85, PI - 0.12, stream) + b1 * amp * 1.1
 	p.band[1] = lerp(3.10, PI + 0.02, stream) + b2 * amp * 1.5
 	# Condongkan torso sedikit melawan arah kain (aksi-reaksi halus).

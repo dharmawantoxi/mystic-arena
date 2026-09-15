@@ -44,6 +44,11 @@ var _skill_key := ""
 var _skill_time := 0.0
 var _attack_started_emitted := false
 var _impact_emitted := false
+## attack_progress frame sebelumnya (khusus state attack): ap dihitung Hero
+## dari attack_timer/cooldown, jadi kalau cooldown berubah mid-swing (slow
+## menara / buff habis) ap bisa MUNDUR dan pose melompat ke belakang =
+## stutter. Dilacak agar monoton naik dalam satu swing.
+var _prev_ap := 0.0
 var _prev_pos := Vector2.ZERO
 var _hero = null
 var _hero_hp := -1.0
@@ -87,6 +92,19 @@ func drive(p_phase: float, p_action: String, p_attack_progress: float,
 		state = _override_state
 		if _override_t >= _override_dur:
 			_override_state = ""
+
+	# ── attack_progress monoton naik dalam satu swing ──
+	# Reset 1->0 (serangan baru) diizinkan; selain itu ap tidak boleh mundur
+	# (mundur = pose melompat ke belakang = stutter, mis. slow menara
+	# mengubah cooldown mid-swing). Di luar state attack tracker di-reset.
+	if state == "attack":
+		if _prev_ap > 0.5 and ap < _prev_ap - 0.4:
+			pass  # serangan baru (wrap): terima reset
+		elif ap < _prev_ap:
+			ap = _prev_ap
+		_prev_ap = ap
+	else:
+		_prev_ap = 0.0
 
 	# ── Sinyal combat feel (dipakai demo; sistem lain boleh listen) ──
 	_emit_combat_signals(state, ap)
