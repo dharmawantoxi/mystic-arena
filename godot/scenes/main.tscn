@@ -24,6 +24,7 @@ script = ExtResource("4")
 
 [node name="FX" type="CanvasLayer" parent="."]
 layer = 10
+follow_viewport_enabled = true
 
 [node name="Camera2D" type="Camera2D" parent="."]
 script = ExtResource("6")

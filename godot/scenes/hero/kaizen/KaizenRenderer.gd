@@ -121,7 +121,7 @@ func _solve(p: KaizenPose) -> Dictionary:
 	var bdir := _fwd(p.weapon_angle)
 	var tip := hand_f + bdir * BLADE_LEN
 	var grip_end := hand_f - bdir * GRIP_LEN
-	return {
+	var j := {
 		"hip": hip, "chest": chest, "neck": neck, "head": head_c,
 		"up1": up1, "up2": up2,
 		"sh_f": sh_f, "sh_b": sh_b,
@@ -131,6 +131,19 @@ func _solve(p: KaizenPose) -> Dictionary:
 		"elb_b": elb_b, "hand_b": hand_b,
 		"bdir": bdir, "tip": tip, "grip_end": grip_end,
 	}
+	_clamp_ground(j)
+	return j
+
+
+## Titik tubuh tidak pernah menembus tanah (y lokal > -0.5): kaki rebah,
+## tangan terkulai, dan kepala saat roboh "mendarat" DI permukaan, bukan
+## 3-4px di dalamnya. Hanya titik sendi — vektor arah (up/bdir) diskip.
+static func _clamp_ground(j: Dictionary) -> void:
+	for key in ["hip", "chest", "neck", "head", "knee_f", "ankle_f", "toe_f",
+			"knee_b", "ankle_b", "toe_b", "elb_f", "hand_f", "elb_b", "hand_b"]:
+		var pt: Vector2 = j[key]
+		if pt.y > -0.5:
+			j[key] = Vector2(pt.x, -0.5)
 
 
 ## Ujung bilah (lokal) — dipakai root untuk API publik / FX.
@@ -301,7 +314,11 @@ func _draw_hakama(p: KaizenPose, j: Dictionary) -> void:
 	var knee_b: Vector2 = j["knee_b"]
 	var skew := (knee_f.x - knee_b.x) * 0.18
 	var half_w := 12.0 + p.skirt_flare
-	var hem_y := -8.5
+	# Hem mengikuti pinggul: 19px di bawah hip, TAPI tidak pernah di atas
+	# -8.5 (kaki terlihat) dan tidak pernah di bawah -1.5 (kain menggantung
+	# menembus tanah saat pinggul turun — dulu hem absolut -8.5 bikin rok
+	# TERBALIK di animasi death karena pinggul turun melewati garis hem).
+	var hem_y := clampf(hip.y + 19.0, -8.5, -1.5)
 	var pts := PackedVector2Array([
 		hip + Vector2(-8.0, -3.0),
 		hip + Vector2(8.0, -3.0),
