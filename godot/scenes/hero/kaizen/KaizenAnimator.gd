@@ -36,6 +36,16 @@ static func ss(t: float) -> float:
 	return t * t * (3.0 - 2.0 * t)
 
 
+## Interpolasi sudut bilah DALAM DERAJAT tanpa wrap — jalur ayunan mengikuti
+## angka yang ditulis, bukan jarak terpendek. WAJIB dipakai untuk kurva bilah:
+## lerp_angle(148°, -58°) memilih jarak terpendek (+154° lewat bawah) sehingga
+## tebasan tampak "dari bawah ke atas" — bug klasik sweep 206°. Dengan sweep()
+## jalurnya deterministik: 148 → 90 → 0 → -58 = tebasan turun dari atas.
+## `t` sudah di-ease pemanggil (pow/ss); sini hanya lerp linear derajat.
+static func sweep(from_deg: float, to_deg: float, t: float) -> float:
+	return D(lerpf(from_deg, to_deg, clampf(t, 0.0, 1.0)))
+
+
 ## Dipanggil root tiap frame (delta asli). Mengatur kedip mata.
 func tick(delta: float) -> void:
 	if _blink_t >= 0.0:
@@ -193,11 +203,13 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 		p.arm_f_el = D(30.0) + D(74.0) * t
 		p.arm_b_sh = D(-9.0) + D(22.0) * t
 		p.arm_b_el = D(24.0) + D(18.0) * t
-		p.weapon_angle = lerp_angle(D(ATK_REST_ANG), D(ATK_RAISE_ANG), t)
+		p.weapon_angle = sweep(ATK_REST_ANG, ATK_RAISE_ANG, t)
 		p.skirt_flare = 0.6 + t * 1.4
 		p.trail = false
 	elif ap < ATK_SWING_END:
 		# ACTION — tebasan cepat; kurva ease-in supaya ada "berat".
+		# Bilah MENEBAS TURUN dari belakang-atas lewat puncak kepala
+		# (148 → 90 → 0 → -58, sweep 206° searah jarum jam di layar).
 		var t := pow((ap - ATK_WINDUP_END) / (ATK_SWING_END - ATK_WINDUP_END), 1.45)
 		p.root_y = lerp(3.0, -1.0, t)
 		p.root_x = lerp(-1.5, 7.0, t)
@@ -211,7 +223,7 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 		p.arm_f_el = lerp(D(104.0), D(16.0), t)
 		p.arm_b_sh = D(13.0) - D(30.0) * t
 		p.arm_b_el = D(42.0)
-		p.weapon_angle = lerp_angle(D(ATK_RAISE_ANG), D(ATK_END_ANG), t)
+		p.weapon_angle = sweep(ATK_RAISE_ANG, ATK_END_ANG, t)
 		p.skirt_flare = 2.0 + t * 4.0
 		p.trail = true
 	elif ap < ATK_HOLD_END:
@@ -246,7 +258,7 @@ func _attack(p: KaizenPose, ap: float, phase: float) -> void:
 		p.arm_f_el = lerp(D(20.0), D(30.0), t)
 		p.arm_b_sh = lerp(D(-17.0), D(-9.0), t)
 		p.arm_b_el = lerp(D(40.0), D(24.0), t)
-		p.weapon_angle = lerp_angle(D(ATK_END_ANG), D(ATK_REST_ANG), t)
+		p.weapon_angle = sweep(ATK_END_ANG, ATK_REST_ANG, t)
 		p.skirt_flare = lerp(4.5, 0.6, t)
 		p.trail = t < 0.4
 	_secondary(p, phase, 2.6, 0.24)
@@ -360,6 +372,9 @@ func _skill_r(p: KaizenPose, skill_t: float) -> void:
 		p.wind_glow = t
 	elif skill_t < 0.42:
 		# RELEASE: meledak ke atas, bilah naik vertikal.
+		# Sweep naik lewat DEPAN tubuh (-152 → -90 → 0 → 104) — lerp_angle
+		# di sini dulu membalik arahnya (lewat belakang) sehingga ultimate
+		# tampak "menebas ke bawah dari bawah".
 		var t := pow((skill_t - 0.16) / 0.26, 1.35)
 		p.root_y = lerp(6.0, -5.0, t)
 		p.root_x = 3.0 * t
@@ -373,7 +388,7 @@ func _skill_r(p: KaizenPose, skill_t: float) -> void:
 		p.arm_f_el = lerp(D(70.0), D(6.0), t)
 		p.arm_b_sh = D(5.0) - D(30.0) * t
 		p.arm_b_el = D(40.0)
-		p.weapon_angle = lerp_angle(D(-152.0), D(104.0), t)
+		p.weapon_angle = sweep(-152.0, 104.0, t)
 		p.skirt_flare = 3.0 + t * 4.0
 		p.wind_glow = 1.0
 		p.trail = true
@@ -391,7 +406,7 @@ func _skill_r(p: KaizenPose, skill_t: float) -> void:
 		p.arm_f_el = lerp(D(6.0), D(30.0), t)
 		p.arm_b_sh = lerp(D(-25.0), D(-9.0), t)
 		p.arm_b_el = lerp(D(40.0), D(24.0), t)
-		p.weapon_angle = lerp_angle(D(104.0), D(-32.0), t)
+		p.weapon_angle = sweep(104.0, ATK_REST_ANG, t)
 		p.wind_glow = 1.0 - t * 0.75
 	_secondary(p, skill_t * 14.0, 3.0, 0.4)
 
@@ -419,25 +434,45 @@ func _hurt(p: KaizenPose, t: float, phase: float) -> void:
 
 
 func _death(p: KaizenPose, t: float) -> void:
-	# Roboh ke belakang: pinggul turun, torso rebah, bilah terlepas.
-	var k := ss(t)
-	p.root_y = 19.0 * k
-	p.root_x = -6.0 * k
-	p.torso_lean = -D(72.0) * k
-	p.chest_flex = -D(10.0) * k
-	p.head_lean = -D(20.0) * k
-	p.arm_f_sh = D(10.0) + D(60.0) * k
-	p.arm_f_el = D(30.0) - D(10.0) * k
-	p.arm_b_sh = D(-9.0) - D(52.0) * k
-	p.arm_b_el = D(24.0) + D(20.0) * k
-	p.leg_f_hip = D(7.0) + D(56.0) * k
-	p.leg_f_knee = D(-5.0) - D(70.0) * k
-	p.leg_b_hip = D(-8.0) + D(38.0) * k
-	p.leg_b_knee = D(-4.0) - D(54.0) * k
-	p.weapon_angle = D(ATK_REST_ANG) - D(60.0) * k
-	p.skirt_flare = 3.0 * k
-	p.alpha = 1.0 - 0.4 * k
-	_secondary(p, 0.0, 0.4, 0.05)
+	# Roboh terlentang dalam DUA gelombang — seperti tubuh sungguhan jatuh:
+	#   1) torso+kaki berotak mundur lebih dulu (t 0.00-0.50),
+	#   2) pinggul jatuh menyusul sampai mendekati tanah (t 0.12-0.67),
+	#   3) settle: badan "mendarat" kecil, lalu mayat memudar pelan.
+	# Semua akhir posisi DIJAGA di atas tanah (y<=0): kaki rebah lurus ke
+	# depan (hip ~73-78°, lutut lurus), torso rebah ke belakang (-88°),
+	# kepala melorot ke tanah lewat chest_flex. Versi lama menenggelamkan
+	# pinggul -8px sambil kaki masih panjang 23px ke bawah → kaki tembus
+	# lantai, lutut terbalik, dan rok hakama terlipat terbalik.
+	var k_torso := ss(clampf(t / 0.5, 0.0, 1.0))
+	var k_hip := ss(clampf((t - 0.12) / 0.55, 0.0, 1.0))
+	var settle := ss(clampf((t - 0.72) / 0.28, 0.0, 1.0))
+	# ── pinggul: jatuh terakhir, berakhir hanya -8px dari tanah ──
+	p.root_y = 19.0 * k_hip
+	p.root_x = -7.0 * k_hip
+	# ── torso rebah ke belakang (hampir horizontal), dada melorot ──
+	p.torso_lean = D(2.0) - D(90.0) * k_torso
+	p.chest_flex = -D(16.0) * k_torso
+	p.head_lean = -D(14.0) * k_torso
+	# ── lengan terlepas ke samping: depan terkepalk ke depan-atas tanah,
+	#    belakang terkulai ke belakang menyentuh tanah ──
+	p.arm_f_sh = D(10.0) + D(64.0) * k_torso      # 74° → hampir sejajar tanah
+	p.arm_f_el = D(30.0) - D(10.0) * k_torso
+	p.arm_b_sh = D(-9.0) - D(41.0) * k_torso      # -50° → terkulai ke belakang
+	p.arm_b_el = D(24.0) - D(14.0) * k_torso
+	# ── kaki diluruskan rebah ke DEPAN (bukan menekuk terbalik) ──
+	p.leg_f_hip = D(7.0) + D(66.0) * k_torso      # 73°
+	p.leg_f_knee = D(-5.0) * (1.0 - k_torso)      # lurus saat rebah
+	p.leg_b_hip = D(-8.0) + D(86.0) * k_torso     # 78°
+	p.leg_b_knee = D(-4.0) * (1.0 - k_torso)
+	p.leg_f_foot = D(14.0) * k_torso              # telapak menghadap atas
+	p.leg_b_foot = D(18.0) * k_torso
+	# ── bilah longgar di tangan, hampir sejajar tanah ke depan ──
+	p.weapon_angle = D(ATK_REST_ANG) + D(42.0) * k_torso
+	p.skirt_flare = lerp(0.6, 2.4, k_hip) - 1.4 * settle
+	# Memudar HANYA setelah badan selesai rebah (dulu fade bareng jatuh →
+	# mayat tampak "menguap" di udara).
+	p.alpha = 1.0 - 0.38 * settle
+	_secondary(p, t * 6.0, 1.6, 0.45 * k_torso)
 
 
 func _victory(p: KaizenPose, phase: float) -> void:

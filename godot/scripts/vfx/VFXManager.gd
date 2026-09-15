@@ -72,12 +72,22 @@ func _acquire() -> Object:
 ## Actor efek dunia dipasang di container FX arena (CanvasLayer di atas
 ## unit) bila ada; demo/scene lain jatuh ke current_scene — sama seperti
 ## konvensi GameManager.attach_fx.
+##
+## PENTING (fix "skill FX tidak terlihat/meleset"): CanvasLayer menggambar
+## di RUANG LAYAR dan tidak ikut transform kamera. Kamera arena dikunci ke
+## frame 1280x720, jadi di layar yang bukan persis 16:9 (jendela lebih
+## kecil/lebar, tablet 4:3, ultrawide) koordinat dunia dan layar BEDA
+## offset — sabit/impact muncul di tempat salah atau di luar layar.
+## follow_viewport_enabled membuat layer mengikuti kamera → posisi global
+## actor selalu = posisi dunia, di aspect ratio apa pun.
 func _host(actor: Node2D) -> void:
 	var host: Node = GameManager.fx_container
 	if host == null or not is_instance_valid(host):
 		host = get_tree().current_scene
 	if host == null:
 		host = get_tree().root
+	if host is CanvasLayer:
+		host.follow_viewport_enabled = true
 	if actor.get_parent() != host:
 		if actor.get_parent() != null:
 			actor.get_parent().remove_child(actor)
