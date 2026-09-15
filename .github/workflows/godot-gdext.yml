@@ -26,17 +26,37 @@ name: Godot GDExtension (godot++)
 #     tiap ekstensi: objek compile-nya dipakai bersama, jadi enam lib hanya
 #     membayar satu compile godot-cpp.
 #
+# KEBIJAKAN TRIGGER (2026-09-15) — build ±20-35 menit TIDAK lagi menahan
+# PR oracle Python:
+#   * PR otomatis HANYA kalau berkas sisi C++/Godot yang berubah
+#     (godot/gdext/**, addons mystic_*, generator tools/gen_*_cpp.py,
+#     harness paritas, scene uji GDExt, project.godot).
+#   * PR yang hanya menyentuh oracle Python (levels/**, hero_skills/**,
+#     map_components/**, ui_components/**, mobile/**, splash_screen.py)
+#     cukup lewat Godot Check (godot-check.yml, ±7 menit): langkah
+#     freshness `--check` di sana gagal CEPAT (±1 menit, tanpa compiler)
+#     kalau C++-nya basi, lengkap dengan perintah regenerasi.
+#   * PR oracle yang tetap ingin build penuh: beri label `gdext-ci` pada
+#     PR (trigger pull_request_target di bawah) ATAU jalankan manual.
+#   * Push main TIDAK berubah: paritas tetap diverifikasi otomatis di main.
+#
 # HEMAT KUOTA:
-#   * hanya jalan kalau berkas GDExt/skill/generator yang berubah (filter paths),
+#   * filter paths (lihat KEBIJAKAN TRIGGER di atas),
 #   * godot-cpp (sumber + objek hasil compile) di-cache per commit SHA,
 #   * binary Godot di-cache (pola sama dengan godot-check.yml),
-#   * concurrency membatalkan run lama, timeout 45 menit.
+#   * concurrency membatalkan run lama, timeout 75 menit.
 #
 # Jalan manual: tab Actions -> "Godot GDExtension (godot++)" -> Run workflow.
 # ═══════════════════════════════════════════════════════
 
 on:
   pull_request:
+    # KEBIJAKAN (2026-09-15): oracle Python (levels/**, hero_skills/**,
+    # map_components/**, ui_components/**, mobile/**, splash_screen.py)
+    # DIHAPUS dari trigger PR — PR jalur itu cukup lewat godot-check.yml
+    # (±7 menit; freshness `--check` gagal cepat di sana kalau C++ basi).
+    # Di sini otomatis HANYA berkas sisi C++/Godot. Build penuh untuk PR
+    # oracle: label `gdext-ci` atau Run workflow manual.
     paths:
       - 'godot/gdext/**'
       - 'godot/addons/mystic_skills/**'
@@ -48,7 +68,8 @@ on:
       - 'godot/tests/HeroSkillGdextParityTest.gd'
       - 'godot/tests/HeroSkillGdextParityTest.tscn'
       - 'godot/project.godot'
-      - 'hero_skills/**'
+      # Generator + harness: mengubah generator = output transpile bisa
+      # berubah, mengubah harness = hasil paritas bisa berubah.
       - 'tools/gen_hero_skills_cpp.py'
       - 'tools/gen_hero_skill_kit.py'
       - 'tools/gen_levels_cpp.py'
@@ -62,20 +83,16 @@ on:
       - 'godot/tests/LevelDataGdextParityTest.gd'
       - 'godot/tests/LevelDataGdextParityTest.tscn'
       - 'godot/tests/fixtures/level_data.json'
-      - 'levels/**'
       - 'tools/gen_maps_cpp.py'
       - 'tools/test_godot_map_data_parity.py'
       - 'tools/test_maps_cpp_selftest.py'
       - 'godot/addons/mystic_maps/**'
-      - 'ui_components/**'
       - 'tools/gen_ui_cpp.py'
       - 'tools/test_ui_cpp_selftest.py'
       - 'godot/addons/mystic_ui/**'
-      - 'mobile/**'
       - 'tools/gen_mobile_cpp.py'
       - 'tools/test_mobile_cpp_selftest.py'
       - 'godot/addons/mystic_mobile/**'
-      - 'splash_screen.py'
       - 'tools/gen_splash_cpp.py'
       - 'tools/test_godot_splash_parity.py'
       - 'tools/test_splash_cpp_selftest.py'
@@ -96,8 +113,12 @@ on:
       - 'godot/tests/MapDataGdextParityTest.gd'
       - 'godot/tests/MapDataGdextParityTest.tscn'
       - 'godot/tests/fixtures/map_data.json'
-      - 'map_components/**'
       - '.github/workflows/godot-gdext.yml'
+  pull_request_target:
+    # Label `gdext-ci` pada PR menjalankan build penuh untuk VERSI PR-nya
+    # (job dibatasi `if` label == gdext-ci; checkout head SHA +
+    # persist-credentials: false — pola aman pull_request_target).
+    types: [labeled]
   push:
     branches: [main]
     paths:
@@ -164,7 +185,9 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: godot-gdext-${{ github.ref }}
+  # Nomor PR dipakai saat ada (pull_request & pull_request_target) supaya
+  # run berlabel tidak masuk group `refs/heads/main` milik push.
+  group: godot-gdext-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -184,6 +207,12 @@ jobs:
   build:
     name: Build mystic_skills + mystic_levels + mystic_maps + mystic_ui + mystic_mobile + mystic_splash + paritas C++ vs oracle
     runs-on: ubuntu-latest
+    # pull_request_target (trigger label) hanya boleh jalan untuk label
+    # `gdext-ci` — label lain (mis. `godot-debug`) tidak memicu build
+    # C++ ±20-35 menit.
+    if: >-
+      github.event_name != 'pull_request_target' ||
+      github.event.label.name == 'gdext-ci'
     # 75 menit, bukan 45: job ini membangun ENAM lib berurutan (±8-10 menit
     # per lib walaupun objek godot-cpp di-cache) + unduh Godot + 10 langkah
     # engine. Dengan lima lib (FASE 37) totalnya ±39 menit sehingga cap 45
@@ -194,7 +223,19 @@ jobs:
     timeout-minutes: 75
 
     steps:
-      - uses: actions/checkout@v4
+      # Trigger label (`pull_request_target`) jalannya di konteks BASE repo —
+      # checkout eksplisit ke SHA head PR, dan credential dibuang segera
+      # setelahnya (pola aman GitHub untuk job berlabel).
+      - name: Checkout head PR (hanya trigger label)
+        if: github.event_name == 'pull_request_target'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Checkout
+        if: github.event_name != 'pull_request_target'
+        uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
