@@ -80,11 +80,11 @@ static func create_sprite_frames() -> SpriteFrames:
 	
 	# Create animations from strips
 	for anim_name in ANIMATIONS:
-		var config := ANIMATIONS[anim_name]
-		var strip_path := config["strip"] as String
-		var frame_count := config["frames"] as int
-		var fps := config["fps"] as float
-		var loop := config["loop"] as bool
+		var config: Dictionary = ANIMATIONS[anim_name]
+		var strip_path: String = config["strip"]
+		var frame_count: int = config["frames"]
+		var fps: float = config["fps"]
+		var loop: bool = config["loop"]
 		
 		# Load the strip texture
 		var texture := load(strip_path) as Texture2D
