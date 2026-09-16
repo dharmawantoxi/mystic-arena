@@ -208,6 +208,12 @@ func style_projectile(bullet: Node) -> void:
 		bullet.set_arrow_style("wind")
 
 
+## Showcase/demo: target dunia tetap untuk FX skill (tanpa hero).
+func set_demo_target(pos: Vector2) -> void:
+	if skill_fx != null and "demo_target" in skill_fx:
+		skill_fx.demo_target = pos
+
+
 ## ── API PUBLIK — posisi global senjata (dipakai SkillFX) ──
 
 func get_bow_grip_global() -> Vector2:

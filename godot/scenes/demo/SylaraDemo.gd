@@ -22,7 +22,6 @@ const FX_TARGET := Vector2(235.0, -16.0)
 @onready var label_mode: Label = $CanvasLayer/VBox/ModeLabel
 @onready var label_stats: Label = $CanvasLayer/VBox/StatsLabel
 @onready var phase_bar: ProgressBar = $CanvasLayer/VBox/PhaseBar
-@onready var skill_fx = $SylaraRoot/SylaraSkeleton/SkillFX
 
 var phase := 0.0
 var cycle_t := 0.0
@@ -48,8 +47,8 @@ func _ready() -> void:
 		sylara.skill_cast.connect(_on_skill_cast)
 		if sylara.has_signal("skill_release"):
 			sylara.skill_release.connect(_on_skill_release)
-	if skill_fx != null:
-		skill_fx.demo_target = FX_TARGET
+	if sylara != null and sylara.has_method("set_demo_target"):
+		sylara.set_demo_target(FX_TARGET)
 
 
 func _process(delta: float) -> void:
