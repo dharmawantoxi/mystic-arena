@@ -969,6 +969,10 @@ func _shoot_projectile(t: Node2D, dmg: float) -> void:
 	b.setup(t, dmg, team, "normal", {}, 520.0,
 		fill_color.lightened(0.35), self, dmg_school)
 	b.global_position = global_position + Vector2(0, -10)
+	# Rig hero boleh memberi identitas visual proyektil (mis. panah
+	# angin Sylara). VISUAL ONLY — damage & timing tetap paritas pygame.
+	if custom_visual != null and is_instance_valid(custom_visual) 			and custom_visual.has_method("style_projectile"):
+		custom_visual.style_projectile(b)
 	GameManager.attach_fx(b)
 
 
