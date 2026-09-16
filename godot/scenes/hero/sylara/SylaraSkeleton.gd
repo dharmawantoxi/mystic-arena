@@ -1,11 +1,14 @@
-# SylaraSkeleton.gd — root controller karakter Sylara (sprite-based version).
+# SylaraSkeleton.gd — root controller karakter Sylara (Godot 4.x Masterwork Rebuild).
 #
 # Arsitektur modular (satu script = satu tanggung jawab):
-#   SylaraSkeleton.gd    (root: state machine, drive() API, sinyal)
-#   ├── AnimatedSprite2D  (sprite-based animation via SpriteFrames)
-#   └── SylaraSkillFX.gd  (skill key → urutan VFX pooled)
+#   SylaraSkeleton.gd    (root: state machine, blending, drive() API, sinyal)
+#   ├── SylaraRenderer.gd (pose → gambar _draw() berlapis, pixel art)
+#   ├── SylaraSkillFX.gd  (skill key → urutan VFX pooled via VFXManager)
+#   ├── SylaraAnimator.gd (state → pose target berbobot & transisi)
+#   ├── SylaraPose.gd     (data transfer pose tulang & secondary motion)
+#   └── SylaraPalette.gd  (warna terkontrol & hierarki kontras)
 #
-# Kontrak dengan Hero.gd (sama seperti KaizenSkeleton):
+# Kontrak dengan Hero.gd:
 #   * drive(phase, action, attack_progress, facing, is_moving, skill, delta)
 #     dipanggil Hero._drive_visual tiap physics frame.
 #   * Digambar menghadap +x; Hero mem-flip Visual.scale.x — rig TIDAK
@@ -18,17 +21,23 @@
 class_name SylaraSkeleton
 extends Node2D
 
-const SpriteSetupScript = preload("res://scenes/hero/sylara/SylaraSpriteSetup.gd")
+const AnimatorScript = preload("res://scenes/hero/sylara/SylaraAnimator.gd")
 
 signal attack_started
 signal attack_impact
 signal skill_cast(skill_key: String)
+signal skill_impact(skill_key: String, target_pos: Vector2)
+signal character_hurt
+signal character_died
 
-## Dipakai Hero.gd untuk memilih renderer; dipertahankan dari rig Kaizen.
+## Dipakai Hero.gd untuk memilih renderer; timing pelepasan panah (draw -> release).
 const ATTACK_IMPACT_PROGRESS := 0.52
 
-@onready var sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var renderer: SylaraRenderer = $Renderer
 @onready var skill_fx: SylaraSkillFX = $SkillFX
+
+var animator = null
+var pose_current = null
 
 ## State override dari play() (demo / showcase).
 var _override_state := ""
@@ -40,6 +49,7 @@ var _skill_key := ""
 var _skill_time := 0.0
 var _attack_started_emitted := false
 var _impact_emitted := false
+
 ## attack_progress frame sebelumnya: ap dihitung Hero dari attack_timer/
 ## cooldown, jadi kalau cooldown berubah mid-swing ap bisa MUNDUR dan
 ## pose melompat ke belakang = stutter. Dilacak agar monoton naik.
@@ -48,16 +58,16 @@ var _prev_pos := Vector2.ZERO
 var _hero = null
 var _hero_hp := -1.0
 var facing: int = 1
-## Track current animation to avoid redundant play() calls.
-var _current_anim := ""
 
 
 func _ready() -> void:
 	add_to_group("sylara_skeleton")
+	animator = AnimatorScript.new()
+	pose_current = animator.compute("idle", 0.0, 0.0, 0.0, {})
 	_prev_pos = global_position
-	# Setup sprite frames from strips.
-	SpriteSetupScript.setup_animated_sprite(sprite)
-	skill_fx.resolve_hero()
+	# Hero (kalau ada di arena) = kakek node: Hero/Visual/<rig>.
+	if skill_fx != null and skill_fx.has_method("resolve_hero"):
+		skill_fx.resolve_hero()
 	var n: Node = get_parent()
 	if n != null:
 		n = n.get_parent()
@@ -72,122 +82,236 @@ func drive(p_phase: float, p_action: String, p_attack_progress: float,
 		p_delta: float = 0.016) -> void:
 	var delta := p_delta if p_delta > 0.0 else get_process_delta_time()
 	facing = 1 if p_facing >= 0 else -1
+	var phase := p_phase
 	var ap := clampf(p_attack_progress, 0.0, 1.0)
 
+	animator.tick(delta)
 	_watch_hero()
 	_track_skill(p_skill, delta)
 
 	# ── State efektif: override (play) > skill > attack > swing > gerak > idle ──
 	var state := _derive_state(p_action, p_moving, p_skill)
+	var extra := {}
 	if _override_state != "":
 		_override_t += delta
+		extra["t"] = clampf(_override_t / maxf(0.001, _override_dur), 0.0, 1.0)
 		state = _override_state
 		if _override_t >= _override_dur:
 			_override_state = ""
 
 	# ── attack_progress monoton naik dalam satu swing ──
 	if state == "attack" or state == "swing":
-		if ap < _prev_ap - 0.05:
-			# Reset — serangan baru dimulai.
+		if _prev_ap > 0.5 and ap < _prev_ap - 0.4:
+			# Serangan baru dimulai (wrap/reset).
 			_attack_started_emitted = false
 			_impact_emitted = false
-		elif _prev_ap > 0.01 and ap > 0.0:
-			ap = maxf(ap, _prev_ap)
+		elif ap < _prev_ap:
+			ap = _prev_ap
 		_prev_ap = ap
 	else:
 		_prev_ap = 0.0
 
-	# ── Sinyal attack ──
-	if state == "attack" or state == "swing":
-		if not _attack_started_emitted and ap > 0.01:
-			_attack_started_emitted = true
-			attack_started.emit()
-		if not _impact_emitted and ap >= ATTACK_IMPACT_PROGRESS:
-			_impact_emitted = true
-			attack_impact.emit()
+	# ── Sinyal combat feel (sinkron dengan timing impact panah/busur) ──
+	_emit_combat_signals(state, ap)
 
-	# ── Play sprite animation ──
-	_play_animation(state)
+	# ── Pose target + blending (transisi halus, anti-robotic) ──
+	var skill_t := _skill_time if p_skill != "" else 0.0
+	var target = animator.compute(state, phase, ap, skill_t, extra)
+	var rate := _blend_rate(state)
+	var k := 1.0 - exp(-rate * delta)
+	_blend_pose(pose_current, target, k)
 
-	# ── Notify SkillFX ──
-	skill_fx.prev_pos = _prev_pos
-	skill_fx.notify_drive(p_skill, global_position, facing, delta)
+	# ── Serahkan ke renderer + trail + skill FX ──
+	if renderer != null:
+		renderer.pose = pose_current
+		renderer.phase = phase
+		_update_trail(pose_current)
+		renderer.queue_redraw()
+
+	if skill_fx != null and skill_fx.has_method("notify_drive"):
+		skill_fx.prev_pos = _prev_pos
+		skill_fx.notify_drive(p_skill, global_position, facing, delta)
+
 	_prev_pos = global_position
 
 
-## Play the appropriate sprite animation for the given state.
-func _play_animation(state: String) -> void:
-	# Map state to animation name.
-	var anim_name := state
-	# Handle states that don't have dedicated animations.
-	if not sprite.sprite_frames.has_animation(anim_name):
-		anim_name = "idle"
-	
-	# Only play if animation changed (avoid restarting looped anims).
-	if anim_name != _current_anim:
-		_current_anim = anim_name
-		sprite.play(anim_name)
+## Showcase/demo: paksa state (hurt/death/victory/run) selama `dur` detik.
+func play(state: String, dur: float = 0.5) -> void:
+	_override_state = state
+	_override_t = 0.0
+	_override_dur = maxf(0.05, dur)
+	if state == "hurt":
+		character_hurt.emit()
+	elif state == "death":
+		character_died.emit()
 
 
-## Derive state dari input Hero.
+## Hero.gd melewatkan FX skill generik bila rig menanganinya sendiri.
+func handles_skill_fx(_key: String) -> bool:
+	return true
+
+
+# ══════════════════════════════════════════════════════════
+#  INTERNAL
+# ══════════════════════════════════════════════════════════
+
 func _derive_state(action: String, moving: bool, skill: String) -> String:
-	if _override_state != "":
-		return _override_state
 	if skill != "":
-		return "skill_" + skill
+		match skill:
+			"q":
+				return "skill_q"
+			"w":
+				return "skill_w"
+			"e":
+				return "skill_e"
+			"r":
+				return "skill_r"
 	if action == "attack":
-		# Cek apakah melee (swing) atau ranged (attack).
-		if _hero != null and is_instance_valid(_hero):
-			if _hero.get("target") != null and is_instance_valid(_hero.target):
-				var dist := global_position.distance_to(_hero.target.global_position)
-				if dist < 64.0:
-					return "swing"
+		# Melee riposte bila jarak sangat dekat, default ranged archer draw
 		return "attack"
+	if action == "swing":
+		return "swing"
+	if action == "walk" or moving:
+		return "walk"
+	if action == "run":
+		return "run"
 	if action == "hurt":
 		return "hurt"
 	if action == "death":
 		return "death"
-	if moving:
-		if _hero != null and is_instance_valid(_hero):
-			var speed := float(_hero.get("move_speed"))
-			if speed > 220.0:
-				return "run"
-		return "walk"
+	if action == "victory":
+		return "victory"
 	return "idle"
 
 
-## Track skill timer untuk animator.
 func _track_skill(skill: String, delta: float) -> void:
-	if skill != "" and skill != _skill_key:
+	if skill == "":
+		_skill_key = ""
+		_skill_time = 0.0
+		return
+	if skill != _skill_key:
 		_skill_key = skill
 		_skill_time = 0.0
 		skill_cast.emit(skill)
-	elif skill != "":
+	else:
 		_skill_time += delta
-	elif _skill_key != "":
-		_skill_key = ""
-		_skill_time = 0.0
 
 
-## Watch hero HP for hurt detection.
+func _emit_combat_signals(state: String, ap: float) -> void:
+	if state == "attack" or state == "swing":
+		if not _attack_started_emitted:
+			_attack_started_emitted = true
+			_impact_emitted = false
+			attack_started.emit()
+		if not _impact_emitted and ap >= ATTACK_IMPACT_PROGRESS:
+			_impact_emitted = true
+			attack_impact.emit()
+	else:
+		_attack_started_emitted = false
+
+
+## Deteksi kena pukul dari HP hero → pose hurt singkat (tanpa coupling:
+## hanya baca properti, tanpa sinyal lintas-node).
 func _watch_hero() -> void:
 	if _hero == null or not is_instance_valid(_hero):
 		return
-	var current_hp := float(_hero.hp)
-	if current_hp < _hero_hp - 0.5 and _hero_hp >= 0.0:
-		# Hero took damage — trigger hurt state via override.
-		if _override_state == "":
-			play("hurt", 0.3)
-	_hero_hp = current_hp
+	var hp_now := float(_hero.hp)
+	if hp_now < _hero_hp - 0.5 and _override_state == "":
+		play("hurt", 0.3)
+	_hero_hp = hp_now
 
 
-## API demo/showcase — paksa state sementara.
-func play(state: String, duration: float = 1.0) -> void:
-	_override_state = state
-	_override_t = 0.0
-	_override_dur = duration
+func _update_trail(p) -> void:
+	if renderer == null:
+		return
+	if p.trail:
+		var bow_pos: Vector2 = renderer.get_bow_tip()
+		renderer.trail_pts.append(renderer.to_global(bow_pos))
+		if renderer.trail_pts.size() > 8:
+			renderer.trail_pts.remove_at(0)
+	elif not renderer.trail_pts.is_empty():
+		renderer.trail_pts.remove_at(0)
 
 
-## Dipanggil Hero.gd untuk cek apakah rig menangani FX skill sendiri.
-func handles_skill_fx(key: String) -> bool:
-	return skill_fx.handles_skill_fx(key)
+func _blend_rate(state: String) -> float:
+	match state:
+		"attack", "swing", "skill_q":
+			return 26.0
+		"skill_e", "skill_r":
+			return 24.0
+		"skill_w":
+			return 20.0
+		"hurt":
+			return 22.0
+		"death":
+			return 8.0
+		"walk", "run":
+			return 12.0
+	return 10.0
+
+
+## Lerp pose-ke-pose (sudut lewat lerp_angle). `k` sudah dihitung root.
+func _blend_pose(cur, tgt, k: float) -> void:
+	k = clampf(k, 0.0, 1.0)
+	cur.root_x = lerpf(cur.root_x, tgt.root_x, k)
+	cur.root_y = lerpf(cur.root_y, tgt.root_y, k)
+	cur.torso_lean = lerp_angle(cur.torso_lean, tgt.torso_lean, k)
+	cur.chest_flex = lerp_angle(cur.chest_flex, tgt.chest_flex, k)
+	cur.head_lean = lerp_angle(cur.head_lean, tgt.head_lean, k)
+	cur.arm_f_sh = lerp_angle(cur.arm_f_sh, tgt.arm_f_sh, k)
+	cur.arm_f_el = lerp_angle(cur.arm_f_el, tgt.arm_f_el, k)
+	cur.arm_b_sh = lerp_angle(cur.arm_b_sh, tgt.arm_b_sh, k)
+	cur.arm_b_el = lerp_angle(cur.arm_b_el, tgt.arm_b_el, k)
+	cur.leg_f_hip = lerp_angle(cur.leg_f_hip, tgt.leg_f_hip, k)
+	cur.leg_f_knee = lerpf(cur.leg_f_knee, tgt.leg_f_knee, k)
+	cur.leg_f_foot = lerpf(cur.leg_f_foot, tgt.leg_f_foot, k)
+	cur.leg_b_hip = lerp_angle(cur.leg_b_hip, tgt.leg_b_hip, k)
+	cur.leg_b_knee = lerpf(cur.leg_b_knee, tgt.leg_b_knee, k)
+	cur.leg_b_foot = lerpf(cur.leg_b_foot, tgt.leg_b_foot, k)
+	cur.bow_angle = lerp_angle(cur.bow_angle, tgt.bow_angle, k)
+	cur.bow_draw = lerpf(cur.bow_draw, tgt.bow_draw, k)
+	cur.bow_off = cur.bow_off.lerp(tgt.bow_off, k)
+	for i in 3:
+		cur.cape[i] = lerp_angle(cur.cape[i], tgt.cape[i], k)
+		cur.hair[i] = lerp_angle(cur.hair[i], tgt.hair[i], k)
+	for i in 2:
+		cur.hood[i] = lerp_angle(cur.hood[i], tgt.hood[i], k)
+	cur.cape_flare = lerpf(cur.cape_flare, tgt.cape_flare, k)
+	cur.eye_blink = lerpf(cur.eye_blink, tgt.eye_blink, k)
+	cur.wind_glow = lerpf(cur.wind_glow, tgt.wind_glow, k)
+	cur.hurt_tint = lerpf(cur.hurt_tint, tgt.hurt_tint, k)
+	cur.alpha = lerpf(cur.alpha, tgt.alpha, k)
+	# trail: ambil langsung dari target keputusan animator
+	cur.trail = tgt.trail
+
+
+# ══════════════════════════════════════════════════════════
+#  API PUBLIK — Posisi Global Senjata & Efek
+# ══════════════════════════════════════════════════════════
+
+func get_bow_grip_global() -> Vector2:
+	if renderer == null:
+		return global_position
+	return renderer.to_global(renderer.get_bow_grip())
+
+
+func get_bow_tip_global() -> Vector2:
+	if renderer == null:
+		return global_position
+	return renderer.to_global(renderer.get_bow_tip())
+
+
+func get_bow_nock_global() -> Vector2:
+	if renderer == null:
+		return global_position
+	return renderer.to_global(renderer.get_bow_nock())
+
+
+func get_arrow_spawn_global() -> Vector2:
+	if renderer == null:
+		return global_position
+	# Arrow spawns from bow grip forward along bow direction
+	var grip: Vector2 = renderer.get_bow_grip()
+	var tip: Vector2 = renderer.get_bow_tip()
+	var dir := (tip - grip).normalized()
+	return renderer.to_global(grip + dir * 18.0)

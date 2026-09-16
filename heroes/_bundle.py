@@ -3109,7 +3109,7 @@ class _NS_sylara:
     # DI LAYAR setara dunia.  Semua radius di-clamp ke dalam canvas cache
     # (_ring_r) supaya efek tidak terpotong di tepi.
     # ---------------------------------------------------------------------------
-    SKILL_VISUAL_DURATION = {"q": 118, "w": 118, "e": 99, "r": 39}
+    SKILL_VISUAL_DURATION = {"q": 180, "w": 180, "e": 150, "r": 60}
 
     # Cache surface statis (aura / mist / ground glow) — dibangun SEKALI,
     # tanpa alokasi surface per frame.

@@ -1007,9 +1007,6 @@ class ParticleSystem:
         budget = particle_budget()
         if budget <= 0.0:
             return None
-        if (budget < 1.0 and not getattr(self, "_in_burst", 0)
-                and random.random() >= budget):
-            return None
         if len(self._live) >= self.cap:
             return None
         p = self._acquire().spawn(x, y, vx, vy, life, size, color, **kw)
@@ -1422,8 +1419,8 @@ class ImpactFX:
             st = 1.0 - t / 0.55
             r0 = int((6 + 18 * pw) * (0.3 + 1.1 * t))
             for i in range(4):
-                ang = self.angle + k * math.pi / 4 + 0.19
-                L = (6 + 14 * pw) * st * (1.0 if k % 2 else 0.55)
+                ang = self.angle + i * math.pi / 4 + 0.19
+                L = (6 + 14 * pw) * st * (1.0 if i % 2 else 0.55)
                 pygame.draw.line(
                     surface,
                     _clamp_color(_mix(P["fx_deep"], P["fx_light"], st)),
@@ -1431,7 +1428,7 @@ class ImpactFX:
                      y + int(math.sin(ang) * r0)),
                     (x + int(math.cos(ang) * (r0 + L)),
                      y + int(math.sin(ang) * (r0 + L))),
-                    2 if k % 2 else 1)
+                    2 if i % 2 else 1)
 
         # ── 4. SABIT ANGIN — busur mengembang searah tumbukan ────────
         # Berbasis LINGKARAN BESAR (arc), BUKAN lerp linear: memberi
