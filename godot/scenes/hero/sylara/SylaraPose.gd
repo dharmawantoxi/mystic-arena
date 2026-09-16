@@ -43,9 +43,9 @@ var bow_draw := 0.0        # tarikan tali 0..1 (0 = rileks, 1 = full draw)
 var bow_off := Vector2.ZERO  # offset grip tambahan (dipakai skill)
 
 # ── Secondary motion: arah absolut tiap segmen (rad, y-down) ──
-var cape: Array = [2.98, 3.10, 2.86]     # 3 segmen cape
-var hood: Array = [2.85, 3.10]           # 2 segmen hood edges
-var hair: Array = [3.05, 3.18, 2.95]     # 3 segmen rambut
+var cape: Array[float] = [2.98, 3.10, 2.86]     # 3 segmen cape
+var hood: Array[float] = [2.85, 3.10]           # 2 segmen hood edges
+var hair: Array[float] = [3.05, 3.18, 2.95]     # 3 segmen rambut
 
 # ── Ekspresi / flare ──
 var cape_flare := 0.5      # lebar bukaan cape (px ekstra di hem)
