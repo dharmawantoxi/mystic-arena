@@ -1,19 +1,22 @@
-# SylaraPose.gd — data pose tunggal rig Sylara (Godot 4.x rebuild).
+# SylaraPose.gd — data pose tunggal rig Sylara.
 #
 # Satu pose = semua sudut/offset yang dibutuhkan SylaraRenderer untuk
 # menggambar karakter. Animator MENULIS pose target ke instance yang
-# dipakai ulang tiap frame (tanpa Pose.new() per frame — hemat GC di
-# Android); root (SylaraSkeleton.gd) me-lerp pose sekarang menuju target
+# dipakai ulang tiap frame (tanpa alokasi per frame — penting di
+# Android), lalu SylaraSkeleton me-lerp pose saat-ini menuju target
 # supaya transisi antar-state halus (tidak robotic).
 #
-# Konvensi sudut:
-#   * torso/kepala/lengan/kaki: 0 = lurus ke bawah / tegak, positif = ke
-#     depan (+x lokal). Semua radian.
-#   * bow_angle: arah busur ABSOLUT, 0 = +x (depan), positif = naik (CCW
-#     di layar, karena y-down).
+# Konvensi sudut (radian, layar y-down Godot):
+#   * torso/kepala/lengan/kaki: 0 = lurus ke bawah / tegak, positif =
+#     ke depan (+x lokal).
+#   * aim_angle: arah bidik ABSOLUT ruang lokal rig, 0 = +x (arah
+#     hadap), positif = memutar ke bawah layar (searah jarum jam).
+#     Diisi root dari posisi target (ruang dunia → lokal) sehingga busur
+#     bisa membidik 360° bebas — bukan hanya kiri/kanan.
+#   * bow_offset: offset pose busur relatif aim_angle (busur diturunkan
+#     saat idle, sejajar saat bidik).
 #   * bow_draw: 0.0 = santai, 1.0 = tali tertarik penuh.
-#   * cape/hood/hair: arah absolut segmen, 0 = +x, PI = belakang,
-#     positif turun (y-down standar).
+#   * cape/hood/hair: arah absolut tiap segmen, PI = ke belakang.
 class_name SylaraPose
 extends RefCounted
 
@@ -39,7 +42,8 @@ var leg_b_knee := -0.05
 var leg_b_foot := 0.10
 
 # ── Busur (senjata utama) ──
-var bow_angle := -0.35     # arah busur (0 = +x, positif = CCW layar)
+var aim_angle := 0.0       # arah bidik absolut lokal (rad)
+var bow_offset := 0.0      # offset pose busur dari arah bidik
 var bow_draw := 0.0        # tarikan tali 0..1 (0 = rileks, 1 = full draw)
 var bow_off := Vector2.ZERO  # offset grip tambahan (dipakai skill)
 
@@ -48,12 +52,21 @@ var cape: Array[float] = [2.98, 3.10, 2.86]     # 3 segmen cape
 var hood: Array[float] = [2.85, 3.10]           # 2 segmen hood edges
 var hair: Array[float] = [3.05, 3.18, 2.95]     # 3 segmen rambut
 
-# ── Ekspresi / flare ──
+# ── Ekspresi / aura ──
 var cape_flare := 0.5      # lebar bukaan cape (px ekstra di hem)
 var eye_blink := 0.0       # 0 = terbuka, 1 = tertutup
 var wind_glow := 0.0       # intensitas aksen sihir angin (0..1)
+var focus_glow := 0.0      # aura Focus Fire di busur (0..1)
+var windrun := 0.0         # aura Windrun + trail angin (0..1)
+var channel := 0.0         # tegangan charge Powershot (0..1)
 var hurt_tint := 0.0       # kilatan merah saat kena pukul (0..1)
 var alpha := 1.0           # seluruh rig (death fade)
+
+# ── Tether Shackle Shot (ruang lokal rig) ──
+var tether_on := false         # apakah sulur aktif
+var tether_alpha := 0.0        # fade masuk/keluar (di-blend root)
+var tether_local := Vector2.ZERO  # posisi target di ruang lokal rig
+var aim_point_local := Vector2.ZERO  # titik bidik channel (ruang lokal rig)
 
 
 ## Kembalikan ke nilai default sebelum dipakai ulang sebagai pose target.
@@ -74,7 +87,8 @@ func reset() -> void:
 	leg_b_hip = -0.06
 	leg_b_knee = -0.05
 	leg_b_foot = 0.10
-	bow_angle = -0.35
+	aim_angle = 0.0
+	bow_offset = 0.0
 	bow_draw = 0.0
 	bow_off = Vector2.ZERO
 	cape[0] = 2.98
@@ -88,5 +102,12 @@ func reset() -> void:
 	cape_flare = 0.5
 	eye_blink = 0.0
 	wind_glow = 0.0
+	focus_glow = 0.0
+	windrun = 0.0
+	channel = 0.0
 	hurt_tint = 0.0
 	alpha = 1.0
+	tether_on = false
+	tether_alpha = 0.0
+	tether_local = Vector2.ZERO
+	aim_point_local = Vector2.ZERO

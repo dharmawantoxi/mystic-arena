@@ -188,33 +188,38 @@ func _draw() -> void:
 			_draw_generic()
 
 
-## Panah Sylara — port _draw_arrow_projectile _entity.py:4994-5058.
+## Panah kerucut Powershot Sylara (Wind Ranger) — 100% kode.
 ## Ujung TEPAT di (0,0) = global_position; badan memanjang ke belakang.
+## Shaft ramping, mata kristal ber-glow angin, fletching zamrud ganda
+## dengan lilitan emas, trail angin 3 titik.
 func _draw_arrow() -> void:
 	var dir := Vector2(cos(_angle), sin(_angle))
 	var perp := dir.orthogonal()
-	# Trail (motion blur), alpha 150-30i / 255
-	for i in range(4):
-		var alpha: float = (150.0 - float(i) * 30.0) / 255.0
-		draw_circle(-dir * float(i + 1) * 4.0, 2.0,
-			Color(110.0 / 255.0, 220.0 / 255.0, 110.0 / 255.0, alpha))
-	# Shaft kayu (2 px gelap + 1 px terang)
+	# Trail angin (motion blur).
+	for i in range(3):
+		var alpha: float = (0.55 - float(i) * 0.13)
+		draw_circle(-dir * float(i + 1) * 4.5, 1.8 + 0.4 * float(i),
+			Color(150.0 / 255.0, 255.0 / 255.0, 204.0 / 255.0, alpha * 0.6))
+	# Shaft ramping (gelap + inti terang).
 	var tail := -dir * 11.0
 	draw_line(tail, Vector2.ZERO, Color(100.0 / 255.0, 65.0 / 255.0, 30.0 / 255.0), 2.0)
 	draw_line(tail, Vector2.ZERO, Color(150.0 / 255.0, 105.0 / 255.0, 55.0 / 255.0), 1.0)
-	# Mata panah hijau menyala
+	# Glow angin di sekitar mata panah.
+	draw_circle(Vector2.ZERO, 6.0, Color(78.0 / 255.0, 237.0 / 255.0, 152.0 / 255.0, 70.0 / 255.0))
+	# Mata panah kristal (dua lapis: inti + badan).
 	draw_colored_polygon([Vector2.ZERO, -dir * 5.0 + perp * 3.0, -dir * 5.0 - perp * 3.0],
 		Color(60.0 / 255.0, 140.0 / 255.0, 60.0 / 255.0))
 	draw_colored_polygon([Vector2.ZERO, -dir * 3.0 + perp * 2.0, -dir * 3.0],
-		Color(120.0 / 255.0, 220.0 / 255.0, 120.0 / 255.0))
-	# Kilau ujung (1 px di pygame -> titik kecil)
-	draw_circle(Vector2.ZERO, 0.8, Color(200.0 / 255.0, 255.0 / 255.0, 200.0 / 255.0))
-	# Bulu ekor
+		Color(150.0 / 255.0, 255.0 / 255.0, 204.0 / 255.0))
+	# Kilau ujung.
+	draw_circle(Vector2.ZERO, 0.8, Color(242.0 / 255.0, 255.0 / 255.0, 248.0 / 255.0))
+	# Fletching zamrud ganda.
 	for side in [-1.0, 1.0]:
 		draw_colored_polygon([tail, tail - dir * 3.0 + perp * 3.0 * side, tail - dir * 4.0],
-			Color(80.0 / 255.0, 160.0 / 255.0, 80.0 / 255.0))
-	# Glow
-	draw_circle(Vector2.ZERO, 6.0, Color(100.0 / 255.0, 220.0 / 255.0, 100.0 / 255.0, 80.0 / 255.0))
+			Color(92.0 / 255.0, 224.0 / 255.0, 120.0 / 255.0))
+	# Lilitan emas di pangkal shaft.
+	draw_line(tail + dir * 1.6 + perp * 1.2, tail + dir * 1.6 - perp * 1.2,
+		Color(252.0 / 255.0, 210.0 / 255.0, 90.0 / 255.0), 1.1)
 
 
 ## Orb void Vex (kind="skill") — port FALLBACK pygame

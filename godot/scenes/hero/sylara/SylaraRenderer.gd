@@ -1,27 +1,29 @@
-# SylaraRenderer.gd — renderer prosedural pixel-art fantasy masterwork Sylara (Godot 4.x).
+# SylaraRenderer.gd — renderer prosedural Sylara (Godot native, 100% kode).
 #
-# Satu-satunya tugas: menggambar karakter Sylara dari SylaraPose lewat _draw().
+# Satu-satunya tugas: menggambar karakter Sylara dari SylaraPose lewat
+# _draw(). TIDAK ADA aset eksternal — seluruh bentuk lahir dari
+# primitif CanvasItem (draw_polygon / draw_line / draw_circle / draw_arc):
 #
-# Standar Visual Tertinggi: Masterwork Pixel-Art Fantasy Heroine (100% Murni Kode):
-#   * GPU Vertex Gradient Shading (draw_polygon ber-PackedColorArray) untuk gradasi
-#     pencahayaan halus pada jubah, tunik, kulit, dan korset tanpa tekstur eksternal.
-#   * Logika Panahan Sejati (Archery Anatomy): Saat membidik/menarik tali, lengan busur
-#     terentang lurus horizontal setinggi dada/bahu; tali busur & nock ditarik tepat
-#     ke titik jangkar wajah (pipi/sudut rahang, Y ≈ -38..-40); anak panah kristal membidik
-#     sejajar horizontal melintasi grip busur.
-#   * Wajah 3/4 elven cantik dengan kulit porselen berona pipi lembut, mata zamrud berbinar,
-#     dan telinga runcing beranting emas.
-#   * Busur pusaka recurve dengan urat emas, ujung tanduk gading, dan benang sihir mint.
-#   * Aura angin kompas di tanah dengan partikel daun melayang dan wisp angin menari.
+#   * GPU vertex-gradient shading (draw_polygon + PackedColorArray) untuk
+#     gradasi pencahayaan halus pada jubah, tunik, kulit, korset.
+#   * FK 2-bone + IK jangkar pipi untuk busur: saat membidik/menarik tali,
+#     lengan busur lurus ke arah bidik, tali & nock ditarik ke jangkar
+#     wajah, anak panah kristal sejajar garis bidik.
+#   * BIDIK 360°: busur diarahkan ke pose.aim_angle (ruang lokal) yang
+#     diisi root dari posisi target nyata (dunia → lokal), bukan hanya
+#     sisi kiri/kanan — tubuh tetap menghadap sumbu hadap, busur berputar.
+#   * Aura per-skill digambar langsung di sini (nol aktor pool):
+#     Focus Fire (cincin energi di busur), Windrun (trail angin di belakang),
+#     Shackle Shot (tether sulur ke target), Powershot (channel: string
+#     tegang + sedotan angin + garis bidik).
 #
-# 100% KODE tanpa aset eksternal. Semua koordinat di-snap ke piksel bulat (_sn) untuk
-# ketajaman kristal di semua tingkat zoom kamera (Android & PC).
+# Koordinat dis-snap ke piksel bulat (_sn) untuk ketajaman di semua zoom.
 class_name SylaraRenderer
 extends Node2D
 
 const Pal = preload("res://scenes/hero/sylara/SylaraPalette.gd")
 
-# ── Metrik tubuh elven proporsional (pixel art; anchor = tanah di antara dua kaki) ──
+# ── Metrik tubuh elven proporsional (anchor = tanah di antara dua kaki) ──
 const HIP_Y := -26.0
 const SPINE_LEN := 12.0
 const CHEST_LEN := 8.5
@@ -32,6 +34,7 @@ const FOOT_LEN := 6.5
 const ARM_UPPER := 9.0
 const ARM_LOWER := 8.5
 const BOW_LEN := 23.5        # panjang setengah busur recurve (grip → tip)
+const DRAW_REACH := 13.0     # jarak tarikan tali maksimum (full draw)
 const CAPE_SEGS: Array = [9.0, 9.0, 10.5]
 const CAPE_W: Array = [6.0, 5.2, 4.0]
 const HOOD_SEGS: Array = [5.5, 5.0]
@@ -40,10 +43,10 @@ const HAIR_W: Array = [4.2, 3.2, 2.0]
 
 ## Pose aktif (di-set root tiap frame sebelum queue_redraw).
 var pose: SylaraPose = null
-## Fase global (untuk rotasi aura angin, wisp angin & shimmer).
+## Fase global (rotasi aura, wisp angin, shimmer).
 var phase := 0.0
 
-## Cache geometri busur — dipakai SkillFX / Skeleton untuk anchor nock/tip/grip.
+## Cache geometri busur — dipakai Skeleton/SkillFX untuk anchor.
 var _bow_grip := Vector2.ZERO
 var _bow_tip := Vector2.ZERO
 var _bow_nock := Vector2.ZERO
@@ -77,34 +80,38 @@ func _draw() -> void:
 
 	# 0. AMBIENT MAGIC & GROUND SHADOW
 	_draw_ground_magic(p)
-	_draw_shadow(p, j)
+	_draw_shadow(p)
+	_draw_windrun_trail(p)
 
-	# 1. BACK (lapisan belakang: jubah, rambut, quiver, kaki & lengan penarik belakang)
+	# 1. BACK (jubah, rambut, quiver, lengan penarik belakang, kaki belakang)
 	_draw_cape(p, j)
 	_draw_hair(p, j)
 	_draw_quiver(j)
 	_draw_drawing_arm(p, j)
 	_draw_calf(p, j, true)
 
-	# 2. BODY (lapisan kaki depan, sepatu bot, tunik & torso)
+	# 2. BODY (kaki depan, boots, tunik, torso)
 	_draw_calf(p, j, false)
 	_draw_feet(j)
 	_draw_tunic(p, j)
 	_draw_torso(j)
 
-	# 3. ARMOR & KORSET (korset kulit petualang, sabuk gesper emas, mantle bahu)
+	# 3. ARMOR (korset kulit, sabuk emas, mantle bahu)
 	_draw_belt(j)
 	_draw_corset(j)
 	_draw_mantle(j)
 
-	# 4. KEPALA & WAJAH CANTIK (tudung elven, wajah tirus, mata zamrud, rambut)
+	# 4. KEPALA & WAJAH (tudung elven, mata zamrud, telinga runcing)
 	_draw_head_and_hood(p, j)
 
-	# 5. WEAPON (lengan busur depan & busur recurve pusaka)
+	# 5. WEAPON (lengan busur depan & busur recurve + tali + panah)
 	_draw_bow_arm(p, j)
 	_draw_bow(p, j)
 
-	# 6. HIGHLIGHT & MAGIC ACCENT
+	# 6. AURA & MAGIC (fokus, channel, tether, rim, wisp)
+	_draw_focus_aura(p, j)
+	_draw_channel(p, j)
+	_draw_tether(p, j)
 	_draw_rim(j)
 	_draw_wind_wisps(p, j)
 
@@ -114,7 +121,7 @@ func _draw() -> void:
 
 
 # ══════════════════════════════════════════════════════════
-#  FK — SATU SUMBER KEBENARAN POSISI TULANG DENGAN ANATOMI PANAHAN
+#  FK — SATU SUMBER POSISI TULANG (busur bebas 360°)
 # ══════════════════════════════════════════════════════════
 
 static func _down(a: float) -> Vector2:
@@ -123,10 +130,13 @@ static func _down(a: float) -> Vector2:
 
 func _solve(p: SylaraPose) -> Dictionary:
 	var hip: Vector2 = Vector2(p.root_x, HIP_Y + p.root_y)
-	var up1: Vector2 = Vector2(sin(p.torso_lean), -cos(p.torso_lean))
+	# Torso sedikit "twist" mengikuti arah bidik (membaca natural di 2D).
+	var aim := p.aim_angle + p.bow_offset
+	var lean := p.torso_lean + sin(aim) * 0.05
+	var up1: Vector2 = Vector2(sin(lean), -cos(lean))
 	var chest: Vector2 = hip + up1 * SPINE_LEN
-	var up2: Vector2 = Vector2(sin(p.torso_lean + p.chest_flex),
-		-cos(p.torso_lean + p.chest_flex))
+	var up2: Vector2 = Vector2(sin(lean + p.chest_flex),
+		-cos(lean + p.chest_flex))
 	var neck: Vector2 = chest + up2 * CHEST_LEN
 	var head_c: Vector2 = neck + up2 * HEAD_R
 	var sh_f: Vector2 = chest + Vector2(4.4, -0.6)
@@ -136,34 +146,47 @@ func _solve(p: SylaraPose) -> Dictionary:
 
 	var knee_f: Vector2 = hip_f + _down(p.leg_f_hip) * LEG_UPPER
 	var ankle_f: Vector2 = knee_f + _down(p.leg_f_hip + p.leg_f_knee) * LEG_LOWER
-	var toe_f: Vector2 = ankle_f + Vector2(cos(p.leg_f_foot), -sin(p.leg_f_foot)) * FOOT_LEN
+	var toe_f: Vector2 = ankle_f + Vector2(cos(p.leg_f_foot),
+		-sin(p.leg_f_foot)) * FOOT_LEN
 
 	var knee_b: Vector2 = hip_b + _down(p.leg_b_hip) * LEG_UPPER
 	var ankle_b: Vector2 = knee_b + _down(p.leg_b_hip + p.leg_b_knee) * LEG_LOWER
-	var toe_b: Vector2 = ankle_b + Vector2(cos(p.leg_b_foot), -sin(p.leg_b_foot)) * FOOT_LEN
+	var toe_b: Vector2 = ankle_b + Vector2(cos(p.leg_b_foot),
+		-sin(p.leg_b_foot)) * FOOT_LEN
 
-	# ── LENGAN DEPAN (Bow Arm) ──
+	# ── ORIENTASI BUSUR: arah bidik lokal penuh (0..2PI) ──
+	var bow_dir := Vector2(cos(aim), sin(aim))
+	var bow_up := Vector2(sin(aim), -cos(aim))
+
+	# ── LENGAN DEPAN (bow arm): lurus ke arah busur saat membidik ──
 	var elb_f: Vector2 = sh_f + _down(p.arm_f_sh) * ARM_UPPER
 	var hand_f: Vector2 = elb_f + _down(p.arm_f_sh + p.arm_f_el) * ARM_LOWER + p.bow_off
-
-	# ── LENGAN BELAKANG (Drawing Arm) ──
-	var elb_b: Vector2 = sh_b + _down(p.arm_b_sh) * ARM_UPPER
-	var hand_b: Vector2 = elb_b + _down(p.arm_b_sh + p.arm_b_el) * ARM_LOWER
-
-	# ── ORIENTASI BUSUR & BIDIKAN PANAH ──
-	var bow_up := Vector2(sin(p.bow_angle), -cos(p.bow_angle)).normalized()
-	var bow_dir := Vector2(-bow_up.y, bow_up.x).normalized()
-	if bow_dir.x < 0.0:
-		bow_dir = -bow_dir
-
-	_bow_up = bow_up
-	_bow_dir = bow_dir
 	_bow_grip = hand_f
 	_bow_tip = hand_f + bow_up * BOW_LEN
 
-	# Nock (titik tarikan tali): ditarik mundur searah -bow_dir
-	var pull_dist: float = p.bow_draw * 12.0
+	# Nock: ditarik mundur searah -bidik.
+	var pull_dist: float = p.bow_draw * DRAW_REACH
 	_bow_nock = hand_f - bow_dir * pull_dist
+
+	# ── LENGAN BELAKANG (drawing arm): IK — tangan menempel nock ──
+	var hand_b: Vector2
+	var elb_b: Vector2
+	if p.bow_draw > 0.05:
+		hand_b = _bow_nock
+		var to_hand: Vector2 = hand_b - sh_b
+		var n := to_hand.length()
+		var mid: Vector2 = sh_b + to_hand * 0.5
+		if n > 0.001:
+			var perp: Vector2 = Vector2(-to_hand.y, to_hand.x) / n
+			elb_b = mid + perp * 1.6
+		else:
+			elb_b = mid
+	else:
+		elb_b = sh_b + _down(p.arm_b_sh) * ARM_UPPER
+		hand_b = elb_b + _down(p.arm_b_sh + p.arm_b_el) * ARM_LOWER
+
+	_bow_up = bow_up
+	_bow_dir = bow_dir
 
 	var j := {
 		"hip": hip, "chest": chest, "neck": neck, "head_c": head_c,
@@ -182,15 +205,16 @@ func _solve(p: SylaraPose) -> Dictionary:
 
 
 static func _clamp_ground(j: Dictionary) -> void:
-	for key in ["hip", "chest", "neck", "head_c", "knee_f", "ankle_f", "toe_f",
-			"knee_b", "ankle_b", "toe_b", "elb_f", "hand_f", "elb_b", "hand_b"]:
+	for key in ["hip", "chest", "neck", "head_c", "elb_f", "hand_f",
+			"elb_b", "hand_b", "knee_f", "ankle_f", "toe_f",
+			"knee_b", "ankle_b", "toe_b"]:
 		var pt: Vector2 = j[key]
 		if pt.y > -0.5:
 			j[key] = Vector2(pt.x, -0.5)
 
 
 # ══════════════════════════════════════════════════════════
-#  PRIMITIF GPU VERTEX GRADIENT & PIXEL-ART
+#  PRIMITIF — GPU VERTEX GRADIENT & BENTUK
 # ══════════════════════════════════════════════════════════
 
 func _c(col: Color) -> Color:
@@ -209,7 +233,7 @@ func _poly(pts: PackedVector2Array, col: Color) -> void:
 	draw_colored_polygon(pts, _c(col))
 
 
-## Poligon dengan interpolasi gradasi warna per-vertex di GPU
+## Poligon dengan interpolasi gradasi warna per-vertex di GPU.
 func _poly_vgrad(pts: PackedVector2Array, col_top: Color, col_bot: Color) -> void:
 	if pts.size() < 3:
 		return
@@ -232,10 +256,9 @@ func _poly_vgrad(pts: PackedVector2Array, col_top: Color, col_bot: Color) -> voi
 
 func _capsule(a: Vector2, b: Vector2, w: float, col: Color,
 		outline: bool = true, outline_col: Color = Pal.INK) -> void:
-	var pts := _capsule_pts(a, b, w)
 	if outline:
 		_poly(_capsule_pts(a, b, w + 2.2), outline_col)
-	_poly(pts, col)
+	_poly(_capsule_pts(a, b, w), col)
 
 
 func _capsule_pts(a: Vector2, b: Vector2, w: float) -> PackedVector2Array:
@@ -291,19 +314,19 @@ func _taper_pts(a: Vector2, wa: float, b: Vector2, wb: float) -> PackedVector2Ar
 
 
 # ══════════════════════════════════════════════════════════
-#  0. AMBIENT GROUND MAGIC & SHADOW
+#  0. AMBIENT GROUND MAGIC & SHADOW & WINDRUN TRAIL
 # ══════════════════════════════════════════════════════════
 
 func _draw_ground_magic(p: SylaraPose) -> void:
 	var c := Vector2(p.root_x * 0.35, 0.0)
 	var rot := phase * 0.70
 
-	# Halo lembut sihir angin di tanah
+	# Halo lembut sihir angin di tanah.
 	draw_circle(c, 24.0, Color(Pal.WIND.r, Pal.WIND.g, Pal.WIND.b, 0.12 * p.alpha))
 
 	var ring_col := Color(Pal.WIND.r, Pal.WIND.g, Pal.WIND.b, 0.22 * p.alpha)
-	var glow_col := Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g, Pal.WIND_LIGHT.b, 0.35 * p.alpha)
-
+	var glow_col := Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g,
+		Pal.WIND_LIGHT.b, 0.35 * p.alpha)
 	for i in 3:
 		var start_a: float = rot + float(i) * TAU / 3.0
 		var end_a: float = start_a + 1.25
@@ -311,6 +334,7 @@ func _draw_ground_magic(p: SylaraPose) -> void:
 		var glyph_p: Vector2 = c + Vector2(cos(end_a), sin(end_a) * 0.45) * 20.0
 		draw_circle(glyph_p, 1.4, glow_col)
 
+	# Daun melayang mengitari sang ranger.
 	for i in 3:
 		var a: float = rot * 1.3 + float(i) * TAU / 3.0
 		var r: float = 16.5 + sin(phase * 2.0 + float(i)) * 3.0
@@ -319,7 +343,7 @@ func _draw_ground_magic(p: SylaraPose) -> void:
 		draw_circle(lp, 1.1, Color(leaf_c.r, leaf_c.g, leaf_c.b, 0.50 * p.alpha))
 
 
-func _draw_shadow(p: SylaraPose, _j: Dictionary) -> void:
+func _draw_shadow(p: SylaraPose) -> void:
 	var rx := 14.0 + absf(p.root_x) * 0.3
 	var c := Vector2(p.root_x * 0.5, 1.0)
 	var pts := PackedVector2Array()
@@ -327,6 +351,27 @@ func _draw_shadow(p: SylaraPose, _j: Dictionary) -> void:
 		var a := float(i) * TAU / 14.0
 		pts.append(c + Vector2(cos(a) * rx, sin(a) * 3.8))
 	_poly(pts, Pal.SHADOW_GROUND)
+
+
+## Trail angin Windrun: 4 stria mengalir ke belakang + jejak di tanah.
+## Digambar renderer (bukan pool) supaya durasi buff 3 dtk tetap gratis.
+func _draw_windrun_trail(p: SylaraPose) -> void:
+	if p.windrun < 0.03:
+		return
+	var a_base := 0.40 * p.windrun * p.alpha
+	var col := Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g, Pal.WIND_LIGHT.b, a_base)
+	var col2 := Color(Pal.WIND.r, Pal.WIND.g, Pal.WIND.b, a_base * 0.8)
+	for i in 4:
+		var t: float = phase * 5.0 + float(i) * 1.7
+		var y: float = -22.0 + float(i) * 4.5 + sin(t) * 2.0
+		var x0: float = -6.0 - float(i) * 2.0
+		var len: float = 20.0 + 7.0 * (0.5 + 0.5 * sin(t * 1.3))
+		draw_line(Vector2(x0, y), Vector2(x0 - len, y + 2.5), col, 1.6)
+		draw_line(Vector2(x0 - len * 0.35, y + 1.2),
+			Vector2(x0 - len * 0.85, y + 2.2), col2, 1.0)
+	# Jejak gale di tanah (elips tipis ke belakang).
+	var tc := Vector2(p.root_x * 0.5 - 10.0, 1.5)
+	draw_arc(tc, 12.0, PI * 0.75, PI * 1.25, 8, col2, 1.4, true)
 
 
 # ══════════════════════════════════════════════════════════
@@ -337,7 +382,7 @@ func _draw_cape(p: SylaraPose, j: Dictionary) -> void:
 	var anchor: Vector2 = (j["chest"] as Vector2) + Vector2(-3.4, -2.0)
 	var prev := anchor
 
-	# Lapisan dalam jubah (bayangan)
+	# Lapisan dalam jubah (bayangan).
 	for i in 3:
 		var seg_len: float = float(CAPE_SEGS[i])
 		var seg_w: float = float(CAPE_W[i]) * 1.05 + p.cape_flare * (0.35 + float(i) * 0.2)
@@ -352,7 +397,7 @@ func _draw_cape(p: SylaraPose, j: Dictionary) -> void:
 		_poly_vgrad(poly, Pal.CAPE_DARK, Color("#0c1c10"))
 		prev = next
 
-	# Lapisan luar hijau zamrud bertrim emas dengan gradasi GPU
+	# Lapisan luar hijau zamrud bertrim emas.
 	prev = anchor
 	for i in 3:
 		var seg_len: float = float(CAPE_SEGS[i])
@@ -368,17 +413,16 @@ func _draw_cape(p: SylaraPose, j: Dictionary) -> void:
 		var col_a: Color = Pal.CAPE_LIGHT if i == 0 else Pal.CAPE
 		var col_b: Color = Pal.CAPE if i == 0 else Pal.CAPE_DARK
 		_poly_vgrad(poly, col_a, col_b)
-
-		# Kilau sutra kain jubah
+		# Kilau sutra kain jubah.
 		draw_line(_sn(prev + perp * 0.6), _sn(next + perp * 0.8), _c(Pal.CAPE_BRIGHT), 1.0)
-		# Bordir emas pada hem ujung jubah
+		# Bordir emas pada hem ujung jubah.
 		if i == 2:
 			draw_line(_sn(poly[1]), _sn(poly[2]), _c(Pal.GOLD_LIGHT), 1.3)
 		prev = next
 
 
 # ══════════════════════════════════════════════════════════
-#  2. HAIR (Rambut Auburn Tembaga Hangat dengan Kilau Sutra)
+#  2. HAIR (Rambut Auburn Tembaga dengan Kilau Sutra)
 # ══════════════════════════════════════════════════════════
 
 func _draw_hair(p: SylaraPose, j: Dictionary) -> void:
@@ -414,7 +458,7 @@ func _draw_quiver(j: Dictionary) -> void:
 	draw_line(_sn(base + Vector2(-3.0, -8.5)), _sn(base + Vector2(3.0, -8.5)), _c(Pal.GOLD_DARK), 1.2)
 	draw_line(_sn(base + Vector2(-2.6, -3.8)), _sn(base + Vector2(3.2, -3.8)), _c(Pal.GOLD_LIGHT), 1.1)
 
-	# 4 Arrow fletchings (bulu zamrud elven)
+	# 4 arrow fletchings (bulu zamrud elven).
 	for i in 4:
 		var ax: float = base.x - 2.2 + float(i) * 1.4
 		var ay: float = base.y - 9.0
@@ -425,32 +469,22 @@ func _draw_quiver(j: Dictionary) -> void:
 
 
 # ══════════════════════════════════════════════════════════
-#  4. ARMS — LENGAN PANAHAN SEJATI (BOW ARM & DRAWING ARM)
+#  4. ARMS — Lengan panahan (bow arm & drawing arm, IK nock)
 # ══════════════════════════════════════════════════════════
 
-func _draw_drawing_arm(p: SylaraPose, j: Dictionary) -> void:
-	# Lengan belakang: menarik tali ke pipi/dagu saat membidik (draw)
+func _draw_drawing_arm(_p: SylaraPose, j: Dictionary) -> void:
 	var sh: Vector2 = j["sh_b"] as Vector2
 	var elb: Vector2 = j["elb_b"] as Vector2
 	var hand: Vector2 = j["hand_b"] as Vector2
-
-	# Saat menarik busur (p.bow_draw > 0.05), tangan penarik berada di anchor point nock
-	if p.bow_draw > 0.05:
-		var nock: Vector2 = j["bow_nock"] as Vector2
-		hand = nock
-		elb = Vector2(sh.x - 4.0, sh.y - 1.5)
-
 	_taper_vgrad(sh, 4.6, elb, 3.8, Pal.CLOTH, Pal.CLOTH_DARK)
 	_taper_vgrad(elb, 3.6, hand, 3.0, Pal.SKIN_SHADOW, Pal.SKIN)
 	draw_circle(_sn(hand), 2.0, _c(Pal.SKIN_SHADOW))
 
 
 func _draw_bow_arm(_p: SylaraPose, j: Dictionary) -> void:
-	# Lengan depan: merentang kokoh memegang busur setinggi dada/bahu
 	var sh: Vector2 = j["sh_f"] as Vector2
 	var elb: Vector2 = j["elb_f"] as Vector2
 	var hand: Vector2 = j["hand_f"] as Vector2
-
 	_taper_vgrad(sh, 5.2, elb, 4.2, Pal.CLOTH_LIGHT, Pal.CLOTH)
 	_taper_vgrad(elb, 4.0, hand, 3.4, Pal.LEATHER_LIGHT, Pal.LEATHER)
 	draw_line(_sn(elb.lerp(hand, 0.4)), _sn(elb.lerp(hand, 0.6)), _c(Pal.GOLD_LIGHT), 1.1)
@@ -463,7 +497,6 @@ func _draw_calf(_p: SylaraPose, j: Dictionary, is_back: bool) -> void:
 	var ankle: Vector2 = (j["ankle_b"] if is_back else j["ankle_f"]) as Vector2
 	var pants_top: Color = Pal.CLOTH if not is_back else Pal.CLOTH_DARK
 	var pants_bot: Color = Pal.CLOTH_DARK if not is_back else Color("#122414")
-
 	_taper_vgrad(hip_j, 5.4, knee, 4.4, pants_top, pants_bot)
 	draw_circle(_sn(knee), 2.2, _c(pants_bot))
 	var boot_top: Color = Pal.LEATHER_LIGHT if not is_back else Pal.LEATHER
@@ -479,7 +512,6 @@ func _draw_feet(j: Dictionary) -> void:
 		var ankle: Vector2 = j[ankle_key] as Vector2
 		var toe: Vector2 = j[toe_key] as Vector2
 		var col: Color = Pal.LEATHER if is_front else Pal.LEATHER_DARK
-
 		_capsule(ankle + Vector2(0.0, 0.8), toe + Vector2(0.5, 0.8), 3.4, col)
 		if is_front:
 			var cuff_a := ankle + Vector2(-2.2, -1.8)
@@ -495,7 +527,6 @@ func _draw_feet(j: Dictionary) -> void:
 func _draw_tunic(p: SylaraPose, j: Dictionary) -> void:
 	var hip: Vector2 = j["hip"] as Vector2
 	var flare: float = 1.6 + p.cape_flare * 2.2
-
 	var poly := PackedVector2Array([
 		hip + Vector2(-4.2, -2.0),
 		hip + Vector2(4.2, -2.0),
@@ -527,7 +558,6 @@ func _draw_belt(j: Dictionary) -> void:
 func _draw_corset(j: Dictionary) -> void:
 	var chest: Vector2 = j["chest"] as Vector2
 	var hip: Vector2 = j["hip"] as Vector2
-
 	var poly := PackedVector2Array([
 		chest + Vector2(-3.8, -3.2), chest + Vector2(3.8, -3.2),
 		hip + Vector2(4.0, -1.2), hip + Vector2(-4.0, -1.2),
@@ -535,8 +565,7 @@ func _draw_corset(j: Dictionary) -> void:
 	_poly_vgrad(poly, Pal.LEATHER_LIGHT, Pal.LEATHER)
 	draw_line(_sn(chest + Vector2(-3.8, -3.2)), _sn(hip + Vector2(-4.0, -1.2)), _c(Pal.INK), 1.0)
 	draw_line(_sn(chest + Vector2(3.8, -3.2)), _sn(hip + Vector2(4.0, -1.2)), _c(Pal.INK), 1.0)
-
-	# Tali silang emas beraksen metalik
+	# Tali silang emas beraksen metalik.
 	draw_line(_sn(chest + Vector2(-1.4, -2.2)), _sn(chest + Vector2(1.4, -0.4)), _c(Pal.GOLD_LIGHT), 0.9)
 	draw_line(_sn(chest + Vector2(-1.4, -0.4)), _sn(chest + Vector2(1.4, -2.2)), _c(Pal.GOLD_LIGHT), 0.9)
 	draw_line(_sn(chest + Vector2(-1.4, 0.4)), _sn(chest + Vector2(1.4, 2.2)), _c(Pal.GOLD_LIGHT), 0.9)
@@ -546,7 +575,6 @@ func _draw_corset(j: Dictionary) -> void:
 func _draw_mantle(j: Dictionary) -> void:
 	var chest: Vector2 = j["chest"] as Vector2
 	var neck: Vector2 = j["neck"] as Vector2
-
 	var mantle_poly := PackedVector2Array([
 		neck + Vector2(-3.8, 1.2), neck + Vector2(3.8, 1.2),
 		chest + Vector2(5.2, -1.6), chest + Vector2(2.4, 0.4),
@@ -556,19 +584,19 @@ func _draw_mantle(j: Dictionary) -> void:
 	draw_line(_sn(chest + Vector2(-5.2, -1.6)), _sn(chest + Vector2(-2.4, 0.4)), _c(Pal.GOLD_LIGHT), 1.1)
 	draw_line(_sn(chest + Vector2(-2.4, 0.4)), _sn(chest + Vector2(2.4, 0.4)), _c(Pal.GOLD_LIGHT), 1.1)
 	draw_line(_sn(chest + Vector2(2.4, 0.4)), _sn(chest + Vector2(5.2, -1.6)), _c(Pal.GOLD_LIGHT), 1.1)
-
-	# Permata angin bercahaya mint di tengah dada
+	# Permata angin bercahaya mint di tengah dada.
 	draw_circle(_sn(chest + Vector2(0.0, -0.6)), 1.4, _c(Pal.GOLD_LIGHT))
 	draw_circle(_sn(chest + Vector2(0.0, -0.6)), 0.8, _c(Pal.WIND_BRIGHT))
 
 
 # ══════════════════════════════════════════════════════════
-#  6. HOOD & WAJAH CANTIK ELVEN (GORGEOUS ELVEN HEROINE)
+#  6. HOOD & WAJAH ELVEN
 # ══════════════════════════════════════════════════════════
 
 func _draw_head_and_hood(p: SylaraPose, j: Dictionary) -> void:
 	var head_c: Vector2 = j["head_c"] as Vector2
-	var lean: float = p.head_lean
+	# Kepala sedikit mengikuti arah bidik.
+	var lean: float = p.head_lean + sin(p.aim_angle + p.bow_offset) * 0.04
 
 	var hood_pts := PackedVector2Array([
 		head_c + Vector2(-5.2 + lean, -2.5),
@@ -594,7 +622,7 @@ func _draw_head_and_hood(p: SylaraPose, j: Dictionary) -> void:
 	])
 	_poly(cowl_shadow, Pal.HOOD_DARK)
 
-	# Wajah elven tirus dengan kulit porselen hangat
+	# Wajah elven tirus dengan kulit porselen hangat.
 	var face_pts := PackedVector2Array([
 		head_c + Vector2(-0.6 + lean * 1.5, -HEAD_R + 1.2),
 		head_c + Vector2(2.0 + lean * 1.5, -HEAD_R + 2.0),
@@ -608,7 +636,7 @@ func _draw_head_and_hood(p: SylaraPose, j: Dictionary) -> void:
 	draw_line(_sn(head_c + Vector2(-0.6 + lean * 1.5, 3.5)),
 		_sn(head_c + Vector2(2.6 + lean * 1.5, 3.8)), _c(Pal.SKIN_SHADOW), 0.8)
 
-	# Telinga runcing elven dengan anting emas
+	# Telinga runcing elven dengan anting emas.
 	var ear := PackedVector2Array([
 		head_c + Vector2(-0.8 + lean * 1.5, -1.2),
 		head_c + Vector2(-4.8 + lean * 1.5, -3.5),
@@ -619,7 +647,7 @@ func _draw_head_and_hood(p: SylaraPose, j: Dictionary) -> void:
 	draw_line(_sn(ear[1]), _sn(ear[2]), _c(Pal.INK_SOFT), 0.7)
 	draw_circle(_sn(head_c + Vector2(-3.6 + lean * 1.5, -2.6)), 0.6, _c(Pal.GOLD_LIGHT))
 
-	# Mata zamrud pemanah berbinar
+	# Mata zamrud pemanah berbinar.
 	var eye_c := head_c + Vector2(2.2 + lean * 1.5, -1.0)
 	var open: float = 1.0 - clampf(p.eye_blink, 0.0, 1.0)
 	if open > 0.4:
@@ -637,7 +665,7 @@ func _draw_head_and_hood(p: SylaraPose, j: Dictionary) -> void:
 	draw_circle(_sn(head_c + Vector2(2.4 + lean * 1.5, 1.2)), 1.4,
 		_c(Color(Pal.SKIN_BLUSH.r, Pal.SKIN_BLUSH.g, Pal.SKIN_BLUSH.b, 0.38)))
 
-	# Rambut auburn tembaga
+	# Rambut auburn tembaga.
 	draw_line(_sn(head_c + Vector2(-0.6 + lean, -HEAD_R + 1.2)),
 		_sn(head_c + Vector2(1.4 + lean, -HEAD_R + 3.2)), _c(Pal.HAIR), 1.2)
 	draw_line(_sn(head_c + Vector2(-0.6 + lean, -1.0)),
@@ -645,12 +673,13 @@ func _draw_head_and_hood(p: SylaraPose, j: Dictionary) -> void:
 	draw_line(_sn(head_c + Vector2(-0.2 + lean, -0.5)),
 		_sn(head_c + Vector2(0.5 + lean, 3.4)), _c(Pal.HAIR_SHINE), 0.7)
 
-	# Bordir emas pada tudung
+	# Bordir emas pada tudung.
 	draw_line(_sn(head_c + Vector2(-2.8 + lean, -HEAD_R - 2.8)),
 		_sn(head_c + Vector2(2.2 + lean, -HEAD_R - 2.2)), _c(Pal.GOLD_LIGHT), 1.1)
 	draw_line(_sn(head_c + Vector2(2.2 + lean, -HEAD_R - 2.2)),
 		_sn(head_c + Vector2(4.2 + lean, -2.5)), _c(Pal.GOLD_LIGHT), 1.1)
 
+	# Cowl hood mengalir (2 segmen).
 	var prev_hood: Vector2 = head_c + Vector2(-3.4, -HEAD_R + 2.0)
 	for i in 2:
 		var seg_len: float = float(HOOD_SEGS[i])
@@ -663,7 +692,7 @@ func _draw_head_and_hood(p: SylaraPose, j: Dictionary) -> void:
 
 
 # ══════════════════════════════════════════════════════════
-#  7. WEAPON — BUSUR PUSAKA RECURVE DENGAN LOGIKA PANAHAN SEJATI
+#  7. WEAPON — BUSUR PUSAKA RECURVE (arah bebas 360°)
 # ══════════════════════════════════════════════════════════
 
 func _draw_bow(p: SylaraPose, j: Dictionary) -> void:
@@ -671,11 +700,11 @@ func _draw_bow(p: SylaraPose, j: Dictionary) -> void:
 	var bow_up: Vector2 = j["bow_up"] as Vector2
 	var bow_dir: Vector2 = j["bow_dir"] as Vector2
 
-	# Grip busur berbalut kulit & cincin emas
+	# Grip busur berbalut kulit & cincin emas.
 	_capsule(grip - bow_up * 3.0, grip + bow_up * 3.0, 3.0, Pal.WOOD_DARK)
 	draw_line(_sn(grip - bow_dir * 1.5), _sn(grip + bow_dir * 1.5), _c(Pal.GOLD_LIGHT), 1.0)
 
-	# Limb atas & bawah (recurve elven mulus melengkung alami)
+	# Limb atas & bawah (recurve elven melengkung alami).
 	var tip_upper: Vector2 = grip + bow_up * BOW_LEN
 	var ctrl_upper: Vector2 = grip + bow_up * (BOW_LEN * 0.55) + bow_dir * 4.6
 	_draw_recurve_limb(grip + bow_up * 3.0, ctrl_upper, tip_upper, 3.0, 1.4)
@@ -684,7 +713,7 @@ func _draw_bow(p: SylaraPose, j: Dictionary) -> void:
 	var ctrl_lower: Vector2 = grip - bow_up * (BOW_LEN * 0.55) + bow_dir * 4.6
 	_draw_recurve_limb(grip - bow_up * 3.0, ctrl_lower, tip_lower, 3.0, 1.4)
 
-	# Ujung tanduk gading & cincin emas
+	# Ujung tanduk gading & cincin emas.
 	var tip_upper_end: Vector2 = tip_upper - bow_dir * 2.8
 	var tip_lower_end: Vector2 = tip_lower - bow_dir * 2.8
 	draw_line(_sn(tip_upper), _sn(tip_upper_end), _c(Pal.HORN_TIP), 2.0)
@@ -692,24 +721,22 @@ func _draw_bow(p: SylaraPose, j: Dictionary) -> void:
 	draw_circle(_sn(tip_upper), 1.2, _c(Pal.GOLD_LIGHT))
 	draw_circle(_sn(tip_lower), 1.2, _c(Pal.GOLD_LIGHT))
 
-	# Tali busur ajaib (Luminous Mana String)
+	# Tali busur ajaib (luminous mana string).
 	var string_top: Vector2 = tip_upper_end
 	var string_bot: Vector2 = tip_lower_end
 
 	if p.bow_draw > 0.02:
 		var nock: Vector2 = j["bow_nock"] as Vector2
-
-		# Tali ditarik ke anchor point di pipi/rahang pemanah
+		# Tali ditarik ke jangkar di pipi/rahang pemanah.
 		draw_line(_sn(string_top), _sn(nock), _c(Pal.STRING_GLOW), 2.6)
 		draw_line(_sn(nock), _sn(string_bot), _c(Pal.STRING_GLOW), 2.6)
 		draw_line(_sn(string_top), _sn(nock), _c(Pal.STRING), 1.2)
 		draw_line(_sn(nock), _sn(string_bot), _c(Pal.STRING), 1.2)
-
-		# Anak panah kristal terletak lurus horizontal dari nock menembus grip busur
+		# Anak panah kristal sejajar garis bidik.
 		var arrow_tip: Vector2 = grip + bow_dir * 11.5
 		_draw_arrow(nock, arrow_tip)
 	else:
-		# Tali santai di busur
+		# Tali santai di busur.
 		draw_line(_sn(string_top), _sn(string_bot), _c(Pal.STRING_GLOW), 2.0)
 		draw_line(_sn(string_top), _sn(string_bot), _c(Pal.STRING), 1.1)
 
@@ -732,8 +759,7 @@ func _draw_arrow(nock: Vector2, tip: Vector2) -> void:
 	draw_line(_sn(nock), _sn(tip), _c(Pal.WOOD_SHINE), 0.7)
 	var d: Vector2 = (tip - nock).normalized()
 	var perp: Vector2 = Vector2(-d.y, d.x)
-
-	# Mata panah kristal perak
+	# Mata panah kristal perak.
 	var head_poly := PackedVector2Array([
 		tip + d * 2.6,
 		tip - d * 3.8 + perp * 2.0,
@@ -742,8 +768,7 @@ func _draw_arrow(nock: Vector2, tip: Vector2) -> void:
 	])
 	_poly(head_poly, Pal.HEAD)
 	draw_line(_sn(tip + d * 2.0), _sn(tip - d * 3.4), _c(Pal.HEAD_SHINE), 0.9)
-
-	# Fletching bulu zamrud ganda
+	# Fletching bulu zamrud ganda.
 	var f_base: Vector2 = nock + d * 3.4
 	draw_line(_sn(f_base), _sn(f_base - d * 3.0 + perp * 2.2), _c(Pal.FEATHER), 1.3)
 	draw_line(_sn(f_base), _sn(f_base - d * 3.0 - perp * 2.2), _c(Pal.FEATHER), 1.3)
@@ -751,8 +776,104 @@ func _draw_arrow(nock: Vector2, tip: Vector2) -> void:
 
 
 # ══════════════════════════════════════════════════════════
-#  8. RIM LIGHT & MAGIC ACCENT
+#  8. AURA PER-SKILL (digambar renderer — nol aktor pool)
 # ══════════════════════════════════════════════════════════
+
+## Focus Fire: dua cincin energi berputar di busur + wisp di nock.
+func _draw_focus_aura(p: SylaraPose, j: Dictionary) -> void:
+	if p.focus_glow < 0.03:
+		return
+	var grip: Vector2 = j["bow_grip"] as Vector2
+	var nock: Vector2 = j["bow_nock"] as Vector2
+	var g: float = p.focus_glow * p.alpha
+	var col := Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g, Pal.WIND_LIGHT.b, 0.30 * g)
+	var rot := phase * 2.6
+	draw_arc(grip, 16.0, rot, rot + 1.8, 14, col, 1.2, true)
+	draw_arc(grip, 20.0, rot + PI, rot + PI + 1.8, 14, col, 1.0, true)
+	# Ember kecil mengelilingi nock.
+	var ea: float = phase * 4.2
+	draw_circle(nock + Vector2(cos(ea), sin(ea)) * 5.0, 1.2,
+		Color(Pal.WIND_BRIGHT.r, Pal.WIND_BRIGHT.g, Pal.WIND_BRIGHT.b, 0.5 * g))
+	draw_circle(nock + Vector2(cos(ea + PI), sin(ea + PI)) * 5.0, 1.0,
+		Color(Pal.LEAF_GOLD.r, Pal.LEAF_GOLD.g, Pal.LEAF_GOLD.b, 0.45 * g))
+
+
+## Powershot channel: string tegang + inti nock + sedotan angin + garis bidik.
+func _draw_channel(p: SylaraPose, j: Dictionary) -> void:
+	if p.channel < 0.03:
+		return
+	var nock: Vector2 = j["bow_nock"] as Vector2
+	var ch: float = p.channel * p.alpha
+
+	# Inti energi membesar di nock.
+	draw_circle(_sn(nock), 2.0 + 3.0 * p.channel,
+		Color(Pal.WIND_BRIGHT.r, Pal.WIND_BRIGHT.g, Pal.WIND_BRIGHT.b, 0.85 * ch))
+	draw_circle(_sn(nock), 4.5 + 3.0 * p.channel,
+		Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g, Pal.WIND_LIGHT.b, 0.30 * ch))
+
+	# Sedotan angin: 3 busur yang MENYUSUT ke nock seiring charge.
+	var suck_r: float = 26.0 * (1.0 - p.channel) + 9.0
+	var rot := phase * 3.4
+	var col := Color(Pal.WIND.r, Pal.WIND.g, Pal.WIND.b, 0.40 * ch)
+	for i in 3:
+		var a0: float = rot + float(i) * TAU / 3.0
+		draw_arc(_sn(nock), suck_r, a0, a0 + 1.1, 10, col, 1.3, true)
+
+	# Garis bidik samar menuju titik sasaran (4 segmen putus-putus).
+	var aim_pt: Vector2 = p.aim_point_local
+	var d: Vector2 = aim_pt - nock
+	if d.length() > 30.0:
+		var dn: Vector2 = d.normalized()
+		var line_col := Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g,
+			Pal.WIND_LIGHT.b, 0.22 * ch)
+		for i in 4:
+			var t0: float = 0.15 + float(i) * 0.20
+			draw_line(nock + dn * (d.length() * t0),
+				nock + dn * (d.length() * (t0 + 0.15)), line_col, 1.2)
+		# Titik sasaran.
+		draw_circle(_sn(aim_pt), 2.4, Color(Pal.WIND_BRIGHT.r, Pal.WIND_BRIGHT.g,
+			Pal.WIND_BRIGHT.b, 0.4 * ch))
+		draw_line(_sn(aim_pt + Vector2(-4.0, 0.0)), _sn(aim_pt + Vector2(4.0, 0.0)),
+			Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g, Pal.WIND_LIGHT.b, 0.35 * ch), 1.0)
+
+
+## Shackle Shot: sulur dari nock ke target (terikat, berdenyut).
+func _draw_tether(p: SylaraPose, j: Dictionary) -> void:
+	if not p.tether_on or p.tether_alpha < 0.02:
+		return
+	var nock: Vector2 = j["bow_nock"] as Vector2
+	var end: Vector2 = p.tether_local
+	var a: float = p.tether_alpha * p.alpha
+	if a <= 0.01:
+		return
+	var d: Vector2 = end - nock
+	if d.length() < 8.0:
+		return
+	# Kurva sulur (quadratic bezier dengan sag).
+	var mid: Vector2 = nock + d * 0.5
+	var perp: Vector2 = d.normalized().orthogonal()
+	mid += perp * (4.0 + 3.0 * sin(phase * 3.0))
+	var col_vine := Color(Pal.VINE.r, Pal.VINE.g, Pal.VINE.b, 0.9 * a)
+	var col_vine_l := Color(Pal.VINE_LIGHT.r, Pal.VINE_LIGHT.g, Pal.VINE_LIGHT.b, 0.8 * a)
+	var prev: Vector2 = nock
+	for i in range(1, 6):
+		var t := float(i) / 5.0
+		var q1: Vector2 = (1.0 - t) * (1.0 - t) * nock \
+			+ 2.0 * (1.0 - t) * t * mid + t * t * end
+		draw_line(_sn(prev), _sn(q1), col_vine, 2.2 * a + 0.4)
+		draw_line(_sn(prev), _sn(q1), col_vine_l, 0.9 * a)
+		prev = q1
+	# Node daun di sepanjang sulur.
+	for t in [0.32, 0.62]:
+		var q: Vector2 = (1.0 - t) * (1.0 - t) * nock \
+			+ 2.0 * (1.0 - t) * t * mid + t * t * end
+		draw_circle(_sn(q + perp * 2.0), 1.6, Color(Pal.LEAF.r, Pal.LEAF.g, Pal.LEAF.b, 0.85 * a))
+		draw_circle(_sn(q - perp * 2.0), 1.3, Color(Pal.LEAF_GOLD.r, Pal.LEAF_GOLD.g, Pal.LEAF_GOLD.b, 0.7 * a))
+	# Cincin akar berdenyut di target.
+	var pulse: float = 1.0 + 0.18 * sin(phase * 6.0)
+	draw_arc(_sn(end), 7.0 * pulse, 0.0, TAU, 16, col_vine_l, 1.6)
+	draw_circle(_sn(end), 2.0, Color(Pal.VINE_LIGHT.r, Pal.VINE_LIGHT.g, Pal.VINE_LIGHT.b, 0.5 * a))
+
 
 func _draw_rim(j: Dictionary) -> void:
 	var head_c: Vector2 = j["head_c"] as Vector2
@@ -767,20 +888,20 @@ func _draw_wind_wisps(p: SylaraPose, j: Dictionary) -> void:
 		return
 	var glow: float = p.wind_glow
 	var bow_tip: Vector2 = j["bow_tip"] as Vector2
-
-	var wisp_col := Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g, Pal.WIND_LIGHT.b, 0.55 * glow * p.alpha)
+	var wisp_col := Color(Pal.WIND_LIGHT.r, Pal.WIND_LIGHT.g, Pal.WIND_LIGHT.b,
+		0.55 * glow * p.alpha)
 	for i in 3:
 		var t: float = phase * 3.2 + float(i) * 2.1
 		var off: Vector2 = Vector2(sin(t) * 4.6, cos(t * 1.4) * 3.6)
 		draw_circle(_sn(bow_tip + off), 1.5 + sin(t * 2.0) * 0.5, wisp_col)
-
 	if p.bow_draw > 0.2:
 		var nock: Vector2 = j["bow_nock"] as Vector2
 		var ring_alpha: float = 0.5 * p.bow_draw * p.alpha
 		draw_arc(_sn(nock), 4.8 * p.bow_draw, 0.0, TAU, 12,
 			Color(Pal.WIND.r, Pal.WIND.g, Pal.WIND.b, ring_alpha), 1.2, true)
 		draw_circle(_sn(nock), 3.2 * p.bow_draw,
-			Color(Pal.WIND_BRIGHT.r, Pal.WIND_BRIGHT.g, Pal.WIND_BRIGHT.b, 0.75 * p.bow_draw * p.alpha))
+			Color(Pal.WIND_BRIGHT.r, Pal.WIND_BRIGHT.g, Pal.WIND_BRIGHT.b,
+			0.75 * p.bow_draw * p.alpha))
 
 
 func _draw_hurt_flash(p: SylaraPose, j: Dictionary) -> void:
