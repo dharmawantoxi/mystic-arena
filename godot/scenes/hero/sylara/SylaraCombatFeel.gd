@@ -88,10 +88,12 @@ func _on_skill_released(key: String, aim_point: Vector2) -> void:
 	# Impact dijadwalkan pada MOMEN MENDARAT kerucut — lewat Tween milik
 	# node ini: kalau rig dibebaskan sebelum timer habis, tween ikut
 	# mati (aman, tidak ada callback ke instance bebas).
+	# CATATAN 4.3: tween_callback() maksimal 1 argumen — binding lewat
+	# Callable.bind(), bukan parameter kedua.
 	if is_inside_tree():
 		var tw := create_tween()
 		tw.tween_interval(R_IMPACT_TRAVEL)
-		tw.tween_callback(_fire_r_impact, aim_point)
+		tw.tween_callback(_fire_r_impact.bind(aim_point))
 	else:
 		_fire_r_impact(aim_point)
 
