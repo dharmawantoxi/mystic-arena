@@ -13,6 +13,7 @@
 extends Node2D
 
 const CYCLE_LEN := 24.0
+const Pal = preload("res://scenes/hero/sylara/SylaraPalette.gd")
 
 @onready var sylara = $SylaraRoot/SylaraSkeleton
 @onready var label_mode: Label = $CanvasLayer/VBox/ModeLabel
@@ -200,11 +201,17 @@ func _update_labels() -> void:
 
 
 func _on_attack_impact() -> void:
-	pass
+	AudioManager.play_combat("hero_ranged", 0.85)
+	if sylara != null and is_instance_valid(sylara):
+		var spawn_pos: Vector2 = sylara.get_arrow_spawn_global()
+		var target_pos := spawn_pos + Vector2(170.0 * facing, 0.0)
+		VFXManager.flash(spawn_pos, 7.0, Pal.WIND_BRIGHT, 0.0, 0.10)
+		VFXManager.streak(spawn_pos, target_pos, Pal.WIND, 0.0, 0.18, 4.0)
+		VFXManager.ring(target_pos, 12.0, Pal.WIND_LIGHT, 0.12, 0.22, 2.0)
 
 
 func _on_skill_cast(key: String) -> void:
-	pass
+	AudioManager.play_sfx("hero_skill", 0.85)
 
 
 func _draw() -> void:

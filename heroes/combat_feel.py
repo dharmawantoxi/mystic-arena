@@ -31,9 +31,8 @@ import pygame
 HIT_STOP_ENABLED = True
 
 #: Jendela hit-stop yang diizinkan (detik). Di luar ini dibuang.
-#: DIKURANGI untuk hilangkan patah-patah saat skill: max 0.04s, min 0.02s
-HIT_STOP_MIN = 0.02
-HIT_STOP_MAX = 0.04
+HIT_STOP_MIN = 0.03
+HIT_STOP_MAX = 0.08
 
 #: Simulasi game berjalan pada langkah tetap 1/60 s.
 FIXED_DT = 1.0 / 60.0
@@ -131,8 +130,7 @@ class HitStop:
 
     MIN_SECONDS = HIT_STOP_MIN
     MAX_SECONDS = HIT_STOP_MAX
-    #: pengaman: tidak pernah lebih dari 2 langkah (dulu 5) untuk hilangkan patah
-    MAX_FRAMES = 2
+    MAX_FRAMES = 5
 
     def __init__(self):
         self.frames = 0
@@ -145,10 +143,6 @@ class HitStop:
         try:
             seconds = float(seconds)
         except (TypeError, ValueError):
-            return
-        # HANYA izinkan hit-stop >=0.035s (R skill / crit) - Q/W 0.02-0.03 diabaikan
-        # untuk hilangkan patah-patah saat hero cast skill biasa
-        if seconds < 0.035:
             return
         seconds = max(self.MIN_SECONDS, min(self.MAX_SECONDS, seconds))
         frames = max(1, int(round(seconds / FIXED_DT)))
