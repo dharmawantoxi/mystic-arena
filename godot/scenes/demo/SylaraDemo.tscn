@@ -3,8 +3,10 @@
 [ext_resource type="PackedScene" path="res://scenes/hero/sylara/SylaraSkeleton.tscn" id="1_sylara"]
 [ext_resource type="Script" path="res://scenes/demo/SylaraDemo.gd" id="2_demo"]
 
-; Showcase Sylara: siklus penuh IDLE/WALK/RUN/ATTACK/SWING/Q/W/E/R/HURT/
-; DEATH/VICTORY + kontrol keyboard. Latar panggung digambar SylaraDemo._draw().
+; Showcase Sylara (Wind Ranger rig, logika Godot native):
+; siklus penuh IDLE/WALK/RUN/ATTACK/Q/W/E/R/HURT/DEATH/VICTORY +
+; kontrol keyboard + titik bidik orbit (pamerkan aim 360°).
+; Latar panggung & marker bidik digambar SylaraDemo._draw().
 
 [node name="SylaraDemo" type="Node2D"]
 script = ExtResource("2_demo")
@@ -21,6 +23,9 @@ position = Vector2(0, 0)
 [node name="SylaraSkeleton" parent="SylaraRoot" instance=ExtResource("1_sylara")]
 position = Vector2(0, -6)
 
+[node name="AimNode" type="Node2D" parent="SylaraRoot"]
+position = Vector2(150, -26)
+
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 20
 
@@ -34,7 +39,7 @@ offset_bottom = 96.0
 alignment = 0
 
 [node name="Title" type="Label" parent="CanvasLayer/VBox"]
-text = "MYSTIC ARENA — SYLARA  (Godot 4.x rebuild)   procedural layered archer renderer + pooled VFX"
+text = "MYSTIC ARENA — SYLARA  (Wind Ranger rig, Godot-native)   100% procedural _draw(), bidik 360°, sinyal event-driven"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.75, 0.95, 0.72, 1)
 theme_override_font_sizes/font_size = 13
@@ -52,7 +57,7 @@ theme_override_font_sizes/font_size = 11
 theme_override_colors/font_color = Color(0.85, 1, 0.55, 1)
 
 [node name="StatsLabel" type="Label" parent="CanvasLayer/VBox"]
-text = "SylaraRenderer _draw() layered | SylaraAnimator pose blending | SylaraSkillFX + VFXManager pool"
+text = "SylaraRenderer _draw() 360°-aim | SylaraAnimator pose loop | sinyal event-driven | VFXManager pool"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(0.6, 0.75, 0.58, 1)
@@ -65,7 +70,7 @@ value = 30.0
 show_percentage = false
 
 [node name="Hint" type="Label" parent="CanvasLayer"]
-text = "IDLE → WALK → RUN → ATTACK (ranged) → SWING (melee) → Q Focus Fire → W Windrun → E Shackle Shot → R Powershot → HURT → DEATH → VICTORY"
+text = "IDLE → WALK → RUN → ATTACK (loop tembak) → Q Focus Fire → W Windrun → E Shackle Shot → R Powershot → HURT → DEATH → VICTORY"
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0

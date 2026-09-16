@@ -1,68 +1,118 @@
-# SylaraCombatFeel.gd — lapisan combat feel Sylara (Godot 4.x).
+# SylaraCombatFeel.gd — lapisan combat feel Sylara (Godot native).
 #
-# SATU tanggung jawab: menyinkronkan ANIMATION + VFX + AUDIO + HIT-STOP +
-# CAMERA pada momen yang benar. Node ini TIDAK PERNAH menyentuh gameplay:
-# tidak ada damage, cooldown, atau state kit di sini (itu milik
-# HeroSkillKit + CombatSystem yang parity-locked).
+# Satu tanggung jawab: menyinkronkan AUDIO + CAMERA SHAKE + HIT-STOP +
+# VFX impact pada MOMEN yang benar. Node ini TIDAK PERNAH menyentuh
+# gameplay (damage/cooldown/state kit milik HeroSkillKit).
 #
-# Batasan kontrak (test_basic_attack_no_impact_fx):
-#   * BASIC ATTACK → NOL impact FX, NOL hit-stop, NOL shake. Hanya kilatan
-#     nock KECIL di busur (1 aktor, 0.1 dtk) + sabit tebasan tunggal untuk
-#     melee riposte. Suara tembakan tetap milik Hero.try_attack (tidak
-#     boleh dobel).
-#   * SKILL → impact penuh hanya untuk R (ultimate) dan diledakkan pada
-#     MOMEN DAMAGE (±1.0 dtk setelah cast, saat powershot_timer habis),
-#     bukan saat cast. Q/W/E memakai shake+suara dari kit (sudah ada).
+# Pola Godot:
+#   * EVENT-DRIVEN lewat sinyal root (bow_released, skill_released,
+#     character_died) — tanpa _process polling, tanpa antrean manual.
+#   * Event tertunda (impact Powershot = beberapa fraksi detik setelah
+#     tebar) dijadwalkan dengan Tween node (aman dari freed-instance).
 #
-# Penjadwalan event tertunda memakai antrean kecil + _process yang HANYA
-# hidup saat antrean tidak kosong (hemat baterai Android).
+# Bobot feel (seimbang, tidak menyengal):
+#   * BASIC ATTACK → kilatan nock KECIL saat tali snap (1 aktor, 0.08 dtk).
+#     Tanpa hit-stop/shake — serangan dasar harus ringan & cepat.
+#   * POWERSHOT (ultimate) → bunyi lepas di momen tebar, lalu paket impact
+#     penuh (flash + ring + sparks terarah + hit-stop 0.04 + shake 0.12)
+#     dijadwalkan pada MOMEN MENDARAT kerucut, bukan saat cast.
+#   * KEMATIAN → paket perpisahan angin (3 aktor). Di arena, hero langsung
+#     tersembunyi oleh alur respawn — VFX tetap terlihat karena aktor
+#     VFXManager hidup di layer dunia.
 class_name SylaraCombatFeel
 extends Node
 
 const Pal = preload("res://scenes/hero/sylara/SylaraPalette.gd")
 
-## Antrean event tertunda: {t, kind, pos, dir}.
-var _pending: Array[Dictionary] = []
+## Perkiraan waktu tempuh kerucut Powershot (dtk) — impact dijadwalkan
+## searah jarak bidik agar mendarat tepat di ujung kerucut.
+const R_IMPACT_TRAVEL := 0.35
 
 var _skel: SylaraSkeleton = null
+var _hero = null
 
 
 func _ready() -> void:
-	set_process(false)
 	var p := get_parent()
 	if p is SylaraSkeleton:
 		_skel = p as SylaraSkeleton
-		if not _skel.attack_impact.is_connected(_on_attack_impact):
-			_skel.attack_impact.connect(_on_attack_impact)
-		if not _skel.character_died.is_connected(_on_character_died):
-			_skel.character_died.connect(_on_character_died)
+		_skel.bow_released.connect(_on_bow_released)
+		_skel.skill_released.connect(_on_skill_released)
+		_skel.character_died.connect(_on_character_died)
+	# Hero = 2 kakek node (Hero/Visual/<rig>) — dipakai untuk hook kematian
+	# arena (GameManager.hero_died) tanpa modifikasi hero.
+	var n: Node = p
+	if n != null:
+		n = n.get_parent()
+		if n != null:
+			n = n.get_parent()
+	if n != null and "hp" in n and "kit" in n:
+		_hero = n
+		_hook_arena_death()
+
+
+## Kematian di arena: hero di-hide alur respawn; biarkan VFX perpisahan
+## (layer dunia) tetap menyala di posisi hero.
+func _hook_arena_death() -> void:
+	# GameManager = autoload (selalu ada di project).
+	if GameManager.has_signal("hero_died"):
+		GameManager.hero_died.connect(_on_arena_hero_died)
+
+
+func _on_arena_hero_died(h: Node) -> void:
+	if _hero != null and h == _hero:
+		_on_character_died()
 
 
 # ══════════════════════════════════════════════════════════
-#  BASIC ATTACK — kilatan nock / sabit tunggal
+#  BASIC ATTACK — kilatan tali snap
 # ══════════════════════════════════════════════════════════
 
-func _on_attack_impact() -> void:
+func _on_bow_released() -> void:
 	if _skel == null or not is_instance_valid(_skel):
 		return
-	if _skel.last_attack_kind == "swing":
-		# Melee riposte: SATU sabit angin di ujung busur (pengganti trail
-		# global yang rusak — world-space, pooled, auto-release).
-		var tip: Vector2 = _skel.get_bow_tip_global()
-		var grip: Vector2 = _skel.get_bow_grip_global()
-		var d: Vector2 = tip - grip
-		var ang := 0.0
-		if d.length_squared() > 0.01:
-			ang = atan2(-d.y, d.x)
-		VFXManager.slash(tip, ang, 30.0, 1.9, Pal.WIND, 0.0, 0.26, 0.0, 7.0)
-	else:
-		# Ranged loose: kilatan nock kecil tepat saat tali dilepas.
-		VFXManager.flash(_skel.get_bow_nock_global(), 5.0,
-			Pal.WIND_BRIGHT, 0.0, 0.10)
+	# Kilatan nock kecil tepat saat tali dilepas (1 aktor, 0.08 dtk).
+	VFXManager.flash(_skel.get_bow_nock_global(), 5.0,
+		Pal.WIND_BRIGHT, 0.0, 0.08)
 
 
 # ══════════════════════════════════════════════════════════
-#  DEATH — paket perpisahan sekali pakai (3 aktor)
+#  POWERSHOT — audio tebar + impact terjadwal
+# ══════════════════════════════════════════════════════════
+
+func _on_skill_released(key: String, aim_point: Vector2) -> void:
+	if key != "r" or _skel == null:
+		return
+	# Bunyi busur dilepas pada momen tebar (bukan saat charge mulai).
+	AudioManager.play_combat("hero_ranged", 1.0)
+	# Impact dijadwalkan pada MOMEN MENDARAT kerucut — lewat Tween milik
+	# node ini: kalau rig dibebaskan sebelum timer habis, tween ikut
+	# mati (aman, tidak ada callback ke instance bebas).
+	if is_inside_tree():
+		var tw := create_tween()
+		tw.tween_interval(R_IMPACT_TRAVEL)
+		tw.tween_callback(_fire_r_impact, aim_point)
+	else:
+		_fire_r_impact(aim_point)
+
+
+func _fire_r_impact(pos: Vector2) -> void:
+	# Paket impact ultimate (komposisi setara VFXManager.impact tier 3,
+	# tetapi posisinya disinkronkan ke ujung kerucut bidik).
+	VFXManager.flash(pos, 17.0, Pal.WIND_WHITE, 0.0, 0.16)
+	VFXManager.ring(pos, 42.0, Pal.WIND, 0.02, 0.4, 2.8)
+	VFXManager.sparks(pos, randf() * TAU, 6, 240.0, Pal.WIND_BRIGHT,
+		0.0, 0.34, TAU * 0.4)
+	# Hit-stop + shake proporsional ULTIMATE — singkat agar tidak macet.
+	GameManager.request_hit_stop(0.04, 0.04)
+	var tree := get_tree()
+	if tree != null:
+		tree.call_group("camera", "add_trauma", 0.12)
+	AudioManager.play_sfx("explosion", 0.22)
+
+
+# ══════════════════════════════════════════════════════════
+#  DEATH — paket perpisahan angin (3 aktor)
 # ══════════════════════════════════════════════════════════
 
 func _on_character_died() -> void:
@@ -72,64 +122,3 @@ func _on_character_died() -> void:
 	VFXManager.flash(c, 9.0, Pal.WIND_LIGHT, 0.0, 0.16)
 	VFXManager.ring(c, 26.0, Pal.WIND, 0.03, 0.38, 2.4)
 	VFXManager.sparks(c, PI * 0.5, 5, 95.0, Pal.LEAF, 0.02, 0.4, 1.0)
-
-
-# ══════════════════════════════════════════════════════════
-#  SKILL R — event tertunda (release & impact)
-# ══════════════════════════════════════════════════════════
-
-## Bunyi busur dilepas pada momen release visual (t ≈ 0.45 dtk).
-func schedule_r_release(delay: float) -> void:
-	_pending.append({"t": maxf(0.0, delay), "kind": "r_audio",
-		"pos": Vector2.ZERO, "dir": Vector2.RIGHT})
-	set_process(true)
-
-
-## Paket impact R pada MOMEN DAMAGE (t ≈ 0.95 dtk): flash + ring + sparks
-## terarah + hit-stop + shake — komposisi setara VFXManager.impact(tier 3)
-## tetapi WAKTUNYA disinkronkan ke powershot_timer, bukan ke cast.
-func schedule_r_impact(pos: Vector2, beam_dir: Vector2, delay: float) -> void:
-	_pending.append({"t": maxf(0.0, delay), "kind": "r_impact",
-		"pos": pos, "dir": beam_dir})
-	set_process(true)
-
-
-func _process(delta: float) -> void:
-	if _pending.is_empty():
-		set_process(false)
-		return
-	for i in range(_pending.size() - 1, -1, -1):
-		var ev: Dictionary = _pending[i]
-		ev["t"] = float(ev["t"]) - delta
-		if float(ev["t"]) > 0.0:
-			continue
-		_pending.remove_at(i)
-		_fire(ev)
-	if _pending.is_empty():
-		set_process(false)
-
-
-func _fire(ev: Dictionary) -> void:
-	match String(ev.get("kind", "")):
-		"r_audio":
-			AudioManager.play_combat("hero_ranged", 0.9)
-		"r_impact":
-			_fire_r_impact(ev["pos"] as Vector2, ev["dir"] as Vector2)
-
-
-func _fire_r_impact(pos: Vector2, beam_dir: Vector2) -> void:
-	VFXManager.flash(pos, 17.0, Pal.WIND_WHITE, 0.0, 0.16)
-	VFXManager.ring(pos, 42.0, Pal.WIND, 0.02, 0.4, 2.8)
-	var ang := 0.0
-	if beam_dir.length_squared() > 0.01:
-		ang = atan2(-beam_dir.y, beam_dir.x)
-	VFXManager.sparks(pos, ang, 6, 240.0, Pal.WIND_BRIGHT, 0.0, 0.34, 0.55)
-	# Hit-stop + shake proporsional ULTIMATE (sama seperti tier 3):
-	# singkat agar game tidak terasa macet.
-	GameManager.request_hit_stop(0.05, 0.05)
-	var tree := get_tree()
-	if tree != null:
-		tree.call_group("camera", "add_trauma", 0.14)
-	AudioManager.play_sfx("explosion", 0.22)
-	if _skel != null and is_instance_valid(_skel):
-		_skel.skill_impact.emit("r", pos)

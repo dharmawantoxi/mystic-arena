@@ -1,18 +1,18 @@
-# SylaraArrow.gd — proyektil basic attack Sylara (Godot 4.x).
+# SylaraArrow.gd — proyektil basic attack Sylara (Godot native).
 #
-# Subclass TowerBullet yang HANYA meng-override _draw(). Seluruh perilaku
-# (homing, hit-test, damage, lifetime, wind-wall/evasion guards) diwarisi
-# 1:1 dari TowerBullet sehingga paritas gameplay dan DeathDispatch harness
-# tidak berubah — yang berbeda hanya gambarnya.
+# Subclass TowerBullet yang HANYA meng-override _draw() — seluruh perilaku
+# (homing, hit-test, damage, lifetime, guard evasion/wind-wall) diwarisi
+# utuh dari TowerBullet sehingga logika proyektil arena tetap satu-satunya.
+# Yang berbeda murni visualnya.
 #
-# Bahasa visual: panah wind-ranger — shaft ramping, fletching hijau zamrud
-# ganda, mata panah kristal perak dengan kilau permata, dan jejak angin PENDEK.
+# Bahasa visual (referensi Wind Ranger): panah angin elven — shaft ramping,
+# mata panah kristal bercahaya, fletching zamrud ganda dengan lilitan emas,
+# dan jejak angin PENDEK (3 titik dari _trail TowerBullet). 100% kode.
 class_name SylaraArrow extends "res://scenes/tower/TowerBullet.gd"
 
 const Pal = preload("res://scenes/hero/sylara/SylaraPalette.gd")
 
-## Panjang total panah (px lokal). Ujung TEPAT di (0,0) = global_position,
-## badan memanjang ke belakang — sama seperti _draw_hd_arrow induk.
+## Panjang total panah (px lokal); badan terpusat di (0,0) = posisi node.
 const ARROW_LEN := 16.0
 
 
@@ -24,7 +24,7 @@ func _draw() -> void:
 			dir = d.normalized()
 	var perp := dir.orthogonal()
 
-	# ── Jejak angin pendek: 3 titik dari _trail induk (global → lokal) ──
+	# ── Jejak angin pendek: 3 titik dari _trail TowerBullet ──
 	var n := _trail.size()
 	for i in n:
 		var a: float = 0.12 + 0.18 * float(i + 1) / 3.0
@@ -35,19 +35,18 @@ func _draw() -> void:
 	var tail := -dir * (ARROW_LEN * 0.5)
 	var head := dir * (ARROW_LEN * 0.5)
 
-	# ── Shaft ramping halus ──
+	# ── Shaft ramping (kayu gelap + inti terang + kilau sisi) ──
 	var shaft_a := tail + dir * 2.0
 	var shaft_b := head - dir * 2.5
 	draw_line(shaft_a, shaft_b, Pal.WOOD_DARK, 2.4, true)
 	draw_line(shaft_a, shaft_b, Pal.SHAFT, 1.4, true)
 	draw_line(shaft_a + perp * 0.4, shaft_b + perp * 0.4, Pal.WOOD_SHINE, 0.8, true)
 
-	# ── Mata panah kristal perak berkilau ──
+	# ── Mata panah kristal dengan glow angin ──
+	draw_circle(head, 5.0, Color(Pal.WIND.r, Pal.WIND.g, Pal.WIND.b, 0.22))
 	var tip := head + dir * 3.2
 	var base := head - dir * 2.0
-	var head_poly := PackedVector2Array([
-		tip, base + perp * 3.0, base - perp * 3.0,
-	])
+	var head_poly := PackedVector2Array([tip, base + perp * 3.0, base - perp * 3.0])
 	draw_colored_polygon(head_poly, Pal.HEAD)
 	draw_line(tip, base + perp * 3.0, Pal.HEAD_SHINE, 1.0, true)
 	draw_line(tip, base - perp * 3.0, Pal.HEAD_SHINE, 1.0, true)
@@ -70,4 +69,5 @@ func _draw() -> void:
 	# ── Aksen angin bercahaya di sisi shaft ──
 	var wisp_a := tail + dir * 3.0 + perp * 2.4
 	draw_line(wisp_a, wisp_a + dir * 5.0,
-		Color(Pal.WIND_BRIGHT.r, Pal.WIND_BRIGHT.g, Pal.WIND_BRIGHT.b, 0.65), 1.2, true)
+		Color(Pal.WIND_BRIGHT.r, Pal.WIND_BRIGHT.g, Pal.WIND_BRIGHT.b, 0.65),
+		1.2, true)

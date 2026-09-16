@@ -5,16 +5,16 @@
 [ext_resource type="Script" path="res://scenes/hero/sylara/SylaraSkillFX.gd" id="3_skillfx"]
 [ext_resource type="Script" path="res://scenes/hero/sylara/SylaraCombatFeel.gd" id="4_feel"]
 
-; Sylara (Godot 4.x) — karakter modular:
-;   SylaraSkeleton (root: state machine + blending + drive API + signals)
-;   ├── Renderer  — _draw() prosedural berlapis (SylaraRenderer.gd)
-;   ├── SkillFX   — sequencer FX skill via VFXManager pooled (SylaraSkillFX.gd)
-;   └── Feel      — sinkron audio/shake/hit-stop/arc (SylaraCombatFeel.gd)
-; Animasi dihitung SylaraAnimator.gd (pose target per state, pakai-ulang);
-; satu CanvasItem per karakter supaya optimal dan ringan di Android.
-; Flip facing dilakukan PARENT (Hero/Visual), rig digambar menghadap +x.
-; Gameplay (damage/cooldown/kit) MILIK HeroSkillKit + CombatSystem — rig ini
-; murni visual + feel dan tidak boleh mengubah state gameplay (paritas).
+; Sylara — Wind Ranger rig (logika Godot native, 100% render kode):
+;   SylaraSkeleton (root: state machine + blending + drive API + sinyal)
+;   ├── Renderer  — _draw() prosedural berlapis, bidik 360° (SylaraRenderer.gd)
+;   ├── SkillFX   — sequencer FX skill via sinyal + VFXManager pooled
+;   └── Feel      — audio/shake/hit-stop, event-driven (SylaraCombatFeel.gd)
+; Animasi: SylaraAnimator.gd (pose target per state, tulis pakai-ulang).
+; Satu CanvasItem per karakter — ringan di Android.
+; Flip facing dilakukan PARENT (Hero/Visual); rig digambar menghadap +x.
+; Gameplay (damage/cooldown/kit) milik HeroSkillKit — rig ini murni
+; visual + feel dan hanya MEMBACA state hero (read-only).
 
 [node name="SylaraSkeleton" type="Node2D" groups=["sylara_skeleton"]]
 script = ExtResource("1_sylara")
