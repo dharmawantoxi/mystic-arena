@@ -92,7 +92,7 @@ func _run_auto_cycle() -> void:
 		attack_progress = clampf((ct - 6.0) / 1.0, 0.0, 1.0)
 	elif ct < 8.4:
 		seg = "SWING"
-		action = "attack"
+		action = "swing"
 		attack_progress = clampf((ct - 7.2) / 1.0, 0.0, 1.0)
 	elif ct < 11.4:
 		seg = "Q FOCUS FIRE"

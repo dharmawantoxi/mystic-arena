@@ -1,9 +1,10 @@
 # SylaraPose.gd — data pose tunggal rig Sylara (Godot 4.x rebuild).
 #
 # Satu pose = semua sudut/offset yang dibutuhkan SylaraRenderer untuk
-# menggambar karakter. Animator memproduksi pose target tiap frame; root
-# (SylaraSkeleton.gd) me-lerp pose sekarang menuju target supaya transisi
-# antar-state halus (tidak robotic).
+# menggambar karakter. Animator MENULIS pose target ke instance yang
+# dipakai ulang tiap frame (tanpa Pose.new() per frame — hemat GC di
+# Android); root (SylaraSkeleton.gd) me-lerp pose sekarang menuju target
+# supaya transisi antar-state halus (tidak robotic).
 #
 # Konvensi sudut:
 #   * torso/kepala/lengan/kaki: 0 = lurus ke bawah / tegak, positif = ke
@@ -53,4 +54,39 @@ var eye_blink := 0.0       # 0 = terbuka, 1 = tertutup
 var wind_glow := 0.0       # intensitas aksen sihir angin (0..1)
 var hurt_tint := 0.0       # kilatan merah saat kena pukul (0..1)
 var alpha := 1.0           # seluruh rig (death fade)
-var trail := false         # aktifkan jejak busur (swing/melee riposte)
+
+
+## Kembalikan ke nilai default sebelum dipakai ulang sebagai pose target.
+## Dipanggil animator di awal compute() — tanpa alokasi baru.
+func reset() -> void:
+	root_x = 0.0
+	root_y = 0.0
+	torso_lean = 0.0
+	chest_flex = 0.0
+	head_lean = 0.0
+	arm_f_sh = 0.12
+	arm_f_el = 0.55
+	arm_b_sh = -0.10
+	arm_b_el = 0.40
+	leg_f_hip = 0.05
+	leg_f_knee = -0.06
+	leg_f_foot = 0.12
+	leg_b_hip = -0.06
+	leg_b_knee = -0.05
+	leg_b_foot = 0.10
+	bow_angle = -0.35
+	bow_draw = 0.0
+	bow_off = Vector2.ZERO
+	cape[0] = 2.98
+	cape[1] = 3.10
+	cape[2] = 2.86
+	hood[0] = 2.85
+	hood[1] = 3.10
+	hair[0] = 3.05
+	hair[1] = 3.18
+	hair[2] = 2.95
+	cape_flare = 0.5
+	eye_blink = 0.0
+	wind_glow = 0.0
+	hurt_tint = 0.0
+	alpha = 1.0

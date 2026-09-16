@@ -1,18 +1,15 @@
-# Sylara v1 — Godot 4.x Character (Sprite-Based Animation + Skill FX)
+# Sylara — Godot 4.x Character (Procedural Rig + Pooled VFX)
 
-![Sylara Wind Ranger](sylara_preview_sheet.png)
+Karakter **Sylara** (Wind Ranger — recurve bow, daun, angin laminar)
+diimplementasikan sebagai **rig prosedural Godot-native**: satu CanvasItem
+`_draw()` berlapis + animator pose + sequencer skill FX pooled. Bukan
+sprite strip, bukan placeholder geometris.
 
-Dokumen ini mendeskripsikan implementasi karakter **Sylara** untuk
-Godot 4.x menggunakan **AI-generated sprite assets** + **VFXManager**
-untuk skill effects.
-
-* Karakter: `CHARACTER_NAME = "sylara"` (Wind Ranger — recurve bow,
-  daun, angin laminar).
-* Referensi kualitas: Wind Ranger Dota 2 (silhouette, polish, combat
-  feel) — TIDAK menyalin desain.
-* **Sprite-based animation**: AI-generated sprite strips (10 animations)
-* **Procedural VFX**: Skill effects via VFXManager pooled system
-* Target platform: **Android** (Mobile renderer)
+* Karakter: `hero_type = "sylara"` (Wind Ranger).
+* Referensi kualitas: Wind Ranger Dota 2 (silhouette, readability, combat
+  feel) — sebagai **benchmark kualitas, bukan untuk disalin**. Identitas
+  Sylara: hijau hutan + emas daun + busur recurve + sihir angin.
+* Target platform: **Android** (renderer Mobile / Compatibility).
 
 ---
 
@@ -20,43 +17,49 @@ untuk skill effects.
 
 ```
 sylara/
-├── SylaraSkeleton.tscn   — scene tree (root + AnimatedSprite2D + SkillFX)
-├── SylaraSkeleton.gd     — root controller (state machine, drive API, signals)
-├── SylaraSpriteSetup.gd  — SpriteFrames configuration from strips
-└── SylaraSkillFX.gd      — sequencer FX skill via VFXManager pooled
+├── SylaraSkeleton.tscn   — scene tree (root + Renderer + SkillFX + Feel)
+├── SylaraSkeleton.gd     — root: state machine, blending, drive() API, sinyal,
+│                            pemilihan swing otomatis, hook proyektil
+├── SylaraRenderer.gd     — pose → gambar _draw() berlapis (1 CanvasItem)
+├── SylaraAnimator.gd     — state → pose target (tulis pakai-ulang, tanpa alokasi)
+├── SylaraPose.gd         — data pose tulang + secondary motion (+ reset())
+├── SylaraSkillFX.gd      — skill key → urutan VFX pooled (bidik target asli)
+├── SylaraCombatFeel.gd   — sinkron audio/shake/hit-stop/arc + impact R tertunda
+├── SylaraArrow.gd        — visual proyektil basic attack (subclass TowerBullet)
+└── SylaraPalette.gd      — palet terkontrol (satu-satunya sumber warna)
 ```
 
-**Asset files:**
-```
-godot/assets/units/
-├── sylara_idle_strip.png      — 8 frames @ 8 FPS
-├── sylara_walk_strip.png      — 8 frames @ 10 FPS
-├── sylara_run_strip.png       — 8 frames @ 12 FPS
-├── sylara_attack_strip.png    — 8 frames @ 15 FPS
-├── sylara_swing_strip.png     — 6 frames @ 12 FPS
-├── sylara_skill_q_strip.png   — 10 frames @ 15 FPS (Focus Fire)
-├── sylara_skill_w_strip.png   — 8 frames @ 10 FPS (Windrun)
-├── sylara_skill_e_strip.png   — 8 frames @ 12 FPS (Shackle Shot)
-├── sylara_skill_r_strip.png   — 12 frames @ 12 FPS (Powershot)
-└── sylara_hurt_strip.png      — 4 frames @ 10 FPS
-```
+**Bukan bagian arsitektur** (sengaja): gameplay Sylara (damage, cooldown,
+buff/debuff, timer kit) milik `HeroSkillKit.sylara_*` + `CombatSystem` yang
+parity-locked terhadap pygame. Rig ini **murni visual + feel** dan tidak
+boleh mengubah state gameplay — dikunci `GameplayParityTest`
+(experimental_hero_rigs on/off hasilnya identik).
+
+**File yang dihapus** (sistem paralel mati, tidak direferensikan, layer
+collision tidak kompatibel arena): `Sylara.tscn`, `Sylara.gd`,
+`SylaraCombat.gd`, `SylaraHitbox.gd`, `SylaraHurtbox.gd`, `SylaraAudio.gd`.
+Satu-satunya controller hero adalah `Hero.gd` generik.
 
 ---
 
 ## 2. Visual Identity
 
-**Color Palette:**
-- Forest green `#376234` — tunic, hood, cape
-- Dark green `#1e3a1c` — shadows
-- Gold `#aa8228` — trim, buckles, accents
-- Wood brown `#825a32` — bow
-- Wind green `#6ec35a` — magic effects, skill VFX
+**Palet** (`SylaraPalette.gd` — BASE → SHADOW → HIGHLIGHT → MAGIC ACCENT):
 
-**Character Design:**
-- Strong silhouette: hood + flowing cape + recurve bow + quiver
-- Leather armor vest with gold trim over green tunic
-- Recurve bow as primary weapon
-- Green eyes visible under hood shadow
+- Hijau hutan `#376234` — tunic, hood, cape (identitas utama)
+- Emas `#aa8228` — trim, buckle, quiver band (aksen hangat)
+- Kayu `#825a32` — busur recurve (senjata utama)
+- Angin `#6ec35a` — sihir (AKSEN, bukan dominan)
+
+**Siluet** (harus terbaca saat zoom out): hood + cape berkibar + quiver +
+busur recurve. Detail identitas: telinga elf, mata emerald + blink, vest
+kulit + clasp permata angin, pauldron bahu depan, pisau sabuk, bracer,
+cuff boots.
+
+**Lapisan gambar** (belakang → depan): ground shadow → cape/hair/quiver/
+lengan belakang/kaki belakang → kaki depan/boots/tunic/torso → belt/vest/
+hood → kepala/wajah → lengan depan/pauldron/busur+panah → rim light +
+wind wisps → hurt flash seluruh badan.
 
 ---
 
@@ -65,175 +68,160 @@ godot/assets/units/
 ### State Machine
 
 ```
-SylaraSkeleton.drive()
+Hero._drive_visual / Demo
+    ↓ drive(phase, action, attack_progress, facing, is_moving, skill, delta)
+SylaraSkeleton._derive_state()   → override > skill > attack/swing > gerak > idle
     ↓
-_derive_state(action, moving, skill)
+SylaraAnimator.compute(..., pose_target)   → tulis pakai-ulang (nol alokasi)
     ↓
-_play_animation(state)
+_blend_pose(pose_current → pose_target)    → lerp sudut (anti-robotic)
     ↓
-AnimatedSprite2D.play(animation_name)
+SylaraRenderer._draw()
 ```
+
+### Sinkronisasi serangan (RELEASE-FIRST)
+
+`Hero.try_attack()` melepaskan proyektil / damage **instan di ap=0**
+(paritas pygame — tidak boleh digeser). Karena itu siklus serangan
+dirancang terbalik dari biasanya:
+
+```
+ap 0.00 = RELEASE / STRIKE (tali snap + proyektil beterbangan)
+   ↓ FOLLOW-THROUGH → READY → ANTICIPATION → DRAW (wrap = lepas lagi)
+```
+
+Sinyal `attack_impact` menyala di `ATTACK_IMPACT_PROGRESS = 0.08`.
+Melee riposte (`swing`) dipilih otomatis saat target hero ≤ 64 px
+(dibaca dari `Hero.target` — tanpa mengubah `Hero.gd`).
 
 ### Animation States
 
-| State | Animation | Frames | FPS | Loop | Trigger |
-|-------|-----------|--------|-----|------|---------|
-| idle | `idle` | 8 | 8 | ✓ | Default state |
-| walk | `walk` | 8 | 10 | ✓ | Moving, speed ≤ 220 |
-| run | `run` | 8 | 12 | ✓ | Moving, speed > 220 |
-| attack | `attack` | 8 | 15 | ✗ | Ranged attack (distance ≥ 64) |
-| swing | `swing` | 6 | 12 | ✗ | Melee attack (distance < 64) |
-| skill_q | `skill_q` | 10 | 15 | ✗ | Focus Fire cast |
-| skill_w | `skill_w` | 8 | 10 | ✗ | Windrun cast |
-| skill_e | `skill_e` | 8 | 12 | ✗ | Shackle Shot cast |
-| skill_r | `skill_r` | 12 | 12 | ✗ | Powershot cast |
-| hurt | `hurt` | 4 | 10 | ✗ | HP decrease detected |
-| death | (fallback: idle) | — | — | — | Pending sprite strip |
-| victory | (fallback: idle) | — | — | — | Pending sprite strip |
+| State | Trigger | Catatan |
+|-------|---------|---------|
+| idle / walk / run | gerak | napas, stride, secondary cloth |
+| attack | ap 0→1 | release-first, sinkron spawn |
+| swing | target ≤ 64px | strike-first, sabit via Feel |
+| skill_q/w/e/r | active_skill | fase pre/cast/impact/aftermath |
+| hurt | HP turun terdeteksi | recoil + tint seluruh badan |
+| death | Hero.die() | robah dramatis + fade (0.9 dtk, lalu hide) |
+| victory | demo/showcase | angkat busur |
 
-### State Priority
-
-```
-override (play()) > skill > attack/swing > hurt > death > run > walk > idle
-```
+Secondary motion: cape 3 segmen, hood 2 segmen, rambut 3 segmen,
+eye blink mandiri — kontinu berbasis fase cloth.
 
 ---
 
-## 4. Skill Visual Effects
+## 4. Combat Feel
 
-Skill VFX handled by **SylaraSkillFX.gd** using **VFXManager** pooled actors:
+| Jalur | Sinkronisasi |
+|-------|--------------|
+| Basic ranged | spawn `SylaraArrow` dari ujung busur di ap=0 + kilatan nock kecil di impact. **Nol** impact FX / hit-stop / shake (kontrak `test_basic_attack_no_impact_fx`). |
+| Basic melee | damage instan + **satu** sabit angin di ujung busur (world-space, pooled). |
+| Skill Q/W/E | shake + suara dari kit saat cast (sudah ada); visual FX mengikuti. |
+| Skill R | charge 0–0.45 dtk → release (visual + bunyi busur) → **impact di 0.95 dtk = momen damage** (flash + ring + sparks terarah + hit-stop 0.05 + shake 0.14 + sinyal `skill_impact`). |
+| Kematian | `Hero.die()` instan secara logika; `hide()` ditunda 0.9 dtk (hero rig saja) + paket FX perpisahan (flash + ring + sparks daun). |
 
-### Q — Focus Fire (Rapid Volley)
-- 5 arrow streaks from bow to target
-- Impact flashes at target location
-- Green wind particles
-- Duration: ~0.6s
-
-### W — Windrun (Speed Aura)
-- Circular wind burst around character
-- Expanding wind ring
-- Leaf particles orbiting
-- Speed buff visual indicator
-- Duration: 5s (buff) + 0.5s (cast VFX)
-
-### E — Shackle Shot (Vine Projectile)
-- Green vine projectile from bow
-- Vine trail effect
-- Impact: vine wrap animation at target
-- Duration: ~0.8s (flight) + 0.5s (impact)
-
-### R — Powershot (Charged Gale)
-- Charge phase: wind gathering at bow
-- Release: massive wind projectile
-- Screen shake + hitstop on impact
-- Large explosion VFX
-- Duration: ~1.0s (charge) + 0.8s (flight) + 0.5s (impact)
+Sinyal: `attack_started`, `attack_impact`, `skill_cast(key)`,
+`skill_impact("r", pos)`, `character_hurt`, `character_died`.
 
 ---
 
-## 5. Integration
+## 5. Skill Visual Effects (anggaran pool!)
+
+`VFXManager` = **32 aktor untuk SELURUH arena**. Tiap skill Sylara dibatasi
+±12 aktor konkuren (sebelumnya R ≈ 25, Q ≈ 21 — memakan efek hero lain):
+
+| Skill | Komposisi | Puncak |
+|-------|-----------|--------|
+| Q Focus Fire | 5 streak (1/ panah, ke target asli) + 1 ring + 1 flash + sparks + ring kaki | ±7 |
+| W Windrun | 6 hembusan + 1 ring aura 70px + 2 sabit siklon + sparks + glow tanah | ±12 |
+| E Shackle Shot | 2 sulur (nock → target asli) + 1 ring + 1 flash + 3 node daun + sparks + glow | ±8 |
+| R Powershot | charge (2 ring + 3 sedot + flash + glow) → 5 panah kerucut + tunnel + sparks → impact terjadwal | ±12 |
+
+Aturan: 70% bentuk solid primer, 20% sekunder terarah, 10% aksen.
+Glow hanya aksen. Trail proyektil pendek (3 titik).
+
+---
+
+## 6. Integration
 
 ### RendererRegistry
 
 ```gdscript
-# godot/scripts/render/RendererRegistry.gd
-const HERO_SCENES = {
+const HERO := {
     "kaizen": preload("res://scenes/hero/kaizen/KaizenSkeleton.tscn"),
     "sylara": preload("res://scenes/hero/sylara/SylaraSkeleton.tscn"),
 }
 ```
 
-### Hero.gd Compatibility
+Aktif saat `mystic/rendering/experimental_hero_rigs=true` (default);
+fallback = strip bake pygame.
 
-SylaraSkeleton implements the same interface as KaizenSkeleton:
+### Hook Hero.gd (3 titik, semuanya aditif & parity-safe)
 
-```gdscript
-func drive(phase, action, attack_progress, facing, is_moving, skill, delta):
-    # Update sprite animation based on state
-    pass
+1. `_shoot_projectile()` → `custom_visual.spawn_attack_projectile(t, dmg)`
+   bila rig menyediakannya (parameter TowerBullet identik — hanya gambar
+   + titik spawn dari ujung busur yang berbeda).
+2. `die()` → hero rig (punya `play()`) menunda `hide()` 0.9 dtk +
+   menyembunyikan `$UI` langsung; hero lain tidak berubah.
+3. `_physics_process()` → `_tick_death_visual()` mendrive pose `death`
+   selama jendela di atas; `respawn()` mengembalikan semuanya.
 
-func handles_skill_fx(skill_key):
-    return true  # SylaraSkillFX handles all skill VFX
-```
+### Demo
 
----
-
-## 6. Performance
-
-### Memory
-- 10 sprite strips × ~2MB each = ~20MB total
-- SpriteFrames created once at `_ready()`
-- No runtime texture loading
-
-### Rendering
-- AnimatedSprite2D: single draw call per frame
-- VFXManager: pooled actors (no allocation during gameplay)
-- Target: 60 FPS on mid-range Android devices
-
-### Optimization Notes
-- Sprite strips could be packed into texture atlas for better memory efficiency
-- Consider texture compression (ETC2/ASTC) for mobile
-- VFX actors reused from pool (32 max)
+`godot/scenes/demo/SylaraDemo.tscn` — siklus penuh
+IDLE → WALK → RUN → ATTACK → SWING → Q → W → E → R → HURT → DEATH →
+VICTORY + kontrol keyboard (SPACE/1-4/H/D/V/F/R).
 
 ---
 
-## 7. Pending Work
+## 7. Performance (Android)
 
-### Missing Sprites
-- [ ] `sylara_death_strip.png` — death animation (8 frames)
-- [ ] `sylara_victory_strip.png` — victory celebration (6 frames)
-
-Currently falls back to idle animation.
-
-### Future Improvements
-- [ ] Texture atlas packing for all sprite strips
-- [ ] Normal maps for lighting effects
-- [ ] Additional idle variations (breathing, looking around)
-- [ ] Combo attack sequences
-- [ ] Critical hit animations
+- 1 CanvasItem per hero; `_draw()` CPU tanpa shader partikel.
+- Nol alokasi per frame: pose pakai-ulang, VFX pooled (nol
+  instantiate/free), Feel `_process` hanya hidup saat antrean terisi.
+- Tiap skill ≤ ±12 aktor pool; basic attack = 0 aktor pool
+  (proyektil TowerBullet, bukan VFX).
+- Tidak ada `_process` polling — semua event-driven via `drive()`.
 
 ---
 
 ## 8. Files Reference
 
 ### Core Scripts
-- `godot/scenes/hero/sylara/SylaraSkeleton.gd` — Root controller
-- `godot/scenes/hero/sylara/SylaraSpriteSetup.gd` — SpriteFrames config
-- `godot/scenes/hero/sylara/SylaraSkillFX.gd` — Skill VFX sequencer
-- `godot/scenes/hero/sylara/SylaraSkeleton.tscn` — Scene tree
 
-### Assets
-- `godot/assets/units/sylara_*_strip.png` — Sprite strips (10 files)
+- `godot/scenes/hero/sylara/SylaraSkeleton.gd` (+ `.tscn`) — root controller
+- `godot/scenes/hero/sylara/SylaraRenderer.gd` — renderer prosedural
+- `godot/scenes/hero/sylara/SylaraAnimator.gd` — state machine animasi
+- `godot/scenes/hero/sylara/SylaraPose.gd` — data pose
+- `godot/scenes/hero/sylara/SylaraSkillFX.gd` — sequencer skill FX
+- `godot/scenes/hero/sylara/SylaraCombatFeel.gd` — lapisan combat feel
+- `godot/scenes/hero/sylara/SylaraArrow.gd` — proyektil basic attack
+- `godot/scenes/hero/sylara/SylaraPalette.gd` — palet
 
 ### Integration
-- `godot/scripts/render/RendererRegistry.gd` — Registers Sylara scene
 
-### Documentation
-- `docs/SYLARA_GODOT_REBUILD.md` — This file
-- `docs/sylara_preview_*.png` — Concept art references
+- `godot/scripts/render/RendererRegistry.gd` — registrasi rig
+- `godot/scenes/hero/Hero.gd` — hook proyektil + death visual
+- `godot/scenes/hero/HeroSkillKit.gd` (`sylara_*`) — gameplay (JANGAN UBAH —
+  parity-locked, hasil transpile `hero_skills/_bundle.py`)
+- `godot/scenes/demo/SylaraDemo.tscn` (+ `.gd`) — showcase
 
 ---
 
-## 9. Development Notes
+## 9. Quality Checklist
 
-### Sprite Generation
-Sprites generated via AI image generation with consistent prompts:
-- Pixel art style
-- 64x80 pixels per frame
-- Transparent background
-- Side view facing right
-- Consistent character design across all animations
-
-### Animation Timing
-FPS values tuned for game feel:
-- **Idle/Walk**: Slow, relaxed (8-10 FPS)
-- **Run**: Faster, energetic (12 FPS)
-- **Attack/Skills**: Quick, snappy (12-15 FPS)
-- **Hurt**: Brief, reactive (10 FPS)
-
-### State Machine Design
-Priority-based state selection ensures:
-- Skills interrupt movement/attacks
-- Attacks interrupt movement
-- Hurt can interrupt anything (via override)
-- Smooth transitions between states
+- [x] Siluet kuat (hood + cape + quiver + recurve bow)
+- [x] Identitas jelas, senjata/tubuh/wajah terbaca
+- [x] Outline tinta tertutup, depth/shadow/highlight/rim terkontrol
+- [x] Idle hidup; walk/run natural; attack/swing sinkron damage
+- [x] Anticipation → impact → follow-through → recovery di semua aksi
+- [x] Secondary motion (cape/hood/hair/blink) + easing natural
+- [x] Skill FX: primer jelas, partikel terkontrol, glow aksen,
+      tidak menutupi battlefield, anggaran pool ±12
+- [x] Impact R di momen damage + hit-stop + shake proporsional
+- [x] Basic attack: nol impact FX / hit-stop / shake (kontrak)
+- [x] Death anim + FX terlihat di arena (hide ditunda, logika instan)
+- [x] Nol alokasi per frame; event-driven; Android-friendly
+- [x] `gdparse` + `tscn_lint` + `check_refs` + `particles_lint` +
+      `map_clutter_lint` + `log_gate` lolos

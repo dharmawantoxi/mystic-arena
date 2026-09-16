@@ -147,6 +147,7 @@ var skills = null      # SkillBook
 @onready var shadow: Node2D = $Shadow # Polygon2D ellipse (0 asset)
 @onready var hp_bar: ProgressBar = $UI/HPBar
 @onready var name_label: Label = $UI/NameLabel
+@onready var ui_layer: CanvasGroup = $UI
 # CPUParticles2D (bukan GPU) — lihat catatan di Hero.tscn: aman di
 # Compatibility renderer Android/GLES dan tidak butuh shader partikel.
 @onready var hit_particles: CPUParticles2D = $FX/HitParticles
@@ -156,6 +157,14 @@ var skills = null      # SkillBook
 ## Jeda minimum antar burst HitParticles (detik) — lihat play_hit_fx()
 const HIT_FX_COOLDOWN := 0.08
 var _hit_fx_cd: float = 0.0
+
+## Jendela animasi kematian hero rig (detik). Logika die() (is_dead, reward,
+## respawn timer, collision off) tetap INSTAN; hanya hide() yang ditunda
+## supaya pose death + FX perpisahan sempat terlihat. Hero non-rig (bake /
+## silhouette) tetap hide() langsung seperti sebelumnya.
+const DEATH_ANIM_SEC := 0.9
+var _death_anim := false
+var _death_hide_t := 0.0
 
 var silhouette = null
 var custom_visual = null
@@ -291,7 +300,10 @@ func setup_visual():
 # ══════════════════════════════════════════════════════════
 
 func _physics_process(delta):
-	if is_dead or GameManager.state != "playing":
+	if is_dead:
+		_tick_death_visual(delta)
+		return
+	if GameManager.state != "playing":
 		return
 	if status != null:
 		status.tick(delta)
@@ -405,6 +417,21 @@ func _physics_process(delta):
 	_drive_visual(is_moving, delta)
 	if _ring_alpha > 0.0 or selected:
 		queue_redraw()
+
+
+## Visual kematian hero rig: drive pose "death" selama jendela DEATH_ANIM_SEC
+## lalu hide(). Murni visual — dipanggil dari cabang is_dead di atas.
+func _tick_death_visual(delta: float) -> void:
+	if not _death_anim:
+		return
+	_death_hide_t -= delta
+	anim_phase += delta * 6.0
+	if custom_visual != null and is_instance_valid(custom_visual) \
+			and custom_visual.has_method("drive"):
+		custom_visual.drive(anim_phase, "death", 0.0, facing, false, "", delta)
+	if _death_hide_t <= 0.0:
+		_death_anim = false
+		hide()
 
 
 func _move_to(dest: Vector2, speed: float) -> bool:
@@ -965,6 +992,14 @@ func try_attack():
 ## Hero ranged menembak proyektil (paritas Bullet pygame): bisa ditangkis
 ## Wind Wall Kaizen dan bisa meleset karena evasion.
 func _shoot_projectile(t: Node2D, dmg: float) -> void:
+	# Hook visual rig (Sylara): proyektil khas dengan parameter IDENTIK
+	# (target, damage, team, speed, school, source) → paritas utuh.
+	# Rig yang tidak menyediakan hook memakai TowerBullet generik.
+	if custom_visual != null and is_instance_valid(custom_visual) \
+			and custom_visual.has_method("spawn_attack_projectile"):
+		var hooked = custom_visual.spawn_attack_projectile(t, dmg)
+		if hooked != null:
+			return
 	var b = TowerBulletScript.new()
 	b.setup(t, dmg, team, "normal", {}, 520.0,
 		fill_color.lightened(0.35), self, dmg_school)
@@ -1098,7 +1133,18 @@ func die(killer = null):
 		items.clear_on_death()
 	# Hero mati tidak digambar oleh pygame. Node dipertahankan agar level,
 	# item dan kepemilikan tetap utuh; GameManager mengelola timer 10 detik.
-	hide()
+	# Hero rig: hide() ditunda selama DEATH_ANIM_SEC supaya animasi death +
+	# FX perpisahan terlihat; UI disembunyikan langsung. Semua logika
+	# (is_dead/reward/respawn/collision) sudah instan di atas — tak berubah.
+	if custom_visual != null and is_instance_valid(custom_visual) \
+			and custom_visual.has_method("play"):
+		_death_anim = true
+		_death_hide_t = DEATH_ANIM_SEC
+		if ui_layer != null:
+			ui_layer.visible = false
+		custom_visual.play("death", DEATH_ANIM_SEC)
+	else:
+		hide()
 	GameManager.hero_died.emit(self)
 
 
@@ -1142,6 +1188,10 @@ func respawn() -> void:
 	collision_layer = 2 if team == "blue" else 4
 	collision_mask = 4 if team == "blue" else 2
 	modulate = Color.WHITE
+	_death_anim = false
+	_death_hide_t = 0.0
+	if ui_layer != null:
+		ui_layer.visible = true
 	show()
 	set_physics_process(true)
 	update_ui()

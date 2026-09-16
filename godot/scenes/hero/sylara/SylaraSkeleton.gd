@@ -1,12 +1,14 @@
-# SylaraSkeleton.gd — root controller karakter Sylara (Godot 4.x Masterwork Rebuild).
+# SylaraSkeleton.gd — root controller karakter Sylara (Godot 4.x).
 #
 # Arsitektur modular (satu script = satu tanggung jawab):
 #   SylaraSkeleton.gd    (root: state machine, blending, drive() API, sinyal)
-#   ├── SylaraRenderer.gd (pose → gambar _draw() berlapis, pixel art)
-#   ├── SylaraSkillFX.gd  (skill key → urutan VFX pooled via VFXManager)
-#   ├── SylaraAnimator.gd (state → pose target berbobot & transisi)
-#   ├── SylaraPose.gd     (data transfer pose tulang & secondary motion)
-#   └── SylaraPalette.gd  (warna terkontrol & hierarki kontras)
+#   ├── SylaraRenderer.gd   (pose → gambar _draw() berlapis, pixel art)
+#   ├── SylaraSkillFX.gd    (skill key → urutan VFX pooled via VFXManager)
+#   ├── SylaraCombatFeel.gd (attack/skill → audio + shake + hit-stop + arc)
+#   ├── SylaraAnimator.gd   (state → pose target, tulis pakai-ulang)
+#   ├── SylaraPose.gd       (data transfer pose tulang & secondary motion)
+#   ├── SylaraArrow.gd      (visual proyektil basic attack)
+#   └── SylaraPalette.gd    (warna terkontrol & hierarki kontras)
 #
 # Kontrak dengan Hero.gd:
 #   * drive(phase, action, attack_progress, facing, is_moving, skill, delta)
@@ -15,6 +17,8 @@
 #     melakukan flip sendiri (menghindari double-flip).
 #   * handles_skill_fx() = true → Hero melewatkan FX skill generik supaya
 #     tidak dobel (NO VISUAL NOISE).
+#   * spawn_attack_projectile() = hook opt-in: Hero memakai SylaraArrow
+#     (visual khas) dengan parameter TowerBullet yang identik (paritas).
 #
 # Kontrak demo/showcase: play("hurt"/"death"/"victory"/"run", durasi)
 # memaksa state sementara di luar drive() Hero.
@@ -22,6 +26,8 @@ class_name SylaraSkeleton
 extends Node2D
 
 const AnimatorScript = preload("res://scenes/hero/sylara/SylaraAnimator.gd")
+const ArrowScript = preload("res://scenes/hero/sylara/SylaraArrow.gd")
+const PoseScript = preload("res://scenes/hero/sylara/SylaraPose.gd")
 
 signal attack_started
 signal attack_impact
@@ -30,16 +36,27 @@ signal skill_impact(skill_key: String, target_pos: Vector2)
 signal character_hurt
 signal character_died
 
-## Dipakai Hero.gd untuk memilih renderer; timing pelepasan panah (draw -> release).
-const ATTACK_IMPACT_PROGRESS := 0.52
+## Momen tali dilepas / tebasan menghantam. Sinkron dengan desain
+## RELEASE-FIRST animator: spawn proyektil & damage instan terjadi di ap=0,
+## jadi sinyal impact harus di awal siklus, bukan di tengah.
+const ATTACK_IMPACT_PROGRESS := 0.08
+
+## Jarak target di bawah ini → melee riposte ("swing"), bukan tembakan.
+const MELEE_RANGE := 64.0
 
 @onready var renderer: SylaraRenderer = $Renderer
 @onready var skill_fx: SylaraSkillFX = $SkillFX
+@onready var feel: SylaraCombatFeel = $Feel
 
-var animator = null
-var pose_current = null
+var animator: SylaraAnimator = null
+var pose_current: SylaraPose = null
+var pose_target: SylaraPose = null
 
-## State override dari play() (demo / showcase).
+## Jenis serangan terakhir ("shot" / "swing") — dibaca Feel untuk memilih
+## kilatan nock vs sabit tebasan saat attack_impact menyala.
+var last_attack_kind := "shot"
+
+## State override dari play() (demo / showcase / death anim Hero).
 var _override_state := ""
 var _override_t := 0.0
 var _override_dur := 0.0
@@ -54,7 +71,6 @@ var _impact_emitted := false
 ## cooldown, jadi kalau cooldown berubah mid-swing ap bisa MUNDUR dan
 ## pose melompat ke belakang = stutter. Dilacak agar monoton naik.
 var _prev_ap := 0.0
-var _prev_pos := Vector2.ZERO
 var _hero = null
 var _hero_hp := -1.0
 var facing: int = 1
@@ -63,8 +79,10 @@ var facing: int = 1
 func _ready() -> void:
 	add_to_group("sylara_skeleton")
 	animator = AnimatorScript.new()
-	pose_current = animator.compute("idle", 0.0, 0.0, 0.0, {})
-	_prev_pos = global_position
+	# Dua pose pakai-ulang: tidak ada alokasi per frame (Android).
+	pose_current = PoseScript.new()
+	pose_target = PoseScript.new()
+	animator.compute("idle", 0.0, 0.0, 0.0, {}, pose_current)
 	# Hero (kalau ada di arena) = kakek node: Hero/Visual/<rig>.
 	if skill_fx != null and skill_fx.has_method("resolve_hero"):
 		skill_fx.resolve_hero()
@@ -116,26 +134,23 @@ func drive(p_phase: float, p_action: String, p_attack_progress: float,
 
 	# ── Pose target + blending (transisi halus, anti-robotic) ──
 	var skill_t := _skill_time if p_skill != "" else 0.0
-	var target = animator.compute(state, phase, ap, skill_t, extra)
+	animator.compute(state, phase, ap, skill_t, extra, pose_target)
 	var rate := _blend_rate(state)
 	var k := 1.0 - exp(-rate * delta)
-	_blend_pose(pose_current, target, k)
+	_blend_pose(pose_current, pose_target, k)
 
-	# ── Serahkan ke renderer + trail + skill FX ──
+	# ── Serahkan ke renderer + skill FX ──
 	if renderer != null:
 		renderer.pose = pose_current
 		renderer.phase = phase
-		_update_trail(pose_current)
 		renderer.queue_redraw()
 
 	if skill_fx != null and skill_fx.has_method("notify_drive"):
-		skill_fx.prev_pos = _prev_pos
 		skill_fx.notify_drive(p_skill, global_position, facing, delta)
 
-	_prev_pos = global_position
 
 
-## Showcase/demo: paksa state (hurt/death/victory/run) selama `dur` detik.
+## Showcase/demo + death anim Hero: paksa state selama `dur` detik.
 func play(state: String, dur: float = 0.5) -> void:
 	_override_state = state
 	_override_t = 0.0
@@ -149,6 +164,27 @@ func play(state: String, dur: float = 0.5) -> void:
 ## Hero.gd melewatkan FX skill generik bila rig menanganinya sendiri.
 func handles_skill_fx(_key: String) -> bool:
 	return true
+
+
+## Hook opt-in Hero._shoot_projectile: SylaraArrow dengan parameter
+## TowerBullet yang IDENTIK (target, damage, team, speed 520, school,
+## source) — hanya spawn dari ujung busur + gambar khas wind-ranger.
+## Perilaku homing/hit/damage diwarisi 1:1 (paritas utuh).
+func spawn_attack_projectile(t: Node2D, dmg: float) -> Node2D:
+	var arrow = ArrowScript.new()
+	var team := "blue"
+	var school := ""
+	var col := Color(0.55, 0.95, 0.45)
+	if _hero != null and is_instance_valid(_hero):
+		team = str(_hero.get("team"))
+		school = str(_hero.get("dmg_school"))
+		var fc = _hero.get("fill_color")
+		if fc is Color:
+			col = (fc as Color).lightened(0.35)
+	arrow.setup(t, dmg, team, "normal", {}, 520.0, col, _hero, school)
+	arrow.global_position = get_arrow_spawn_global()
+	GameManager.attach_fx(arrow)
+	return arrow
 
 
 # ══════════════════════════════════════════════════════════
@@ -167,7 +203,10 @@ func _derive_state(action: String, moving: bool, skill: String) -> String:
 			"r":
 				return "skill_r"
 	if action == "attack":
-		# Melee riposte bila jarak sangat dekat, default ranged archer draw
+		# Melee riposte bila target sangat dekat, default tembakan busur.
+		# Dibaca dari jarak target hero (tanpa mengubah Hero.gd).
+		if _hero_target_in_melee():
+			return "swing"
 		return "attack"
 	if action == "swing":
 		return "swing"
@@ -182,6 +221,17 @@ func _derive_state(action: String, moving: bool, skill: String) -> String:
 	if action == "victory":
 		return "victory"
 	return "idle"
+
+
+func _hero_target_in_melee() -> bool:
+	if _hero == null or not is_instance_valid(_hero):
+		return false
+	var tgt = _hero.get("target")
+	if tgt == null or not is_instance_valid(tgt) or not (tgt is Node2D):
+		return false
+	if bool((tgt as Node).get("is_dead")):
+		return false
+	return global_position.distance_to((tgt as Node2D).global_position) <= MELEE_RANGE
 
 
 func _track_skill(skill: String, delta: float) -> void:
@@ -202,6 +252,7 @@ func _emit_combat_signals(state: String, ap: float) -> void:
 		if not _attack_started_emitted:
 			_attack_started_emitted = true
 			_impact_emitted = false
+			last_attack_kind = "swing" if state == "swing" else "shot"
 			attack_started.emit()
 		if not _impact_emitted and ap >= ATTACK_IMPACT_PROGRESS:
 			_impact_emitted = true
@@ -219,18 +270,6 @@ func _watch_hero() -> void:
 	if hp_now < _hero_hp - 0.5 and _override_state == "":
 		play("hurt", 0.3)
 	_hero_hp = hp_now
-
-
-func _update_trail(p) -> void:
-	if renderer == null:
-		return
-	if p.trail:
-		var bow_pos: Vector2 = renderer.get_bow_tip()
-		renderer.trail_pts.append(renderer.to_global(bow_pos))
-		if renderer.trail_pts.size() > 8:
-			renderer.trail_pts.remove_at(0)
-	elif not renderer.trail_pts.is_empty():
-		renderer.trail_pts.remove_at(0)
 
 
 func _blend_rate(state: String) -> float:
@@ -251,7 +290,7 @@ func _blend_rate(state: String) -> float:
 
 
 ## Lerp pose-ke-pose (sudut lewat lerp_angle). `k` sudah dihitung root.
-func _blend_pose(cur, tgt, k: float) -> void:
+func _blend_pose(cur: SylaraPose, tgt: SylaraPose, k: float) -> void:
 	k = clampf(k, 0.0, 1.0)
 	cur.root_x = lerpf(cur.root_x, tgt.root_x, k)
 	cur.root_y = lerpf(cur.root_y, tgt.root_y, k)
@@ -281,8 +320,6 @@ func _blend_pose(cur, tgt, k: float) -> void:
 	cur.wind_glow = lerpf(cur.wind_glow, tgt.wind_glow, k)
 	cur.hurt_tint = lerpf(cur.hurt_tint, tgt.hurt_tint, k)
 	cur.alpha = lerpf(cur.alpha, tgt.alpha, k)
-	# trail: ambil langsung dari target keputusan animator
-	cur.trail = tgt.trail
 
 
 # ══════════════════════════════════════════════════════════
@@ -310,7 +347,7 @@ func get_bow_nock_global() -> Vector2:
 func get_arrow_spawn_global() -> Vector2:
 	if renderer == null:
 		return global_position
-	# Arrow spawns from bow grip forward along bow direction
+	# Anak panah lahir dari grip ke arah busur (sesuai pose bidikan).
 	var grip: Vector2 = renderer.get_bow_grip()
 	var tip: Vector2 = renderer.get_bow_tip()
 	var dir := (tip - grip).normalized()
