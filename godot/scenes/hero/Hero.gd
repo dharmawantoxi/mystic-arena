@@ -965,6 +965,14 @@ func try_attack():
 ## Hero ranged menembak proyektil (paritas Bullet pygame): bisa ditangkis
 ## Wind Wall Kaizen dan bisa meleset karena evasion.
 func _shoot_projectile(t: Node2D, dmg: float) -> void:
+	# Hook visual rig (Sylara): proyektil khas dengan parameter IDENTIK
+	# (target, damage, team, speed, school, source) → paritas utuh.
+	# Rig yang tidak menyediakan hook memakai TowerBullet generik.
+	if custom_visual != null and is_instance_valid(custom_visual) \
+			and custom_visual.has_method("spawn_attack_projectile"):
+		var hooked = custom_visual.spawn_attack_projectile(t, dmg)
+		if hooked != null:
+			return
 	var b = TowerBulletScript.new()
 	b.setup(t, dmg, team, "normal", {}, 520.0,
 		fill_color.lightened(0.35), self, dmg_school)

@@ -1,26 +1,33 @@
-# SylaraAnimator.gd — state machine animasi prosedural Sylara (Godot 4.x Masterwork Rebuild).
+# SylaraAnimator.gd — state machine animasi prosedural Sylara (Godot 4.x).
 #
-# Tanggung jawab SATU hal: (state, fase, progress) → SylaraPose target.
+# Tanggung jawab SATU hal: (state, fase, progress) → tulis SylaraPose target.
+# Pose target ditulis ke instance PAKAI-ULANG (tanpa alokasi per frame).
 #
 # Mengikuti kaidah animasi dan game feel profesional:
 #   ANTICIPATION → ACTION → IMPACT → FOLLOW THROUGH → RECOVERY
 #
+# PENTING — sinkronisasi serangan dasar: Hero.try_attack() melepaskan
+# proyektil / damage INSTAN di ap=0 (paritas pygame, tidak boleh digeser).
+# Karena itu siklus attack/swing dirancang RELEASE-FIRST: ap 0.0 = momen
+# tali dilepas / tebasan menghantam, lalu follow-through, recovery, dan
+# anticipation+draw untuk tembakan BERIKUTNYA di ekor siklus. Hasilnya
+# panah beterbangan tepat saat tali snap — bukan 0.3 detik sebelumnya.
+#
 # Secondary motion (cape 3 segmen, hood 2 segmen, hair 3 segmen, bow string,
 # eye blinking) dihitung kontinu berbasis fase cloth dan kecepatan gerak.
+class_name SylaraAnimator
 extends RefCounted
 
-const PoseScript = preload("res://scenes/hero/sylara/SylaraPose.gd")
+# ── Siklus serangan ranged: RELEASE dulu (spawn instan di ap=0) ──
+const ATK_RELEASE_END := 0.12    # tali snap + recoil kick
+const ATK_FOLLOW_END := 0.40     # follow through → sikap siaga
+const ATK_READY_END := 0.68      # siaga bernapas (breathing ready)
+const ATK_ANTICIP_END := 0.86    # anticipation; draw 0.86–1.00
 
-# ── Timing serangan ranged (draw & release) ──
-const ATK_DRAW_START := 0.08     # anticipation selesai, mulai tarik tali
-const ATK_DRAW_END := 0.48       # tali full drawn (tegangan maksimum)
-const ATK_RELEASE := 0.52        # IMPACT — lepas tali busur
-const ATK_FOLLOW_END := 0.72     # follow through
-
-# ── Timing serangan melee (sapuan busur jarak dekat) ──
-const SWING_WINDUP_END := 0.22
-const SWING_STRIKE_END := 0.55
-const SWING_HOLD_END := 0.68
+# ── Siklus melee riposte: STRIKE dulu (damage instan di ap=0) ──
+const SWING_STRIKE_END := 0.30
+const SWING_HOLD_END := 0.55
+const SWING_RECOVER_END := 0.80  # windup 0.80–1.00
 
 # Blink: jadwal kedip acak mandiri agar wajah hidup
 var _blink_cd := 2.5
@@ -31,18 +38,9 @@ var _cloth_phase := 0.0
 var _cloth_speed := 1.0
 
 
-static func D(deg: float) -> float:
-	return deg * PI / 180.0
-
-
 static func ss(t: float) -> float:
 	t = clampf(t, 0.0, 1.0)
 	return t * t * (3.0 - 2.0 * t)
-
-
-## Interpolasi sudut dalam derajat tanpa wrap.
-static func sweep(from_deg: float, to_deg: float, t: float) -> float:
-	return D(lerpf(from_deg, to_deg, clampf(t, 0.0, 1.0)))
 
 
 ## Dipanggil root tiap physics frame (delta asli).
@@ -65,62 +63,61 @@ func _blink_amount() -> float:
 	return sin(clampf(_blink_t / 0.16, 0.0, 1.0) * PI)
 
 
-## Hitung pose target berdasarkan state, progress, dan skill time.
+## Hitung pose target ke `out` (pakai-ulang, tanpa alokasi).
 func compute(state: String, phase: float, attack_progress: float,
-		skill_t: float, extra: Dictionary) -> Object:
-	var p = PoseScript.new()
-	p.eye_blink = _blink_amount()
+		skill_t: float, extra: Dictionary, out: SylaraPose) -> void:
+	out.reset()
+	out.eye_blink = _blink_amount()
 
 	match state:
 		"idle":
-			_idle(p, phase)
+			_idle(out, phase)
 		"walk":
-			_walk(p, phase)
+			_walk(out, phase)
 		"run":
-			_run(p, phase)
+			_run(out, phase)
 		"attack":
-			_attack(p, attack_progress, phase)
+			_attack(out, attack_progress, phase)
 		"swing":
-			_swing(p, attack_progress, phase)
+			_swing(out, attack_progress)
 		"skill_q":
 			var prog := attack_progress
 			if prog <= 0.0:
 				prog = clampf(skill_t / 3.0, 0.0, 1.0)
-			_skill_q(p, prog, phase)
+			_skill_q(out, prog)
 		"skill_w":
 			var prog := attack_progress
 			if prog <= 0.0:
 				prog = clampf(skill_t / 3.0, 0.0, 1.0)
-			_skill_w(p, prog, phase, skill_t)
+			_skill_w(out, prog, phase, skill_t)
 		"skill_e":
 			var prog := attack_progress
 			if prog <= 0.0:
 				prog = clampf(skill_t / 2.5, 0.0, 1.0)
-			_skill_e(p, prog, phase)
+			_skill_e(out, prog)
 		"skill_r":
 			var prog := attack_progress
 			if prog <= 0.0:
 				prog = clampf(skill_t / 1.35, 0.0, 1.0)
-			_skill_r(p, prog, phase, skill_t)
+			_skill_r(out, prog)
 		"hurt":
-			_hurt(p, float(extra.get("t", 0.0)), phase)
+			_hurt(out, float(extra.get("t", 0.0)))
 		"death":
-			_death(p, float(extra.get("t", 0.0)))
+			_death(out, float(extra.get("t", 0.0)))
 		"victory":
-			_victory(p, phase)
+			_victory(out, phase)
 		_:
-			_idle(p, phase)
+			_idle(out, phase)
 
 	# Secondary motion untuk kain & rambut
-	_cloth(p, state, phase)
-	return p
+	_cloth(out, state)
 
 
 # ══════════════════════════════════════════════════════════
 #  1. IDLE (Stance Waspada Ranger)
 # ══════════════════════════════════════════════════════════
 
-func _idle(p: Object, phase: float) -> void:
+func _idle(p: SylaraPose, phase: float) -> void:
 	_cloth_speed = 1.0
 	var breath := sin(phase * 2.4) * 0.02
 	p.root_y = sin(phase * 2.4) * 0.65
@@ -152,7 +149,7 @@ func _idle(p: Object, phase: float) -> void:
 #  2. WALK (Langkah Ranger Anggun)
 # ══════════════════════════════════════════════════════════
 
-func _walk(p: Object, phase: float) -> void:
+func _walk(p: SylaraPose, phase: float) -> void:
 	_cloth_speed = 1.45
 	var cycle := phase * 4.6
 	var s := sin(cycle)
@@ -186,7 +183,7 @@ func _walk(p: Object, phase: float) -> void:
 #  3. RUN (Lari Cepat dengan Busur Siap)
 # ══════════════════════════════════════════════════════════
 
-func _run(p: Object, phase: float) -> void:
+func _run(p: SylaraPose, phase: float) -> void:
 	_cloth_speed = 2.2
 	var cycle := phase * 7.2
 	var s := sin(cycle)
@@ -217,66 +214,80 @@ func _run(p: Object, phase: float) -> void:
 
 
 # ══════════════════════════════════════════════════════════
-#  4. ATTACK (Ranged — Tarik & Lepas Panah Penuh Bobot)
+#  4. ATTACK (Ranged — RELEASE-FIRST, sinkron spawn instan)
+#
+#  ap 0.00 = tali dilepas + proyektil beterbangan (Hero.try_attack).
+#  Siklus: RELEASE → FOLLOW → READY → ANTICIPATION → DRAW (wrap = lepas).
 # ══════════════════════════════════════════════════════════
 
-func _attack(p: Object, ap: float, phase: float) -> void:
+func _attack(p: SylaraPose, ap: float, phase: float) -> void:
 	_cloth_speed = 1.85
 
-	if ap < ATK_DRAW_START:
-		# ANTICIPATION: Angkat busur, condong ke belakang menyiapkan tarikan
-		var t := ss(ap / ATK_DRAW_START)
+	if ap < ATK_RELEASE_END:
+		# RELEASE (IMPACT): tali snap, panah melesat, recoil kick ke depan.
+		var t := ap / ATK_RELEASE_END
+		p.torso_lean = lerpf(0.07, 0.02, t)
+		p.arm_f_sh = 0.94
+		p.arm_f_el = 0.10
+		p.arm_b_sh = lerpf(-0.88, -0.30, t)
+		p.arm_b_el = lerpf(1.48, 0.55, t)
+		p.bow_angle = 0.04
+		p.bow_draw = lerpf(1.0, 0.0, t * t)
+		p.root_x = lerpf(1.4, 0.4, t)
+		p.chest_flex = lerpf(-0.02, 0.0, t)
+		p.wind_glow = lerpf(0.6, 0.25, t)
+
+	elif ap < ATK_FOLLOW_END:
+		# FOLLOW THROUGH: lengan tali kembali, busur turun ke siaga.
+		var t := ss((ap - ATK_RELEASE_END) / (ATK_FOLLOW_END - ATK_RELEASE_END))
+		p.torso_lean = lerpf(0.02, 0.0, t)
+		p.arm_f_sh = lerpf(0.94, 0.55, t)
+		p.arm_f_el = lerpf(0.10, 0.38, t)
+		p.arm_b_sh = lerpf(-0.30, -0.12, t)
+		p.arm_b_el = lerpf(0.55, 0.45, t)
+		p.bow_angle = lerpf(0.04, -0.20, t)
+		p.bow_draw = 0.0
+		p.root_x = lerpf(0.4, 0.0, t)
+		p.wind_glow = lerpf(0.25, 0.05, t)
+
+	elif ap < ATK_READY_END:
+		# READY: siaga bernapas, busur setengah terangkat.
+		var sway := sin(phase * 2.0) * 0.02
+		p.torso_lean = sway
+		p.arm_f_sh = 0.55 + sway
+		p.arm_f_el = 0.38
+		p.arm_b_sh = -0.12 + sway
+		p.arm_b_el = 0.45
+		p.bow_angle = -0.20 + sway
+		p.bow_draw = 0.0
+		p.root_x = 0.0
+		p.wind_glow = 0.05
+
+	elif ap < ATK_ANTICIP_END:
+		# ANTICIPATION: angkat busur, condong ke belakang.
+		var t := ss((ap - ATK_READY_END) / (ATK_ANTICIP_END - ATK_READY_END))
 		p.torso_lean = lerpf(0.0, -0.07, t)
-		p.arm_f_sh = lerpf(0.35, 0.88, t)
-		p.arm_f_el = lerpf(0.65, 0.22, t)
-		p.arm_b_sh = lerpf(-0.08, -0.52, t)
+		p.arm_f_sh = lerpf(0.55, 0.88, t)
+		p.arm_f_el = lerpf(0.38, 0.22, t)
+		p.arm_b_sh = lerpf(-0.12, -0.52, t)
 		p.arm_b_el = lerpf(0.45, 1.15, t)
-		p.bow_angle = lerpf(-0.45, 0.12, t)
+		p.bow_angle = lerpf(-0.20, 0.12, t)
 		p.bow_draw = 0.0
 		p.root_x = lerpf(0.0, -1.6, t)
 
-	elif ap < ATK_DRAW_END:
-		# DRAW: Tarik tali busur ke belakang (tension building)
-		var t := ss((ap - ATK_DRAW_START) / (ATK_DRAW_END - ATK_DRAW_START))
+	else:
+		# DRAW: tarik tali hingga penuh — wrap berikutnya = RELEASE.
+		var t := ss((ap - ATK_ANTICIP_END) / (1.0 - ATK_ANTICIP_END))
 		p.torso_lean = lerpf(-0.07, -0.11, t)
 		p.arm_f_sh = 0.88 + t * 0.06
-		p.arm_f_el = lerpf(0.22, 0.12, t)    # lengan depan lurus membidik
-		p.arm_b_sh = lerpf(-0.52, -0.88, t)   # siku belakang ditarik kuat
+		p.arm_f_el = lerpf(0.22, 0.12, t)
+		p.arm_b_sh = lerpf(-0.52, -0.88, t)
 		p.arm_b_el = lerpf(1.15, 1.48, t)
 		p.bow_angle = lerpf(0.12, 0.04, t)
-		p.bow_draw = t                        # tali tertarik penuh
+		p.bow_draw = t
 		p.root_x = lerpf(-1.6, -2.6, t)
 		p.chest_flex = t * 0.05
-		p.wind_glow = t * 0.35
-
-	elif ap < ATK_RELEASE:
-		# RELEASE (IMPACT Frame): Tali lepas, panah melesat, recoil forward kick
-		var t := (ap - ATK_DRAW_END) / (ATK_RELEASE - ATK_DRAW_END)
-		p.torso_lean = lerpf(-0.11, 0.05, t)
-		p.arm_f_sh = 0.92
-		p.arm_f_el = 0.10
-		p.arm_b_sh = lerpf(-0.88, -0.28, t)
-		p.arm_b_el = lerpf(1.48, 0.55, t)
-		p.bow_angle = 0.04
-		p.bow_draw = lerpf(1.0, 0.0, t * t)   # tali snap seketika
-		p.root_x = lerpf(-2.6, 1.2, t)
-		p.chest_flex = lerpf(0.05, -0.02, t)
-		p.wind_glow = 0.5
-		p.trail = t < 0.55
-
-	else:
-		# FOLLOW THROUGH & RECOVERY: Kembali ke sikap siaga
-		var t := ss((ap - ATK_RELEASE) / (1.0 - ATK_RELEASE))
-		p.torso_lean = lerpf(0.05, 0.0, t)
-		p.arm_f_sh = lerpf(0.92, 0.35, t)
-		p.arm_f_el = lerpf(0.10, 0.65, t)
-		p.arm_b_sh = lerpf(-0.28, -0.08, t)
-		p.arm_b_el = lerpf(0.55, 0.45, t)
-		p.bow_angle = lerpf(0.04, -0.45, t)
-		p.bow_draw = 0.0
-		p.root_x = lerpf(1.2, 0.0, t)
-		p.chest_flex = lerpf(-0.02, 0.0, t)
-		p.wind_glow = lerpf(0.5, 0.0, t)
+		p.wind_glow = t * 0.45
 
 	p.leg_f_hip = 0.16 + sin(phase * 0.5) * 0.02
 	p.leg_f_knee = -0.09
@@ -285,37 +296,54 @@ func _attack(p: Object, ap: float, phase: float) -> void:
 
 
 # ══════════════════════════════════════════════════════════
-#  5. SWING (Melee Riposte — Tebasan Busur Jarak Dekat)
+#  5. SWING (Melee Riposte — STRIKE-FIRST, sinkron damage instan)
+#
+#  ap 0.00 = busur menghantam (damage sudah mendarat di try_attack).
+#  Siklus: STRIKE → HOLD → RECOVER → WINDUP (wrap = hantam).
 # ══════════════════════════════════════════════════════════
 
-func _swing(p: Object, ap: float, _phase: float) -> void:
+func _swing(p: SylaraPose, ap: float) -> void:
 	_cloth_speed = 2.1
 
-	if ap < SWING_WINDUP_END:
-		var t := ss(ap / SWING_WINDUP_END)
-		p.torso_lean = lerpf(0.0, -0.16, t)
-		p.arm_f_sh = lerpf(0.35, -0.65, t)
-		p.arm_f_el = lerpf(0.65, 0.95, t)
-		p.bow_angle = lerpf(-0.45, 1.85, t)
-		p.root_x = lerpf(0.0, -2.2, t)
-	elif ap < SWING_STRIKE_END:
-		var t := ss((ap - SWING_WINDUP_END) / (SWING_STRIKE_END - SWING_WINDUP_END))
+	if ap < SWING_STRIKE_END:
+		# STRIKE: sapuan cepat atas-belakang → bawah-depan + lunge.
+		var t := ss(ap / SWING_STRIKE_END)
 		p.torso_lean = lerpf(-0.16, 0.20, t)
 		p.arm_f_sh = lerpf(-0.65, 1.25, t)
 		p.arm_f_el = lerpf(0.95, 0.28, t)
 		p.bow_angle = lerpf(1.85, -1.25, t)
 		p.root_x = lerpf(-2.2, 3.2, t)
 		p.chest_flex = lerpf(0.0, 0.09, t)
-		p.trail = true
-	else:
-		var t := ss((ap - SWING_STRIKE_END) / (1.0 - SWING_STRIKE_END))
-		p.torso_lean = lerpf(0.20, 0.0, t)
+		p.wind_glow = lerpf(0.45, 0.15, t)
+	elif ap < SWING_HOLD_END:
+		# HOLD: tahan ujung sapuan sepersekian detik (bobot).
+		var t := (ap - SWING_STRIKE_END) / (SWING_HOLD_END - SWING_STRIKE_END)
+		p.torso_lean = lerpf(0.20, 0.14, t)
+		p.arm_f_sh = 1.25
+		p.arm_f_el = 0.28
+		p.bow_angle = -1.25
+		p.root_x = lerpf(3.2, 2.4, t)
+		p.chest_flex = 0.09
+		p.wind_glow = lerpf(0.15, 0.05, t)
+	elif ap < SWING_RECOVER_END:
+		# RECOVER: kembali ke guard.
+		var t := ss((ap - SWING_HOLD_END) / (SWING_RECOVER_END - SWING_HOLD_END))
+		p.torso_lean = lerpf(0.14, 0.0, t)
 		p.arm_f_sh = lerpf(1.25, 0.35, t)
 		p.arm_f_el = lerpf(0.28, 0.65, t)
 		p.bow_angle = lerpf(-1.25, -0.45, t)
-		p.root_x = lerpf(3.2, 0.0, t)
+		p.root_x = lerpf(2.4, 0.0, t)
 		p.chest_flex = lerpf(0.09, 0.0, t)
-		p.trail = t < 0.3
+		p.wind_glow = 0.05
+	else:
+		# WINDUP: angkat busur untuk hantaman berikutnya.
+		var t := ss((ap - SWING_RECOVER_END) / (1.0 - SWING_RECOVER_END))
+		p.torso_lean = lerpf(0.0, -0.16, t)
+		p.arm_f_sh = lerpf(0.35, -0.65, t)
+		p.arm_f_el = lerpf(0.65, 0.95, t)
+		p.bow_angle = lerpf(-0.45, 1.85, t)
+		p.root_x = lerpf(0.0, -2.2, t)
+		p.wind_glow = t * 0.2
 
 	p.leg_f_hip = 0.22
 	p.leg_f_knee = -0.11
@@ -329,7 +357,7 @@ func _swing(p: Object, ap: float, _phase: float) -> void:
 #  6. SKILL Q — FOCUS FIRE (Rapid Volley Barrage)
 # ══════════════════════════════════════════════════════════
 
-func _skill_q(p: Object, prog: float, _phase: float) -> void:
+func _skill_q(p: SylaraPose, prog: float) -> void:
 	_cloth_speed = 2.1
 
 	if prog < 0.08:
@@ -374,7 +402,7 @@ func _skill_q(p: Object, prog: float, _phase: float) -> void:
 #  7. SKILL W — WINDRUN (Gale Aura Sprint)
 # ══════════════════════════════════════════════════════════
 
-func _skill_w(p: Object, prog: float, phase: float, skill_t: float) -> void:
+func _skill_w(p: SylaraPose, prog: float, phase: float, skill_t: float) -> void:
 	_cloth_speed = 2.9
 
 	if prog < 0.10:
@@ -423,7 +451,7 @@ func _skill_w(p: Object, prog: float, phase: float, skill_t: float) -> void:
 #  8. SKILL E — SHACKLE SHOT (Precision Vine Loose)
 # ══════════════════════════════════════════════════════════
 
-func _skill_e(p: Object, prog: float, _phase: float) -> void:
+func _skill_e(p: SylaraPose, prog: float) -> void:
 	_cloth_speed = 1.65
 
 	if prog < 0.15:
@@ -479,11 +507,11 @@ func _skill_e(p: Object, prog: float, _phase: float) -> void:
 #  9. SKILL R — POWERSHOT (Charged Gale Blast Ultimate)
 # ══════════════════════════════════════════════════════════
 
-func _skill_r(p: Object, prog: float, _phase: float, _skill_t: float) -> void:
+func _skill_r(p: SylaraPose, prog: float) -> void:
 	_cloth_speed = 2.6
 
 	if prog < 0.35:
-		# CHARGE: Posisi kuda-kuda kokoh, tarikan busur maksimal
+		# CHARGE: kuda-kuda kokoh, tarikan busur maksimal.
 		var t := ss(prog / 0.35)
 		p.arm_f_sh = lerpf(0.35, 1.08, t)
 		p.arm_f_el = lerpf(0.65, 0.07, t)
@@ -498,7 +526,7 @@ func _skill_r(p: Object, prog: float, _phase: float, _skill_t: float) -> void:
 		p.wind_glow = t * 0.95
 
 	elif prog < 0.45:
-		# RELEASE: Ledakan badai kerucut 5-panah gale
+		# RELEASE: ledakan badai kerucut 5-panah gale.
 		var t := ss((prog - 0.35) / 0.10)
 		p.arm_f_sh = 1.08
 		p.arm_f_el = 0.06
@@ -511,10 +539,9 @@ func _skill_r(p: Object, prog: float, _phase: float, _skill_t: float) -> void:
 		p.root_y = lerpf(-1.6, 0.6, t)
 		p.chest_flex = lerpf(0.07, -0.04, t)
 		p.wind_glow = 1.0
-		p.trail = true
 
 	elif prog < 0.72:
-		# GALE TUNNEL: Follow through pose
+		# GALE TUNNEL: follow through pose.
 		var t := (prog - 0.45) / 0.27
 		p.arm_f_sh = lerpf(1.08, 0.82, t)
 		p.arm_f_el = lerpf(0.06, 0.24, t)
@@ -524,7 +551,6 @@ func _skill_r(p: Object, prog: float, _phase: float, _skill_t: float) -> void:
 		p.torso_lean = lerpf(0.14, 0.04, t)
 		p.root_x = lerpf(4.2, 1.6, t)
 		p.wind_glow = lerpf(1.0, 0.4, t)
-		p.trail = t < 0.38
 
 	else:
 		# RECOVERY
@@ -548,7 +574,7 @@ func _skill_r(p: Object, prog: float, _phase: float, _skill_t: float) -> void:
 #  10. HURT & HIT REACTION
 # ══════════════════════════════════════════════════════════
 
-func _hurt(p: Object, t: float, _phase: float) -> void:
+func _hurt(p: SylaraPose, t: float) -> void:
 	_cloth_speed = 1.6
 	var recoil := sin(t * PI)
 	p.root_x = -recoil * 3.2
@@ -569,7 +595,7 @@ func _hurt(p: Object, t: float, _phase: float) -> void:
 #  11. DEATH (Roboh Dramatis & Alpha Dissolve)
 # ══════════════════════════════════════════════════════════
 
-func _death(p: Object, t: float) -> void:
+func _death(p: SylaraPose, t: float) -> void:
 	_cloth_speed = 0.45
 	var fall := ss(minf(t * 1.5, 1.0))
 
@@ -594,7 +620,7 @@ func _death(p: Object, t: float) -> void:
 #  12. VICTORY (Angkat Busur Kemenangan)
 # ══════════════════════════════════════════════════════════
 
-func _victory(p: Object, phase: float) -> void:
+func _victory(p: SylaraPose, phase: float) -> void:
 	_cloth_speed = 1.25
 	var wave := sin(phase * 2.0)
 
@@ -615,7 +641,7 @@ func _victory(p: Object, phase: float) -> void:
 #  13. SECONDARY MOTION — KAIN & RAMBUT
 # ══════════════════════════════════════════════════════════
 
-func _cloth(p: Object, state: String, _phase: float) -> void:
+func _cloth(p: SylaraPose, state: String) -> void:
 	var cp := _cloth_phase
 	var cape_base := PI + 0.10
 
@@ -642,7 +668,7 @@ func _cloth(p: Object, state: String, _phase: float) -> void:
 			p.cape[i] += 0.22 + float(i) * 0.08
 		for i in 3:
 			p.hair[i] += 0.16 + float(i) * 0.06
-	elif state in ["skill_r"] or p.trail:
+	elif state in ["skill_r", "swing"]:
 		for i in 3:
 			p.cape[i] += 0.14
 		for i in 3:
