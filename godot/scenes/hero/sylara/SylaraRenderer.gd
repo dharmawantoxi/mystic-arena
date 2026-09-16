@@ -40,7 +40,7 @@ const HAIR_SEGS: Array = [7.5, 6.5, 6.5]
 const HAIR_W: Array = [4.0, 3.0, 1.8]
 
 ## Pose aktif (di-set root tiap frame sebelum queue_redraw).
-var pose = null
+var pose: SylaraPose = null
 ## Fase global (untuk hamon shimmer, glint, wisp angin).
 var phase := 0.0
 ## Jejak trail busur: titik GLOBAL, di-push root saat pose.trail aktif.
@@ -127,39 +127,39 @@ static func _fwd(a: float) -> Vector2:
 	return Vector2(cos(a), -sin(a))
 
 
-func _solve(p) -> Dictionary:
-	var hip := Vector2(p.root_x, HIP_Y + p.root_y)
-	var up1 := Vector2(sin(p.torso_lean), -cos(p.torso_lean))
-	var chest := hip + up1 * SPINE_LEN
-	var up2 := Vector2(sin(p.torso_lean + p.chest_flex),
+func _solve(p: SylaraPose) -> Dictionary:
+	var hip: Vector2 = Vector2(p.root_x, HIP_Y + p.root_y)
+	var up1: Vector2 = Vector2(sin(p.torso_lean), -cos(p.torso_lean))
+	var chest: Vector2 = hip + up1 * SPINE_LEN
+	var up2: Vector2 = Vector2(sin(p.torso_lean + p.chest_flex),
 		-cos(p.torso_lean + p.chest_flex))
-	var neck := chest + up2 * CHEST_LEN
-	var head_c := neck + up2 * HEAD_R
-	var sh_f := chest + Vector2(4.5, -0.6)
-	var sh_b := chest + Vector2(-4.5, -1.2)
-	var hip_f := hip + Vector2(3.5, 2.0)
-	var hip_b := hip + Vector2(-3.5, 2.5)
+	var neck: Vector2 = chest + up2 * CHEST_LEN
+	var head_c: Vector2 = neck + up2 * HEAD_R
+	var sh_f: Vector2 = chest + Vector2(4.5, -0.6)
+	var sh_b: Vector2 = chest + Vector2(-4.5, -1.2)
+	var hip_f: Vector2 = hip + Vector2(3.5, 2.0)
+	var hip_b: Vector2 = hip + Vector2(-3.5, 2.5)
 
-	var knee_f := hip_f + _down(p.leg_f_hip) * LEG_UPPER
-	var ankle_f := knee_f + _down(p.leg_f_hip + p.leg_f_knee) * LEG_LOWER
-	var toe_f := ankle_f + _fwd(p.leg_f_foot) * FOOT_LEN
+	var knee_f: Vector2 = hip_f + _down(p.leg_f_hip) * LEG_UPPER
+	var ankle_f: Vector2 = knee_f + _down(p.leg_f_hip + p.leg_f_knee) * LEG_LOWER
+	var toe_f: Vector2 = ankle_f + _fwd(p.leg_f_foot) * FOOT_LEN
 
-	var knee_b := hip_b + _down(p.leg_b_hip) * LEG_UPPER
-	var ankle_b := knee_b + _down(p.leg_b_hip + p.leg_b_knee) * LEG_LOWER
-	var toe_b := ankle_b + _fwd(p.leg_b_foot) * FOOT_LEN
+	var knee_b: Vector2 = hip_b + _down(p.leg_b_hip) * LEG_UPPER
+	var ankle_b: Vector2 = knee_b + _down(p.leg_b_hip + p.leg_b_knee) * LEG_LOWER
+	var toe_b: Vector2 = ankle_b + _fwd(p.leg_b_foot) * FOOT_LEN
 
-	var elb_f := sh_f + _down(p.arm_f_sh) * ARM_UPPER
-	var hand_f := elb_f + _down(p.arm_f_sh + p.arm_f_el) * ARM_LOWER + p.bow_off
-	var elb_b := sh_b + _down(p.arm_b_sh) * ARM_UPPER
-	var hand_b := elb_b + _down(p.arm_b_sh + p.arm_b_el) * ARM_LOWER
+	var elb_f: Vector2 = sh_f + _down(p.arm_f_sh) * ARM_UPPER
+	var hand_f: Vector2 = elb_f + _down(p.arm_f_sh + p.arm_f_el) * ARM_LOWER + p.bow_off
+	var elb_b: Vector2 = sh_b + _down(p.arm_b_sh) * ARM_UPPER
+	var hand_b: Vector2 = elb_b + _down(p.arm_b_sh + p.arm_b_el) * ARM_LOWER
 
 	# Busur: orientasi dari bow_angle
-	var bow_dir := _fwd(p.bow_angle)
-	var bow_perp := Vector2(-bow_dir.y, bow_dir.x)
+	var bow_dir: Vector2 = _fwd(p.bow_angle)
+	var bow_perp: Vector2 = Vector2(-bow_dir.y, bow_dir.x)
 	_bow_dir = bow_dir
 	_bow_grip = hand_f
 	_bow_tip = hand_f + bow_dir * BOW_LEN
-	var bow_mid := hand_f + bow_dir * BOW_LEN * 0.5
+	var bow_mid: Vector2 = hand_f + bow_dir * BOW_LEN * 0.5
 	_bow_nock = hand_f - bow_dir * 3.5 + bow_perp * (p.bow_draw * 11.0)
 
 	return {
