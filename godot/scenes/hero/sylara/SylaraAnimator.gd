@@ -137,7 +137,7 @@ func _solve_leg(p: SylaraPose, foot_rel: Vector2, foot_ang: float,
 ## (terangkat) kembali x<0 → x>0.
 func _gait_foot(p: SylaraPose, theta: float, stride: float, lift: float,
 		front: bool) -> void:
-	var u: float = fposmod(theta, TAU)
+	var u: float = fmod(theta, TAU)
 	var fx: float = cos(theta) * stride
 	var swing := 0.0
 	if u > PI:
@@ -261,7 +261,7 @@ func _walk(p: SylaraPose, phase: float) -> void:
 
 	_gait_foot(p, cycle, 6.5, 3.2, true)
 	_gait_foot(p, cycle + PI, 6.5, 3.2, false)
-	p.dust = _dust(fposmod(cycle, TAU), 0.55)
+	p.dust = _dust(fmod(cycle, TAU), 0.55)
 
 
 # ══════════════════════════════════════════════════════════
@@ -292,7 +292,7 @@ func _run(p: SylaraPose, phase: float) -> void:
 
 	_gait_foot(p, cycle, 9.5, 5.5, true)
 	_gait_foot(p, cycle + PI, 9.5, 5.5, false)
-	p.dust = _dust(fposmod(cycle, TAU), 0.7)
+	p.dust = _dust(fmod(cycle, TAU), 0.7)
 
 
 # ══════════════════════════════════════════════════════════
@@ -506,7 +506,7 @@ func _skill_w(p: SylaraPose, prog: float, phase: float, skill_t: float) -> void:
 		p.wind_glow = 0.65 + sin(skill_t * 5.2) * 0.22
 		_gait_foot(p, run_c, 7.5, 4.4, true)
 		_gait_foot(p, run_c + PI, 7.5, 4.4, false)
-		p.dust = _dust(fposmod(run_c, TAU), 0.8)
+		p.dust = _dust(fmod(run_c, TAU), 0.8)
 	else:
 		var t := ss((prog - 0.88) / 0.12)
 		p.root_y = lerpf(-3.2, 0.0, t)

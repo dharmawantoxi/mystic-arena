@@ -330,7 +330,7 @@ func _draw_corridor(nock: Vector2, data: Dictionary, k: float) -> void:
 	draw_line(nock, end, _col(Pal.WIND_LIGHT, 0.30 * fade), 3.0)
 	# Dash berjalan di garis inti
 	for i in 4:
-		var u0: float = fposmod(_t_dir(k, i), 1.0)
+		var u0: float = fmod(_t_dir(k, i), 1.0)
 		var p0 := nock + dir * (len * (u0 * 0.9))
 		draw_line(p0, p0 + dir * 16.0, _col(Pal.WIND_BRIGHT, 0.4 * fade), 2.0)
 
@@ -355,7 +355,8 @@ func _draw_vine(nock: Vector2, data: Dictionary, t: float) -> void:
 		var amp: float = sin(u * PI) * (6.0 - t * 1.2)
 		var off: float = sin(u * PI * 2.2 + t * 4.0) * amp
 		pts.append(base + perp * off)
-	var fade := 1.0 - smoothstep(1.6, 2.2, t)
+	var u: float = clampf((t - 1.6) / 0.6, 0.0, 1.0)
+	var fade := 1.0 - u * u * (3.0 - 2.0 * u)
 	# Batang: lapis gelap lalu terang
 	for i in range(pts.size() - 1):
 		draw_line(pts[i], pts[i + 1], _col(Pal.VINE_DARK, 0.75 * fade), 3.0)
@@ -373,7 +374,7 @@ func _draw_vine(nock: Vector2, data: Dictionary, t: float) -> void:
 
 func _draw_suck(nock: Vector2, t: float) -> void:
 	for i in 3:
-		var prog: float = fposmod(t * 1.1 + float(i) / 3.0, 1.0)
+		var prog: float = fmod(t * 1.1 + float(i) / 3.0, 1.0)
 		var r: float = lerpf(44.0, 7.0, prog * prog)
 		var a: float = (1.0 - prog) * 0.5
 		draw_arc(nock, r, 0.0, TAU, 26, _col(Pal.WIND, a), 1.8)

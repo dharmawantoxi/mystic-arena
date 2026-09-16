@@ -46,11 +46,11 @@ const ARM_UPPER := 9.0
 const ARM_LOWER := 8.5
 const BOW_LEN := 23.0        # panjang busur recurve (grip ke tip)
 const BOW_DRAW_PX := 11.0    # tarikan tali maksimum (px)
-const CAPE_SEGS: Array[float] = [8.0, 8.0, 9.0]
-const CAPE_W: Array[float] = [5.6, 4.8, 3.4]
-const HOOD_SEGS: Array[float] = [5.0, 4.5]
-const HAIR_SEGS: Array[float] = [7.0, 6.0, 6.0]
-const HAIR_W: Array[float] = [4.2, 3.2, 2.0]
+const CAPE_SEGS := [8.0, 8.0, 9.0]
+const CAPE_W := [5.6, 4.8, 3.4]
+const HOOD_SEGS := [5.0, 4.5]
+const HAIR_SEGS := [7.0, 6.0, 6.0]
+const HAIR_W := [4.2, 3.2, 2.0]
 
 ## Pose aktif (di-set root tiap frame sebelum queue_redraw).
 var pose: SylaraPose = null
@@ -70,7 +70,7 @@ var _bow_perp := Vector2.DOWN
 
 ## Buffer polygon reusable — ZERO alokasi per-frame (Android).
 const _BUF_COUNT := 12
-var _bufs: Array[PackedVector2Array] = []
+var _bufs: Array = []
 var _buf_i := 0
 
 
@@ -83,7 +83,7 @@ func _ready() -> void:
 ## _draw (immediate mode — titik dikonsumsi saat draw_* dipanggil).
 func _pbuf(n: int) -> PackedVector2Array:
 	_buf_i = (_buf_i + 1) % _BUF_COUNT
-	var b := _bufs[_buf_i]
+	var b: PackedVector2Array = _bufs[_buf_i]
 	b.resize(n)
 	return b
 
