@@ -119,20 +119,20 @@ func compute(state: String, phase: float, attack_progress: float,
 
 func _idle(p: SylaraPose, phase: float) -> void:
 	_cloth_speed = 1.0
-	var breath := sin(phase * 2.4) * 0.02
-	p.root_y = sin(phase * 2.4) * 0.65
+	var breath := sin(phase * 1.8) * 0.02
+	p.root_y = sin(phase * 1.8) * 0.70
 	p.torso_lean = breath
-	p.chest_flex = breath * 0.5
-	p.head_lean = sin(phase * 1.8 + 0.4) * 0.025
+	p.chest_flex = breath * 0.7
+	p.head_lean = sin(phase * 1.4 + 0.3) * 0.02
 
-	# Lengan depan memegang busur rileks
-	p.arm_f_sh = 0.35 + sin(phase * 2.0) * 0.02
-	p.arm_f_el = 0.65
+	# Lengan depan memegang busur rileks dengan keanggunan elven
+	p.arm_f_sh = 0.34 + sin(phase * 1.8) * 0.02
+	p.arm_f_el = 0.62
 	# Lengan belakang rileks di samping
-	p.arm_b_sh = -0.08 + sin(phase * 2.2 + 1.0) * 0.02
-	p.arm_b_el = 0.45
+	p.arm_b_sh = -0.07 + sin(phase * 2.0 + 1.0) * 0.02
+	p.arm_b_el = 0.42
 
-	# Kaki terbuka mantap (archer stance)
+	# Kaki terbuka mantap & anggun (archer stance)
 	p.leg_f_hip = 0.07
 	p.leg_f_knee = -0.05
 	p.leg_b_hip = -0.08
@@ -141,7 +141,7 @@ func _idle(p: SylaraPose, phase: float) -> void:
 	p.leg_b_foot = 0.10
 
 	# Busur dipegang diagonal rendah
-	p.bow_angle = -0.45 + sin(phase * 1.6) * 0.03
+	p.bow_angle = -0.42 + sin(phase * 1.5) * 0.03
 	p.bow_draw = 0.0
 
 
@@ -645,22 +645,22 @@ func _cloth(p: SylaraPose, state: String) -> void:
 	var cp := _cloth_phase
 	var cape_base := PI + 0.10
 
-	# 3 segmen cape
+	# 3 segmen cape dengan perpaduan gelombang multi-harmonik (gerakan kain alami)
 	for i in 3:
-		var seg_speed := 0.12 + float(i) * 0.08
-		var wave := sin(cp + float(i) * 0.72) * seg_speed
+		var seg_speed := 0.13 + float(i) * 0.08
+		var wave := (sin(cp + float(i) * 0.68) * 0.75 + sin(cp * 1.8 + float(i) * 1.1) * 0.25) * seg_speed
 		p.cape[i] = cape_base + wave + float(i) * 0.06
 
 	# 2 segmen hood cowl
 	for i in 2:
-		var wave := sin(cp * 0.82 + float(i) * 0.92) * 0.08
+		var wave := (sin(cp * 0.85 + float(i) * 0.9) * 0.8 + sin(cp * 1.6) * 0.2) * 0.08
 		p.hood[i] = PI + wave
 
-	# 3 segmen rambut
+	# 3 segmen rambut auburn yang melambai lembut dengan gravitasi & angin
 	for i in 3:
-		var seg_speed := 0.10 + float(i) * 0.07
-		var wave := sin(cp * 1.12 + float(i) * 0.62 + 1.2) * seg_speed
-		p.hair[i] = PI + 0.15 + wave + float(i) * 0.05
+		var seg_speed := 0.11 + float(i) * 0.07
+		var wave := (sin(cp * 1.15 + float(i) * 0.58 + 1.2) * 0.7 + sin(cp * 2.2 + float(i)) * 0.3) * seg_speed
+		p.hair[i] = PI + 0.14 + wave + float(i) * 0.05
 
 	# Kibaran ekstra saat berlari / skill
 	if state in ["run", "skill_w"]:
