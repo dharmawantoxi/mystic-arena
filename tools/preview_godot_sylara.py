@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pixel-art fantasy elven heroine preview renderer matching Kaizen & sprite benchmark."""
+"""Pixel-art fantasy elven heroine preview with authentic archery form & draw logic."""
 import math
 import struct
 import zlib
@@ -193,22 +193,36 @@ WIND_BRIGHT = hex_to_rgba("c6ffea", 230)
 SHADOW = (6, 12, 8, 85)
 
 
-def draw_sylara_heroine(cv, ox, oy, scale=4.0, bow_draw=0.0):
+def draw_sylara(cv, ox, oy, scale=4.0, is_attack=False, bow_draw=0.0):
     def S(x, y):
         return (round(ox + x * scale), round(oy + y * scale))
 
     # 0. Ground Shadow & Magic Ring
-    cv.draw_capsule(S(-8, 0), S(8, 0), 6 * scale, SHADOW, outline=False)
+    if is_attack:
+        cv.draw_capsule(S(-10, 0), S(10, 0), 7 * scale, SHADOW, outline=False)
+    else:
+        cv.draw_capsule(S(-8, 0), S(8, 0), 6 * scale, SHADOW, outline=False)
 
     # 1. Flowing Cape Behind Body
-    cape_pts = [
-        S(-3, -34), S(-1, -34),
-        S(-4, -14), S(-9, -14),
-        S(-7, -26),
-    ]
-    cv.draw_polygon(cape_pts, CAPE)
-    cv.draw_line(S(-3, -34)[0], S(-3, -34)[1], S(-9, -14)[0], S(-9, -14)[1], CAPE_DARK, 1.2 * scale)
-    cv.draw_line(S(-9, -14)[0], S(-9, -14)[1], S(-4, -14)[0], S(-4, -14)[1], GOLD_DARK, 1.0 * scale)
+    if is_attack:
+        # Cape billows backwards with the draw tension
+        cape_pts = [
+            S(-4, -35), S(-2, -35),
+            S(-10, -18), S(-16, -18),
+            S(-11, -28),
+        ]
+        cv.draw_polygon(cape_pts, CAPE)
+        cv.draw_line(S(-4, -35)[0], S(-4, -35)[1], S(-16, -18)[0], S(-16, -18)[1], CAPE_DARK, 1.2 * scale)
+        cv.draw_line(S(-16, -18)[0], S(-16, -18)[1], S(-10, -18)[0], S(-10, -18)[1], GOLD_DARK, 1.0 * scale)
+    else:
+        cape_pts = [
+            S(-3, -34), S(-1, -34),
+            S(-4, -14), S(-9, -14),
+            S(-7, -26),
+        ]
+        cv.draw_polygon(cape_pts, CAPE)
+        cv.draw_line(S(-3, -34)[0], S(-3, -34)[1], S(-9, -14)[0], S(-9, -14)[1], CAPE_DARK, 1.2 * scale)
+        cv.draw_line(S(-9, -14)[0], S(-9, -14)[1], S(-4, -14)[0], S(-4, -14)[1], GOLD_DARK, 1.0 * scale)
 
     # 2. Back Hair Braid
     hair_back = [
@@ -232,18 +246,28 @@ def draw_sylara_heroine(cv, ox, oy, scale=4.0, bow_draw=0.0):
         cv.draw_line(S(ax - 0.5, ay - 4.5)[0], S(ax - 0.5, ay - 4.5)[1], S(ax - 0.8, ay - 3.5)[0], S(ax - 0.8, ay - 3.5)[1], FEATHER, 1.2 * scale)
         cv.draw_line(S(ax - 0.5, ay - 4.5)[0], S(ax - 0.5, ay - 4.5)[1], S(ax - 0.2, ay - 3.5)[0], S(ax - 0.2, ay - 3.5)[1], FEATHER, 1.2 * scale)
 
-    # 4. Legs & Boots (Slender elven legs, folded boots)
-    # Back leg
-    cv.draw_taper(S(-1.5, -20), 3.4 * scale, S(-2.0, -10), 2.8 * scale, PANTS)
-    cv.draw_taper(S(-2.0, -10), 3.2 * scale, S(-2.5, -1), 2.6 * scale, LEATHER_DARK)
-    cv.draw_capsule(S(-3.5, -1), S(0.0, -1), 2.8 * scale, LEATHER_DARK)
-    # Front leg
-    cv.draw_taper(S(2.0, -20), 3.4 * scale, S(2.5, -10), 2.8 * scale, PANTS)
-    cv.draw_taper(S(2.5, -10), 3.4 * scale, S(2.8, -1), 2.8 * scale, LEATHER)
-    # Boot cuff & strap
-    cv.draw_capsule(S(0.8, -10), S(4.2, -10), 2.2 * scale, LEATHER_LIGHT)
-    cv.draw_line(S(1.0, -9.5)[0], S(1.0, -9.5)[1], S(4.0, -9.5)[0], S(4.0, -9.5)[1], GOLD, 0.8 * scale)
-    cv.draw_capsule(S(1.0, -1), S(5.2, -1), 3.0 * scale, LEATHER)
+    # 4. Legs & Boots
+    if is_attack:
+        # Solid, braced athletic archer stance: feet spread wide
+        cv.draw_taper(S(-2.0, -20), 3.4 * scale, S(-5.0, -10), 2.8 * scale, PANTS)
+        cv.draw_taper(S(-5.0, -10), 3.2 * scale, S(-6.5, -1), 2.6 * scale, LEATHER_DARK)
+        cv.draw_capsule(S(-8.0, -1), S(-4.0, -1), 2.8 * scale, LEATHER_DARK)
+
+        cv.draw_taper(S(2.0, -20), 3.4 * scale, S(5.0, -10), 2.8 * scale, PANTS)
+        cv.draw_taper(S(5.0, -10), 3.4 * scale, S(6.0, -1), 2.8 * scale, LEATHER)
+        cv.draw_capsule(S(4.2, -10), S(7.2, -10), 2.2 * scale, LEATHER_LIGHT)
+        cv.draw_capsule(S(4.5, -1), S(8.5, -1), 3.0 * scale, LEATHER)
+    else:
+        # Elegant upright standing stance
+        cv.draw_taper(S(-1.5, -20), 3.4 * scale, S(-2.0, -10), 2.8 * scale, PANTS)
+        cv.draw_taper(S(-2.0, -10), 3.2 * scale, S(-2.5, -1), 2.6 * scale, LEATHER_DARK)
+        cv.draw_capsule(S(-3.5, -1), S(0.0, -1), 2.8 * scale, LEATHER_DARK)
+
+        cv.draw_taper(S(2.0, -20), 3.4 * scale, S(2.5, -10), 2.8 * scale, PANTS)
+        cv.draw_taper(S(2.5, -10), 3.4 * scale, S(2.8, -1), 2.8 * scale, LEATHER)
+        cv.draw_capsule(S(0.8, -10), S(4.2, -10), 2.2 * scale, LEATHER_LIGHT)
+        cv.draw_line(S(1.0, -9.5)[0], S(1.0, -9.5)[1], S(4.0, -9.5)[0], S(4.0, -9.5)[1], GOLD, 0.8 * scale)
+        cv.draw_capsule(S(1.0, -1), S(5.2, -1), 3.0 * scale, LEATHER)
 
     # 5. Forest Tunic (Peeking out under corset)
     tunic_poly = [
@@ -344,64 +368,127 @@ def draw_sylara_heroine(cv, ox, oy, scale=4.0, bow_draw=0.0):
     cv.draw_line(S(-2.5, -49)[0], S(-2.5, -49)[1], S(2.0, -48.5)[0], S(2.0, -48.5)[1], GOLD_LIGHT, 1.0 * scale)
     cv.draw_line(S(2.0, -48.5)[0], S(2.0, -48.5)[1], S(3.8, -44)[0], S(3.8, -44)[1], GOLD_LIGHT, 1.0 * scale)
 
-    # 9. Shoulder Pauldron & Bow Arm
+    # 9. Shoulder Pauldron
     cv.draw_capsule(S(2.5, -34.5), S(4.5, -33.0), 3.0 * scale, HOOD)
     cv.draw_line(S(2.8, -35.5)[0], S(2.8, -35.5)[1], S(4.8, -34.0)[0], S(4.8, -34.0)[1], GOLD, 0.8 * scale)
 
-    elb = S(5.5, -27.0)
-    hand = S(7.5, -19.0)
-    cv.draw_taper(S(3.5, -33.5), 3.2 * scale, elb, 2.6 * scale, HOOD_DARK)
-    cv.draw_taper(elb, 2.6 * scale, hand, 2.2 * scale, LEATHER)
-    cv.draw_capsule(hand, S(8.2, -18.5), 2.0 * scale, SKIN)
+    # ══════════════════════════════════════════════════════════
+    # 10. REAL ARCHERY LOGIC: ARMS & BOW
+    # ══════════════════════════════════════════════════════════
+    if is_attack:
+        # ── DRAW / AIM STANCE (ARCHERY ANATOMY) ──
+        # Bow hand extended STRAIGHT FORWARD at chest/chin height: Y = -38
+        grip = S(14.0, -38.0)
+        bow_hand = grip
 
-    # 10. Recurve Bow (Graceful authentic elven recurve)
-    grip = hand
-    tip_up = S(11.0, -38.0)
-    ctrl_up = S(14.5, -29.0)
-    tip_low = S(11.0, 0.0)
-    ctrl_low = S(14.5, -9.0)
+        # Left Arm (Bow Arm): from shoulder (3.5, -34) forward to bow grip (14.0, -38)
+        elb_f = S(9.0, -36.5)
+        cv.draw_taper(S(3.5, -34.0), 3.2 * scale, elb_f, 2.6 * scale, HOOD_DARK)
+        cv.draw_taper(elb_f, 2.6 * scale, bow_hand, 2.2 * scale, LEATHER)
+        cv.draw_capsule(bow_hand, S(14.8, -37.5), 2.0 * scale, SKIN)
 
-    # Upper limb
-    steps = 12
-    p_prev = grip
-    for i in range(1, steps + 1):
-        t = i / steps
-        pt = (
-            (1 - t) ** 2 * grip[0] + 2 * (1 - t) * t * ctrl_up[0] + t ** 2 * tip_up[0],
-            (1 - t) ** 2 * grip[1] + 2 * (1 - t) * t * ctrl_up[1] + t ** 2 * tip_up[1],
-        )
-        cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD, 2.2 * scale)
-        cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD_LIGHT, 0.9 * scale)
-        p_prev = pt
+        # Right Arm (Drawing Arm): pulls arrow nock right to the CHEEK/CHIN (anchor point)!
+        # Anchor point in archery = right below the cheekbone / corner of mouth: (2.5, -38.5)
+        nock = S(2.5 + (1.0 - bow_draw) * 9.0, -38.5)
+        elb_b = S(-4.0, -38.0)
+        # Drawing arm from back shoulder (-2.5, -34.5) to high elbow (-4.0, -38.0) to chin nock (2.5, -38.5)
+        cv.draw_taper(S(-2.5, -34.5), 3.0 * scale, elb_b, 2.5 * scale, HOOD_DARK)
+        cv.draw_taper(elb_b, 2.5 * scale, nock, 2.2 * scale, SKIN)
+        cv.draw_circle(nock[0], nock[1], 1.5 * scale, SKIN)
 
-    # Lower limb
-    p_prev = grip
-    for i in range(1, steps + 1):
-        t = i / steps
-        pt = (
-            (1 - t) ** 2 * grip[0] + 2 * (1 - t) * t * ctrl_low[0] + t ** 2 * tip_low[0],
-            (1 - t) ** 2 * grip[1] + 2 * (1 - t) * t * ctrl_low[1] + t ** 2 * tip_low[1],
-        )
-        cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD, 2.2 * scale)
-        cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD_LIGHT, 0.9 * scale)
-        p_prev = pt
+        # Recurve Bow held upright/slightly angled at chest height
+        tip_up = S(12.5, -62.0)
+        ctrl_up = S(19.0, -50.0)
+        tip_low = S(12.5, -14.0)
+        ctrl_low = S(19.0, -26.0)
 
-    # Tips & String
-    cv.draw_capsule(tip_up, S(10.0, -39.0), 1.6 * scale, (240, 235, 220, 255))
-    cv.draw_capsule(tip_low, S(10.0, 1.0), 1.6 * scale, (240, 235, 220, 255))
+        # Recurve upper limb
+        steps = 14
+        p_prev = grip
+        for i in range(1, steps + 1):
+            t = i / steps
+            pt = (
+                (1 - t) ** 2 * grip[0] + 2 * (1 - t) * t * ctrl_up[0] + t ** 2 * tip_up[0],
+                (1 - t) ** 2 * grip[1] + 2 * (1 - t) * t * ctrl_up[1] + t ** 2 * tip_up[1],
+            )
+            cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD, 2.4 * scale)
+            cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD_LIGHT, 0.9 * scale)
+            p_prev = pt
 
-    if bow_draw > 0.05:
-        nock = S(11.0 - bow_draw * 10.0, -19.0)
-        cv.draw_line(tip_up[0], tip_up[1], nock[0], nock[1], STRING_GLOW, 2.4 * scale)
-        cv.draw_line(nock[0], nock[1], tip_low[0], tip_low[1], STRING_GLOW, 2.4 * scale)
-        cv.draw_line(tip_up[0], tip_up[1], nock[0], nock[1], STRING, 1.1 * scale)
-        cv.draw_line(nock[0], nock[1], tip_low[0], tip_low[1], STRING, 1.1 * scale)
+        # Recurve lower limb
+        p_prev = grip
+        for i in range(1, steps + 1):
+            t = i / steps
+            pt = (
+                (1 - t) ** 2 * grip[0] + 2 * (1 - t) * t * ctrl_low[0] + t ** 2 * tip_low[0],
+                (1 - t) ** 2 * grip[1] + 2 * (1 - t) * t * ctrl_low[1] + t ** 2 * tip_low[1],
+            )
+            cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD, 2.4 * scale)
+            cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD_LIGHT, 0.9 * scale)
+            p_prev = pt
 
-        arrow_tip = S(18.0, -19.0)
-        cv.draw_line(nock[0], nock[1], arrow_tip[0], arrow_tip[1], WOOD_LIGHT, 1.3 * scale)
-        cv.draw_circle(arrow_tip[0], arrow_tip[1], 1.6 * scale, (220, 240, 255, 255))
-        cv.draw_circle(nock[0], nock[1], 2.2 * scale, WIND_BRIGHT)
+        # Ivory Horn Tips
+        cv.draw_capsule(tip_up, S(11.0, -63.5), 1.8 * scale, (240, 235, 220, 255))
+        cv.draw_capsule(tip_low, S(11.0, -12.5), 1.8 * scale, (240, 235, 220, 255))
+
+        # Drawn Bowstring pulling back to the CHIN / CHEEK anchor!
+        cv.draw_line(tip_up[0], tip_up[1], nock[0], nock[1], STRING_GLOW, 2.6 * scale)
+        cv.draw_line(nock[0], nock[1], tip_low[0], tip_low[1], STRING_GLOW, 2.6 * scale)
+        cv.draw_line(tip_up[0], tip_up[1], nock[0], nock[1], STRING, 1.2 * scale)
+        cv.draw_line(nock[0], nock[1], tip_low[0], tip_low[1], STRING, 1.2 * scale)
+
+        # Arrow held horizontally through bow grip pointing forward!
+        arrow_head = S(25.0, -38.5)
+        cv.draw_line(nock[0], nock[1], arrow_head[0], arrow_head[1], WOOD_LIGHT, 1.4 * scale)
+        # Crystal arrowhead
+        cv.draw_circle(arrow_head[0], arrow_head[1], 1.8 * scale, (220, 240, 255, 255))
+        cv.draw_circle(arrow_head[0], arrow_head[1], 1.1 * scale, (255, 255, 255, 255))
+        # Wind runes flare at nock
+        cv.draw_circle(nock[0], nock[1], 2.4 * scale, WIND_BRIGHT)
+
     else:
+        # ── IDLE / RESTING STANCE ──
+        # Arm rests down at side holding bow diagonally
+        elb = S(5.5, -27.0)
+        hand = S(7.5, -20.0)
+        cv.draw_taper(S(3.5, -33.5), 3.2 * scale, elb, 2.6 * scale, HOOD_DARK)
+        cv.draw_taper(elb, 2.6 * scale, hand, 2.2 * scale, LEATHER)
+        cv.draw_capsule(hand, S(8.2, -19.5), 2.0 * scale, SKIN)
+
+        grip = hand
+        tip_up = S(11.0, -39.0)
+        ctrl_up = S(14.5, -30.0)
+        tip_low = S(11.0, -1.0)
+        ctrl_low = S(14.5, -10.0)
+
+        # Recurve upper limb
+        steps = 12
+        p_prev = grip
+        for i in range(1, steps + 1):
+            t = i / steps
+            pt = (
+                (1 - t) ** 2 * grip[0] + 2 * (1 - t) * t * ctrl_up[0] + t ** 2 * tip_up[0],
+                (1 - t) ** 2 * grip[1] + 2 * (1 - t) * t * ctrl_up[1] + t ** 2 * tip_up[1],
+            )
+            cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD, 2.2 * scale)
+            cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD_LIGHT, 0.9 * scale)
+            p_prev = pt
+
+        # Recurve lower limb
+        p_prev = grip
+        for i in range(1, steps + 1):
+            t = i / steps
+            pt = (
+                (1 - t) ** 2 * grip[0] + 2 * (1 - t) * t * ctrl_low[0] + t ** 2 * tip_low[0],
+                (1 - t) ** 2 * grip[1] + 2 * (1 - t) * t * ctrl_low[1] + t ** 2 * tip_low[1],
+            )
+            cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD, 2.2 * scale)
+            cv.draw_line(p_prev[0], p_prev[1], pt[0], pt[1], WOOD_LIGHT, 0.9 * scale)
+            p_prev = pt
+
+        # Tips & Resting String
+        cv.draw_capsule(tip_up, S(10.0, -40.0), 1.6 * scale, (240, 235, 220, 255))
+        cv.draw_capsule(tip_low, S(10.0, 0.0), 1.6 * scale, (240, 235, 220, 255))
         cv.draw_line(tip_up[0], tip_up[1], tip_low[0], tip_low[1], STRING_GLOW, 2.0 * scale)
         cv.draw_line(tip_up[0], tip_up[1], tip_low[0], tip_low[1], STRING, 1.1 * scale)
 
@@ -410,17 +497,17 @@ def main():
     W, H = 1040, 520
     cv = Canvas(W, H, (12, 17, 14, 255))
 
-    # 1. Left: Arena In-Game Scale (~70px, scale=1.4)
-    draw_sylara_heroine(cv, 110, 420, scale=1.4, bow_draw=0.0)
+    # 1. Left: Arena In-Game Scale (~70px, scale=1.4) - Idle
+    draw_sylara(cv, 110, 420, scale=1.4, is_attack=False)
 
     # 2. Middle-Left: Full Body Idle / Showcase (scale=3.5)
-    draw_sylara_heroine(cv, 340, 450, scale=3.5, bow_draw=0.0)
+    draw_sylara(cv, 320, 450, scale=3.5, is_attack=False)
 
-    # 3. Middle-Right: Full Body Attack / Powershot Draw (scale=3.5, bow_draw=0.85)
-    draw_sylara_heroine(cv, 590, 450, scale=3.5, bow_draw=0.85)
+    # 3. Middle-Right: AUTHENTIC ARCHERY ATTACK DRAW (scale=3.5) - Drawn at chin/chest height!
+    draw_sylara(cv, 570, 450, scale=3.5, is_attack=True, bow_draw=0.95)
 
     # 4. Right: High Fidelity Close-Up (scale=6.5)
-    draw_sylara_heroine(cv, 860, 480, scale=6.5, bow_draw=0.0)
+    draw_sylara(cv, 840, 480, scale=6.5, is_attack=False)
 
     out = "docs/sylara_godot_new_preview.png"
     cv.save_png(out)
