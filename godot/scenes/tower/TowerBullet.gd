@@ -24,6 +24,8 @@ var school: String = ""              # netral (pygame Bullet TANPA sekolah);
 var hit_dmg_type: String = "projectile"  # hero/hero minion = "projectile";
                                          # boss ranged = "normal" (pygame
                                          # base_boss:707 basic instan)
+var arrow_style: String = ""   # "" = default; rig hero boleh memberi
+                                # identitas visual (mis. "wind" — Sylara)
 var speed: float = 480.0             # 8 px/frame × 60
 var radius: float = 4.0
 var color: Color = Color("#ffe9a8")
@@ -54,6 +56,13 @@ func setup(p_target: Node2D, p_damage: float, p_team: String, p_type: String,
 	color = p_color
 	z_index = 400
 	z_as_relative = false
+
+
+## Hook rig (Hero._shoot_projectile): identitas visual proyektil —
+## TIDAK mengubah damage/timing (paritas pygame).
+func set_arrow_style(style: String) -> void:
+	arrow_style = style
+	queue_redraw()
 
 
 func _combat():
@@ -95,11 +104,17 @@ func _target_radius() -> float:
 
 
 func _draw() -> void:
-	# jejak
+	# jejak (warna mengikuti identitas panah bila rig menyetelnya)
+	var trail_col := color
+	if arrow_style == "wind":
+		trail_col = Color(170.0 / 255.0, 235.0 / 255.0, 135.0 / 255.0)
 	for i in range(_trail.size()):
 		var a: float = 0.18 + 0.22 * float(i)
 		draw_circle(to_local(_trail[i]), radius * (0.5 + 0.16 * float(i)),
-			Color(color.r, color.g, color.b, a))
+			Color(trail_col.r, trail_col.g, trail_col.b, a))
+	if arrow_style == "wind":
+		_draw_wind_arrow()
+		return
 	match bullet_type:
 		"cannon":
 			draw_circle(Vector2.ZERO, radius * 1.5, Color(0.12, 0.1, 0.09, 1))
@@ -113,6 +128,55 @@ func _draw() -> void:
 			draw_circle(Vector2.ZERO, radius * 0.7, color)
 		_:
 			_draw_hd_arrow()
+
+
+## Panah angin — identitas serangan dasar Sylara (rig memberi gaya via
+## set_arrow_style). Shaft kayu, ujung perak, fletching hijau-angin +
+## jejak angin pendek di ekor (MASTER FX: pendek, terarah, bukan spam).
+func _draw_wind_arrow() -> void:
+	var dir := Vector2.RIGHT
+	if target != null and is_instance_valid(target):
+		var d: Vector2 = target.global_position - global_position
+		if d.length_squared() > 0.01:
+			dir = d.normalized()
+	var perp := dir.orthogonal()
+	var ink := Color(10.0 / 255.0, 20.0 / 255.0, 12.0 / 255.0)
+	var shaft := Color(134.0 / 255.0, 85.0 / 255.0, 40.0 / 255.0)
+	var shaft_hi := Color(200.0 / 255.0, 175.0 / 255.0, 130.0 / 255.0)
+	var wind := Color(110.0 / 255.0, 195.0 / 255.0, 90.0 / 255.0)
+	var wind_hi := Color(210.0 / 255.0, 255.0 / 255.0, 175.0 / 255.0)
+	var head_c := Color(180.0 / 255.0, 195.0 / 255.0, 210.0 / 255.0)
+	var head_hi := Color(235.0 / 255.0, 245.0 / 255.0, 255.0 / 255.0)
+	var half := 6.5
+	var tail := -dir * half
+	var head := dir * half
+	# Jejak angin di ekor (aksen)
+	draw_line(tail - dir * 2.0, tail - dir * 9.0 + perp * 1.0,
+		Color(wind.r, wind.g, wind.b, 0.45), 2.0)
+	draw_line(tail - dir * 3.0, tail - dir * 7.0 - perp * 1.5,
+		Color(wind_hi.r, wind_hi.g, wind_hi.b, 0.5), 1.2)
+	# Shaft tiga lapis
+	var sa: Vector2 = tail + dir * 1.5
+	var sb: Vector2 = head - dir * 2.0
+	draw_line(sa, sb, ink, 3.0)
+	draw_line(sa, sb, shaft, 2.0)
+	draw_line(sa + perp * 0.4, sb + perp * 0.4, shaft_hi, 1.0)
+	# Ujung perak (rhombus + highlight)
+	var tip: Vector2 = head + dir * 3.4
+	var base: Vector2 = head - dir * 1.6
+	draw_colored_polygon(PackedVector2Array([
+		tip, base + perp * 2.6, base - perp * 2.6,
+	]), head_c)
+	draw_colored_polygon(PackedVector2Array([
+		tip, base + perp * 1.2 + dir * 0.8, base + dir * 0.8,
+	]), head_hi)
+	draw_circle(tip, 0.7, Color.WHITE)
+	# Fletching hijau-angin
+	for side in [-1.0, 1.0]:
+		draw_colored_polygon(PackedVector2Array([
+			tail, tail - dir * 3.4 + perp * 2.6 * side, tail - dir * 4.4,
+		]), wind)
+	draw_circle(tail, 1.0, Color(wind.r, wind.g, wind.b, 0.8))
 
 
 ## Port `Bullet._draw_hd_arrow` `_entity.py:345-430` (shaft + feather + head).

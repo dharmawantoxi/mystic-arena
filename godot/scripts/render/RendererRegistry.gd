@@ -3,10 +3,11 @@
 # Sejak 2026-09-15 rig Kaizen v4 (rebuild Godot native: renderer
 # prosedural berlapis + animator pose + KaizenSkillFX + VFXManager pooled)
 # adalah DEFAULT arena (mystic/rendering/experimental_hero_rigs=true di
-# project.godot). Sylara v1 (rebuild Godot 4.x: renderer prosedural
-# berlapis + animator pose + SylaraSkillFX + VFXManager pooled) ditambahkan
-# sebagai hero rig kedua. Set flag false untuk fallback ke strip bake
-# renderer pygame. Kontrak dua jalur ini dikunci GameplayParityTest.
+# project.godot). Sylara v2 (rebuild Godot 4.x total: renderer prosedural
+# berlapis 14-lapis + animator IK-kaki + SylaraSkillFX + VFXManager pooled
+# + SylaraCombat feel-policy) adalah hero rig kedua. Set flag false untuk
+# fallback ke strip bake renderer pygame. Kontrak dua jalur ini dikunci
+# GameplayParityTest.
 # KaizenDemo.tscn selalu memakai rig langsung.
 # Minion belum punya jalur bake (tetap silhouette).
 #

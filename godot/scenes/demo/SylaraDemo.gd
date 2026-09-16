@@ -15,6 +15,9 @@ extends Node2D
 const CYCLE_LEN := 24.0
 const Pal = preload("res://scenes/hero/sylara/SylaraPalette.gd")
 
+## Target dunia tetap untuk FX skill showcase (Q koridor, E sulur, R gale).
+const FX_TARGET := Vector2(235.0, -16.0)
+
 @onready var sylara = $SylaraRoot/SylaraSkeleton
 @onready var label_mode: Label = $CanvasLayer/VBox/ModeLabel
 @onready var label_stats: Label = $CanvasLayer/VBox/StatsLabel
@@ -35,12 +38,17 @@ var _manual_skill_t := 0.0
 
 var _last_seg := ""
 var _ui_timer := 0.0
+var _swing_forced := false
 
 
 func _ready() -> void:
 	if sylara != null and sylara.has_signal("attack_impact"):
 		sylara.attack_impact.connect(_on_attack_impact)
 		sylara.skill_cast.connect(_on_skill_cast)
+		if sylara.has_signal("skill_release"):
+			sylara.skill_release.connect(_on_skill_release)
+	if sylara != null and sylara.has_method("set_demo_target"):
+		sylara.set_demo_target(FX_TARGET)
 
 
 func _process(delta: float) -> void:
@@ -94,6 +102,7 @@ func _run_auto_cycle() -> void:
 		seg = "SWING"
 		action = "attack"
 		attack_progress = clampf((ct - 7.2) / 1.0, 0.0, 1.0)
+		_swing_forced = true
 	elif ct < 11.4:
 		seg = "Q FOCUS FIRE"
 		skill_key = "q"
@@ -119,10 +128,13 @@ func _run_auto_cycle() -> void:
 
 	if seg != _last_seg:
 		_last_seg = seg
+		_swing_forced = (seg == "SWING")
 		if seg == "HURT" or seg == "DEATH" or seg == "VICTORY":
 			if sylara != null and sylara.has_method("play"):
 				var dur := 1.2 if seg == "DEATH" else (1.0 if seg == "VICTORY" else 0.4)
 				sylara.play(seg.to_lower(), dur)
+		if sylara != null and "demo_swing" in sylara:
+			sylara.demo_swing = _swing_forced
 
 
 func _move_rig(delta: float) -> void:
@@ -195,7 +207,7 @@ func _update_labels() -> void:
 	if label_mode != null:
 		label_mode.text = "SYLARA // %s" % _last_seg
 	if label_stats != null:
-		label_stats.text = "SylaraRenderer _draw() layered | SylaraAnimator pose blending | SylaraSkillFX + VFXManager pool"
+		label_stats.text = "v2: 14-layer renderer | IK foot solver | wind platform | swing riposte | skill FX + combat feel policy"
 	if phase_bar != null:
 		phase_bar.value = fmod(cycle_t, CYCLE_LEN) / CYCLE_LEN * 100.0
 
@@ -214,6 +226,12 @@ func _on_skill_cast(key: String) -> void:
 	AudioManager.play_sfx("hero_skill", 0.85)
 
 
+func _on_skill_release(key: String) -> void:
+	if key == "r":
+		# Release ultimit (hit-stop + trauma ditangani SylaraCombat).
+		AudioManager.play_sfx("hero_ranged", 1.0)
+
+
 func _draw() -> void:
 	# Ground line.
 	draw_line(Vector2(-400, 0), Vector2(400, 0),
@@ -222,3 +240,13 @@ func _draw() -> void:
 	for x in range(-400, 401, 50):
 		draw_line(Vector2(x, -2), Vector2(x, 2),
 			Color(0.12, 0.16, 0.10, 0.3), 1.0)
+
+	# Marker target skill FX (Q koridor / E sulur / R gale mengarah ke sini).
+	draw_arc(FX_TARGET, 14.0, 0.0, TAU, 24, Pal.WIND_LIGHT, 1.4)
+	draw_arc(FX_TARGET, 8.0, 0.0, TAU, 20, Color(Pal.WIND.r, Pal.WIND.g,
+		Pal.WIND.b, 0.7), 1.2)
+	draw_circle(FX_TARGET, 2.0, Pal.WIND_BRIGHT)
+	draw_line(FX_TARGET + Vector2(-20, 0), FX_TARGET + Vector2(20, 0),
+		Color(Pal.WIND.r, Pal.WIND.g, Pal.WIND.b, 0.4), 1.0)
+	draw_line(FX_TARGET + Vector2(0, -20), FX_TARGET + Vector2(0, 20),
+		Color(Pal.WIND.r, Pal.WIND.g, Pal.WIND.b, 0.4), 1.0)
