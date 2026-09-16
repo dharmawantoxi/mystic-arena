@@ -157,7 +157,6 @@ var skills = null      # SkillBook
 const HIT_FX_COOLDOWN := 0.08
 var _hit_fx_cd: float = 0.0
 
-
 var silhouette = null
 var custom_visual = null
 var anim_phase: float = 0.0
