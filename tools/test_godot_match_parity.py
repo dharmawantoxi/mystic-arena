@@ -4842,6 +4842,11 @@ def make_boss_death_rewards_fixture(core, entity):
             gold_events.clear()
             popup_events.clear()
             roll_index.update(uniform=0, randint=0)
+            try:
+                from heroes import combat_feel as _feel
+                _feel.reset()
+            except Exception:
+                pass
             return init
 
         def units():
@@ -5013,6 +5018,11 @@ def make_boss_death_rewards_fixture(core, entity):
                 __main__.game_instance = None
                 b.take_damage(10 ** 9, "blue")
                 __main__.game_instance = game
+                try:
+                    from heroes import combat_feel as _feel
+                    _feel.reset()
+                except Exception:
+                    pass
                 game.active_boss = b
                 game.update()
                 catalog.append({"boss_type": bt, "name": b.name,
