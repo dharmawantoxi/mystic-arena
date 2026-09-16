@@ -5,91 +5,109 @@
 # Semua sistem Sylara (renderer, animator, skill FX) mengambil warna dari
 # sini supaya identitas visual konsisten dan tidak ada warna liar.
 #
-# Identitas Sylara: hijau hutan (jubah/hood) + emas daun (aksen hangat) +
-# kayu busur recurve + sihir angin hijau-muda sebagai AKSEN (bukan dominan).
-# Wind Ranger archer — busur, daun, angin laminar.
+# Identitas Sylara: Elven Wind Ranger — rambut auburn hangat + jubah hijau
+# hutan + korset kulit bergesper emas + sihir angin zamrud bercahaya.
 extends Object
 
-# ── Garis luar (outline tinta — siluet harus terbaca saat zoom out) ──
-const INK := Color("#09140c")
+# ── Garis luar (outline tinta — halus & elegan, bukan hitam mati kasar) ──
+const INK := Color("#0c1c10")
+const INK_SOFT := Color(0.06, 0.12, 0.08, 0.65)
 
-# ── Kulit: BASE / SHADOW / HIGHLIGHT ──
-const SKIN := Color("#c8a882")
-const SKIN_SHADOW := Color("#a07e5e")
-const SKIN_LIGHT := Color("#e6ccb0")
+# ── Kulit elven: porselen hangat bercahaya, blush pipi lembut & bibir mawar ──
+const SKIN := Color("#fae4d4")
+const SKIN_SHADOW := Color("#d69e82")
+const SKIN_DEEP := Color("#b0765c")
+const SKIN_LIGHT := Color("#fff5ec")
+const SKIN_BLUSH := Color("#ee8478")
+const LIP := Color("#d66462")
+const LIP_SHINE := Color("#ff9896")
 
-# ── Rambut (hijau gelap / hitam kehijauan) ──
-const HAIR := Color("#1a3018")
-const HAIR_LIGHT := Color("#3a6832")
+# ── Rambut: auburn tembaga hangat berkilau (sesuai konsep masterwork) ──
+const HAIR := Color("#7e3518")
+const HAIR_DARK := Color("#461c0a")
+const HAIR_LIGHT := Color("#b65e28")
+const HAIR_SHINE := Color("#e28c50")
 
-# ── Jubah hijau (cloth): BASE / SHADOW / HIGHLIGHT ──
-const CLOTH := Color("#376234")
-const CLOTH_DARK := Color("#1e3a1c")
-const CLOTH_LIGHT := Color("#5e9650")
+# ── Jubah hijau (cloth): hijau zamrud hutan beludru ──
+const CLOTH := Color("#2c5a32")
+const CLOTH_DARK := Color("#16381c")
+const CLOTH_LIGHT := Color("#4a8a52")
+const CLOTH_SHINE := Color("#6cb874")
+const CLOTH_TRIM := Color("#dba232")
 
-# ── Hood / tudung — sedikit lebih gelap dari jubah ──
-const HOOD := Color("#2a4e26")
-const HOOD_DARK := Color("#142e12")
+# ── Hood / tudung — cowl fitted yang membingkai wajah elven ──
+const HOOD := Color("#224c28")
+const HOOD_DARK := Color("#122e18")
+const HOOD_LIGHT := Color("#387842")
 
-# ── Cape / selendang angin — warna identitas sekunder ──
-const CAPE := Color("#4a8842")
-const CAPE_DARK := Color("#2c5a28")
-const CAPE_LIGHT := Color("#72b866")
+# ── Cape / selendang angin berlapis — berkibar dinamis ──
+const CAPE := Color("#387a3e")
+const CAPE_DARK := Color("#204e26")
+const CAPE_LIGHT := Color("#58a85e")
+const CAPE_BRIGHT := Color("#7ecc82")
 
-# ── Kayu busur recurve ──
-const WOOD := Color("#825a32")
-const WOOD_DARK := Color("#4e2e18")
-const WOOD_LIGHT := Color("#aa7e4a")
-const WOOD_SHINE := Color("#cda568")
+# ── Kayu busur pusaka recurve (aged ironwood + urat emas) ──
+const WOOD := Color("#7c5228")
+const WOOD_DARK := Color("#482c14")
+const WOOD_LIGHT := Color("#a4723e")
+const WOOD_SHINE := Color("#cca05c")
+const HORN_TIP := Color("#ede4d0")
 
-# ── Tali busur ──
-const STRING := Color("#dcd2b4")
-const STRING_DARK := Color("#9e9478")
+# ── Tali busur: benang angin ajaib bercahaya (luminous mana string) ──
+const STRING := Color("#90ffcc")
+const STRING_DARK := Color("#38b47a")
+const STRING_GLOW := Color("#40e890")
 
-# ── Anak panah ──
+# ── Anak panah wind-ranger ──
 const SHAFT := Color("#c8af82")
 const SHAFT_DARK := Color("#8c6e46")
-const HEAD := Color("#b4c3d2")
-const HEAD_DARK := Color("#647388")
-const HEAD_SHINE := Color("#ebf5ff")
-const FEATHER := Color("#8cc85e")
-const FEATHER_DARK := Color("#467838")
+const HEAD := Color("#c6dcf0")
+const HEAD_DARK := Color("#7088a4")
+const HEAD_SHINE := Color("#f4faff")
+const FEATHER := Color("#5ce078")
+const FEATHER_DARK := Color("#2c8c44")
 
-# ── Emas hardware (gesper, trim armor, quiver) ──
-const GOLD := Color("#aa8228")
-const GOLD_DARK := Color("#5e4614")
-const GOLD_LIGHT := Color("#e6c35a")
-const GOLD_HOT := Color("#ffec96")
+# ── Emas hardware (gesper, trim armor, quiver band, clasp) ──
+const GOLD := Color("#dba232")
+const GOLD_DARK := Color("#7c5614")
+const GOLD_LIGHT := Color("#fcd25a")
+const GOLD_HOT := Color("#fff4aa")
 
-# ── Armor kulit ──
-const LEATHER := Color("#6e5030")
-const LEATHER_DARK := Color("#3e2c1a")
-const LEATHER_LIGHT := Color("#96724a")
+# ── Armor kulit: korset & bracer kulit lentur berkualitas tinggi ──
+const LEATHER := Color("#704626")
+const LEATHER_DARK := Color("#442612")
+const LEATHER_LIGHT := Color("#9a6438")
+const LEATHER_SHINE := Color("#c68a52")
 
-# ── MAGIC ACCENT — angin hijau. HANYA aksen, jangan mendominasi layar. ──
-const WIND := Color("#6ec35a")
-const WIND_DEEP := Color("#143c10")
-const WIND_DARK := Color("#327832")
-const WIND_LIGHT := Color("#aaeb88")
-const WIND_BRIGHT := Color("#d2ffb0")
-const WIND_WHITE := Color("#e8ffd6")
+# ── MAGIC ACCENT — angin hijau mint bercahaya ──
+const WIND := Color("#4eed98")
+const WIND_DEEP := Color("#143c1c")
+const WIND_DARK := Color("#2a8848")
+const WIND_LIGHT := Color("#96ffcc")
+const WIND_BRIGHT := Color("#c6ffea")
+const WIND_WHITE := Color("#f2fff8")
 
-# ── Daun (aksen hangat satu-satunya) ──
-const LEAF := Color("#92a834")
-const LEAF_DARK := Color("#4e601e")
-const LEAF_GOLD := Color("#c4d648")
-const LEAF_EMBER := Color("#eca83a")
-const LEAF_PALE := Color("#f2f0a8")
+# ── Daun (aksen alam berhamburan) ──
+const LEAF := Color("#add834")
+const LEAF_DARK := Color("#58741c")
+const LEAF_GOLD := Color("#eaf24e")
+const LEAF_EMBER := Color("#f4b03c")
+const LEAF_PALE := Color("#f8f8b8")
 
 # ── Sulur Shackle (E) ──
-const VINE := Color("#427c38")
-const VINE_DARK := Color("#183e1e")
-const VINE_LIGHT := Color("#80be60")
+const VINE := Color("#3a7c36")
+const VINE_DARK := Color("#183e1c")
+const VINE_LIGHT := Color("#76c860")
 
-# ── Lain-lain ──
-const EYE := Color("#78d246")          # iris hijau terang — titik fokus wajah
-const QUIVER := Color("#5a3e22")       # quiver kulit
-const QUIVER_DARK := Color("#342214")
-const RIM := Color("#d6f0c8")          # rim light hangat-hijau dari atas-kiri
-const SHADOW_GROUND := Color(0.02, 0.05, 0.02, 0.26)
-const HURT_TINT := Color(1.0, 0.32, 0.24)
+# ── Mata elven bercahaya (emerald catchlights) ──
+const EYE := Color("#38b846")
+const EYE_DARK := Color("#165c22")
+const EYE_LIGHT := Color("#78f060")
+const EYE_WHITE := Color("#f6fbf8")
+
+# ── Perlengkapan & Efek ──
+const QUIVER := Color("#583c22")
+const QUIVER_DARK := Color("#342012")
+const RIM := Color("#d8ffdc")
+const SHADOW_GROUND := Color(0.02, 0.05, 0.02, 0.28)
+const HURT_TINT := Color(1.0, 0.32, 0.28)
