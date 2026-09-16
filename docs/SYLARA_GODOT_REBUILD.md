@@ -119,7 +119,7 @@ eye blink mandiri — kontinu berbasis fase cloth.
 | Basic melee | damage instan + **satu** sabit angin di ujung busur (world-space, pooled). |
 | Skill Q/W/E | shake + suara dari kit saat cast (sudah ada); visual FX mengikuti. |
 | Skill R | charge 0–0.45 dtk → release (visual + bunyi busur) → **impact di 0.95 dtk = momen damage** (flash + ring + sparks terarah + hit-stop 0.05 + shake 0.14 + sinyal `skill_impact`). |
-| Kematian | `Hero.die()` instan secara logika; `hide()` ditunda 0.9 dtk (hero rig saja) + paket FX perpisahan (flash + ring + sparks daun). |
+| Kematian | `Hero.die()` → `hide()` instan (kontrak paritas `Dead hero is hidden`); pose death + FX perpisahan tersedia di demo/showcase via `play("death")`. |
 
 Sinyal: `attack_started`, `attack_impact`, `skill_cast(key)`,
 `skill_impact("r", pos)`, `character_hurt`, `character_died`.
@@ -157,15 +157,13 @@ const HERO := {
 Aktif saat `mystic/rendering/experimental_hero_rigs=true` (default);
 fallback = strip bake pygame.
 
-### Hook Hero.gd (3 titik, semuanya aditif & parity-safe)
+### Hook Hero.gd (1 titik, aditif & parity-safe)
 
 1. `_shoot_projectile()` → `custom_visual.spawn_attack_projectile(t, dmg)`
    bila rig menyediakannya (parameter TowerBullet identik — hanya gambar
    + titik spawn dari ujung busur yang berbeda).
-2. `die()` → hero rig (punya `play()`) menunda `hide()` 0.9 dtk +
-   menyembunyikan `$UI` langsung; hero lain tidak berubah.
-3. `_physics_process()` → `_tick_death_visual()` mendrive pose `death`
-   selama jendela di atas; `respawn()` mengembalikan semuanya.
+2. (Death visual DITOLAK — kontrak paritas mengunci hero mati langsung
+   hidden; pose `death` hanya untuk demo/showcase.)
 
 ### Demo
 
@@ -221,7 +219,7 @@ VICTORY + kontrol keyboard (SPACE/1-4/H/D/V/F/R).
       tidak menutupi battlefield, anggaran pool ±12
 - [x] Impact R di momen damage + hit-stop + shake proporsional
 - [x] Basic attack: nol impact FX / hit-stop / shake (kontrak)
-- [x] Death anim + FX terlihat di arena (hide ditunda, logika instan)
+- [x] Death anim + FX tersedia (demo/showcase; arena hide instan per kontrak paritas)
 - [x] Nol alokasi per frame; event-driven; Android-friendly
 - [x] `gdparse` + `tscn_lint` + `check_refs` + `particles_lint` +
       `map_clutter_lint` + `log_gate` lolos
