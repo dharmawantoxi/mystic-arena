@@ -1,76 +1,57 @@
 [gd_scene load_steps=3 format=3 uid="uid://csylara_demo_01a075b2"]
 
-[ext_resource type="PackedScene" path="res://scenes/hero/sylara/SylaraSkeleton.tscn" id="1_sylara"]
+[ext_resource type="PackedScene" path="res://scenes/hero/sylara/SylaraV105.tscn" id="1_sylara"]
 [ext_resource type="Script" path="res://scenes/demo/SylaraDemo.gd" id="2_demo"]
 
-; Showcase Sylara (Wind Ranger rig, logika Godot native):
-; siklus penuh IDLE/WALK/RUN/ATTACK/Q/W/E/R/HURT/DEATH/VICTORY +
-; kontrol keyboard + titik bidik orbit (pamerkan aim 360°).
-; Latar panggung & marker bidik digambar SylaraDemo._draw().
+; Showcase Sylara V10.5 — SYLARA MEMAKAI RIG SATU FILE (SylaraV105.gd):
+; kamera dinamis smooth-lag, ghost trail windrun, skill lengkap, UI mobile,
+; dekorasi dunia — semua dari script karakter sendiri.
+; Demo hanya menambahkan: instance rig + HUD (judul/mode/statistik) +
+; keyboard desktop (WASD → joystick_vector, SPACE/1-4/H/K/L).
+; KAMERA sengaja tidak ada di scene ini — SylaraV105 membuatnya sendiri.
+; HUD diposisi tengah-atas & bawah agar tidak menimpa UI bawaan rig
+; (tombol tes HURT/DEATH/REVIVE kiri-atas, panel skill kanan-bawah).
 
 [node name="SylaraDemo" type="Node2D"]
 script = ExtResource("2_demo")
 
-[node name="Camera2D" type="Camera2D" parent="."]
-current = true
-position = Vector2(0, -14)
-zoom = Vector2(2.2, 2.2)
-process_mode = 3
-
-[node name="SylaraRoot" type="Node2D" parent="."]
+[node name="SylaraV105" parent="." instance=ExtResource("1_sylara")]
 position = Vector2(0, 0)
-
-[node name="SylaraSkeleton" parent="SylaraRoot" instance=ExtResource("1_sylara")]
-position = Vector2(0, -6)
-
-[node name="AimNode" type="Node2D" parent="SylaraRoot"]
-position = Vector2(150, -26)
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = 20
 
 [node name="VBox" type="VBoxContainer" parent="CanvasLayer"]
-anchors_preset = 10
-anchor_right = 1.0
-offset_left = 16.0
-offset_top = 12.0
-offset_right = -16.0
-offset_bottom = 96.0
-alignment = 0
+anchors_preset = 5
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+anchor_bottom = 0.0
+offset_left = -320.0
+offset_top = 8.0
+offset_right = 320.0
+offset_bottom = 86.0
 
 [node name="Title" type="Label" parent="CanvasLayer/VBox"]
-text = "MYSTIC ARENA — SYLARA  (Wind Ranger rig, Godot-native)   100% procedural _draw(), bidik 360°, sinyal event-driven"
+text = "MYSTIC ARENA — SYLARA V10.5  (dynamic camera · ghost trails · windrun sprint — 1 file: SylaraV105.gd)"
 horizontal_alignment = 1
 theme_override_colors/font_color = Color(0.75, 0.95, 0.72, 1)
 theme_override_font_sizes/font_size = 13
 
-[node name="Subtitle" type="Label" parent="CanvasLayer/VBox"]
-text = "[SPACE] attack   [1/2/3/4] skill Q/W/E/R   [H] hurt   [D] death   [V] victory   [F] flip   [R] reset"
-horizontal_alignment = 1
-theme_override_colors/font_color = Color(0.55, 0.72, 0.52, 1)
-theme_override_font_sizes/font_size = 10
-
 [node name="ModeLabel" type="Label" parent="CanvasLayer/VBox"]
-text = "SYLARA // IDLE"
+text = "SYLARA V10.5 // IDLE"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 11
 theme_override_colors/font_color = Color(0.85, 1, 0.55, 1)
 
 [node name="StatsLabel" type="Label" parent="CanvasLayer/VBox"]
-text = "SylaraRenderer _draw() 360°-aim | SylaraAnimator pose loop | sinyal event-driven | VFXManager pool"
+text = "1 script, 1 _draw() | kamera smooth-lag 6.0 | ghost trail 0.04 s"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 9
 theme_override_colors/font_color = Color(0.6, 0.75, 0.58, 1)
 
-[node name="PhaseBar" type="ProgressBar" parent="CanvasLayer/VBox"]
-custom_minimum_size = Vector2(0, 6)
-max_value = 100.0
-step = 1.0
-value = 30.0
-show_percentage = false
-
 [node name="Hint" type="Label" parent="CanvasLayer"]
-text = "IDLE → WALK → RUN → ATTACK (loop tembak) → Q Focus Fire → W Windrun → E Shackle Shot → R Powershot → HURT → DEATH → VICTORY"
+text = "WASD / panah: gerak | SPACE: attack | 1: Q Focus | 2: W Windrun (toggle) | 3: E Shackle | 4: R Power | H: hurt | K: death | L: revive   —   sentuh: joystick + tombol bawaan rig"
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0

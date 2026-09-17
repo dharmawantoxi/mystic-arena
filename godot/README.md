@@ -350,6 +350,12 @@ Hanya aktif bila `Main.enable_debug_controls = true` (default **false**).
 Untuk Kaizen showcase saja: double-click `godot/scenes/demo/KaizenDemo.tscn` → **Run Current Scene**.
 Siklus idle 3s → walk 3s → attack loop (hamon kilat + wind ribbon). SPACE=force attack, F=flip, R=reset.
 
+Untuk Sylara: double-click `godot/scenes/demo/SylaraDemo.tscn` → **Run Current Scene**.
+Sylara memakai rig satu file V10.5 (`scenes/hero/sylara/SylaraV105.gd` — kamera dinamis
+smooth-lag, ghost trail windrun, UI mobile bawaan). `WASD`/panah gerak, SPACE=attack,
+`1/2/3/4`=Q/W/E/R, H=hurt, K=death, L=revive. (Rig modular `SylaraSkeleton.tscn`
+tetap visual Sylara di arena — bukan demo ini; detail di `docs/SYLARA_GODOT_REBUILD.md`.)
+
 ## "F5 cuma layar hitam" — penyebab & perbaikannya
 
 Log dulu berhenti di `[GameManager] Start Level 1 — gold 1000` dan viewport tetap gelap. Itu **bukan**

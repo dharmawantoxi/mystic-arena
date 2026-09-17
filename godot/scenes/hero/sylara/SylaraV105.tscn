@@ -1,0 +1,20 @@
+[gd_scene load_steps=3 format=3 uid="uid://csylara_v105_01a075b2"]
+
+[ext_resource type="Script" path="res://scenes/hero/sylara/SylaraV105.gd" id="1_v105"]
+
+[sub_resource type="CapsuleShape2D" id="CapsuleShape2D_1"]
+radius = 14.0
+height = 44.0
+
+; Sylara V10.5 — rig SATU FILE (SylaraV105.gd): controller CharacterBody2D
+; + kamera dinamis smooth-lag + ghost trail windrun + seluruh skill + UI
+; mobile. Kamera, WorldEnvironment (glow), dekorasi dunia, dan UI mobile
+; dibuat sendiri oleh script di _ready() — scene ini sengaja kosong.
+; Dipakai langsung sebagai karakter (F5) dan di scenes/demo/SylaraDemo.tscn.
+
+[node name="SylaraV105" type="CharacterBody2D"]
+script = ExtResource("1_v105")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, -10)
+shape = SubResource("CapsuleShape2D_1")

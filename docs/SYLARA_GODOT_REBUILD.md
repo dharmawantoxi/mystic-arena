@@ -131,12 +131,45 @@ skena tetap, kontrak `Hero.gd` utuh.
 godot --path godot res://scenes/demo/SylaraDemo.tscn
 ```
 
-Siklus: IDLE → WALK → RUN → ATTACK (loop tembak) → Q → W → E → R
-(channel + tebar) → HURT → DEATH → VICTORY. Titik bidik mengorbit (marker
-crosshair) untuk memamerkan aim 360°. Keyboard: `SPACE` attack,
-`1/2/3/4` Q/W/E/R, `H/D/V` hurt/death/victory, `F` flip, `R` reset.
+Sejak 2026-09-17 `SylaraDemo.tscn` memamerkan **rig satu file V10.5**
+(`SylaraV105.tscn`, lihat bagian 9) — bukan siklus auto `drive()` rig
+modular di atas. Keyboard desktop (lapisan tipis demo, bukan milik rig):
+`WASD`/panah gerak, `SPACE` attack, `1/2/3/4` Q/W/E/R, `H` hurt,
+`K` death, `L` revive. Sentuh: joystick + tombol bawaan rig
+(ATTACK/Q/W/E/R + HURT/DEATH/REVIVE).
 
-CI statis: `gdparse` + `godot/tools/tscn_lint.py` + `check_refs.py` +
-`particles_lint.py`; CI runtime: `godot-check.yml` (engine headless +
-suite parity). Gameplay Sylara (damage/CD/W- evade/R powershot) dikunci
+Rig modular bagian 1-7 tetap menjadi **visual arena** Sylara
+(`RendererRegistry.HERO["sylara"]`, dikunci `GameplayParityTest`) dan
+diverifikasi lewat arena main + suite parity. CI statis: `gdparse` +
+`godot/tools/tscn_lint.py` + `check_refs.py` + `particles_lint.py`;
+CI runtime: `godot-check.yml` (engine headless + suite parity).
+Gameplay Sylara (damage/CD/W- evade/R powershot) dikunci
 `HeroSkillParityTest` & fixture `match_parity.json` — tidak tersentuh.
+
+## 9. Sylara V10.5 — rig satu file standalone (`SylaraV105.gd`)
+
+Selain rig modular arena di atas, Sylara juga punya versi **satu file**
+(sekalian jadi arena uji karakter solo): `scenes/hero/sylara/SylaraV105.gd`
++ `SylaraV105.tscn`. Semua logika dalam SATU script `CharacterBody2D`:
+
+| Fitur | Detail |
+|---|---|
+| **Kamera dinamis** | `Camera2D` dibuat script di `_ready()`; `position_smoothing_speed = 6.0` (smooth lag — Sylara melesat mendahului kamera) |
+| **Windrun sprint** | toggle (bukan durasi): `windrun_speed = 480` px/dtk (vs 200 jalan); analog lepas → otomatis lanjut lari ke arah aim; kaki animasi 0.04 dtk |
+| **Ghost trail** | tiap 0.04 dtk saat windrun, bayangan sprite windrun (tinta hijau, alpha 0.7 → 0) mengikuti posisi — digambar `_draw()` sendiri, tanpa node tambahan |
+| **Skill** | basic attack (frame 3), Q Focus Fire (tembak cepat frame 1/3), W Windrun (toggle), E Shackle Shot (tornado expanding di depan), R Powershot (channel 6 frame + panah 1100 px/dtk) |
+| **UI mobile bawaan** | `CanvasLayer` + joystick virtual (inner class `TouchJoystick`) + tombol ATTACK/Q/W/E/R + tombol tes HURT/DEATH/REVIVE |
+| **Dunia** | grid rumput 64px + pohon/batu prosedural (31×21 grid, cull ±600×400 px) agar perpindahan terasa jelas |
+| **Glow** | `WorldEnvironment` + `Environment.glow` (blend SCREEN) — dibuat script |
+
+Aturan pakai:
+- **Standalone**: `SylaraV105.tscn` langsung (F5) atau `SylaraDemo.tscn`
+  (HUD + keyboard desktop).
+- **TIDAK untuk arena**: script ini CharacterBody2D utuh — gerak, input,
+  kamera, WorldEnvironment, UI semua miliknya. Arena sudah punya
+  CharacterBody2D (Hero) + kamera frame + layout mobile sendiri; menaruh
+  rig ini di bawah `Hero/Visual` akan bentrok (nested body, kamera kedua,
+  UI ganda). Arena Sylara tetap rig modular `SylaraSkeleton.tscn`.
+- Script V10.5 adalah sumber kebenaran karakter (dipertahankan apa adanya
+  saat integrasi) — fitur baru Sylara masuk ke sini dulu, baru dipertimbangkan
+  sinkronisasi ke rig modular.
