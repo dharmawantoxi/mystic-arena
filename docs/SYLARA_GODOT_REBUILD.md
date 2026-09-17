@@ -140,3 +140,36 @@ CI statis: `gdparse` + `godot/tools/tscn_lint.py` + `check_refs.py` +
 `particles_lint.py`; CI runtime: `godot-check.yml` (engine headless +
 suite parity). Gameplay Sylara (damage/CD/W- evade/R powershot) dikunci
 `HeroSkillParityTest` & fixture `match_parity.json` — tidak tersentuh.
+
+## 9. PASS PIXEL-ART (v3, 2026-09-17)
+
+Referensi visual baru: sprite sheet pixel art **"Wind Ranger — The Wind's
+Arrow"** (baris animasi IDLE / WALK / ATTACK / POWERSHOT / WINDRUN /
+FOCUS FIRE). `SylaraRenderer.gd` ditulis ulang total meniru gaya sheet
+tersebut; arsitektur & kontrak (bagian 1–6) TIDAK berubah:
+
+- **Cel-shading flat + outline tinta 1 px** — semua gradient vertex halus
+  (`_poly_vgrad`) dihapus; setiap siluet diisi warna flat (BASE + satu
+  tingkat SHADOW hard-edge) dan digarisi `draw_polyline` INK tertutup.
+- **Gravity droop di renderer** — segmen jubah & rambut diberi bias sudut
+  ke bawah (`CAPE_DROOP 0.45`, `HAIR_DROOP 0.35`, y-down) supaya kain
+  "jatuh" seperti di sheet, bukan melayang horizontal.
+- **Siluet sesuai sheet**: hood runcing berekor terjuntai; poni oranye
+  bergerigi + side lock + ekor rambut mengalir; jubah berhem zig-zag dua
+  titik; rok tunik bergerigi tiga titik; belt kulit bergesper emas
+  persegi; boots lutut bercuff + rivet; quiver diagonal dengan 3 fletching
+  di atas bahu; tali quiver menyilang dada; pauldron kulit; busur recurve
+  keemasan (`BOW_LEN` 23.5 → 19.5 agar proporsi busur = ±0.65 tinggi badan
+  seperti sheet).
+- **Aura disesuaikan baris sheet**: FOCUS FIRE = cincin energi busur +
+  ring melingkar di tubuh + swirl rune di tanah; POWERSHOT = panah charge
+  menyala hijau-kuning (`_draw_charged_arrow`) + limb busur ber-glow;
+  WINDRUN = swoosh horizontal tapered + curl ekor.
+- **Palette** (`SylaraPalette.gd`) di-tune baris demi baris ke warna
+  sheet (rambut `#c94f22`, hood `#35722c`, jubah `#2f6d2a`, kulit
+  `#f6d7b3`, angin `#6ee848`/`#a8f878`). Nama konstan tidak berubah —
+  SkillFX/Feel/Arrow tetap kompilasi tanpa edit.
+
+Kontrak antar-berkas dipertahankan & diaudit: `pose`/`phase`,
+`get_bow_grip/tip/nock/dir`, seluruh kunci `j[...]` dari `_solve`, semua
+field `SylaraPose`, dan semua konstan `Pal.*` yang dipakai berkas lain.
