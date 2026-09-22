@@ -17,10 +17,10 @@ const INCOME_PER_SEC = 3.0
 const SHOP_BLUE = Vector2(340, 540)
 const SHOP_RED = Vector2(940, 180)
 
-const LANE_TOP_WP = [Vector2(90, 590), Vector2(85, 460), Vector2(95, 340), Vector2(120, 220), Vector2(170, 180), Vector2(240, 100), Vector2(380, 75), Vector2(550, 70), Vector2(720, 75), Vector2(880, 85), Vector2(1030, 110), Vector2(1180, 180)]
-const LANE_MID_WP = [Vector2(170, 550), Vector2(300, 420), Vector2(440, 320), Vector2(580, 400), Vector2(640, 360), Vector2(700, 320), Vector2(840, 400), Vector2(980, 300), Vector2(1110, 170)]
-const LANE_BOT_WP = [Vector2(130, 630), Vector2(260, 650), Vector2(420, 660), Vector2(600, 660), Vector2(780, 655), Vector2(940, 645), Vector2(1070, 620), Vector2(1170, 500), Vector2(1190, 340), Vector2(1195, 250), Vector2(1180, 180)]
-const LANE_SMOOTH = [10, 8, 10]
+const LANE_TOP_WP = [Vector2(90, 590), Vector2(85, 460), Vector2(95, 340), Vector2(115, 230), Vector2(165, 175), Vector2(235, 110), Vector2(360, 78), Vector2(520, 68), Vector2(690, 70), Vector2(860, 80), Vector2(1020, 115), Vector2(1180, 180)]
+const LANE_MID_WP = [Vector2(170, 550), Vector2(280, 450), Vector2(400, 380), Vector2(520, 350), Vector2(640, 340), Vector2(760, 330), Vector2(880, 300), Vector2(1000, 240), Vector2(1110, 170)]
+const LANE_BOT_WP = [Vector2(130, 630), Vector2(265, 652), Vector2(415, 662), Vector2(590, 665), Vector2(770, 660), Vector2(935, 650), Vector2(1065, 625), Vector2(1135, 565), Vector2(1170, 500), Vector2(1185, 410), Vector2(1190, 320), Vector2(1185, 235), Vector2(1180, 180)]
+const LANE_SMOOTH = [12, 12, 12]
 const RIVER_WP = [Vector2(0, 200), Vector2(150, 270), Vector2(350, 350), Vector2(640, 360), Vector2(930, 370), Vector2(1130, 450), Vector2(1280, 520)]
 const RIVER_SMOOTH = 10
 const SLOT_BLUE_FRAC = [[0.15, 0.30, 0.45], [0.10, 0.25, 0.40], [0.15, 0.30, 0.45]]
@@ -341,34 +341,11 @@ func _draw_lanes() -> void:
 		return
 	var p1: Color = map_theme["p1"]
 	var p2: Color = map_theme["p2"]
-	var p3: Color = map_theme["p3"]
-	var p4: Color = map_theme["p4"]
-	var moss: Color = map_theme["p_moss"]
-	var crack: Color = map_theme["p_crack"]
 	for li in lane_paths.size():
 		var path: PackedVector2Array = lane_paths[li]
-		draw_polyline(path, p1, 46.0)
-		var acc := 0.0
-		var next_mark := 8.0
-		var n := 0
-		for i in range(path.size() - 1):
-			var a: Vector2 = path[i]
-			var b: Vector2 = path[i + 1]
-			var seglen := a.distance_to(b)
-			if seglen < 1.0:
-				continue
-			var dir := (b - a) / seglen
-			while next_mark <= acc + seglen:
-				var t := (next_mark - acc) / seglen
-				var p: Vector2 = a.lerp(b, t)
-				_draw_cobble(p, dir.angle(), n, p1, p2, p3, p4, moss, crack)
-				if n % 3 == 0:
-					var pp := Vector2(-dir.y, dir.x)
-					_draw_border_stone(p + pp * 25.0)
-					_draw_border_stone(p - pp * 25.0)
-				n += 1
-				next_mark += 16.0
-			acc += seglen
+		draw_polyline(path, Color8(12, 8, 12), 52.0, true)
+		draw_polyline(path, p1, 46.0, true)
+		draw_polyline(path, Color(p2.r, p2.g, p2.b, 0.28), 10.0, true)
 
 
 func _draw_cobble(p: Vector2, ang: float, n: int, p1: Color, p2: Color, p3: Color, p4: Color, moss: Color, crack: Color) -> void:
@@ -967,9 +944,9 @@ func _gen_decor16() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = DECOR16_SEED
 	var lanes: Array = [
-		_curved_path(LANE_TOP_WP, 10),
-		_curved_path(LANE_MID_WP, 8),
-		_curved_path(LANE_BOT_WP, 10),
+		_curved_path(LANE_TOP_WP, int(LANE_SMOOTH[0])),
+		_curved_path(LANE_MID_WP, int(LANE_SMOOTH[1])),
+		_curved_path(LANE_BOT_WP, int(LANE_SMOOTH[2])),
 	]
 	var river: Array = _curved_path(RIVER_WP, 10)
 	var placed: Array = []
@@ -1129,9 +1106,9 @@ func _draw17_slashes() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1700
 	var lanes: Array = [
-		_curved_path(LANE_TOP_WP, 10),
-		_curved_path(LANE_MID_WP, 8),
-		_curved_path(LANE_BOT_WP, 10),
+		_curved_path(LANE_TOP_WP, int(LANE_SMOOTH[0])),
+		_curved_path(LANE_MID_WP, int(LANE_SMOOTH[1])),
+		_curved_path(LANE_BOT_WP, int(LANE_SMOOTH[2])),
 	]
 	var crack := Color8(170, 36, 61)
 	for i in range(28):
@@ -1346,9 +1323,9 @@ func _gen_decor23() -> void:
 	_decor23_tiles.clear()
 	_decor23_borders.clear()
 	var lanes: Array = [
-		_curved_path(LANE_TOP_WP, 10),
-		_curved_path(LANE_MID_WP, 8),
-		_curved_path(LANE_BOT_WP, 10),
+		_curved_path(LANE_TOP_WP, int(LANE_SMOOTH[0])),
+		_curved_path(LANE_MID_WP, int(LANE_SMOOTH[1])),
+		_curved_path(LANE_BOT_WP, int(LANE_SMOOTH[2])),
 	]
 	var seen := {}
 	for pts in lanes:
@@ -1366,26 +1343,31 @@ func _gen_decor23() -> void:
 						continue
 					var ox := float(tx) + 8.0 - lp.x
 					var oy := float(ty) + 8.0 - lp.y
-					if ox * ox + oy * oy > 625.0:
+					if ox * ox + oy * oy > 729.0:
 						continue
 					seen[key] = true
 					_decor23_tiles.append(Vector2i(tx, ty))
-		for i in range(0, n, 6):
-			if i >= n - 1:
-				continue
+		var acc := 0.0
+		var next_border := 0.0
+		for i in range(n - 1):
 			var a: Vector2 = pts[i]
 			var b: Vector2 = pts[i + 1]
-			var dd: Vector2 = b - a
-			var seglen := dd.length()
+			var seg := b - a
+			var seglen := seg.length()
 			if seglen < 0.01:
 				continue
-			var nx := -dd.y / seglen
-			var ny := dd.x / seglen
-			for side in [1.0, -1.0]:
-				var bx := int(a.x + nx * side * 23.0)
-				var by := int(a.y + ny * side * 23.0)
-				if bx > 5 and bx < 1275 and by > 5 and by < 715:
-					_decor23_borders.append(Vector2i(bx, by))
+			var dir := seg / seglen
+			var nrm := Vector2(-dir.y, dir.x)
+			while next_border <= acc + seglen:
+				var t := (next_border - acc) / seglen
+				var p: Vector2 = a.lerp(b, t)
+				for side in [1.0, -1.0]:
+					var bx := int(p.x + nrm.x * side * 23.0)
+					var by := int(p.y + nrm.y * side * 23.0)
+					if bx > 5 and bx < 1275 and by > 5 and by < 715:
+						_decor23_borders.append(Vector2i(bx, by))
+				next_border += 32.0
+			acc += seglen
 
 func _draw23_tile(t: Vector2i) -> void:
 	var tx := float(t.x)
@@ -1412,9 +1394,9 @@ func _draw23_tile(t: Vector2i) -> void:
 				draw_rect(Rect2(tx + sx_off + 1, ty + sy_off + 1, 6, 6), ps2)
 				draw_rect(Rect2(tx + sx_off + 2, ty + sy_off + 2, 4, 4), ps3)
 				draw_rect(Rect2(tx + sx_off + 2, ty + sy_off + 2, 4, 1), ps4)
-	if (t.x + t.y) % 7 == 0:
+	if (t.x + t.y) % 11 == 0:
 		draw_line(Vector2(tx + 3, ty + 4), Vector2(tx + 10, ty + 7), Color8(170, 36, 61), 1.0)
-	if variant > 85:
+	if variant > 90:
 		draw_rect(Rect2(tx + 3, ty + 3, 3, 2), Color8(65, 90, 45))
 		draw_rect(Rect2(tx + 3, ty + 3, 2, 1), Color8(55, 90, 40))
 
@@ -1447,9 +1429,9 @@ func _gen_decor24() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 2400
 	var lanes: Array = [
-		_curved_path(LANE_TOP_WP, 10),
-		_curved_path(LANE_MID_WP, 8),
-		_curved_path(LANE_BOT_WP, 10),
+		_curved_path(LANE_TOP_WP, int(LANE_SMOOTH[0])),
+		_curved_path(LANE_MID_WP, int(LANE_SMOOTH[1])),
+		_curved_path(LANE_BOT_WP, int(LANE_SMOOTH[2])),
 	]
 	var river: Array = _curved_path(RIVER_WP, 10)
 	var placed: Array = []
@@ -1504,9 +1486,9 @@ func _gen_decor25() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 3500
 	var lanes: Array = [
-		_curved_path(LANE_TOP_WP, 10),
-		_curved_path(LANE_MID_WP, 8),
-		_curved_path(LANE_BOT_WP, 10),
+		_curved_path(LANE_TOP_WP, int(LANE_SMOOTH[0])),
+		_curved_path(LANE_MID_WP, int(LANE_SMOOTH[1])),
+		_curved_path(LANE_BOT_WP, int(LANE_SMOOTH[2])),
 	]
 	var river: Array = _curved_path(RIVER_WP, 10)
 	var placed: Array = []
