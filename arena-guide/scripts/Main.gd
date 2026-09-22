@@ -729,7 +729,7 @@ func _process(delta: float) -> void:
 		wave_count += 1
 		_spawn_wave(wave_count)
 		wave_timer = wave_interval
-		_flame_t += delta
+	_flame_t += delta
 	if _flame_t >= 0.15:
 		_flame_t = 0.0
 		_flame_frame = (_flame_frame + 1) % 4

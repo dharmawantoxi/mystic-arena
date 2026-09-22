@@ -1,5 +1,5 @@
-# EXACT COPY dari user (diterima via chat, 2026-09-22). JANGAN edit manual —
-# kondisi = setelah user fix bug heartbeat (dedent _flame_t += delta).
+# EXACT COPY dari user (diterima via chat, 2026-09-22 pasca-L28). JANGAN edit manual —
+# kondisi = L15–L28 lengkap. CATATAN: _flame_t += delta TER-NEST di if wave (REGRESI heartbeat).
 extends Node2D
 ## Mystic Arena - Main DIAGONAL ala pygame (langkah 15).
 
@@ -60,7 +60,7 @@ func _ready() -> void:
 	_build_paths()
 	map_theme = MapTheme.get_theme(str(level_data.get("theme", "forest")))
 	map_seed = int(level_data.get("level", 1)) * 1000 + 7
-	print("[Main] Level %d: %s | gold awal %d | Tema map: %s." % [int(level_data["level"]), str(level_data["name"]), int(level_data["name"]), int(level_data["starting_gold"]), str(map_theme.get("name", "?"))])
+	print("[Main] Level %d: %s | gold awal %d | Tema map: %s." % [int(level_data["level"]), str(level_data["name"]), int(level_data["starting_gold"]), str(map_theme.get("name", "?"))])
 	var heroes: Array = level_data["heroes"]
 	print("[Main] Hero tersedia: %d (contoh: %s, HP %d)" % [heroes.size(), str(heroes[0]["name"]), int(heroes[0]["hp"])])
 	slots = _generate_slots()
@@ -159,10 +159,12 @@ func _draw() -> void:
 	_draw_decor18()
 	_draw20_river_runes()
 	_draw_lanes()
-	_draw_decor23()
+	_draw_decor23() 
 	_draw_base_plates()
 	_draw_border_wall()
+	_draw_decor26()
 	_draw_decor()
+	_draw_decor25()
 	_draw_decor17()
 	_draw_decor16()
 	_draw_decor24()
@@ -190,6 +192,10 @@ func _draw() -> void:
 		draw_string(font, Vector2((1280.0 - w2) * 0.5, 410.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color.WHITE)
 
 
+func _draw_terrain() ... (sampai sebelum _draw_terrain_details)
+# 2) Ganti SELURUH func _draw_terrain_details() ... (sampai sebelum _draw_river)
+# Hook: sudah dipanggil di _draw() — tidak perlu ubah urutan.
+#
 func _draw_terrain() -> void:
 	if map_theme.is_empty():
 		draw_rect(ARENA, Color("#1B2B20"))
@@ -201,6 +207,7 @@ func _draw_terrain() -> void:
 	var r_high: Color = map_theme["r_high"]
 	var r_moss: Color = map_theme["r_moss"]
 	var d2: Color = map_theme["d2"]
+	var d3: Color = map_theme["d3"]
 	var d4: Color = map_theme["d4"]
 	var d_ash: Color = map_theme["d_ash"]
 	var d_burnt: Color = map_theme["d_burnt"]
@@ -226,6 +233,17 @@ func _draw_terrain() -> void:
 					draw_rect(Rect2(tx + 5, ty + 6, 6, 4), r_moss)
 				elif v < 55:
 					draw_rect(Rect2(tx + 6, ty + 4, 2, 2), r_high)
+				elif v < 70:
+					# tuft daun ekstra (density bake)
+					draw_rect(Rect2(tx + 2, ty + 3, 1, 2), r3)
+					draw_rect(Rect2(tx + 7, ty + 9, 1, 3), r4)
+					draw_rect(Rect2(tx + 12, ty + 5, 1, 2), r3)
+				elif v < 85:
+					draw_rect(Rect2(tx + 9, ty + 10, 5, 3), r_moss)
+					draw_rect(Rect2(tx + 10, ty + 10, 3, 1), r3)
+				elif v < 92:
+					draw_rect(Rect2(tx + 3, ty + 11, 2, 2), r_high)
+					draw_rect(Rect2(tx + 11, ty + 2, 2, 2), r4)
 			elif cyy < thr - 20.0:
 				draw_rect(Rect2(tx, ty, 16, 16), d2)
 				if v < 20:
@@ -240,15 +258,28 @@ func _draw_terrain() -> void:
 					var qx: int = tx + 2 + (tx * 7 + ty * 3 + 5) % 11
 					var qy: int = ty + 2 + (tx * 11 + ty * 5 + 3) % 11
 					draw_rect(Rect2(qx, qy, 2, 2), pebble)
+					# speck ketiga (density)
+					var rx: int = tx + 2 + (tx * 3 + ty * 17 + 2) % 11
+					var ry: int = ty + 2 + (tx * 19 + ty * 7 + 1) % 11
+					draw_rect(Rect2(rx, ry, 1, 1), pebble)
 				elif v < 60:
 					draw_rect(Rect2(tx + 4, ty + 6, 4, 3), d_burnt)
 				elif v < 68:
 					draw_rect(Rect2(tx + 5, ty + 3, 3, 2), d4)
+				elif v < 80:
+					draw_rect(Rect2(tx + 2, ty + 10, 3, 2), d_ash)
+					draw_rect(Rect2(tx + 10, ty + 4, 2, 2), d3)
+				elif v < 90:
+					draw_rect(Rect2(tx + 7, ty + 8, 4, 2), d_burnt)
+					draw_rect(Rect2(tx + 1, ty + 2, 2, 1), d3)
 			else:
 				draw_rect(Rect2(tx, ty, 16, 16), t1)
 				if v < 30:
 					draw_rect(Rect2(tx + 4, ty + 6, 4, 2), t2)
-
+				elif v < 50:
+					draw_rect(Rect2(tx + 9, ty + 3, 3, 2), t2)
+				elif v < 65:
+					draw_rect(Rect2(tx + 2, ty + 11, 5, 2), t2)
 
 func _draw_terrain_details() -> void:
 	if map_theme.is_empty():
@@ -258,18 +289,21 @@ func _draw_terrain_details() -> void:
 	var burnt: Color = map_theme["d_burnt"]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 100
-	for i in 50:
+	for i in 120:
 		var x := rng.randf_range(0.0, 1280.0)
 		var y := rng.randf_range(360.0, 720.0)
-		if rng.randf() > 0.7:
+		if rng.randf() > 0.55:
 			draw_circle(Vector2(x, y), 3.0, r1)
-	for i in 40:
+			if rng.randf() > 0.7:
+				draw_circle(Vector2(x + 4.0, y - 2.0), 2.0, r1)
+	for i in 90:
 		var x2 := rng.randf_range(0.0, 1280.0)
 		var y2 := rng.randf_range(0.0, 360.0)
-		if rng.randf() > 0.6:
+		if rng.randf() > 0.5:
 			draw_circle(Vector2(x2, y2), 4.0, burnt)
 			draw_circle(Vector2(x2 - 1.0, y2 - 1.0), 2.0, de1)
-
+			if rng.randf() > 0.65:
+				draw_circle(Vector2(x2 + 5.0, y2 + 3.0), 2.0, burnt)
 
 func _draw_river() -> void:
 	if map_theme.is_empty() or river_pts.is_empty():
@@ -687,7 +721,7 @@ func _process(delta: float) -> void:
 		wave_count += 1
 		_spawn_wave(wave_count)
 		wave_timer = wave_interval
-	_flame_t += delta
+		_flame_t += delta
 	if _flame_t >= 0.15:
 		_flame_t = 0.0
 		_flame_frame = (_flame_frame + 1) % 4
@@ -1076,6 +1110,21 @@ func _draw17_shadow(p: Vector2, w: float) -> void:
 	draw_circle(Vector2.ZERO, w, Color(0, 0, 0, 0.45))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
+func _draw17_slashes() yang sudah ada (blok L17).
+# Hook: sudah dipanggil dari _draw_decor17() — tidak ubah _draw() / urutan.
+#
+# Masalah: L17 lama garis 2px + highlight, panjang 10–18px → terlalu "darah tebal".
+# Pygame lane crack: draw_line 1px warna path_crack (170,36,61), span ~7px di tile.
+# Perubahan:
+#   - count 42 → 28 (lebih jarang, mirip density crack bata L23)
+#   - panjang half-span 2.5–4.5 (total ~5–9px)
+#   - width 1.0 saja, warna Color8(170, 36, 61) = Forest path_crack
+#   - hilangkan garis highlight kedua (yang bikin tebal)
+#   - offset lateral -10..10 (sedikit lebih ke dalam lane)
+
+# ═══════════════════════════════════════════
+# LANGKAH 28 — ganti _draw17_slashes saja
+# ═══════════════════════════════════════════
 func _draw17_slashes() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1700
@@ -1084,7 +1133,8 @@ func _draw17_slashes() -> void:
 		_curved_path(LANE_MID_WP, 8),
 		_curved_path(LANE_BOT_WP, 10),
 	]
-	for i in range(42):
+	var crack := Color8(170, 36, 61)
+	for i in range(28):
 		var pts: Array = lanes[rng.randi_range(0, 2)]
 		var idx: int = rng.randi_range(0, pts.size() - 1)
 		var a: Vector2 = pts[max(idx - 1, 0)]
@@ -1093,11 +1143,11 @@ func _draw17_slashes() -> void:
 		var nrm := Vector2.UP
 		if tang.length() > 0.01:
 			nrm = Vector2(-tang.y, tang.x).normalized()
-		var p: Vector2 = pts[idx] + nrm * rng.randf_range(-14.0, 14.0)
+		var p: Vector2 = pts[idx] + nrm * rng.randf_range(-10.0, 10.0)
 		var ang := rng.randf_range(0.0, PI)
-		var d := Vector2(cos(ang), sin(ang)) * rng.randf_range(5.0, 9.0)
-		draw_line(p - d, p + d, Color8(150, 25, 25), 2.0)
-		draw_line(p - d * 0.5 + Vector2(2, -1), p + d * 0.5 + Vector2(2, -1), Color8(200, 50, 50), 1.0)
+		var half := rng.randf_range(2.5, 4.5)
+		var d := Vector2(cos(ang), sin(ang)) * half
+		draw_line(p - d, p + d, crack, 1.0)
 
 func _draw_decor17() -> void:
 	if _decor16_cache.is_empty():
@@ -1208,7 +1258,7 @@ func _draw20_shop_fx() -> void:
 			smoke2.a = ab
 			draw_circle(Vector2(sx, sy), float(size) * 2.0, smoke1)
 			draw_circle(Vector2(sx, sy), float(size), smoke2)
-
+			
 # ═══════════════════════════════════════════
 # LANGKAH 21 — kunang-kunang ambient (paritas pygame)
 # ═══════════════════════════════════════════
@@ -1439,3 +1489,103 @@ func _draw_decor24() -> void:
 	for i in range(_decor24_cache.size()):
 		var e: Array = _decor24_cache[i]
 		_draw24_landmark(e[0], int(e[1]), i % 6 == 0)
+
+# ═══════════════════════════════════════════
+# LANGKAH 25 — pohon mati twisted 2-tone + bayangan (paritas bake)
+# ═══════════════════════════════════════════
+var _decor25_cache: Array = []
+
+func _gen_decor25() -> void:
+	_decor25_cache.clear()
+	if _decor16_cache.is_empty():
+		_gen_decor16()
+	if _decor24_cache.is_empty():
+		_gen_decor24()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3500
+	var lanes: Array = [
+		_curved_path(LANE_TOP_WP, 10),
+		_curved_path(LANE_MID_WP, 8),
+		_curved_path(LANE_BOT_WP, 10),
+	]
+	var river: Array = _curved_path(RIVER_WP, 10)
+	var placed: Array = []
+	for e in _decor16_cache:
+		placed.append(e[1])
+	for e in _decor24_cache:
+		placed.append(e[0])
+	for d in decor:
+		placed.append(d["pos"])
+	var attempts := 0
+	while _decor25_cache.size() < 35 and attempts < 400:
+		attempts += 1
+		var p := Vector2(float(rng.randi_range(2, 77)) * 16.0, float(rng.randi_range(2, 42)) * 16.0)
+		if _decor16_ok(p, lanes, river, placed, 50.0, "dire"):
+			placed.append(p)
+			var sizes: Array = [14.0, 18.0, 22.0]
+			_decor25_cache.append([p, sizes[rng.randi_range(0, 2)]])
+
+func _draw25_dead_tree(p: Vector2, size: float) -> void:
+	var s := size
+	var d1 := Color8(28, 20, 18)
+	var d2 := Color8(55, 42, 35)
+	var ol := Color8(12, 8, 12)
+	var shadow := Color(0.0, 0.0, 0.0, 80.0 / 255.0)
+	var h := s * 0.5
+	var q3 := float(floori(s / 3.0))
+	draw_set_transform(Vector2(p.x, p.y + q3 - 2.0 + q3 * 0.5), 0.0, Vector2(1.0, q3 / (h * 2.0)))
+	draw_circle(Vector2.ZERO, h, shadow)
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	var tw := 4.0
+	draw_rect(Rect2(p.x - tw * 0.5 - 1.0, p.y - s, tw + 2.0, s + 1.0), ol)
+	draw_rect(Rect2(p.x - tw * 0.5, p.y - s, tw, s), d1)
+	draw_rect(Rect2(p.x - tw * 0.5, p.y - s, 2.0, s), d2)
+	var branches: Array = [
+		[Vector2(p.x, p.y - h), Vector2(p.x - h, p.y - s + 4.0), 3.0],
+		[Vector2(p.x, p.y - h + 4.0), Vector2(p.x + h, p.y - s + 4.0), 3.0],
+		[Vector2(p.x, p.y - s + 4.0), Vector2(p.x - q3, p.y - s - 4.0), 2.0],
+		[Vector2(p.x, p.y - s + 4.0), Vector2(p.x + q3, p.y - s - 2.0), 2.0],
+	]
+	for b in branches:
+		var a: Vector2 = b[0]
+		var e2: Vector2 = b[1]
+		var w: float = b[2]
+		draw_line(a, e2, d1, w)
+		draw_line(a, e2, ol, 1.0)
+		var jx := float((int(p.x) * 7 + int(p.y) * 13 + int(s)) % 7 - 3)
+		var jy := float(-((int(p.x) * 5 + int(p.y) * 11 + int(s)) % 5))
+		draw_line(e2, e2 + Vector2(jx, jy), d1, 1.0)
+
+func _draw_decor25() -> void:
+	if _decor25_cache.is_empty():
+		_gen_decor25()
+	for e in _decor25_cache:
+		_draw25_dead_tree(e[0], float(e[1]))
+
+# ═══════════════════════════════════════════
+# LANGKAH 26 — bayangan hitam bawah dekor lama (paritas bake)
+# ═══════════════════════════════════════════
+func _draw26_shadow(p: Vector2, rx: float, ry: float, alpha: float) -> void:
+	if rx <= 0.0 or ry <= 0.0:
+		return
+	draw_set_transform(p, 0.0, Vector2(1.0, ry / rx))
+	draw_circle(Vector2.ZERO, rx, Color(0.0, 0.0, 0.0, alpha))
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _draw_decor26() -> void:
+	for d in decor:
+		var kind: String = str(d["kind"])
+		var p: Vector2 = d["pos"]
+		var v: int = int(d["v"])
+		var k := 0.85 + 0.15 * float(v)
+		match kind:
+			"dark_tree":
+				_draw26_shadow(Vector2(p.x, p.y + 14.0 * k), 12.0 * k, 6.0 * k, 100.0 / 255.0)
+			"dead_tree":
+				_draw26_shadow(Vector2(p.x, p.y + 6.0), 9.0 * k, 4.0 * k, 80.0 / 255.0)
+			"bush":
+				_draw26_shadow(Vector2(p.x, p.y + 5.0), 8.0 * k, 3.0 * k, 80.0 / 255.0)
+			"rock", "rock_obs":
+				_draw26_shadow(Vector2(p.x, p.y + 6.0 * k), 9.0 * k, 6.0 * k, 80.0 / 255.0)
+			"gravestone":
+				_draw26_shadow(Vector2(p.x, p.y + 7.0), 6.0, 2.0, 100.0 / 255.0)
