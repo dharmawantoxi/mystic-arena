@@ -1,10 +1,7 @@
-# project/ — salinan exact script user (kosong)
+# project/ — salinan exact script user
 
-Folder ini disiapkan untuk menyimpan **salinan persis** file project Godot user
-(`Main.gd`, `Minion.gd`, Tower/Hero/Shop/HUD, ...).
+- `Main.gd` ✅ exact copy dari user (2026-09-22). Termasuk bug heartbeat
+  (`_flame_t += delta` salah indent) apa adanya — update lagi setelah user fix.
+- Masih menunggu: `Minion.gd` + script lain (Tower/Hero/Shop/HUD/Nexus/LevelDB/...).
 
-Cara melengkapi: user attach file `.gd` ke chat → agent simpan exact copy di sini
-+ catat tanggal update di `../progress.md`.
-
-Status: menunggu upload user. L15 verbatim ikut hilang bila user tidak pernah upload —
-jangan merekonstruksi dari nol, minta file-nya.
+Aturan: file di sini hanya diupdate dari paste/upload user, tidak pernah dikarang agent.

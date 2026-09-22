@@ -4,10 +4,17 @@
 
 ## Status terakhir
 
-- **L24 (landmark dead-knight + panji) SUDAH dikirim sebagai panduan, BELUM dikonfirmasi.**
-  Menunggu user balas "langkah 24 done" + screenshot.
+- **L24 (landmark dead-knight + panji): kode + hook TERKONFIRMASI ADA di file user,
+  menunggu screenshot ("langkah 24 done").**
 - L15–L23 DONE, semuanya terverifikasi via screenshot.
 - User menolak klaim "paritas selesai" (benar) → audit paritas dibuka, gap dikerjakan berurutan.
+- **Main.gd user DIARSIPKAN** di `arena-guide/project/Main.gd` (exact copy, 2026-09-22).
+- **BUG DITEMUKAN di file user**: `_flame_t += delta` salah indent (masuk blok wave-spawn)
+  → heartbeat macet → SEMUA animasi L19–L22 kemungkinan diam. Fix 1 baris sudah dikirim ke user.
+- `_draw_decor` user SUDAH diketahui → bayangan pohon (audit #4) tidak lagi blocked.
+- CATATAN PLATFORM: HEAD branch sesi bisa ter-reset ke base tiap turn (file kerja tetap ada
+  sebagai untracked). Alur commit yang aman: `git fetch` → `git reset --soft origin/branch`
+  → cek `git status` → `git add` → commit → push. Jangan pernah force-push.
 
 ## Project user (tidak ada di repo ini)
 
