@@ -1,7 +1,9 @@
-# EXACT COPY dari user (2026-09-22). L15–L29 lengkap.
-# L29: heartbeat _flame_t dedent fix TERKONFIRMASI user ("langkah 29 done").
 extends Node2D
-## Mystic Arena - Main DIAGONAL ala pygame (langkah 15).
+## Mystic Arena - Main DIAGONAL (L15–L31 full paste).
+## Viewport 1624x720. Arena 1280 kiri + panel bata 344 kanan (SidePanel.gd).
+## Butuh: res://scripts/SidePanel.gd (lihat arena-guide/scripts/SidePanel.gd).
+## Hud.gd: sembunyikan gold/wave/hint/skill buttons (pindah ke panel).
+
 
 const LevelDB = preload("res://scripts/LevelDB.gd")
 const HeroScene = preload("res://scenes/Hero.tscn")
@@ -16,9 +18,12 @@ const HERO_SPAWN = Vector2(250, 580)
 const INCOME_PER_SEC = 3.0
 const SHOP_BLUE = Vector2(340, 540)
 const SHOP_RED = Vector2(940, 180)
+const PANEL_X := 1280.0
+const PANEL_W := 344.0
+const VIEW_W := 1624.0
 
 const LANE_TOP_WP = [Vector2(90, 590), Vector2(85, 460), Vector2(95, 340), Vector2(120, 220), Vector2(170, 180), Vector2(240, 100), Vector2(380, 75), Vector2(550, 70), Vector2(720, 75), Vector2(880, 85), Vector2(1030, 110), Vector2(1180, 180)]
-const LANE_MID_WP = [Vector2(170, 550), Vector2(300, 420), Vector2(440, 320), Vector2(580, 400), Vector2(640, 360), Vector2(700, 320), Vector2(840, 400), Vector2(980, 300), Vector2(1110, 170)]
+const LANE_MID_WP = [Vector2(170, 550), Vector2(280, 450), Vector2(400, 380), Vector2(520, 350), Vector2(640, 340), Vector2(760, 330), Vector2(880, 300), Vector2(1000, 240), Vector2(1110, 170)]
 const LANE_BOT_WP = [Vector2(130, 630), Vector2(260, 650), Vector2(420, 660), Vector2(600, 660), Vector2(780, 655), Vector2(940, 645), Vector2(1070, 620), Vector2(1170, 500), Vector2(1190, 340), Vector2(1195, 250), Vector2(1180, 180)]
 const LANE_SMOOTH = [10, 8, 10]
 const RIVER_WP = [Vector2(0, 200), Vector2(150, 270), Vector2(350, 350), Vector2(640, 360), Vector2(930, 370), Vector2(1130, 450), Vector2(1280, 520)]
@@ -43,6 +48,7 @@ var decor: Array = []
 var lane_paths: Array = []
 var lane_hit: Array = []
 var river_pts := PackedVector2Array()
+var side_panel = null
 
 
 func _ready() -> void:
@@ -50,7 +56,7 @@ func _ready() -> void:
 	$Camera2D.position = Vector2(640, 360)
 	$Camera2D.limit_left = 0
 	$Camera2D.limit_top = 0
-	$Camera2D.limit_right = 1280
+	$Camera2D.limit_right = int(VIEW_W)
 	$Camera2D.limit_bottom = 720
 	print("[Main] Ready - tekan H (toko) / ESC (pause) untuk tes input.")
 	level_data = LevelDB.load_level(App.level_path())
@@ -75,6 +81,9 @@ func _ready() -> void:
 	hud = Hud.new()
 	add_child(hud)
 	hud.setup(self)
+	side_panel = load("res://scripts/SidePanel.gd").new()
+	add_child(side_panel)
+	side_panel.setup(self)
 	pause_layer = PauseMenu.new()
 	add_child(pause_layer)
 	pause_layer.setup(self)
@@ -180,6 +189,8 @@ func _draw() -> void:
 		draw_arc(pos, 22.0, 0.0, TAU, 32, ring, 3.0)
 		draw_circle(pos, 5.0, ring)
 	_draw22_fog()
+	if side_panel != null:
+		side_panel.draw_on(self)
 	if match_over:
 		draw_rect(ARENA, Color(0, 0, 0, 0.72))
 		var font: Font = ThemeDB.fallback_font
@@ -192,10 +203,6 @@ func _draw() -> void:
 		draw_string(font, Vector2((1280.0 - w2) * 0.5, 410.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color.WHITE)
 
 
-func _draw_terrain() ... (sampai sebelum _draw_terrain_details)
-# 2) Ganti SELURUH func _draw_terrain_details() ... (sampai sebelum _draw_river)
-# Hook: sudah dipanggil di _draw() — tidak perlu ubah urutan.
-#
 func _draw_terrain() -> void:
 	if map_theme.is_empty():
 		draw_rect(ARENA, Color("#1B2B20"))
@@ -340,35 +347,11 @@ func _draw_lanes() -> void:
 	if map_theme.is_empty():
 		return
 	var p1: Color = map_theme["p1"]
-	var p2: Color = map_theme["p2"]
-	var p3: Color = map_theme["p3"]
-	var p4: Color = map_theme["p4"]
-	var moss: Color = map_theme["p_moss"]
-	var crack: Color = map_theme["p_crack"]
 	for li in lane_paths.size():
 		var path: PackedVector2Array = lane_paths[li]
+		draw_polyline(path, Color8(12, 8, 12), 52.0)
 		draw_polyline(path, p1, 46.0)
-		var acc := 0.0
-		var next_mark := 8.0
-		var n := 0
-		for i in range(path.size() - 1):
-			var a: Vector2 = path[i]
-			var b: Vector2 = path[i + 1]
-			var seglen := a.distance_to(b)
-			if seglen < 1.0:
-				continue
-			var dir := (b - a) / seglen
-			while next_mark <= acc + seglen:
-				var t := (next_mark - acc) / seglen
-				var p: Vector2 = a.lerp(b, t)
-				_draw_cobble(p, dir.angle(), n, p1, p2, p3, p4, moss, crack)
-				if n % 3 == 0:
-					var pp := Vector2(-dir.y, dir.x)
-					_draw_border_stone(p + pp * 25.0)
-					_draw_border_stone(p - pp * 25.0)
-				n += 1
-				next_mark += 16.0
-			acc += seglen
+
 
 
 func _draw_cobble(p: Vector2, ang: float, n: int, p1: Color, p2: Color, p3: Color, p4: Color, moss: Color, crack: Color) -> void:
@@ -686,6 +669,10 @@ func _spawn_hero() -> void:
 
 
 func _on_left_click(point: Vector2) -> void:
+	if point.x >= PANEL_X:
+		if side_panel != null:
+			side_panel.handle_click(point)
+		return
 	if hero == null:
 		return
 	if hero.position.distance_to(point) <= 30.0:
@@ -1109,18 +1096,6 @@ func _draw17_shadow(p: Vector2, w: float) -> void:
 	draw_set_transform(p + Vector2(0, 2), 0.0, Vector2(1.0, 0.42))
 	draw_circle(Vector2.ZERO, w, Color(0, 0, 0, 0.45))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-func _draw17_slashes() yang sudah ada (blok L17).
-# Hook: sudah dipanggil dari _draw_decor17() — tidak ubah _draw() / urutan.
-#
-# Masalah: L17 lama garis 2px + highlight, panjang 10–18px → terlalu "darah tebal".
-# Pygame lane crack: draw_line 1px warna path_crack (170,36,61), span ~7px di tile.
-# Perubahan:
-#   - count 42 → 28 (lebih jarang, mirip density crack bata L23)
-#   - panjang half-span 2.5–4.5 (total ~5–9px)
-#   - width 1.0 saja, warna Color8(170, 36, 61) = Forest path_crack
-#   - hilangkan garis highlight kedua (yang bikin tebal)
-#   - offset lateral -10..10 (sedikit lebih ke dalam lane)
 
 # ═══════════════════════════════════════════
 # LANGKAH 28 — ganti _draw17_slashes saja

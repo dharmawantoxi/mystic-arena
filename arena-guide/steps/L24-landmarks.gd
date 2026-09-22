@@ -1,4 +1,4 @@
-# L24 — landmark dead-knight abaddon + panji (paritas bake) — PENDING konfirmasi user
+# L24 — landmark dead-knight abaddon + panji (paritas bake) — DONE
 # SNIPPET: tempel di AKHIR Main.gd.
 # Hook: _draw_decor24() SETELAH _draw_decor16() SEBELUM _draw_shops().
 # Clearance menumpang _decor16_ok (min_lane 74) + posisi L16 (anti-tumpuk).
