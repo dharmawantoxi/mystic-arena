@@ -8,7 +8,7 @@
   menunggu screenshot ("langkah 24 done").**
 - L15–L23 DONE, semuanya terverifikasi via screenshot.
 - User menolak klaim "paritas selesai" (benar) → audit paritas dibuka, gap dikerjakan berurutan.
-- **Main.gd user DIARSIPKAN** di `arena-guide/project/Main.gd` (exact copy, 2026-09-22).
+- **Main.gd + Minion.gd user DIARSIPKAN** di `arena-guide/project/` (exact copy, 2026-09-22).
 - **BUG DITEMUKAN di file user**: `_flame_t += delta` salah indent (masuk blok wave-spawn)
   → heartbeat macet → SEMUA animasi L19–L22 kemungkinan diam. Fix 1 baris sudah dikirim ke user.
 - `_draw_decor` user SUDAH diketahui → bayangan pohon (audit #4) tidak lagi blocked.
@@ -98,5 +98,6 @@ particles(L21), loop slots, fog(L22), overlay match_over (VICTORY/DEFEAT, TERAKH
 
 ## Yang BELUM ada di arsip
 
-- File utuh project user (Main.gd, Minion.gd, Tower/Hero/Shop/HUD...). Minta user attach
-  file `.gd` ke chat → simpan exact copy di `arena-guide/project/` + catat di sini.
+- Main.gd ✅ + Minion.gd ✅ tersimpan di `arena-guide/project/` (exact copy 2026-09-22).
+- Masih kurang: script/scene lain (Tower/Hero/Shop/HUD/Nexus/LevelDB/...).
+  Minta user attach file `.gd` → simpan exact copy di `arena-guide/project/`.
