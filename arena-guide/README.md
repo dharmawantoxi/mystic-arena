@@ -15,7 +15,7 @@ sendiri: `D:\mystic-godot-471`, Godot 4.7.1, renderer Mobile, 1280x720, target d
 
 - `progress.md` — status terakhir, geometri, urutan `_draw()`, jejak L15–L24, audit paritas.
 - `steps/L15-note.md` — L15 (diagonal penuh) tidak tersimpan verbatim; baca catatannya.
-- `steps/L16-decor4.gd` … `steps/L29-heartbeat-fix.gd` — snippet per langkah (final, sudah termasuk fix).
+- `steps/L16-decor4.gd` … `steps/L30-lane-clean.gd` — snippet per langkah (final, sudah termasuk fix).
 - `project/` — (kosong) tempat salinan exact script user BILA user upload/attach file `.gd` ke chat.
 
 ## Aturan sesi (jangan dilanggar)

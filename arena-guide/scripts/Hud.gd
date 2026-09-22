@@ -19,6 +19,7 @@ func setup(main_ref) -> void:
 	_hint_l = _make_label(764, 616, 500, 32, 15)
 	_hint_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hint_l.text = "Klik hero = pilih | Klik map = jalan | Klik slot biru = bangun (100g)"
+	_hint_l.visible = false
 	var keys: Array = ["Q", "W", "E", "R"]
 	for i in 4:
 		var b := Button.new()
