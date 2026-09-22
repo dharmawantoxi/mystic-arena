@@ -1,4 +1,4 @@
-# L27 — ground micro-detail density + palette fix (paritas bake) — SNIPPET
+# L27 — ground micro-detail density + palette fix (paritas bake) — DONE
 # BUKAN append: GANTI dua fungsi yang sudah ada di Main.gd.
 # 1) Ganti SELURUH func _draw_terrain() ... (sampai sebelum _draw_terrain_details)
 # 2) Ganti SELURUH func _draw_terrain_details() ... (sampai sebelum _draw_river)
