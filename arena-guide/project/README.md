@@ -1,9 +1,7 @@
 # project/ — salinan exact script user
 
-- `Main.gd` ✅ exact copy dari user (2026-09-22 **pasca-L28**).
-  L15–L28 lengkap (terrain density, dead trees, shadows, landmarks, slash polish).
-  **REGRESI:** `_flame_t += delta` kembali ter-indent di dalam `if wave_timer`
-  → animasi torch/rune/firefly/fog hanya jalan saat wave spawn. Fix 1-baris di L29.
+- `Main.gd` ✅ exact copy kondisi **pasca-L29** (2026-09-22).
+  L15–L28 map parity + L29 heartbeat fix (`_flame_t += delta` di level `_process`).
 - `Minion.gd` ✅ exact copy dari user (2026-09-22).
 - Masih menunggu: script lain (Tower/Hero/Shop/HUD/Nexus/LevelDB/...).
 

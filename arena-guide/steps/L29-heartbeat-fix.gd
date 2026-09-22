@@ -1,4 +1,4 @@
-# L29 — fix regresi heartbeat (dedent _flame_t) — SNIPPET
+# L29 — fix regresi heartbeat (dedent _flame_t) — DONE
 # BUKAN append: perbaiki INDENT di func _process.
 # Bug: `_flame_t += delta` ikut Tab di dalam `if wave_timer <= 0.0`
 #   → torch/rune/asap/firefly/fog hanya update saat wave spawn.

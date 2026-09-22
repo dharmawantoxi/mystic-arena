@@ -4,15 +4,13 @@
 
 ## Status terakhir
 
-- **Main.gd user DIARSIPKAN ulang** di `arena-guide/project/Main.gd` (exact copy
-  **pasca-L28**, 2026-09-22). L15–L28 lengkap.
-- **REGRESI HEARTBEAT terdeteksi di paste user:** `_flame_t += delta` lagi
-  ter-nest di dalam `if wave_timer <= 0.0` (sama bug yang pernah difix).
-  → L29 fix SIAP (dedent 1 baris).
-- **AUDIT PARITAS VISUAL MAP #1–#6 SELESAI** (L23–L28, screenshot OK).
-- L25 seed di file user = **3500** (bukan 2500 snippet awal) — dibiarkan, placement
-  tetap valid DIRE.
+- **L29 (heartbeat fix) DONE** — user konfirmasi 2026-09-22.
+- **Main.gd DIARSIPKAN** di `arena-guide/project/Main.gd` = kondisi **pasca-L29**
+  (L15–L29 lengkap, heartbeat dedent benar).
+- **AUDIT PARITAS VISUAL MAP #1–#6 SELESAI** (L23–L28 + screenshot).
+- Animasi L19–L22 (torch/rune/asap/firefly/fog) harus hidup tiap 0.15 dtk lagi.
 - Minion.gd arsip tetap (2026-09-22).
+- **Tidak ada langkah map-bake wajib yang terbuka.**
 - CATATAN PLATFORM: `git fetch` → `git reset --soft origin/branch` → add → commit → push.
   Jangan force-push.
 
@@ -27,10 +25,12 @@
 - SHOP_BLUE=(340,540) SHOP_RED=(940,180)
 - threshold_y(x)=200+320x/1280
 
-## Member penting (pasca-L28)
+## Member penting (pasca-L29)
 
 - `_decor16/21/22/23/24/25_cache`, `_flame_t`/`_flame_frame`, `_anim_t`
-- MapTheme forest `d3` dipakai L27
+- Heartbeat `_process`: `_flame_t += delta` di level fungsi (1 Tab), tiap 0.15 →
+  frame+1, `_anim_t+=9.0`, `queue_redraw()`
+- L25 seed di file user = **3500**
 - `_draw17_slashes` L28: 28× crack 1px Color8(170,36,61)
 
 ## Urutan `_draw()` final
@@ -47,11 +47,11 @@ shops, shop_fx, particles, slots, fog, match_over overlay
 |---|---|---|
 | L15–L23 | diagonal + ambient + lane bata | DONE |
 | L24 | landmark dead-knight + panji | DONE |
-| L25 | dead trees DIRE twisted (seed 3500 di file user) | DONE |
+| L25 | dead trees DIRE twisted (seed 3500) | DONE |
 | L26 | bayangan dekor lama | DONE |
 | L27 | terrain density + t2/d3 | DONE |
 | L28 | slash → crack 1px | DONE |
-| L29 | fix regresi heartbeat dedent `_flame_t` | SIAP |
+| L29 | fix heartbeat dedent `_flame_t` | DONE |
 
 ## Audit paritas visual
 
@@ -59,8 +59,11 @@ shops, shop_fx, particles, slots, fog, match_over overlay
 |---|---|---|
 | 1–6 | lane/landmark/dead tree/shadow/terrain/slash | DONE |
 
-## Setelah L29
+**→ Sesi port map visual L15–L29 SELESAI.**
 
-- Animasi L19–L22 harus hidup lagi tiap 0.15 dtk.
-- Opsional: dark tree density pygame (~45) vs plan 12.
-- Opsional: arsip script lain (Tower/Hero/HUD/...).
+## Opsional berikutnya (bukan audit #1–#6)
+
+1. Dark tree density pygame (~45) vs plan user (12) — gap terpisah.
+2. Arsip script lain: Tower/Hero/Shop/HUD/Nexus/LevelDB (minta paste).
+3. Paritas unit/combat/FX/UI di luar map bake.
+4. Stop — map bake sudah cukup.

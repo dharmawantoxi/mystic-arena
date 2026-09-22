@@ -1,5 +1,5 @@
-# EXACT COPY dari user (diterima via chat, 2026-09-22 pasca-L28). JANGAN edit manual —
-# kondisi = L15–L28 lengkap. CATATAN: _flame_t += delta TER-NEST di if wave (REGRESI heartbeat).
+# EXACT COPY dari user (2026-09-22). L15–L29 lengkap.
+# L29: heartbeat _flame_t dedent fix TERKONFIRMASI user ("langkah 29 done").
 extends Node2D
 ## Mystic Arena - Main DIAGONAL ala pygame (langkah 15).
 
@@ -721,7 +721,7 @@ func _process(delta: float) -> void:
 		wave_count += 1
 		_spawn_wave(wave_count)
 		wave_timer = wave_interval
-		_flame_t += delta
+	_flame_t += delta
 	if _flame_t >= 0.15:
 		_flame_t = 0.0
 		_flame_frame = (_flame_frame + 1) % 4
