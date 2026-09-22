@@ -4,42 +4,29 @@
 
 ## Status terakhir
 
-- **L30 (lane rapi + hilangkan hint text): SNIPPET SIAP** — menunggu user tempel.
-  Keluhan user: lane patah + tulisan menghalangi map.
-  Fix: mid WP smooth, hapus cobble di bawah L23, sembunyikan Hud hint.
-- L29 heartbeat DONE. `project/Main.gd` = pasca-L29.
-- Audit visual map #1–#6 DONE (L23–L28).
-- CATATAN PLATFORM: `git fetch` → `git reset --soft origin/branch` → add → commit → push.
-  Jangan force-push.
+- **L31 (panel kanan bata + STATUS/HERO/SKILL/TACTICAL): SNIPPET SIAP.**
+  User minta panel kanan seperti pygame (`mobile/sidepanel.py`).
+  Viewport 1624x720, arena 1280 kiri, rail bata 344 kanan.
+  Tactical = stub visual dulu (logika penuh belakangan).
+- L30 lane-clean SIAP (mid smooth + hide hint) — boleh digabung dengan L31.
+- L29 heartbeat DONE. Audit map #1–#6 DONE.
+- `project/Main.gd` = pasca-L29 (belum L30/L31).
+- CATATAN PLATFORM: fetch → reset --soft origin/branch → add → commit → push.
 
-## Project user
+## Geometri panel (pygame paritas)
 
-- Godot 4.7.1 Mobile 1280x720, `D:\\mystic-godot-471`.
+- VIEW 1624x720; ARENA 0..1280; PANEL_X=1280 PANEL_W=344
+- Latar bata 16px path_stone + outline
+- Zona: pause y14 | STATUS ~96 | HEROES | SKILLS QWER | TACTICAL 5 tombol
 
-## Geometri (setelah L30)
-
-- BASE/SHOP/threshold sama L15.
-- **LANE_MID_WP baru (L30):** (170,550)(280,450)(400,380)(520,350)(640,340)(760,330)(880,300)(1000,240)(1110,170)
-  — hilangkan zig-zag 65° di mid lama.
-- TOP/BOT WP tidak berubah.
-- `_draw_lanes`: hanya polyline base 52 + p1 46; cobble tidak dipanggil (L23 bata menutupi).
-
-## Urutan `_draw()` final
-
-```
-terrain, terrain_details, river, decor18, river_runes, lanes, decor23,
-base_plates, border_wall, decor26, decor, decor25, decor17, decor16, decor24,
-shops, shop_fx, particles, slots, fog, match_over
-```
-
-## Jejak langkah
+## Jejak
 
 | Step | Isi | Status |
 |---|---|---|
-| L15–L28 | map parity bake | DONE |
-| L29 | heartbeat fix | DONE |
-| L30 | mid lane smooth + no cobble + hide HUD hint | SIAP |
+| L15–L29 | map parity + heartbeat | DONE |
+| L30 | mid lane smooth + no cobble + hide hint | SIAP |
+| L31 | side panel brick + status/hero/skill/tactical | SIAP |
 
-## Audit paritas visual #1–#6
+## File baru
 
-Semua DONE. L30 = polish geometri/UX atas keluhan user.
+- `arena-guide/scripts/SidePanel.gd` + `steps/L31-side-panel.gd`

@@ -20,6 +20,10 @@ func setup(main_ref) -> void:
 	_hint_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_hint_l.text = "Klik hero = pilih | Klik map = jalan | Klik slot biru = bangun (100g)"
 	_hint_l.visible = false
+	# L31: GOLD/WAVE/skill pindah ke panel kanan
+	_gold_l.visible = false
+	_wave_l.visible = false
+	_hero_l.visible = false
 	var keys: Array = ["Q", "W", "E", "R"]
 	for i in 4:
 		var b := Button.new()
@@ -30,6 +34,8 @@ func setup(main_ref) -> void:
 		add_child(b)
 		b.pressed.connect(_on_skill_btn.bind(i))
 		_btns.append(b)
+	for b in _btns:
+		b.visible = false
 
 
 func _make_label(x: float, y: float, w: float, h: float, fsize: int) -> Label:
