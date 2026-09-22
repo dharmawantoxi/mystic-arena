@@ -1,6 +1,5 @@
 # EXACT COPY dari user (diterima via chat, 2026-09-22). JANGAN edit manual —
-# update hanya dengan paste baru dari user. Termasuk bug heartbeat L19 (_flame_t
-# salah indent, lihat progress.md) karena itu kondisi real file user saat diarsipkan.
+# kondisi = setelah user fix bug heartbeat (dedent _flame_t += delta).
 extends Node2D
 ## Mystic Arena - Main DIAGONAL ala pygame (langkah 15).
 
@@ -688,7 +687,7 @@ func _process(delta: float) -> void:
 		wave_count += 1
 		_spawn_wave(wave_count)
 		wave_timer = wave_interval
-		_flame_t += delta
+	_flame_t += delta
 	if _flame_t >= 0.15:
 		_flame_t = 0.0
 		_flame_frame = (_flame_frame + 1) % 4

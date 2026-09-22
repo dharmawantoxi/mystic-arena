@@ -9,8 +9,8 @@
 - L15–L23 DONE, semuanya terverifikasi via screenshot.
 - User menolak klaim "paritas selesai" (benar) → audit paritas dibuka, gap dikerjakan berurutan.
 - **Main.gd + Minion.gd user DIARSIPKAN** di `arena-guide/project/` (exact copy, 2026-09-22).
-- **BUG DITEMUKAN di file user**: `_flame_t += delta` salah indent (masuk blok wave-spawn)
-  → heartbeat macet → SEMUA animasi L19–L22 kemungkinan diam. Fix 1 baris sudah dikirim ke user.
+- **BUG heartbeat DIPERBAIKI user** (dedent `_flame_t += delta` ke 1 Tab, 2026-09-22);
+  arsip Main.gd = kondisi setelah fix. Animasi L19–L22 seharusnya hidup kembali.
 - `_draw_decor` user SUDAH diketahui → bayangan pohon (audit #4) tidak lagi blocked.
 - CATATAN PLATFORM: HEAD branch sesi bisa ter-reset ke base tiap turn (file kerja tetap ada
   sebagai untracked). Alur commit yang aman: `git fetch` → `git reset --soft origin/branch`
