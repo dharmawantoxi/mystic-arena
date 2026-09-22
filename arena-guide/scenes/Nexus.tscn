@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://digqtix7vmd0w"]
+
+[ext_resource type="Script" uid="uid://dhkwnm8o7frff" path="res://scripts/Nexus.gd" id="1_i7na7"]
+
+[node name="Nexus" type="Node2D" unique_id=1463975204]
+script = ExtResource("1_i7na7")
