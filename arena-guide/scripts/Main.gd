@@ -1452,7 +1452,7 @@ func _gen_decor25() -> void:
 	if _decor24_cache.is_empty():
 		_gen_decor24()
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 3500
+	rng.seed = 2500
 	var lanes: Array = [
 		_curved_path(LANE_TOP_WP, 10),
 		_curved_path(LANE_MID_WP, 8),
@@ -1483,7 +1483,8 @@ func _draw25_dead_tree(p: Vector2, size: float) -> void:
 	var shadow := Color(0.0, 0.0, 0.0, 80.0 / 255.0)
 	var h := s * 0.5
 	var q3 := float(floori(s / 3.0))
-	draw_set_transform(Vector2(p.x, p.y + q3 - 2.0 + q3 * 0.5), 0.0, Vector2(1.0, q3 / (h * 2.0)))
+	# pygame: ellipse (x-size//2, y+size//3-2, size, size//3) → pusat + scale Y
+	draw_set_transform(Vector2(p.x, p.y + q3 - 2.0 + q3 * 0.5), 0.0, Vector2(1.0, q3 / maxf(h * 2.0, 0.001)))
 	draw_circle(Vector2.ZERO, h, shadow)
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	var tw := 4.0
@@ -1502,6 +1503,7 @@ func _draw25_dead_tree(p: Vector2, size: float) -> void:
 		var w: float = b[2]
 		draw_line(a, e2, d1, w)
 		draw_line(a, e2, ol, 1.0)
+		# tip cabang: ganti random.randint pygame → hash stabil dari posisi
 		var jx := float((int(p.x) * 7 + int(p.y) * 13 + int(s)) % 7 - 3)
 		var jy := float(-((int(p.x) * 5 + int(p.y) * 11 + int(s)) % 5))
 		draw_line(e2, e2 + Vector2(jx, jy), d1, 1.0)
@@ -1511,7 +1513,7 @@ func _draw_decor25() -> void:
 		_gen_decor25()
 	for e in _decor25_cache:
 		_draw25_dead_tree(e[0], float(e[1]))
-		
+
 # ═══════════════════════════════════════════
 # LANGKAH 26 — bayangan hitam bawah dekor lama (paritas bake)
 # ═══════════════════════════════════════════
