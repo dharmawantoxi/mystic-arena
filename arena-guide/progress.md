@@ -4,16 +4,14 @@
 
 ## Status terakhir
 
-- **L28 (polish slash L17 → crack 1px): SNIPPET SIAP — ganti `_draw17_slashes` saja.**
-- **L27 (terrain density): DONE** — screenshot user 2026-09-22 (wave 1, GOLD 515,
-  dead trees DIRE, landmark+panji, bayangan, lane bata, terrain padat).
-- **L24 + L25 + L26 DONE** (user konfirmasi + screenshot L27 memverifikasi semuanya).
-- L15–L23 DONE.
-- Audit paritas visual #1–#5 DONE; #6 = L28 (polish opsional, tapi disiapkan).
-- **Main.gd + Minion.gd user DIARSIPKAN** di `arena-guide/project/` (exact copy, 2026-09-22,
-  pre-L25). Minta re-paste Main.gd setelah L28 untuk arsip final.
+- **AUDIT PARITAS VISUAL MAP #1–#6 SELESAI** (L15–L28, screenshot L28 2026-09-22
+  WAVE 2 / GOLD 562 — crack lane tipis 1px path_crack, dead trees, landmark+panji,
+  bayangan, terrain density, lane bata semua tampil).
+- L15–L28 semua DONE.
+- **Main.gd + Minion.gd user DIARSIPKAN** di `arena-guide/project/` (exact copy 2026-09-22,
+  kondisi **pre-L25**). Minta user paste ulang `Main.gd` untuk arsip final pasca-L28.
 - **BUG heartbeat DIPERBAIKI user** (dedent `_flame_t += delta`).
-- CATATAN PLATFORM: HEAD branch sesi bisa ter-reset ke base tiap turn. Alur commit aman:
+- CATATAN PLATFORM: HEAD branch sesi bisa ter-reset. Alur commit aman:
   `git fetch` → `git reset --soft origin/branch` → `git add` → commit → push.
   Jangan force-push.
 
@@ -36,9 +34,10 @@
 
 - `slots`, `_decor16/21/22/23/24/25_cache`, `_flame_t`/`_flame_frame`, `_anim_t`
 - Heartbeat `_process` 0.15 dtk → frame+1, `_anim_t+=9.0`, `queue_redraw()`
-- MapTheme forest punya `d3` (dipakai L27)
+- MapTheme forest punya `d3` (L27)
+- `_draw17_slashes` pasca-L28: 28 crack 1px Color8(170,36,61), half 2.5–4.5
 
-## Urutan `_draw()` user (setelah L26)
+## Urutan `_draw()` user (final L26+)
 
 ```
 terrain, terrain_details, river, decor18, river_runes(L20), lanes, decor23,
@@ -55,8 +54,8 @@ overlay match_over (TERAKHIR)
 | L24 | landmark dead-knight + panji (seed 2400) | DONE |
 | L25 | pohon mati DIRE twisted 2-tone (seed 2500) | DONE |
 | L26 | bayangan hitam bawah dark_tree/bush/rock/grave | DONE |
-| L27 | terrain density + t2 fix + d3 micro-detail | DONE (screenshot) |
-| L28 | ganti `_draw17_slashes` → crack 1px path_crack | SIAP tempel |
+| L27 | terrain density + t2 fix + d3 micro-detail | DONE |
+| L28 | `_draw17_slashes` → crack 1px path_crack | DONE |
 
 ## Audit paritas visual (bake `godot/assets/maps/forest.png`)
 
@@ -67,9 +66,18 @@ overlay match_over (TERAKHIR)
 | 3 | Pohon mati twisted dire | DONE (L25) |
 | 4 | Bayangan hitam bawah dekor | DONE (L26) |
 | 5 | Ground micro-detail density | DONE (L27) |
-| 6 | Slash L17 kepanjangan vs crack 1px | L28 SIAP |
+| 6 | Slash L17 → crack 1px | DONE (L28) |
 
-## Setelah audit map selesai
+**→ Audit map visual SELESAI.** Tidak ada gap audit terbuka.
 
-- Opsional: paste ulang Main.gd → arsip `project/Main.gd`
-- Sisa di luar audit map: unit/FX/UI lain (bukan fokus arena-guide L15+)
+## Sisa di luar audit map (belum dikerjakan di sesi ini)
+
+- Arsip `project/Main.gd` masih pre-L25 — minta paste ulang.
+- Script lain belum diarsip: Tower/Hero/Shop/HUD/Nexus/LevelDB (ada draft di `scripts/`).
+- Paritas unit/combat/FX/UI (bukan fokus L15–L28).
+- Dark tree density pygame (45 placement) vs plan user (12) — gap terpisah, bukan #1–#6.
+
+## Referensi pygame (ringkas)
+
+- `map_components/_bundle.py`: terrain 4971+, dead trees 6199+, landmark ~7060,
+  lane cobble 5200+, path_crack Forest (170,36,61), DEAD_TREE_1/2 (28,20,18)/(55,42,35).

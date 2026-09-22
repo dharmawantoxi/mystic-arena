@@ -1,4 +1,4 @@
-# L28 — polish slash L17 → crack 1px tipis (paritas bake) — SNIPPET
+# L28 — polish slash L17 → crack 1px tipis (paritas bake) — DONE
 # BUKAN append: GANTI hanya func _draw17_slashes() yang sudah ada (blok L17).
 # Hook: sudah dipanggil dari _draw_decor17() — tidak ubah _draw() / urutan.
 #
