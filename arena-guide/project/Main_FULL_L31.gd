@@ -203,10 +203,6 @@ func _draw() -> void:
 		draw_string(font, Vector2((1280.0 - w2) * 0.5, 410.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color.WHITE)
 
 
-func _draw_terrain() ... (sampai sebelum _draw_terrain_details)
-# 2) Ganti SELURUH func _draw_terrain_details() ... (sampai sebelum _draw_river)
-# Hook: sudah dipanggil di _draw() — tidak perlu ubah urutan.
-#
 func _draw_terrain() -> void:
 	if map_theme.is_empty():
 		draw_rect(ARENA, Color("#1B2B20"))
@@ -1100,18 +1096,6 @@ func _draw17_shadow(p: Vector2, w: float) -> void:
 	draw_set_transform(p + Vector2(0, 2), 0.0, Vector2(1.0, 0.42))
 	draw_circle(Vector2.ZERO, w, Color(0, 0, 0, 0.45))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-
-func _draw17_slashes() yang sudah ada (blok L17).
-# Hook: sudah dipanggil dari _draw_decor17() — tidak ubah _draw() / urutan.
-#
-# Masalah: L17 lama garis 2px + highlight, panjang 10–18px → terlalu "darah tebal".
-# Pygame lane crack: draw_line 1px warna path_crack (170,36,61), span ~7px di tile.
-# Perubahan:
-#   - count 42 → 28 (lebih jarang, mirip density crack bata L23)
-#   - panjang half-span 2.5–4.5 (total ~5–9px)
-#   - width 1.0 saja, warna Color8(170, 36, 61) = Forest path_crack
-#   - hilangkan garis highlight kedua (yang bikin tebal)
-#   - offset lateral -10..10 (sedikit lebih ke dalam lane)
 
 # ═══════════════════════════════════════════
 # LANGKAH 28 — ganti _draw17_slashes saja
