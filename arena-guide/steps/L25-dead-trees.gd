@@ -1,4 +1,4 @@
-# L25 — pohon mati twisted 2-tone + bayangan (paritas bake) — SNIPPET
+# L25 — pohon mati twisted 2-tone + bayangan (paritas bake) — DONE
 # SNIPPET: tempel di AKHIR Main.gd (setelah blok L24).
 # Hook di _draw(): panggil _draw_decor25() SETELAH _draw_decor() SEBELUM _draw_decor17().
 #   urutan: ... border_wall, decor, decor25, decor17, decor16, decor24, shops ...
