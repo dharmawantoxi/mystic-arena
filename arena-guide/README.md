@@ -23,5 +23,7 @@ sendiri: `D:\mystic-godot-471`, Godot 4.7.1, renderer Mobile, 1280x720, target d
 - 1 langkah per giliran; user entri manual sendiri.
 - Jangan ubah/commit/push repo kecuali user minta eksplisit.
   Pengecualian: folder `arena-guide/` boleh diupdate tiap langkah selesai (commit + push
-  HANYA ke branch sesi `arena/01a0ae7d-mystic-arena`, tidak pernah ke `main`).
+  HANYA ke branch sesi `arena/01a0cbd1-mystic-arena` — branch sesi ini, tidak pernah ke `main`).
 - Setelah tiap langkah selesai: tulis blok SUMMARY di chat (self-contained, copy-paste aman).
+- **KONVENSI DELIVERY 2026-09-23 (permanen): SEMUA file yang diubah SELALU dikirim sebagai `https://raw.githubusercontent.com/.../arena/01a0cbd1-mystic-arena/...` biar user tinggal buka → Ctrl+A → copy paste manual.** Berlaku untuk semua chat baru di branch ini — user tidak perlu menjelaskan lagi. Contoh: `Shop.gd` → `.../arena-guide/scripts/Shop.gd`, `Main.gd` → `.../project/Main_FULL_L31.gd`.
+- **SCOPE 2026-09-23: SAMAKAN SEMUA LOGIKA GAME DENGAN PYGAME (`_core.py` / `_entity.py` / `_system.py` / `hero_items.py` / `hero_balance.py` / `levels/`), RENDER VISUAL TIDAK DISENTUH (user update sendiri).** Mulai L37 ke atas, ubahan hanya logic (damage/armor/crit/lifesteal/wave/gold/level), tidak ada ubahan `draw_*`.
