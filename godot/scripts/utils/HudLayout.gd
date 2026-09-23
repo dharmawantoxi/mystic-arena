@@ -213,6 +213,72 @@ static func format_gold_rate(rate: float) -> String:
 	return ("-" if neg else "") + _strip_rate(s)
 
 
+## True bila bit tanda double ini 1 (termasuk -0.0 dan nilai yang membulat
+## ke nol). Python memakai tanda nilai ASLI saat memformat, bukan tanda hasil
+## pembulatan: f"{-0.004:,.2f}" == "-0.00" sementara f"{int(round(-0.004)):,}"
+## == "0" — jadi kedua jalur format uang harus memutuskan tandanya sendiri.
+static func has_sign_bit(value: float) -> bool:
+	return _double_bits(value) < 0
+
+
+## Bulatkan nilai biner EKSAK ke `digits` desimal dengan ties-to-even dan
+## kembalikan hasil TERKALI 10^digits (integer). Ini padanan CPython
+## `round(x, d)` / f"{x:.df}" yang sebenarnya: angka 10^d dihitung lewat
+## integer 64-bit (`|x| * 10^d = m * 5^d * 2^(e+d)`), BUKAN lewat perkalian
+## float, jadi tidak ada double-rounding. `format_gold_rate` memakai triks
+## yang sama khusus untuk 1 desimal; fungsi ini versi umum yang dipakai
+## `TopupCurrency.format_price` (`.2f` + `int(round())` harga mata uang).
+## Tanpa ini, angka yang jatuh tepat di ,5 bisa berbeda engine (2,5 -> 3
+## alih-alih 2) dan satu paket jadi tampil dengan harga berbeda di dua mesin.
+static func round_half_even_scaled(value: float, digits: int) -> int:
+	if is_nan(value) or is_inf(value):
+		return 0 # harga tidak pernah inf/nan; pemanggil tidak menampilkannya
+	var bits := _double_bits(value)
+	var neg := bits < 0
+	var exp := int((bits >> 52) & 0x7FF)
+	var mant := bits & 0xFFFFFFFFFFFFF
+	var m: int
+	var e: int
+	if exp == 0:
+		m = mant # subnormal (m=0 -> nol)
+		e = -1074
+	else:
+		m = mant | 0x10000000000000
+		e = exp - 1075
+	if m == 0:
+		return 0
+	var d := m
+	for _i in maxi(0, digits):
+		d *= 5
+	var k := e + maxi(0, digits)
+	var res: int
+	if k >= 0:
+		var room := 0
+		if k < 63:
+			room = 9223372036854775807 >> k
+		if k >= 63 or d > room:
+			# Di luar jangkauan int64 (> ~1e18): fallback format engine.
+			res = int(round(value * pow(10.0, float(maxi(0, digits)))))
+		else:
+			res = d << k
+	else:
+		var sh := -k
+		if sh >= 63:
+			res = 0 # |value|*10^d < 2^-7 -> bagian bulatnya 0 (frac < 1/2)
+		else:
+			var q0: int = d >> sh
+			var r: int = d - (q0 << sh)
+			var twice := r * 2
+			var half := 1 << sh
+			if twice > half:
+				res = q0 + 1
+			elif twice < half:
+				res = q0
+			else:
+				res = q0 if q0 % 2 == 0 else q0 + 1
+	return -res if neg else res
+
+
 ## rstrip("0").rstrip(".") untuk string "%.1f".
 static func _strip_rate(s: String) -> String:
 	if s.ends_with("0"):

@@ -194,6 +194,57 @@ func cover_arena(c: Control) -> void:
 	c.offset_right = f.position.x + f.size.x
 	c.offset_bottom = f.position.y + f.size.y
 
+# ══════════════════════════════════════════════════════════
+#  SAFE AREA + GETAR (port platform_utils.get_safe_area / .vibrate)
+# ══════════════════════════════════════════════════════════
+
+## Paritas `platform_utils._SAFE_MARGIN_LOGICAL = 28`: tepi kiri/kanan aman
+## dari poni dan gesture bar saat fullscreen HP. Atas 10 px, bawah 10 px
+## (pygame menulis `LOGICAL_HEIGHT - 20` = 10 + 10).
+const SAFE_MARGIN_LOGICAL := 28.0
+const SAFE_TOP := 10.0
+const SAFE_BOTTOM := 10.0
+
+
+## Padanan `platform_utils.TOUCH_MODE` = `IS_ANDROID or MYSTIC_FORCE_TOUCH=1`.
+## Pemilik keputusannya AppShell (port `main.py`), dibaca ulang di sini supaya
+## HUD/overlay punya SATU sumber.
+func touch_mode() -> bool:
+	return AppShell.touch_mode()
+
+
+## Rect aman dalam koordinat logis 1280x720 — paritas `get_safe_area()`:
+## di luar mode sentuh = arena penuh (0,0,1280,720); di HP =
+## (28, 10, 1280-56, 720-20).
+##
+## CATATAN: pygame TIDAK membaca data poni asli (Android API
+## `WindowInsets`), hanya margin tetap — jadi "poni/cutout" ditangani lewat
+## asumsi 28 px. Godot sengaja TIDAK menambah `DisplayServer.screen_get_*`
+## di atasnya: aturan proyek adalah paritas, bukan melampaui pygame. Titik
+## penyatuannya ada di satu fungsi ini, jadi kalau nanti mau ditingkatkan,
+## hanya sini yang diubah.
+func safe_area() -> Rect2:
+	if not touch_mode():
+		return Rect2(Vector2.ZERO, DESIGN_SIZE)
+	return Rect2(SAFE_MARGIN_LOGICAL, SAFE_TOP,
+		DESIGN_SIZE.x - SAFE_MARGIN_LOGICAL * 2.0,
+		DESIGN_SIZE.y - SAFE_TOP - SAFE_BOTTOM)
+
+
+## Getar pendek sebagai umpan balik tombol (paritas `platform_utils.vibrate`
+## — dipakai main.py: 30 ms untuk TAHAN tombol jeda, 15 ms untuk tombol panel
+## kanan). Godot 4: `Input.vibrate_handheld`, hanya nyata di Android/iOS.
+## Return false di luar mode sentuh, persis `if not IS_ANDROID: return False`.
+## Deviasi mesin: pygame mengembalikan False kalau `getSystemService` tidak
+## memberi vibrator; Godot tidak bisa menanya alatnya, jadi True di sini
+## berarti "permintaan diteruskan ke engine".
+func vibrate(ms: int) -> bool:
+	if not touch_mode():
+		return false
+	Input.vibrate_handheld(ms)
+	return true
+
+
 func has_side_panel() -> bool:
 	if viewport_size.x <= viewport_size.y:
 		return false

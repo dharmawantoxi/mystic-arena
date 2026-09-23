@@ -479,5 +479,18 @@ func _report_stats() -> void:
 	if int(s["main"]) == 0 and tolak == 0:
 		return
 	print("[AudioManager] suara tempur 10 dtk: main %d · ditolak %d (jeda %d / anggaran %d / kanal %d)"
-		% [s["main"], tolak, s["tolak_jeda"], s["tolak_anggaran"], s["tolak_kanal"]])
+			% [s["main"], tolak, s["tolak_jeda"], s["tolak_anggaran"], s["tolak_kanal"]])
 	_combat_stats = {"main": 0, "tolak_jeda": 0, "tolak_anggaran": 0, "tolak_kanal": 0}
+
+
+## Statistik suara tempur untuk overlay debug. Padanan `_stats` milik
+## combat_audio (mobile/combat_audio.py:308-313) TANPA reset — format
+## stringnya hidup di SATU tempat: `DebugOverlay.line_audio()`.
+func combat_stats() -> Dictionary:
+	var s := _combat_stats
+	return {
+		"main": int(s["main"]),
+		"tolak_jeda": int(s["tolak_jeda"]),
+		"tolak_anggaran": int(s["tolak_anggaran"]),
+		"tolak_kanal": int(s["tolak_kanal"]),
+	}

@@ -50,9 +50,9 @@ untuk menyesuaikan Godot. Semua perbaikan dilakukan di sisi Godot.
 | 15 | Konstanta hardcoded | langkah [6/7] sync tool | **PASS** (FIRST_WAVE 300, RESPAWN 600, HUNT 900, AGGRO 250, RETREAT 0.20/0.80, FPS 60) |
 | 16 | Aset visual bake | `tools/visual_parity_audit` + hitung file | **455 unit PNG + 54 map PNG + 20 props PNG ada**; fresh-check tak bisa jalan di sandbox ini (numpy tidak ada) — isi file tetap ada |
 | 17 | SFX/BGM | `assets/sounds/` (23 wav + lisensi) vs AudioManager.gd | Katalog 1:1; converter menyalin ke `godot/assets/sounds/` (di-gitignore; ekstensi diluruskan 16 wav + 7 ogg + 1 mp3) |
-| 18 | Fitur mobile | `mobile/*.py` vs godot autoload/scene | Mayoritas ada padanan; **cloud save, vibrate, safe-area, long-press, debug overlay 4-mode, particle_ratio BELUM** |
+| 18 | Fitur mobile | `mobile/*.py` vs godot autoload/scene | vibrate/safe-area/long-press/debug overlay 4-mode **SUDAH (2026-09-23, Fase 32)**; **cloud save + particle_ratio BELUM** |
 | 19 | Perilaku mikro | baca kode target menara, forge, popup | Ditemukan **3 gap nyata** (lihat checklist belum-sama) |
-| 20 | Meta/topup | `topup_*`, `_system.SaveManager`, meta_gold | Save 3 slot + meta_gold paritas; **multi-currency topup belum (Godot IDR saja)** |
+| 20 | Meta/topup | `topup_*`, `_system.SaveManager`, meta_gold | Save 3 slot + meta_gold paritas; multi-currency topup ✅ **1:1 sejak 2026-09-24** (`TopupCurrency.gd` = port `topup_currency.py`, 20 mata uang + deteksi locale + riwayat `cur`/`price_cur`) |
 
 ---
 
@@ -112,16 +112,16 @@ untuk menyesuaikan Godot. Semua perbaikan dilakukan di sisi Godot.
 ### Gap perilaku nyata (berdampak gameplay/fitur)
 - [x] **1. Antrean forge item untuk hero MATI** — ✅ **DITUTUP 2026-09-23.** Pygame: beli item untuk hero mati → antre `pending_forge_items` → terkirim saat respawn (`hero_items.py:3143`, dikirim `_core.py:2184`). Perbaikan Godot: field `_pending_forge_items` dideklarasikan di Hero.gd (akar masalah lama: properti dinamis tidak tersimpan di Node); `GameManager.itemshop_target_hero()` kini memprioritaskan target-tersimpan→terseleksi→hidup→mati persis `_resolve_shop_target`; `try_buy_item` mengantre item untuk hero mati dengan kapasitas `count+pending < 6`; pengiriman + recalc stat dipanggil di `_update_hero_respawns` (urutan paritas respawn→deliver); chip strip BUY FOR hero mati diaktifkan + badge `queued`; hint `dead_delivery_hint`/`queued_item_count` tampil di tab. Integrasi dikunci `GameplayParityTest` (antre 5 item → FULL ke-6 → respawn → 6 slot terisi).
 - [x] **4. Tie-break target menara** — ✅ **DITUTUP 2026-09-23.** `CombatSystem.nearest_enemy` mendapat parameter `last_wins_ties` dan SEMUA call site dipetakan per padanan Pygame-nya: Tower/Nexus/Hero-attack/Hero-aggro kini `<=` (kandidat terakhir menang, `_entity.py:864-869/:1744-1749/:3663-3670/:3726-3731`); Hero-hunt dan Boss tetap `<` (`_entity.py:3707-3714`, `base_boss.py:688-692`).
-- [ ] **2. Multi-currency top-up** — Pygame: 21 mata uang (IDR, USD, EUR, GBP, SGD, MYR, THB, VND, PHP, JPY, KRW, CNY, AUD, CAD, BRL, INR, MXN, ZAR, AED, SAR) + deteksi locale perangkat (pyjnius di Android / modul locale di PC), fallback USD (`topup_currency.py`). Godot: **hardcode IDR** saja (TopupDialog.gd:503,526); nol referensi currency lain di seluruh GDScript.
+- [x] **2. Multi-currency top-up** — ✅ **DITUTUP 2026-09-24.** Pygame: **20** mata uang (IDR, USD, EUR, GBP, SGD, MYR, THB, VND, PHP, JPY, KRW, CNY, AUD, CAD, BRL, INR, MXN, ZAR, AED, SAR — daftar lama di baris ini menulis "21" padahal tabel `IDR_PER_UNIT` `topup_currency.py:21-42` berisi 20 kunci, dan tidak ada HUF/TRY/NZD seperti yang kadang dikutip dari varian lama modul) + deteksi locale perangkat (pyjnius di Android → `locale.setlocale` di PC → env `LC_ALL`/`LC_CTYPE`/`LANG`), region dulu baru bahasa, fallback `USD`. Godot: `scripts/systems/TopupCurrency.gd` (port 1:1 semua tabel + `format_price`/`convert_idr`/`parse_locale_name`/`device_locale`/`currency_for`), `HudLayout.round_half_even_scaled` + `has_sign_bit` (satu-satunya pembulat uang; ties-to-even bit-eksak — `round()` engine mengubah `"¥93"`/`"₩870"` pada angka tie), dan `TopupDialog.gd` (`currency` = padanan `Game.topup_currency`, deteksi malas sekali di `_ready`, `_price_str` delegasi, riwayat beli menyimpan `cur` + `price_cur` 2 desimal seperti `_core.py:6107-6119`; redeem tetap `"IDR"`/0 seperti `:6065-6072`). **Bug nyata yang ikut ditutup:** dialog Godot mencetak `"Rp10.000"` — spasi simbol pygame (`"Rp "`) hilang, jadi label harganya tidak pernah identik walau mata uangnya IDR. Quirk yang sengaja DIPERTAHANKAN: lookup kurs tanpa normalisasi kapital (`convert_idr(x, "idr")` jatuh ke USD), `VND 0.62` per unit (`10.000 rupiah = "₫16,129"`), koma tetap koma untuk VND, `-0.00003` dolar tetap `$-0.00`, dan simbol "C$" dipakai CNY sekaligus CAD. Deviasi engine + alasan: 5 butir di header `TopupCurrency.gd` (tidak ada pyjnius/`setlocale`; `DisplayServer.get_locale()` + env; `MYSTIC_FORCE_LOCALE` untuk tes headless; badan `detect_currency` dipecah jadi fungsi murni; `None`→`""`). Dikunci `tools/test_godot_topup_currency_parity.py` (137 pin sumber + menjalankan modul pygame asli untuk 581 kasus fixture **dan** shadow-run 623 cek atas algoritma Godot, karena CI linter tidak punya engine) + `godot/tests/TopupCurrencyParityTest.tscn`. **Masih terbuka, di luar gap ini:** pygame mencetak `[TOP UP] +50.000 Hero Gold (PAKET 50K via GOPAY, USD 0.62, simulasi)` ke konsol (`_core.py:6133-6134`) dan Godot tidak punya baris log itu; dan blokir cloud-save (#3) belum tersentuh.
 - [ ] **3. Cloud save (Google Play Games)** — Pygame: sign-in, upload/download async, status overlay (`mobile/cloud_save.py`). Godot: eksplisit **tidak diport** (komentar SaveManager.gd:34); tombol settings selalu OFF/unavailable.
 
 ### Gap mobile/Android
-- [ ] **5. Vibrate/haptic** — Pygame `mobile/platform_utils.py:142` (pyjnius Vibrator, dipakai mis. long-press pause 30 ms). Godot: **nol** referensi vibrate.
-- [ ] **6. Safe-area (poni/cutout)** — Pygame `plat.get_safe_area()` dipakai overlay debug (mobile/debug.py:256/290/393). Godot: **nol** referensi safe_area.
-- [ ] **7. Gestur long-press** — Pygame `mobile/touch.py` memancarkan tap/long_press/double_tap/drag; long-press tombol pause = toggle overlay debug + vibrate (main.py:407-413). Godot: tidak ada lapisan gestur long-press.
-- [ ] **8. Overlay debug mobile 4-mode** (off/mini/full/graph, `mobile/debug.py`) — Panel F8 desktop SUDAH diport (FpsCounter.gd), tetapi tombol FPS 4-mode mobile **dinyatakan terbuka** oleh komentar FpsCounter.gd:44-47 sendiri.
+- [x] **5. Vibrate/haptic** — ✅ **DITUTUP 2026-09-23.** Pygame: `mobile/platform_utils.py:142` `vibrate(ms=25)` (pyjnius Vibrator), dipanggil hanya dari dua tempat: `main.py:412` tahan tombol jeda **30 ms** dan `main.py:368` sentuhan yang ditangkap rail kanan **15 ms**. Godot: `MobileLayout.vibrate(ms)` -> `Input.vibrate_handheld(ms)`, mengembalikan false di luar mode sentuh (paritas `if not IS_ANDROID: return False`), dan dipanggil dari DUA titik yang sama (`Main._dispatch_gesture` tahan-jeda 30 ms; `SidePanel._on_pause_pressed` + `_open_shop` 15 ms). Deviasi: Godot tidak bisa menanya keberadaan vibrator, jadi `true` = "permintaan diteruskan ke engine". butuh izin `VIBRATE` di preset ekspor. Dikunci pin statik di `tools/test_godot_mobile_touch_parity.py` (jumlah + milidetik getar tidak bisa berubah sendiri).
+- [x] **6. Safe-area (poni/cutout)** — ✅ **DITUTUP 2026-09-23.** Pygame: `platform_utils.get_safe_area()` = rect aman `(28, 10, 1280-56, 720-20)` HANYA di mode sentuh, rect penuh 1280x720 di desktop; dipakai overlay debug di tiga tempat (`debug.py:256/290/393`). Godot: `MobileLayout.safe_area()` dengan angka yang sama (`SAFE_MARGIN_LOGICAL 28`, `SAFE_TOP/BOTTOM 10`) + gerbang `AppShell.touch_mode()` yang sama; `DebugOverlay` mengambil rect ini dari `state_snapshot()` untuk mini/full/grafik, jadi titik jangkar panel ikut sama. Catatan yang harus tetap terbaca: pygame TIDAK membaca `WindowInsets` asli, hanya margin tetap — port ini sengaja TIDAK menambah `DisplayServer.screen_get_safe_area()` di atasnya (aturan proyek: paritas, bukan melampaui pygame); kalau nanti mau ditingkatkan, satu fungsi itu tempatnya. Dikunci fixture (`safe_area` dari `get_safe_area()` sungguhan) + regex rumus di kedua sumber.
+- [x] **7. Gestur long-press** — ✅ **DITUTUP 2026-09-23.** `scripts/systems/TouchGestures.gd` adalah padanan 1:1 `mobile/touch.py`: `TAP_SLOP 14` (geser < 14 px masih tap), `LONG_PRESS_MS 450` (`>=`, sekali per tekanan lewat `long_fired`), `DOUBLE_TAP_MS 280` + radius 40 px, notch scroll setiap `SCROLL_STEP 42` dengan AKUMULATOR berisi sisa (bukan dinolkan), fling saat `moved and |v| > 4`, inersia `*= 0.9` sampai `|v| <= 0.6`, maks 3 notch per frame, kecepatan `0.6*lama + 0.4*baru`, dan `dispatch_button` = `dispatch_to_game` (tap->1, long_press->3, scroll->4/5, sisanya 0). Mouse dipakai sebagai jalur utama (juga di Android), `InputEventScreenTouch/Drag` dihitung untuk diagnostik dan menelan kembarannya — persis alasan yang ditulis `touch.py:120-135`. Rantai tahan-jeda (overlay debug + getar, `main.py:404-413`) dipindah apa adanya, TERMASUK urutannya yang dicek sebelum filter `claimed`. Gerbang klaim press memakai `_input`+`_unhandled_input`, bukan `_unhandled_input` saja, karena Godot memberi event ke Control di tengah. Dikunci 14 skenario replay di `tests/MobileTouchParityTest.tscn` (termasuk 449,9 vs 450 ms, 40 vs 41 px, dua jari, cancel, dan inersia per frame).
+- [x] **8. Overlay debug mobile 4-mode** (off/mini/full/graph, `mobile/debug.py`) — ✅ **DITUTUP 2026-09-23.** `scenes/ui/DebugOverlay.gd` memindahkan aturan `mobile/debug.py`: `toggle = (mode+1)%4` + `[DEBUG] overlay = <nama>`, `set_mode = mode%4` (mode negatif pun jatuh ke 3 lewat `posmod`), `enabled = mode != OFF`, riwayat 180 sampel fps + frame-ms, `peak`, `frame_ms > 33`, tangga warna fps `>=50` hijau / `>=30` kuning / selain itu merah, mini `"%3.0f FPS  %4.1fms"` di `(safe.left+6, safe.top+6)` dengan panel `(-4,-3)`/`(+12,+8)` dan teks `(x+2, y+1)`, panel lengkap lewat BUFFER OPAQUE `(8,8,14)` + tepi `(90,90,120)` 1 px (`+18`/`19`/`+12`, teks di `(8, 6+19i)`), teks disegar maksimal 4x/dtk (`JEDA_SEGAR_MS 250`), grafik 240x70 di `safe.top+145` dengan skala TETAP 50 ms + panduan 16,7/33,3 ms + poly-line `(150,220,255)`, GRAFIK = LENGKAP + grafik, cincin jari `(90,220,255)` r=26 tebal 2 + titik putih r=3 yang datanya dibaca dari `TouchGestures.points`. Konsumennya disatukan: **tombol FPS di TouchHUD, tahan jeda, dan F8** semuanya mengiklusi mesin ini; overlay Label ad-hoc di `HUD.gd` DIHAPUS (dulu rute paralel yang bikin angka dua engine berbeda jadi tiga). `FpsCounter.gd` (`_system.py`, jalur desktop legacy) tetap ada + tetap dikunci `tests/SystemPerfParityTest`, tapi bukan lagi target F8, dan komentar yang menyatakan gap ini terbuka sudah diperbarui. Isi baris yang sumber datanya khusus pygame (konversi sprite, fastblit, cache memori/font, `blitwatch`, `perf.PHASES`) TIDAK dirender — daftar lengkap + alasan di `godot/README.md` (Fase 32). Format baris yang tersisa dibandingkan VERBATIM, dan geometri panel dibandingkan dengan jejak `pygame.draw.*`/`blit` sungguhan.
 - [ ] **9. Particle ratio budget** — Pygame `mobile/perf.py`: multiplier partikel 0.20 (low) / 0.40 (med) / 0.70 (high) × fx_load + anggaran keras per frame. Godot: tidak ada `particle_ratio`; adaptive quality hanya mengganti batas FPS.
-- [ ] **10. Modul perf Android** tanpa padanan Godot: `blitwatch`, `bootcheck`, `buildinfo`, `diagnostics`, `fastblit`, `spritecache` (sebagian besar plumbing spesifik Pygame; `buildinfo/bootcheck` hanya terwakili crash-log AppShell).
+- [ ] **10. Modul perf Android** tanpa padanan Godot: `blitwatch`, `bootcheck`, `buildinfo`, `diagnostics`, `fastblit`, `spritecache` (sebagian besar plumbing spesifik Pygame; `buildinfo/bootcheck` hanya terwakili crash-log AppShell). Sejak Fase 32 overlay debug Godot menampilkan baris BUILD dari `application/config/version` (bukan `mobile/buildinfo.py`) — modulnya tetap tidak diport, hanya kolomnya yang punya padanan.
 
 ### Deviasi disengaja / belum setara visual
 - [ ] **11. FX skill boss per-boss** — Pygame punya 27 modul FX khusus (`heroes/*_fx.py`: abaddon_fx, ignis_drachorn_fx, dst). Godot mengganti SEMUA dengan aproksimasi generik `KitShockRing.gd` (komentar kode sendiri: *"bukan salinan piksel renderer pygame"*).
@@ -147,27 +147,40 @@ untuk menyesuaikan Godot. Semua perbaikan dilakukan di sisi Godot.
 |---|---|
 | Data konten (hero/boss/level/item/minion/ekonomi/teks) | ✅ **1:1 penuh** — diverifikasi kunci-per-kunci & nilai-per-nilai |
 | Perilaku gameplay inti | ✅ **1:1 berlapis oracle** — fixture PASS (54 level, 216 boss, 79 smart-AI, trace skill) |
-| Menu/settings/save/topup (struktur) | ✅ Hampir penuh (settings per-slot = deviasi tercatat) |
+| Menu/settings/save/topup (struktur) | ✅ Hampir penuh (settings per-slot = deviasi tercatat; topup multi-currency penuh) |
 | Visual struktural (sinematik, HUD, popup, shake) | ✅ 1:1; piksel unit/map lewat bake |
 | FX skill boss (piksel) | ⚠️ Aproksimasi generik, bukan salinan |
-| Fitur Android (cloud, vibrate, safe-area, long-press, debug 4-mode, particle budget) | ❌ Belum diport |
+| Fitur Android (vibrate, safe-area, long-press, debug overlay 4-mode) | ✅ **Ditutup 2026-09-23** (Fase 32) — `TouchGestures/DebugOverlay/MobileLayout` |
+| Fitur Android (cloud save, particle budget) | ❌ Belum diport |
 | Forge item untuk hero mati | ❌ Belum di-wire (fitur Pygame nyata) |
-| Multi-mata-uang topup | ❌ Godot IDR saja |
+| Multi-mata-uang topup | ✅ **Ditutup 2026-09-24** (Fase 33) — `TopupCurrency.gd` + `TopupDialog.gd`, diunci `test_godot_topup_currency_parity.py` |
 | Tie-break target menara | ⚠️ Beda operator `<=` vs `<` |
 
 **Status akhir: BELUM 1:1 penuh** — progres per 2026-09-23:
-gap **#1 (forge hero mati)** dan **#4 (tie-break)** ✅ DITUTUP.
-Sisa terbuka: 1 fitur topup multi-currency, 5 fitur Android (cloud save,
-vibrate, safe-area, long-press, debug 4-mode, particle budget), sejumlah
-deviasi disengaja, dan sertifikasi piksel FX runtime yang masih terbuka.
+gap **#1 (forge hero mati)**, **#2 (multi-currency top-up)**, **#4
+(tie-break)**, dan **#5-#8 (rantai sentuh mobile: long-press + overlay debug
+4-mode + getar + safe-area)** ✅ DITUTUP.
+Sisa terbuka: 2 fitur Android (cloud save,
+particle budget) + modul perf spesifik Pygame (#10), satu baris log `[TOP UP]`
+yang belum punya padanan Godot, sejumlah deviasi
+disengaja, dan sertifikasi piksel FX runtime yang masih terbuka.
 
 Urutan prioritas penutupan gap berikutnya:
 1. ~~Forge queue hero mati~~ ✅ selesai
 2. ~~Tie-break menara~~ ✅ selesai (dipetakan per call site: `<=` untuk
    tower/nexus/attack/aggro, `<` tetap untuk hunt/boss)
-3. Long-press + overlay debug mobile 4-mode + vibrate (satu rantai fitur).
-4. Safe-area layout.
-5. Multi-currency topup.
+3. ~~Long-press + overlay debug mobile 4-mode + vibrate (satu rantai fitur)~~
+   ✅ selesai 2026-09-23 (`TouchGestures.gd`, `DebugOverlay.gd`,
+   `Main._dispatch_gesture`, `MobileLayout.vibrate`; diunci
+   `tools/test_godot_mobile_touch_parity.py` + `tests/MobileTouchParityTest.tscn`)
+4. ~~Safe-area layout~~ ✅ selesai 2026-09-23 (`MobileLayout.safe_area()` =
+   `(28, 10, 1224, 700)` di mode sentuh, dipakai jangkar overlay debug)
+5. ~~Multi-currency topup~~ ✅ selesai 2026-09-24 (Fase 33 —
+   `scripts/systems/TopupCurrency.gd` port 1:1 `topup_currency.py`,
+   `HudLayout.round_half_even_scaled` untuk pembulatan ties-even,
+   `TopupDialog.currency` + riwayat `cur`/`price_cur`; diunci
+   `tools/test_godot_topup_currency_parity.py` +
+   `godot/tests/TopupCurrencyParityTest.tscn`)
 6. Cloud save backend.
 7. Particle ratio budget.
 8. FX boss per-boss (27 modul) bila ingin klaim piksel 1:1.
