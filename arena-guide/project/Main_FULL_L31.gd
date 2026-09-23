@@ -1065,6 +1065,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 			_on_left_click(get_global_mouse_position())
 		if mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
+			if shop != null and shop.open:
+				if shop.handle_right_click(get_global_mouse_position()):
+					queue_redraw()
+					return
 			if hero != null:
 				hero.set_selected(false)
 				print("[Main] Pilihan dibatalkan.")

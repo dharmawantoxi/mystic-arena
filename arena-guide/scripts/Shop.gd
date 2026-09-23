@@ -21,6 +21,7 @@ var _main = null
 var open := false
 var _close_rect := Rect2()
 var _buy_rects: Dictionary = {} # item_id -> Rect2
+var _inv_rects: Dictionary = {} # slot_index -> Rect2 L35 SELL
 
 func setup(main_ref) -> void:
 	_main = main_ref
@@ -114,14 +115,16 @@ func draw_on(host: CanvasItem) -> void:
 			var label := "FULL" if _is_full() else ("GOLD -" if _main != null and int(_main.gold) < int(data["cost"]) else "BUY")
 			var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+17), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(170,170,180))
-	# inventory bawah
+	# inventory bawah L35 SELL 70%
+	_inv_rects.clear()
 	if _main != null and _main.hero != null:
 		var inv: Array = _main.hero.get("inventory") if "inventory" in _main.hero else []
 		var inv_y := py+ph-52
-		host.draw_string(font, Vector2(px+18, inv_y), "INVENTORY %d/%d  (klik kanan slot di game untuk drop — v1)" % [int(inv.size()), MAX_SLOTS], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(170,180,205))
+		host.draw_string(font, Vector2(px+18, inv_y), "INVENTORY %d/%d  (klik kanan slot = JUAL 70%%)" % [int(inv.size()), MAX_SLOTS], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(170,180,205))
 		var sx2 := px + pw*0.5 - 180
 		for i in 6:
 			var r := Rect2(sx2 + float(i)*54, inv_y+8, 48, 32)
+			_inv_rects[i] = r
 			host.draw_rect(r, Color8(14,17,30))
 			var slot_item = null
 			if i < inv.size():
@@ -132,7 +135,13 @@ func draw_on(host: CanvasItem) -> void:
 				col = d.get("color", col)
 				if d.has("color"):
 					host.draw_rect(Rect2(r.position.x+2, r.position.y+2, 44,28), col)
+				# hint SELL di hover not needed — selalu tampil kecil X
+				host.draw_rect(Rect2(r.position.x+34, r.position.y+2, 12, 12), Color8(180,60,60,0.9))
+				host.draw_string(font, Vector2(r.position.x+37, r.position.y+11), "x", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
 			host.draw_rect(r, col, false, 1.5 if slot_item != null else 1.0)
+		# hint text jika ada item
+		if not inv.is_empty():
+			host.draw_string(font, Vector2(px+pw*0.5 - 90, inv_y+46), "klik kanan slot untuk jual", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color8(200,180,160))
 
 func handle_click(point: Vector2) -> bool:
 	if not open:
@@ -156,6 +165,63 @@ func handle_click(point: Vector2) -> bool:
 	# klik di luar panel = tutup
 	toggle()
 	return true
+
+func handle_right_click(point: Vector2) -> bool:
+	if not open:
+		return false
+	for idx in _inv_rects.keys():
+		var r: Rect2 = _inv_rects[idx]
+		if r.has_point(point):
+			_try_sell(int(idx))
+			return true
+	# klik kanan di panel tapi bukan slot = block
+	var pw := 900.0
+	var ph := 560.0
+	var px := (1280.0 - pw)*0.5
+	var py := (720.0 - ph)*0.5
+	if Rect2(px,py,pw,ph).has_point(point):
+		return true
+	return false
+
+func _try_sell(slot_idx: int) -> void:
+	if _main == null or _main.hero == null:
+		return
+	var inv: Array = _main.hero.get("inventory") if "inventory" in _main.hero else []
+	if slot_idx < 0 or slot_idx >= inv.size():
+		Sound.play("error")
+		return
+	var id: String = str(inv[slot_idx])
+	var data: Dictionary = CATALOG.get(id, {})
+	if data.is_empty():
+		return
+	var cost := int(data.get("cost", 100))
+	var refund := int(cost * 0.7)
+	inv.remove_at(slot_idx)
+	_revert_stats(_main.hero, data)
+	_main.gold += refund
+	Sound.play("click")
+	print("[Shop] %s jual %s (+%d G) sisa %d" % [_main.hero.hero_name, str(data["name"]), refund, int(_main.gold)])
+	_main.queue_redraw()
+
+func _revert_stats(hero, data: Dictionary) -> void:
+	if data.has("dmg"):
+		hero.damage = maxf(1.0, hero.damage - float(data["dmg"]))
+	if data.has("hp"):
+		var sub := float(data["hp"])
+		hero.max_hp = maxf(1.0, hero.max_hp - sub)
+		hero.hp = minf(hero.hp, hero.max_hp)
+		hero.hp = maxf(1.0, hero.hp)
+	if data.has("armor"):
+		if "bonus_armor" in hero:
+			hero.bonus_armor = maxf(0.0, hero.bonus_armor - float(data["armor"]))
+	if data.has("as"):
+		if "bonus_as" in hero:
+			hero.bonus_as = maxf(0.0, hero.bonus_as - float(data["as"]))
+		hero.attack_interval = minf(1.0, hero.attack_interval + float(data["as"])*0.006)
+	if data.has("ls"):
+		if "lifesteal" in hero:
+			hero.lifesteal = maxf(0.0, hero.lifesteal - float(data["ls"]))
+	hero.queue_redraw()
 
 func _can_buy(id: String) -> bool:
 	if _main == null or _main.hero == null:
