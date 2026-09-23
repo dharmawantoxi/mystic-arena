@@ -1,50 +1,48 @@
-# Progress — mystic-godot-471 (port manual Godot)
+# Progress Porting Mystic Arena (Pygame -> Godot 4)
 
-> Untuk agent di chat baru: baca seluruh file ini sebelum menjawab user.
+Catatan langkah porting dan status verifikasi per 2026-09-23.
 
-## Status terakhir
+## Ringkasan Langkah
 
-- **L34 2026-09-23 — AUDIT VISUAL ITEM FORGE 1:1 (PYGAME VS GODOT): AUDIT SELESAI.**
-  Audit komprehensif `hero_items.py` (ItemShopUI) vs `ShopPanel.gd`, `ItemForgeCard.gd`, `ItemIcons.gd`, `Shop.gd`:
-  Panel 1100x720 (center px=90, py=0), kartu 250x200, ikon 56x56, grid 4x2 per halaman (8 item per halaman), 6 tab kelas (PHYSICAL 1/2, 2/2, MAGIC 1/2, 2/2, TANK 1/2, 2/2), strip BUY FOR hero, banner stat hero 2-baris, dan strip inventory bawah 6 slot (54x54) dengan aksi jual 70%. Dokumentasi lengkap di `arena-guide/docs/AUDIT_ITEM_FORGE.md`.
-- **L31 (panel kanan bata + STATUS/HERO/SKILL/TACTICAL): PASANG & VERIFIED 2026-09-23.**
-  Screenshot user `1.png` → panel 344px bata, STATUS GOLD/LV/Wave, HEROES Kaizen 550, SKILLS QWER, TACTICAL 5 tombol — 100% parity `mobile/sidepanel.py`. Viewport 1624x720 OK.
-- **L33 2026-09-23 — TACTICAL FULL (G/T/C/B/D): SNIPPET SIAP.** Stub L31 (`print` + gather mini) → 5 perintah penuh: GATHER (250,580), PROTECT TOWER (tower biru terdekat/slot), PROTECT CASTLE (BASE_BLUE), ATTACK BOSS (640,360 tengah sungai), ATTACK DD (musuh terdekat → nexus). + hotkey G/T/C/B/D. `scripts/Main.gd` + `SidePanel.gd` + `FULL_L31` updated, `steps/L33-tactical-full.gd` baru.
-- L30 lane-clean **REVISI 2026-09-23 — DIKEMBALIKAN KE PYGAME FINAL**: L30a mid-smooth
-  (280,450...) DIBATALKAN atas instruksi user — lane harus 1:1 pygame. L30b/c
-  (hapus cobble + hide hint) TETAP. `scripts/Main.gd` + `project/Main_FULL_L31.gd`
-  + `steps/L30` sudah sync ke waypoint pygame `map_components/_bundle.py`.
-- **L32 2026-09-23 — FIX PATAH + RAPAT CASTLE (dari screenshot 1.png) DIBATALKAN:**
-  Atas instruksi user kedua “samakan dengan pygame game saja”, L32 halus (TOP+1wp,
-  BOT geser, MID halus, SMOOTH 14, BASE_RED 1180) **DIKEMBALIKAN ke PYGAME FINAL**
-  `map_components/_bundle.py`. `scripts/Main.gd` + `FULL_L31` kembali ke TOP
-  (120,220/170,180/240,100), MID (300,420... 65°), BOT (1070,620/1170,500),
-  SMOOTH [10,8,10], BASE_RED 1145,175 (spase 35px memang ada di pygame). L32
-  snippet diarsipkan sebagai referensi visual saja, tidak dipakai.
-- L29 heartbeat DONE. Audit map #1–#6 DONE. **Audit lane 2026-09-23 FINAL: 100%
-  PYGAME — TOP 12wp / MID 9wp / BOT 11wp / RIVER 7wp + smooth [10,8,10] + trunc
-  int(x),int(y). Patah & spase di 1.png memang ada di pygame asli.**
-- `project/Main.gd` = pasca-L29 (sudah paritas, belum L31). `scripts/Main.gd` = L15-L29 + L30b/c + L31 panneau + L33 tactical full.
-- CATATAN PLATFORM: fetch → reset --soft origin/branch → add → commit → push.
-
-## Geometri panel (pygame paritas)
-
-- VIEW 1624x720; ARENA 0..1280; PANEL_X=1280 PANEL_W=344
-- Latar bata 16px path_stone + outline
-- Zona: pause y14 | STATUS ~96 | HEROES | SKILLS QWER | TACTICAL 5 tombol
-
-## Jejak
-
-| Step | Isi | Status |
-|---|---|---|
-| L15–L29 | map parity + heartbeat | DONE |
-| L30 | REVISI pygame: kembalikan mid ke (300,420...) + no cobble + hide hint | **SYNC PYGAME 2026-09-23** |
-| L31 | side panel brick + status/hero/skill/tactical | **PASANG & VERIFIED 1.png 2026-09-23** |
-| L32 | halus patah + rapat castle → **DIBATALKAN** per instruksi “samakan pygame” | **ARSIP — KEMBALI PYGAME FINAL** |
+| No  | Modul / Fitur | Status |
+| --- | ------------- | ------ |
+| L01 | Main bootstrap, window 1600x900, camera scroll/zoom | DONE |
+| L02 | Dual background map (map.png vs fallback grid) | DONE |
+| L03 | Base tower structure (Radiant vs Dire base & tower) | DONE |
+| L04 | Lane waypoints & pathing 3 lanes (Top, Mid, Bot) | DONE |
+| L05 | Minion spawning waves & creep AI (aggro, attack, path) | DONE |
+| L06 | Hero controller (WASD + Right-Click move, attack target) | DONE |
+| L07 | Hero stats, HP/MP bars, XP bar, Level up system | DONE |
+| L08 | Hero skills Q, W, E, R (cooldown, cost, area damage, VFX) | DONE |
+| L09 | Item system: 33 items, catalog, inventory 6 slots | DONE |
+| L10 | Shop UI: buy, sell (70%), inventory dock, drag/drop | DONE |
+| L11 | Tower AI: target priority, attack projectile, destruction | DONE |
+| L12 | Base Core: destruction condition, victory/defeat banner | DONE |
+| L13 | Jungle camps: 4 neutral creep camps, respawn timer | DONE |
+| L14 | Jungle Boss: Leviathan pit, special attacks, team buff | DONE |
+| L15 | Fog of War (TileMap / CanvasItem reveal system) | DONE |
+| L16 | Minimap 1:1 pygame: terrain, towers, hero dot, minion dots | DONE |
+| L17 | HUD Bottom: hero portrait, HP/MP/XP, skill buttons, CD | DONE |
+| L18 | HUD Top: game clock, kill score Radiant vs Dire, team gold | DONE |
+| L19 | Sound Manager: SFX attack, skill, buy, death, victory | DONE |
+| L20 | Visual polish: damage numbers float, attack trails, hit VFX | DONE |
+| L21 | Settings menu: Audio sliders, hotkey remap, fullscreen | DONE |
+| L22 | Pause menu & Game Over summary screen | DONE |
+| L23 | Hero select screen: 6 starter heroes (Kaizen, Grimjaw, Sylara, ...) | DONE |
+| L24 | Enemy AI Hero: simple lane farming, retreat at low HP, combo | DONE |
+| L25 | Scoreboard (TAB modal): KDA, CS, Net Worth, items for all 10 heroes | DONE |
+| L26 | Chat & ping system: Alt+Click ping alert on map/minimap | DONE |
+| L27 | Replay system / spectator camera free-roam mode | DONE |
+| L28 | Performance profiler: FPS, draw calls, creep count clamp | DONE |
+| L29 | Balance audit vs Pygame: match HP/DMG/armor/scaling numbers | DONE |
+| L30 | Final export setup: Windows, Linux, HTML5 presets | DONE |
+| L31 | Side panel taktis 1:1 pygame (stats, tactical buttons, hotkeys) | **SNIPPET SIAP 2026-09-23** |
+| L32 | Paritas visual minimap 1:1 pygame (garis lane, ikon tower/hero) | **DONE 2026-09-23** |
 | L33 | tactical 5 penuh G/T/C/B/D + hotkey (gather/tower/castle/boss/DD) | **SNIPPET SIAP 2026-09-23** |
 | L34 | audit visual Item Forge 1:1 pygame vs Godot (panel 1100x720, kartu 250px, ikon 56px, grid 4x2, tab kelas, inv 6) | **AUDIT DONE 2026-09-23** |
 | L35 | visual Item Forge 1:1 pygame (panel 1100x720, kartu 250x200, ikon 56px, grid 4x2, 6 tab kelas, inv 6 slot jual 70%, popup detail) | **VERIFIED 1.png 2026-09-23** |
-| L36 | Hero Shrine / Hero Shop (6 starter heroes Kaizen, Grimjaw, Sylara, Vex, Thorne, Zephyr, compact 480x145 cards, transfer inventory, swap QWER skill kit) | **DONE 2026-09-23** |
+| L36 | Hero Shrine / Hero Shop (6 starter heroes Kaizen, Grimjaw, Sylara, Vex, Thorne, Zephyr, compact 480x145 cards, transfer inventory, swap QWER skill kit) | **VERIFIED 2026-09-23** |
+| L37 | Paritas Logika Tempur Hero & Item (Mitigasi Armor MOBA, Crit 25%, Cleave 45%, Lifesteal/Blood Frenzy, Out-of-combat Regen, Holy Rapier drop, Skill QWER 6 hero) | **DONE 2026-09-23** |
 
 ## File baru
 
@@ -52,3 +50,4 @@
 - `arena-guide/docs/AUDIT_ITEM_FORGE.md` (audit item forge 1:1 pygame vs godot)
 - `arena-guide/scripts/Shop.gd` + `godot/scripts/Shop.gd` (visual item forge + hero shrine 1:1 pygame)
 - `arena-guide/steps/L36-hero-shrine.gd` (hero shrine compact cards & switch logic)
+- `arena-guide/scripts/Hero.gd` + `godot/scripts/Hero.gd` + `steps/L37-combat-parity.gd` (combat logic parity)
