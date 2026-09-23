@@ -27,6 +27,10 @@ var _spawn_pos: Vector2 = Vector2(220, 360)
 var _dead: float = 0.0
 var _flash: float = 0.0
 var _flash_col: Color = Color(1.0, 0.4, 0.4)
+var inventory: Array = [] # L34 item ids (max 6)
+var lifesteal: float = 0.0 # dari Demon Maw
+var bonus_armor: float = 0.0
+var bonus_as: float = 0.0
 
 
 func _ready() -> void:
@@ -122,7 +126,12 @@ func _combat(delta: float) -> void:
 	if not is_instance_valid(_enemy) or not _enemy.is_alive():
 		_enemy = _find_enemy()
 	if _enemy != null and _cooldown <= 0.0:
-		_enemy.take_damage(_atk_damage())
+		var dmg := _atk_damage()
+		_enemy.take_damage(dmg)
+		# lifesteal (Demon Maw)
+		if lifesteal > 0.0 and dmg > 0.0:
+			hp = minf(max_hp, hp + dmg * lifesteal)
+			queue_redraw()
 		Sound.play("hit")
 		_cooldown = attack_interval
 

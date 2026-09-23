@@ -35,6 +35,7 @@ var match_over: bool = false
 var victory: bool = false
 var hud: Hud = null
 var pause_layer: PauseMenu = null
+var shop = null # ShopUI L34
 var map_theme: Dictionary = {}
 var map_seed: int = 7
 var decor: Array = []
@@ -76,6 +77,11 @@ func _ready() -> void:
 	pause_layer = PauseMenu.new()
 	add_child(pause_layer)
 	pause_layer.setup(self)
+	# L34 shop
+	var ShopUIScript = load("res://scripts/Shop.gd")
+	shop = ShopUIScript.new()
+	add_child(shop)
+	shop.setup(self)
 
 
 func _threshold_y(x: float) -> float:
@@ -178,6 +184,8 @@ func _draw() -> void:
 		draw_arc(pos, 22.0, 0.0, TAU, 32, ring, 3.0)
 		draw_circle(pos, 5.0, ring)
 	_draw22_fog()
+	if shop != null:
+		shop.draw_on(self)
 	if match_over:
 		draw_rect(ARENA, Color(0, 0, 0, 0.72))
 		var font: Font = ThemeDB.fallback_font
@@ -670,6 +678,16 @@ func _spawn_hero() -> void:
 
 
 func _on_left_click(point: Vector2) -> void:
+	if shop != null and shop.open:
+		if shop.handle_click(point):
+			queue_redraw()
+			return
+	# klik gedung ITEM forge
+	if point.distance_to(SHOP_BLUE) <= 40.0:
+		if shop != null:
+			shop.toggle()
+			queue_redraw()
+		return
 	if hero == null:
 		return
 	if hero.position.distance_to(point) <= 30.0:
@@ -1004,13 +1022,28 @@ func _unhandled_input(event: InputEvent) -> void:
 			if k.keycode == KEY_D:
 				tactical_attack_dd()
 				return
+			if k.keycode == KEY_H:
+				if shop != null and not match_over:
+					shop.toggle()
+					queue_redraw()
+				return
+			if k.keycode == KEY_ESCAPE and shop != null and shop.open:
+				shop.toggle()
+				queue_redraw()
+				return
 	if match_over:
+		return
+	if shop != null and shop.open and event.is_action_pressed("pause"):
+		shop.toggle()
+		queue_redraw()
 		return
 	if event.is_action_pressed("pause"):
 		toggle_pause()
 		return
 	if event.is_action_pressed("toggle_shop"):
-		print("[Main] Kontrol: klik hero=pilih, klik map=jalan, klik slot=bangun, QWER=skill, ESC=pause, M=suara.")
+		if shop != null and not match_over:
+			shop.toggle()
+			queue_redraw()
 		return
 	if event.is_action_pressed("skill_q"):
 		cast_hero_skill(0)
