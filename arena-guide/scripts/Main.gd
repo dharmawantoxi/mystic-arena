@@ -683,10 +683,11 @@ func _on_left_click(point: Vector2) -> void:
 			queue_redraw()
 			return
 	# klik gedung ITEM forge
-	if point.distance_to(SHOP_BLUE) <= 40.0:
+	if point.distance_to(SHOP_BLUE) <= 60.0:
 		if shop != null:
 			shop.toggle()
 			queue_redraw()
+			print("[Shop] klik gedung ITEM %s" % str(point))
 		return
 	if hero == null:
 		return
