@@ -132,22 +132,22 @@ func _nearest_enemy_for_dd():
 	return best
 # --- END TACTICAL ---
 
-# dan di _unhandled_input, setelah blok skill_r, TAMBAHKAN hotkey G/T/C/B/D (sebelum return mouse):
-#	if k.keycode == KEY_G:
-#		tactical_gather()
-#		return
-#	if k.keycode == KEY_T:
-#		tactical_protect_tower()
-#		return
-#	if k.keycode == KEY_C:
-#		tactical_protect_castle()
-#		return
-#	if k.keycode == KEY_B:
-#		tactical_attack_boss()
-#		return
-#	if k.keycode == KEY_D:
-#		tactical_attack_dd()
-#		return
+# dan di _unhandled_input, di DALAM if k.pressed and not k.echo (setelah ESC, sebelum tutup blok), TAMBAHKAN:
+#			if k.keycode == KEY_G:
+#				tactical_gather()
+#				return
+#			if k.keycode == KEY_T:
+#				tactical_protect_tower()
+#				return
+#			if k.keycode == KEY_C:
+#				tactical_protect_castle()
+#				return
+#			if k.keycode == KEY_B:
+#				tactical_attack_boss()
+#				return
+#			if k.keycode == KEY_D:
+#				tactical_attack_dd()
+#				return
 
 # ═══════════════════════════════════════════
 # A — GANTI DI scripts/SidePanel.gd

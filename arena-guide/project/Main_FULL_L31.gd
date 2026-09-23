@@ -992,6 +992,21 @@ func _unhandled_input(event: InputEvent) -> void:
 			if match_over and k.keycode == KEY_ESCAPE:
 				App.to_menu()
 				return
+			if k.keycode == KEY_G:
+				tactical_gather()
+				return
+			if k.keycode == KEY_T:
+				tactical_protect_tower()
+				return
+			if k.keycode == KEY_C:
+				tactical_protect_castle()
+				return
+			if k.keycode == KEY_B:
+				tactical_attack_boss()
+				return
+			if k.keycode == KEY_D:
+				tactical_attack_dd()
+				return
 	if match_over:
 		return
 	if event.is_action_pressed("pause"):
@@ -1011,21 +1026,6 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("skill_r"):
 		cast_hero_skill(3)
-		return
-	if k.keycode == KEY_G:
-		tactical_gather()
-		return
-	if k.keycode == KEY_T:
-		tactical_protect_tower()
-		return
-	if k.keycode == KEY_C:
-		tactical_protect_castle()
-		return
-	if k.keycode == KEY_B:
-		tactical_attack_boss()
-		return
-	if k.keycode == KEY_D:
-		tactical_attack_dd()
 		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
