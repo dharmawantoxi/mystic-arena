@@ -750,13 +750,21 @@ func _test_safe_area() -> void:
 			- float(MobileLayout.SAFE_BOTTOM)))
 	_nums([built.position.x, built.position.y, built.size.x, built.size.y],
 		want, "safe area sentuh = rumus pygame (28,10,W-56,H-20)")
-	if not AppShell.touch_mode():
-		var full := MobileLayout.safe_area()
-		_expect(full.position == Vector2.ZERO
-			and full.size == MobileLayout.DESIGN_SIZE,
+	# cabang mana yang berlaku ditentukan `AppShell.touch_mode()` — harness
+	# boleh dijalankan dengan ATAU tanpa MYSTIC_FORCE_TOUCH=1
+	var got := MobileLayout.safe_area()
+	if AppShell.touch_mode():
+		_nums([got.position.x, got.position.y, got.size.x, got.size.y],
+			want, "safe area DI MODE SENTUH = rect oracle")
+		_expect(MobileLayout.vibrate(30),
+			"mode sentuh: permintaan getar diteruskan ke engine")
+	else:
+		_expect(got.position == Vector2.ZERO
+			and got.size == MobileLayout.DESIGN_SIZE,
 			"di luar mode sentuh: safe area = 1280x720 penuh")
-	_expect(not MobileLayout.vibrate(30),
-		"vibrate() no-op di luar mode sentuh (paritas `if not IS_ANDROID`)")
+		_expect(not MobileLayout.vibrate(30),
+			"vibrate() no-op di luar mode sentuh (paritas "
+			+ "`if not IS_ANDROID: return False`)")
 
 
 # ══════════════════════════════════════════════════════════
