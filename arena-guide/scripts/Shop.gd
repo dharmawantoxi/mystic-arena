@@ -1,4 +1,4 @@
-@warning_ignore("inferred_declaration", "untyped_declaration")
+@warning_ignore("inferred_declaration", "untyped_declaration", "integer_division")
 extends Node2D
 class_name ShopUI
 ## ITEM FORGE (biru 340,540) + HERO SHRINE (merah 940,180). H = item, klik gedung = sesuai warna.
@@ -283,7 +283,7 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: flo
 	var page_items: Array = SHOP_PAGES[_page]
 
 	for i in page_items.size():
-		var r: int = i / cols
+		var r: int = int(float(i) / float(cols))
 		var c: int = i % cols
 		var x: float = sx + float(c) * (cw + gap_x)
 		var y: float = sy + float(r) * (ch + gap_y)
@@ -529,7 +529,7 @@ func _draw_hero_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: flo
 	var sy: float = py + 134.0
 
 	for i in ids.size():
-		var r: int = i / cols
+		var r: int = int(float(i) / float(cols))
 		var c: int = i % cols
 		var x: float = sx + float(c) * (cw + gap)
 		var y: float = sy + float(r) * (ch + gap)
