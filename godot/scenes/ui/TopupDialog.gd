@@ -20,6 +20,22 @@
 # 0.5 terpusat di (0,0) (dialog seperti keluar lewat pojok kiri-atas layar)
 # dan dim tidak terlihat. Semua lapisan full-rect kini memakai
 # MobileLayout.fill_parent (anchor 0..1 + offset nol eksplisit).
+#
+# FASE 33 - HARGA MULTI-MATA-UIANG (gap #2 audit). Sebelumnya dialog ini hanya
+# punya satu angka IDR dan memformatnya sendiri ("Rp10.000" - tanpa spasi,
+# beda dari pygame "Rp 10.000"). Kini harga lewat TopupCurrency (port 1:1
+# topup_currency.py di root) dengan nama mata uang per pengguna, meniru alur
+# pygame:
+#   * `Game.topup_currency` (_core.py:3190, None) -> `currency` di sini;
+#     deteksi malas (_core.py:5583-5589) sekali di _ready - dialog Godot
+#     ditata ulang saat dibuka, tidak digambar tiap frame - dan kegagalan
+#     sama-sama jatuh ke "USD";
+#   * `Game._topup_price_str` (_core.py:5344-5347, `or "IDR"`) -> _price_str;
+#   * riwayat pembelian (_core.py:6107-6109, 6119) -> `cur` + `price_cur`
+#     ikut tersimpan; redeem tetap "IDR"/0 seperti _core.py:6065-6073.
+# Nilai mata uang, simbol, dan pembulatannya TIDAK ada di berkas ini — semuanya
+# hidup di TopupCurrency.gd (port 1:1) supaya tes parity bisa memutar ulang
+# tabelnya tanpa menyalin angka ke dua tempat.
 extends Control
 class_name TopupDialog
 
@@ -42,6 +58,10 @@ const FIT_MARGIN := 24.0
 const MIN_SCALE := 0.4
 
 var phase: String = "select"
+## Nama mata uang tampilan harga (paritas `Game.topup_currency`,
+## _core.py:3190). "" = belum terdeteksi -> harga tampil sebagai IDR, persis
+## `self.topup_currency or "IDR"` di pygame.
+var currency: String = ""
 var pkg_idx: int = 0
 var method_idx: int = 0
 var progress: float = 0.0
@@ -60,6 +80,12 @@ var _body: Control = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Deteksi malas seperti pygame (_core.py:5583-5589): hanya bila belum
+	# pernah diresolve; kegagalan deteksi -> fallback "USD".
+	# MYSTIC_FORCE_LOCALE (env) memaksa locale - dipakai tes headless dan
+	# tes screenshot supaya cabang deteksi bisa dibandingkan deterministik.
+	if currency == "":
+		currency = TopupCurrency.detect_currency()
 	MobileLayout.fill_parent(self)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var dim := ColorRect.new()
@@ -521,10 +547,24 @@ func _topup_complete() -> void:
 	SaveManager.add_meta_gold(total)
 	tx_id = "MA-%010d" % (int(Time.get_ticks_msec()) % 10000000000)
 	var history: Array = SaveManager.data.get("topup_history", [])
+	# Paritas _core.py:6107-6109 + 6119: `cur` = mata uang pengguna ("IDR"
+	# kalau belum terdeteksi) dan `price_cur` = harga dalam mata uang itu,
+	# sudah dibulatkan 2 desimal ties-even. Pembulatannya lewat
+	# HudLayout.round_half_even_scaled: `round()` engine membulatkan .5
+	# menjauhi nol, jadi selisih satu sen di data tersimpan itu bug, bukan
+	# gaya pembulatan.
+	var price_idr := int(pkg["price"])
+	var cur := currency if currency != "" else "IDR"
+	# convert_idr mengembalikan [nilai, mata_uang_final] dan pygame menyimpan
+	# `cur` ASLINYA (bukan yang final) + nilai yang dibulatkan 2 desimal
+	# ties-even (_core.py:6108, 6119) — jadi riwayat lama tetap terbaca.
+	var converted: Array = TopupCurrency.convert_idr(price_idr, cur)
+	var price_cur := float(HudLayout.round_half_even_scaled(
+			float(converted[0]), 2)) / 100.0
 	history.append({"tx": tx_id, "pkg": str(pkg["label"]),
 		"gold": int(pkg["gold"]), "bonus": int(pkg.get("bonus", 0)),
-		"price": int(pkg["price"]), "cur": "IDR",
-		"price_cur": int(pkg["price"]),
+		"price": price_idr, "cur": cur,
+		"price_cur": price_cur,
 		"method": str(METHODS[method_idx]).to_lower(),
 		"ts": int(Time.get_unix_time_from_system())})
 	while history.size() > 50:
@@ -544,14 +584,12 @@ static func _grouped(n: int) -> String:
 	return HudLayout.format_thousands(n)
 
 
-func _price_str(amount_idr: int) -> String:
-	# Format IDR (paritas format_price IDR): Rp10.000
-	var s := str(absi(amount_idr))
-	var out := ""
-	while s.length() > 3:
-		out = "." + s.right(3) + out
-		s = s.left(s.length() - 3)
-	return "Rp" + s + out
+func _price_str(amount_idr: float) -> String:
+	# Paritas `Game._topup_price_str` (_core.py:5344-5347): mata uang kosong
+	# berarti "tampilkan IDR apa adanya", jadi pemanggil tidak perlu tahu
+	# apakah deteksi sudah terjadi atau belum.
+	return TopupCurrency.format_price(amount_idr,
+			currency if currency != "" else "IDR")
 
 
 # ── sub-view kustom (gambar eksak pygame) ──

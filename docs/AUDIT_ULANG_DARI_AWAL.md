@@ -52,7 +52,7 @@ untuk menyesuaikan Godot. Semua perbaikan dilakukan di sisi Godot.
 | 17 | SFX/BGM | `assets/sounds/` (23 wav + lisensi) vs AudioManager.gd | Katalog 1:1; converter menyalin ke `godot/assets/sounds/` (di-gitignore; ekstensi diluruskan 16 wav + 7 ogg + 1 mp3) |
 | 18 | Fitur mobile | `mobile/*.py` vs godot autoload/scene | vibrate/safe-area/long-press/debug overlay 4-mode **SUDAH (2026-09-23, Fase 32)**; **cloud save + particle_ratio BELUM** |
 | 19 | Perilaku mikro | baca kode target menara, forge, popup | Ditemukan **3 gap nyata** (lihat checklist belum-sama) |
-| 20 | Meta/topup | `topup_*`, `_system.SaveManager`, meta_gold | Save 3 slot + meta_gold paritas; **multi-currency topup belum (Godot IDR saja)** |
+| 20 | Meta/topup | `topup_*`, `_system.SaveManager`, meta_gold | Save 3 slot + meta_gold paritas; multi-currency topup ✅ **1:1 sejak 2026-09-24** (`TopupCurrency.gd` = port `topup_currency.py`, 20 mata uang + deteksi locale + riwayat `cur`/`price_cur`) |
 
 ---
 
@@ -112,7 +112,7 @@ untuk menyesuaikan Godot. Semua perbaikan dilakukan di sisi Godot.
 ### Gap perilaku nyata (berdampak gameplay/fitur)
 - [x] **1. Antrean forge item untuk hero MATI** — ✅ **DITUTUP 2026-09-23.** Pygame: beli item untuk hero mati → antre `pending_forge_items` → terkirim saat respawn (`hero_items.py:3143`, dikirim `_core.py:2184`). Perbaikan Godot: field `_pending_forge_items` dideklarasikan di Hero.gd (akar masalah lama: properti dinamis tidak tersimpan di Node); `GameManager.itemshop_target_hero()` kini memprioritaskan target-tersimpan→terseleksi→hidup→mati persis `_resolve_shop_target`; `try_buy_item` mengantre item untuk hero mati dengan kapasitas `count+pending < 6`; pengiriman + recalc stat dipanggil di `_update_hero_respawns` (urutan paritas respawn→deliver); chip strip BUY FOR hero mati diaktifkan + badge `queued`; hint `dead_delivery_hint`/`queued_item_count` tampil di tab. Integrasi dikunci `GameplayParityTest` (antre 5 item → FULL ke-6 → respawn → 6 slot terisi).
 - [x] **4. Tie-break target menara** — ✅ **DITUTUP 2026-09-23.** `CombatSystem.nearest_enemy` mendapat parameter `last_wins_ties` dan SEMUA call site dipetakan per padanan Pygame-nya: Tower/Nexus/Hero-attack/Hero-aggro kini `<=` (kandidat terakhir menang, `_entity.py:864-869/:1744-1749/:3663-3670/:3726-3731`); Hero-hunt dan Boss tetap `<` (`_entity.py:3707-3714`, `base_boss.py:688-692`).
-- [ ] **2. Multi-currency top-up** — Pygame: 21 mata uang (IDR, USD, EUR, GBP, SGD, MYR, THB, VND, PHP, JPY, KRW, CNY, AUD, CAD, BRL, INR, MXN, ZAR, AED, SAR) + deteksi locale perangkat (pyjnius di Android / modul locale di PC), fallback USD (`topup_currency.py`). Godot: **hardcode IDR** saja (TopupDialog.gd:503,526); nol referensi currency lain di seluruh GDScript.
+- [x] **2. Multi-currency top-up** — ✅ **DITUTUP 2026-09-24.** Pygame: **20** mata uang (IDR, USD, EUR, GBP, SGD, MYR, THB, VND, PHP, JPY, KRW, CNY, AUD, CAD, BRL, INR, MXN, ZAR, AED, SAR — daftar lama di baris ini menulis "21" padahal tabel `IDR_PER_UNIT` `topup_currency.py:21-42` berisi 20 kunci, dan tidak ada HUF/TRY/NZD seperti yang kadang dikutip dari varian lama modul) + deteksi locale perangkat (pyjnius di Android → `locale.setlocale` di PC → env `LC_ALL`/`LC_CTYPE`/`LANG`), region dulu baru bahasa, fallback `USD`. Godot: `scripts/systems/TopupCurrency.gd` (port 1:1 semua tabel + `format_price`/`convert_idr`/`parse_locale_name`/`device_locale`/`currency_for`), `HudLayout.round_half_even_scaled` + `has_sign_bit` (satu-satunya pembulat uang; ties-to-even bit-eksak — `round()` engine mengubah `"¥93"`/`"₩870"` pada angka tie), dan `TopupDialog.gd` (`currency` = padanan `Game.topup_currency`, deteksi malas sekali di `_ready`, `_price_str` delegasi, riwayat beli menyimpan `cur` + `price_cur` 2 desimal seperti `_core.py:6107-6119`; redeem tetap `"IDR"`/0 seperti `:6065-6072`). **Bug nyata yang ikut ditutup:** dialog Godot mencetak `"Rp10.000"` — spasi simbol pygame (`"Rp "`) hilang, jadi label harganya tidak pernah identik walau mata uangnya IDR. Quirk yang sengaja DIPERTAHANKAN: lookup kurs tanpa normalisasi kapital (`convert_idr(x, "idr")` jatuh ke USD), `VND 0.62` per unit (`10.000 rupiah = "₫16,129"`), koma tetap koma untuk VND, `-0.00003` dolar tetap `$-0.00`, dan simbol "C$" dipakai CNY sekaligus CAD. Deviasi engine + alasan: 5 butir di header `TopupCurrency.gd` (tidak ada pyjnius/`setlocale`; `DisplayServer.get_locale()` + env; `MYSTIC_FORCE_LOCALE` untuk tes headless; badan `detect_currency` dipecah jadi fungsi murni; `None`→`""`). Dikunci `tools/test_godot_topup_currency_parity.py` (137 pin sumber + menjalankan modul pygame asli untuk 581 kasus fixture **dan** shadow-run 623 cek atas algoritma Godot, karena CI linter tidak punya engine) + `godot/tests/TopupCurrencyParityTest.tscn`. **Masih terbuka, di luar gap ini:** pygame mencetak `[TOP UP] +50.000 Hero Gold (PAKET 50K via GOPAY, USD 0.62, simulasi)` ke konsol (`_core.py:6133-6134`) dan Godot tidak punya baris log itu; dan blokir cloud-save (#3) belum tersentuh.
 - [ ] **3. Cloud save (Google Play Games)** — Pygame: sign-in, upload/download async, status overlay (`mobile/cloud_save.py`). Godot: eksplisit **tidak diport** (komentar SaveManager.gd:34); tombol settings selalu OFF/unavailable.
 
 ### Gap mobile/Android
@@ -147,20 +147,22 @@ untuk menyesuaikan Godot. Semua perbaikan dilakukan di sisi Godot.
 |---|---|
 | Data konten (hero/boss/level/item/minion/ekonomi/teks) | ✅ **1:1 penuh** — diverifikasi kunci-per-kunci & nilai-per-nilai |
 | Perilaku gameplay inti | ✅ **1:1 berlapis oracle** — fixture PASS (54 level, 216 boss, 79 smart-AI, trace skill) |
-| Menu/settings/save/topup (struktur) | ✅ Hampir penuh (settings per-slot = deviasi tercatat) |
+| Menu/settings/save/topup (struktur) | ✅ Hampir penuh (settings per-slot = deviasi tercatat; topup multi-currency penuh) |
 | Visual struktural (sinematik, HUD, popup, shake) | ✅ 1:1; piksel unit/map lewat bake |
 | FX skill boss (piksel) | ⚠️ Aproksimasi generik, bukan salinan |
 | Fitur Android (vibrate, safe-area, long-press, debug overlay 4-mode) | ✅ **Ditutup 2026-09-23** (Fase 32) — `TouchGestures/DebugOverlay/MobileLayout` |
 | Fitur Android (cloud save, particle budget) | ❌ Belum diport |
 | Forge item untuk hero mati | ❌ Belum di-wire (fitur Pygame nyata) |
-| Multi-mata-uang topup | ❌ Godot IDR saja |
+| Multi-mata-uang topup | ✅ **Ditutup 2026-09-24** (Fase 33) — `TopupCurrency.gd` + `TopupDialog.gd`, diunci `test_godot_topup_currency_parity.py` |
 | Tie-break target menara | ⚠️ Beda operator `<=` vs `<` |
 
 **Status akhir: BELUM 1:1 penuh** — progres per 2026-09-23:
-gap **#1 (forge hero mati)**, **#4 (tie-break)**, dan **#5-#8 (rantai sentuh
-mobile: long-press + overlay debug 4-mode + getar + safe-area)** ✅ DITUTUP.
-Sisa terbuka: 1 fitur topup multi-currency, 2 fitur Android (cloud save,
-particle budget) + modul perf spesifik Pygame (#10), sejumlah deviasi
+gap **#1 (forge hero mati)**, **#2 (multi-currency top-up)**, **#4
+(tie-break)**, dan **#5-#8 (rantai sentuh mobile: long-press + overlay debug
+4-mode + getar + safe-area)** ✅ DITUTUP.
+Sisa terbuka: 2 fitur Android (cloud save,
+particle budget) + modul perf spesifik Pygame (#10), satu baris log `[TOP UP]`
+yang belum punya padanan Godot, sejumlah deviasi
 disengaja, dan sertifikasi piksel FX runtime yang masih terbuka.
 
 Urutan prioritas penutupan gap berikutnya:
@@ -173,7 +175,12 @@ Urutan prioritas penutupan gap berikutnya:
    `tools/test_godot_mobile_touch_parity.py` + `tests/MobileTouchParityTest.tscn`)
 4. ~~Safe-area layout~~ ✅ selesai 2026-09-23 (`MobileLayout.safe_area()` =
    `(28, 10, 1224, 700)` di mode sentuh, dipakai jangkar overlay debug)
-5. Multi-currency topup.
+5. ~~Multi-currency topup~~ ✅ selesai 2026-09-24 (Fase 33 —
+   `scripts/systems/TopupCurrency.gd` port 1:1 `topup_currency.py`,
+   `HudLayout.round_half_even_scaled` untuk pembulatan ties-even,
+   `TopupDialog.currency` + riwayat `cur`/`price_cur`; diunci
+   `tools/test_godot_topup_currency_parity.py` +
+   `godot/tests/TopupCurrencyParityTest.tscn`)
 6. Cloud save backend.
 7. Particle ratio budget.
 8. FX boss per-boss (27 modul) bila ingin klaim piksel 1:1.

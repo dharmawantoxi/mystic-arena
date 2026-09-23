@@ -1100,6 +1100,72 @@ Deviasi yang disengaja (tercatat, bukan kelupaan):
    klik. Klik kanan fisik dikirim sebagai `long_press` press-segera, jadi
    sensasinya tidak berubah.
 
+## Mata uang dialog top-up (Fase 33 — port `topup_currency.py`)
+
+Harga paket top-up disimpan dalam IDR dan **ditampilkan** dalam mata uang
+pemain. Sebelum fase ini Godot me-hardcode satu angka dan memformatnya
+sendiri — hasilnya `"Rp10.000"`, satu spasi lebih rapat dari `"Rp 10.000"`
+pygame, karena spasi itu bagian dari simbol (`CURRENCY_SYMBOLS["IDR"] = "Rp "`),
+bukan padding. Sekarang: satu port murni, satu titik deteksi, satu sumber
+pembulatan.
+
+| Pygame (`topup_currency.py`, root repo) | Godot | Catatan |
+|---|---|---|
+| `IDR_PER_UNIT` (:21-42, **20** mata uang — baris audit lama menyebut "21", itu salah hitung) | `scripts/systems/TopupCurrency.gd` | salinan literal; fixture membandingkan sebagai DATA dan pin membandingkan TULISANNya juga (`"VND": 0.62`, `"IDR": 1.0`, `"USD": 16200` — beda bentuk angka itu berarti, bukan gaya) |
+| `CURRENCY_SYMBOLS` (:45-66), `NO_DECIMAL` (:69), `REGION_CURRENCY` (:73-95, 29 kunci — lima `EUR` dalam SATU baris), `LANG_CURRENCY` (:100-109, `id` bukan `in`), `DEFAULT_CURRENCY="USD"` (:112) | idem | simbol ber-spasi (`"Rp "`, `"RM "`, `"R "` untuk rand ZA, `"AED "`, `"SAR "`) dan `"C$"` kembar (CNY+CAD) dipertahankan apa adanya; baris rangkap lima sengaja tidak dipecah supaya diff tabel tetap 1:1 |
+| `_parse_locale_name` (:115-126) | `TopupCurrency.parse_locale_name` | TANPA strip; tolak awalan `"C"` (case-sensitive → `"ca_ES"` sah, `"C.UTF-8"` tidak); region hanya bila anak kunci `_` tepat 2 huruf alpha; `-`→`_` sehingga `en-US` == `en_US` |
+| `_device_locale` (:129-176): pyjnius → `locale.setlocale(LC_ALL,"")` → env `LC_ALL`/`LC_CTYPE`/`LANG` | `TopupCurrency.device_locale()` | **deviasi #2**: Godot tidak mengubah locale proses dan tidak punya jalur Java; sumbernya `DisplayServer.get_locale()` lalu env dengan URUTAN + penyaringan `"C"` yang sama. Ditambah `MYSTIC_FORCE_LOCALE` (**deviasi #3**, cermin `MYSTIC_FORCE_TOUCH`) yang dibaca paling awal — tanpa itu cabang deteksi tidak bisa diuji di CI tanpa GPU; di build biasa env itu tidak pernah ada sehingga jalurnya identik dengan pygame |
+| `detect_currency()` (:179-195) | `detect_currency()` = `currency_for(device_locale())` | region dulu → bahasa → USD. Badannya dipecah jadi `currency_for(lang, region)` + `detect_from_locale_name(nama)` (**deviasi #4**) supaya fixture bisa memutar ulang cabang yang sama tanpa Env; `None` pygame jadi `""` (**deviasi #5**, semua pembanding cuma menguji kekosongan) |
+| `convert_idr` (:198-205) → `(nilai, mata_uang_final)` | `convert_idr` → `Array` | lookup `IDR_PER_UNIT.get(currency)` **tanpa normalisasi kapital** (`:201`): `"idr"` tidak ketemu lalu jatuh ke USD. Quirk, bukan bug port — ada kasusnya di fixture. Bukan `(nilai, ok)`: mata uang final yang dikembalikan, dan `if not rate:` (None ATAU nol) |
+| `format_price` (:208-221) | `format_price` | NO_DECIMAL → `f"{int(round(val)):,}"` + tukar `,`→`.` **khusus IDR** (`"Rp 10.000"`, sementara `"₫16,129"` tetap koma); sisanya `f"{val:,.2f}"`; simbol diambil dengan `CURRENCY_SYMBOLS.get(cur, cur + " ")` —
+fallback `cur + " "` itu TIDAK pernah tercapai lewat `format_price` (nama tak
+sudah diganti `DEFAULT_CURRENCY` di `convert_idr` dulu, dan 20 mata uang tabel
+kurs = 20 kunci tabel simbol, diverifikasi oracle), tapi tetap dipertahankan
+supaya strukturnya identik dan tetap dipakai di jalur lain |
+| `Game.topup_currency` (`_core.py:3190`), deteksi malas (`:5583-5589`, gagal → `"USD"`), `_topup_price_str` (`:5344-5347`, `or "IDR"`), riwayat beli (`:6107-6109`, `:6119`), redeem tetap `"IDR"`/0 (`:6065-6072`) | `scenes/ui/TopupDialog.gd`: `currency`, resolve di `_ready`, `_price_str`, `_topup_complete` | dialog Godot ditata ulang (bukan digambar tiap frame), jadi deteksi sekali di `_ready` — posisi logikanya sama: hanya saat belum terisi. `price_cur` di save = float 2 desimal, `price` TETAP base IDR (sumber kebenaran), `cur` = mata uang yang dilihat pemain saat beli |
+
+**Kenapa pembulatannya bit-eksak.** `int(round(val))` dan `f"{val:,.2f}"`
+CPython membulatkan *nilai biner* dengan ties-to-even; `round()` GDScript
+membulatkan `.5` menjauhi nol, jadi angka yang jatuh tepat di tengah (2,5 →
+2 vs 3) beda satu digit — dan untuk mata uang, satu digit itu adalah harga
+yang dibayar. Karena itu satu-satunya pembulat uang di proyek ini adalah
+`HudLayout.round_half_even_scaled(value, digits)` (dikeluarkan dari triks
+`format_gold_rate`: bit IEEE-754 dibaca lewat `_double_bits`, `10^digits`
+dibangun dari `5^digits` di integer 64-bit, tidak ada perkalian float sehingga
+tidak ada double-rounding). Aturan "tanda diambil dari nilai ASLI, bukan dari
+hasil bulat" ikut dipertahankan: `-0.00003` dolar tampil `$-0.00`, bukan
+`$0.00` (`HudLayout.has_sign_bit`), sementara jalur tanpa-desimal justru
+kehilangan tanda itu karena `int(round())` pygame memang menghasilkan `0`.
+
+Tiga lapis penguncian:
+
+```bash
+# Oracle: MENJALANKAN topup_currency.py ASLI (432 kasus harga, 32 locale,
+# 50 kasus pembulatan ties, 27 konversi, 7 baris riwayat, 9 invarian
+# fmt_idr), mem-PIN 137 literal/tabel di 5 berkas sumber, lalu
+# shadow-run algoritma Godot (623 cek) supaya deviasi aritmetika terbaca
+# bahkan di CI linter yang tidak punya engine.
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_topup_currency_parity.py
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_topup_currency_parity.py --write-fixture   # hanya bila topup_currency.py berubah
+
+# Replay headless (fixture lewat kelas produksi: TopupCurrency, HudLayout,
+# TopupDialog asli + MYSTIC_FORCE_LOCALE):
+XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/TopupCurrencyParityTest.tscn --quit-after 300
+```
+
+Fixture (`godot/tests/fixtures/topup_currency.json`) HANYA berisi fungsi murni
+— tidak ada state modul, waktu, atau angka runtime, sehingga dua kali
+`--write-fixture` wajib menghasilkan berkas identik (diperiksa alat oracle).
+
+Yang TIDAK diport (sengaja): pyjnius + `locale.setlocale` (lihat tabel), dan
+cloud save (tetap gap #6 audit — mata uang tidak bergantung padanya). Tabel
+kurs di modul ini STATIS dan hanya untuk TAMPILAN: kalau nanti disambung ke
+gateway nyata (Midtrans/Xendit/Stripe), invoice dibuat dengan mata uang hasil
+deteksi dan kurs gateway, bukan dari tabel ini (`topup_currency.py:13-16`).
+Catatan yang masih terbuka dari fase ini: pygame mencetak baris
+`[TOP UP] ...` ke konsol saat transaksi selesai (`_core.py:6133-6134`,
+memuat `cur` + `price_cur`) dan Godot tidak — di luar gap #2, tercatat di audit.
+
 ## Kaizen Skeleton2D (showcase / opt-in)
 
 ```
