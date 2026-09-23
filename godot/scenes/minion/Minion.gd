@@ -408,7 +408,7 @@ func try_attack():
 		# Minion.update menyerang INSTAN take_damage(damage, team) — NETRAL
 		# tanpa source & school (paritas _entity.py:5580-5581) — jadi
 		# proyektil ini juga netral; sisa deviasi (projectile vs instant)
-		# terbuka di docs/GODOT_PARITY.md. Source TETAP null: minion tidak
+		# terbuka di docs/AUDIT_ULANG_DARI_AWAL.md. Source TETAP null: minion tidak
 		# pernah memberi kill credit / reflect Bristleback-Thornmail /
 		# blind (syarat source is not None di pygame).
 		var b = TowerBulletScript.new()

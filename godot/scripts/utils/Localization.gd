@@ -56,7 +56,7 @@
 #     GameManager.set_language).
 #   Kunci lain (notifikasi forge, banner toko, popup detail item, "MATI"/
 #   antrean chip hero) ikut diport sebagai DATA karena permukaan UI
-#   pemakainya belum ada di port Godot — lihat docs/LOCALIZATION_GODOTPP.md.
+#   pemakainya belum ada di port Godot — lihat docs/AUDIT_ULANG_DARI_AWAL.md.
 #
 # Twin Pygame: localization.py. Dikunci: godot/tests/LocalizationParityTest.gd
 # (+ fixture godot/tests/fixtures/localization.json) dan oracle tanpa engine

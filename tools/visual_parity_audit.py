@@ -36,7 +36,7 @@ Pemakaian
 ---------
   python3 tools/visual_parity_audit.py              # cepat (~30 dtk)
   python3 tools/visual_parity_audit.py --full       # re-bake SEMUA (222 unit + 54 map)
-  python3 tools/visual_parity_audit.py --report md  # tulis docs/PARITY_AUDIT.md
+  python3 tools/visual_parity_audit.py --report md  # tulis docs/VISUAL_PARITY_REPORT.md
   python3 tools/visual_parity_audit.py --section palette,encoder
 
 Butuh pygame-ce (dan Pillow untuk bake strip unit).
@@ -60,7 +60,7 @@ GODOT = os.path.join(ROOT, "godot")
 #  Infrastruktur laporan
 # ══════════════════════════════════════════════════════════════════
 
-## Penanda blok yang ditulis mesin di docs/PARITY_AUDIT.md. Isi di luar
+## Penanda blok yang ditulis mesin di docs/VISUAL_PARITY_REPORT.md. Isi di luar
 ## penanda ini adalah laporan kurasi (ditulis manusia) dan TIDAK boleh
 ## disentuh `--report md`.
 BEGIN = "<!-- BEGIN AUTO AUDIT -->"
@@ -921,7 +921,7 @@ def main():
     ap.add_argument("--section", default=",".join(ALL),
                     help="daftar seksi dipisah koma: " + ", ".join(ALL))
     ap.add_argument("--report", choices=["md"],
-                    help="tulis juga laporan markdown ke docs/PARITY_AUDIT.md")
+                    help="tulis juga laporan markdown ke docs/VISUAL_PARITY_REPORT.md")
     args = ap.parse_args()
     want = set(s.strip() for s in args.section.split(",") if s.strip())
 
@@ -962,7 +962,7 @@ def main():
     if args.report == "md":
         docs = os.path.join(ROOT, "docs")
         os.makedirs(docs, exist_ok=True)
-        p = os.path.join(docs, "PARITY_AUDIT.md")
+        p = os.path.join(docs, "VISUAL_PARITY_REPORT.md")
         block = (BEGIN + "\n"
                  "## Hasil audit terakhir (otomatis)\n\n"
                  "Dihasilkan `tools/visual_parity_audit.py` "

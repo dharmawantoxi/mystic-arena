@@ -1015,7 +1015,7 @@ def main():
                 "nilai SUMBER pygame: di layar nyata pygame (surface tanpa "
                 "SRCALPHA) alpha itu dibuang sehingga bayangan tampil hitam "
                 "pekat, sedangkan kanvas Godot selalu blend - deviasi piksel "
-                "yang dicatat di docs/GODOT_PARITY.md."),
+                "yang dicatat di docs/AUDIT_ULANG_DARI_AWAL.md."),
         },
         "scenarios": [
             {"name": s["name"], "boss_type": s["boss_type"], "state": s["state"],

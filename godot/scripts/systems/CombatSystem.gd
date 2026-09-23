@@ -54,7 +54,6 @@ const UNIT_GROUPS: Array = ["heroes", "bosses", "minions", "towers", "nexus"]
 ## bukan kematian) menonaktifkannya — perilaku produksi tidak berubah.
 var death_dispatch_enabled: bool = true
 
-
 # ══════════════════════════════════════════════════════════
 #  QUERY UNIT
 # ══════════════════════════════════════════════════════════
@@ -73,7 +72,6 @@ func units_of(team: String) -> Array:
 			out.append(n)
 	return out
 
-
 ## Semua musuh hidup dari sudut pandang `team`
 func enemies_of(team: String) -> Array:
 	var out: Array = []
@@ -90,7 +88,6 @@ func enemies_of(team: String) -> Array:
 			out.append(n)
 	return out
 
-
 ## Musuh dalam radius dari sebuah titik
 func enemies_in_radius(team: String, center: Vector2, radius: float) -> Array:
 	var out: Array = []
@@ -98,7 +95,6 @@ func enemies_in_radius(team: String, center: Vector2, radius: float) -> Array:
 		if (e as Node2D).global_position.distance_to(center) <= radius:
 			out.append(e)
 	return out
-
 
 ## Paritas `_system.query_enemies_in_range(x, y, radius, team)` +
 ## `Minion._get_enemies` (`_entity.py:5635-5679`): minion/hero/boss diambil dari
@@ -138,7 +134,6 @@ func query_enemies_in_range(team: String, center: Vector2, radius: float) -> Arr
 				out.append(n)
 	return out
 
-
 # ══════════════════════════════════════════════════════════
 #  SPATIAL GRID — singleton `_grid` tingkat modul (_system.py:145)
 # ══════════════════════════════════════════════════════════
@@ -160,10 +155,8 @@ var _spatial_grid = SpatialGridScript.new()
 var _grid_build_frame: int = -1000000
 var _grid_ready: bool = false
 
-
 func _ready() -> void:
 	_spatial_grid.cell_size = GRID_CELL_SIZE
-
 
 ## Hasil build grid masih berlaku? False sebelum build pertama.
 func spatial_grid_fresh() -> bool:
@@ -171,18 +164,15 @@ func spatial_grid_fresh() -> bool:
 		return false
 	return Engine.get_process_frames() - _grid_build_frame <= GRID_STALE_FRAMES
 
-
 ## Jumlah entri terindeks (debug overlay + tes; pygame tidak punya padanan).
 func spatial_grid_count() -> int:
 	return _spatial_grid.count()
-
 
 ## Buang grid (harness/tes; produksi memanggil `update_spatial_grid` lagi).
 func reset_spatial_grid() -> void:
 	_spatial_grid.clear()
 	_grid_ready = false
 	_grid_build_frame = -1000000
-
 
 ## Padanan `update_spatial_grid(minions, heroes)` (_system.py:147-167): sekali
 ## per frame (frame genap) dari `Main._process`. Hanya minion & hero/boss yang
@@ -191,7 +181,6 @@ func update_spatial_grid(minions: Array, heroes: Array) -> void:
 	_spatial_grid.update_from(_alive_only(minions), _alive_only(heroes))
 	_grid_build_frame = Engine.get_process_frames()
 	_grid_ready = true
-
 
 ## Guard umur node Godot: `is_instance_valid` diperlukan karena array pemanggil
 ## bisa memegang node yang sudah di-free di tengah frame (pygame cukup membaca
@@ -203,7 +192,6 @@ static func _alive_only(units: Array) -> Array:
 			out.append(u)
 	return out
 
-
 ## Varian produksi: daftar unit diambil dari grup scene tree dengan urutan
 ## yang sama dengan pygame, lalu diteruskan ke `update_spatial_grid`.
 func update_spatial_grid_from_tree() -> void:
@@ -212,7 +200,6 @@ func update_spatial_grid_from_tree() -> void:
 	heroes.append_array(_group_nodes("bosses"))
 	update_spatial_grid(minions, heroes)
 
-
 func _group_nodes(group: String) -> Array:
 	var out: Array = []
 	for n in get_tree().get_nodes_in_group(group):
@@ -220,26 +207,38 @@ func _group_nodes(group: String) -> Array:
 			out.append(n)
 	return out
 
-
 static func _targetable(unit) -> bool:
 	var st = unit.get("status")
 	if st != null and st.has_method("can_be_targeted"):
 		return st.can_be_targeted()
 	return true
 
-
 ## Unit terdekat yang bisa diserang (paritas _find_hunt_target: murni jarak)
-func nearest_enemy(unit, max_distance: float) -> Node2D:
+##
+## `last_wins_ties` = aturan tie-break dua kandidat pada jarak SAMA PERSIS
+## (penutup gap #4 audit 2026-09-23 — dulu semua call site memakai `<`):
+##   false (`<`)  = kandidat PERTAMA menang — paritas Hero._find_hunt_target
+##                  (_entity.py:3707-3714) dan scan target boss
+##                  (base_boss.py:688-692)
+##   true  (`<=`) = kandidat TERAKHIR menang — paritas Tower._find_target
+##                  (_entity.py:864-869), Castle._find_target (:1744-1749),
+##                  Hero._find_attack_target (:3663-3670), dan
+##                  Hero._find_aggro_target (:3726-3731)
+func nearest_enemy(unit, max_distance: float, last_wins_ties := false) -> Node2D:
 	var best: Node2D = null
 	var best_d := max_distance
 	var from: Vector2 = unit.global_position
 	for e in enemies_of(str(unit.get("team"))):
 		var d: float = from.distance_to((e as Node2D).global_position)
-		if d < best_d:
+		var take := false
+		if last_wins_ties:
+			take = d <= best_d
+		else:
+			take = d < best_d
+		if take:
 			best_d = d
 			best = e as Node2D
 	return best
-
 
 # ══════════════════════════════════════════════════════════
 #  DAMAGE PENYERANG (sebelum mitigasi)
@@ -277,7 +276,6 @@ func calc_damage(attacker: Node, defender: Node, base: float, _school: String) -
 			return float(int(dmg * float(roll[1])))
 	return dmg
 
-
 ## Damage skill: skill_damage hero × amplifier item × skill_down (Mage Tower)
 func calc_skill_damage(attacker: Node, multiplier: float) -> float:
 	var base := float(attacker.get("skill_damage"))
@@ -289,7 +287,6 @@ func calc_skill_damage(attacker: Node, multiplier: float) -> float:
 	if st != null:
 		out *= st.skill_damage_mult()
 	return maxf(0.0, out)
-
 
 ## Mitigasi — per jenis target, mirror take_damage pygame masing-masing
 # ══════════════════════════════════════════════════════════
@@ -308,15 +305,12 @@ func _num(v) -> float:
 		return 0.0
 	return float(v)
 
-
 ## Deteksi jenis unit (duck-typing field khas masing-masing class).
 func _is_hero(unit) -> bool:
 	return unit != null and "hero_type" in unit and "skills" in unit
 
-
 func _is_minion(unit) -> bool:
 	return unit != null and "minion_type" in unit
-
 
 ## HERO — mirror Hero.take_damage pygame 4636-4693.
 ## Urutan: dmg_amp int(round) → armor (SEMUA damage non-'fire', dibaca LIVE
@@ -362,7 +356,6 @@ func _hero_mitigate(target, dmg: float, dmg_type: String, st, eff_school: String
 		dmg = maxf(1.0, DamageSchool.py_round(dmg * keep))
 	return dmg
 
-
 ## MINION — mirror Minion.take_damage pygame 5795-5821.
 ## Urutan: dmg_amp → shred bonus damage ×(1+min(1,shred*0.06)) utk non-fire
 ## (double-dip Corroder) → school: physical memakai armor−shred (negatif =
@@ -389,7 +382,6 @@ func _minion_mitigate(target, dmg: float, dmg_type: String, st,
 				dmg * (1.0 - float(target.get("magic_resist")))))
 	return dmg
 
-
 ## BOSS — mirror Boss.take_damage pygame 5978-6037 (sebelum resilience).
 ## Urutan: dmg_amp → shred bonus → school: physical = reduction dikurangi
 ## shred×0.06 (bukan armor yang dikikis!) clamp [0, 0.60]; magic = MR.
@@ -414,7 +406,6 @@ func _boss_mitigate(target, dmg: float, dmg_type: String, st,
 				dmg * (1.0 - float(target.get("magic_resist")))))
 	return dmg
 
-
 ## TOWER — mirror Tower.take_damage pygame 1053-1071 (tanpa shred/amp:
 ## menara pygame tidak punya status itu). Nexus/castle TANPA mitigasi
 ## sekolah sama sekali (Castle.take_damage 1758 hanya shield).
@@ -427,7 +418,6 @@ func _tower_mitigate(target, dmg: float, eff_school: String) -> float:
 		dmg = maxf(1.0, DamageSchool.py_round(
 			dmg * (1.0 - float(target.get("magic_resist")))))
 	return dmg
-
 
 # ══════════════════════════════════════════════════════════
 #  PIPELINE UTAMA
@@ -455,7 +445,7 @@ func apply_damage(target, amount: float, from_team: String = "",
 
 	var st = target.get("status")
 	# Sekolah damage = milik PENYERANG, bukan target (paritas
-	# resolve_damage_school di _entity.py 106-131: school eksplisit ->
+	# resolve_damage_school di _entity.py 106-131: school eksplisit
 	# dmg_type dot yang netral -> source.dmg_school). Versi sebelumnya salah
 	# mengambil dmg_school TARGET, sehingga serangan fisik ke hero berschool
 	# magic ikut dianggap magic dan menembus armor.
@@ -632,7 +622,6 @@ func apply_damage(target, amount: float, from_team: String = "",
 
 	return dealt
 
-
 ## Port `credit_hero_damage` `_entity.py:26-45`. `int(amount)` memotong
 ## ke 0; source tanpa field `damage_dealt` diabaikan (bukan hero). Nested
 ## reflect memakai source=null jadi defender tidak ter-kredit.
@@ -642,7 +631,6 @@ func _credit_hero_damage(source, amount: float) -> void:
 	if not ("damage_dealt" in source):
 		return
 	source.damage_dealt = float(source.get("damage_dealt")) + float(int(amount))
-
 
 ## Panggil die() unit dengan argumen sesuai jenisnya (pygame: take_damage
 ## tidak punya die(); Godot `die()` menerima killer/source untuk hero/boss
@@ -665,7 +653,6 @@ func _dispatch_death(target, source, from_team: String) -> void:
 		# Minion.die(killer_team) / Nexus.die(killer_team).
 		target.die(from_team)
 
-
 ## True Strike penyerang (Sundering Cudgel): serangan basic tidak pernah
 ## meleset (menembus evasion + blind). Mirror has_true_strike hero_items.
 func _source_has_true_strike(source) -> bool:
@@ -675,7 +662,6 @@ func _source_has_true_strike(source) -> bool:
 	if sinv != null and sinv.has_method("has_true_strike"):
 		return bool(sinv.has_true_strike())
 	return false
-
 
 ## Blind PENYERANG (aura Solar Brand membutakan unit di sekitarnya):
 ## peluang serangan fisiknya meleset. Mirror blind_timer/blind_amount
@@ -687,7 +673,6 @@ func _source_blind(source) -> float:
 	if sst != null and _num(sst.get("blind_timer")) > 0.0:
 		return _num(sst.get("blind_amount"))
 	return 0.0
-
 
 ## Shield menyerap damage 1:1 lebih dulu (paritas Tower.take_damage 476-487 dan
 ## Castle.take_damage 201-225). Castle punya lapisan kedua: sisa damage tetap
@@ -713,7 +698,6 @@ func _shield_pass(target, dmg: float) -> Array:
 		remaining = float(int(remaining * (1.0 - float(target.get("shield_damage_reduction")))))
 	return [absorbed, remaining]
 
-
 ## Heal lewat semantik property `hp` pygame: pemanggil mem-min ke max_hp
 ## DULU, lalu setter memotong kenaikan dengan anti-heal dan/atau
 ## memperbesarnya dengan heal_amp (debuff, _core.py:829-845). Dipakai
@@ -733,7 +717,6 @@ func heal_gain_py(unit, gain: float) -> void:
 		if _num(st.get("heal_amp_timer")) > 0.0 and value > before:
 			value = before + (value - before) * (1.0 + _num(st.get("heal_amp_amount")))
 	unit.hp = value
-
 
 ## On-hit pasif penyerang — basis damage PRA-mitigasi (pygame
 ## on_basic_attack_hit menerima `damage` serangan, bukan damage mendarat).
@@ -780,7 +763,6 @@ func _on_attacker_hit(attacker, target, dealt: float, is_physical: bool,
 		if tst != null:
 			tst.apply_armor_shred(shred, 360.0 / 60.0)
 
-
 ## Heal yang melewati anti-heal / heal_amp (paritas property `hp` setter pygame)
 func heal_unit(unit, amount: float) -> float:
 	if amount <= 0.0 or unit == null or not is_instance_valid(unit):
@@ -797,7 +779,6 @@ func heal_unit(unit, amount: float) -> float:
 	var before := float(unit.get("hp"))
 	unit.hp = minf(max_hp, before + healed)
 	return float(unit.get("hp")) - before
-
 
 # ══════════════════════════════════════════════════════════
 #  AURA ITEM (Steel Aegis / Everfrost Guard / Solar Brand / Searbrand)
@@ -861,7 +842,6 @@ func update_auras() -> void:
 		for aura in auras:
 			_apply_aura(u, aura, pos, team, all)
 
-
 func _apply_aura(_caster, aura: Dictionary, pos: Vector2, team: String, all: Array) -> void:
 	var ally_r := float(aura.get("ally_radius", 0))
 	var enemy_r := float(aura.get("enemy_radius", 0))
@@ -895,7 +875,6 @@ func _apply_aura(_caster, aura: Dictionary, pos: Vector2, team: String, all: Arr
 				if blind > 0.0:
 					st.apply_blind(blind, 0.6)
 
-
 # ══════════════════════════════════════════════════════════
 #  FX TEKS
 # ══════════════════════════════════════════════════════════
@@ -913,7 +892,6 @@ func _hit_spark_count(target) -> int:
 		return 10 # Castle/Nexus
 	return 0
 
-
 func _hit_sparks(target) -> void:
 	var count := _hit_spark_count(target)
 	if count <= 0 or not (target is Node2D):
@@ -922,12 +900,10 @@ func _hit_sparks(target) -> void:
 	GameManager.spark_fx.add_hit_particles(at.x, at.y,
 		str(target.get("team")), count)
 
-
 func _spawn_damage_number(target, amount: float, big: bool) -> void:
 	if amount < 1.0:
 		return
 	_float_text(target, str(int(round(amount))), big)
-
 
 func _float_text(target, text: String, big: bool) -> void:
 	var tree := get_tree()

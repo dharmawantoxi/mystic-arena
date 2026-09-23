@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regression test PYRENTH V3 (renderer + live combat-FX engine).
 
-Mengunci kontrak yang dibangun di dokumen docs/PYRENTH_V3_COMBAT_FX.md:
+Mengunci kontrak yang dibangun di dokumen docs/AUDIT_ULANG_DARI_AWAL.md:
 
   * lapisan hidup heroes/pyrenth_fx.py punya semua API yang dipakai
     pipeline hero/boss (attach/owns/tick/draw_*_layer/notify_*);

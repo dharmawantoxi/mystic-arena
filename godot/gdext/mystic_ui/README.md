@@ -3,7 +3,7 @@
 Port `ui_components/_bundle.py` (lapisan **LAYOUT + STATE + LABEL** dari 11
 submodul komponen UI) ke Godot C++ GDExtension.
 
-Dokumen status paritas: [`docs/GODOT_PARITY.md`](../../../docs/GODOT_PARITY.md)
+Dokumen status paritas: [`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md)
 (FASE 36). **Status: generator + self-test tanpa engine HIJAU, backend GDScript
 belum disakelar — tidak ada perilaku pemain yang berubah.** Lihat "Yang belum"
 di bawah sebelum mengaktifkan flag.
@@ -122,7 +122,7 @@ bukan ±30 menit siklus CI.
    `mystic_ui` di `.github/workflows/godot-gdext.yml` (scons + cek entry
    `mystic_ui_library_init` lewat `nm -D` + string khas `ui_v1:11mod:80fn:` /
    `MysticUI` yang tahan strip) sudah ada dan menahan regresi link/registrasi.
-4. `docs/UI_COMPONENTS_GODOTPP.md`.
+4. `docs/AUDIT_ULANG_DARI_AWAL.md`.
 
 Sampai itu selesai, Python/pygame adalah satu-satunya backend dan tidak ada
 perilaku pemain yang berubah.

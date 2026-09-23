@@ -10,7 +10,7 @@ adalah teks yang selama ini di-hardcode di ``godot/scenes/ui/*.gd``, jadi
 pemain Indonesia tidak melihat perbedaan apa pun, sementara ``en`` membuat
 pilihan "English" benar-benar berlaku di dalam game (bukan hanya di label
 Pengaturan). Pemakai pygame lama tidak berubah: pygame tetap memakai teks
-campurannya sendiri di ``_core.py`` (lihat docs/LOCALIZATION_GODOTPP.md).
+campurannya sendiri di ``_core.py`` (lihat docs/AUDIT_ULANG_DARI_AWAL.md).
 """
 
 _LANGUAGE = "id"

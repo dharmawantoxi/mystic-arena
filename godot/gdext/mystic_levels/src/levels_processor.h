@@ -6,7 +6,7 @@
 // Generator : tools/gen_levels_cpp.py (AST Python -> C++, bukan terjemahan tangan)
 // Regenerasi: python3 tools/gen_levels_cpp.py
 // Cek CI    : python3 tools/gen_levels_cpp.py --check
-// Desain    : docs/LEVELS_GODOTPP.md
+// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md
 //
 // Port levels/level_data.py (54 level, 17 field) ke Godot C++ GDExtension.
 // API = persis ekspor levels/__init__.py: ALL_LEVELS, get_level_config,

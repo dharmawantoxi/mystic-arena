@@ -8,8 +8,6 @@ Google Play**, dengan kontrol **layar sentuh penuh**.
 > 📖 Panduan lengkap langkah demi langkah (build APK, GitHub Actions,
 > publikasi Play Store): **[docs/PANDUAN_ANDROID.md](docs/PANDUAN_ANDROID.md)**
 
----
-
 ## Struktur proyek
 
 ```
@@ -72,18 +70,13 @@ bersih, sedangkan portrait Hero Shop/panel otomatis menambah serat rambut,
 bidang wajah, textile weave, jahitan hakama, dan engraving armor. Kedua LOD
 tetap 100% procedural.
 
-Preview karakter dan skill:
-[docs/kaizen_masterwork_preview.png](docs/kaizen_masterwork_preview.png).
-Contact sheet rig idle/walk/attack:
-[docs/kaizen_animation_strip.png](docs/kaizen_animation_strip.png).
-
 Uji regresi: `python tools/test_hero_hd_render.py` dan
 `python tools/test_kaizen_masterwork.py`.
 
 ### Upgrade terkini: Kaizen v2 Pixel Masterwork + Skill FX v2.1
 
 Renderer Kaizen ditulis ulang mengikuti standar **Thorne v2 / v2.1**
-(detail lengkap: [docs/KAIZEN_V2_RENDERER.md](docs/KAIZEN_V2_RENDERER.md)).
+(detail lengkap: [docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)).
 Rig native dibesarkan ~1.5x (bbox idle 104x112 -> 158x168) sehingga
 kepadatan detail di layar naik tanpa mengubah ukuran di arena (pipeline
 menormalkan). Disiplin pixel-art: ramp hue-shift 4-5 band, selout,
@@ -101,17 +94,11 @@ mata + hachimaki menyala saat R). Ring telegraph E tepat 100 px dunia
 dan R tepat 150 px dunia pada skala apa pun (teraudit 180/180 hit);
 biaya cache-miss rata-rata 2.1-3.2 ms.
 
-Audit terukur + preview:
-`python tools/_audit_kaizen_v2.py` ->
-[docs/kaizen_v2_review.png](docs/kaizen_v2_review.png),
-[docs/kaizen_v2_skills.png](docs/kaizen_v2_skills.png),
-[docs/kaizen_v2_before_after.png](docs/kaizen_v2_before_after.png).
-
 ### Upgrade terbaru: Varkul V3 Combat FX + Swing Arc
 
 Renderer Varkul (Frost Sorcerer, mini-boss level3) ditulis ulang
 mengikuti standar **Thorne v2 / Xerathis v3**
-(detail lengkap: [docs/VARKUL_V3_COMBAT_FX.md](docs/VARKUL_V3_COMBAT_FX.md)).
+(detail lengkap: [docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)).
 Sapuan staff kini **berbasis ark**: sudut staff diinterpolasi lewat tabel
 `_NS_varkul.STAFF_ARC` (anticipation → wind-up → swing → impact →
 follow-through → recovery) yang dibaca renderer canvas DAN lapisan hidup
@@ -126,14 +113,12 @@ budget 2.35 ms).
 
 Uji regresi + preview:
 `python tools/test_varkul_v3_combat.py` (14 grup),
-[docs/varkul_v3_preview.png](docs/varkul_v3_preview.png),
-[docs/varkul_v3_swing_strip.png](docs/varkul_v3_swing_strip.png).
 
 ### Upgrade terbaru: Ignis Drachorn V3 Combat FX + Elder Dragon Form
 
 Sistem visual & rasa-gameplay **Ignis Drachorn** (true boss level4) ditulis
 ulang total mengikuti standar **Varkul v3 / Gornak v3**
-(detail lengkap: [docs/IGNIS_DRACHORN_V3_COMBAT_FX.md](docs/IGNIS_DRACHORN_V3_COMBAT_FX.md)).
+(detail lengkap: [docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)).
 Renderer memakai urutan lapisan tegas (bayangan → tungkai belakang → badan →
 armor → kepala → senjata → tungkai depan → highlight → FX serang → FX skill →
 partikel) di atas komposit siluet + rim `lighting.apply_to_rig`. Ayunan pedang
@@ -148,12 +133,7 @@ impact flash + hit-stop 0.03–0.08 s + shake trauma via `heroes/combat_feel`.
 Fallback canvas otomatis nonaktif saat lapisan hidup aktif — tidak ada efek
 digambar dua kali (3.24 ms/frame dengan skill R aktif).
 
-Uji regresi + preview (regenerasi `python tools/_shot_ignis_v3.py`):
 `python tools/test_ignis_v3_combat.py` (22 grup),
-[docs/ignis_v3_preview.png](docs/ignis_v3_preview.png),
-[docs/ignis_v3_fx_sheet.png](docs/ignis_v3_fx_sheet.png),
-[docs/ignis_v3_elder_form.png](docs/ignis_v3_elder_form.png).
-
 
 ### Contoh maksimal kedua: Thorne Masterwork
 
@@ -168,11 +148,6 @@ memakai **LOD dua tingkat** yang sama: arena mempertahankan siluet yang
 bersih, sedangkan portrait menambah barb quill, serat bulu, kerut
 moncong, alur taring, anyaman vest, jahitan hem, dan goresan pauldron.
 Kedua LOD tetap 100% procedural.
-
-Preview karakter dan skill:
-[docs/thorne_masterwork_preview.png](docs/thorne_masterwork_preview.png).
-Contact sheet rig idle/walk/attack:
-[docs/thorne_animation_strip.png](docs/thorne_animation_strip.png).
 
 Uji regresi: `python tools/test_thorne_masterwork.py`.
 
@@ -198,11 +173,6 @@ aura/platform/proyektil dilewati supaya auto-crop terisi wajah &
 material, bukan lingkaran efek. Biaya render ±0.8 ms/frame (setara
 Thorne) dan tetap 100% procedural — tanpa PNG hero atau `image.load`.
 
-Preview karakter dan skill:
-[docs/sylara_masterwork_preview.png](docs/sylara_masterwork_preview.png).
-Contact sheet rig idle/walk/attack:
-[docs/sylara_animation_strip.png](docs/sylara_animation_strip.png).
-
 Uji regresi: `python tools/test_sylara_masterwork.py`.
 
 ### Contoh maksimal keempat: Zephyr Masterwork
@@ -227,18 +197,14 @@ wajah, dan embroidery. Q Bramble Maze, W Shadow Realm, E Casket Curse, dan
 R Bedlam tetap memakai timer gameplay yang sama, dengan efek visual baru
 yang dibangun penuh dari primitive pygame.
 
-Preview karakter dan skill:
-[docs/zephyr_masterwork_preview.png](docs/zephyr_masterwork_preview.png) dan
-[docs/zephyr_skills_preview.png](docs/zephyr_skills_preview.png).
-Contact sheet rig idle/walk/cast:
-[docs/zephyr_animation_strip.png](docs/zephyr_animation_strip.png).
+ dan
 
 Uji regresi: `python tools/test_zephyr_masterwork.py`.
 
 ### Contoh maksimal kelima: Grimjaw Masterwork
 
 > Renderer Grimjaw kini **doodle sketch v4** (lihat
-> [docs/GRIMJAW_V4_DOODLE_RENDERER.md](docs/GRIMJAW_V4_DOODLE_RENDERER.md));
+> [docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md));
 > deskripsi pixel-masterwork di bawah berlaku untuk v2 (historis).
 
 Grimjaw (Juggernaut — *The Blade Fury*) kini menerima upgrade penuh yang
@@ -260,16 +226,8 @@ pauldron, jahitan loincloth, dan ember api. Q Blade Fury, W Healing Ward,
 E Critical Strike, dan R Omnislash tetap memakai timer gameplay yang sama,
 dengan efek visual yang dibangun penuh dari primitive pygame.
 
-Preview karakter dan pose:
-[docs/grimjaw_masterwork_preview.png](docs/grimjaw_masterwork_preview.png).
-Portrait LOD Hero Shop:
-[docs/grimjaw_portrait_preview.png](docs/grimjaw_portrait_preview.png).
-Contact sheet rig idle/walk/attack:
-[docs/grimjaw_animation_strip.png](docs/grimjaw_animation_strip.png).
-
 Uji regresi: `python tools/test_grimjaw_masterwork.py`.
 Review sheet dirender ulang dengan
-`python tools/_shot_grimjaw_masterwork.py`.
 
 ### Contoh maksimal keenam: Vex Masterwork
 
@@ -291,16 +249,8 @@ W Astral Imprisonment, E Sanity's Eclipse, dan R Essence Flux tetap
 memakai timer gameplay yang sama, dengan efek visual yang dibangun penuh
 dari primitive pygame.
 
-Preview karakter dan pose:
-[docs/vex_masterwork_preview.png](docs/vex_masterwork_preview.png).
-Portrait LOD Hero Shop:
-[docs/vex_portrait_preview.png](docs/vex_portrait_preview.png).
-Contact sheet rig idle/walk/attack:
-[docs/vex_animation_strip.png](docs/vex_animation_strip.png).
-
 Uji regresi: `python tools/test_vex_masterwork.py`.
 Review sheet dirender ulang dengan
-`python tools/_shot_vex_masterwork.py`.
 
 ### Contoh maksimal ketujuh: Gornak Masterwork (mini boss + hero)
 
@@ -353,16 +303,10 @@ Yang dilakukan:
   outline siluet (5 salinan per frame) tidak membayar ruang kosong, dan
   ada test yang memastikan tidak ada bilah terpotong.
 
-Preview karakter, ukuran 1x di arena, dan baris paritas ukuran:
-[docs/gornak_masterwork_preview.png](docs/gornak_masterwork_preview.png).
-Contact sheet rig idle/walk/attack:
-[docs/gornak_animation_strip.png](docs/gornak_animation_strip.png).
-Portrait LOD Hero Shop: [docs/gornak_portrait_preview.png](docs/gornak_portrait_preview.png).
+Portrait LOD Hero Shop: .
 Perbandingan sebelum/sesudah (baris atas = renderer lama, zoom sama):
-[docs/gornak_before_after.png](docs/gornak_before_after.png).
 Khusus pass visual jalur hero (lane + Hero Shop, ukuran sengaja tidak
-diubah): [docs/gornak_hero_pass.png](docs/gornak_hero_pass.png) —
-dirender ulang dengan `python tools/_shot_gornak_hero_pass.py`.
+diubah):  —
 
 **Pass kedua — visual jalur HERO.** Setelah ukuran aman, keluhan berikutnya
 adalah Gornak-as-hero tetap kalah "hidup" dibanding grimjaw/kaizen/vex.
@@ -432,8 +376,6 @@ Q/W/E/R jalur boss **dan** hero, tidak di-upscale, budget ms/frame, plus
 `test_hero_visual_quality` yang mengunci jalur hero: portrait tidak terpotong
 di kanvas 160, mata & warna tema harus muncul di badan, dua kaki tetap
 terpisah, dan cakram cahaya tetap ada di lane).
-Review sheet: `python tools/_shot_gornak_masterwork.py` dan
-`python tools/_shot_gornak_before_after.py`.
 
 ### Pass kelima Gornak — combat FX hidup (lapisan 1:1, 100% prosedural)
 
@@ -476,15 +418,7 @@ Terukur: render berat (lapisan hidup penuh + impact per 10 frame) median
 **≈ 2.9 ms/frame**, partikel aktif ≤ 170 dan **0** setelah 400 frame tanpa
 tempur, entri surface cache 110/384.
 
-Detail lengkap: **[docs/GORNAK_V3_COMBAT_FX.md](docs/GORNAK_V3_COMBAT_FX.md)**.
-Lembar review (regenerasi `python tools/_audit_gornak_v3.py`, 46 cek terukur):
-[docs/gornak_v3_swing_strip.png](docs/gornak_v3_swing_strip.png),
-[docs/gornak_v3_projectile.png](docs/gornak_v3_projectile.png),
-[docs/gornak_v3_impact.png](docs/gornak_v3_impact.png),
-[docs/gornak_v3_skillfx.png](docs/gornak_v3_skillfx.png),
-[docs/gornak_v3_feel.png](docs/gornak_v3_feel.png),
-[docs/gornak_v3_ingame.png](docs/gornak_v3_ingame.png),
-[docs/gornak_v3_debug.png](docs/gornak_v3_debug.png).
+Detail lengkap: **[docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)**.
 Uji regresi: `python -m pytest tools/test_gornak_v3_combat.py -q` (60 cek) dan
 `python tools/test_gornak_masterwork.py` (16 cek, tetap hijau).
 
@@ -535,15 +469,9 @@ final 77x84 px tanpa upscale (morgath 75x72, kaizen 79x76, abaddon
 piksel terang tertinggi.
 
 Before/after (v3 diambil dari git HEAD, zoom sama):
-[docs/gornak_v4_before_after.png](docs/gornak_v4_before_after.png).
-Skill FX v4: [docs/gornak_v4_skills.png](docs/gornak_v4_skills.png).
+Skill FX v4: .
 Di lane (paritas keluarga):
-[docs/gornak_v4_ingame.png](docs/gornak_v4_ingame.png).
 Sheet utama diregenerasi:
-[docs/gornak_masterwork_preview.png](docs/gornak_masterwork_preview.png),
-[docs/gornak_animation_strip.png](docs/gornak_animation_strip.png),
-[docs/gornak_portrait_preview.png](docs/gornak_portrait_preview.png)
-(`python tools/_shot_gornak_v4.py` untuk ketiga sheet pertama).
 
 Uji regresi: `python tools/test_gornak_masterwork.py` (17 kelompok cek,
 ditulis ulang untuk arsitektur v4) dan
@@ -585,9 +513,7 @@ Sistem tempurnya kini ditulis ulang mengikuti arsitektur Gornak v3:
   hidup aktif, renderer melompati 4 FX in-canvas-nya — dan semuanya kembali
   otomatis sebagai fallback kalau modul FX gagal dimuat.
 
-Detail lengkap: **[docs/GRIMJAW_V3_COMBAT_FX.md](docs/GRIMJAW_V3_COMBAT_FX.md)**.
-Lembar review (`python tools/_shot_grimjaw_v3_combat.py`):
-[docs/grimjaw_v3_combat_sheet.png](docs/grimjaw_v3_combat_sheet.png).
+Detail lengkap: **[docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)**.
 Uji regresi: `python -m pytest tools/test_grimjaw_v3_combat.py -q` (58 cek),
 `tools/test_grimjaw_masterwork.py` + `tools/test_grimjaw_swing_arah.py`
 (19 cek, tetap hijau).
@@ -647,10 +573,6 @@ progres 0.55, kurva serangan monoton, outline siluet, portrait LOD
 terpusat tanpa FX tanah, jalur hero `render_hero` + beam pass, dan FX
 skill tetap terpasang). Tes silang `test_gornak_masterwork.py` (yang
 membandingkan bbox morgath) tetap hijau.
-Review sheet: `python tools/_shot_morgath_masterwork.py` ->
-[docs/morgath_masterwork_preview.png](docs/morgath_masterwork_preview.png),
-[docs/morgath_before_after.png](docs/morgath_before_after.png),
-[docs/morgath_portrait_preview.png](docs/morgath_portrait_preview.png).
 
 ## Pass cahaya bersama (lighting.py)
 
@@ -688,10 +610,8 @@ Yang dijamin test (`tools/test_hero_lighting.py`):
 * kill switch `HD_LIGHTING_ENABLED = False` dan `import lighting` gagal sama
   -samanya tidak bikin render crash.
 
-A/B untuk keluarga: `docs/lighting_ab.png` (regenerasi:
-`python tools/_shot_lighting_ab.py`) — tiap sel menampilkan KIRI tanpa pass,
+A/B untuk keluarga:  (regenerasi:
 KANAN dengan pass, plus angka piksel yang berubah. Untuk Gornak sendiri:
-`docs/gornak_hero_pass.png`.
 
 ## Item Forge (16 item, 2 halaman TIER I / TIER II)
 
@@ -714,8 +634,7 @@ Mekanik baru yang didukung engine: `evasion`, `damage block`,
 `armor shred`, `damage amp`, `heal amp`, `slow resist`, `stun/root`
 (boss punya resist 55%), dan `move speed` — semua lewat
 `TowerDebuffMixin` di [_core.py](_core.py). Screenshot toko:
-[docs/item_forge_tier1.png](docs/item_forge_tier1.png) &
-[docs/item_forge_tier2.png](docs/item_forge_tier2.png).
+ &
 
 ## Tactical Commands & Achievement
 
@@ -869,7 +788,7 @@ per (tipe, pose) menahan cache bila selisihnya > 0,35 terhadap jalur
 langsung, dan pose/tipe ber-FX satu-shot (krobellus dkk.) tetap digambar
 langsung supaya tidak ada FX yang hilang atau terpotong.
 Rincian diagnosa, angka, dan katup pengaman:
-[docs/BOSS_HERO_SMOOTH_PARITY.md](docs/BOSS_HERO_SMOOTH_PARITY.md).
+[docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md).
 
 ```bash
 python tools/test_boss_hero_smooth_parity.py --all   # 16 pemeriksaan, 216 boss

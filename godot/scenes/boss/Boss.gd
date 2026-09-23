@@ -203,7 +203,7 @@ func _ready():
 	prefer_distance = float(s.get("prefer_distance", 280.0))
 	# Boss yang punya rantai smart-AI spesifik di Boss.update pygame memakai
 	# per-skill AI Q/W/E/R (port-nya masih terbuka — lihat "Smart-AI boss
-	# musuh" di docs/GODOT_PARITY.md); yang TIDAK punya memakai ability
+	# musuh" di docs/AUDIT_ULANG_DARI_AWAL.md); yang TIDAK punya memakai ability
 	# generik _use_ability. Bendera dibaca dari bosses.json (diekspor
 	# converter dari AST Boss.update — jangan disalin manual ke daftar
 	# konstan, supaya daftar smart-AI tidak pernah tidak sinkron).
@@ -833,7 +833,7 @@ func kit_can_move(e) -> bool:
 ## Pengganti lapisan FX heroes/<boss>_fx pygame (notify_skill_cast):
 ## callout nama skill + denyut ring di posisi boss. Lapisan visual
 ## aproksimasi — koefisien/timing perilaku dijamin BossSmartAIParityTest,
-## bukan audit piksel FX (lihat docs/GODOT_PARITY.md).
+## bukan audit piksel FX (lihat docs/AUDIT_ULANG_DARI_AWAL.md).
 func kit_fx_cast(skill: String) -> void:
 	_callout(str(skill).to_upper() + "!")
 	_kit_ring(global_position, radius + 18.0, fill_color.lightened(0.25))

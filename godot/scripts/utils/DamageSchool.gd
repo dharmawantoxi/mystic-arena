@@ -5,7 +5,7 @@ class_name DamageSchool
 # Di pygame: _is_physical_hit + resolve_damage_school.
 # Mitigasi armor/MR TIDAK lagi universal di sini: tiap jenis target
 # (hero/minion/boss/tower) memakai blok take_damage-nya sendiri di
-# CombatSystem (audit jalur damage basic hero — lihat docs/GODOT_PARITY.md).
+# CombatSystem (audit jalur damage basic hero — lihat docs/AUDIT_ULANG_DARI_AWAL.md).
 
 static func resolve(school: String, dmg_type: String, source) -> String:
 	if school in ["physical","magic"]:

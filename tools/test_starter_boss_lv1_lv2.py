@@ -178,7 +178,7 @@ def test_gornak_swing_trail_bisa_digambar():
 
 
 def test_gornak_swing_trail_versi_v3_yang_terpakai():
-    """Yang aktif harus implementasi sector-arc (docs/GORNAK_V3_COMBAT_FX)."""
+    """Yang aktif harus implementasi sector-arc (docs/AUDIT_ULANG_DARI_AWAL.md)."""
     from heroes import gornak_fx as F
     for attr in ("MAX_TURN_DOT", "ARC_STEP", "MAX_SWEEP"):
         assert hasattr(F.SwingTrail, attr), (

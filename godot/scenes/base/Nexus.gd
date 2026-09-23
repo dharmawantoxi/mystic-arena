@@ -60,8 +60,6 @@ var display_name: String = "Nexus"
 ## Cache entri manifest bake kastil (Fase 7).
 var _baked: Dictionary = {}
 
-
-
 func _ready() -> void:
 	add_to_group("nexus")
 	z_as_relative = false
@@ -74,10 +72,8 @@ func _ready() -> void:
 	display_name = "Radiant Nexus" if team == "blue" else "Dire Nexus"
 	GameManager.register_nexus(self)
 
-
 func _exit_tree() -> void:
 	GameManager.unregister_nexus(self)
-
 
 ## CombatSystem itu autoload singleton -> boleh dirujuk langsung sebagai
 ## identifier global (gaya yang sama dengan Hero.gd/Minion.gd). Helper ini
@@ -85,7 +81,6 @@ func _exit_tree() -> void:
 ## di-mock kalau suatu saat combat dipisah per-scene.
 func _combat():
 	return CombatSystem
-
 
 # ══════════════════════════════════════════════════════════
 #  STAT & SHIELD
@@ -118,7 +113,6 @@ func _apply_level_stats() -> void:
 		shield = shield_max if shield_active else 0.0
 	queue_redraw()
 
-
 func set_wave(wave_number: int) -> void:
 	# paritas Castle.set_wave: perlindungan gratis sampai wave 10
 	var cfg: Dictionary = TowerDB.shield_cfg()
@@ -137,14 +131,11 @@ func set_wave(wave_number: int) -> void:
 		shield_active = true
 	queue_redraw()
 
-
 func can_buy_shield() -> bool:
 	return not free_shield_active and not castle_shield_purchased and not is_dead
 
-
 func shield_cost() -> int:
 	return int(TowerDB.shield_cfg().get("cost", 850))
-
 
 func activate_castle_shield() -> bool:
 	if not can_buy_shield():
@@ -158,16 +149,13 @@ func activate_castle_shield() -> bool:
 	queue_redraw()
 	return true
 
-
 func can_upgrade() -> bool:
 	return level < TowerDB.nexus_max_level() and not is_dead
-
 
 func upgrade_cost() -> int:
 	if not can_upgrade():
 		return 0
 	return int(TowerDB.nexus_stats(level).get("upgrade_cost", 0))
-
 
 func upgrade() -> bool:
 	if not can_upgrade():
@@ -176,7 +164,6 @@ func upgrade() -> bool:
 	_apply_level_stats()
 	GameManager.nexus_upgraded.emit(team, level)
 	return true
-
 
 func _update_shield_regen(delta: float) -> void:
 	if not shield_active:
@@ -187,7 +174,6 @@ func _update_shield_regen(delta: float) -> void:
 	var rate := float(cfg.get("regen_rate_per_frame", 3.5)) * FPS
 	if no_damage_timer >= delay and shield < shield_max:
 		shield = minf(shield_max, shield + rate * delta)
-
 
 # ══════════════════════════════════════════════════════════
 #  LOOP
@@ -204,14 +190,15 @@ func _physics_process(delta: float) -> void:
 
 	var cs = _combat()
 	if cs != null:
-		target = cs.nearest_enemy(self, attack_range)
+		# last_wins_ties=true — paritas Castle._find_target pygame
+		# (_entity.py:1744-1749, `dist <= best_dist`).
+		target = cs.nearest_enemy(self, attack_range, true)
 	if target != null:
 		angle = (target.global_position - global_position).angle()
 		if attack_timer <= 0.0:
 			_shoot()
 			attack_timer = attack_cooldown
 	queue_redraw()
-
 
 func _shoot() -> void:
 	if target == null:
@@ -225,7 +212,6 @@ func _shoot() -> void:
 		color_accent, null)
 	b.global_position = global_position + Vector2(cos(angle), sin(angle)) * 26.0
 	GameManager.attach_fx(b)
-
 
 # ══════════════════════════════════════════════════════════
 #  DAMAGE
@@ -252,12 +238,10 @@ func take_damage(amount: float, from_team: String = "", dmg_type: String = "norm
 	if hp <= 0.0:
 		die(from_team)
 
-
 func heal(amount: float) -> void:
 	if is_dead:
 		return
 	hp = minf(max_hp, hp + amount)
-
 
 func die(killer_team: String = "") -> void:
 	if is_dead:
@@ -273,7 +257,6 @@ func die(killer_team: String = "") -> void:
 	tw.tween_property(self, "modulate:a", 0.25, 0.9)
 	tw.tween_property(self, "scale", Vector2(1.15, 0.7), 0.9)
 	GameManager.nexus_destroyed.emit(team, killer_team)
-
 
 # ══════════════════════════════════════════════════════════
 #  GAMBAR
@@ -302,7 +285,6 @@ func _draw() -> void:
 	_draw_geometric_castle(team_col)
 	_draw_overlays(team_col, cfg)
 
-
 ## Gambar badan kastil dari strip bake. False = tekstur/frame tidak ada.
 func _draw_baked_castle(_team_col: Color) -> bool:
 	var tex: Texture2D = BakedPropDB.texture(str(_baked.get("png", "")))
@@ -315,7 +297,6 @@ func _draw_baked_castle(_team_col: Color) -> bool:
 	var a := BakedPropDB.anchor(_baked)
 	draw_texture_rect_region(tex, Rect2(-a, region.size), region)
 	return true
-
 
 ## Badan kastil geometris (jalur lama, kalau bake tidak tersedia).
 func _draw_geometric_castle(team_col: Color) -> void:
@@ -342,7 +323,6 @@ func _draw_geometric_castle(team_col: Color) -> void:
 	draw_colored_polygon(PackedVector2Array([
 		Vector2(0, -16), Vector2(6, -4), Vector2(0, 8), Vector2(-6, -4)]),
 		Color(color_accent.r, color_accent.g, color_accent.b, glow))
-
 
 ## Lapisan di atas badan kastil: crest armor + bar SHIELD + ring seleksi +
 ## overlay mati. pygame menggambar semua ini di luar `_render_castle_full()`,
@@ -406,7 +386,6 @@ func _draw_overlays(_team_col: Color, cfg: Dictionary) -> void:
 	if is_dead:
 		draw_rect(Rect2(Vector2(-40, -40), Vector2(80, 80)), Color(0, 0, 0, 0.45), true)
 
-
 ## Port `_draw_gate_torch` `_entity.py:3083-3170` (tanpa draw_ellipse).
 func _draw_gate_torch(p: Vector2, off: float) -> void:
 	draw_rect(Rect2(p + Vector2(-3, 0), Vector2(6, 8)), Color(0.28, 0.24, 0.22))
@@ -427,7 +406,6 @@ func _draw_gate_torch(p: Vector2, off: float) -> void:
 		p + Vector2(-2, -5), p + Vector2(0, -fire_h + 4.0), p + Vector2(2, -5),
 	]), Color(1.0, 0.9, 0.35))
 	draw_circle(p + Vector2(0, -6), 11.0, Color(1.0, 0.45, 0.1, 0.14))
-
 
 ## Port `_draw_castle_magic_aura` `_entity.py:3172-3184` (elips → busur).
 func _draw_magic_aura() -> void:

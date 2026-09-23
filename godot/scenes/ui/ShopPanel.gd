@@ -63,7 +63,6 @@ var _context: Label = null
 var _tab: String = "tower"
 var _refresh_timer: float = 0.0
 
-
 func _ready() -> void:
 	name = "ShopPanel"
 	# root tembus klik; yang menahan klik hanya _panel (biar arena tetap bisa
@@ -82,13 +81,11 @@ func _ready() -> void:
 	GameManager.language_changed.connect(_on_language_changed)
 	_on_shop_changed()
 
-
 ## Satu-satunya pintu teks panel: kunci tabel -> string bahasa aktif.
 ## (Dinamai `_loc`, bukan ditulis `MysticLocalization.tr_text` di 60 tempat,
 ## supaya pemanggil bisa memakai `%` GDScript untuk angkanya.)
 func _loc(key: String) -> String:
 	return MysticLocalization.tr_text(key)
-
 
 ## Bahasa berganti (SETTINGS/pause) -> chrome + isi tab dibangun ulang.
 func _on_language_changed(_language: String) -> void:
@@ -97,7 +94,6 @@ func _on_language_changed(_language: String) -> void:
 	if visible:
 		_update_gold_label()
 		_rebuild_body()
-
 
 ## Label chrome yang tidak ikut `_rebuild_body`: judul + 4 tab. Isi tab
 ## dibangun ulang sendiri, jadi teksnya selalu dibaca ulang per bahasa.
@@ -108,7 +104,6 @@ func _apply_chrome_texts() -> void:
 		var b: Button = _tab_buttons.get(str(pair[0]))
 		if b != null and b.has_method("set_label"):
 			b.set_label(_loc(str(pair[1])))
-
 
 # ══════════════════════════════════════════════════════════
 #  KERANGKA UI
@@ -233,11 +228,9 @@ func _build() -> void:
 		COL_DIM)
 	vbox.add_child(_context)
 
-
 ## true kalau tab aktif memakai popup panel kanan (TOWER/CASTLE SHOP).
 func _uses_rail_popup() -> bool:
 	return MobileLayout.has_side_panel() and RAIL_TABS.has(_tab)
-
 
 ## Tempatkan panel: popup di panel kanan (tower/castle) atau modal tengah
 ## (hero/item). Semua koordinat dijepit ke dalam viewport supaya tombol tidak
@@ -271,7 +264,6 @@ func _layout_panel() -> void:
 	_panel.offset_bottom = rect.position.y + rect.size.y
 	_apply_compact(rect.size.x < 420.0)
 
-
 ## Popup panel kanan sempit (±280 px): judul & tab dikecilkan, teks tombol
 ## tutup dipendekkan supaya semuanya tetap muat dan bisa diklik.
 func _apply_compact(compact: bool) -> void:
@@ -296,7 +288,6 @@ func _apply_compact(compact: bool) -> void:
 	if _context != null:
 		_context.visible = not compact
 
-
 # ══════════════════════════════════════════════════════════
 #  SINKRON STATE
 # ══════════════════════════════════════════════════════════
@@ -314,7 +305,6 @@ func _process(delta: float) -> void:
 	if _tab == "nexus" or _tab == "hero":
 		_rebuild_body()
 
-
 func open_tab(tab_id: String) -> void:
 	if TABS.any(func(pair): return str(pair[0]) == tab_id):
 		_tab = tab_id
@@ -326,7 +316,6 @@ func open_tab(tab_id: String) -> void:
 	_sync_tab_buttons()
 	_update_gold_label()
 	_rebuild_body()
-
 
 func _on_shop_changed() -> void:
 	# Tab yang diminta eksplisit (ITEM FORGE) menang atas tab terakhir.
@@ -342,19 +331,16 @@ func _on_shop_changed() -> void:
 	elif _scrim != null:
 		_scrim.visible = false
 
-
 func collect_ui_keys() -> Array:
 	var keys: Array = []
 	_collect_keys_in(self, keys)
 	return keys
-
 
 func _collect_keys_in(node: Node, keys: Array) -> void:
 	for c in node.get_children():
 		if c is Button and c.has_meta("ui_key"):
 			keys.append(str(c.get_meta("ui_key")))
 		_collect_keys_in(c, keys)
-
 
 func _on_selection_changed() -> void:
 	# Pilihan unit menentukan isi tab -> otomatis pindah ke tab yang relevan
@@ -370,27 +356,22 @@ func _on_selection_changed() -> void:
 		_sync_tab_buttons()
 		_rebuild_body()
 
-
 func _on_gold_changed(_amount: int) -> void:
 	_update_gold_label()
 	if visible and (_tab == "item" or _tab == "hero" or _tab == "tower"):
 		_rebuild_body()
 
-
 func _on_tower_built(_tower: Node) -> void:
 	if visible:
 		_rebuild_body()
-
 
 func _on_nexus_upgraded(_team: String, _level: int) -> void:
 	if visible:
 		_rebuild_body()
 
-
 func _on_difficulty_changed(_d: String) -> void:
 	if visible:
 		_rebuild_body()
-
 
 func _on_tab_pressed(tab_id: String) -> void:
 	_tab = tab_id
@@ -398,13 +379,11 @@ func _on_tab_pressed(tab_id: String) -> void:
 	_layout_panel()
 	_rebuild_body()
 
-
 func _sync_tab_buttons() -> void:
 	for key in _tab_buttons:
 		var b: Button = _tab_buttons[key]
 		b.set_pressed_no_signal(str(key) == _tab)
 	_apply_chrome_texts()
-
 
 func _update_gold_label() -> void:
 	# "gold" + angka + laju — format sama persis dengan chip HUD pygame
@@ -412,7 +391,6 @@ func _update_gold_label() -> void:
 	_gold_label.text = "%s gold  (+%s/s)" % [
 		HudLayout.format_thousands(GameManager.gold),
 		GameManager.format_gold_rate(GameManager.gold_per_second)]
-
 
 # ══════════════════════════════════════════════════════════
 #  ISI PANEL
@@ -434,7 +412,6 @@ func _rebuild_body() -> void:
 			_build_tower_tab()
 	_update_context()
 
-
 func _update_context() -> void:
 	var parts: Array = []
 	var h = GameManager.selected_hero
@@ -455,7 +432,6 @@ func _update_context() -> void:
 	_context.text = "[%s]  %s · gold %d · AI %d · difficulty %s" % [
 		_tab.to_upper(), joiner.join(parts) if not parts.is_empty() else none_text,
 		GameManager.gold, GameManager.ai_gold, GameManager.difficulty.to_upper()]
-
 
 # ── TAB MENARA ────────────────────────────────────────────
 
@@ -499,7 +475,6 @@ func _build_tower_tab() -> void:
 		GameManager.free_slots_for("blue").size(),
 		GameManager.free_slots_for("red").size()], COL_DIM)
 	_add_label(_loc("shop_tower_click_upgrade"), COL_DIM)
-
 
 func _tower_detail(t) -> void:
 	var info: Dictionary = TowerDB.type_info(str(t.get("tower_type")))
@@ -569,16 +544,13 @@ func _tower_detail(t) -> void:
 			func(): _run(func(): GameManager.try_sell_tower(), "ui_sell"), true,
 			"sell_tower", {"refund": int(t.sell_value())}, "danger")
 
-
 func _build_tower(tower_type: String) -> void:
 	# ui_buy 1.0 — paritas Game.try_build_tower _core.py:1652
 	_run(func(): GameManager.try_build_tower(tower_type), "ui_buy")
 
-
 func _pick_path(t, target_type: String) -> void:
 	GameManager.select_tower(t)
 	_run(func(): GameManager.try_upgrade_tower(target_type), "ui_upgrade", 0.5)
-
 
 # ── TAB ITEM ──────────────────────────────────────────────
 #
@@ -618,6 +590,16 @@ func _build_item_tab() -> void:
 				owned_text.append(ItemDB.item_name(str(id)))
 		_add_label(_loc("shop_item_owned") % (", ".join(owned_text)
 			if not owned_text.is_empty() else "-"), Color(0.6, 0.9, 0.7), 11)
+		# Target mati: hint pengiriman + jumlah antrean (paritas blok
+		# `dead_delivery_hint`/`queued_item_count` pada strip target pygame,
+		# hero_items.py:3406-3415). Antrean disembunyikan saat kosong.
+		if bool(h.get("is_dead")):
+			var pend_n: int = HeroItems.pending_forge_items(h).size()
+			var hint := _loc("dead_delivery_hint")
+			if pend_n > 0:
+				hint += " " + MysticLocalization.tr_text("queued_item_count",
+					{"count": pend_n})
+			_add_label(hint, COL_WARN, 11)
 
 	var grouped: Dictionary = ItemDB.grouped()
 	# GRID KARTU KONTINU lintas kategori (paritas `_draw_item_grid` pygame,
@@ -653,12 +635,15 @@ func _build_item_tab() -> void:
 		for item_id in grouped[cat]:
 			var iid := str(item_id)
 			var cost := ItemDB.item_cost(iid)
-			var can: bool = items != null and items.can_equip(iid)
 			var have: bool = items != null and items.has(iid)
 			var afford := GameManager.gold >= cost
+			# Alasan blokir PENDING-AWARE — antrean forge ikut memakan slot
+			# (paritas slot_full hero_items.py:3773-3776); dilepas ke
+			# GameManager supaya strip, kartu, dan API satu sumber angka.
 			var reason := ""
-			if items != null:
-				reason = items.equip_block_reason(iid)
+			if h != null:
+				reason = GameManager.forge_equip_block_reason(h, iid)
+			var can: bool = items != null and reason == ""
 			if reason == "" and not afford:
 				reason = "POOR"
 			var label := "[%s] %s — %d g" % [ItemDB.item_class_label(iid),
@@ -693,7 +678,7 @@ func _build_item_tab() -> void:
 			b.icon = ItemIcons.texture(iid, ITEM_ROW_ICON)
 			b.expand_icon = true
 			# WAJIB dipasangkan dengan ikon: Button menghitung minimum size
-			# dengan teks KOSONG (Button::get_minimum_size ->
+			# dengan teks KOSONG (Button::get_minimum_size
 			# get_minimum_size_for_text_and_icon("", icon)), jadi lebar teks
 			# tidak pernah membesarkan tombol. Tanpa clip_text, label panjang
 			# ("[PHYSICAL] Sundering Cudgel — 4500 g") yang terdorong ikon
@@ -701,7 +686,6 @@ func _build_item_tab() -> void:
 			b.clip_text = true
 			b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 			grid.add_child(b)
-
 
 ## Strip "BUY FOR:" — padanan `_draw_hero_strip` (hero_items.py:3241-3295).
 ## Chip per hero roster (hidup maupun mati, sama seperti `_player_heroes`),
@@ -730,6 +714,12 @@ func _build_buy_for_strip(heroes: Array, target) -> void:
 			.get("name", hero.get("hero_type")))
 		var status := MysticLocalization.tr_text("dead") if dead \
 			else "Lv.%d" % int(hero.get("level"))
+		# Antrean item yang dibeli saat hero mati — chip pygame menampilkan
+		# ` queued` di samping status (hero_items.py:3297-3299).
+		var pending: int = HeroItems.pending_forge_items(hero).size()
+		if pending > 0:
+			status += " " + MysticLocalization.tr_text("queued",
+				{"count": pending})
 		var b := PygameButton.pill_button("%s  %s  Item %d/%d" % [
 				hname, status, used, ItemDB.max_slots()],
 			"gold" if hero == target else "neutral", "", 0, 30, 12)
@@ -737,18 +727,13 @@ func _build_buy_for_strip(heroes: Array, target) -> void:
 		# ui_key stabil untuk audit closed-world UiHudParityTest; hero dipilih
 		# lewat GameManager supaya SkillBar + tab lain ikut sinkron.
 		b.set_meta("ui_key", "itemshop_hero_%d" % i)
-		if dead:
-			# Hero MATI tetap tampil di strip (paritas `hero_strip` pygame),
-			# tapi tidak bisa dijadikan penerima: port Godot belum punya
-			# antrean `pending_forge_items` (hero_items.py:3143), jadi item
-			# untuk hero mati akan hilang saat respawn, bukan terkirim.
-			b.disabled = true
-			b.tooltip_text = _loc("shop_dead_no_forge")
-		else:
-			b.tooltip_text = _loc("shop_buy_for")
-			b.pressed.connect(func(): GameManager.select_hero(hero))
+		# Hero MATI boleh dijadikan penerima (paritas `_resolve_shop_target`
+		# hero_items.py:3169-3186): itemnya diantrekan `pending_forge_items`
+		# dan terkirim otomatis saat respawn — bukan hilang.
+		b.tooltip_text = _loc("dead_delivery_hint") if dead \
+			else _loc("shop_buy_for")
+		b.pressed.connect(func(): GameManager.select_hero(hero))
 		row.add_child(b)
-
 
 ## Kartu ITEM FORGE (ItemForgeCard.gd). `tip` = tooltip alasan yang sama
 ## seperti baris sempit (dan padanan klik-ikon popup detail pygame, yang di
@@ -761,7 +746,6 @@ func _make_item_card(item_id: String, can_buy: bool, owned: int,
 		reason, _item_card_label(reason, can_buy, has_hero), tip,
 		_buy_item.bind(item_id))
 	return card
-
 
 ## Label pill bawah kartu = pygame ("BUY" / alasan). MELEE ONLY / MAGIC ONLY
 ## sengaja literal: string yang sama di kedua bahasa, seperti di pygame
@@ -782,7 +766,6 @@ func _item_card_label(reason: String, can_buy: bool,
 		"MAGIC ONLY":
 			return "MAGIC ONLY"
 	return _loc("shop_card_poor") if has_hero else _loc("shop_card_no_hero")
-
 
 ## Kartu HERO toko in-match (HeroShopCard.gd). `blocked` peta ke state kartu
 ## persis percabangan `_draw_compact_card` pygame (owned -> ACTIVE, roster
@@ -808,7 +791,6 @@ func _make_hero_card(hero_type: String, d: Dictionary, cost: int,
 		tip, blocked)
 	return card
 
-
 ## Teks alasan disabled item (MELEE ONLY/MAGIC ONLY = label kartu pygame).
 func _item_reason_tip(reason: String) -> String:
 	match reason:
@@ -824,11 +806,9 @@ func _item_reason_tip(reason: String) -> String:
 			return _loc("shop_reason_poor")
 	return ""
 
-
 func _buy_item(item_id: String) -> void:
 	# ui_buy 1.0 — paritas pembelian item di toko (_core.py:2637)
 	_run(func(): GameManager.try_buy_item(item_id), "ui_buy")
-
 
 # ── TAB HERO ──────────────────────────────────────────────
 
@@ -926,12 +906,10 @@ func _build_hero_tab() -> void:
 	_add_label(_loc("shop_hero_others") % HeroDB.get_all_types().size(),
 		COL_DIM, 11)
 
-
 func _buy_hero(hero_type: String) -> void:
 	# ui_buy 1.0 + hero_spawn (dibunyikan GameManager.try_buy_hero,
 	# paritas _core.py:2637-2638 yang memanggil keduanya berurutan)
 	_run(func(): GameManager.try_buy_hero(hero_type), "ui_buy")
-
 
 # ── TAB NEXUS ─────────────────────────────────────────────
 
@@ -984,8 +962,6 @@ func _build_nexus_tab() -> void:
 			int(enemy.get("shield")), int(enemy.get("shield_max"))],
 			Color(1.0, 0.62, 0.62), 12)
 
-
-
 # ══════════════════════════════════════════════════════════
 #  WIDGET HELPER
 # ══════════════════════════════════════════════════════════
@@ -1001,29 +977,26 @@ func _player_hero():
 		return null
 	return h
 
-
 ## Semua hero pemain, hidup MAUPUN mati — padanan `_player_heroes(game)`
 ## (hero_items.py:3133-3135) yang menjadi isi strip "BUY FOR".
 func _roster_heroes() -> Array:
 	return GameManager.owned_heroes("blue")
 
-
 ## Penerima item — delegasi ke `GameManager.itemshop_target_hero()` supaya
 ## klik mouse, papan ketik, dan controller memakai aturan yang sama
-## (`_resolve_shop_target` hero_items.py:3169-3186: hero terseleksi -> hero
-## hidup pertama -> tidak ada). Hero mati ikut muncul di strip "BUY FOR"
-## seperti pygame, tapi port Godot belum punya antrean Item Forge
-## (`pending_forge_items`), jadi hero mati tidak dijadikan penerima.
+## (`_resolve_shop_target` hero_items.py:3169-3186: target tersimpan
+## hero terseleksi -> hero hidup pertama -> hero mati pertama). Hero mati
+## SAH menjadi penerima: pembelian masuk antrean `pending_forge_items`
+## dan terkirim setelah respawn (parity penuh sejak penutupan gap #1).
 func _item_target():
 	return GameManager.itemshop_target_hero()
-
 
 ## Jalankan aksi beli lalu segarkan panel (signal GameManager bisa tidak muncul
 ## kalau aksinya gagal — gold kurang, slot terisi, dsb)
 ## Semua aksi toko lewat sini, jadi umpan balik suara cukup dipasang SATU kali.
 ##
 ## `action` = Callable GameManager.try_*() yang mengembalikan bool (true =
-## berhasil). Berhasil -> `sfx`; gagal (gold kurang / syarat tidak terpenuhi) ->
+## berhasil). Berhasil -> `sfx`; gagal (gold kurang / syarat tidak terpenuhi)
 ## "ui_error" 0.4 — persis pola pygame yang memanggil
 ## SoundManager().play('ui_error') di tiap cabang gagal lalu
 ## play('ui_buy'/'ui_upgrade'/'ui_sell') di jalur sukses
@@ -1047,13 +1020,11 @@ func _run(action: Callable, sfx: String = "ui_buy", volume_mult: float = 1.0) ->
 	_update_gold_label()
 	_rebuild_body()
 
-
 ## Jumlah kolom grid item: 3 di modal besar, 1 di popup panel kanan sempit.
 func _grid_columns() -> int:
 	if _panel != null and _panel.size.x > 0.0 and _panel.size.x < 420.0:
 		return 1
 	return ITEM_COLUMNS
-
 
 ## Kolom grid KARTU ITEM FORGE dari lebar panel nyata: kartu 250 px + gap
 ## 12 px persis pygame (`_draw_item_grid`: 4 kolom muat PANEL_W 1100).
@@ -1071,11 +1042,9 @@ func _item_columns() -> int:
 	var cols := int(floor((w + 12.0) / (ItemForgeCard.CARD_W + 12.0)))
 	return clampi(cols, 1, 4)
 
-
 ## 2 kolom di modal, 1 kolom di popup panel kanan.
 func _pair_columns() -> int:
 	return 1 if _grid_columns() == 1 else 2
-
 
 ## Lebar minimum tombol baris supaya isi TIDAK PERNAH melebar keluar panel
 ## (penyebab tombol terpotong / tidak bisa diklik di popup panel kanan).
@@ -1087,7 +1056,6 @@ func _row_width(columns: int) -> float:
 	return maxf(80.0, (inner - 8.0 * float(maxi(1, columns) - 1))
 		/ float(maxi(1, columns)))
 
-
 func _add_label(text_val: String, col: Color = COL_TEXT, font_size: int = 12) -> Label:
 	var l := Label.new()
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -1097,7 +1065,6 @@ func _add_label(text_val: String, col: Color = COL_TEXT, font_size: int = 12) ->
 	_body.add_child(l)
 	return l
 
-
 func _add_button(label: String, tooltip: String, cb: Callable, enabled: bool,
 		ui_key: String = "", ui_data: Dictionary = {},
 		kind: String = "neutral") -> Button:
@@ -1106,7 +1073,6 @@ func _add_button(label: String, tooltip: String, cb: Callable, enabled: bool,
 	b.custom_minimum_size = Vector2(0, 32)
 	_body.add_child(b)
 	return b
-
 
 func _make_button(label: String, tooltip: String, cb: Callable, enabled: bool,
 		ui_key: String = "", ui_data: Dictionary = {},

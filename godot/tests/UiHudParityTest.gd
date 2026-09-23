@@ -24,11 +24,9 @@ var _universe: Array = [] # semesta ui_key tertutup (dibangun sekali)
 var _failures: int = 0
 var _checks: int = 0
 
-
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_run.call_deferred()
-
 
 func _run() -> void:
 	_save_before = SaveManager.data.duplicate(true)
@@ -82,7 +80,6 @@ func _run() -> void:
 	await _test_gameover()
 	_finish()
 
-
 # ══════════════════════════════════════════════════════════
 #  FORMAT TEKS (murni)
 # ══════════════════════════════════════════════════════════
@@ -121,14 +118,12 @@ func _test_formats() -> void:
 		_expect(HudLayout.format_match_time(int(sval)) == formats["match_time"][sval],
 			"match_time %s" % sval)
 
-
 func _near_color(actual: Color, rgb: Color, message: String) -> void:
 	# rgb = komponen 0..255 (format sumber pygame); actual = Color 0..1.
 	_expect(absf(actual.r - rgb.r / 255.0) < 0.002
 		and absf(actual.g - rgb.g / 255.0) < 0.002
 		and absf(actual.b - rgb.b / 255.0) < 0.002,
 		"%s (got %s)" % [message, actual])
-
 
 # ══════════════════════════════════════════════════════════
 #  TOUCH RECT (murni)
@@ -147,7 +142,6 @@ func _test_touch() -> void:
 		var p: Array = entry["point"]
 		_expect(HudLayout.touch_hit(base, Vector2(p[0], p[1])) == bool(entry["hit"]),
 			"touch_hit %s" % [p])
-
 
 # ══════════════════════════════════════════════════════════
 #  PREDIKAT MELEE/MAGIC 222 HERO + KATALOG ITEM
@@ -169,7 +163,6 @@ func _test_magic_melee() -> void:
 	_expect(bad_range.is_empty(), "range 222 hero sama (%s)" % [bad_range])
 	_expect(bad_magic.is_empty(), "is_magic_hero 222 hero sama (%s)" % [bad_magic])
 
-
 func _test_item_catalog() -> void:
 	var items: Dictionary = _fx["rules"]["items"]
 	_expect(ItemDB.items.keys().size() == items.size(), "33 item")
@@ -187,7 +180,6 @@ func _test_item_catalog() -> void:
 		union.append_array(page)
 	_expect(union.size() == 33 and ItemDB.items.keys().all(
 		func(sid): return union.has(sid)), "union halaman = 33 id item")
-
 
 # ══════════════════════════════════════════════════════════
 #  WAVE (murni: 121 titik + judul + subtitle)
@@ -219,7 +211,6 @@ func _test_wave_pure() -> void:
 			_failures += 1
 	_expect(bad == 0, "kurva slide 121/121 sama")
 
-
 # ══════════════════════════════════════════════════════════
 #  INTRO SKIP + TOUCH DATA + STRUKTUR
 # ══════════════════════════════════════════════════════════
@@ -231,12 +222,10 @@ func _test_intro_skip() -> void:
 	_expect(_fresh_intro().skip_key(_key(KEY_ESCAPE)) == bool(skips["escape"]), "ESC tak skip")
 	_expect(_fresh_intro().skip_click() == bool(skips["click"]), "skip klik")
 
-
 func _fresh_intro():
 	var intro = LevelIntroScript.new()
 	add_child(intro)
 	return intro
-
 
 func _test_touchhud_data() -> void:
 	var touch: Dictionary = _fx["touchhud"]
@@ -258,7 +247,6 @@ func _test_touchhud_data() -> void:
 	for state_key in touch["visibility"]:
 		_expect(HudLayout.touch_visibility(str(state_key)) == touch["visibility"][state_key],
 			"touch visibility %s" % state_key)
-
 
 func _test_structure() -> void:
 	# Godot tak punya urutan draw manual (scene tree) — analognya: kehadiran
@@ -292,7 +280,6 @@ func _test_structure() -> void:
 	_expect(_shop.find_child("Panel", true, false).mouse_filter == Control.MOUSE_FILTER_STOP,
 		"panel menelan klik (itemshop_empty_swallow)")
 
-
 # ══════════════════════════════════════════════════════════
 #  LABEL HUD LIVE
 # ══════════════════════════════════════════════════════════
@@ -315,7 +302,6 @@ func _test_hud_labels() -> void:
 	GameManager.gold_per_second = 3.0
 	GameManager.wave_number = 0
 
-
 func _test_wave_live() -> void:
 	_hud.announce_wave(1)
 	_expect(_hud.wave_banner.text == "WAVE 1", "banner title live")
@@ -330,7 +316,6 @@ func _test_wave_live() -> void:
 	_expect(absf(_hud.wave_banner.modulate.a) < 0.01, "banner alpha akhir 0")
 	_expect(absf(_hud.wave_banner.offset_left - (-300.0 + 1280.0)) < 1.0,
 		"banner x akhir +1280 (got %s)" % _hud.wave_banner.offset_left)
-
 
 func _test_pause_geometry() -> void:
 	_menu.open_pause()
@@ -366,7 +351,6 @@ func _test_pause_geometry() -> void:
 	_main._toggle_pause()
 	_expect(not get_tree().paused and not _menu.is_open(), "resume bulat")
 
-
 func _find_node_by_name(node: Node, want: String) -> Node:
 	if node.name == want:
 		return node
@@ -375,7 +359,6 @@ func _find_node_by_name(node: Node, want: String) -> Node:
 		if found != null:
 			return found
 	return null
-
 
 # ══════════════════════════════════════════════════════════
 #  PANEL HERO (SkillBar)
@@ -430,7 +413,6 @@ func _test_skillbar_panel() -> void:
 	_bar._close_btn.pressed.emit()
 	_expect(GameManager.selected_hero == null, "X deselect")
 	GameManager.select_hero(hero)
-
 
 # ══════════════════════════════════════════════════════════
 #  TOKO HERO
@@ -521,7 +503,6 @@ func _test_shop_heroes() -> void:
 	_expect(_shop._tab == "hero", "tab -> hero")
 	GameManager.select_hero(GameManager.owned_heroes()[0])
 
-
 # ══════════════════════════════════════════════════════════
 #  TOKO MENARA (+ TABEL BIAYA)
 # ══════════════════════════════════════════════════════════
@@ -532,7 +513,6 @@ func _free_blue_slot() -> int:
 		if str(s["team"]) == "blue" and not bool(s["taken"]):
 			return i
 	return -1
-
 
 func _test_shop_tower() -> void:
 	var rules: Dictionary = _fx["rules"]
@@ -604,7 +584,6 @@ func _test_shop_tower() -> void:
 	_expect(GameManager.selected_tower == null, "seleksi menara lepas")
 	await get_tree().process_frame
 
-
 # ══════════════════════════════════════════════════════════
 #  TOKO NEXUS (+ TABEL BIAYA + NAMA CASTLE)
 # ══════════════════════════════════════════════════════════
@@ -639,10 +618,8 @@ func _test_shop_nexus() -> void:
 	_expect("ROYAL CASTLE" in _shop._body.get_child(0).text
 		or _shop_has_text("ROYAL CASTLE"), "judul castle L5")
 
-
 func _shop_has_text(fragment: String) -> bool:
 	return _find_text_in(_shop._body, fragment)
-
 
 func _find_text_in(node: Node, fragment: String) -> bool:
 	for c in node.get_children():
@@ -651,7 +628,6 @@ func _find_text_in(node: Node, fragment: String) -> bool:
 		if _find_text_in(c, fragment):
 			return true
 	return false
-
 
 # ══════════════════════════════════════════════════════════
 #  TOKO ITEM (gates melee/magic + 33 kunci)
@@ -758,14 +734,12 @@ func _test_shop_item() -> void:
 	_expect(csb != null and csb.border_width_left == 1, "slot kosong border 1 px")
 	GameManager.select_hero(kaizen)
 
-
 func _check_gate(hero, item_id: String, can: bool, reason: String) -> void:
 	_expect(hero.items.can_equip(item_id) == can,
 		"gate %s x %s" % [hero.hero_type, item_id])
 	_expect(hero.items.equip_block_reason(item_id) == reason,
 		"reason %s x %s (got %s)" % [hero.hero_type, item_id,
 			hero.items.equip_block_reason(item_id)])
-
 
 # ══════════════════════════════════════════════════════════
 #  KLIK DUNIA
@@ -848,7 +822,6 @@ func _test_clicks() -> void:
 	_expect(not GameManager.shop_open, "rightclick tutup toko")
 	GameManager.select_hero(sylara)
 
-
 func _find_empty_point() -> Vector2:
 	var avoid: Array = []
 	for s in GameManager.build_slots:
@@ -877,7 +850,6 @@ func _find_empty_point() -> Vector2:
 			x += 40.0
 		y += 40.0
 	return Vector2(640, 360)
-
 
 # ══════════════════════════════════════════════════════════
 #  HOTKEY (playing) + SKOR/KILL
@@ -945,7 +917,6 @@ func _test_hotkeys_playing() -> void:
 	red_tower.free()
 	blue_minion.free()
 
-
 # ══════════════════════════════════════════════════════════
 #  GAME OVER (victory/defeat/last + N/R/ESC)
 # ══════════════════════════════════════════════════════════
@@ -955,7 +926,6 @@ func _pin_end_state() -> void:
 	GameManager.total_kills = 4242
 	GameManager.wave_number = 13
 	GameManager.match_start_msec = Time.get_ticks_msec() - 3723 * 1000
-
 
 func _test_gameover() -> void:
 	# ── victory L1: judul/stat/unlock/newhero/next ──
@@ -1037,7 +1007,6 @@ func _test_gameover() -> void:
 	_main._on_key(_key(KEY_SPACE))
 	await get_tree().process_frame
 
-
 # ══════════════════════════════════════════════════════════
 #  TAB ITEM TANPA HERO + BAHASA IN-MATCH (FASE 39)
 # ══════════════════════════════════════════════════════════
@@ -1073,8 +1042,9 @@ func _test_shop_item_no_hero() -> void:
 			blocked += 1
 	_expect(blocked == 33, "33 kartu mati tanpa hero (got %d)" % blocked)
 	# Strip BUY FOR tidak dibangun tanpa hero (pygame: `if not heroes: return`),
-	# dan pembelian DITOLAK tanpa target — gold utuh (deviasi: tidak ada
-	# antrean Item Forge, jadi tidak ada "dibeli untuk hero mati").
+	# dan pembelian DITOLAK tanpa target — gold utuh. (Antrean Item Forge
+	# untuk hero mati — yang dulu tercatat sebagai deviasi — SUDAH parity
+	# sejak penutupan gap #1; integrasinya dikunci di GameplayParityTest.)
 	_expect(not keys.has("itemshop_hero_0"), "tanpa hero: strip BUY FOR kosong")
 	_press("item_buy_dead_edge")
 	_expect(GameManager.gold == 100000, "beli tanpa hero ditolak (gold utuh)")
@@ -1088,7 +1058,6 @@ func _test_shop_item_no_hero() -> void:
 	_expect(keys2.has("itemshop_hero_0") and keys2.has("itemshop_hero_1")
 		and keys2.has("itemshop_hero_2"),
 		"strip BUY FOR kembali dengan roster (%s)" % str(keys2))
-
 
 ## Bahasa aktif harus berlaku DI DALAM GAME (permintaan user; FASE 30 hanya
 ## sampai baris SETTINGS). Diuji pada keempat permukaan: chrome ShopPanel,
@@ -1131,7 +1100,6 @@ func _test_language_in_game() -> void:
 		"baris hint HUD kembali Indonesia")
 	_shop.open_tab("item")
 
-
 func _find_label_with_text(node: Node, wanted: String) -> Label:
 	for c in node.get_children():
 		if c is Label and str((c as Label).text) == wanted:
@@ -1140,7 +1108,6 @@ func _find_label_with_text(node: Node, wanted: String) -> Label:
 		if found != null:
 			return found
 	return null
-
 
 # ══════════════════════════════════════════════════════════
 #  HELPER
@@ -1167,10 +1134,8 @@ func _audit_keys(context: String) -> void:
 		_expect(not seen.has(k), "key unik %s (%s)" % [k, context])
 		seen[k] = true
 
-
 func _button_by_key(ui_key: String) -> Button:
 	return _find_button_in(_shop, ui_key)
-
 
 func _find_button_in(node: Node, ui_key: String) -> Button:
 	for c in node.get_children():
@@ -1181,7 +1146,6 @@ func _find_button_in(node: Node, ui_key: String) -> Button:
 			return found
 	return null
 
-
 ## Kartu HeroShopCard milik satu hero (mode kartu; null saat rail sempit).
 func _hero_card(hero_type: String) -> Control:
 	for node in _shop.find_children("*", "Control", true, false):
@@ -1189,7 +1153,6 @@ func _hero_card(hero_type: String) -> Control:
 				and str(node.get("hero_type")) == hero_type:
 			return node
 	return null
-
 
 ## Kartu ItemForgeCard milik satu item di dalam body toko (kartunya kontrol
 ## digambar; tombol aksinya anak kartu).
@@ -1202,13 +1165,11 @@ func _item_card(item_id: String) -> Control:
 			return node
 	return null
 
-
 func _press(ui_key: String) -> void:
 	var b := _button_by_key(ui_key)
 	_expect(b != null, "tombol %s ada" % ui_key)
 	if b != null:
 		b.pressed.emit()
-
 
 func _key(code: int) -> InputEventKey:
 	var event := InputEventKey.new()
@@ -1216,13 +1177,11 @@ func _key(code: int) -> InputEventKey:
 	event.pressed = true
 	return event
 
-
 func _keyup(code: int) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.keycode = code
 	event.pressed = false
 	return event
-
 
 func _expect(condition: bool, message: String) -> void:
 	_checks += 1
@@ -1232,7 +1191,6 @@ func _expect(condition: bool, message: String) -> void:
 		# hanya menulis "ERROR:" yang tak cocok pola anotasi).
 		print("[UiHudParityTest] FAIL: " + message)
 		push_error("[UiHudParityTest] " + message)
-
 
 func _finish() -> void:
 	get_tree().paused = false

@@ -3,7 +3,7 @@
 // Generator : tools/gen_maps_cpp.py (AST Python -> C++, bukan terjemahan tangan)
 // Regenerasi: python3 tools/gen_maps_cpp.py
 // Cek CI    : python3 tools/gen_maps_cpp.py --check
-// Desain    : docs/MAPS_GODOTPP.md
+// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md
 #include "maps_processor.h"
 
 #include <cmath>

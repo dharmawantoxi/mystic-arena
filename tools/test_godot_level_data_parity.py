@@ -50,7 +50,7 @@ pun dalam hitungan milidetik. Yang dikerjakan:
                 godot-cpp yang ±10 menit.
 
 Regenerasi fixture HANYA bila level_data.py berubah — data pygame tidak pernah
-disesuaikan mengikuti Godot (aturan docs/MIGRASI_1_1.md).
+disesuaikan mengikuti Godot (aturan docs/AUDIT_ULANG_DARI_AWAL.md).
 """
 import argparse
 import json

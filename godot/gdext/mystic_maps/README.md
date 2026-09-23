@@ -4,8 +4,8 @@ Port `map_components/_bundle.py` (palet + 54 tema + `PathGenerator` +
 `DecorationGenerator`) ke Godot C++ GDExtension.
 
 Dokumen desain + semantik Python↔Godot yang dikunci:
-[`docs/MAPS_GODOTPP.md`](../../../docs/MAPS_GODOTPP.md). Status paritas
-menyeluruh: [`docs/GODOT_PARITY.md`](../../../docs/GODOT_PARITY.md) (FASE 35).
+[`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md). Status paritas
+menyeluruh: [`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md) (FASE 35).
 
 ## Tujuan
 

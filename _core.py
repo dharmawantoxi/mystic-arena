@@ -9026,7 +9026,7 @@ class DevMode:
         ]
         # Partikel lapisan FX karakter (Zephyr/Gornak). Angka ini harus
         # SELALU jatuh ke 0 setelah pertarungan selesai - kalau nyangkut,
-        # ada efek yang tidak mati (lihat checklist di docs/*_V3_COMBAT_FX.md).
+        # ada efek yang tidak mati (lihat checklist di docs/AUDIT_ULANG_DARI_AWAL.md).
         try:
             from heroes import combat_feel as _feel
             _n = _feel.stats()

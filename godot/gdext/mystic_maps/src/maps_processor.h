@@ -6,7 +6,7 @@
 // Generator : tools/gen_maps_cpp.py (AST Python -> C++, bukan terjemahan tangan)
 // Regenerasi: python3 tools/gen_maps_cpp.py
 // Cek CI    : python3 tools/gen_maps_cpp.py --check
-// Desain    : docs/MAPS_GODOTPP.md
+// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md
 //
 // Port map_components/_bundle.py (54 tema, 77 kunci union, PathGenerator +
 // DecorationGenerator) ke Godot C++ GDExtension. API = permukaan modul

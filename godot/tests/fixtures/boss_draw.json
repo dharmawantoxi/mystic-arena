@@ -19,7 +19,7 @@
   ],
   "scenarios": 50,
   "ops": 647,
-  "note": "Op = kosakata gambar BossOverlay.gd, koordinat dunia/layar pygame (arena 1280x720 == layar). Warna [r,g,b,a] 0..255. `band` = pita alpha anulus inner < d <= outer (pygame draw.circle MENIMPA, bukan blend). `underlay` digambar node Boss (di bawah badan), `over` oleh BossPlate (di atas badan). state.metrics = metrik teks pygame (lebar/tinggi/ascent) yang disuntik ke BossOverlay supaya geometri teks dibandingkan dengan angka pygame, bukan metrik HarfBuzz Godot. Badan boss TIDAK direkam (strip bake Fase 5); skenario has_renderer=false merekam _draw_generic_body. Alpha bayangan (0,0,0,120) adalah nilai SUMBER pygame: di layar nyata pygame (surface tanpa SRCALPHA) alpha itu dibuang sehingga bayangan tampil hitam pekat, sedangkan kanvas Godot selalu blend - deviasi piksel yang dicatat di docs/GODOT_PARITY.md."
+  "note": "Op = kosakata gambar BossOverlay.gd, koordinat dunia/layar pygame (arena 1280x720 == layar). Warna [r,g,b,a] 0..255. `band` = pita alpha anulus inner < d <= outer (pygame draw.circle MENIMPA, bukan blend). `underlay` digambar node Boss (di bawah badan), `over` oleh BossPlate (di atas badan). state.metrics = metrik teks pygame (lebar/tinggi/ascent) yang disuntik ke BossOverlay supaya geometri teks dibandingkan dengan angka pygame, bukan metrik HarfBuzz Godot. Badan boss TIDAK direkam (strip bake Fase 5); skenario has_renderer=false merekam _draw_generic_body. Alpha bayangan (0,0,0,120) adalah nilai SUMBER pygame: di layar nyata pygame (surface tanpa SRCALPHA) alpha itu dibuang sehingga bayangan tampil hitam pekat, sedangkan kanvas Godot selalu blend - deviasi piksel yang dicatat di docs/AUDIT_ULANG_DARI_AWAL.md."
  },
  "scenarios": [
   {

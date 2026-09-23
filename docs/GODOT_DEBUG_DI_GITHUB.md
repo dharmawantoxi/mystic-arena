@@ -11,7 +11,7 @@
 > di CI.
 
 Halaman ini untuk **menjalankan/melihat/memburu bug**, bukan mengukur paritas.
-Audit paritas tetap di [GODOT_PARITY.md](GODOT_PARITY.md) dan
+Audit paritas tetap di [AUDIT_ULANG_DARI_AWAL.md](AUDIT_ULANG_DARI_AWAL.md) dan
 `../godot/README.md`.
 
 | Berkas | Tugas |

@@ -1399,7 +1399,7 @@ def make_hero_basic_attack_fixture(entity):
         "note": "jalur damage basic hero: kalkulasi _do_attack + blok "
                 "mitigasi take_damage tiap jenis target; skenario bebas "
                 "RNG (tanpa crit item/evasion/roll block item/windrun/"
-                "shadow realm — lihat docs/GODOT_PARITY.md)",
+                "shadow realm — lihat docs/AUDIT_ULANG_DARI_AWAL.md)",
     }
 
 
@@ -1908,7 +1908,7 @@ def make_hero_rng_guard_fixture(entity):
                 "take_damage/_do_attack pygame ASLI dengan random.random "
                 "ter-script per situs roll; nilai+jumlah+urutan konsumsi "
                 "direplay Godot lewat ParityRng (HeroRngGuardParityTest) "
-                "— lihat docs/GODOT_PARITY.md",
+                "— lihat docs/AUDIT_ULANG_DARI_AWAL.md",
     }
 
 
@@ -1918,7 +1918,7 @@ def make_hero_rng_guard_fixture(entity):
 # ══════════════════════════════════════════════════════════════
 #
 # Fixture `item_procs` menutup gap item tempur yang sengaja dilewati
-# seksi `hero_rng_guards` (docs/GODOT_PARITY.md sampai FASE 19):
+# seksi `hero_rng_guards` (docs/AUDIT_ULANG_DARI_AWAL.md sampai FASE 19):
 #   • Soul Rend (Sanguine Thorn): auto-trigger via inv.update saat hero
 #     punya target musuh hidup — silence + damage amp + PENANDAAN
 #     rend_target; serangan dasar ke target bertanda crit PASTI 150%
@@ -2471,7 +2471,7 @@ def make_item_proc_fixture(entity):
                 "inv.update pygame ASLI dengan random.random ter-script "
                 "per situs; nilai+jumlah+urutan konsumsi + flag state "
                 "direplay Godot lewat ParityRng (ItemProcParityTest) — "
-                "lihat docs/GODOT_PARITY.md",
+                "lihat docs/AUDIT_ULANG_DARI_AWAL.md",
     }
 
 

@@ -45,7 +45,7 @@
 #      grafik) + tombol FPS di TouchHUD. Yang diport di sini adalah kelas
 #      `_system.py` (jalur desktop legacy, satu-satunya konsumennya).
 #      Tombol FPS 4-mode `mobile/debug.py` MASIH terbuka; lihat
-#      docs/SYSTEM_PY_COVERAGE.md.
+#      docs/AUDIT_ULANG_DARI_AWAL.md.
 extends Control
 
 ## Geometri panel — paritas `base_x/base_y/panel_w/panel_h` (_system.py:259-266)

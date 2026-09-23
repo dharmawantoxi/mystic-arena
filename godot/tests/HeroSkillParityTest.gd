@@ -18,7 +18,7 @@
 # itu dikunci GameplayParityTest/BattleSmokeTest); harness Hero.gd
 # `skill_test_step()` adalah satu-satunya driver frame di sini.
 #
-# Batas cakupan yang sengaja (lihat docs/GODOT_PARITY.md):
+# Batas cakupan yang sengaja (lihat docs/AUDIT_ULANG_DARI_AWAL.md):
 #   - Guard windrun (RNG 75%) & shadow-realm TIDAK teruji penuh di harness
 #     (damage 'fire' tidak fisik -> windrun tak consume roll; shadow realm
 #     baru aktif saat Zephyr W dicast dan TERCATAT lewat bhp flat).

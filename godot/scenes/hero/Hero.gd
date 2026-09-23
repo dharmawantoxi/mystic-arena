@@ -157,6 +157,14 @@ var skills = null      # SkillBook
 const HIT_FX_COOLDOWN := 0.08
 var _hit_fx_cd: float = 0.0
 
+## Antrean item forge yang dibeli saat hero ini MATI — baru dipasang ke
+## `items` tepat setelah respawn (paritas atribut `h._pending_forge_items`
+## di _entity.py yang ditulis/baca hero_items.pending_forge_items). WAJIB
+## dideklarasikan: objek GDScript tidak menyimpan properti dinamis, dan
+## HeroItems.pending_forge_items(hero) bekerja lewat get/set nama ini.
+## die/respawn tidak menyentuhnya (item yang tak muat tetap mengantre).
+var _pending_forge_items: Array = []
+
 var silhouette = null
 var custom_visual = null
 var anim_phase: float = 0.0
@@ -169,7 +177,6 @@ var hurt_flash = null
 var _ring_radius: float = 0.0
 var _ring_alpha: float = 0.0
 var _ring_color: Color = Color(1, 0.9, 0.5)
-
 
 func _ready():
 	apply_hero_data()
@@ -189,7 +196,6 @@ func _ready():
 	# Godot physics: collision layer beda per team (blue=2, red=4)
 	collision_layer = 2 if team == "blue" else 4
 	collision_mask = 4 if team == "blue" else 2
-
 
 func apply_hero_data():
 	var s = HeroDB.get_balanced_stats(hero_type)
@@ -225,7 +231,6 @@ func apply_hero_data():
 	if skills != null:
 		skills.setup(self)
 
-
 ## Hitung ulang stat turunan dari level + item (paritas _apply_level_stats +
 ## _recalc_item_stats). `full_heal` hanya saat spawn pertama.
 func _recalc_derived(full_heal: bool = false) -> void:
@@ -248,7 +253,6 @@ func _recalc_derived(full_heal: bool = false) -> void:
 	move_speed = base_speed
 	attack_cooldown = base_attack_cd
 	update_ui()
-
 
 func setup_visual():
 	# Sprite kosong legacy dimatikan. Registry memilih bake asli, rig
@@ -284,7 +288,6 @@ func setup_visual():
 	silhouette.configure(
 		UnitSilhouetteScript.Kind.HERO, hero_type, team, fill_color, fill_dark,
 		radius, role, dmg_school, not is_melee_hero)
-
 
 # ══════════════════════════════════════════════════════════
 #  LOOP
@@ -324,7 +327,9 @@ func _physics_process(delta):
 				or str(follow_target.get("team")) == team:
 			follow_target = null
 
-	# AI sederhana: cari target terdekat (port dari Hero._find_hunt_target)
+	# AI sederhana: cari target terdekat (port dari Hero._find_hunt_target —
+	# pygame memakai `dist < best_dist` _entity.py:3707-3714, jadi di sini
+	# last_wins_ties TETAP false / default)
 	if not target or not is_instance_valid(target) or bool(target.get("is_dead")):
 		target = CombatSystem.nearest_enemy(self, HUNT_RANGE)
 
@@ -345,7 +350,9 @@ func _physics_process(delta):
 	# sambil jalan ATAU heal, tetap serang musuh yang masuk attack range.
 	if is_retreating:
 		var base := own_base()
-		var foe := CombatSystem.nearest_enemy(self, attack_range)
+		# last_wins_ties=true — paritas Hero._find_attack_target pygame
+		# (_entity.py:3663-3670, `dist <= best_dist`)
+		var foe := CombatSystem.nearest_enemy(self, attack_range, true)
 		if foe != null:
 			target = foe
 			try_attack()
@@ -360,14 +367,17 @@ func _physics_process(delta):
 	# jalan tetap menyerang musuh dalam range.
 	elif has_destination():
 		var dpos := destination
-		if destination_auto and CombatSystem.nearest_enemy(self, AGGRO_RANGE) != null:
+		# last_wins_ties=true untuk KEDUA scan — paritas
+		# Hero._find_aggro_target (_entity.py:3726-3731) dan
+		# Hero._find_attack_target (:3663-3670), keduanya `dist <= best_dist`.
+		if destination_auto and CombatSystem.nearest_enemy(self, AGGRO_RANGE, true) != null:
 			clear_destination()
 		else:
 			var dist := global_position.distance_to(dpos)
 			if dist <= 8.0:
 				clear_destination()
 			else:
-				var dfoe := CombatSystem.nearest_enemy(self, attack_range)
+				var dfoe := CombatSystem.nearest_enemy(self, attack_range, true)
 				if dfoe != null:
 					target = dfoe
 					try_attack()
@@ -406,7 +416,6 @@ func _physics_process(delta):
 	if _ring_alpha > 0.0 or selected:
 		queue_redraw()
 
-
 func _move_to(dest: Vector2, speed: float) -> bool:
 	if speed <= 1.0:
 		velocity = Vector2.ZERO
@@ -421,14 +430,12 @@ func _move_to(dest: Vector2, speed: float) -> bool:
 	move_and_slide()
 	return true
 
-
 ## Posisi tujuan AI/pemain (paritas move_to(x, y, auto) _entity.py:
 ## destination tuple + destination_auto). `auto=true` = perintah AIPlayer,
 ## dibatalkan oleh aggro (lihat _physics_process state 2).
 func set_destination(dest: Vector2, auto: bool = false) -> void:
 	destination = dest
 	destination_auto = auto
-
 
 ## Perintah gerak pemain/taktis (paritas Hero.move_to _entity.py:3571-3575):
 ## pasang destination, buang follow_target, batalkan retreat.
@@ -438,15 +445,12 @@ func move_to(x: float, y: float, auto: bool = false) -> void:
 	follow_target = null
 	is_retreating = false
 
-
 func clear_destination() -> void:
 	destination = Vector2.INF
 	destination_auto = false
 
-
 func has_destination() -> bool:
 	return destination != Vector2.INF
-
 
 ## Speed efektif: slow menara, buff Windrun, item move speed, stun (paritas _eff_speed)
 func _eff_speed() -> float:
@@ -455,13 +459,11 @@ func _eff_speed() -> float:
 		mult = status.move_speed_mult()
 	return move_speed * mult
 
-
 ## Attack cooldown efektif: atk_slow menara, attack speed item, buff skill
 func _eff_attack_cd() -> float:
 	if status != null:
 		return status.attack_cd(attack_cooldown)
 	return attack_cooldown
-
 
 ## Regen: 180 HP/s di base sendiri, 9 HP/s di luar + hp_regen item (per detik)
 func _regen(delta: float) -> void:
@@ -478,7 +480,6 @@ func _regen(delta: float) -> void:
 	if rate <= 0.0:
 		return
 	CombatSystem.heal_unit(self, rate * delta)
-
 
 ## Hero AI maupun pemain: auto-cast SDLAM NYA AKTIF seperti pygame v27
 ## (_entity.py:3432-3440 — "Semua skill sekarang dicor otomatis").
@@ -504,7 +505,6 @@ func _auto_cast_frames() -> void:
 	# CATATAN: decrement Q TIDAK di sini — ia terjadi SETELAH auto-cast di
 	# _step_skill_frames() (satu-satunya Q-- per frame), sama seperti urutan
 	# Hero.update pygame (_entity.py:3806-3810).
-
 
 ## Mirror Hero._try_auto_cast: prioritas R -> E(2+ musuh) -> W(hp<40%) -> Q;
 ## wajib ada musuh hidup dalam skill_range (guard anti-buang); target dipaksa
@@ -536,7 +536,6 @@ func _try_auto_cast() -> void:
 	if is_skill_ready("q"):
 		try_cast_skill("q")
 
-
 func is_skill_ready(key: String) -> bool:
 	match key:
 		"q":
@@ -548,7 +547,6 @@ func is_skill_ready(key: String) -> bool:
 		"r":
 			return r_cooldown <= 0
 	return false
-
 
 ## Hero.cast_skill pygame (_entity.py:3578-3643): delegasi ke handler, lalu
 ## CDR (Octarine) + spell vamp. INI satu-satunya jalur cast (tombol HUD,
@@ -596,12 +594,11 @@ func try_cast_skill(key: String, all_units: Array = [], all_towers: Array = [],
 					hp = minf(max_hp, hp + float(heal))
 	return ok
 
-
 ## Langkah timer skill per-frame — URUTAN PERSIS Hero.update pygame:
 ## (4) skill_timer, (7) attack_timer, (7b) active_skill_timer, (8) w/e/r,
 ## (9) skills.update_timers. attack_timer di-tick di sini supaya posisi
 ## relatifnya sama (proyektil visual tidak memengaruhi kit: damage skill
-## instan; lihat docs/GODOT_PARITY.md).
+## instan; lihat docs/AUDIT_ULANG_DARI_AWAL.md).
 func _step_skill_frames() -> void:
 	if skill_timer > 0:
 		skill_timer -= 1
@@ -620,7 +617,6 @@ func _step_skill_frames() -> void:
 	var lists := _kit_lists()
 	HeroSkillKit.update_timers(self, lists[0], lists[1], lists[2])
 
-
 ## Semua unit/tower/base lawan untuk handler skill (mirror argumen
 ## Game.update -> Hero.update di pygame). Grup sama dengan Boss.kit_enemies,
 ## TANPA potong jarak — penyaringan tim+hidup di kit_enemies().
@@ -632,7 +628,6 @@ func _kit_lists() -> Array:
 	var towers: Array = get_tree().get_nodes_in_group("towers")
 	var bases: Array = get_tree().get_nodes_in_group("nexus")
 	return [units, towers, bases]
-
 
 # ══════════════════════════════════════════════════════════
 #  JEMBATAN HeroSkillKit (dipanggil HeroSkillKit.gd — konversi frame<->detik
@@ -653,7 +648,6 @@ func kit_enemies(all_units, all_towers, all_bases) -> Array:
 			out.append(n)
 	return out
 
-
 ## Mirror property skill_damage _entity.py (int(round) BERANTAI: base lalu
 ## amp item, lalu skill_down tower) — dibaca 280x oleh kit; JANGAN pakai
 ## CombatSystem.calc_skill_damage (float, tanpa rantai bulat pygame).
@@ -669,16 +663,13 @@ func kit_skill_damage() -> int:
 		return HeroDB._py_round(float(base) * f)
 	return base
 
-
 ## settings.get_all_hero_types()[hero_type] — katalog mentah heroes.json.
 func kit_catalog_all() -> Dictionary:
 	return HeroDB.catalog_all()
 
-
 ## settings.HERO_LEVELS (int-keyed) untuk reset buff damage Thorne R dkk.
 func kit_hero_levels() -> Dictionary:
 	return HeroDB.hero_levels_int()
-
 
 ## e.take_damage(dmg, team[, source=, school=]) — kwargs DIPERTAHANKAN per
 ## call-site (attribution damage_dealt hanya bila source ada; sekolah
@@ -694,7 +685,6 @@ func kit_hit(e, dmg, from_team, src = null, school = "") -> void:
 	CombatSystem.apply_damage(e, float(dmg), str(from_team),
 		"normal", src, str(school) if school != null else "", false)
 
-
 ## e.apply_slow(amount, durasi_FRAME pygame).
 func kit_slow(e, amount: float, dur_frames) -> void:
 	if e == null or not is_instance_valid(e):
@@ -702,7 +692,6 @@ func kit_slow(e, amount: float, dur_frames) -> void:
 	if not kit_has_slow(e):
 		return
 	e.status.apply_slow(float(amount), float(dur_frames) / 60.0)
-
 
 ## _apply_stun / e.attack_timer = max(t, F_frame) pygame.
 func kit_lock(e, frames) -> void:
@@ -712,18 +701,15 @@ func kit_lock(e, frames) -> void:
 		return
 	e.attack_timer = maxf(float(e.get("attack_timer")), float(frames) / 60.0)
 
-
 func kit_atk_timer(e) -> float:
 	if e == null or not is_instance_valid(e) or not ("attack_timer" in e):
 		return 0.0
 	return float(e.get("attack_timer")) * 60.0
 
-
 func kit_unit_alive(e) -> bool:
 	if e == null or not is_instance_valid(e):
 		return false
 	return not bool(e.get("is_dead"))
-
 
 ## hasattr(e, "apply_slow") — unit dengan status effects (bukan tower/nexus).
 func kit_has_slow(e) -> bool:
@@ -732,18 +718,15 @@ func kit_has_slow(e) -> bool:
 	var st = e.get("status")
 	return st != null
 
-
 func kit_has_atk_timer(e) -> bool:
 	if e == null or not is_instance_valid(e):
 		return false
 	return "attack_timer" in e
 
-
 func kit_has_hp(e) -> bool:
 	if e == null or not is_instance_valid(e):
 		return false
 	return "hp" in e
-
 
 ## _shake_screen / _play_skill_sound / _add_popup — lapisan feedback; di
 ## harness replay tetap aman (call_group tanpa receiver = no-op).
@@ -752,10 +735,8 @@ func kit_shake(amount: float) -> void:
 	if tree is SceneTree:
 		(tree as SceneTree).call_group("camera", "add_trauma", amount / 60.0)
 
-
 func kit_sound(volume: float) -> void:
 	AudioManager.play_sfx("hero_skill", volume)
-
 
 func kit_popup(text: String, critical: bool = false) -> void:
 	var num = preload("res://scenes/fx/DamageNumber.tscn").instantiate()
@@ -764,7 +745,6 @@ func kit_popup(text: String, critical: bool = false) -> void:
 	var host := get_tree().current_scene
 	if host != null and is_instance_valid(host):
 		host.add_child(num)
-
 
 ## Hero._spawn_skill_projectile: visual homing TANPA damage (damage skill
 ## instan). Harness replay melewatkan spawn (tidak ada sistem proyektil).
@@ -779,19 +759,16 @@ func kit_skill_proj(target, _speed := 13.0) -> void:
 	if host != null:
 		host.add_child(p)
 
-
 ## Pengganti blok `try: from heroes/<alias>_fx import ... notify_skill_cast/
 ## impact` (lapisan visual per-boss). Sama seperti jembatan Boss.gd.
 func kit_fx_cast(skill: String) -> void:
 	kit_popup(str(skill).to_upper(), false)
 	_kit_ring(global_position, radius + 16.0, fill_color.lightened(0.25))
 
-
 func kit_fx_impact(x: float, y: float, r: float, skill: String) -> void:
 	_kit_ring(Vector2(x, y), maxf(10.0, r), fill_color.lightened(0.4))
 	if skill == "r":
 		_kit_ring(Vector2(x, y), maxf(10.0, r) * 0.6, Color(1.0, 0.85, 0.4))
-
 
 func _kit_ring(center: Vector2, r: float, col: Color) -> void:
 	var host := get_tree().current_scene
@@ -800,7 +777,6 @@ func _kit_ring(center: Vector2, r: float, col: Color) -> void:
 	var ring = preload("res://scenes/fx/KitShockRing.gd").new()
 	ring.setup(center, r, col)
 	host.add_child(ring)
-
 
 ## Input catch-up: jumlah hero NON-starter yang sudah dibuka pemain lintas
 ## save — paritas `Hero.__init__` pygame (_entity.py:3355-3360):
@@ -816,7 +792,6 @@ func _kit_ring(center: Vector2, r: float, col: Color) -> void:
 ## HeroCatchupUnlockParityTest.
 func _catchup_unlocks() -> int:
 	return GameManager.catchup_unlocks()
-
 
 ## ══ HARNESS PARITAS (HeroSkillParityTest) ══
 ## Satu langkah frame dengan urutan yang sama persis oracle
@@ -861,7 +836,6 @@ func skill_test_step(frame: int, cast_key: String, force: bool, enemies: Array) 
 		hp = 1.0
 	return ok
 
-
 func _drive_visual(is_moving: bool, delta: float) -> void:
 	var ap := 0.0
 	var cd := _eff_attack_cd()
@@ -880,7 +854,6 @@ func _drive_visual(is_moving: bool, delta: float) -> void:
 	elif custom_visual != null and is_instance_valid(custom_visual) and custom_visual.has_method("drive"):
 		custom_visual.drive(anim_phase, act, ap, facing, is_moving, skill_key, delta)
 
-
 static func _parse_color(v, fallback: Color) -> Color:
 	if v is Color:
 		return v
@@ -894,20 +867,17 @@ static func _parse_color(v, fallback: Color) -> Color:
 		return fallback
 	return c
 
-
 func own_base() -> Vector2:
 	var am = get_tree().get_first_node_in_group("arena_map")
 	if am != null and am.has_method("get_own_base"):
 		return am.get_own_base(team)
 	return Vector2(100, 620) if team == "blue" else Vector2(1180, 100)
 
-
 func enemy_base() -> Vector2:
 	var am = get_tree().get_first_node_in_group("arena_map")
 	if am != null and am.has_method("get_enemy_base"):
 		return am.get_enemy_base(team)
 	return Vector2(1180, 100) if team == "blue" else Vector2(100, 620)
-
 
 # ══════════════════════════════════════════════════════════
 #  SERANG
@@ -961,7 +931,6 @@ func try_attack():
 			if items.has_method("on_attack_hit"):
 				items.on_attack_hit(target, dmg)
 
-
 ## Hero ranged menembak proyektil (paritas Bullet pygame): bisa ditangkis
 ## Wind Wall Kaizen dan bisa meleset karena evasion.
 func _shoot_projectile(t: Node2D, dmg: float) -> void:
@@ -978,7 +947,6 @@ func _shoot_projectile(t: Node2D, dmg: float) -> void:
 		fill_color.lightened(0.35), self, dmg_school)
 	b.global_position = global_position + Vector2(0, -10)
 	GameManager.attach_fx(b)
-
 
 ## Proyektil skill visual-only (paritas _spawn_skill_projectile
 ## _entity.py:4509-4530). Damage otoritatif tetap instan di SkillBook —
@@ -1012,7 +980,6 @@ func spawn_skill_projectile(t: Node2D) -> void:
 	p.global_position = global_position + Vector2(0, -5)
 	GameManager.attach_fx(p)
 
-
 # ══════════════════════════════════════════════════════════
 #  DAMAGE & MATI
 # ══════════════════════════════════════════════════════════
@@ -1034,7 +1001,6 @@ func take_damage(amount: float, from_team: String, dmg_type: String = "normal",
 	if hp <= 0:
 		die(source)
 	update_ui()
-
 
 ## Burst partikel + flash saat hero KENA damage SKILL.
 ##
@@ -1060,20 +1026,17 @@ func play_hit_fx(col: Color = Color(1.0, 0.72, 0.55)) -> void:
 		hit_particles.restart()
 		hit_particles.emitting = true
 
-
 ## Flash putih 8 frame. Dipanggil take_damage() dan play_hit_fx() — TIDAK
 ## dari deteksi hp seperti minion/boss (lihat watch_hp di HurtFlash.gd).
 func _flash() -> void:
 	if hurt_flash != null:
 		hurt_flash.trigger()
 
-
 func heal(amount: float) -> void:
 	if is_dead:
 		return
 	CombatSystem.heal_unit(self, amount)
 	update_ui()
-
 
 func die(killer = null):
 	if is_dead:
@@ -1109,7 +1072,6 @@ func die(killer = null):
 	hide()
 	GameManager.hero_died.emit(self)
 
-
 func _cancel_active_skills() -> void:
 	# VISUAL ONLY: state kit (charge powershot, tickers) TIDAK dibersihkan di
 	# sini — paritas _entity.py: Hero yang mati berhenti di-update sehingga
@@ -1120,7 +1082,6 @@ func _cancel_active_skills() -> void:
 		hit_particles.emitting = false
 	if skill_particles != null:
 		skill_particles.emitting = false
-
 
 ## _entity.Hero.respawn: instance sama, HP penuh, kembali ke base sendiri.
 func respawn() -> void:
@@ -1155,7 +1116,6 @@ func respawn() -> void:
 	update_ui()
 	queue_redraw()
 
-
 func update_ui():
 	if hp_bar:
 		hp_bar.max_value = max_hp
@@ -1166,7 +1126,6 @@ func update_ui():
 		name_label.text = display_name
 	queue_redraw()
 
-
 # ══════════════════════════════════════════════════════════
 #  SKILL (dipanggil HUD / tombol Q W E R)
 # ══════════════════════════════════════════════════════════
@@ -1175,7 +1134,6 @@ func cast_q(): return _cast_skill("q")
 func cast_w(): return _cast_skill("w")
 func cast_e(): return _cast_skill("e")
 func cast_r(): return _cast_skill("r")
-
 
 func _cast_skill(key: String) -> bool:
 	if is_dead:
@@ -1191,7 +1149,6 @@ func _cast_skill(key: String) -> bool:
 		# (BaseSkill._trigger_* -> h.kit_sound).
 		AudioManager.play_sfx("ui_error", 0.3)
 	return ok
-
 
 ## FX skill: ring memancar + burst CPUParticles2D (warna mengikuti tombol)
 func play_skill_fx(key: String) -> void:
@@ -1233,12 +1190,10 @@ func play_skill_fx(key: String) -> void:
 		particles.emitting = true
 	queue_redraw()
 
-
 ## Dipanggil StatusEffects saat buff habis (Warpath/Focus Fire sudah otomatis
 ## lewat buff multiplier, jadi tidak ada stat yang perlu dipulihkan manual).
 func on_buff_expired(_id: String) -> void:
 	queue_redraw()
-
 
 # ══════════════════════════════════════════════════════════
 #  LEVEL & ITEM (dipanggil ShopPanel)
@@ -1247,10 +1202,8 @@ func on_buff_expired(_id: String) -> void:
 func can_upgrade() -> bool:
 	return level < HeroDB.max_hero_level
 
-
 func upgrade_cost() -> int:
 	return HeroDB.upgrade_cost(hero_type, level)
-
 
 func upgrade() -> bool:
 	if not can_upgrade():
@@ -1260,7 +1213,6 @@ func upgrade() -> bool:
 	print("[Hero] %s naik ke level %d" % [name, level])
 	return true
 
-
 func buy_item(item_id: String) -> bool:
 	if items == null or not items.can_equip(item_id):
 		return false
@@ -1269,7 +1221,6 @@ func buy_item(item_id: String) -> bool:
 	_recalc_derived()
 	print("[Hero] %s membeli %s" % [name, ItemDB.item_name(item_id)])
 	return true
-
 
 # ══════════════════════════════════════════════════════════
 #  SELEKSI & GAMBAR TAMBAHAN
@@ -1281,7 +1232,6 @@ func set_selected(value: bool) -> void:
 	selected = value
 	player_controlled = value and team == "blue"
 	queue_redraw()
-
 
 ## Bintang level di atas papan nama — port `_build_name_badge`
 ## `_entity.py:4931-4970`. L<=5: satu bintang per level; L>5: 1 bintang + `xN`.
@@ -1299,7 +1249,6 @@ func _draw_level_stars() -> void:
 			draw_string(font, Vector2(-2.0, y + 4.0), "x%d" % level,
 				HORIZONTAL_ALIGNMENT_LEFT, -1, 10, col)
 
-
 func _draw_star(c: Vector2, col: Color) -> void:
 	draw_colored_polygon(PackedVector2Array([
 		c + Vector2(0, -3), c + Vector2(2, 0), c + Vector2(4, 0),
@@ -1307,7 +1256,6 @@ func _draw_star(c: Vector2, col: Color) -> void:
 		c + Vector2(-3, 5), c + Vector2(-2, 2), c + Vector2(-4, 0),
 		c + Vector2(-2, 0),
 	]), col)
-
 
 func _draw() -> void:
 	_draw_level_stars()

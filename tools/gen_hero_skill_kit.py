@@ -39,7 +39,7 @@ ujung yang menyentuh field Godot yang memang detik):
     dengan arity yang sudah dihitung saat generate (tidak ada introspeksi
     runtime di Godot; registry dibaca langsung dari AST)
 
-BAGIAN YANG TIDAK DITRANSPILE (sengaja, tertulis di docs/GODOT_PARITY.md):
+BAGIAN YANG TIDAK DITRANSPILE (sengaja, tertulis di docs/AUDIT_ULANG_DARI_AWAL.md):
   * BaseSkill._get_enemies/_get_enemies_in_range/_skill_range/_acquire_target/
     _has_target/_deal_aoe_damage/_play_skill_sound/_add_popup/_shake_screen:
     emitter tulis-tangan di header template dengan mirror baris-per-baris

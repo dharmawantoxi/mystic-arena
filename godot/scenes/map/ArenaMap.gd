@@ -538,7 +538,7 @@ func _build_decor():
 		or bool(d.get("has_crystals_blue", false)) or bool(d.get("has_crystals_red", false))
 	_decor_wants_grave = bool(d.get("has_gravestones", false))
 	# Empat flag di bawah sudah lama diekspor converter tapi tak pernah
-	# dibaca (lihat docs/AUDIT_PARITAS.md A1-A4): tanpa ini tema tulang dan
+	# dibaca (lihat docs/AUDIT_ULANG_DARI_AWAL.md A1-A4): tanpa ini tema tulang dan
 	# tema hutan mati sama-sama tampil "pohon + batu" walau warnanya beda.
 	_decor_wants_dead_tree = bool(d.get("has_dead_trees", false))
 	_decor_wants_dark_tree = bool(d.get("has_dark_trees", false))

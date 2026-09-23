@@ -1751,7 +1751,7 @@ def emit_h(fns):
 //             tangan)
 // Regenerasi: python3 tools/gen_mobile_cpp.py
 // Cek CI    : python3 tools/gen_mobile_cpp.py --check
-// Desain    : docs/MOBILE_GODOTPP.md
+// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md
 //
 // Port paket `mobile/` ke Godot C++ GDExtension: lapisan KEPUTUSAN murni
 // (ambang gesture, rect + visibility tombol HUD, preset kualitas + adaptive

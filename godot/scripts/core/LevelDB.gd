@@ -241,7 +241,7 @@ static func py_contains(haystack: Array, needle) -> bool:
 
 ## `a == b` ala Python untuk nilai yang bisa muncul di save: numerik
 ## dibandingkan lintas tipe, selain itu harus se-tipe. bool TIDAK disamakan
-## dengan int (Python: True == 1) — deviasi dicatat docs/LEVELS_GODOTPP.md;
+## dengan int (Python: True == 1) — deviasi dicatat docs/AUDIT_ULANG_DARI_AWAL.md;
 ## save Godot hanya menyimpan int/float jadi tidak pernah terjadi.
 ##
 ## Sesudah penjaga tipe, sisanya diserahkan ke `==` Godot karena untuk tipe

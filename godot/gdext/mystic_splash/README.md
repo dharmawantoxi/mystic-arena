@@ -4,8 +4,8 @@ Port `splash_screen.py` (lapisan **MODEL** splashscreen pembuka: timing/fade,
 gerak partikel, gradien + vignette latar, geometri logo + cincin glow, glow
 judul + garis aksen, hint skip) ke Godot C++ GDExtension.
 
-Dokumen status paritas: [`docs/GODOT_PARITY.md`](../../../docs/GODOT_PARITY.md)
-(FASE 38) dan [`docs/SPLASH_GODOTPP.md`](../../../docs/SPLASH_GODOTPP.md).
+Dokumen status paritas: [`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md)
+(FASE 38) dan [`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md).
 **Status: generator, oracle pygame, self-test C++ tanpa engine, backend
 GDScript + saklar loader, dan dua scene paritas engine SEMUA hijau. Flag
 `mystic/splash/use_gdext_splash` tetap `false` (default produksi = GDScript),

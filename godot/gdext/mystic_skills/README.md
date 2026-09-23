@@ -5,8 +5,8 @@ Port `hero_skills/_bundle.py` (Python, 5.221 baris: `BaseSkill` + 6 starter +
 GDExtension.
 
 Dokumen desain + daftar bug paritas yang diperbaiki:
-[`docs/HERO_SKILLS_GODOTPP.md`](../../../docs/HERO_SKILLS_GODOTPP.md).
-Status paritas menyeluruh: [`docs/GODOT_PARITY.md`](../../../docs/GODOT_PARITY.md)
+[`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md).
+Status paritas menyeluruh: [`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md)
 (FASE 33).
 
 ## Tujuan
@@ -173,7 +173,7 @@ ObjectID dan memberi `nullptr`, jadi `if (tgt && ...)` setara
 
 ## Paritas
 
-Dikunci tiga lapis (rincian di `docs/HERO_SKILLS_GODOTPP.md`):
+Dikunci tiga lapis (rincian di `docs/AUDIT_ULANG_DARI_AWAL.md`):
 
 1. **Oracle Pygame** — `HeroSkillGdextParityTest` memaksa backend `gdext` lalu
    memutar ulang `match_parity.json["hero_skills"]` (direkam dari `Hero.update`

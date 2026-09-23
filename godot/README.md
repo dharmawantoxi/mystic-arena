@@ -1,7 +1,7 @@
 # Mystic Arena — Godot Edition
 
 > **Status: port masih parsial, belum sama sepenuhnya dengan Pygame.**
-> Audit dan daftar selisih yang tersisa: [GODOT_PARITY.md](../docs/GODOT_PARITY.md).
+> Audit dan daftar selisih yang tersisa: [AUDIT_ULANG_DARI_AWAL.md](../docs/AUDIT_ULANG_DARI_AWAL.md).
 > Bake visual dan keberhasilan export Android bukan bukti paritas seluruh game.
 
 Port GPU dari versi `pygame-ce`. **Visual 222 unit kini hasil bake renderer
@@ -185,7 +185,7 @@ menutupi peta:
   GameOverOverlay membaca dari tabel teks bersama (`Localization.gd`,
   106 kunci × 2 bahasa) dan menyambung `GameManager.language_changed`, jadi
   "English" di PENGATURAN langsung mengubah teks in-match. Rincian: bagian
-  "Lokalisasi teks UI" dan `docs/LOCALIZATION_GODOTPP.md`.
+  "Lokalisasi teks UI" dan `docs/AUDIT_ULANG_DARI_AWAL.md`.
 
 ## Koreksi paritas pertandingan (2026-09-07)
 
@@ -311,7 +311,7 @@ scan grup — himpunan sama, urutan ikut grup. `WorldPopups._draw` memakai
 `FrustumCuller` (margin 80 + radius) untuk tidak membangun `draw_string` popup
 yang berada di luar layar. Dikunci `SystemPerfParityTest` terhadap fixture
 oracle pygame (`tools/test_system_perf_parity.py`); peta blok lengkapnya ada di
-`../docs/SYSTEM_PY_COVERAGE.md`.
+`../docs/AUDIT_ULANG_DARI_AWAL.md`.
 
 Hero Radiant yang tidak dipilih tetap bertarung sendiri (AI + auto-cast skill); yang dipilih berhenti auto-cast dan menunggu input QWER — sama seperti pygame.
 
@@ -514,7 +514,7 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 - **Aura TRUE BOSS sekarang digambar** (`Boss.gd::_draw`, paritas `_draw_true_boss_aura` `bosses/base_boss.py:6351-6375`): penanda kelas yang di pygame menyala setiap frame selama true boss hidup — `aura_r = radius + 15`, 8 langkah 2 px, alpha `(aura_r - r) * 5 * pulse`, denyut `sin(pulse) * 0.3 + 0.7` dengan `pulse += 0.1`/frame (= `PULSE_SPEED` 6 rad/detik). Mini boss tidak punya. **Jebakan yang perlu diingat:** `pygame.draw.circle` TIDAK mem-blend — ia menimpa piksel di surface SRCALPHA, jadi 8 lingkaran itu gradien BERPITA, bukan tumpukan. `draw_circle()` Godot mem-blend, sehingga port naif membuat pusat aura ~3x lebih pekat (144/255 vs 49/255 pada pulse 0,7). Implementasi Godot memakai 1 cakram inti + 6 cincin `draw_arc` yang tidak saling menimpa; profilnya diuji melawan surface pygame asli di `tools/test_boss_true_aura_parity.py` (46 cek, plus `tools/boss_true_aura_parity.png` lewat `--shot`). Aura `ability_active` dan `is_enraged` belum diport karena mekanik enrage/ability boss memang belum ada di Godot. Node `FX/Aura` (partikel) tetap mati — itu upgrade, bukan baseline pygame.
 - **Flash putih saat kena damage = `hurt_flash_timer` pygame, dideteksi dari `hp` yang turun.** `scripts/render/HurtFlash.gd` dipakai bersama Hero/Minion/Boss: 8 frame @60fps (`DURATION = 8.0/60.0`) turun linear, targetnya `silhouette.flash_amount` → `custom_visual.modulate` → fallback (`hit_flash_mat` hero / `body` minion / `sprite` boss). **Deteksinya menonton `hp`, bukan hook di `take_damage()`** — persis alasan pygame menaruhnya di `update()` (`_entity.py:5545-5551`, `bosses/base_boss.py:609-610`): damage masuk dari banyak pintu, dan di port Godot `take_damage()` hampir tidak pernah dipanggil karena `Hero._attack`, `TowerBullet`, `SkillBook`, item, dan reflect semuanya memanggil `CombatSystem.apply_damage()` langsung. Satu pengecualian yang disengaja: **hero** memakai `watch_hp = false` (flash hanya lewat `trigger()` dari `take_damage`/`play_hit_fx`), karena pygame tidak punya hurt flash hero dan menyalakannya tiap pukulan sama saja dengan memberi flash pada serangan dasar — dilarang kontrak di atas. Minion: pygame MENYIMPAN `hurt_flash_timer` tapi tidak pernah menggambarnya (tidak ada cabang di draw minion); di Godot digambar, sejalan dengan keputusan yang sama pada partikel cuaca `ash`/`spirit`/`mist`/`acid`.
 - **Impact FX korban = SKILL saja, serangan dasar NOL FX.** Kontrak pemilik game (dikunci `tools/test_basic_attack_no_impact_fx.py`; komentar sumber `_entity.py:4376-4384`): benturan serangan dasar tidak boleh memicu flash/spark/shockwave/hit-stop, karena di combat ramai tumpukannya menutupi sprite. Karena itu `Hero.play_hit_fx()` (burst `FX/HitParticles` + flash putih) di-hook dari `SkillBook._damage()` — BUKAN dari `Hero.take_damage()` atau `CombatSystem.apply_damage()` yang dilewati semua jalur damage termasuk basic attack, tower, dan minion. Warna burst mengikuti `fill_color` caster supaya terbaca siapa yang memukul; ada jeda 0,08 detik per hero (`HIT_FX_COOLDOWN`) supaya skill AoE + ticker DoT tidak saling membatalkan burst lewat `restart()`. Minion/boss belum punya node partikel korban, jadi `has_method("play_hit_fx")` melewatinya dengan aman.
-- **Efek `EffectManager` (percikan/ledakan/panah lane) memakai rasio partikel 1.0, bukan 0.70 pygame.** `add_hit_particles` pygame dikalikan `mobile.perf.Quality.particle_ratio`, dan preset HIGH desktop (`mobile/perf.py:499`) memberi **0.70**, jadi pygame sebenarnya memunculkan 3/4/7 percikan untuk minion/boss/nexus, bukan 4/6/10. Port Godot memakai 1.0 karena lapisan adaptive quality memang belum diport (lihat `docs/SYSTEM_PY_COVERAGE.md` §3) — `SparkField.particle_ratio` / `particles_enabled` tersedia sebagai knob supaya port perf nanti tidak perlu menyentuh berkas lain. Fakta pygame-nya direkam di fixture (`py_quality`) dan dikunci `RenderFxParityTest._test_wiring`.
+- **Efek `EffectManager` (percikan/ledakan/panah lane) memakai rasio partikel 1.0, bukan 0.70 pygame.** `add_hit_particles` pygame dikalikan `mobile.perf.Quality.particle_ratio`, dan preset HIGH desktop (`mobile/perf.py:499`) memberi **0.70**, jadi pygame sebenarnya memunculkan 3/4/7 percikan untuk minion/boss/nexus, bukan 4/6/10. Port Godot memakai 1.0 karena lapisan adaptive quality memang belum diport (lihat `docs/AUDIT_ULANG_DARI_AWAL.md` §3) — `SparkField.particle_ratio` / `particles_enabled` tersedia sebagai knob supaya port perf nanti tidak perlu menyentuh berkas lain. Fakta pygame-nya direkam di fixture (`py_quality`) dan dikunci `RenderFxParityTest._test_wiring`.
 - **Percikan/ledakan memakai RNG global, bukan stream `ParityRng` yang dikunci.** Pygame memakai `random.uniform/randint/choice` global; yang dijaga paritas adalah NILAI dan URUTAN roll per partikel (angle → speed → warna → spark → lifetime), yang di harness di-replay lewat RNG ter-script dan di produksi dari RNG global. Hasilnya percikan tidak identik antar-build — sama seperti pygame.
 - **Raster efek tidak dibandingkan piksel demi piksel.** `draw_circle`/`draw_colored_polygon` Godot vs sprite hasil `transform.scale` + `blit` pygame; yang dikunci geometri (pusat, radius, titik), warna+alpha, dan urutan perintah gambar per frame. Headless Godot tidak bisa screenshot.
 - **Sekolah damage** diambil dari penyerang (`DamageSchool.resolve`), dot `fire`/`ice` netral — paritas `resolve_damage_school` pygame.
@@ -551,7 +551,7 @@ tanpa toolchain tetap normal. Paritas jalur C++ dijaga
 `tests/HeroSkillGdextParityTest.tscn` (oracle Pygame 222 hero × 4 skenario +
 A/B backend) di workflow `godot-gdext.yml`; kesegaran kedua generator dijaga
 `gen_hero_skill_kit.py --check` + `gen_hero_skills_cpp.py --check` di
-`godot-check.yml`. Rincian: `docs/HERO_SKILLS_GODOTPP.md`.
+`godot-check.yml`. Rincian: `docs/AUDIT_ULANG_DARI_AWAL.md`.
 
 ## Katalog level: GDScript (default) atau C++ godot++ (opt-in)
 
@@ -593,7 +593,7 @@ toolchain tetap normal. Paritas dijaga tiga lapis: `tools/test_godot_level_data_
 ±2 detik), dan `tests/LevelDataParityTest.tscn` /
 `tests/LevelDataGdextParityTest.tscn` (replay fixture oracle di engine; yang
 kedua memaksa backend C++ + A/B) di workflow `godot-gdext.yml`. Rincian:
-`docs/LEVELS_GODOTPP.md`.
+`docs/AUDIT_ULANG_DARI_AWAL.md`.
 
 ## Splashscreen: GDScript (default) atau C++ godot++ (opt-in)
 
@@ -639,7 +639,7 @@ audit wiring/arity/semantik argumen sweep/ruang lingkup identifier GDScript), `t
 `splash_processor.cpp` lewat stub Variant — butuh g++ saja, 1.585 cek dengan
 checkout godot-cpp / 1.580 tanpa, 6.524 perintah), dan `tests/SplashParityTest.tscn` / `tests/SplashGdextParityTest.tscn`
 (replay fixture di engine; yang kedua memaksa backend C++ + A/B seluruh API) di
-workflow `godot-gdext.yml`. Rincian: `docs/SPLASH_GODOTPP.md` +
+workflow `godot-gdext.yml`. Rincian: `docs/AUDIT_ULANG_DARI_AWAL.md` +
 `gdext/mystic_splash/README.md`.
 
 ## Asset Pipeline
@@ -854,7 +854,7 @@ scenes/fx/PathPreview.gd       — PathPreview (:1275-1370): panah lane 120 fram
 Pemiliknya `GameManager.spark_fx` (dibuat di `_bootstrap`, di-tick
 `_process` dengan akumulator 60 Hz, dibersihkan di `return_to_menu`). View
 dibuat oleh `Main._fx_ready()` — **node langsung**, bukan `call_group` (lihat
-temuan 7 di `docs/PARITY_AUDIT.md`: call_group ke metode yang tidak ada diam
+temuan 7 di `docs/AUDIT_ULANG_DARI_AWAL.md`: call_group ke metode yang tidak ada diam
 saja). Situs pemanggil mengikuti pygame persis: percikan di
 `CombatSystem._hit_spark_count` (minion 4 `_entity.py:5842` · boss 6
 `base_boss.py:6057` · nexus 10 `_entity.py:1816` · **hero & menara 0**),
@@ -920,7 +920,7 @@ Catatan jujur: 25 kunci masih diport sebagai DATA (notifikasi forge, antrean
 item + `queued_item_count`, `shop_no_hero_yet`, label halaman toko, popup
 detail item) dan menunggu permukaan UI-nya — oracle mencetak daftarnya setiap
 run, dan alasan per kelompok ada di
-[`../docs/LOCALIZATION_GODOTPP.md`](../docs/LOCALIZATION_GODOTPP.md).
+[`../docs/AUDIT_ULANG_DARI_AWAL.md`](../docs/AUDIT_ULANG_DARI_AWAL.md).
 
 ```bash
 python3 tools/test_godot_localization_parity.py                 # oracle tanpa engine
@@ -1003,7 +1003,7 @@ Catatan jujur: 6 widget baru di atas **belum dipasang** di layar mana pun —
 `_volume_slider` sendiri, dan rewiring-nya ditahan karena
 `MetaShopTxnParityTest`/`LocalizationParityTest` mengunci struktur node layar
 itu. Rincian + semua deviasi (strip aksen opaque, pita gradasi teks, `pyrect`,
-nama API): [`../docs/UI_THEME_GODOTPP.md`](../docs/UI_THEME_GODOTPP.md).
+nama API): [`../docs/AUDIT_ULANG_DARI_AWAL.md`](../docs/AUDIT_ULANG_DARI_AWAL.md).
 
 ```bash
 # Oracle: cek statik (tanpa engine) + menjalankan ui_theme.py ASLI untuk fixture
@@ -1077,4 +1077,4 @@ Ini masalah SDK lokal, terpisah dari parse error GDScript:
 
 Path SDK adalah pengaturan editor per mesin, bukan path yang perlu disimpan di repository.
 
-Lihat `docs/GODOT_MIGRATION.md` untuk roadmap lengkap.
+Lihat `docs/AUDIT_ULANG_DARI_AWAL.md` untuk roadmap lengkap.

@@ -1,0 +1,173 @@
+# AUDIT ULANG DARI AWAL — Godot vs Pygame (tanpa dokumen migrasi)
+
+> **PATOKAN TUNGGAL paritas Godot ↔ Pygame per 2026-09-23 (diperbarui 2026-09-24).**
+> Dokumen migrasi/paritas lama **dan** work-log per-fitur + PNG review di
+> `docs/` telah **dihapus** dan tidak boleh lagi dijadikan acuan:
+> - baseline lama: `GODOT_PARITY.md`, `GODOT_MIGRATION.md`, `MIGRASI_1_1.md`,
+>   `MIGRASI_1_1_REPORT.md`, `PARITY_AUDIT.md`, `AUDIT_PARITAS.md`
+> - work-log: `*_GODOTPP.md`, `*_PY_COVERAGE.md`, `*_V2_RENDERER.md`,
+>   `*_V3_COMBAT_FX.md`, `*_V4_*.md`, `BOSS_HERO_SMOOTH_PARITY.md`, dan PNG
+>   review di akar `docs/` (isi lamanya masih di riwayat git).
+> Yang **tetap ada** di `docs/`: patokan ini, runbook operasional
+> (`PANDUAN_ANDROID.md`, `PLAYSTORE_RELEASE.md`, `GDEXT_VERIFIKASI_LOKAL.md`,
+> `GODOT_DEBUG_DI_GITHUB.md`, `CARA_CONVERT_TANPA_HAPUS_PYGAME.md`,
+> `PERF_ANDROID_LOWEND.md`, `PERF_FX_BENCH.md`, `balance_audit.md`,
+> `hero_kategori.md`), plus `workflow_transaksi/` (screenshot alur bayar).
+> Laporan mesin (bukan patokan): `docs/GODOT_PYGAME_SYNC_REPORT.md`
+> (`tools/godot_pygame_sync.py --report md`) dan `docs/VISUAL_PARITY_REPORT.md`
+> (`tools/visual_parity_audit.py --report md`).
+
+**Tanggal audit:** 2026-09-23
+**Metode:** Membandingkan kode sumber Pygame secara langsung dengan kode/data Godot,
+**TANPA** membaca dokumen migrasi/paritas lama (kini sudah dihapus, lihat di atas).
+Semua klaim di bawah diverifikasi dari kode + data mentah.
+
+Pygame = sumber kebenaran (root repo). Godot = port (`godot/`).
+**Aturan oracle tetap berlaku (warisan `MIGRASI_1_1.md`):** Pygame adalah sumber
+kebenaran tunggal — Godot HANYA membaca; sumber Pygame tidak pernah disunting
+untuk menyesuaikan Godot. Semua perbaikan dilakukan di sisi Godot.
+
+---
+
+## LANGKAH AUDIT (step by step)
+
+| # | Langkah | Cara cek | Hasil |
+|---|---------|----------|-------|
+| 1 | Petakan struktur kedua engine | `ls` + hitung berkas | Pygame: 4 modul inti (_core 10.281 baris, _entity 6.536, _render 3.671, _system 1.125) + 6 bundle data/renderer (50.311 baris). Godot: 9 paket skrip + 14 grup scene + 17 JSON data + 44 parity test |
+| 2 | Bandingkan katalog hero | `get_all_hero_types()` Pygame vs `godot/data/heroes.json` | **222/222 kunci sama, semua stat combat identik** |
+| 3 | Bandingkan arketipe hero | `hero_archetypes.ARCHETYPES` vs `hero_archetypes.json` | **222/222 kunci + nilai identik** |
+| 4 | Bandingkan katalog boss | `boss_data.get_all_boss_types()` vs `bosses.json` | **216/216; hp/damage/warna cocok**; Godot menambah armor/MR/label_top precomputed |
+| 5 | Bandingkan level | `level_data.ALL_LEVELS` vs `levels.json` | **54/54 semua field skalar identik**; mini_bosses sama (beda format kunci int→string) |
+| 6 | Bandingkan item | `hero_items.ITEM_CATALOG` vs `items.json` | **33/33 kunci + nilai identik** |
+| 7 | Bandingkan ekonomi | Konstanta `_core.py` vs `economy.json` | **9/9 identik** (gold 350, 3/dtk, +0.3/level, +100/level, mult 1.25/1.0/0.75, wave 1500f, delay 20f, max 5 hero) |
+| 8 | Lokalisasi | `localization._TEXT` vs `Localization.gd` const TEXT | **209 kunci × 2 bahasa, semua nilai identik** (5 kunci multi-baris dicek manual — utuh) |
+| 9 | Menu & state | `MenuState` vs enum State MainMenu.gd | **8/8 state sama** |
+| 10 | Isi Settings | `_draw_settings` vs `_build_settings` | Semua baris ada di dua engine: 4 slider volume, difficulty, screen shake, damage numbers, game speed, bahasa, FPS limit, reset save, cloud save (OFF) |
+| 11 | Perintah taktis | `tactical_commands.py` vs `TacticalCommands.gd` | **5/5 perintah + semua konstanta HOLD identik** (240/600/150/180/90/30 frame) |
+| 12 | Smart-AI boss | `def _smart_ai` di `base_boss.py` vs BossKit.gd + flag `uses_smart_ai` | **79/79**; BossKit.gd di-generate 1:1 (7.081 baris) |
+| 13 | Skill hero | `hero_skills/_bundle.py` vs HeroSkillKit.gd | Di-generate 1:1 (5.806 baris); `--check` generator lulus |
+| 14 | Jalankan oracle perilaku | `tools/godot_pygame_sync.py` (tanpa stub) | **PASS** — fixture cocok: 54 level, 50 komposisi wave, 25 kombinasi minion/nexus, 216 boss-core, 79 smart-AI (237 skenario), trace skill hero |
+| 15 | Konstanta hardcoded | langkah [6/7] sync tool | **PASS** (FIRST_WAVE 300, RESPAWN 600, HUNT 900, AGGRO 250, RETREAT 0.20/0.80, FPS 60) |
+| 16 | Aset visual bake | `tools/visual_parity_audit` + hitung file | **455 unit PNG + 54 map PNG + 20 props PNG ada**; fresh-check tak bisa jalan di sandbox ini (numpy tidak ada) — isi file tetap ada |
+| 17 | SFX/BGM | `assets/sounds/` (23 wav + lisensi) vs AudioManager.gd | Katalog 1:1; converter menyalin ke `godot/assets/sounds/` (di-gitignore; ekstensi diluruskan 16 wav + 7 ogg + 1 mp3) |
+| 18 | Fitur mobile | `mobile/*.py` vs godot autoload/scene | Mayoritas ada padanan; **cloud save, vibrate, safe-area, long-press, debug overlay 4-mode, particle_ratio BELUM** |
+| 19 | Perilaku mikro | baca kode target menara, forge, popup | Ditemukan **3 gap nyata** (lihat checklist belum-sama) |
+| 20 | Meta/topup | `topup_*`, `_system.SaveManager`, meta_gold | Save 3 slot + meta_gold paritas; **multi-currency topup belum (Godot IDR saja)** |
+
+---
+
+## CHECKLIST — SUDAH SAMA ✅
+
+### A. Data (lapisan konten) — 100%
+- [x] **Hero 222/222** — semua stat combat (cost/hp/damage/speed/range/attack_cooldown/skill_cooldown/skill_damage/skill_range) identik per hero
+- [x] **Arketipe hero 222/222** — dmg_type/playstyle/tier/power identik
+- [x] **Boss 216/216** — stat dasar (hp/damage), warna, nama skill identik; field armor/MR/min_distance Godot = hasil precompute dari aturan Pygame
+- [x] **Level 54/54** — semua field (mult musuh, gold awal, reward meta, mini/true boss, tema map, bgm, syarat unlock) identik
+- [x] **Item 33/33** — cost, stats, kategori, drop-rule, flag melee/magic identik
+- [x] **Minion 5 jenis** — goblin/orc/troll/undead/dark_rider: hp/dmg/speed/range/cd/gold/radius sama
+- [x] **Ekonomi 9/9 konstanta** — starting gold, gold/detik, bonus level, mult kesulitan, interval wave, spawn delay, max hero
+- [x] **Lokalisasi 209 kunci × id+en** — semua nilai string identik (fallback id, template `{nama}` sama)
+- [x] **Konstanta gameplay hardcoded** — FIRST_WAVE/RESPAWN/HUNT/AGGRO/RETREAT/FPS cocok (audit statis PASS)
+- [x] **Tower 14 definisi** (towers.json) + nexus 4 — dikunci oracle & parity test
+- [x] **Katalog audio 23 SFX + BGM** — AudioManager membaca katalog yang sama (converter menyalin file)
+
+### B. Perilaku gameplay (dikunci oracle PASS + 44 parity test)
+- [x] **Alur match** — roster kosong → beli hero → wave minion → mini boss → true boss → victory/defeat
+- [x] **Oracle match parity** — 54 level, 50 komposisi wave, 25 kombinasi minion+nexus, 216 rekaman boss-core, 79 rekaman smart-AI (237 skenario), trace skill hero: **PASS**
+- [x] **Smart-AI boss 79/79** — rantai `_smart_ai_*` di-port generate ke BossKit.gd
+- [x] **Skill hero** — HeroSkillKit.gd generated 1:1 dari hero_skills/_bundle.py (QWER 6 starter + boss-hero generik); auto-cast r→e→w→q, CDR, spell vamp
+- [x] **Perintah taktis 5/5** — gather / protect_tower / protect_castle / attack_boss / attack_damage_dealer + mode HOLD (tap<0,33s vs tahan), re-issue tiap 0,5 dtk
+- [x] **Respawn, timer wave, aggro/retreat AI hero** — konstanta identik
+- [x] **Damage & mitigasi** — armor/MR, crit, block, evasion, item proc (dikunci ItemProcParityTest), death dispatch, reward kill
+- [x] **Difficulty & enemy scaling** — mult gold 1.25/1.0/0.75, scaling musuh khusus `hard`
+- [x] **Game speed** — 0.5/1.0/1.5/2.0 via Engine.time_scale
+- [x] **Adaptive quality** — transisi HIGH↔MEDIUM↔LOW dari rata-rata FPS (window 90 frame)
+
+### C. Menu, settings, save
+- [x] **Menu state 8/8** — main, slot_select, level_select, hero_shop, settings, how_to_play, credits, pause
+- [x] **Settings lengkap** — 4 slider volume (+catatan voice tanpa aset di KEDUA engine), difficulty (+kunci LOCKED run), screen shake, damage numbers, game speed, bahasa id/en, FPS limit, tombol reset save
+- [x] **Save 3 slot** — file per slot, migrasi save lama ke slot 1, info slot, format playtime, hapus slot
+- [x] **Meta progression** — meta_gold, reward win/replay/repeat, unlock level berurutan
+- [x] **Hero shop menu** — katalog 222 hero, harga, arketipe tier/power
+- [x] **Topup dialog** — pilih paket, metode bayar, simulasi pembayaran, redeem voucher + keypad layar
+- [x] **Layar game over** — judul menang/kalah, statistik, popup unlock hero (slide-in delay 90 frame)
+- [x] **Input controller** — ControllerManager (796 baris) + ControllerRouter (573) + parity test input
+
+### D. Visual & sinematik (struktur 1:1, piksel lewat bake)
+- [x] **Banner intro boss** — strip 600×92, timeline 100 frame (fade 12/slide 18/fade-out 20), skip SPACE/ESC/klik ditelan
+- [x] **Animasi mati boss** — fase pause 90f (true)/60f (mini), white flash 15f, gelombang cincin
+- [x] **Level intro, wave announcer (WavePlate), combo counter+badge, achievement popup** — semua ter-wire lewat signal
+- [x] **Screen shake kamera** — model trauma (maks, bukan jumlah; 1.0 = 60 px)
+- [x] **KillFeed DIHAPUS di dua engine** — paritas (sengaja)
+- [x] **Floating text/damage number, HitSpark, DeathBurst, PathPreview** — ada padanan
+- [x] **FPS overlay (F8)** — panel + grafik histori, layout di-port persis; ops gambar dikunci fixture
+- [x] **Aset bake** — 455 PNG unit (hero/boss/minion/tower/nexus), 54 PNG map, 20 PNG props — semuanya hasil render Pygame
+- [x] **Lighting** — Lighting.gd + LightingCompat (preset tema map)
+- [x] **HUD lengkap** — HUD, ShopPanel, SkillBar, SidePanel, TouchHUD, VirtualCursor, BossPlate/BossOverlay
+
+---
+
+## CHECKLIST — BELUM SAMA ❌
+
+### Gap perilaku nyata (berdampak gameplay/fitur)
+- [x] **1. Antrean forge item untuk hero MATI** — ✅ **DITUTUP 2026-09-23.** Pygame: beli item untuk hero mati → antre `pending_forge_items` → terkirim saat respawn (`hero_items.py:3143`, dikirim `_core.py:2184`). Perbaikan Godot: field `_pending_forge_items` dideklarasikan di Hero.gd (akar masalah lama: properti dinamis tidak tersimpan di Node); `GameManager.itemshop_target_hero()` kini memprioritaskan target-tersimpan→terseleksi→hidup→mati persis `_resolve_shop_target`; `try_buy_item` mengantre item untuk hero mati dengan kapasitas `count+pending < 6`; pengiriman + recalc stat dipanggil di `_update_hero_respawns` (urutan paritas respawn→deliver); chip strip BUY FOR hero mati diaktifkan + badge `queued`; hint `dead_delivery_hint`/`queued_item_count` tampil di tab. Integrasi dikunci `GameplayParityTest` (antre 5 item → FULL ke-6 → respawn → 6 slot terisi).
+- [x] **4. Tie-break target menara** — ✅ **DITUTUP 2026-09-23.** `CombatSystem.nearest_enemy` mendapat parameter `last_wins_ties` dan SEMUA call site dipetakan per padanan Pygame-nya: Tower/Nexus/Hero-attack/Hero-aggro kini `<=` (kandidat terakhir menang, `_entity.py:864-869/:1744-1749/:3663-3670/:3726-3731`); Hero-hunt dan Boss tetap `<` (`_entity.py:3707-3714`, `base_boss.py:688-692`).
+- [ ] **2. Multi-currency top-up** — Pygame: 21 mata uang (IDR, USD, EUR, GBP, SGD, MYR, THB, VND, PHP, JPY, KRW, CNY, AUD, CAD, BRL, INR, MXN, ZAR, AED, SAR) + deteksi locale perangkat (pyjnius di Android / modul locale di PC), fallback USD (`topup_currency.py`). Godot: **hardcode IDR** saja (TopupDialog.gd:503,526); nol referensi currency lain di seluruh GDScript.
+- [ ] **3. Cloud save (Google Play Games)** — Pygame: sign-in, upload/download async, status overlay (`mobile/cloud_save.py`). Godot: eksplisit **tidak diport** (komentar SaveManager.gd:34); tombol settings selalu OFF/unavailable.
+
+### Gap mobile/Android
+- [ ] **5. Vibrate/haptic** — Pygame `mobile/platform_utils.py:142` (pyjnius Vibrator, dipakai mis. long-press pause 30 ms). Godot: **nol** referensi vibrate.
+- [ ] **6. Safe-area (poni/cutout)** — Pygame `plat.get_safe_area()` dipakai overlay debug (mobile/debug.py:256/290/393). Godot: **nol** referensi safe_area.
+- [ ] **7. Gestur long-press** — Pygame `mobile/touch.py` memancarkan tap/long_press/double_tap/drag; long-press tombol pause = toggle overlay debug + vibrate (main.py:407-413). Godot: tidak ada lapisan gestur long-press.
+- [ ] **8. Overlay debug mobile 4-mode** (off/mini/full/graph, `mobile/debug.py`) — Panel F8 desktop SUDAH diport (FpsCounter.gd), tetapi tombol FPS 4-mode mobile **dinyatakan terbuka** oleh komentar FpsCounter.gd:44-47 sendiri.
+- [ ] **9. Particle ratio budget** — Pygame `mobile/perf.py`: multiplier partikel 0.20 (low) / 0.40 (med) / 0.70 (high) × fx_load + anggaran keras per frame. Godot: tidak ada `particle_ratio`; adaptive quality hanya mengganti batas FPS.
+- [ ] **10. Modul perf Android** tanpa padanan Godot: `blitwatch`, `bootcheck`, `buildinfo`, `diagnostics`, `fastblit`, `spritecache` (sebagian besar plumbing spesifik Pygame; `buildinfo/bootcheck` hanya terwakili crash-log AppShell).
+
+### Deviasi disengaja / belum setara visual
+- [ ] **11. FX skill boss per-boss** — Pygame punya 27 modul FX khusus (`heroes/*_fx.py`: abaddon_fx, ignis_drachorn_fx, dst). Godot mengganti SEMUA dengan aproksimasi generik `KitShockRing.gd` (komentar kode sendiri: *"bukan salinan piksel renderer pygame"*).
+- [ ] **12. Struktur toko dalam match** — Pygame: item shop fullscreen terpisah dengan halaman (SHOP_PAGES) + toko tower/hero berbeda. Godot: panel terpadu 4 tab (tower/item/hero/nexus). Perilaku harga/item sama; **layout berbeda**.
+- [ ] **13. Target pembelian item** — Pygame item shop punya state target hero internal; Godot membeli untuk hero yang dipilih via GameManager (chip hero strip).
+- [ ] **14. Cakupan penyimpanan settings** — Pygame: settings GLOBAL (settings.json, berlaku semua slot). Godot: settings disimpan **per slot** (bahasa, volume, difficulty, speed ikut slot). Deviasi tercatat di SaveManager.gd:613-617.
+- [ ] **15. Animasi slide-in popup menara** — `PopupAnimation` (\_render.py:1202, dipakai `_core.py:2577`) tidak punya padanan Godot; popup menara muncul tanpa animasi.
+- [ ] **16. Permukaan UI untuk sebagian kunci lokalisasi** — komentar Localization.gd:41-44: kunci notifikasi forge / banner toko / detail item / chip MATI-antrean diport sebagai DATA saja karena **permukaan UI-nya belum ada** di port Godot (konsisten dengan gap #1).
+- [ ] **17. Modul C++ GDExt tidak aktif** — 7 modul (levels, lighting, maps, mobile, skills, splash, ui) teruji paritas di CI, tetapi `project.godot` mematikan SEMUA flag (`use_gdext_*=false`); runtime pemain = GDScript. (Bukan bug — jalur akselerasi opsional.)
+- [ ] **18. File audio tidak ikut di repo Godot** — `godot/assets/sounds/` di-gitignore; pemain/dev harus menjalankan converter agar suara ada (16 wav + 7 ogg + 1 mp3 hasil pelurusan ekstensi). Bake PNG unit/map/props SUDAH ter-commit.
+- [ ] **19. Sertifikasi piksel runtime** — visual unit/map dijamin lewat bake (deretan PNG dari renderer Pygame), tetapi FX runtime (skill, hit, glow, komposit HUD) diimplementasikan ulang di Godot; belum ada bukti screenshot piksel-per-piksel end-to-end untuk itu.
+- [ ] **20. Server payment (`server/app.py`)** — tooling sisi Pygame/PC; tidak ada padanan (dan memang di luar scope port Godot).
+
+### Catatan kesetaraan "sama-sama tidak ada" (bukan gap)
+- Slider Voice aktif di dua engine tetapi **tidak ada aset voice di dua-duanya** — paritas absen.
+- `main_desktop_legacy.py` = launcher desktop lawas Pygame; Godot satu launcher — bukan gap.
+
+---
+
+## KESIMPULAN
+
+| Lapisan | Status |
+|---|---|
+| Data konten (hero/boss/level/item/minion/ekonomi/teks) | ✅ **1:1 penuh** — diverifikasi kunci-per-kunci & nilai-per-nilai |
+| Perilaku gameplay inti | ✅ **1:1 berlapis oracle** — fixture PASS (54 level, 216 boss, 79 smart-AI, trace skill) |
+| Menu/settings/save/topup (struktur) | ✅ Hampir penuh (settings per-slot = deviasi tercatat) |
+| Visual struktural (sinematik, HUD, popup, shake) | ✅ 1:1; piksel unit/map lewat bake |
+| FX skill boss (piksel) | ⚠️ Aproksimasi generik, bukan salinan |
+| Fitur Android (cloud, vibrate, safe-area, long-press, debug 4-mode, particle budget) | ❌ Belum diport |
+| Forge item untuk hero mati | ❌ Belum di-wire (fitur Pygame nyata) |
+| Multi-mata-uang topup | ❌ Godot IDR saja |
+| Tie-break target menara | ⚠️ Beda operator `<=` vs `<` |
+
+**Status akhir: BELUM 1:1 penuh** — progres per 2026-09-23:
+gap **#1 (forge hero mati)** dan **#4 (tie-break)** ✅ DITUTUP.
+Sisa terbuka: 1 fitur topup multi-currency, 5 fitur Android (cloud save,
+vibrate, safe-area, long-press, debug 4-mode, particle budget), sejumlah
+deviasi disengaja, dan sertifikasi piksel FX runtime yang masih terbuka.
+
+Urutan prioritas penutupan gap berikutnya:
+1. ~~Forge queue hero mati~~ ✅ selesai
+2. ~~Tie-break menara~~ ✅ selesai (dipetakan per call site: `<=` untuk
+   tower/nexus/attack/aggro, `<` tetap untuk hunt/boss)
+3. Long-press + overlay debug mobile 4-mode + vibrate (satu rantai fitur).
+4. Safe-area layout.
+5. Multi-currency topup.
+6. Cloud save backend.
+7. Particle ratio budget.
+8. FX boss per-boss (27 modul) bila ingin klaim piksel 1:1.

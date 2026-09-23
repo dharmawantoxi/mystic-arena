@@ -281,7 +281,7 @@ def build_commands(catalog):
     # Python True == 1; Variant::evaluate(OP_EQUAL) tidak punya evaluator untuk
     # BOOL vs INT (variant_op.cpp), jadi kedua backend Godot menjawab False.
     # Harapan dibaca dari fixture (sumber yang sama dengan engine test), bukan
-    # dihitung ulang di sini: docs/LEVELS_GODOTPP.md + deviation_battery.
+    # dihitung ulang di sini: docs/AUDIT_ULANG_DARI_AWAL.md + deviation_battery.
     fixture = json.loads(FIXTURE_JSON.read_text(encoding="utf-8"))
     for index, case in enumerate(fixture["deviation_battery"]):
         haystack_pairs, needle_pair, expected_bool, note = case

@@ -37,7 +37,7 @@ class _NS_zharok:
 
     Renderer `_NS_zharok` mengikuti standar **Thorne v2 Pixel Masterwork**
     untuk rig/palet/pose, lalu diangkat ke standar **v3 Combat FX**
-    (lihat docs/ZHAROK_V3_COMBAT_FX.md) dengan:
+    (lihat docs/AUDIT_ULANG_DARI_AWAL.md) dengan:
 
       * controller animasi ber-delta-time + state/prioritas + fase serangan
       * ARK ayunan stave busur (`BOW_ARC`) sebagai SATU sumber geometri
@@ -5462,7 +5462,7 @@ class _NS_vokrahn:
 
     Rewrite penuh renderer + sistem tempur **VOKRAHN, THE HARBINGER OF
     CHAOS** (mini-boss level 4) mengikuti standar v3 Combat FX (lihat
-    docs/VOKRAHN_V3_COMBAT_FX.md).
+    docs/AUDIT_ULANG_DARI_AWAL.md).
 
     Pembagian kerja:
 
@@ -7837,7 +7837,7 @@ class _NS_ignis_drachorn:
 
     Rewrite penuh renderer + sistem tempur **IGNIS DRACHORN, THE MOLTEN
     SOVEREIGN** (true boss level 4) mengikuti standar Thorne v2 Pixel
-    Masterwork + v3 Combat FX (lihat docs/IGNIS_DRACHORN_V3_COMBAT_FX.md).
+    Masterwork + v3 Combat FX (lihat docs/AUDIT_ULANG_DARI_AWAL.md).
 
     Pembagian kerja:
 

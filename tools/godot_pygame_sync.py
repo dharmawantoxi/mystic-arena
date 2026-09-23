@@ -24,7 +24,7 @@ Tool ini:
 Usage:
   python tools/godot_pygame_sync.py              # cek semua
   python tools/godot_pygame_sync.py --fix        # auto-fix: re-export data JSON
-  python tools/godot_pygame_sync.py --report md  # laporan markdown ke docs/MIGRASI_1_1.md
+  python tools/godot_pygame_sync.py --report md  # laporan markdown ke docs/GODOT_PYGAME_SYNC_REPORT.md
 
 Tanpa mengubah satu baris pun Pygame — semua perbaikan di sisi Godot.
 """
@@ -499,7 +499,7 @@ def main():
         print("   Untuk baked assets: SDL_VIDEODRIVER=dummy python tools/convert_to_godot.py --units-png --maps-png")
 
     if args.report:
-        report_path = ROOT / "docs" / "MIGRASI_1_1_REPORT.md"
+        report_path = ROOT / "docs" / "GODOT_PYGAME_SYNC_REPORT.md"
         report_path.parent.mkdir(exist_ok=True)
         with open(report_path, "w", encoding="utf-8") as f:
             f.write("# Laporan Migrasi 1:1 Godot ↔ Pygame\n\n")
