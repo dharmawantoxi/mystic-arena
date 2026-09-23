@@ -140,7 +140,7 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 	for i in range(start, end):
 		ids.append(all_ids[i])
 	for i in ids.size():
-		var r: int = i // cols
+		var r: int = int(float(i) / float(cols))
 		var c: int = i % cols
 		var x: float = sx + float(c)*(cw+gap)
 		var y: float = sy + float(r)*(ch+gap)
@@ -235,7 +235,7 @@ func _draw_hero_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 	var sx: float = px + (pw - (cols*cw + (cols-1)*gap))*0.5
 	var sy: float = py + 56.0
 	for i in ids.size():
-		var r: int = i // cols
+		var r: int = int(float(i) / float(cols))
 		var c: int = i % cols
 		var x: float = sx + float(c)*(cw+gap)
 		var y: float = sy + float(r)*(ch+gap)
