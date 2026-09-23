@@ -830,6 +830,124 @@ func _on_nexus_destroyed(nexus: NexusUnit) -> void:
 		print("[Main] DEFEAT... Nexus biru hancur. Tekan R untuk ulangi.")
 
 
+# --- TACTICAL COMMANDS L33 ---
+const BOSS_POS := Vector2(640, 360)
+
+func tactical_gather() -> void:
+	if hero == null or not hero.is_alive():
+		print("[Tactical] GATHER gagal — hero gugur/belum spawn.")
+		return
+	hero.move_to(Vector2(250, 580))
+	Sound.play("move")
+	print("[Tactical] GATHER → hero kumpul di base (250,580)")
+
+func tactical_protect_tower() -> void:
+	if hero == null or not hero.is_alive():
+		return
+	var t := _nearest_blue_tower()
+	if t != null:
+		hero.move_to(t.position)
+		print("[Tactical] PROTECT TOWER → %s di (%d,%d)" % [t.tower_name, int(t.position.x), int(t.position.y)])
+	else:
+		var p := _nearest_blue_slot_pos()
+		hero.move_to(p)
+		print("[Tactical] PROTECT TOWER → slot biru (%d,%d) (belum ada tower)" % [int(p.x), int(p.y)])
+	Sound.play("move")
+
+func tactical_protect_castle() -> void:
+	if hero == null or not hero.is_alive():
+		return
+	hero.move_to(BASE_BLUE)
+	Sound.play("move")
+	print("[Tactical] PROTECT CASTLE → %s" % str(BASE_BLUE))
+
+func tactical_attack_boss() -> void:
+	if hero == null or not hero.is_alive():
+		return
+	hero.move_to(BOSS_POS)
+	Sound.play("move")
+	print("[Tactical] ATTACK BOSS → tengah sungai %s" % str(BOSS_POS))
+
+func tactical_attack_dd() -> void:
+	if hero == null or not hero.is_alive():
+		return
+	var target = _nearest_enemy_for_dd()
+	if target != null:
+		hero.move_to(target.position)
+		print("[Tactical] ATTACK DD → kejar %s" % str(target.position))
+	else:
+		hero.move_to(BASE_RED)
+		print("[Tactical] ATTACK DD → fallback nexus merah")
+	Sound.play("move")
+
+func _nearest_blue_tower() -> TowerUnit:
+	var best = null
+	var best_d := 999999.0
+	for n in get_tree().get_nodes_in_group("towers"):
+		var t := n as TowerUnit
+		if t == null or t.team != "blue" or not t.is_alive():
+			continue
+		var d := hero.position.distance_to(t.position) if hero != null else 0.0
+		if d < best_d:
+			best = t
+			best_d = d
+	return best
+
+func _nearest_blue_slot_pos() -> Vector2:
+	var best := BASE_BLUE
+	var best_d := 999999.0
+	for s in slots:
+		if str(s["team"]) != "blue":
+			continue
+		var p: Vector2 = s["pos"]
+		var d := hero.position.distance_to(p) if hero != null else p.distance_to(BASE_BLUE)
+		if d < best_d:
+			best = p
+			best_d = d
+	return best
+
+func _nearest_enemy_for_dd():
+	var best = null
+	var best_d := 999999.0
+	for n in get_tree().get_nodes_in_group("heroes"):
+		var h := n as HeroUnit
+		if h == null or h.team == "blue" or not h.is_alive():
+			continue
+		var d := hero.position.distance_to(h.position)
+		if d < best_d:
+			best = h
+			best_d = d
+	if best != null:
+		return best
+	for n in get_tree().get_nodes_in_group("minions"):
+		var m := n as MinionUnit
+		if m == null or m.team == "blue" or not m.is_alive():
+			continue
+		var d := hero.position.distance_to(m.position)
+		if d < best_d:
+			best = m
+			best_d = d
+	if best != null:
+		return best
+	for n in get_tree().get_nodes_in_group("towers"):
+		var t := n as TowerUnit
+		if t == null or t.team == "blue" or not t.is_alive():
+			continue
+		var d := hero.position.distance_to(t.position)
+		if d < best_d:
+			best = t
+			best_d = d
+	for n in get_tree().get_nodes_in_group("nexus"):
+		var nx := n as NexusUnit
+		if nx == null or nx.team == "blue" or not nx.is_alive():
+			continue
+		var d := hero.position.distance_to(nx.position)
+		if d < best_d:
+			best = nx
+			best_d = d
+	return best
+# --- END TACTICAL L33 ---
+
 func cast_hero_skill(i: int) -> void:
 	if match_over or hero == null:
 		return
@@ -893,6 +1011,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("skill_r"):
 		cast_hero_skill(3)
+		return
+	if k.keycode == KEY_G:
+		tactical_gather()
+		return
+	if k.keycode == KEY_T:
+		tactical_protect_tower()
+		return
+	if k.keycode == KEY_C:
+		tactical_protect_castle()
+		return
+	if k.keycode == KEY_B:
+		tactical_attack_boss()
+		return
+	if k.keycode == KEY_D:
+		tactical_attack_dd()
 		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton

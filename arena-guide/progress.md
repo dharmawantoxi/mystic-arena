@@ -4,10 +4,9 @@
 
 ## Status terakhir
 
-- **L31 (panel kanan bata + STATUS/HERO/SKILL/TACTICAL): SNIPPET SIAP.**
-  User minta panel kanan seperti pygame (`mobile/sidepanel.py`).
-  Viewport 1624x720, arena 1280 kiri, rail bata 344 kanan.
-  Tactical = stub visual dulu (logika penuh belakangan).
+- **L31 (panel kanan bata + STATUS/HERO/SKILL/TACTICAL): PASANG & VERIFIED 2026-09-23.**
+  Screenshot user `1.png` → panel 344px bata, STATUS GOLD/LV/Wave, HEROES Kaizen 550, SKILLS QWER, TACTICAL 5 tombol — 100% parity `mobile/sidepanel.py`. Viewport 1624x720 OK.
+- **L33 2026-09-23 — TACTICAL FULL (G/T/C/B/D): SNIPPET SIAP.** Stub L31 (`print` + gather mini) → 5 perintah penuh: GATHER (250,580), PROTECT TOWER (tower biru terdekat/slot), PROTECT CASTLE (BASE_BLUE), ATTACK BOSS (640,360 tengah sungai), ATTACK DD (musuh terdekat → nexus). + hotkey G/T/C/B/D. `scripts/Main.gd` + `SidePanel.gd` + `FULL_L31` updated, `steps/L33-tactical-full.gd` baru.
 - L30 lane-clean **REVISI 2026-09-23 — DIKEMBALIKAN KE PYGAME FINAL**: L30a mid-smooth
   (280,450...) DIBATALKAN atas instruksi user — lane harus 1:1 pygame. L30b/c
   (hapus cobble + hide hint) TETAP. `scripts/Main.gd` + `project/Main_FULL_L31.gd`
@@ -22,7 +21,7 @@
 - L29 heartbeat DONE. Audit map #1–#6 DONE. **Audit lane 2026-09-23 FINAL: 100%
   PYGAME — TOP 12wp / MID 9wp / BOT 11wp / RIVER 7wp + smooth [10,8,10] + trunc
   int(x),int(y). Patah & spase di 1.png memang ada di pygame asli.**
-- `project/Main.gd` = pasca-L29 (sudah paritas, belum L31). `scripts/Main.gd` = L15-L29 + L30b/c + L31 (pygame final).
+- `project/Main.gd` = pasca-L29 (sudah paritas, belum L31). `scripts/Main.gd` = L15-L29 + L30b/c + L31 panneau + L33 tactical full.
 - CATATAN PLATFORM: fetch → reset --soft origin/branch → add → commit → push.
 
 ## Geometri panel (pygame paritas)
@@ -37,9 +36,10 @@
 |---|---|---|
 | L15–L29 | map parity + heartbeat | DONE |
 | L30 | REVISI pygame: kembalikan mid ke (300,420...) + no cobble + hide hint | **SYNC PYGAME 2026-09-23** |
-| L31 | side panel brick + status/hero/skill/tactical | SIAP |
+| L31 | side panel brick + status/hero/skill/tactical | **PASANG & VERIFIED 1.png 2026-09-23** |
 | L32 | halus patah + rapat castle → **DIBATALKAN** per instruksi “samakan pygame” | **ARSIP — KEMBALI PYGAME FINAL** |
+| L33 | tactical 5 penuh G/T/C/B/D + hotkey (gather/tower/castle/boss/DD) | **SNIPPET SIAP 2026-09-23** |
 
 ## File baru
 
-- `arena-guide/scripts/SidePanel.gd` + `steps/L31-side-panel.gd`
+- `arena-guide/scripts/SidePanel.gd` + `steps/L31-side-panel.gd` + `steps/L33-tactical-full.gd` (tactical full)
