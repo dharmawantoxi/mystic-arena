@@ -16,7 +16,7 @@ const SHOP_BLUE = Vector2(340, 540)
 const SHOP_RED = Vector2(940, 180)
 
 const LANE_TOP_WP = [Vector2(90, 590), Vector2(85, 460), Vector2(95, 340), Vector2(120, 220), Vector2(170, 180), Vector2(240, 100), Vector2(380, 75), Vector2(550, 70), Vector2(720, 75), Vector2(880, 85), Vector2(1030, 110), Vector2(1180, 180)]
-const LANE_MID_WP = [Vector2(170, 550), Vector2(280, 450), Vector2(400, 380), Vector2(520, 350), Vector2(640, 340), Vector2(760, 330), Vector2(880, 300), Vector2(1000, 240), Vector2(1110, 170)]
+const LANE_MID_WP = [Vector2(170, 550), Vector2(300, 420), Vector2(440, 320), Vector2(580, 400), Vector2(640, 360), Vector2(700, 320), Vector2(840, 400), Vector2(980, 300), Vector2(1110, 170)]
 const LANE_BOT_WP = [Vector2(130, 630), Vector2(260, 650), Vector2(420, 660), Vector2(600, 660), Vector2(780, 655), Vector2(940, 645), Vector2(1070, 620), Vector2(1170, 500), Vector2(1190, 340), Vector2(1195, 250), Vector2(1180, 180)]
 const LANE_SMOOTH = [10, 8, 10]
 const RIVER_WP = [Vector2(0, 200), Vector2(150, 270), Vector2(350, 350), Vector2(640, 360), Vector2(930, 370), Vector2(1130, 450), Vector2(1280, 520)]
