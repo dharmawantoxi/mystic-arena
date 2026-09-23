@@ -1,3 +1,4 @@
+@warning_ignore("inferred_declaration")
 extends Node2D
 class_name ShopUI
 ## ITEM FORGE (biru 340,540) + HERO SHRINE (merah 940,180). H = item, klik gedung = sesuai warna.
@@ -55,12 +56,12 @@ const HERO_CATALOG := {
 }
 
 var _main = null
-var open := false
-var mode := "item" # item | hero
-var _close_rect := Rect2()
+var open = false
+var mode = "item" # item | hero
+var _close_rect = Rect2()
 var _page: int = 0
-var _page_prev_rect := Rect2()
-var _page_next_rect := Rect2()
+var _page_prev_rect = Rect2()
+var _page_next_rect = Rect2()
 var _buy_rects: Dictionary = {} # item_id -> Rect2 (item mode)
 var _hero_buy_rects: Dictionary = {} # hero_id -> Rect2 (hero mode)
 var _inv_rects: Dictionary = {} # slot_index -> Rect2 L35 SELL
@@ -85,7 +86,7 @@ func toggle_mode(requested_mode: String) -> void:
 		visible = true
 	if _main != null:
 		_main.queue_redraw()
-	var label := "ITEM FORGE" if mode=="item" else "HERO SHRINE"
+	var label = "ITEM FORGE" if mode=="item" else "HERO SHRINE"
 	print("[Shop] %s %s" % [label, ("BUKA" if open else "TUTUP")])
 
 func is_open() -> bool:
@@ -95,19 +96,19 @@ func draw_on(host: CanvasItem) -> void:
 	if not open:
 		return
 	host.draw_rect(Rect2(0,0,1280,720), Color(0,0,0,0.65))
-	var pw := 900.0
-	var ph := 560.0
-	var px := (1280.0 - pw) * 0.5
-	var py := (720.0 - ph) * 0.5
+	var pw = 900.0
+	var ph = 560.0
+	var px = (1280.0 - pw) * 0.5
+	var py = (720.0 - ph) * 0.5
 	host.draw_rect(Rect2(px,py,pw,ph), Color8(22,26,44))
-	var edge := Color8(255,205,90) if mode=="item" else Color8(255,120,120)
+	var edge = Color8(255,205,90) if mode=="item" else Color8(255,120,120)
 	host.draw_rect(Rect2(px,py,pw,ph), edge, false, 3.0)
 	host.draw_rect(Rect2(px+2,py+2,pw-4,ph-4), Color8(140,110,58), false, 1.0)
 	var font: Font = ThemeDB.fallback_font
-	var title := "ITEM FORGE — toko biru (H / klik ITEM)" if mode=="item" else "HERO SHRINE — toko merah (klik SHOP)"
-	var tcol := Color8(255,220,100) if mode=="item" else Color8(255,160,160)
+	var title = "ITEM FORGE — toko biru (H / klik ITEM)" if mode=="item" else "HERO SHRINE — toko merah (klik SHOP)"
+	var tcol = Color8(255,220,100) if mode=="item" else Color8(255,160,160)
 	host.draw_string(font, Vector2(px+18, py+32), title, HORIZONTAL_ALIGNMENT_LEFT, -1, 22, tcol)
-	var gold_s := "GOLD %d" % int(_main.gold) if _main != null else "GOLD 0"
+	var gold_s = "GOLD %d" % int(_main.gold) if _main != null else "GOLD 0"
 	host.draw_string(font, Vector2(px+pw-140, py+32), gold_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 20, Color8(255,220,100))
 	_close_rect = Rect2(px+pw-44, py+8, 36, 36)
 	host.draw_rect(_close_rect, Color8(180,60,60))
@@ -119,35 +120,35 @@ func draw_on(host: CanvasItem) -> void:
 		_draw_item_grid(host, px, py, pw, ph, font)
 
 func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, ph: float, font: Font) -> void:
-	var cols := COLS_ITEM
-	var cw := 200.0
-	var ch := 108.0
-	var gap := 12.0
-	var sx := px + (pw - (cols*cw + (cols-1)*gap))*0.5
-	var sy := py + 56.0
+	var cols = COLS_ITEM
+	var cw = 200.0
+	var ch = 108.0
+	var gap = 12.0
+	var sx = px + (pw - (cols*cw + (cols-1)*gap))*0.5
+	var sy = py + 56.0
 	_buy_rects.clear()
 	_hero_buy_rects.clear()
 	_inv_rects.clear()
-	var all_ids := ITEM_CATALOG.keys()
-	var total := all_ids.size()
-	var pages := int(ceil(float(total)/float(ITEMS_PER_PAGE)))
+	var all_ids: Array = ITEM_CATALOG.keys()
+	var total: int = all_ids.size()
+	var pages: int = int(ceil(float(total)/float(ITEMS_PER_PAGE)))
 	if _page >= pages: _page = max(0, pages-1)
 	if _page < 0: _page = 0
-	var start := _page * ITEMS_PER_PAGE
-	var end := min(start + ITEMS_PER_PAGE, total)
+	var start: int = _page * ITEMS_PER_PAGE
+	var end: int = mini(start + ITEMS_PER_PAGE, total)
 	var ids: Array = []
 	for i in range(start, end):
 		ids.append(all_ids[i])
 	for i in ids.size():
-		var r := int(i / cols)
-		var c := int(i % cols)
-		var x := sx + float(c)*(cw+gap)
-		var y := sy + float(r)*(ch+gap)
+		var r = int(i / cols)
+		var c = int(i % cols)
+		var x = sx + float(c)*(cw+gap)
+		var y = sy + float(r)*(ch+gap)
 		var id: String = ids[i]
 		var data: Dictionary = ITEM_CATALOG[id]
 		var owned: int = _count_owned(id)
 		var can_buy: bool = _can_buy(id)
-		var bg := Color8(34,40,68) if can_buy else Color8(30,30,38)
+		var bg = Color8(34,40,68) if can_buy else Color8(30,30,38)
 		host.draw_rect(Rect2(x,y,cw,ch), bg)
 		var border: Color = data["glow"] if can_buy else Color8(80,80,90)
 		host.draw_rect(Rect2(x,y,cw,ch), border, false, 2.0)
@@ -166,21 +167,21 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 		if data.has("as"): stxt += "+%d as" % int(data["as"])
 		host.draw_string(font, Vector2(x+8, y+56), stxt.strip_edges(), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color8(170,255,170) if stxt!="" else Color8(200,210,230))
 		host.draw_string(font, Vector2(x+8, y+68), desc.substr(0,24), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color8(200,210,230))
-		var btn := Rect2(x+8, y+ch-22, cw-16, 18)
+		var btn = Rect2(x+8, y+ch-22, cw-16, 18)
 		_buy_rects[id] = btn
 		if can_buy:
 			host.draw_rect(btn, Color8(48,100,64))
 			host.draw_rect(btn, Color8(120,235,140), false, 1.5)
-			var tw := font.get_string_size("BUY", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			var tw = font.get_string_size("BUY", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+13), "BUY", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.WHITE)
 		else:
 			host.draw_rect(btn, Color8(44,44,54))
 			host.draw_rect(btn, Color8(90,90,100), false, 1.0)
-			var label := "FULL" if _is_full() else ("GOLD -" if _main != null and int(_main.gold) < int(data["cost"]) else "BUY")
-			var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			var label = "FULL" if _is_full() else ("GOLD -" if _main != null and int(_main.gold) < int(data["cost"]) else "BUY")
+			var tw = font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+13), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color8(170,170,180))
 	# pagination controls (above inventory)
-	var pag_y := py + ph - 78
+	var pag_y = py + ph - 78
 	_page_prev_rect = Rect2(px+pw*0.5-74, pag_y, 58, 20)
 	_page_next_rect = Rect2(px+pw*0.5+16, pag_y, 58, 20)
 	var can_prev: bool = _page > 0
@@ -189,8 +190,8 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 	host.draw_rect(_page_prev_rect, Color8(90,130,255) if can_prev else Color8(70,70,80), false, 1.0)
 	host.draw_rect(_page_next_rect, Color8(40,70,140) if can_next else Color8(30,30,38))
 	host.draw_rect(_page_next_rect, Color8(90,130,255) if can_next else Color8(70,70,80), false, 1.0)
-	var twp := font.get_string_size("< PREV", HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
-	var twn := font.get_string_size("NEXT >", HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+	var twp = font.get_string_size("< PREV", HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+	var twn = font.get_string_size("NEXT >", HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
 	host.draw_string(font, Vector2(_page_prev_rect.position.x+(58-twp)*0.5, pag_y+13), "< PREV", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE if can_prev else Color8(130,130,140))
 	host.draw_string(font, Vector2(_page_next_rect.position.x+(58-twn)*0.5, pag_y+13), "NEXT >", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE if can_next else Color8(130,130,140))
 	host.draw_string(font, Vector2(px+pw*0.5-14, pag_y+13), "%d/%d" % [_page+1, pages], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color8(255,220,100))
@@ -198,17 +199,17 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 	_inv_rects.clear()
 	if _main != null and _main.hero != null:
 		var inv: Array = _main.hero.get("inventory") if "inventory" in _main.hero else []
-		var inv_y := py+ph-52
+		var inv_y = py+ph-52
 		host.draw_string(font, Vector2(px+18, inv_y), "INVENTORY %d/%d  (klik kanan slot = JUAL 70%%)" % [int(inv.size()), MAX_SLOTS], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(170,180,205))
-		var sx2 := px + pw*0.5 - 180
+		var sx2 = px + pw*0.5 - 180
 		for i in 6:
-			var r := Rect2(sx2 + float(i)*54, inv_y+8, 48, 32)
+			var r = Rect2(sx2 + float(i)*54, inv_y+8, 48, 32)
 			_inv_rects[i] = r
 			host.draw_rect(r, Color8(14,17,30))
 			var slot_item = null
 			if i < inv.size():
 				slot_item = inv[i]
-			var col := Color8(66,74,104)
+			var col = Color8(66,74,104)
 			if slot_item != null:
 				var d: Dictionary = ITEM_CATALOG.get(str(slot_item), {})
 				col = d.get("color", col)
@@ -226,23 +227,23 @@ func _draw_hero_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 	_buy_rects.clear()
 	_hero_buy_rects.clear()
 	_inv_rects.clear()
-	var ids := HERO_CATALOG.keys()
-	var cols := 4
-	var cw := 200.0
-	var ch := 160.0
-	var gap := 12.0
-	var sx := px + (pw - (cols*cw + (cols-1)*gap))*0.5
-	var sy := py + 56.0
+	var ids = HERO_CATALOG.keys()
+	var cols = 4
+	var cw = 200.0
+	var ch = 160.0
+	var gap = 12.0
+	var sx = px + (pw - (cols*cw + (cols-1)*gap))*0.5
+	var sy = py + 56.0
 	for i in ids.size():
-		var r := int(i / cols)
-		var c := int(i % cols)
-		var x := sx + float(c)*(cw+gap)
-		var y := sy + float(r)*(ch+gap)
+		var r = int(i / cols)
+		var c = int(i % cols)
+		var x = sx + float(c)*(cw+gap)
+		var y = sy + float(r)*(ch+gap)
 		var id: String = ids[i]
 		var data: Dictionary = HERO_CATALOG[id]
-		var can_buy := _can_buy_hero(id)
+		var can_buy = _can_buy_hero(id)
 		var is_current: bool = _main != null and _main.hero != null and str(_main.hero.hero_id) == id
-		var bg := Color8(40,30,40) if is_current else (Color8(34,40,68) if can_buy else Color8(30,30,38))
+		var bg = Color8(40,30,40) if is_current else (Color8(34,40,68) if can_buy else Color8(30,30,38))
 		host.draw_rect(Rect2(x,y,cw,ch), bg)
 		var border: Color = Color8(255,220,100) if is_current else (data["glow"] if can_buy else Color8(80,80,90))
 		host.draw_rect(Rect2(x,y,cw,ch), border, false, 2.5 if is_current else 2.0)
@@ -254,22 +255,22 @@ func _draw_hero_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 		host.draw_string(font, Vector2(x+10, y+114), "%d G" % int(data["cost"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(255,220,100) if can_buy else Color8(200,80,80))
 		if is_current:
 			host.draw_string(font, Vector2(x+cw-70, y+114), "AKTIF", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(150,255,170))
-		var btn := Rect2(x+8, y+ch-28, cw-16, 24)
+		var btn = Rect2(x+8, y+ch-28, cw-16, 24)
 		_hero_buy_rects[id] = btn
 		if is_current:
 			host.draw_rect(btn, Color8(60,60,70))
 			host.draw_rect(btn, Color8(120,120,130), false, 1.0)
-			var tw := font.get_string_size("AKTIF", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			var tw = font.get_string_size("AKTIF", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+17), "AKTIF", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(170,170,180))
 		elif can_buy:
 			host.draw_rect(btn, Color8(80,40,40))
 			host.draw_rect(btn, Color8(255,120,120), false, 1.5)
-			var tw := font.get_string_size("GANTI", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+			var tw = font.get_string_size("GANTI", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
 			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+17), "GANTI", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
 		else:
 			host.draw_rect(btn, Color8(44,44,54))
 			host.draw_rect(btn, Color8(90,90,100), false, 1.0)
-			var tw := font.get_string_size("GOLD -", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			var tw = font.get_string_size("GOLD -", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+17), "GOLD -", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(170,170,180))
 	# hint
 	if _main != null and _main.hero != null:
@@ -304,10 +305,10 @@ func handle_click(point: Vector2) -> bool:
 			if r.has_point(point):
 				_try_buy(str(id))
 				return true
-	var pw := 900.0
-	var ph := 560.0
-	var px := (1280.0 - pw)*0.5
-	var py := (720.0 - ph)*0.5
+	var pw = 900.0
+	var ph = 560.0
+	var px = (1280.0 - pw)*0.5
+	var py = (720.0 - ph)*0.5
 	if Rect2(px,py,pw,ph).has_point(point):
 		return true
 	toggle_mode(mode)
@@ -323,10 +324,10 @@ func handle_right_click(point: Vector2) -> bool:
 		if r.has_point(point):
 			_try_sell(int(idx))
 			return true
-	var pw := 900.0
-	var ph := 560.0
-	var px := (1280.0 - pw)*0.5
-	var py := (720.0 - ph)*0.5
+	var pw = 900.0
+	var ph = 560.0
+	var px = (1280.0 - pw)*0.5
+	var py = (720.0 - ph)*0.5
 	if Rect2(px,py,pw,ph).has_point(point):
 		return true
 	return false
@@ -342,8 +343,8 @@ func _try_sell(slot_idx: int) -> void:
 	var data: Dictionary = ITEM_CATALOG.get(id, {})
 	if data.is_empty():
 		return
-	var cost := int(data.get("cost", 100))
-	var refund := int(cost * 0.7)
+	var cost = int(data.get("cost", 100))
+	var refund = int(cost * 0.7)
 	inv.remove_at(slot_idx)
 	_revert_stats(_main.hero, data)
 	_main.gold += refund
@@ -355,14 +356,14 @@ func _revert_stats(hero, data: Dictionary) -> void:
 	if data.has("dmg"):
 		hero.damage = maxf(1.0, hero.damage - float(data["dmg"]))
 	if data.has("hp"):
-		var sub := float(data["hp"])
+		var sub = float(data["hp"])
 		hero.max_hp = maxf(1.0, hero.max_hp - sub)
 		hero.hp = minf(hero.hp, hero.max_hp)
 		hero.hp = maxf(1.0, hero.hp)
 	if data.has("hp_pct"):
-		var pct := float(data["hp_pct"])
-		var cur := hero.max_hp
-		var add := cur * pct / (1.0+pct)
+		var pct = float(data["hp_pct"])
+		var cur = hero.max_hp
+		var add = cur * pct / (1.0+pct)
 		hero.max_hp = maxf(1.0, cur - add)
 		hero.hp = minf(hero.hp, hero.max_hp)
 	if data.has("armor"):
@@ -419,7 +420,7 @@ func _count_owned(id: String) -> int:
 	if _main == null or _main.hero == null:
 		return 0
 	var inv: Array = _main.hero.get("inventory") if "inventory" in _main.hero else []
-	var c := 0
+	var c = 0
 	for v in inv:
 		if str(v) == id:
 			c+=1
@@ -480,13 +481,13 @@ func _apply_stats(hero, data: Dictionary) -> void:
 	if data.has("dmg"):
 		hero.damage += float(data["dmg"])
 	if data.has("hp"):
-		var add := float(data["hp"])
+		var add = float(data["hp"])
 		hero.max_hp += add
 		hero.hp += add
 		hero.hp = minf(hero.hp, hero.max_hp)
 	if data.has("hp_pct"):
-		var pct := float(data["hp_pct"])
-		var add := hero.max_hp * pct
+		var pct = float(data["hp_pct"])
+		var add = hero.max_hp * pct
 		hero.max_hp += add
 		hero.hp = minf(hero.hp + add, hero.max_hp)
 	if data.has("armor"):
@@ -503,13 +504,13 @@ func _apply_stats(hero, data: Dictionary) -> void:
 			hero.set("lifesteal", 0.0)
 		hero.lifesteal += float(data["ls"])
 	if data.has("crit"):
-		var cur = hero.get("crit_chance") if hero.has_method("get") else null
+		var cur: Variant = hero.get("crit_chance") if hero.has_method("get") else null
 		if cur==null:
 			hero.set("crit_chance", float(data["crit"]))
 		else:
 			hero.set("crit_chance", float(cur)+float(data["crit"]))
 	if data.has("evasion"):
-		var cur2 = hero.get("evasion") if hero.has_method("get") else null
+		var cur2: Variant = hero.get("evasion") if hero.has_method("get") else null
 		if cur2==null:
 			hero.set("evasion", float(data["evasion"]))
 		else:
