@@ -823,7 +823,7 @@ static func round_half_even(x: float) -> float:
 	return f if int(f) % 2 == 0 else f + 1.0
 
 
-## round(x, nd) Python — bit-eksak (lihat docs/MAPS_GODOTPP.md § bankir).
+## round(x, nd) Python — bit-eksak (lihat docs/AUDIT_ULANG_DARI_AWAL.md § bankir).
 ##
 ## Cara naif round_half_even(x * 10^nd) / 10^nd SALAH: x*10^nd dibulatkan dulu
 ## ke double, dan royal.energy (x = 1.1685000000000001, tepat DI ATAS batas

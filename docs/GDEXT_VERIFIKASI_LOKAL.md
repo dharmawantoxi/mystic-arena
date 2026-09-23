@@ -121,7 +121,7 @@ $ GODOT_CPP_DIR=$PWD/godot/gdext/godot-cpp python3 tools/test_ui_cpp_selftest.py
 
 Tertangkap di **L2 maupun L3 dalam < 1 detik** (stub UI ternyata ikut menolak
 `r8()`; header asli memberi pesan "did you mean 'r'?"). Inilah yang dimaksud
-catatan `docs/GODOT_PARITY.md`: tiga kegagalan nyata PR #234 kini ketahuan
+catatan `docs/AUDIT_ULANG_DARI_AWAL.md`: tiga kegagalan nyata PR #234 kini ketahuan
 lokal dalam ±10 detik, bukan ±30 menit siklus CI.
 
 ---
@@ -297,7 +297,7 @@ Flag `SCONS_FLAGS` sengaja sama dengan CI (`optimize=none debug_symbols=no`):
 yang diuji **paritas**, bukan kecepatan, dan `optimize=none` memangkas waktu
 compile drastis. Nama berkas `.so` = suffix scons (`template_debug`), sedangkan
 kunci di `.gdextension` = `linux.debug.x86_64` — jangan "dikoreksi", engine
-tidak akan menemukan lib-nya (lihat `docs/HERO_SKILLS_GODOTPP.md`).
+tidak akan menemukan lib-nya (lihat `docs/AUDIT_ULANG_DARI_AWAL.md`).
 
 ---
 
@@ -372,8 +372,7 @@ Yang masih bisa dipangkas, urut dari dampak terbesar:
 | `godot/tools/godot_log_gate.py` | L5 — gagalkan run kalau log headless memuat error (exit code Godot sering tetap 0) |
 | `tools/godot_debug_run.py` | unduh binary Godot ke cache + jalankan scene/screenshot |
 | `.github/workflows/godot-gdext.yml` | jaring terakhir: build + engine + paritas C++ ↔ oracle |
-| `docs/GODOT_PARITY.md` | status paritas per fase + kelas bug yang dikunci tiap lapis |
-| `docs/HERO_SKILLS_GODOTPP.md`, `LEVELS_`, `MAPS_`, `UI_THEME_`, `MOBILE_`, `SPLASH_GODOTPP.md` | desain per lib |
+| `docs/AUDIT_ULANG_DARI_AWAL.md` | patokan tunggal paritas + desain per lib GDExt |
 
 ### Variabel lingkungan skrip
 

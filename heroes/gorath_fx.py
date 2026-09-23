@@ -15,7 +15,7 @@
 # (lihat heroes/__init__.py `_LIVE_FX_HEROES` dan `_NS_gorath.draw_gorath`),
 # jadi trail/partikel/proyektil tetap bergerak 60 fps sejati walau pose
 # sprite sedang dipakai ulang oleh cache. Untuk geometri badan & disiplin
-# pixel-art renderer, lihat docs/GORATH_V2_RENDERER.md; sistem tempurnya
+# pixel-art renderer, lihat docs/AUDIT_ULANG_DARI_AWAL.md; sistem tempurnya
 # dijelaskan di docs/GORATH_V3_COMBAT_FX.md.
 #
 # Kontrak modul (dipakai renderer & pipeline):

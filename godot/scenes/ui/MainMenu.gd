@@ -1721,7 +1721,7 @@ func _try_unlock_hero(hero_type: String) -> void:
 ## port Godot sengaja TIDAK dipalsukan — ditulis sebagai catatan apa
 ## adanya (voice: tidak ada aset voice di kedua engine). Baris BAHASA
 ## (_core.py:6321-6329) hidup lewat port localization.py — lihat
-## _language_row() + docs/LOCALIZATION_GODOTPP.md.
+## _language_row() + docs/AUDIT_ULANG_DARI_AWAL.md.
 func _build_settings() -> void:
 	_screen_header(_loc("set_title"))
 

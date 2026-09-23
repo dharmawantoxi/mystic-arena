@@ -39,7 +39,7 @@ Butuh pygame-ce (SDL dummy). Tanpa pygame, alat ini tetap menjalankan cek
 statistik 1-3 (palet/coverage/ikon) lalu melapor bahwa seksi oracle dilewati —
 jadi bisa dipasang di langkah linter CI yang belum memasang pygame.
 
-Regenerasi fixture HANYA bila ui_theme.py berubah (aturan docs/MIGRASI_1_1.md:
+Regenerasi fixture HANYA bila ui_theme.py berubah (aturan docs/AUDIT_ULANG_DARI_AWAL.md:
 pygame tidak pernah disetel mengikuti Godot).
 """
 import argparse

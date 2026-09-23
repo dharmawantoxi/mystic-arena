@@ -81,7 +81,6 @@ var _flame_t: float = 0.0
 ## Cache entri manifest bake supaya tidak parse JSON tiap frame.
 var _baked: Dictionary = {}
 
-
 func _ready() -> void:
 	add_to_group("towers")
 	is_player_built = (team == "blue")
@@ -89,14 +88,12 @@ func _ready() -> void:
 	z_as_relative = false
 	_apply_level_stats()
 
-
 ## CombatSystem itu autoload singleton -> boleh dirujuk langsung sebagai
 ## identifier global (gaya yang sama dengan Hero.gd/Minion.gd). Helper ini
 ## dipertahankan supaya call site tetap `var cs = _combat()` dan mudah
 ## di-mock kalau suatu saat combat dipisah per-scene.
 func _combat():
 	return CombatSystem
-
 
 # ══════════════════════════════════════════════════════════
 #  STAT
@@ -133,10 +130,8 @@ func _apply_level_stats() -> void:
 	radius = 16.0 + float(level)
 	queue_redraw()
 
-
 func can_upgrade() -> bool:
 	return level < TowerDB.max_level()
-
 
 func upgrade_cost(target_type: String = "") -> int:
 	if not can_upgrade():
@@ -146,7 +141,6 @@ func upgrade_cost(target_type: String = "") -> int:
 	if level <= 1 and target_type != "":
 		path = target_type
 	return TowerDB.upgrade_cost(path, level)
-
 
 ## Upgrade. Level 1 WAJIB memilih jalur (paritas Tower.upgrade).
 func upgrade(target_type: String = "") -> bool:
@@ -163,12 +157,10 @@ func upgrade(target_type: String = "") -> bool:
 	upgrade_flash = 0.5
 	return true
 
-
 func sell_value() -> int:
 	if not is_player_built:
 		return 0
 	return TowerDB.sell_value(tower_type, level, regen_shield_active)
-
 
 # ══════════════════════════════════════════════════════════
 #  REGEN SHIELD (fitur berbayar — paritas Tower.activate_regen_shield)
@@ -188,10 +180,8 @@ func can_activate_regen_shield() -> bool:
 			and not regen_shield_active and not is_dead \
 			and owned
 
-
 func regen_shield_cost() -> int:
 	return TowerDB.regen_shield_cost()
-
 
 ## Langsung mengisi shield penuh saat dibeli, lalu shield regen sendiri
 func activate_regen_shield() -> bool:
@@ -204,7 +194,6 @@ func activate_regen_shield() -> bool:
 	upgrade_flash = 0.5
 	print("[Tower] %s %s membeli Regen Shield" % [team, display_name])
 	return true
-
 
 # ══════════════════════════════════════════════════════════
 #  LOOP
@@ -225,7 +214,10 @@ func _physics_process(delta: float) -> void:
 
 	var cs = _combat()
 	if cs != null:
-		target = cs.nearest_enemy(self, attack_range)
+		# last_wins_ties=true — paritas Tower._find_target pygame yang
+		# memakai `dist <= best_dist` (_entity.py:864-869): pada jarak
+		# sama persis kandidat TERAKHIR yang menang.
+		target = cs.nearest_enemy(self, attack_range, true)
 	if target != null:
 		angle = (target.global_position - global_position).angle()
 		if attack_timer <= 0.0:
@@ -239,7 +231,6 @@ func _physics_process(delta: float) -> void:
 		_redraw_acc = 0.0
 		z_index = 60 + int(global_position.y) / 4
 		queue_redraw()
-
 
 ## Regen HP setelah 5 detik tidak kena damage (paritas Tower._update_regen)
 func _update_regen(delta: float) -> void:
@@ -263,7 +254,6 @@ func _update_regen(delta: float) -> void:
 				shield + float(scfg.get("rate_per_frame", 1.8)) * FPS * delta)
 			shield_active = true
 			shield_regen_flash = 3.0 / FPS
-
 
 # ══════════════════════════════════════════════════════════
 #  TEMBAK
@@ -327,7 +317,6 @@ func _shoot(cs) -> void:
 						_spawn_bullet(second, damage, "normal", {}, speed,
 							Color("#ffe9a8"))
 
-
 ## Port `_shoot_archer` L5/L6: 2/3 peluru, offset × SCALE 0.7 lalu `int()`,
 ## target ekstra dalam range, sisanya di-pad target utama.
 func _shoot_archer_volley(cs, speed: float) -> void:
@@ -352,7 +341,6 @@ func _shoot_archer_volley(cs, speed: float) -> void:
 		_spawn_bullet(targets[i], damage, "normal", {}, speed, Color("#ffe9a8"),
 			Vector2(float(int(off.x * scale)), float(int(off.y * scale))))
 
-
 func _spawn_bullet(t: Node2D, dmg: float, btype: String, sp: Dictionary,
 		speed: float, col: Color, spawn_offset: Vector2 = Vector2.ZERO) -> void:
 	var b = TowerBulletScript.new()
@@ -366,7 +354,6 @@ func _spawn_bullet(t: Node2D, dmg: float, btype: String, sp: Dictionary,
 	b.global_position = global_position + Vector2(cos(angle), sin(angle)) * 12.0 \
 		+ Vector2(0, -22) + spawn_offset
 	GameManager.attach_fx(b)
-
 
 # ══════════════════════════════════════════════════════════
 #  DAMAGE
@@ -385,12 +372,10 @@ func take_damage(amount: float, from_team: String = "", dmg_type: String = "norm
 	if hp <= 0.0:
 		die(from_team, source)
 
-
 func heal(amount: float) -> void:
 	if is_dead:
 		return
 	hp = minf(max_hp, hp + amount)
-
 
 func die(killer_team: String = "", _killer = null) -> void:
 	if is_dead:
@@ -417,7 +402,6 @@ func die(killer_team: String = "", _killer = null) -> void:
 	print("[Tower] %s %s hancur (Lv%d %s) — %d gold ke %s" % [
 		team, display_name, level, lane, gold_reward, killer_team])
 
-
 # ══════════════════════════════════════════════════════════
 #  GAMBAR (prosedural, 0 asset — gaya sama dengan UnitSilhouette)
 # ══════════════════════════════════════════════════════════
@@ -437,7 +421,6 @@ func _draw() -> void:
 		return
 	_draw_geometric_body(team_col, body_top)
 	_draw_overlays(team_col, body_top)
-
 
 ## Gambar badan menara dari strip bake. Return false kalau tekstur/frame
 ## tidak tersedia (pemanggil lalu memakai gambar geometris).
@@ -463,7 +446,6 @@ func _draw_baked_body() -> bool:
 	var a := BakedPropDB.anchor(_baked)
 	draw_texture_rect_region(tex, Rect2(-a, region.size), region)
 	return true
-
 
 ## Badan menara geometris (jalur lama, dipakai kalau bake tidak ada).
 func _draw_geometric_body(team_col: Color, body_top: float) -> void:
@@ -509,7 +491,6 @@ func _draw_geometric_body(team_col: Color, body_top: float) -> void:
 		"mage":
 			draw_circle(Vector2(0, body_top - 6), 5.0, Color(color.r, color.g, color.b, 0.55))
 			draw_circle(Vector2(0, body_top - 6), 2.6, Color(1, 1, 1, 0.9))
-
 
 ## Lapisan yang digambar Godot di ATAS badan menara (bake maupun geometris):
 ## pip level, gelembung shield, bar HP, kilau upgrade, ring seleksi.

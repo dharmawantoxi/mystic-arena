@@ -39,7 +39,7 @@ CATATAN (temuan audit pada kode pygame, disimpan di fixture):
 `EffectManager.add_hit_particles` membaca `mobile.perf.Quality` — default
 desktop/HIGH adalah `particles=True`, `particle_ratio=0.70`, jadi pygame
 sebenarnya membulatkan `count` menjadi 4→3, 6→4, 10→7. Lapisan adaptive
-quality belum ada di Godot (lihat SYSTEM_PY_COVERAGE.md §3), jadi port
+quality belum ada di Godot (lihat AUDIT_ULANG_DARI_AWAL.md §3), jadi port
 memakai rasio 1.0 (jumlah penuh) dan faktanya direkam di `py_quality` supaya
 selisihnya terlihat, bukan terkubur.
 

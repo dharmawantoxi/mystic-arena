@@ -3,7 +3,7 @@
 // Generator : tools/gen_levels_cpp.py (AST Python -> C++, bukan terjemahan tangan)
 // Regenerasi: python3 tools/gen_levels_cpp.py
 // Cek CI    : python3 tools/gen_levels_cpp.py --check
-// Desain    : docs/LEVELS_GODOTPP.md
+// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md
 #include "levels_processor.h"
 
 using namespace godot;
@@ -623,7 +623,7 @@ bool MysticLevels::py_contains(const Array &haystack, const Variant &needle) {
         }
         // valid == false: pasangan tipe tanpa evaluator == (mis. bool vs
         // int). Python menganggap True == 1; deviasi itu dicatat di
-        // docs/LEVELS_GODOTPP.md dan tidak terjadi di produksi (save Godot
+        // docs/AUDIT_ULANG_DARI_AWAL.md dan tidak terjadi di produksi (save Godot
         // hanya menyimpan int/float). Tidak pernah error/crash di sini.
     }
     return false;

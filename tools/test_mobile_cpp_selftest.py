@@ -17,7 +17,7 @@ Karena numpy/pygame tidak ada di CI, pygame ditiru seminimal mungkin:
   * pygame.font/draw — kelas/kosong; hud.py hanya menyentuhnya saat draw
                        (tidak digerakkan di sini).
 
-Yang TIDAK diorakelkan (backend-bound, lihat docs/MOBILE_GODOTPP.md):
+Yang TIDAK diorakelkan (backend-bound, lihat docs/AUDIT_ULANG_DARI_AWAL.md):
 mixer pygame, sha256/checksum, strftime, JNI, gambar. Gerbang play/combat dan
 ringkas diuji lewat konstanta ASLI _KONFIG + ringkas() asli.
 
@@ -1535,7 +1535,7 @@ def wiring_checks():
     expect("godot/gdext/mystic_mobile/godot-cpp" in gi,
            ".gitignore mengecualikan godot-cpp mystic_mobile")
 
-    # mobile/ tidak boleh tersentuh (MIGRASI_1_1.md)
+    # mobile/ tidak boleh tersentuh (AUDIT_ULANG_DARI_AWAL.md)
     proc = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", "mobile/"],
                           cwd=str(ROOT), capture_output=True)
     expect(proc.returncode == 0, "mobile/*.py tidak dimodifikasi")

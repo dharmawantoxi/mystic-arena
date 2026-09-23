@@ -321,7 +321,7 @@ BANNER = (
     "// Generator : tools/gen_maps_cpp.py (AST Python -> C++, bukan terjemahan tangan)\n"
     "// Regenerasi: python3 tools/gen_maps_cpp.py\n"
     "// Cek CI    : python3 tools/gen_maps_cpp.py --check\n"
-    "// Desain    : docs/MAPS_GODOTPP.md\n"
+    "// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md\n"
 )
 
 KIND_CPP = {

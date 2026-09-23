@@ -26,7 +26,7 @@
 # bertambah / tertukar urutan di salah satu engine gagal tes.
 #
 # Roll yang SENGAJA tidak lewat pintu ini (masih randf() langsung, belum
-# di-parity-kan — lihat docs/GODOT_PARITY.md): sebaran posisi damage
+# di-parity-kan — lihat docs/AUDIT_ULANG_DARI_AWAL.md): sebaran posisi damage
 # number (visual).
 extends RefCounted
 class_name ParityRng

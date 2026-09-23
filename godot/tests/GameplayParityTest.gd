@@ -13,11 +13,9 @@ var _save_before: Dictionary = {}
 var _failures: int = 0
 var _checks: int = 0
 
-
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_run.call_deferred()
-
 
 func _run() -> void:
 	_save_before = SaveManager.data.duplicate(true)
@@ -76,7 +74,6 @@ func _run() -> void:
 	await _test_restart_and_menu()
 	_finish()
 
-
 func _test_startup() -> void:
 	var rules: Dictionary = _fixture["rules"]
 	_expect(RendererRegistry.hero_scene("kaizen") == RendererRegistry.HERO["kaizen"],
@@ -103,7 +100,6 @@ func _test_startup() -> void:
 	_expect(GameManager.wave_number == 0, "Paused intro cannot advance waves")
 	_near(GameManager._wave_timer, rules["first_wave_delay"], "Intro does not consume preparation")
 
-
 func _test_economy() -> void:
 	for c in _fixture["economy"]:
 		var level_num := int(c["level"])
@@ -125,7 +121,6 @@ func _test_economy() -> void:
 	GameManager._gold_timer = 0.0
 	GameManager._process(8.0)
 	_expect(GameManager.gold == 57, "Fractional income and long frames must not lose gold")
-
 
 func _test_purchases_and_respawn() -> void:
 	GameManager.gold = 100000
@@ -191,6 +186,39 @@ func _test_purchases_and_respawn() -> void:
 	_expect(bool(hero.kit.get("_powershot_charging")),
 		"Death freezes delayed casts (paritas: charge jalan lagi post-respawn)")
 
+	# ── Antrean Item Forge untuk hero MATI (paritas `_try_buy`
+	# hero_items.py:4047-4086 + prioritas `_resolve_shop_target` :3169-3186 +
+	# pengiriman pasca-respawn _core.py:2181-2193). Semua hero sedang mati di
+	# titik ini, jadi target pembelian = hero terseleksi walau mati — bukan
+	# null dan bukan hero lain.
+	GameManager.select_hero(hero)
+	GameManager.gold = 50000
+	_expect(GameManager.itemshop_target_hero == hero,
+		"Dead selected hero is a valid forge target (parity _resolve_shop_target)")
+	# Item fixture SENGAJA bebas stat HP (tanpa `hp`/`hp_pct` di catalog):
+	# delivery menjalankan _recalc_derived, dan asersi lama di bawah
+	# (`Respawn restores full HP`) hanya sah kalau max_hp tidak berubah.
+	var forge_ids: Array = ["corroder", "demon_maw", "steel_aegis",
+		"sundering_cudgel", "thunder_coil"]
+	var forge_cost := 0
+	for sid in forge_ids:
+		forge_cost += int(ItemDB.item_cost(sid))
+	var gold_before_forge := int(GameManager.gold)
+	for sid in forge_ids:
+		_expect(GameManager.try_buy_item(sid), "Buy for dead hero queues: " + sid)
+	_expect(HeroItems.pending_forge_items(hero).size() == forge_ids.size(),
+		"Queue holds every purchase until respawn")
+	_expect(int(GameManager.gold) == gold_before_forge - forge_cost,
+		"Queued purchases charge the exact catalog cost")
+	for sid in forge_ids:
+		_expect(not hero.items.has(sid), "Queued item is not equipped yet: " + sid)
+	# dead_edge menempati 1 slot + 5 antrean = 6 slot penuh — paritas
+	# `used_slots + len(pending_forge_items) >= MAX_ITEM_SLOTS`.
+	_expect(not GameManager.try_buy_item("monarch_wings"),
+		"FULL blocks once used slots + queue reach six")
+	_expect(HeroItems.pending_forge_items(hero).size() == forge_ids.size(),
+		"Rejected purchase does not grow the queue")
+
 	GameManager.set_paused(true)
 	GameManager._process(60.0)
 	_near(GameManager.hero_respawn_remaining(hero), 10.0, "Pause freezes respawn")
@@ -199,6 +227,14 @@ func _test_purchases_and_respawn() -> void:
 	_expect(hero.is_dead, "Hero must not respawn before 10 seconds")
 	GameManager._process(0.1)
 	_expect(not hero.is_dead and hero.visible, "Hero respawns after 10 seconds")
+	# Pengiriman forge terjadi TEPAT setelah respawn (_core.py:2181-2186):
+	# kelima item antrean masuk inventory, antrean kosong.
+	_expect(HeroItems.pending_forge_items(hero).is_empty,
+		"Forge queue drains the moment the hero respawns")
+	for sid in forge_ids:
+		_expect(hero.items.has(sid), "Forge delivered at respawn: " + sid)
+	_expect(int(hero.items.count) == 6,
+		"Delivered items fill the free slots (1 kept + 5 queued)")
 	_expect(hero.items == inventory and hero.level == hero_level and hero.kills == 7,
 		"Same hero instance keeps level, items and kill statistics")
 	_near(hero.hp, hero.max_hp, "Respawn restores full HP")
@@ -214,7 +250,6 @@ func _test_purchases_and_respawn() -> void:
 	_expect(GameManager.wave_number == wave_before and _main.red_towers_destroyed == 4,
 		"Team wipe does not reset wave or boss progression")
 	_expect(GameManager._hero_respawn_timers.is_empty(), "All independent respawn timers finish")
-
 
 func _test_ai_ownership() -> void:
 	_reset_field()
@@ -238,7 +273,6 @@ func _test_ai_ownership() -> void:
 	var balance := GameManager.ai_gold
 	_expect(not ai._try_buy_hero(), "AI cannot exceed five owned heroes after a wipe")
 	_expect(GameManager.ai_gold == balance, "Rejected AI purchase is free of side effects")
-
 
 func _test_wave_and_minion_fixtures() -> void:
 	_reset_field()
@@ -319,7 +353,6 @@ func _test_wave_and_minion_fixtures() -> void:
 	goblin.free()
 	troll.free()
 
-
 func _test_wave_queue() -> void:
 	_reset_field()
 	GameManager.waves_enabled = true
@@ -372,7 +405,6 @@ func _test_wave_queue() -> void:
 	_expect(GameManager.count_alive("minions", "red") == 33, "Elite red wave is not truncated at 24 minions")
 	GameManager.waves_enabled = false
 
-
 func _test_boss_schedule() -> void:
 	var previous := GameManager.difficulty
 	for mode in ["easy", "normal", "hard"]:
@@ -389,7 +421,6 @@ func _test_boss_schedule() -> void:
 					_expect(int(wave) >= low and int(wave) <= high, "Boss wave respects difficulty bounds")
 	GameManager.difficulty = previous
 	GameManager.level_number = 1
-
 
 func _test_restart_and_menu() -> void:
 	var hero = GameManager.spawn_hero("kaizen", "blue", Vector2.ZERO)
@@ -409,7 +440,6 @@ func _test_restart_and_menu() -> void:
 	GameManager._process(100.0)
 	_expect(GameManager.wave_number == 0, "Menu cannot advance waves or respawn heroes")
 
-
 func _reset_field() -> void:
 	_main._clear_field()
 	_main._reset_boss_schedule()
@@ -419,11 +449,9 @@ func _reset_field() -> void:
 	GameManager._reset_wave_state()
 	GameManager.wave_number = 0
 
-
 func _set_nexus_level(nexus, level_num: int) -> void:
 	nexus.level = level_num
 	nexus._apply_level_stats()
-
 
 func _drain_queues() -> void:
 	var guard := 0
@@ -433,13 +461,11 @@ func _drain_queues() -> void:
 		guard += 1
 	_expect(guard < 100, "Spawn queues drain without blocking on the next-wave timer")
 
-
 func _key(code: int) -> InputEventKey:
 	var event := InputEventKey.new()
 	event.keycode = code
 	event.pressed = true
 	return event
-
 
 func _keyup(code: int) -> InputEventKey:
 	var event := InputEventKey.new()
@@ -447,17 +473,14 @@ func _keyup(code: int) -> InputEventKey:
 	event.pressed = false
 	return event
 
-
 func _near(actual: float, expected: float, message: String) -> void:
 	_expect(absf(actual - expected) < 0.0001, "%s (got %s, expected %s)" % [message, actual, expected])
-
 
 func _expect(condition: bool, message: String) -> void:
 	_checks += 1
 	if not condition:
 		_failures += 1
 		push_error("[GameplayParityTest] " + message)
-
 
 func _finish() -> void:
 	get_tree().paused = false

@@ -5,7 +5,7 @@
 #
 # V2: BADAN TIDAK LAGI DIGAMBAR DI SINI. Rig pixel masterwork hidup di
 # ``bosses/level2.py::_NS_khalros`` (satu sumber kebenaran untuk jalur boss,
-# lane hero, dan portrait) - lihat docs/KHALROS_V2_RENDERER.md. Modul ini
+# lane hero, dan portrait) - lihat docs/AUDIT_ULANG_DARI_AWAL.md. Modul ini
 # tinggal lapisan HIDUP yang tidak mungkin di-cache: trail ayunan, partikel,
 # proyektil, FX skill, impact, dan game feel. ``KhalrosRenderer`` dipertahankan
 # hanya sebagai penentu state + geometri senjata (dipakai trail & debug), dan

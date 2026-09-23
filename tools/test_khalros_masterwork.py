@@ -685,7 +685,7 @@ def test_render_budget():
     base = bench(probe(264.0, 284.0), surf)
     assert base <= 3.5, f"pose dasar {base:.2f} ms > 3.5 ms"
     # R (ultimate) memutar sebuah cincin rune berdiameter besar -> 3.85-4.60
-    # ms per cast penuh di keluarga level-2 (lihat docs/KHALROS_V2_RENDERER.md).
+    # ms per cast penuh di keluarga level-2 (lihat docs/AUDIT_ULANG_DARI_AWAL.md).
     # Ambang family untuk cast penuh adalah 4.6 ms (dipakai juga di
     # `test_cache_miss_is_affordable`), jadi skill ringan diuji 3.5 ms dan
     # ultimate diuji 4.6 ms supaya tidak memotong performa FX yang memang berat.

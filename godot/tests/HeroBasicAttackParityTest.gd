@@ -22,7 +22,7 @@
 # Nexus ASLI + CombatSystem.apply_damage yang sebenarnya, lalu membandingkan
 # HP semua unit tiap event + damage proyektil + stat awal (max_hp/hp0).
 #
-# Batas cakupan yang sengaja (lihat docs/GODOT_PARITY.md): skenario oracle
+# Batas cakupan yang sengaja (lihat docs/AUDIT_ULANG_DARI_AWAL.md): skenario oracle
 # bebas RNG — roll block item 55%, crit item, evasion item, windrun, dan
 # shadow realm TIDAK teruji di sini (windrun/shadow realm = milestone
 # tersendiri). Sanguine Thorn (rend crit) belum ada di item Godot.

@@ -5,7 +5,7 @@
 # kit_fx_impact pada POSISI + RADIUS yang sama dengan panggilan pygame.
 # Ini aproksimasi visual (draw_arc dua lapis + pudar), bukan salinan piksel
 # renderer pygame — audit visual per-boss dicatat terbuka di
-# docs/GODOT_PARITY.md. CPU-only (aman GLES/Android), tanpa partikel.
+# docs/AUDIT_ULANG_DARI_AWAL.md. CPU-only (aman GLES/Android), tanpa partikel.
 extends Node2D
 
 var _color: Color = Color.WHITE

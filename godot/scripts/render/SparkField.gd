@@ -41,7 +41,7 @@ var particles: Array = []
 var explosions: Array = []
 ## Padanan `Quality.particle_ratio` / `Quality.particles` (`mobile/perf.py:483-508`)
 ## yang dibaca `add_hit_particles` pygame. Sengaja 1.0/true: lapisan adaptive
-## quality belum diport (lihat SYSTEM_PY_COVERAGE.md §3), jadi preset kualitas
+## quality belum diport (lihat AUDIT_ULANG_DARI_AWAL.md §3), jadi preset kualitas
 ## belum memangkas partikel di Godot. Knob-nya ada supaya port perf nanti tidak
 ## perlu menyentuh berkas ini.
 var particle_ratio := 1.0

@@ -5,8 +5,8 @@ Port `levels/level_data.py` (Python, 2.347 baris: 54 literal dict `LEVEL_N` +
 `get_next_level`) ke Godot C++ GDExtension.
 
 Dokumen desain + semantik Python↔Godot yang dikunci:
-[`docs/LEVELS_GODOTPP.md`](../../../docs/LEVELS_GODOTPP.md). Status paritas
-menyeluruh: [`docs/GODOT_PARITY.md`](../../../docs/GODOT_PARITY.md) (FASE 34).
+[`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md). Status paritas
+menyeluruh: [`docs/AUDIT_ULANG_DARI_AWAL.md`](../../../docs/AUDIT_ULANG_DARI_AWAL.md) (FASE 34).
 
 ## Tujuan
 

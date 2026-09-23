@@ -25,7 +25,7 @@ Apa yang dicek (7 kategori, 1000+ skenario):
 Usage:
   python tools/migrate_parity_check.py                # cek semua (default)
   python tools/migrate_parity_check.py --fix          # auto-fix data JSON
-  python tools/migrate_parity_check.py --report md    # generate docs/MIGRASI_1_1.md
+  python tools/migrate_parity_check.py --report md    # generate docs/GODOT_PYGAME_SYNC_REPORT.md
   python tools/migrate_parity_check.py --quick        # skip baked assets check (cepat)
 
 Exit code:

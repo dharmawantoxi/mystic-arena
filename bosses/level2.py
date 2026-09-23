@@ -44,7 +44,7 @@ class _NS_khalros:
     """Namespace khalros - PIXEL MASTERWORK v2 + SKILL FX v2.1.
 
     Rewrite PENUH renderer `_NS_khalros` mengikuti standar
-    **Thorne v2 Pixel Masterwork + v2.1 Skill FX** (docs/THORNE_V2_RENDERER.md),
+    **Thorne v2 Pixel Masterwork + v2.1 Skill FX** (docs/AUDIT_ULANG_DARI_AWAL.md),
     pola yang sama dengan `_NS_razak` / `_NS_gorath` di file ini. Tetap
     100% prosedural: tanpa PNG, sprite-sheet, maupun pemuatan citra.
 
@@ -3920,7 +3920,7 @@ class _NS_gorath:
 
     Rewrite penuh renderer `_NS_gorath` mengikuti standar
     **Thorne v2 Pixel Masterwork + Thorne v2.1 Skill FX**
-    (lihat docs/THORNE_V2_RENDERER.md). Tetap 100% prosedural:
+    (lihat docs/AUDIT_ULANG_DARI_AWAL.md). Tetap 100% prosedural:
     tidak ada PNG / sprite-sheet / image.load.
 
     Apa yang naik dibanding v1
@@ -7250,7 +7250,7 @@ class _NS_alchemist:
 
     FULL REWRITE dari rig ORIGINAL-MAX lama, mengikuti standar
     **Gorath v2 Pixel Masterwork + Razak v3 Combat FX**
-    (docs/GORATH_V2_RENDERER.md, docs/RAZAK_V3_COMBAT_FX.md).
+    (docs/AUDIT_ULANG_DARI_AWAL.md, docs/AUDIT_ULANG_DARI_AWAL.md).
     Tetap 100% prosedural: tidak ada file gambar / sprite-sheet /
     pemuatan aset eksternal. Semua bentuk lahir dari pygame.draw +
     Surface + transform + mask.

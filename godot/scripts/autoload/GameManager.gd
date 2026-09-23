@@ -71,7 +71,6 @@ signal boss_defeated(boss: Node)
 ## BARU frame berikutnya dibekukan cinematic. HUD men-tick popup sekali.
 signal boss_reward_effects_tick
 
-
 const FPS := 60.0
 const ComboCounterScript = preload("res://scripts/utils/ComboCounter.gd")
 const FloatingTextQueueScript = preload("res://scripts/utils/FloatingTextQueue.gd")
@@ -273,7 +272,6 @@ var _hit_stop_until_ms: int = 0
 ## hit-stop menumpuk di atasnya dan watchdog mengembalikan ke nilai ini.
 var game_speed_scale: float = 1.0
 
-
 func _ready():
 	# Autoload harus tetap jalan walau SceneTree di-pause (P/ESC dari Main.gd):
 	# watchdog Engine.time_scale tinggal di sini. Flag is_paused sudah menahan
@@ -287,7 +285,6 @@ func _ready():
 	apply_game_speed(SaveManager.get_setting("game_speed", 1.0))
 	apply_fps_limit(SaveManager.get_setting("fps_limit", 0.0))
 
-
 ## Game Speed — paritas Game.update (_core.py:1958-1977): pygame >1.0
 ## menjalankan _update_gameplay() sebanyak int(mult)-1 kali EKSTRA, akibatnya
 ## 1.5x TIDAK berpengaruh (int(1.5)-1 = 0) — hanya 0.5x/1.0x/2.0x yang beda.
@@ -300,7 +297,6 @@ func apply_game_speed(speed: float) -> void:
 	game_speed_scale = eff
 	if not _hit_stop_active:
 		Engine.time_scale = game_speed_scale
-
 
 ## FPS Limit — paritas main.py:637 (clock.tick(fps_limit)); 0 = tanpa batas,
 ## persis konvensi Engine.max_fps Godot.
@@ -319,7 +315,6 @@ func apply_fps_limit(fps: float) -> void:
 	# karena urutan autoload) — pakai nilai mentah, AppShell._ready akan
 	# menimpanya beberapa milidetik kemudian.
 	Engine.max_fps = int(fps)
-
 
 func load_economy() -> void:
 	economy = FALLBACK_ECONOMY.duplicate(true)
@@ -346,13 +341,11 @@ func load_economy() -> void:
 		format_gold_rate(float(economy.get("gold_per_second", 3))),
 		wave_interval, minion_types.size()])
 
-
 func minion_type_data(minion_type: String) -> Dictionary:
 	var d = minion_types.get(minion_type)
 	if d is Dictionary:
 		return d
 	return FALLBACK_MINION_TYPES.get(minion_type, {})
-
 
 # ══════════════════════════════════════════════════════════
 #  EKONOMI (port compute_starting_gold / compute_gold_per_second)
@@ -364,7 +357,6 @@ func difficulty_mult(d: String = "") -> float:
 		FALLBACK_ECONOMY["difficulty_gold_mult"])
 	return float(mults.get(key, 1.0))
 
-
 ## (base starting_gold level + 100 × (level-1)) × multiplier kesulitan
 func compute_starting_gold(level_config: Dictionary, level_num: int,
 		d: String = "") -> int:
@@ -374,7 +366,6 @@ func compute_starting_gold(level_config: Dictionary, level_num: int,
 		FALLBACK_ECONOMY["gold_per_level_bonus"]))
 	return int((float(base) + bonus) * difficulty_mult(d))
 
-
 ## (GOLD_PER_SECOND + 0.3 × (level-1)) × multiplier kesulitan
 func compute_gold_per_second(level_num: int, d: String = "") -> float:
 	var lv := maxi(1, level_num)
@@ -382,12 +373,10 @@ func compute_gold_per_second(level_num: int, d: String = "") -> float:
 		FALLBACK_ECONOMY["gold_per_second_level_bonus"]))
 	return (float(economy.get("gold_per_second", 3)) + bonus) * difficulty_mult(d)
 
-
 ## 3.0 -> "3", 5.7 -> "5.7", 3.75 -> "3.8" (paritas _core.format_gold_rate).
 ## Kanon di HudLayout (banker's rounding bit-eksak); ini delegasi tipis.
 static func format_gold_rate(rate: float) -> String:
 	return HudLayout.format_gold_rate(rate)
-
 
 # ── SETTINGS (paritas GameSettings pygame) ──
 ## Screen shake (GameSettings.screen_shake_enabled). Dikaca dari save agar
@@ -399,7 +388,6 @@ var damage_numbers_enabled: bool = true
 ## MysticLocalization supaya pemanggil tidak perlu membaca dua sumber.
 var language: String = MysticLocalization.DEFAULT_LANGUAGE
 
-
 ## Sinkronkan flag gameplay + bahasa antarmuka dari save (dipanggil boot +
 ## tiap start_level).
 func _load_gameplay_settings() -> void:
@@ -409,7 +397,6 @@ func _load_gameplay_settings() -> void:
 	world_popups.damage_numbers_enabled = damage_numbers_enabled
 	apply_language(SaveManager.get_setting_str("language",
 		MysticLocalization.DEFAULT_LANGUAGE))
-
 
 ## Terapkan bahasa dari save TANPA menulis apa pun — padanan pemanggilan
 ## `localization.set_language` saat GameSettings dibuat (_core.py:9116) dan
@@ -421,7 +408,6 @@ func apply_language(lang: String) -> void:
 	if language != previous:
 		language_changed.emit(language)
 
-
 ## Pilihan pemain di layar PENGATURAN — paritas GameSettings.set_language
 ## (_core.py:9272-9278): bahasa di luar ("id","en") DIABAIKAN (tidak
 ## disimpan, tidak diterapkan), yang valid langsung berlaku + tersimpan.
@@ -431,17 +417,14 @@ func set_language(lang: String) -> void:
 	apply_language(lang)
 	SaveManager.set_setting_str("language", lang, true)
 
-
 func set_screen_shake(enabled: bool) -> void:
 	screen_shake_enabled = enabled
-
 
 func set_damage_numbers(enabled: bool) -> void:
 	damage_numbers_enabled = enabled
 	# Live: antrean popup yang sedang berjalan ikut berubah (bukan hanya
 	# match berikutnya).
 	world_popups.damage_numbers_enabled = enabled
-
 
 func set_difficulty(d: String) -> void:
 	if not ["easy", "normal", "hard"].has(d):
@@ -469,13 +452,11 @@ func set_difficulty(d: String) -> void:
 		difficulty, format_gold_rate(gold_per_second),
 		" · enemy scaling AKTIF" if enemy_scaling_enabled else ""])
 
-
 func cycle_difficulty() -> String:
 	var order := ["easy", "normal", "hard"]
 	var idx := order.find(difficulty)
 	set_difficulty(order[(idx + 1) % order.size()])
 	return difficulty
-
 
 # ══════════════════════════════════════════════════════════
 #  LOOP
@@ -516,7 +497,6 @@ func _process(delta):
 		if CombatSystem.has_method("update_auras"):
 			CombatSystem.update_auras()
 
-
 func start_level(lv: int, replay: bool = false):
 	level_number = lv
 	state = "playing"
@@ -536,6 +516,9 @@ func start_level(lv: int, replay: bool = false):
 	_gold_timer = 0.0
 	_reset_wave_state(FIRST_WAVE_DELAY)
 	_hero_respawn_timers.clear()
+	# Target forge tersimpan ikut mati bersama match lama (paritas atribut
+	# Game baru `itemshop_target_hero = None` di pygame tiap reset).
+	itemshop_forge_target = null
 	wave_number = 0
 	# ── Meta reward match ini direset (paritas _core.py:1578-1581) ──
 	meta_reward_earned = 0
@@ -588,7 +571,6 @@ func start_level(lv: int, replay: bool = false):
 	# Wave 1 TIDAK dibuat selama intro. Countdown 5 detik baru berjalan
 	# setelah cinematic dilewati, persis Game.reset + update_waves pygame.
 
-
 ## Mulai ulang match yang sama (R setelah menang/kalah, atau ENTER saat kalah).
 ## Replay level yang sudah ditamatkan -> is_replay=true (paritas main.py:576:
 ## Game(screen, level_number=..., is_replay=True)) sehingga end_match()
@@ -596,7 +578,6 @@ func start_level(lv: int, replay: bool = false):
 func restart_match() -> void:
 	print("[GameManager] replay level %d" % level_number)
 	start_level(level_number, true)
-
 
 ## Lanjut ke level berikutnya setelah VICTORY (ENTER). Paritas
 ## levels/level_data.py get_next_level (2340-2346): level+1 kalau masih ada
@@ -610,7 +591,6 @@ func next_level() -> bool:
 	start_level(nxt, false)
 	return true
 
-
 ## Nomor level berikutnya (0 = tidak ada) — paritas get_next_level.
 ## FASE 34: delegasi ke LevelDBLoader (Python `get_next_level`: None kalau
 ## next > len(ALL_LEVELS) ATAU config level itu tidak ada). 0 = padanan None
@@ -623,11 +603,9 @@ func next_level_number(after: int = -1) -> int:
 		return 0
 	return int(nxt)
 
-
 ## Total level (paritas levels/level_data.py get_level_count).
 func level_count() -> int:
 	return LevelDBLoader.get_level_count()
-
 
 ## Kunci level di LEVEL_SELECT (paritas is_level_unlocked level_data.py:2318-2337):
 ## unlock_after_level == null -> selalu terbuka; selain itu butuh level itu
@@ -642,7 +620,6 @@ func level_count() -> int:
 func is_level_unlocked(level_num: int) -> bool:
 	return LevelDBLoader.is_level_unlocked(level_num,
 		SaveManager.data.get("completed_levels", []))
-
 
 ## Kembali ke menu utama dari dalam match (PAUSE -> MAIN MENU, atau ESC
 ## setelah menang/kalah; paritas return_to_menu_requested main.py:582-586).
@@ -666,7 +643,6 @@ func return_to_menu() -> void:
 	# hanya hidup selama sesi match; di sini pasangan stop-nya eksplisit.
 	AudioManager.stop_ambient()
 	print("[GameManager] kembali ke menu utama")
-
 
 # ══════════════════════════════════════════════════════════
 #  PROGRESI LINTAS-SAVE — daftar hero yang dimiliki pemain
@@ -699,7 +675,6 @@ func bind_purchased_heroes(persist: bool = true) -> void:
 		if persist:
 			SaveManager.save()
 
-
 ## Game.reset: unlocked_bosses milik save, terpisah dari purchased_heroes.
 func bind_unlocked_bosses() -> void:
 	var arr = SaveManager.data.get("unlocked_bosses", [])
@@ -708,7 +683,6 @@ func bind_unlocked_bosses() -> void:
 	SaveManager.data["unlocked_bosses"] = arr
 	unlocked_bosses = arr
 
-
 ## Jumlah hero NON-starter yang dimiliki pemain — input catch-up hero.
 ## Mendelegasikan ke hero_balance.boss_unlocks_for_purchases: `len()` polos
 ## atas daftar save (entri kembar ikut terhitung; SaveManager sendiri
@@ -716,20 +690,17 @@ func bind_unlocked_bosses() -> void:
 func boss_unlocks_for_purchases(purchased) -> int:
 	return HeroBalance.boss_unlocks_for_purchases(purchased)
 
-
 ## Dibaca `Hero._catchup_unlocks()` saat unit dibuat. Di luar match daftar
 ## ini kosong (tidak diikat), jadi hasilnya 0 — paritas `game_instance is
 ## None` pygame yang membuat catch-up starter memakai bonus PENUH.
 func catchup_unlocks() -> int:
 	return boss_unlocks_for_purchases(purchased_heroes)
 
-
 func _reset_wave_state(delay: float = 0.0) -> void:
 	_wave_timer = delay
 	for team in WAVE_TEAMS:
 		spawn_queues[team].clear()
 		_spawn_timers[team] = 0.0
-
 
 func can_start_wave() -> bool:
 	if state != "playing" or in_menu or is_paused or get_tree().paused:
@@ -740,7 +711,6 @@ func can_start_wave() -> bool:
 		if not spawn_queues[team].is_empty() or count_alive("minions", team) > 0:
 			return false
 	return true
-
 
 ## Countdown menahan wave BERIKUTNYA, bukan antrean wave yang sedang keluar.
 ## Minion wave lama harus bersih dahulu (Game.update_waves pygame).
@@ -762,7 +732,6 @@ func _update_waves(delta: float) -> void:
 		if spawn_queues[team].is_empty():
 			_spawn_timers[team] = minf(float(_spawn_timers[team]), minion_spawn_delay)
 
-
 func next_wave() -> bool:
 	if not can_start_wave():
 		return false
@@ -782,7 +751,6 @@ func next_wave() -> bool:
 	wave_started.emit(wave_number)
 	return true
 
-
 ## _auto_scale_ai_castle: Lv2/3/4/5 pada wave 4/7/10/13, tanpa biaya.
 func _auto_scale_ai_nexus() -> void:
 	if not is_instance_valid(red_nexus):
@@ -790,7 +758,6 @@ func _auto_scale_ai_nexus() -> void:
 	var target_level := mini(5, 1 + maxi(0, wave_number - 1) / 3)
 	while red_nexus.level < target_level and red_nexus.can_upgrade():
 		red_nexus.upgrade()
-
 
 ## NEXUS_WAVE_COMPOSITION diindeks LEVEL CASTLE, BUKAN nomor wave.
 ## Tambahan elite per wave persis Game._get_wave_composition (_core.py).
@@ -810,12 +777,10 @@ func wave_composition(wave: int, team: String = "blue") -> Array:
 		result.append("orc")
 	return result
 
-
 ## Hanya level nexus TIM SENDIRI yang mengubah stat minion.
 func minion_scale_for(team: String = "blue") -> float:
 	var nexus = blue_nexus if team == "blue" else red_nexus
 	return float(nexus.minion_scale) if is_instance_valid(nexus) else 1.0
-
 
 func _spawn_wave_minion(team: String, entry: Dictionary) -> void:
 	var lane := str(entry["lane"])
@@ -833,7 +798,6 @@ func _spawn_wave_minion(team: String, entry: Dictionary) -> void:
 	if team == "red" and enemy_scaling_enabled:
 		minion.apply_enemy_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
 
-
 # ══════════════════════════════════════════════════════════
 #  HERO RESPAWN — satu hero, bukan reset seluruh arena
 # ══════════════════════════════════════════════════════════
@@ -845,10 +809,8 @@ func _on_hero_died(hero: Node) -> void:
 	if selected_hero == hero:
 		clear_selection()
 
-
 func hero_respawn_remaining(hero: Node) -> float:
 	return float(_hero_respawn_timers.get(hero, 0.0))
-
 
 func _update_hero_respawns(delta: float) -> void:
 	for hero in _hero_respawn_timers.keys():
@@ -859,10 +821,27 @@ func _update_hero_respawns(delta: float) -> void:
 		if remaining <= 0.000001:
 			_hero_respawn_timers.erase(hero)
 			hero.respawn()
+			# Pesanan Item Forge yang dibeli saat hero mati baru masuk
+			# inventory SETELAH respawn selesai — urutan persis
+			# _core.py:2181-2186 (h.respawn lalu
+			# deliver_pending_forge_items(h)); item yang tidak muat tetap
+			# mengantre (pengaman yang sama dengan pygame).
+			var delivered: Array = HeroItems.deliver_pending_forge_items(hero)
+			if not delivered.is_empty():
+				# Recalc stat SETELAH semua item terpasang — padanan efek
+				# _on_item_changed per add di inventory pygame; urutan
+				# akhirnya sama: hp = nilai pasca-respawn, max_hp/x stat
+				# naik mengikuti item baru.
+				if hero.has_method("_recalc_derived"):
+					hero._recalc_derived()
+				# Notifikasi `forge_delivered` pygame lewat add_notification
+				# yang SUDAH no-op (_core.py:8679-8687) — paritasnya log.
+				print("[Shop] forge terkirim ke %s setelah respawn: %s" % [
+					hero.name, ", ".join(delivered)])
+				shop_changed.emit()
 			hero_respawned.emit(hero)
 		else:
 			_hero_respawn_timers[hero] = remaining
-
 
 # ══════════════════════════════════════════════════════════
 #  GOLD
@@ -874,13 +853,11 @@ func spend_gold(amount: int) -> bool:
 		return true
 	return false
 
-
 func ai_spend(amount: int) -> bool:
 	if ai_gold >= amount:
 		ai_gold -= amount
 		return true
 	return false
-
 
 ## Loop reward Game.update pygame — kematian MINION dinilai dari TIM KORBAN,
 ## bukan tim pembunuh (_core.py:2196-2216): minion RED yang mati oleh damage
@@ -914,14 +891,12 @@ func register_minion_death(minion) -> void:
 	else:
 		ai_gold += reward
 
-
 ## Loop reward hero (_core.py:2227-2235): +150 FLAT ke tim lawan korban —
-## hero RED mati (dibunuh apa pun) -> gold+skor pemain; hero biru mati ->
+## hero RED mati (dibunuh apa pun) -> gold+skor pemain; hero biru mati
 ## saldo AI. TIDAK menyalakan combo (combo hanya kill minion red) dan
 ## tidak bergantung siapa pembunuhnya. Dipanggil Hero.die(); flag per
 ## instans = `_rewarded` pygame (dibuka ulang saat respawn, Hero.gd).
 const HERO_KILL_REWARD := 150
-
 
 func register_hero_death(hero) -> void:
 	if not is_instance_valid(hero) or bool(hero.get("reward_processed")):
@@ -933,7 +908,6 @@ func register_hero_death(hero) -> void:
 	else:
 		ai_gold += HERO_KILL_REWARD
 
-
 ## Satu frame pygame untuk mesin combo (ComboCounter.update dipanggil
 ## EffectManager.update sekali per Game.update @60fps). _process memanggil
 ## ini dengan akumulator supaya kadens tetap 60Hz di refresh rate berapa
@@ -944,14 +918,12 @@ func _tick_combo(delta: float) -> void:
 		_combo_accum -= 1.0 / FPS
 		combo.update()
 
-
 ## Paritas EffectManager.unlock_achievement (_render.py:813): antri popup
 ## achievement di layar arena (FX peta). Dipancarkan sebagai signal —
 ## node FX HUD yang subscribe dan menggambar.
 func unlock_achievement(title: String, description: String,
 		icon: String = "star") -> void:
 	achievement_unlocked.emit(title, description, icon)
-
 
 ## Loop reward Game.update pygame — kematian MENARA juga dinilai dari TIM
 ## KORBAN, bukan tim pembunuh (_core.py:2218-2227): menara RED hancur oleh
@@ -974,11 +946,9 @@ func register_tower_death(tower) -> void:
 	else:
 		ai_gold += reward
 
-
 ## Detik sejak match mulai (wall-clock; paritas time.time()-match_start_time).
 func match_time_seconds() -> int:
 	return int(maxi(0, Time.get_ticks_msec() - match_start_msec) / 1000)
-
 
 # ══════════════════════════════════════════════════════════
 #  SPAWN
@@ -993,7 +963,6 @@ func spawn_hero(hero_type: String, team: String, pos: Vector2):
 	(container_or_root(hero_container)).add_child(hero)
 	return hero
 
-
 func spawn_boss(boss_type: String, team: String, pos: Vector2):
 	var boss_scene = preload("res://scenes/boss/Boss.tscn")
 	var boss = boss_scene.instantiate()
@@ -1003,7 +972,6 @@ func spawn_boss(boss_type: String, team: String, pos: Vector2):
 	(container_or_root(boss_container)).add_child(boss)
 	boss_spawned.emit(boss_type)
 	return boss
-
 
 func spawn_minion(minion_type: String, team: String, pos: Vector2,
 		scale_mult: float = 1.0, lane: String = "mid",
@@ -1020,7 +988,6 @@ func spawn_minion(minion_type: String, team: String, pos: Vector2,
 	(container_or_root(minion_container)).add_child(m)
 	return m
 
-
 func spawn_tower(team: String, pos: Vector2, lane: String = "mid",
 		tower_kind: String = "outer", tower_type: String = "archer",
 		level: int = 1):
@@ -1036,7 +1003,6 @@ func spawn_tower(team: String, pos: Vector2, lane: String = "mid",
 	(container_or_root(tower_container)).add_child(t)
 	return t
 
-
 func spawn_nexus(team: String, pos: Vector2):
 	var nexus_scene = preload("res://scenes/base/Nexus.tscn")
 	var n = nexus_scene.instantiate()
@@ -1047,7 +1013,6 @@ func spawn_nexus(team: String, pos: Vector2):
 	(container_or_root(tower_container)).add_child(n)
 	return n
 
-
 ## FX (peluru, damage number) ditaruh di CanvasLayer FX kalau ada
 func attach_fx(node: Node) -> void:
 	var host: Node = fx_container
@@ -1056,7 +1021,6 @@ func attach_fx(node: Node) -> void:
 	if host == null:
 		host = get_tree().root
 	host.add_child(node)
-
 
 ## Container dari Main.tscn bisa belum terpasang (scene lain / sebelum Connector
 ## jalan). Jangan pernah null-crash: fallback ke current_scene, lalu root.
@@ -1068,7 +1032,6 @@ func container_or_root(container: Node) -> Node:
 		return scene
 	return get_tree().root
 
-
 func count_alive(group: String, team: String) -> int:
 	var tree := get_tree()
 	if tree == null:
@@ -1078,7 +1041,6 @@ func count_alive(group: String, team: String) -> int:
 		if is_instance_valid(node) and node.get("team") == team and not bool(node.get("is_dead")):
 			n += 1
 	return n
-
 
 # ══════════════════════════════════════════════════════════
 #  NEXUS / MENANG-KALAH
@@ -1092,20 +1054,17 @@ func register_nexus(nexus) -> void:
 		red_nexus = nexus
 	nexus.set_wave(wave_number)
 
-
 func unregister_nexus(nexus) -> void:
 	if blue_nexus == nexus:
 		blue_nexus = null
 	if red_nexus == nexus:
 		red_nexus = null
 
-
 func _on_nexus_destroyed(team: String, killer_team: String) -> void:
 	if state != "playing":
 		return
 	# Radiant (blue) hancur = kalah; Dire (red) hancur = menang
 	end_match(team == "red", killer_team)
-
 
 func end_match(victory: bool, killer_team: String = "") -> void:
 	if state != "playing":
@@ -1119,7 +1078,6 @@ func end_match(victory: bool, killer_team: String = "") -> void:
 		state.to_upper(), killer_team if killer_team != "" else ("blue" if victory else "red"),
 		meta_reward_earned])
 	game_over.emit(victory)
-
 
 ## Port _grant_meta_reward (_core.py:2365-2456). KEBIJAKAN REWARD (flat):
 ##   - Kalah                          : 0 gold
@@ -1188,7 +1146,6 @@ func _grant_meta_reward(victory: bool) -> void:
 	SaveManager.save()
 	_meta_reward_granted = true
 
-
 ## Port _auto_unlock_defeated_boss_heroes (_core.py:2322): boss (mini/true)
 ## yang dikalahkan di match yang DIMENANGKAN langsung jadi hero milik pemain
 ## tanpa memotong meta gold — di Hero Shop statusnya "OWNED".
@@ -1212,7 +1169,6 @@ func _auto_unlock_defeated_boss_heroes() -> void:
 		# ikon skull. Baris teks panel game-over tetap dari Fase 12.
 		unlock_achievement("NEW HERO UNLOCKED!",
 			"%s now FREE in Hero Shop!" % ", ".join(names), "skull")
-
 
 ## Blok Game.update _core.py:2113-2163. Hanya boss mati+defeated;
 ## flag per instans menggantikan konsumsi active_boss pygame (node Godot
@@ -1252,7 +1208,6 @@ func register_boss_death(boss) -> void:
 	spark_fx.tick()
 	boss_reward_effects_tick.emit()
 
-
 ## _killer_is_hero: tidak ada syarat masih hidup! Proyektil/DoT dari hero
 ## yang sudah mati tetap berhak mendapat atribusi. team SUMBER, bukan
 ## from_team argumen damage, adalah acuan pemeriksaan lawan.
@@ -1260,7 +1215,6 @@ func _killer_is_hero(killer, victim) -> bool:
 	return is_instance_valid(killer) and killer != victim \
 		and "hero_type" in killer and "skills" in killer \
 		and str(killer.get("team")) != str(victim.get("team"))
-
 
 ## _process_boss_kill pygame: hero lawan dari SEMUA tim dapat kills;
 ## hanya hero BLUE menghidupkan counter+popup SLAYER, per kelas boss.
@@ -1284,7 +1238,6 @@ func _process_boss_kill(boss) -> void:
 				killer.display_name, boss.display_name], "skull",
 			boss.global_position + Vector2(0, -40))
 
-
 ## _unlock_achievement: dedup ID hanya selama match, popup arena + teks
 ## floating di lokasi kejadian, sound ui_upgrade 0.5. TIDAK dipanggil dari
 ## kematian hero biasa: popup HERO SLAYER sudah dihapus oleh pemilik game.
@@ -1298,11 +1251,9 @@ func _unlock_achievement(id: String, title: String, description: String,
 		world_popups.add_slayer_text(map_position.x, map_position.y, title)
 	AudioManager.play_sfx("ui_upgrade", 0.5)
 
-
 func add_gold_popup(x: float, y: float, amount: int) -> void:
 	world_popups.add_gold_popup(x, y, amount)
 	gold_popup_added.emit(x, y, amount)
-
 
 func nexus_hp(team: String) -> Array:
 	var nexus = blue_nexus if team == "blue" else red_nexus
@@ -1310,7 +1261,6 @@ func nexus_hp(team: String) -> Array:
 		return [0.0, 1.0, 0.0, 0.0]
 	return [float(nexus.get("hp")), float(nexus.get("max_hp")),
 		float(nexus.get("shield")), float(nexus.get("shield_max"))]
-
 
 # ══════════════════════════════════════════════════════════
 #  HIT-STOP & PAUSE
@@ -1324,7 +1274,6 @@ func request_hit_stop(duration: float = 0.03, scale: float = 0.05) -> void:
 	_hit_stop_until_ms = Time.get_ticks_msec() + maxi(5, int(duration * 1000.0))
 	Engine.time_scale = scale
 
-
 func _watch_hit_stop() -> void:
 	if not _hit_stop_active:
 		return
@@ -1334,12 +1283,10 @@ func _watch_hit_stop() -> void:
 		# (paritas Game.update pygame yang selalu membaca GameSettings).
 		Engine.time_scale = game_speed_scale
 
-
 ## Dipanggil Main.gd (P / ESC). Yang membekukan simulasi adalah SceneTree, jadi
 ## flag ini cuma status untuk yang butuh tahu (mis. HUD / audio).
 func set_paused(value: bool) -> void:
 	is_paused = value
-
 
 # ══════════════════════════════════════════════════════════
 #  SELEKSI & TOKO
@@ -1355,25 +1302,26 @@ var selected_tower = null
 var selected_nexus = null
 ## Index ke build_slots yang sedang dipilih (-1 = tidak ada)
 var selected_slot: int = -1
+## Target pembelian item forge TERSIMPAN — prioritas tertinggi di
+## `itemshop_target_hero` (paritas `game.itemshop_target_hero` pygame,
+## hero_items.py:3181-3183: diisi tiap pembelian berhasil, direset tiap
+## match baru). Boleh menunjuk hero MATI (penerima antrean forge).
+var itemshop_forge_target = null
 var shop_open: bool = false
-
 
 func clear_build_slots() -> void:
 	build_slots.clear()
 	selected_slot = -1
-
 
 func add_build_slot(pos: Vector2, slot_team: String, lane: String) -> int:
 	build_slots.append({"pos": pos, "team": slot_team, "lane": lane,
 		"taken": false, "tower": null})
 	return build_slots.size() - 1
 
-
 func slot(index: int) -> Dictionary:
 	if index < 0 or index >= build_slots.size():
 		return {}
 	return build_slots[index]
-
 
 func free_slots_for(slot_team: String) -> Array:
 	var out: Array = []
@@ -1383,14 +1331,12 @@ func free_slots_for(slot_team: String) -> Array:
 			out.append(i)
 	return out
 
-
 func select_hero(hero) -> void:
 	selected_hero = hero
 	selected_tower = null
 	selected_nexus = null
 	selected_slot = -1
 	selection_changed.emit()
-
 
 func select_tower(tower) -> void:
 	selected_tower = tower
@@ -1399,14 +1345,12 @@ func select_tower(tower) -> void:
 	selected_slot = -1
 	selection_changed.emit()
 
-
 func select_nexus(nexus) -> void:
 	selected_nexus = nexus
 	selected_hero = null
 	selected_tower = null
 	selected_slot = -1
 	selection_changed.emit()
-
 
 func select_slot_index(index: int) -> void:
 	selected_slot = index
@@ -1415,7 +1359,6 @@ func select_slot_index(index: int) -> void:
 	selected_nexus = null
 	selection_changed.emit()
 
-
 func clear_selection() -> void:
 	selected_hero = null
 	selected_tower = null
@@ -1423,23 +1366,19 @@ func clear_selection() -> void:
 	selected_slot = -1
 	selection_changed.emit()
 
-
 func toggle_shop() -> void:
 	shop_open = not shop_open
 	shop_changed.emit()
-
 
 func open_shop() -> void:
 	if not shop_open:
 		shop_open = true
 		shop_changed.emit()
 
-
 func close_shop() -> void:
 	if shop_open:
 		shop_open = false
 		shop_changed.emit()
-
 
 ## Titik spawn dekat base sendiri (dipakai toko hero)
 func base_spawn_point(spawn_team: String, index: int = 0) -> Vector2:
@@ -1447,7 +1386,6 @@ func base_spawn_point(spawn_team: String, index: int = 0) -> Vector2:
 	if am != null and am.has_method("get_spawn_point"):
 		return am.get_spawn_point(spawn_team, index)
 	return Vector2(260, 480) if spawn_team == "blue" else Vector2(1020, 240)
-
 
 # ── MENARA ────────────────────────────────────────────────
 
@@ -1484,7 +1422,6 @@ func try_build_tower(tower_type: String) -> bool:
 	print("[Shop] menara %s dibangun (-%d gold)" % [t.display_name, cost])
 	return true
 
-
 ## Upgrade menara yang dipilih. Level 1 -> 2 wajib memilih jalur.
 func try_upgrade_tower(target_type: String = "") -> bool:
 	if state != "playing":
@@ -1510,7 +1447,6 @@ func try_upgrade_tower(target_type: String = "") -> bool:
 	print("[Shop] menara jadi %s (-%d gold)" % [t.display_name, cost])
 	return true
 
-
 func try_sell_tower() -> bool:
 	var t = selected_tower
 	if t == null or not is_instance_valid(t) or bool(t.get("is_dead")):
@@ -1533,7 +1469,6 @@ func try_sell_tower() -> bool:
 	print("[Shop] menara dijual (+%d gold)" % refund)
 	return true
 
-
 ## Regen Shield menara (fitur berbayar 850 gold, menara Lv4+)
 func try_buy_tower_regen_shield() -> bool:
 	if state != "playing":
@@ -1554,7 +1489,6 @@ func try_buy_tower_regen_shield() -> bool:
 	shop_changed.emit()
 	return true
 
-
 # ── HERO ──────────────────────────────────────────────────
 
 ## Roster milik tim, termasuk hero yang sedang menunggu respawn.
@@ -1565,13 +1499,11 @@ func owned_heroes(team: String = "blue") -> Array:
 			result.append(hero)
 	return result
 
-
 func owns_hero(hero_type: String, team: String = "blue") -> bool:
 	for hero in owned_heroes(team):
 		if hero.hero_type == hero_type:
 			return true
 	return false
-
 
 func can_buy_hero(hero_type: String) -> bool:
 	var data: Dictionary = HeroDB.get_hero(hero_type)
@@ -1580,7 +1512,6 @@ func can_buy_hero(hero_type: String) -> bool:
 		and SaveManager.is_unlocked(hero_type) and not owns_hero(hero_type) \
 		and owned_heroes().size() < max_heroes_owned \
 		and gold >= int(data.get("cost", 400))
-
 
 func try_buy_hero(hero_type: String) -> bool:
 	if not can_buy_hero(hero_type):
@@ -1597,7 +1528,6 @@ func try_buy_hero(hero_type: String) -> bool:
 	close_shop()
 	print("[Shop] %s dibeli (-%d gold)" % [HeroDB.get_hero(hero_type).get("name", hero_type), cost])
 	return true
-
 
 func try_upgrade_hero() -> bool:
 	if state != "playing":
@@ -1620,25 +1550,56 @@ func try_upgrade_hero() -> bool:
 	shop_changed.emit()
 	return true
 
-
-## Hero pemain yang MENERIMA item — padanan `_resolve_shop_target`
-## (hero_items.py:3169-3186), TIDAK lagi "hero yang kebetulan diklik":
-## hero terseleksi (kalau masih hidup) -> hero Radiant hidup pertama -> null.
+## Hero pemain yang MENERIMA item — paritas PENUH `_resolve_shop_target`
+## (hero_items.py:3169-3186, penutup gap #1 audit 2026-09-23):
+## target tersimpan (`itemshop_forge_target`) -> hero terseleksi -> hero
+## Radiant hidup pertama -> hero mati pertama. Hero MATI sah menjadi
+## penerima: itemnya masuk antrean `pending_forge_items` dan terkirim
+## tepat setelah respawn (sebelumnya hero mati ditolak = deviasi, chip
+## strip dimatikan).
 ## Pemakai: ShopPanel tab ITEM dan `try_buy_item` di bawah, jadi klik dari
 ## papan ketik, sentuh, dan mode controller jatuh ke aturan yang sama.
 func itemshop_target_hero():
 	var heroes := owned_heroes("blue")
 	if heroes.is_empty():
 		return null
+	if itemshop_forge_target != null and is_instance_valid(itemshop_forge_target) \
+			and heroes.has(itemshop_forge_target):
+		return itemshop_forge_target
 	var sel = selected_hero
-	if sel != null and is_instance_valid(sel) and not bool(sel.get("is_dead")) \
-			and heroes.has(sel):
+	if sel != null and is_instance_valid(sel) and heroes.has(sel):
 		return sel
 	for h in heroes:
 		if is_instance_valid(h) and not bool(h.get("is_dead")):
 			return h
-	return null
+	return heroes[0]
 
+## Alasan (kosakata baris toko) item TIDAK bisa dibeli untuk `hero` —
+## "" = boleh dibeli. Kapasitas dihitung PENDING-AWARE (antrean forge ikut
+## memakan slot), persis aturan pygame:
+## `hero.items.used_slots + len(pending_forge_items) >= MAX_ITEM_SLOTS`
+## (hero_items.py:4062-4065 + slot_full _draw_item_grid :3773-3776).
+## OWNED tetap diblokir di sini (parity UI yang sudah ada + dikunci
+## UiHudParityTest); `try_buy_item` di bawah sengaja TIDAK memblokir OWNED
+## karena `_try_buy` pygame mengizinkan duplikat (inventory.add menumpuk
+## ke slot kosong, hero_items.py:1717-1741).
+func forge_equip_block_reason(hero, item_id: String) -> String:
+	if hero == null or not is_instance_valid(hero):
+		return ""
+	var inv = hero.get("items")
+	if inv == null:
+		return ""
+	if inv.has(item_id):
+		return "OWNED"
+	if int(inv.count) + HeroItems.pending_forge_items(hero).size() \
+			>= ItemDB.max_slots:
+		return "FULL"
+	if ItemDB.is_melee_only(item_id) and not inv.is_melee_for_equip:
+		return "MELEE ONLY"
+	if bool(ItemDB.get_item(item_id).get("magic_only", false)) \
+			and not inv.is_magic:
+		return "MAGIC ONLY"
+	return ""
 
 func try_buy_item(item_id: String) -> bool:
 	if state != "playing":
@@ -1653,24 +1614,38 @@ func try_buy_item(item_id: String) -> bool:
 		return false
 	if str(h.get("team")) != "blue":
 		return false
+	# Kapasitas + aturan pakai. OWNED sengaja tidak dicek (duplikat sah —
+	# paritas `_try_buy`): alasannya langsung dihitung, bukan lewat
+	# forge_equip_block_reason, supaya jalur API tetap satu sumber angka.
+	var pending: Array = HeroItems.pending_forge_items(h)
+	if int(h.items.count) + pending.size() >= ItemDB.max_slots:
+		print("[Shop] 6 slot item %s sudah penuh" % h.name)
+		return false
 	if not h.items.can_equip(item_id):
-		if h.items.is_full():
-			print("[Shop] 6 slot item %s sudah penuh" % h.name)
-		else:
-			print("[Shop] %s tidak bisa memakai %s (melee/magic only)" % [
-				h.name, ItemDB.item_name(item_id)])
+		print("[Shop] %s tidak bisa memakai %s (melee/magic only)" % [
+			h.name, ItemDB.item_name(item_id)])
 		return false
 	var cost := ItemDB.item_cost(item_id)
 	if not spend_gold(cost):
 		print("[Shop] gold kurang: %s butuh %d (punya %d)" % [
 			ItemDB.item_name(item_id), cost, gold])
 		return false
-	if not h.buy_item(item_id):
+	if bool(h.get("is_dead")):
+		# Hero MATI: item DIANTREKAN, bukan dipasang — terkirim otomatis
+		# tepat setelah respawn (delivery di _update_hero_respawns).
+		# Pesan pygame `forge_queued` dikirim lewat add_notification yang
+		# sudah no-op (_core.py:8679-8687), jadi paritasnya = log saja.
+		pending.append(item_id)
+		print("[Shop] %s MATI — %s diantrekan (forge_queued, antrean %d)" % [
+			h.name, ItemDB.item_name(item_id), pending.size()])
+	elif not h.buy_item(item_id):
 		gold += cost
 		return false
+	# Target tersimpan = prioritas pembelian berikutnya
+	# (paritas `game.itemshop_target_hero = hero` hero_items.py:4084).
+	itemshop_forge_target = h
 	shop_changed.emit()
 	return true
-
 
 # ── NEXUS ─────────────────────────────────────────────────
 
@@ -1690,7 +1665,6 @@ func try_upgrade_nexus() -> bool:
 	print("[Shop] Radiant Nexus naik ke level %d (-%d gold)" % [blue_nexus.level, cost])
 	return true
 
-
 func try_buy_nexus_shield() -> bool:
 	if state != "playing" or blue_nexus == null or not is_instance_valid(blue_nexus):
 		return false
@@ -1706,6 +1680,4 @@ func try_buy_nexus_shield() -> bool:
 	shop_changed.emit()
 	print("[Shop] Castle Shield aktif (-%d gold)" % cost)
 	return true
-
-
 

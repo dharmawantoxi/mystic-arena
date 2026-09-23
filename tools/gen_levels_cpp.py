@@ -236,7 +236,7 @@ BANNER = (
     "// Generator : tools/gen_levels_cpp.py (AST Python -> C++, bukan terjemahan tangan)\n"
     "// Regenerasi: python3 tools/gen_levels_cpp.py\n"
     "// Cek CI    : python3 tools/gen_levels_cpp.py --check\n"
-    "// Desain    : docs/LEVELS_GODOTPP.md\n"
+    "// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md\n"
 )
 
 
@@ -445,7 +445,7 @@ def emit_py_contains():
     out.append("        }")
     out.append("        // valid == false: pasangan tipe tanpa evaluator == (mis. bool vs")
     out.append("        // int). Python menganggap True == 1; deviasi itu dicatat di")
-    out.append("        // docs/LEVELS_GODOTPP.md dan tidak terjadi di produksi (save Godot")
+    out.append("        // docs/AUDIT_ULANG_DARI_AWAL.md dan tidak terjadi di produksi (save Godot")
     out.append("        // hanya menyimpan int/float). Tidak pernah error/crash di sini.")
     out.append("    }")
     out.append("    return false;")

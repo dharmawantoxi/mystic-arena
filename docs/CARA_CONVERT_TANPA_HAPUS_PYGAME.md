@@ -161,11 +161,11 @@ Package SAMA sengaja — save `user://` / cloud tetap kebaca kalau migrasi full 
 
 ```bash
 git status
-# ?? godot/  ?? tools/convert_to_godot.py  ?? docs/GODOT_MIGRATION.md
+# ?? godot/  ?? tools/convert_to_godot.py  ?? docs/AUDIT_ULANG_DARI_AWAL.md
 # M hero_balance.py  (kalau kamu edit balance)
 
 # Commit cuma file Godot + data json (pygame tetap)
-git add tools/convert_to_godot.py godot/ docs/GODOT_MIGRATION.md
+git add tools/convert_to_godot.py godot/ docs/AUDIT_ULANG_DARI_AWAL.md
 git commit -m "feat(godot): kaizen skeleton 25 bones + hamon + demo (pygame tetap)"
 
 # Push ke branch ARENA saja (jangan ke main)

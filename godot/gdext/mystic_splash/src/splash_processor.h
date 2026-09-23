@@ -7,7 +7,7 @@
 //             tangan)
 // Regenerasi: python3 tools/gen_splash_cpp.py
 // Cek CI    : python3 tools/gen_splash_cpp.py --check
-// Desain    : docs/SPLASH_GODOTPP.md
+// Desain    : docs/AUDIT_ULANG_DARI_AWAL.md
 //
 // Port splash_screen.py ke Godot C++ GDExtension: lapisan MODEL (timing +
 // fade, alpha judul, gerak/twinkle partikel, gradien + vignette latar,
