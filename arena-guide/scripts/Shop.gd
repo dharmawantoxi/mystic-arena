@@ -4,20 +4,48 @@ class_name ShopUI
 ## L34 8 item inti + L35 SELL + L36 HERO SHOP
 
 const MAX_SLOTS := 6
+const ITEMS_PER_PAGE := 12
+const COLS_ITEM := 4
 const ITEM_COST := 100
 
 const ITEM_CATALOG := {
-	"dead_edge": {"name":"Dead Edge","cost":100,"color":Color8(220,60,60),"glow":Color8(255,90,90),"desc":"+30 Damage, 25% crit x2","dmg":30,"crit":0.25},
-	"holy_rapier": {"name":"Holy Rapier","cost":150,"color":Color8(255,220,80),"glow":Color8(255,245,150),"desc":"+60 Damage (hilang saat mati)","dmg":60},
-	"leviathan_heart": {"name":"Leviathan Heart","cost":100,"color":Color8(80,220,120),"glow":Color8(130,255,160),"desc":"+250 HP, +5 regen","hp":250},
-	"steel_aegis": {"name":"Steel Aegis","cost":100,"color":Color8(180,200,230),"glow":Color8(120,170,255),"desc":"+6 Armor, +20 AS, aura","armor":6,"as":20},
-	"moon_shard": {"name":"Moon Shard","cost":100,"color":Color8(130,220,255),"glow":Color8(180,240,255),"desc":"+60 Attack Speed","as":60},
-	"demon_maw": {"name":"Demon Maw","cost":120,"color":Color8(180,30,30),"glow":Color8(255,70,70),"desc":"+20 Damage, 15% lifesteal","dmg":20,"ls":0.15},
-	"scarlet_bulwark": {"name":"Scarlet Bulwark","cost":120,"color":Color8(200,60,60),"glow":Color8(255,110,110),"desc":"+250 HP +6 Armor, block 25","hp":250,"armor":6},
-	"searbrand": {"name":"Searbrand","cost":120,"color":Color8(235,95,60),"glow":Color8(255,150,110),"desc":"+15 Damage +150 HP, bakar 6/dtk","dmg":15,"hp":150},
+	"dead_edge": {"name":"Dead Edge","cost":100,"color":Color8(220,60,60),"glow":Color8(255,90,90),"desc":"+52 Damage. 25% peluang Critical Strike (200","dmg":52,"crit":0.25},
+	"holy_rapier": {"name":"Holy Rapier","cost":100,"color":Color8(255,220,80),"glow":Color8(255,245,150),"desc":"+120 Damage. HILANG saat hero mati (tidak di","dmg":120},
+	"demon_maw": {"name":"Demon Maw","cost":100,"color":Color8(180,30,30),"glow":Color8(255,70,70),"desc":"+20 Damage, +4 Armor, 20% Lifesteal. Saat HP","dmg":20,"armor":4,"ls":0.2},
+	"leviathan_heart": {"name":"Leviathan Heart","cost":100,"color":Color8(80,220,120),"glow":Color8(130,255,160),"desc":"+35% Max HP, +6 HP/reg. Di luar pertempuran ","hp_pct":0.35},
+	"cleave_axe": {"name":"Cleave Axe","cost":100,"color":Color8(200,220,240),"glow":Color8(150,210,255),"desc":"+34 Damage, +3 HP/reg. Serangan melee membel","dmg":34},
+	"steel_aegis": {"name":"Steel Aegis","cost":100,"color":Color8(180,200,230),"glow":Color8(120,170,255),"desc":"+4 Armor, +30 Attack Speed. Aura: sekutu di ","armor":6,"as":30},
+	"moon_shard": {"name":"Moon Shard","cost":100,"color":Color8(130,220,255),"glow":Color8(180,240,255),"desc":"+75 Attack Speed. Serangan secepat cahaya bu","as":75},
+	"octarine_core": {"name":"Octarine Core","cost":100,"color":Color8(180,80,230),"glow":Color8(220,130,255),"desc":"+300 HP, +2 HP/reg, 15% Cooldown Reduction, ","hp":300},
+	"scarlet_bulwark": {"name":"Scarlet Bulwark","cost":111,"color":Color8(200,60,60),"glow":Color8(255,110,110),"desc":"+250 HP, +8 HP/reg, +6 Armor. Blok pasif 55%","armor":6,"hp":250},
+	"monarch_wings": {"name":"Monarch Wings","cost":111,"color":Color8(230,140,220),"glow":Color8(255,190,250),"desc":"+38 Damage, +30 Attack Speed, 28% Evasion (p","dmg":38,"as":30,"evasion":0.28},
+	"corroder": {"name":"Corroder","cost":100,"color":Color8(140,220,90),"glow":Color8(190,255,140),"desc":"+65 Damage. Serangan mengikis 6 Armor target","dmg":65},
+	"tempest_vane": {"name":"Tempest Vane","cost":122,"color":Color8(120,210,230),"glow":Color8(180,240,255),"desc":"+250 HP, +4 HP/reg, +12% Move Speed. Saat HP","hp":250,"ms":0.12},
+	"fenrir_chain": {"name":"Fenrir Chain","cost":116,"color":Color8(240,190,90),"glow":Color8(255,230,150),"desc":"+30 Damage, +30 AS, +250 HP. 20% serangan me","dmg":30,"as":30,"hp":250},
+	"sanguine_thorn": {"name":"Sanguine Thorn","cost":133,"color":Color8(230,60,110),"glow":Color8(255,120,160),"desc":"+25 Damage, +60 AS, +5 HP/reg. Soul Rend (au","dmg":25,"as":60},
+	"abyss_breaker": {"name":"Abyss Breaker","cost":122,"color":Color8(90,130,220),"glow":Color8(140,180,255),"desc":"+35 Damage, +300 HP, +16% heal diterima, +30","dmg":35,"hp":300},
+	"thunder_coil": {"name":"Thunder Coil","cost":116,"color":Color8(250,220,90),"glow":Color8(255,245,160),"desc":"+25 Damage, +65 AS. 22% serangan menyambar 3","dmg":25,"as":65},
+	"razor_carapace": {"name":"Razor Carapace","cost":111,"color":Color8(180,180,200),"glow":Color8(230,230,255),"desc":"+18 Damage, +8 Armor, 10% CDR. Saat HP < 55%","dmg":18,"armor":8},
+	"everfrost_guard": {"name":"Everfrost Guard","cost":122,"color":Color8(120,190,230),"glow":Color8(180,230,255),"desc":"+10 Armor, +5 HP/reg, 10% CDR. Aura: musuh d","armor":10},
+	"sundering_cudgel": {"name":"Sundering Cudgel","cost":111,"color":Color8(230,180,70),"glow":Color8(255,220,130),"desc":"+45 Damage, +25 AS. Serangan TIDAK PERNAH me","dmg":48,"as":25},
+	"frostbound_eye": {"name":"Frostbound Eye","cost":116,"color":Color8(120,200,220),"glow":Color8(180,240,255),"desc":"+20 Damage, +250 HP, +4 HP/reg. Tiap seranga","dmg":20,"hp":250},
+	"gale_pike": {"name":"Gale Pike","cost":116,"color":Color8(150,230,200),"glow":Color8(200,255,230),"desc":"+18 Damage, +25 AS, +200 HP, +3 HP/reg, +90 ","dmg":18,"as":25,"hp":200},
+	"basilisk_breath": {"name":"Basilisk Breath","cost":127,"color":Color8(140,210,90),"glow":Color8(190,255,130),"desc":"+26 Damage, +30 AS, +260 HP, +3 HP/reg. Sera","dmg":26,"as":30,"hp":260},
+	"solar_brand": {"name":"Solar Brand","cost":122,"color":Color8(255,190,60),"glow":Color8(255,230,140),"desc":"+30 Damage, +280 HP, +5 HP/reg. Aura: musuh ","dmg":30,"hp":280},
+	"runic_gavel": {"name":"Runic Gavel","cost":116,"color":Color8(200,130,240),"glow":Color8(235,180,255),"desc":"+28 Damage, +250 HP, +4 HP/reg, 15% CDR. Set","dmg":28,"hp":250},
+	"searbrand": {"name":"Searbrand","cost":127,"color":Color8(235,95,60),"glow":Color8(255,150,110),"desc":"+12 Damage, +320 HP, +6 HP/reg, 15% CDR. AUR","dmg":20,"hp":320},
+	"astral_codex": {"name":"Astral Codex","cost":133,"color":Color8(155,90,235),"glow":Color8(210,155,255),"desc":"+280 HP, +4 HP/reg, 18% CDR, 12% Spell Lifes","hp":280},
+	"sage_scepter": {"name":"Sage Scepter","cost":111,"color":Color8(120,190,255),"glow":Color8(170,220,255),"desc":"+200 HP, +3 HP/reg, 15% SKILL AMP, 8% Spell ","hp":200},
+	"fulgur_scepter": {"name":"Fulgur Scepter","cost":133,"color":Color8(255,180,60),"glow":Color8(255,220,120),"desc":"+15 Damage, +200 HP, 10% SKILL AMP, 8% Spell","dmg":15,"hp":200},
+	"hex_idol": {"name":"Hex Idol","cost":127,"color":Color8(170,220,90),"glow":Color8(210,255,140),"desc":"+250 HP, +4 HP/reg, 6% Spell Lifesteal, 10% ","hp":250},
+	"rift_veil": {"name":"Rift Veil","cost":122,"color":Color8(130,120,240),"glow":Color8(180,170,255),"desc":"+260 HP, +4 HP/reg, 6% Spell Lifesteal. Saat","hp":260},
+	"vital_stone": {"name":"Vital Stone","cost":116,"color":Color8(230,80,110),"glow":Color8(255,140,170),"desc":"+320 HP, +6 HP/reg, 20% Spell Lifesteal. Saa","hp":320},
+	"vine_rod": {"name":"Vine Rod","cost":111,"color":Color8(90,200,120),"glow":Color8(150,240,170),"desc":"+15 Damage, +240 HP, +3 HP/reg, 5% Spell Lif","dmg":15,"hp":240},
+	"spectral_charm": {"name":"Spectral Charm","cost":122,"color":Color8(190,220,255),"glow":Color8(225,240,255),"desc":"+230 HP, +3 HP/reg, +10% Move Speed, 6% Spel","hp":230,"ms":0.1},
 }
 # Alias biar kompatibel
 const CATALOG := ITEM_CATALOG
+
 
 const HERO_CATALOG := {
 	"kaizen": {"name":"Kaizen","cost":100,"color":Color8(79,195,247),"glow":Color8(120,220,255),"desc":"550 HP 22 DMG Seimbang","hp":550,"dmg":22,"range":90,"move_speed":120.0,"color_hex":"#4FC3F7"},
@@ -30,6 +58,9 @@ var _main = null
 var open := false
 var mode := "item" # item | hero
 var _close_rect := Rect2()
+var _page: int = 0
+var _page_prev_rect := Rect2()
+var _page_next_rect := Rect2()
 var _buy_rects: Dictionary = {} # item_id -> Rect2 (item mode)
 var _hero_buy_rects: Dictionary = {} # hero_id -> Rect2 (hero mode)
 var _inv_rects: Dictionary = {} # slot_index -> Rect2 L35 SELL
@@ -48,6 +79,8 @@ func toggle_mode(requested_mode: String) -> void:
 		visible = false
 	else:
 		mode = requested_mode
+		if mode == "item":
+			_page = 0
 		open = true
 		visible = true
 	if _main != null:
@@ -86,16 +119,25 @@ func draw_on(host: CanvasItem) -> void:
 		_draw_item_grid(host, px, py, pw, ph, font)
 
 func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, ph: float, font: Font) -> void:
-	var cols := 4
+	var cols := COLS_ITEM
 	var cw := 200.0
-	var ch := 150.0
+	var ch := 108.0
 	var gap := 12.0
 	var sx := px + (pw - (cols*cw + (cols-1)*gap))*0.5
 	var sy := py + 56.0
 	_buy_rects.clear()
 	_hero_buy_rects.clear()
 	_inv_rects.clear()
-	var ids := ITEM_CATALOG.keys()
+	var all_ids := ITEM_CATALOG.keys()
+	var total := all_ids.size()
+	var pages := int(ceil(float(total)/float(ITEMS_PER_PAGE)))
+	if _page >= pages: _page = max(0, pages-1)
+	if _page < 0: _page = 0
+	var start := _page * ITEMS_PER_PAGE
+	var end := min(start + ITEMS_PER_PAGE, total)
+	var ids: Array = []
+	for i in range(start, end):
+		ids.append(all_ids[i])
 	for i in ids.size():
 		var r := int(i / cols)
 		var c := int(i % cols)
@@ -111,35 +153,53 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 		host.draw_rect(Rect2(x,y,cw,ch), border, false, 2.0)
 		host.draw_rect(Rect2(x+8, y+8, 36, 36), data["color"])
 		host.draw_rect(Rect2(x+8, y+8, 36, 36), Color8(255,255,255,0.25), false, 1.0)
-		host.draw_string(font, Vector2(x+52, y+22), str(data["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, data["glow"])
-		host.draw_string(font, Vector2(x+52, y+38), "%d G" % int(data["cost"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(255,220,100) if can_buy else Color8(200,80,80))
+		host.draw_string(font, Vector2(x+52, y+22), str(data["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, data["glow"])
+		host.draw_string(font, Vector2(x+52, y+38), "%d G" % int(data["cost"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(255,220,100) if can_buy else Color8(200,80,80))
 		if owned>0:
-			host.draw_string(font, Vector2(x+cw-60, y+38), "x%d" % owned, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(150,255,170))
+			host.draw_string(font, Vector2(x+cw-42, y+38), "x%d" % owned, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color8(150,255,170))
 		var desc: String = str(data["desc"])
-		if desc.length() > 22:
-			host.draw_string(font, Vector2(x+8, y+62), desc.substr(0,22), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(200,210,230))
-			host.draw_string(font, Vector2(x+8, y+78), desc.substr(22,26), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(200,210,230))
-		else:
-			host.draw_string(font, Vector2(x+8, y+62), desc, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(200,210,230))
-		var btn := Rect2(x+8, y+ch-32, cw-16, 24)
+		var stxt: String = ""
+		if data.has("dmg"): stxt += "+%d dmg " % int(data["dmg"])
+		if data.has("hp"): stxt += "+%d hp " % int(data["hp"])
+		if data.has("hp_pct"): stxt += "+%d%% hp " % int(float(data["hp_pct"])*100)
+		if data.has("armor"): stxt += "+%d arm " % int(data["armor"])
+		if data.has("as"): stxt += "+%d as" % int(data["as"])
+		host.draw_string(font, Vector2(x+8, y+56), stxt.strip_edges(), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color8(170,255,170) if stxt!="" else Color8(200,210,230))
+		host.draw_string(font, Vector2(x+8, y+68), desc.substr(0,24), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color8(200,210,230))
+		var btn := Rect2(x+8, y+ch-22, cw-16, 18)
 		_buy_rects[id] = btn
 		if can_buy:
 			host.draw_rect(btn, Color8(48,100,64))
 			host.draw_rect(btn, Color8(120,235,140), false, 1.5)
-			var tw := font.get_string_size("BUY", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
-			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+17), "BUY", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
+			var tw := font.get_string_size("BUY", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+13), "BUY", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.WHITE)
 		else:
 			host.draw_rect(btn, Color8(44,44,54))
 			host.draw_rect(btn, Color8(90,90,100), false, 1.0)
 			var label := "FULL" if _is_full() else ("GOLD -" if _main != null and int(_main.gold) < int(data["cost"]) else "BUY")
 			var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+17), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(170,170,180))
+			host.draw_string(font, Vector2(btn.position.x+(btn.size.x-tw)*0.5, btn.position.y+13), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color8(170,170,180))
+	# pagination controls (above inventory)
+	var pag_y := py + ph - 78
+	_page_prev_rect = Rect2(px+pw*0.5-74, pag_y, 58, 20)
+	_page_next_rect = Rect2(px+pw*0.5+16, pag_y, 58, 20)
+	var can_prev: bool = _page > 0
+	var can_next: bool = _page < pages-1
+	host.draw_rect(_page_prev_rect, Color8(40,70,140) if can_prev else Color8(30,30,38))
+	host.draw_rect(_page_prev_rect, Color8(90,130,255) if can_prev else Color8(70,70,80), false, 1.0)
+	host.draw_rect(_page_next_rect, Color8(40,70,140) if can_next else Color8(30,30,38))
+	host.draw_rect(_page_next_rect, Color8(90,130,255) if can_next else Color8(70,70,80), false, 1.0)
+	var twp := font.get_string_size("< PREV", HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+	var twn := font.get_string_size("NEXT >", HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+	host.draw_string(font, Vector2(_page_prev_rect.position.x+(58-twp)*0.5, pag_y+13), "< PREV", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE if can_prev else Color8(130,130,140))
+	host.draw_string(font, Vector2(_page_next_rect.position.x+(58-twn)*0.5, pag_y+13), "NEXT >", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE if can_next else Color8(130,130,140))
+	host.draw_string(font, Vector2(px+pw*0.5-14, pag_y+13), "%d/%d" % [_page+1, pages], HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color8(255,220,100))
 	# inventory bawah L35
 	_inv_rects.clear()
 	if _main != null and _main.hero != null:
 		var inv: Array = _main.hero.get("inventory") if "inventory" in _main.hero else []
 		var inv_y := py+ph-52
-		host.draw_string(font, Vector2(px+18, inv_y), "INVENTORY %d/%d  (klik kanan slot = JUAL 70%%)" % [int(inv.size()), MAX_SLOTS], HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(170,180,205))
+		host.draw_string(font, Vector2(px+18, inv_y), "INVENTORY %d/%d  (klik kanan slot = JUAL 70%%)" % [int(inv.size()), MAX_SLOTS], HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(170,180,205))
 		var sx2 := px + pw*0.5 - 180
 		for i in 6:
 			var r := Rect2(sx2 + float(i)*54, inv_y+8, 48, 32)
@@ -159,6 +219,8 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, ph: floa
 			host.draw_rect(r, col, false, 1.5 if slot_item != null else 1.0)
 		if not inv.is_empty():
 			host.draw_string(font, Vector2(px+pw*0.5 - 90, inv_y+46), "klik kanan slot untuk jual", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color8(200,180,160))
+
+
 
 func _draw_hero_grid(host: CanvasItem, px: float, py: float, pw: float, ph: float, font: Font) -> void:
 	_buy_rects.clear()
@@ -227,6 +289,16 @@ func handle_click(point: Vector2) -> bool:
 				_try_buy_hero(str(id))
 				return true
 	else:
+		if _page_prev_rect.has_point(point) and _page>0:
+			_page -=1
+			_main.queue_redraw()
+			Sound.play("click")
+			return true
+		if _page_next_rect.has_point(point) and _page < int(ceil(float(ITEM_CATALOG.size())/float(ITEMS_PER_PAGE)))-1:
+			_page +=1
+			_main.queue_redraw()
+			Sound.play("click")
+			return true
 		for id in _buy_rects.keys():
 			var r: Rect2 = _buy_rects[id]
 			if r.has_point(point):
@@ -287,16 +359,28 @@ func _revert_stats(hero, data: Dictionary) -> void:
 		hero.max_hp = maxf(1.0, hero.max_hp - sub)
 		hero.hp = minf(hero.hp, hero.max_hp)
 		hero.hp = maxf(1.0, hero.hp)
+	if data.has("hp_pct"):
+		var pct := float(data["hp_pct"])
+		var cur := hero.max_hp
+		var add := cur * pct / (1.0+pct)
+		hero.max_hp = maxf(1.0, cur - add)
+		hero.hp = minf(hero.hp, hero.max_hp)
 	if data.has("armor"):
 		if "bonus_armor" in hero:
 			hero.bonus_armor = maxf(0.0, hero.bonus_armor - float(data["armor"]))
 	if data.has("as"):
 		if "bonus_as" in hero:
 			hero.bonus_as = maxf(0.0, hero.bonus_as - float(data["as"]))
-		hero.attack_interval = minf(1.0, hero.attack_interval + float(data["as"])*0.006)
+		hero.attack_interval = maxf(0.20, 1.0/(1.0+hero.bonus_as/100.0)) if hero.bonus_as>0 else 1.0
 	if data.has("ls"):
 		if "lifesteal" in hero:
 			hero.lifesteal = maxf(0.0, hero.lifesteal - float(data["ls"]))
+	if data.has("crit") and hero.get("crit_chance") != null:
+		hero.set("crit_chance", maxf(0.0, float(hero.get("crit_chance")) - float(data["crit"])))
+	if data.has("evasion") and hero.get("evasion") != null:
+		hero.set("evasion", maxf(0.0, float(hero.get("evasion")) - float(data["evasion"])))
+	if data.has("ms"):
+		hero.move_speed = hero.move_speed / (1.0 + float(data["ms"]))
 	hero.queue_redraw()
 
 func _can_buy(id: String) -> bool:
@@ -400,6 +484,11 @@ func _apply_stats(hero, data: Dictionary) -> void:
 		hero.max_hp += add
 		hero.hp += add
 		hero.hp = minf(hero.hp, hero.max_hp)
+	if data.has("hp_pct"):
+		var pct := float(data["hp_pct"])
+		var add := hero.max_hp * pct
+		hero.max_hp += add
+		hero.hp = minf(hero.hp + add, hero.max_hp)
 	if data.has("armor"):
 		if not "bonus_armor" in hero:
 			hero.set("bonus_armor", 0.0)
@@ -408,9 +497,23 @@ func _apply_stats(hero, data: Dictionary) -> void:
 		if not "bonus_as" in hero:
 			hero.set("bonus_as", 0.0)
 		hero.bonus_as += float(data["as"])
-		hero.attack_interval = maxf(0.35, hero.attack_interval - float(data["as"])*0.006)
+		hero.attack_interval = maxf(0.20, 1.0/(1.0+hero.bonus_as/100.0))
 	if data.has("ls"):
 		if not "lifesteal" in hero:
 			hero.set("lifesteal", 0.0)
 		hero.lifesteal += float(data["ls"])
+	if data.has("crit"):
+		var cur = hero.get("crit_chance") if hero.has_method("get") else null
+		if cur==null:
+			hero.set("crit_chance", float(data["crit"]))
+		else:
+			hero.set("crit_chance", float(cur)+float(data["crit"]))
+	if data.has("evasion"):
+		var cur2 = hero.get("evasion") if hero.has_method("get") else null
+		if cur2==null:
+			hero.set("evasion", float(data["evasion"]))
+		else:
+			hero.set("evasion", float(cur2)+float(data["evasion"]))
+	if data.has("ms"):
+		hero.move_speed *= (1.0 + float(data["ms"]))
 	hero.queue_redraw()
