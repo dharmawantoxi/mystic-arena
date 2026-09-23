@@ -92,8 +92,8 @@ var _icon_cache: Dictionary = {}
 
 func setup(main_ref) -> void:
 	_main = main_ref
-	z_index = 60
-	visible = false
+	z_index = 100
+	visible = true
 
 
 func toggle() -> void:
@@ -103,7 +103,6 @@ func toggle() -> void:
 func toggle_mode(requested_mode: String) -> void:
 	if open and mode == requested_mode:
 		open = false
-		visible = false
 		_inspect_item = ""
 	else:
 		mode = requested_mode
@@ -111,7 +110,7 @@ func toggle_mode(requested_mode: String) -> void:
 			_page = 0
 		_inspect_item = ""
 		open = true
-		visible = true
+	queue_redraw()
 	if _main != null:
 		_main.queue_redraw()
 	var label = "ITEM FORGE" if mode == "item" else "HERO SHRINE"
@@ -125,22 +124,43 @@ func is_open() -> bool:
 func _get_item_texture(id: String) -> Texture2D:
 	if _icon_cache.has(id):
 		return _icon_cache[id]
-	var path := "res://assets/items/%s.png" % id
-	if ResourceLoader.exists(path):
-		var tex = load(path)
-		if tex is Texture2D:
-			_icon_cache[id] = tex
-			return tex
+	var candidate_paths := [
+		"res://assets/items/%s.png" % id,
+		"res://godot/assets/items/%s.png" % id,
+		"res://arena-guide/assets/items/%s.png" % id,
+		"res://items/%s.png" % id
+	]
+	for path in candidate_paths:
+		if ResourceLoader.exists(path):
+			var tex = load(path)
+			if tex is Texture2D:
+				_icon_cache[id] = tex
+				return tex
 	_icon_cache[id] = null
 	return null
 
 
+func _draw() -> void:
+	if open:
+		_render_panel(self)
+
+
 func draw_on(host: CanvasItem) -> void:
+	# Jika dipanggil dari Main.gd dan ShopUI sudah terpasang sebagai child node,
+	# biarkan _draw() milik node ShopUI sendiri yang merender dengan z_index = 100
+	# agar panel SELALU berada di lapisan paling depan (di atas minion, tower, dll).
+	if host != self and is_inside_tree():
+		queue_redraw()
+		return
+	_render_panel(host)
+
+
+func _render_panel(host: CanvasItem) -> void:
 	if not open:
 		return
 
 	# Overlay Gelap Layar Penuh (Paritas darken 215 pygame)
-	host.draw_rect(Rect2(0, 0, 1280, 720), Color(0.0, 0.0, 0.0, 0.84))
+	host.draw_rect(Rect2(0, 0, 1280, 720), Color(0.0, 0.0, 0.0, 0.85))
 
 	# Geometri Panel 1100 x 720 px (Center pada 1280 x 720: px=90, py=0)
 	var pw: float = 1100.0
@@ -149,9 +169,9 @@ func draw_on(host: CanvasItem) -> void:
 	var py: float = (720.0 - ph) * 0.5
 
 	# Shadow Panel
-	host.draw_rect(Rect2(px - 10, py - 10, pw + 20, ph + 20), Color(0.0, 0.0, 0.0, 0.63))
+	host.draw_rect(Rect2(px - 10, py - 10, pw + 20, ph + 20), Color(0.0, 0.0, 0.0, 0.65))
 
-	# Panel Background (Paritas gradasi / solid pygame)
+	# Panel Background (Solid gelap RPG)
 	host.draw_rect(Rect2(px, py, pw, ph), Color8(22, 26, 44))
 
 	# Border Emas Luar & Dalam
@@ -204,6 +224,7 @@ func _draw_corner_ticks(host: CanvasItem, rect: Rect2, color: Color, length: flo
 	host.draw_line(Vector2(x1, y1), Vector2(x1 + length, y1), color, width)
 	host.draw_line(Vector2(x1, y1), Vector2(x1, y1 + length), color, width)
 	# Top-Right
+	host.draw_line(Vector2(x2, y1), Vector2(x2 - length, y1), color, width)
 	host.draw_line(Vector2(x2, y1), Vector2(x2 - length, y1), color, width)
 	host.draw_line(Vector2(x2, y1), Vector2(x2, y1 + length), color, width)
 	# Bottom-Left
@@ -264,6 +285,158 @@ func _draw_page_tabs(host: CanvasItem, px: float, py: float, pw: float, font: Fo
 			label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.WHITE if is_cur else col)
 
 
+## Ikon Item 56px: Memuat PNG 1:1 Pygame atau Menggambar Simbol Vektor Prosedural Berkilau
+func _draw_item_icon(host: CanvasItem, id: String, rect: Rect2, data: Dictionary, font: Font) -> void:
+	var tex := _get_item_texture(id)
+	if tex != null:
+		host.draw_texture_rect(tex, rect, false)
+		return
+
+	# Fallback Prosedural Bergaya RPG / Pygame (Bukan kotak warna polos)
+	# 1. Background gelap bertingkat
+	host.draw_rect(rect, Color8(18, 22, 34))
+	host.draw_rect(Rect2(rect.position.x + 2, rect.position.y + 2, rect.size.x - 4, rect.size.y - 4), Color8(28, 33, 50))
+	var col: Color = data.get("color", Color.WHITE)
+	var glow: Color = data.get("glow", Color.WHITE)
+	host.draw_rect(rect, col, false, 2.0)
+	_draw_corner_ticks(host, rect, glow, 6.0, 1.5, 2.0)
+
+	var cx := rect.position.x + rect.size.x * 0.5
+	var cy := rect.position.y + rect.size.y * 0.44
+
+	# 2. Gambar Simbol Khusus per Item / Kategori
+	match id:
+		"dead_edge":
+			# Pedang melengkung merah berdarah
+			host.draw_line(Vector2(cx - 14, cy + 14), Vector2(cx + 14, cy - 14), glow, 3.5)
+			host.draw_line(Vector2(cx + 8, cy - 8), Vector2(cx + 15, cy - 15), Color.WHITE, 2.0)
+			host.draw_line(Vector2(cx - 10, cy + 6), Vector2(cx - 6, cy + 10), col, 2.0)
+		"holy_rapier":
+			# Rapier emas panjang + kilau salib
+			host.draw_line(Vector2(cx - 15, cy + 15), Vector2(cx + 15, cy - 15), glow, 2.5)
+			host.draw_line(Vector2(cx - 10, cy + 8), Vector2(cx - 6, cy + 12), Color8(255, 230, 120), 4.0)
+			host.draw_circle(Vector2(cx + 13, cy - 13), 3.0, Color.WHITE)
+		"demon_maw":
+			# Fangs / taring iblis
+			host.draw_line(Vector2(cx - 12, cy - 8), Vector2(cx, cy + 6), glow, 3.0)
+			host.draw_line(Vector2(cx + 12, cy - 8), Vector2(cx, cy + 6), glow, 3.0)
+			host.draw_circle(Vector2(cx, cy - 4), 5.0, col)
+		"cleave_axe":
+			# Gagang dan mata kapak kembar
+			host.draw_line(Vector2(cx - 12, cy + 14), Vector2(cx + 12, cy - 10), Color8(150, 120, 90), 3.0)
+			host.draw_arc(Vector2(cx + 6, cy - 6), 11.0, -PI * 0.75, PI * 0.25, 8, glow, 3.5)
+			host.draw_arc(Vector2(cx + 6, cy - 6), 11.0, PI * 0.25, PI * 1.25, 8, col, 2.0)
+		"moon_shard":
+			# Bulan sabit cyan bercahaya
+			host.draw_circle(Vector2(cx, cy), 12.0, glow)
+			host.draw_circle(Vector2(cx + 5, cy - 3), 10.0, Color8(28, 33, 50))
+		"monarch_wings":
+			# Sayap kupu-kupu pink anggun
+			host.draw_line(Vector2(cx, cy - 12), Vector2(cx, cy + 12), Color.WHITE, 2.0)
+			host.draw_arc(Vector2(cx - 7, cy - 4), 8.0, -PI * 0.8, PI * 0.4, 8, glow, 2.5)
+			host.draw_arc(Vector2(cx + 7, cy - 4), 8.0, PI * 0.6, PI * 1.8, 8, glow, 2.5)
+			host.draw_arc(Vector2(cx - 6, cy + 5), 6.0, -PI * 0.7, PI * 0.5, 6, col, 2.0)
+			host.draw_arc(Vector2(cx + 6, cy + 5), 6.0, PI * 0.5, PI * 1.7, 6, col, 2.0)
+		"corroder":
+			# Pedang beracun hijau asam
+			host.draw_line(Vector2(cx - 12, cy + 12), Vector2(cx + 12, cy - 12), glow, 3.0)
+			host.draw_circle(Vector2(cx + 4, cy - 4), 4.0, Color8(120, 255, 80))
+			host.draw_circle(Vector2(cx - 2, cy + 6), 2.5, Color8(180, 255, 120))
+		"fenrir_chain":
+			# Tautan rantai emas
+			host.draw_arc(Vector2(cx - 6, cy - 4), 7.0, 0, TAU, 10, glow, 2.0)
+			host.draw_arc(Vector2(cx + 6, cy + 4), 7.0, 0, TAU, 10, glow, 2.0)
+			host.draw_line(Vector2(cx - 3, cy - 1), Vector2(cx + 3, cy + 1), Color.WHITE, 2.0)
+		"sanguine_thorn":
+			# Jarum berduri merah
+			host.draw_line(Vector2(cx, cy + 15), Vector2(cx, cy - 15), glow, 3.0)
+			host.draw_line(Vector2(cx - 6, cy - 2), Vector2(cx + 6, cy - 2), col, 2.0)
+			host.draw_line(Vector2(cx - 4, cy + 5), Vector2(cx + 4, cy + 5), col, 2.0)
+		"thunder_coil":
+			# Petir zigzag
+			host.draw_line(Vector2(cx - 2, cy - 14), Vector2(cx + 5, cy - 3), Color.WHITE, 3.0)
+			host.draw_line(Vector2(cx + 5, cy - 3), Vector2(cx - 4, cy + 2), glow, 3.0)
+			host.draw_line(Vector2(cx - 4, cy + 2), Vector2(cx + 3, cy + 14), glow, 3.0)
+		"sundering_cudgel":
+			# Gada berduri
+			host.draw_line(Vector2(cx - 10, cy + 14), Vector2(cx + 8, cy - 8), Color8(160, 140, 100), 4.0)
+			host.draw_circle(Vector2(cx + 9, cy - 9), 7.0, glow)
+			host.draw_circle(Vector2(cx + 9, cy - 9), 4.0, col)
+		"frostbound_eye":
+			# Mata es biru
+			host.draw_circle(Vector2(cx, cy), 11.0, glow)
+			host.draw_circle(Vector2(cx, cy), 5.0, Color8(20, 40, 80))
+			host.draw_circle(Vector2(cx - 2, cy - 2), 2.0, Color.WHITE)
+		"gale_pike":
+			# Tombak angin
+			host.draw_line(Vector2(cx - 14, cy + 14), Vector2(cx + 14, cy - 14), Color.WHITE, 2.0)
+			host.draw_arc(Vector2(cx, cy), 9.0, 0, PI * 1.5, 8, glow, 2.0)
+		"basilisk_breath":
+			# Taring beracun
+			host.draw_arc(Vector2(cx - 5, cy), 10.0, -PI * 0.5, PI * 0.5, 8, glow, 3.0)
+			host.draw_circle(Vector2(cx + 6, cy + 4), 3.0, col)
+		"solar_brand":
+			# Matahari berpijar
+			host.draw_circle(Vector2(cx, cy), 7.0, Color.WHITE)
+			for a in range(8):
+				var rad: float = float(a) * TAU / 8.0
+				host.draw_line(Vector2(cx, cy) + Vector2(cos(rad), sin(rad)) * 9.0,
+					Vector2(cx, cy) + Vector2(cos(rad), sin(rad)) * 14.0, glow, 2.0)
+		"leviathan_heart":
+			# Jantung hijau
+			host.draw_circle(Vector2(cx - 4, cy - 3), 7.0, glow)
+			host.draw_circle(Vector2(cx + 4, cy - 3), 7.0, glow)
+			host.draw_line(Vector2(cx - 9, cy), Vector2(cx, cy + 12), glow, 3.0)
+			host.draw_line(Vector2(cx + 9, cy), Vector2(cx, cy + 12), glow, 3.0)
+		"steel_aegis", "scarlet_bulwark", "everfrost_guard", "searbrand", "tempest_vane", "razor_carapace":
+			# Perisai kokoh
+			var pts := PackedVector2Array([
+				Vector2(cx - 11, cy - 10), Vector2(cx + 11, cy - 10),
+				Vector2(cx + 9, cy + 3), Vector2(cx, cy + 13),
+				Vector2(cx - 9, cy + 3)
+			])
+			host.draw_colored_polygon(pts, Color8(36, 42, 64))
+			host.draw_polyline(pts, glow, 2.0)
+			host.draw_line(Vector2(cx, cy - 8), Vector2(cx, cy + 10), col, 2.0)
+		"octarine_core", "vital_stone":
+			# Permata kristal bersegi
+			var pts2 := PackedVector2Array([
+				Vector2(cx, cy - 13), Vector2(cx + 11, cy - 4),
+				Vector2(cx + 8, cy + 10), Vector2(cx - 8, cy + 10),
+				Vector2(cx - 11, cy - 4)
+			])
+			host.draw_colored_polygon(pts2, Color8(44, 28, 64))
+			host.draw_polyline(pts2, glow, 2.0)
+			host.draw_circle(Vector2(cx, cy), 4.0, Color.WHITE)
+		"astral_codex":
+			# Buku terbuka
+			host.draw_rect(Rect2(cx - 12, cy - 8, 11, 15), glow, false, 2.0)
+			host.draw_rect(Rect2(cx + 1, cy - 8, 11, 15), glow, false, 2.0)
+			host.draw_line(Vector2(cx, cy - 9), Vector2(cx, cy + 8), Color.WHITE, 2.0)
+		"sage_scepter", "fulgur_scepter", "vine_rod":
+			# Tongkat sihir permata
+			host.draw_line(Vector2(cx - 10, cy + 14), Vector2(cx + 8, cy - 6), Color8(180, 160, 120), 3.0)
+			host.draw_circle(Vector2(cx + 9, cy - 8), 6.0, glow)
+			host.draw_circle(Vector2(cx + 9, cy - 8), 3.0, Color.WHITE)
+		"hex_idol":
+			# Topeng kutukan
+			host.draw_rect(Rect2(cx - 9, cy - 10, 18, 20), glow, false, 2.0)
+			host.draw_circle(Vector2(cx - 4, cy - 3), 2.5, Color8(255, 60, 60))
+			host.draw_circle(Vector2(cx + 4, cy - 3), 2.5, Color8(255, 60, 60))
+			host.draw_line(Vector2(cx - 5, cy + 4), Vector2(cx + 5, cy + 4), Color.WHITE, 2.0)
+		_:
+			# Default: simbol inisial & diamond
+			host.draw_line(Vector2(cx, cy - 10), Vector2(cx + 10, cy), glow, 2.0)
+			host.draw_line(Vector2(cx + 10, cy), Vector2(cx, cy + 10), glow, 2.0)
+			host.draw_line(Vector2(cx, cy + 10), Vector2(cx - 10, cy), glow, 2.0)
+			host.draw_line(Vector2(cx - 10, cy), Vector2(cx, cy - 10), glow, 2.0)
+
+	# 3. Label Singkatan 4 Huruf di Bawah Kotak Ikon
+	var abbr: String = str(data["name"]).replace(" ", "").substr(0, 4).to_upper()
+	var tw := font.get_string_size(abbr, HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
+	host.draw_string(font, Vector2(cx - tw * 0.5, rect.position.y + rect.size.y - 4), abbr, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, glow)
+
+
 ## Grid 4x2 Kartu Item Forge 250px x 200px (Paritas 1:1 ItemShopUI._draw_item_grid)
 func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: float, font: Font) -> void:
 	var cols: int = COLS_ITEM
@@ -295,7 +468,7 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: flo
 		var card_rect := Rect2(x, y, cw, ch)
 		_card_rects[id] = card_rect
 
-		# Background kartu gradasi / solid
+		# Background kartu
 		var bg := Color8(34, 40, 68) if can_buy else Color8(26, 26, 38)
 		host.draw_rect(card_rect, bg)
 
@@ -307,14 +480,9 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: flo
 		if can_buy:
 			_draw_corner_ticks(host, card_rect, Color8(255, 205, 90), 9.0, 1.5, 2.0)
 
-		# Ikon 56 x 56 px
-		var tex := _get_item_texture(id)
+		# Ikon 56 x 56 px (Tekstur PNG atau Vektor Prosedural)
 		var icon_rect := Rect2(x + 10, y + 10, 56, 56)
-		if tex != null:
-			host.draw_texture_rect(tex, icon_rect, false)
-		else:
-			host.draw_rect(icon_rect, data["color"])
-			host.draw_rect(icon_rect, data["glow"], false, 2.0)
+		_draw_item_icon(host, id, icon_rect, data, font)
 
 		# Badge Kelas di Kanan Atas
 		var cls_name: String = str(data.get("class", "PHYSICAL"))
@@ -326,8 +494,17 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: flo
 		host.draw_string(font, Vector2(badge_rect.position.x + (80 - btw) * 0.5, y + 22),
 			cls_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, cls_col)
 
-		# Nama Item (Font 14 Bold Glow)
-		host.draw_string(font, Vector2(x + 74, y + 24), str(data["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 14, data["glow"])
+		# Nama Item (Font 14/12 Glow, fit agar tidak menabrak badge)
+		var max_name_w: float = cw - 74.0 - 92.0 # sisa ruang sebelum badge
+		var item_name: String = str(data["name"])
+		var name_sz: int = 14
+		if font.get_string_size(item_name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_sz).x > max_name_w:
+			name_sz = 12
+		if font.get_string_size(item_name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_sz).x > max_name_w:
+			while item_name.length() > 3 and font.get_string_size(item_name + "…", HORIZONTAL_ALIGNMENT_LEFT, -1, name_sz).x > max_name_w:
+				item_name = item_name.substr(0, item_name.length() - 1)
+			item_name += "…"
+		host.draw_string(font, Vector2(x + 74, y + 24), item_name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_sz, data["glow"])
 
 		# Harga Item
 		var cost_col: Color = Color8(255, 220, 100) if can_buy else Color8(200, 80, 80)
@@ -400,12 +577,8 @@ func _draw_inventory_strip(host: CanvasItem, px: float, inv_y: float, pw: float,
 		if slot_item != null:
 			var d: Dictionary = ITEM_CATALOG.get(str(slot_item), {})
 			col = d.get("color", col)
-			var tex := _get_item_texture(str(slot_item))
 			var icon_box := Rect2(r.position.x + 3, r.position.y + 3, 48, 48)
-			if tex != null:
-				host.draw_texture_rect(tex, icon_box, false)
-			else:
-				host.draw_rect(icon_box, col)
+			_draw_item_icon(host, str(slot_item), icon_box, d, font)
 
 			# Badge kecil tanda jual 70% di pojok slot
 			host.draw_rect(Rect2(r.position.x + slot_size - 14, r.position.y + 2, 12, 12), Color8(180, 60, 60, 0.9))
@@ -421,7 +594,6 @@ func _draw_detail_modal(host: CanvasItem, font: Font) -> void:
 		return
 	var data: Dictionary = ITEM_CATALOG[sid]
 
-	# Dimensi Popup
 	var dw: float = 880.0
 	var dh: float = 520.0
 	var dx: float = (1280.0 - dw) * 0.5
@@ -429,19 +601,14 @@ func _draw_detail_modal(host: CanvasItem, font: Font) -> void:
 	var drect := Rect2(dx, dy, dw, dh)
 
 	# Shadow & Panel
-	host.draw_rect(Rect2(dx - 8, dy - 8, dw + 16, dh + 16), Color(0.0, 0.0, 0.0, 0.7))
+	host.draw_rect(Rect2(dx - 8, dy - 8, dw + 16, dh + 16), Color(0.0, 0.0, 0.0, 0.75))
 	host.draw_rect(drect, Color8(24, 28, 48))
 	host.draw_rect(drect, Color8(255, 205, 90), false, 3.0)
 	_draw_corner_ticks(host, drect, Color8(255, 230, 140), 16.0, 2.0, 6.0)
 
 	# Ikon 64 x 64 px
-	var tex := _get_item_texture(sid)
 	var icon_box := Rect2(dx + 24, dy + 20, 64, 64)
-	if tex != null:
-		host.draw_texture_rect(tex, icon_box, false)
-	else:
-		host.draw_rect(icon_box, data["color"])
-		host.draw_rect(icon_box, data["glow"], false, 2.0)
+	_draw_item_icon(host, sid, icon_box, data, font)
 
 	# Nama & Kelas
 	host.draw_string(font, Vector2(dx + 104, dy + 42), str(data["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 24, data["glow"])
@@ -582,12 +749,13 @@ func handle_click(point: Vector2) -> bool:
 		if _detail_close_rect.has_point(point):
 			_inspect_item = ""
 			Sound.play("click")
-			_main.queue_redraw()
+			queue_redraw()
+			if _main != null: _main.queue_redraw()
 			return true
-		# Klik di luar / di dalam modal menutup modal
 		_inspect_item = ""
 		Sound.play("click")
-		_main.queue_redraw()
+		queue_redraw()
+		if _main != null: _main.queue_redraw()
 		return true
 
 	# Tombol Tutup Panel
@@ -609,7 +777,8 @@ func handle_click(point: Vector2) -> bool:
 			if r.has_point(point):
 				_page = i
 				Sound.play("click")
-				_main.queue_redraw()
+				queue_redraw()
+				if _main != null: _main.queue_redraw()
 				return true
 
 		# Tombol BUY kartu
@@ -625,7 +794,8 @@ func handle_click(point: Vector2) -> bool:
 			if r.has_point(point):
 				_inspect_item = str(id)
 				Sound.play("click")
-				_main.queue_redraw()
+				queue_redraw()
+				if _main != null: _main.queue_redraw()
 				return true
 
 		# Klik kiri slot inventory = buka detail item
@@ -637,7 +807,8 @@ func handle_click(point: Vector2) -> bool:
 					if int(idx) < inv.size():
 						_inspect_item = str(inv[int(idx)])
 						Sound.play("click")
-						_main.queue_redraw()
+						queue_redraw()
+						if _main != null: _main.queue_redraw()
 						return true
 
 	# Klik di dalam panel = tahan
@@ -694,6 +865,7 @@ func _try_sell(slot_idx: int) -> void:
 	_main.gold += refund
 	Sound.play("click")
 	print("[Shop] %s jual %s (+%d G) sisa %d" % [_main.hero.hero_name, str(data["name"]), refund, int(_main.gold)])
+	queue_redraw()
 	_main.queue_redraw()
 
 
@@ -789,6 +961,7 @@ func _try_buy(id: String) -> void:
 	_apply_stats(hero, data)
 	Sound.play("buy")
 	print("[Shop] %s beli %s (-%d G) sisa %d" % [hero.hero_name, str(data["name"]), int(data["cost"]), int(_main.gold)])
+	queue_redraw()
 	_main.queue_redraw()
 
 
@@ -822,6 +995,7 @@ func _try_buy_hero(id: String) -> void:
 	hero.queue_redraw()
 	Sound.play("buy")
 	print("[Shop] GANTI HERO -> %s (-%d G) sisa %d" % [hero.hero_name, int(data["cost"]), int(_main.gold)])
+	queue_redraw()
 	_main.queue_redraw()
 
 
