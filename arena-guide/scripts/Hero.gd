@@ -241,12 +241,12 @@ func _combat(delta: float) -> void:
 
 	if _enemy != null and _cooldown <= 0.0:
 		var base_dmg := _atk_damage()
-		var is_crit: bool = false
+		var _is_crit: bool = false
 
 		# 1. Critical Strike (Dead Edge 25% = 200% damage)
 		if crit_chance > 0.0 and randf() < crit_chance:
 			base_dmg *= 2.0
-			is_crit = true
+			_is_crit = true
 			_add_float_text("CRIT!", Color8(255, 60, 60))
 
 		# 2. Berikan Damage ke Musuh Utama
