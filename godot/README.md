@@ -1017,6 +1017,89 @@ XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/UiThemePari
 SDL_VIDEODRIVER=dummy python3 tools/visual_parity_audit.py --section palette,hardcode
 ```
 
+## Lapisan sentuh + overlay debug 4-mode (Fase 32 — port `mobile/touch.py` + `mobile/debug.py`)
+
+Satu rantai fitur yang di pygame tersebar di empat modul sekarang punya
+padanan Godot dengan SATU sumber angka: **gestur → klaim press → aksi →
+overlay debug → getar → safe-area**.
+
+| Pygame | Godot | Catatan |
+|---|---|---|
+| `mobile/touch.py` `TouchManager` — `TAP_SLOP 14`, `LONG_PRESS_MS 450`, `DOUBLE_TAP_MS 280`, `SCROLL_STEP 42`, `FLING_FRICTION 0.90`, `FLING_MIN_SPEED 0.6`, pelumatan kecepatan `0.6/0.4`, radius double-tap 40, arm fling 4, pembagi `SCROLL_STEP*0.35`, maks 3 notch | `scripts/systems/TouchGestures.gd` | mesin gestur murni (Node tanpa gambar), konstanta memakai **nama yang sama** sehingga bank angka `tools/gen_mobile_cpp.py` / `gdext/mystic_mobile` tetap satu keluarga. `dispatch_button()` = `dispatch_to_game`: tap→klik kiri, long_press→klik kanan, scroll→tombol 4/5 |
+| `main.py:404-413` tahan tombol jeda ≥ 450 ms = `debug.toggle()` + `plat.vibrate(30)`, dicek SEBELUM filter `claimed` | `Main._dispatch_gesture()` + `Main._pause_button_holds()` | urutan cek dipertahankan: sentuhan ke tombol jeda sudah diklaim HUD sejak "down", jadi klaim TIDAK boleh membunuh tahan-jeda. Sumber tombol: `TouchHUD.contains_button("pause", pos)` ATAU `SidePanel.rail_pause_contains(pos)` (rail = padanan `side.buttons["pause"]` saat `side.aktif`) |
+| `platform_utils.vibrate(ms=25)` (pyjnius `Vibrator`) | `MobileLayout.vibrate(ms)` → `Input.vibrate_handheld(ms)` | nyata hanya di Android/iOS; no-op diam-diam di desktop. **Preset ekspor Android wajib punya izin `VIBRATE`** (AndroidManifest gradle) — tanpa itu getar hilang tanpa error, dan durasi < 1 dtk bisa terasa tidak konsisten di beberapa ROM |
+| `platform_utils.get_safe_area()` → `(28, 10, 1280-56, 720-20)` di mode sentuh, rect penuh di luar itu | `MobileLayout.safe_area()` | margin TETAP 28 px — sama seperti pygame yang juga tidak membaca `WindowInsets` asli. Titik penyatuannya satu fungsi, jadi kalau nanti mau pakai insets sungguhan, hanya sana yang berubah |
+| `mobile/hud.py` `TouchButton.contains` = `visible and hit_rect.collidepoint` (inflate 24, `MIN_TAP 80`) | `TouchHUD.contains_button(action, pos)` | rect yang dipakai = rect yang DIGAMBAR (`_buttons[a]["hit"]`), jadi tidak ada "kotak klik tak terlihat" versi kedua |
+| `mobile/debug.py` — 4 mode `off/mini/full/graph`, riwayat `deque(maxlen=180)`, `peak`, `frame_ms > 33`, teks disegar maksimal 4x/dtk (`JEDA_SEGAR_MS 250`), log `[PERF]` tiap 5 dtk, grafik 240×70 di `safe.top+145` dengan panduan 16,7/33,3 ms, cincin jari r=26 + titik r=3 | `scenes/ui/DebugOverlay.gd` | tombol FPS di TouchHUD, tahan-jeda, dan **F8** kini mengiklusi mesin INI. `HUD.toggle_debug_overlay()`/`debug_mode()` cuma meneruskan ke `Main` — overlay Label tempelan di HUD.gd dihapus. `FpsCounter.gd` (panel `_system.py`, jalur desktop legacy) tetap hidup + tetap dikunci `tests/SystemPerfParityTest`, tapi bukan lagi target F8 |
+
+Kenapa lapisan gestur diberi makan dari `_input`, BUKAN `_unhandled_input`:
+Godot mengirim event ke Control (Button/ScrollContainer) MENENGAH, dan
+`_unhandled_input` hanya menerima sisanya. Kalau gestur dibangun dari sisa
+itu, satu sentuhan yang mengenai tombol akan menghasilkan gestur cacat
+(`up` tanpa `down`). Jadi `Main._input()` menyaksikan SETIAP event
+(tanpa pernah `set_input_as_handled()`), mencatat "press kiri = mungkin
+diklaim UI" per `touch_id`, dan `_unhandled_input` melepas catatan itu hanya
+kalau press-nya benar-benar lolos ke arena. Gerbang klaim itu padanan
+`claimed` di `main.py:415-440`; `release` selalu menghapusnya supaya tidak
+ada klaim hantu.
+
+Antrean aksi dijalankan di awal `_process` (SEBELUM early-return `paused`),
+persis posisi `for action in touch.collect():` di loop pygame — jadi overlay
+tetap bisa dimatikan saat game dijeda.
+
+Tiga lapis penguncian:
+
+```bash
+# Oracle: MENJALANKAN mobile/touch.py + mobile/debug.py ASLI dengan jam palsu
+# (time.perf_counter di-monkeypatch) + membajak stdout untuk baris [PERF];
+# lalu mem-PIN konstanta/literal format/geometri dari teks sumber kedua sisi.
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_mobile_touch_parity.py
+SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy python3 tools/test_godot_mobile_touch_parity.py --write-fixture   # hanya bila mobile/*.py berubah
+
+# Replay headless (fixture diputar ulang lewat kelas produksinya):
+XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/MobileTouchParityTest.tscn --quit-after 300
+```
+
+`tests/MobileTouchParityTest.gd` tidak membandingkan piksel (headless tidak
+punya GPU): yang dibandingkan adalah **jejak perintah gambar** yang
+dihasilkan `build_ops()` terhadap `pygame.draw.rect/line/lines/circle` +
+`surface.blit` yang benar-benar dipanggil overlay pygame. Font kedua engine
+tidak identik, jadi oracle menginjeksi font palsu ber-rumus
+`len(text) * size * 3 // 8` dan tes Godot memakai measurer dengan rumus yang
+sama — yang terkunci adalah aritmetika tata letak (rect panel, posisi teks,
+garis panduan, titik poly-line, cincin jari), bukan hasil raster.
+
+Deviasi yang disengaja (tercatat, bukan kelupaan):
+
+1. Baris panel "konversi sprite", "fastblit + cache HERO/BOSS", "memori
+   cache", "font cache", blok `blitwatch` dan `perf.PHASES` TIDAK dirender —
+   tidak ada pemotong sprite SDL / cache blit / font cache di Godot (bake PNG
+   + GPU). Baris "memori" dan "mem …" digabung jadi satu `mem <RSS>`
+   (`VmRSS` `/proc/self/status`, bukan `statm` × page size). Urutan baris yang
+   tersisa dipertahankan dan format teksnya dibandingkan VERBATIM dengan
+   literal pygame (di-pin dari sumber).
+2. `hemat:` dibaca dari `UiTheme.cheap_alpha()` yang di Godot selalu true →
+   panel tampil `hemat:off` + warna kuning, persis pygame di perangkat yang
+   blit-alpha-nya murah; `sprite:` = ON (bake PNG = cache permanen).
+3. Fase frame `event|update|draw|flip`: Godot tidak punya pemisah
+   event/update/draw/flip. Yang dilaporkan = biaya lapisan gestur
+   (`note_event`, padanan `frame_timer.start("event")`),
+   `Performance.TIME_PHYSICS_PROCESS` (langkah simulasi 60 Hz = `game.update()`),
+   `TIME_PROCESS - physics` (render+present, engine tidak memisahkan swap),
+   dan `flip` 0,0 — perilaku `t.get("fase", 0)` untuk fase tanpa mark.
+4. `scroll`/`drag`/`fling` TIDAK diteruskan ke arena: menggulir daftar panjang
+   (hero shop, keypad voucher) di Godot dilakukan `ScrollContainer` secara
+   natif, dan `dispatch_to_game` pygame memang tidak punya aksi double-tap —
+   notch-nya tetap dihitung + dikunci di fixture supaya mesinnya utuh.
+5. Stamp `BUILD` diambil dari `application/config/version` (preset ekspor
+   `version/name`, CI menambalnya dari tag), bukan `mobile/buildinfo.py` yang
+   tidak ikut ke ekspor Godot; tanpa itu `BUILD ?` = persis cabang `except`
+   pygame. Kolom `api_level` Android tetap "-" (butuh JNI; tidak ditebak).
+6. Klik kiri arena kini jatuh pada **release** (bukan press) karena tap
+   pygame baru lahir saat jari diangkat; geser > 14 px tidak lagi dihitung
+   klik. Klik kanan fisik dikirim sebagai `long_press` press-segera, jadi
+   sensasinya tidak berubah.
+
 ## Kaizen Skeleton2D (showcase / opt-in)
 
 ```

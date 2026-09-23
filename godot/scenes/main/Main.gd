@@ -78,10 +78,32 @@ var _grid_tick: int = 0
 ## milik `GameManager.spark_fx` (satu EffectManager global seperti pygame).
 var _spark_layer = null
 var _path_preview = null
-## Overlay FPS (port `_system.FPSCounter`, F8) — CanvasLayer sendiri supaya
-## tampil di ATAS menu/pause, sama seperti pygame yang mem-blit-nya setelah
-## semua state di `main_desktop_legacy.py:455`.
+## Overlay FPS (port `_system.FPSCounter`, panel jalur desktop LEGACY) —
+## CanvasLayer sendiri supaya tampil di ATAS menu/pause, sama seperti pygame
+## yang mem-blit-nya setelah semua state di `main_desktop_legacy.py:455`.
+## Bukan lagi target F8 (lihat catatan di `_build_touch_layer`).
 var _fps_counter = null
+## CanvasLayer tempat panel FpsCounter + overlay debug tinggal (dibuat
+## runtime, BUKAN node .tscn — karena itu dipegang lewat variabel ini, bukan
+## lewat path get_node: `godot/tools/check_refs.py` menuntut path literal ada
+## di scene).
+var _debug_layer: CanvasLayer = null
+## ── LAPISAN SENTUH (port `mobile/touch.py` + `mobile/debug.py`, 2026-09-23) ──
+## Mesin gesture: tap (lepas), TAHAN 450 ms (klik kanan / overlay debug),
+## drag, notch scroll, fling. Main memasok event dari `_input` dan
+## memanen antreannya tiap frame di `_process` — persis siklus
+## `touch.process_event()` (main.py:364) + `touch.collect()` (main.py:401).
+var _gestures = null
+## Overlay debug 4 mode (OFF/RINGKAS/LENGKAP/GRAFIK) — target tombol FPS,
+## F8, dan tahan-tombol-jeda. Hidupnya di CanvasLayer DebugLayer yang sama
+## dengan FpsCounter karena pygame menggambar overlay DI LUAR dispatch state.
+var _debug_overlay = null
+## touch id -> true bila press-nya TIDAK lolos ke arena (ditangkap Control).
+## Padanan `claimed` main.py:421: sentuhan yang diklaim UI tidak diteruskan
+## ke `handle_click`. Klaim dipasang di `_input`, DILEPAS di
+## `_unhandled_input` (event yang selamat dari GUI), dan dibersihkan lagi
+## saat aksi "release" didistribusikan.
+var _press_claim: Dictionary = {}
 
 ## Jadwal boss level ini (port Game.pending_mini_bosses / true_boss_spawned)
 var pending_mini_bosses: Array = []
@@ -139,6 +161,7 @@ func _ready():
 	add_child(popups)
 	_build_fx_layers()
 	_build_fps_counter()
+	_build_touch_layer()
 	# Sambungkan sinyal menu utama (node UI/MainMenu siap lebih dulu karena
 	# anak diproses sebelum parent; koneksi di sini juga aman diulang).
 	var menu = _main_menu()
@@ -254,16 +277,181 @@ func _build_fps_counter() -> void:
 	counter.name = "FpsCounter"
 	layer.add_child(counter)
 	add_child(layer)
+	_debug_layer = layer
 	_fps_counter = counter
 
 
-## Dipakai tombol F8 dan (nanti) tombol debug TouchHUD. Return node-nya supaya
-## tes headless bisa membaca `display_fps`/`fps_history` tanpa cari nama node.
+## Panel `_system.py` (jalur desktop LEGACY pygame). Bukan target F8 maupun
+## tombol FPS lagi — keduanya kini mengiklusi `DebugOverlay` 4 mode, persis
+## `main.py:370` + `main.py:407-413`. FpsCounter tetap bisa dibuka dari kode
+## (tests/SystemPerfParityTest); return node-nya supaya tes headless bisa
+## membaca `display_fps`/`fps_history` tanpa cari nama node.
 func toggle_fps_counter():
 	if _fps_counter == null or not is_instance_valid(_fps_counter):
 		_build_fps_counter()
 	_fps_counter.toggle()
 	return _fps_counter
+
+
+# ══════════════════════════════════════════════════════════
+#  LAPISAN SENTUH + OVERLAY DEBUG 4 MODE
+#  (port mobile/touch.py TouchManager + mobile/debug.py DebugOverlay,
+#   dirangkai seperti main.py: touch.update() -> collect() -> dispatch)
+# ══════════════════════════════════════════════════════════
+
+## Mesin gesture + overlay debug. Dipasang di CanvasLayer DebugLayer yang
+## SAMA dengan FpsCounter (layer 200, PROCESS_MODE_ALWAYS): overlay debug
+## pygame digambar SESUDAH semua state (`main.py:615-617`), jadi ia harus
+## tetap tampil di atas splash/menu/pause tempat HUD disembunyikan.
+func _build_touch_layer() -> void:
+	if _gestures == null or not is_instance_valid(_gestures):
+		var g := preload("res://scripts/systems/TouchGestures.gd").new()
+		g.name = "TouchGestures"
+		add_child(g)
+		_gestures = g
+	_build_debug_overlay()
+	if _debug_overlay != null and is_instance_valid(_debug_overlay):
+		_debug_overlay.bind_gestures(_gestures)
+
+
+func _build_debug_overlay() -> void:
+	if _debug_overlay != null and is_instance_valid(_debug_overlay):
+		return
+	if _debug_layer == null or not is_instance_valid(_debug_layer):
+		_build_fps_counter()
+	var layer := _debug_layer
+	if layer == null or not is_instance_valid(layer):
+		push_warning("[Main] DebugLayer tidak ada - overlay debug dilewati")
+		return
+	var ov := preload("res://scenes/ui/DebugOverlay.gd").new()
+	ov.name = "DebugOverlay"
+	layer.add_child(ov)
+	_debug_overlay = ov
+
+
+## Dibaca HUD (rute tombol FPS + pad) lewat `has_method("debug_overlay")`.
+func debug_overlay():
+	_build_debug_overlay()
+	return _debug_overlay
+
+
+## Padanan `DebugOverlay.toggle()` — mengembalikan mode baru (0..3) supaya
+## pemanggil/tes tidak perlu mengintip properti node.
+func toggle_debug_overlay() -> int:
+	_build_debug_overlay()
+	return int(_debug_overlay.toggle())
+
+
+func debug_mode() -> int:
+	if _debug_overlay == null or not is_instance_valid(_debug_overlay):
+		return DebugOverlay.MODE_OFF
+	return int(_debug_overlay.mode)
+
+
+## SETIAP event dilihat mesin gesture, SEBELUM GUI dan sebelum
+## `_unhandled_input` — paritas main.py:364 (`touch.process_event(event)`
+## dijalankan lebih dulu, dan event yang dikonsumsi tidak dilihat siapa pun).
+## Godot tidak boleh menelan event di sini: Control (tombol, ScrollContainer,
+## dialog) harus tetap kebagian, jadi mesin hanya MENGAMATI.
+func _input(event: InputEvent) -> void:
+	if _gestures == null or not is_instance_valid(_gestures):
+		return
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			# Diduga diklaim UI dulu; `_unhandled_input` melepas dugaan ini
+			# kalau press-nya benar-benar lolos ke arena.
+			_press_claim[TouchGestures.touch_id_of(event)] = true
+	_gestures.feed_event(event)
+
+
+## Panen aksi (paritas `touch.update()` main.py:342 + `for action in
+## touch.collect()` main.py:401). Di Called sebelum cek `paused`: mesin harus
+## tetap hidup saat tree dibekukan, persis pygame yang mendispatch sentuhan
+## juga di STATE_PAUSE (ke menu).
+func _drain_gestures() -> void:
+	if _gestures == null or not is_instance_valid(_gestures):
+		return
+	var t0 := Time.get_ticks_usec()
+	_gestures.update()
+	for action in _gestures.collect():
+		_dispatch_gesture(action as Dictionary)
+	if _debug_overlay != null and is_instance_valid(_debug_overlay):
+		# Fase "event" padanan `frame_timer.start("event")` main.py:337 —
+		# di Godot yang terukur adalah biaya lapisan gesture + overlay.
+		_debug_overlay.note_event(
+			float(Time.get_ticks_usec() - t0) / 1000.0)
+
+
+func _dispatch_gesture(action: Dictionary) -> bool:
+	# true = aksi sudah dikonsumsi (padanan `return True` pada
+	# `dispatch_to_game` touch.py:306-321 dan `continue` di main.py:404-413;
+	# `return False` = aksi tidak punya efek, persis `dispatch_to_game` untuk
+	# kind yang tidak dipetakan / game=None).
+	var kind := str(action["kind"])
+	var tid := int(action["touch_id"])
+	var pos: Vector2 = action["pos"]
+	if kind == TouchGestures.KIND_RELEASE:
+		_press_claim.erase(tid)
+		return false
+	if kind == TouchGestures.KIND_DOWN:
+		return false
+	if kind == TouchGestures.KIND_DRAG \
+			or kind == TouchGestures.KIND_SCROLL \
+			or kind == TouchGestures.KIND_FLING \
+			or kind == TouchGestures.KIND_DOUBLE_TAP:
+		# DEVIASI tercatat, bukan kelupaan: menggulir daftar panjang (hero
+		# shop, keypad voucher) di Godot dilakukan ScrollContainer secara
+		# NATIF (mouse wheel + seretan sentuh + inersia engine), jadi notch
+		# scroll dan fling pygame sengaja tidak diteruskan ke arena.
+		# `double_tap` memang tidak punya aksi di pygame:
+		# `dispatch_to_game` hanya memetakan tap / long_press / scroll.
+		return false
+	var claimed := bool(_press_claim.get(tid, false))
+	if kind == TouchGestures.KIND_TAP:
+		if claimed:
+			return false
+		# Klik saat cinematic = skip + ditelan (paritas `Game.handle_click`
+		# _core.py:2563-2575: intro diperiksa SEBELUM InputHandler).
+		if _cinematic_click():
+			return true
+		_on_click(pos)
+		return true
+	if kind == TouchGestures.KIND_LONG_PRESS:
+		# main.py:404-413 — dicek SEBELUM filter claimed, karena sentuhan ke
+		# tombol jeda sudah diklaim HUD sejak "down".
+		if _pause_button_holds(pos):
+			toggle_debug_overlay()
+			MobileLayout.vibrate(30)
+			return true
+		if claimed:
+			return false
+		# Klik kanan fisik pun lewat jalur ini: pygame memetakan
+		# MOUSEBUTTONDOWN(3) ke long_press, jadi TIDAK ada cabang kanan lagi
+		# di `_unhandled_input` (kalau ada, satu klik jadi dua aksi).
+		_on_right_click(pos)
+		return true
+	return false
+
+
+## Padanan cabang `long_press` main.py:407-411: tombol jeda TouchHUD ATAU
+## tombol jeda rail kanan (saat panel tersedia), hanya di dalam match.
+func _pause_button_holds(pos: Vector2) -> bool:
+	if GameManager.in_menu or get_tree().paused:
+		return false
+	var touch = get_tree().get_first_node_in_group("touch_hud")
+	if touch != null and is_instance_valid(touch) \
+			and touch.has_method("contains_button") \
+			and bool(touch.call("contains_button", "pause", pos)):
+		return true
+	var side = find_child("SidePanel", true, false)
+	if side != null and is_instance_valid(side) \
+			and side.has_method("rail_active") \
+			and bool(side.call("rail_active")) \
+			and side.has_method("rail_pause_contains") \
+			and bool(side.call("rail_pause_contains", pos)):
+		return true
+	return false
 
 
 func _build_slot_layer() -> void:
@@ -575,6 +763,9 @@ func _arena_size() -> Vector2:
 	return Vector2(1280, 720)
 
 func _process(delta: float) -> void:
+	# Sentuhan dipanen PALING AWAL, sebelum cabang mana pun (pygame: event +
+	# dispatch mendahului update/draw, main.py:337-479).
+	_drain_gestures()
 	# Main PROCESS_MODE_ALWAYS (supaya P/ESC bisa resume) -> jadwal boss, AI, dan
 	# redraw slot harus ikut beku saat pause. AI Dire dijalankan oleh node
 	# AIPlayer sendiri (PROCESS_MODE_PAUSABLE).
@@ -761,14 +952,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
-			# Klik selama cinematic = skip + DITELAN (paritas Game.handle_click
-			# _core.py:2563-2575: cek intro sebelum InputHandler, lalu return).
-			if _cinematic_click():
-				return
-			_on_click(get_global_mouse_position())
+			# TIDAK ada klik di sini lagi. pygame: klik kiri lahir dari aksi
+			# "tap" — yaitu saat tombol DILEPAS (touch.py `_up`), bukan saat
+			# ditekan; penekanannya hanya membuat titik sentuh. Di Godot jalur
+			# itu kini ditangani `_dispatch_gesture`, dan satu-satunya tugas
+			# cabang ini adalah mencatat "press ini lolos dari UI" -> klaim
+			# `claimed` dilepas supaya tap-nya sampai ke arena.
+			_press_claim.erase(TouchGestures.touch_id_of(event))
 			return
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_RIGHT:
-			_on_right_click(get_global_mouse_position())
+			# Klik kanan fisik dipetakan mesin gesture ke long_press (persis
+			# touch.py:173-175) dan didispatch dari sana — dua tempat = klik
+			# dobel.
 			return
 		return
 	if event is InputEventKey:
@@ -985,7 +1180,11 @@ func _on_key(key: InputEventKey) -> void:
 	# ditangani SEBELUM dispatch state splash/menu/game/pause dan tombolnya
 	# sengaja TIDAK ditelan, jadi state di bawahnya tetap melihat F8).
 	if key.keycode == KEY_F8:
-		toggle_fps_counter()
+		# Paritas main.py:369-370 — di entry HIDUP, F8 mengsiklus overlay
+		# debug 4 mode (`mobile/debug.py`), BUKAN panel FPS legacy.
+		# `toggle_fps_counter()` (panel `_system.FPSCounter`) tetap ada untuk
+		# harness/tes dan bisa dipanggil dari skrip console.
+		toggle_debug_overlay()
 	# Cinematic dicek SEBELUM pause/gameplay (paritas Game.handle_key
 	# _core.py:2673-2686): ESC saat banner/perayaan = skip, bukan menu pause.
 	if _cinematic_key(key):

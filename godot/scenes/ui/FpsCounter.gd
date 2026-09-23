@@ -43,9 +43,12 @@
 #   4. `main.py` (entry HIDUP pygame) tidak memakai overlay ini — di sana
 #      overlay debug milik `mobile/debug.py` dengan 4 mode (off/mini/full/
 #      grafik) + tombol FPS di TouchHUD. Yang diport di sini adalah kelas
-#      `_system.py` (jalur desktop legacy, satu-satunya konsumennya).
-#      Tombol FPS 4-mode `mobile/debug.py` MASIH terbuka; lihat
-#      docs/AUDIT_ULANG_DARI_AWAL.md.
+#      `_system.py` (jalur desktop legacy, satu-satunya konsumennya): kelasnya
+#      tetap hidup (tests/SystemPerfParityTest menguncinya) dan tetap bisa
+#      dibuka lewat `FpsCounter`, TAPI tombol FPS / tahan-jeda / F8 di game
+#      kini mengarah ke `scenes/ui/DebugOverlay.gd` — padanan penuh
+#      `mobile/debug.py` (gap #8 docs/AUDIT_ULANG_DARI_AWAL.md ditutup
+#      2026-09-23).
 extends Control
 
 ## Geometri panel — paritas `base_x/base_y/panel_w/panel_h` (_system.py:259-266)

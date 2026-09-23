@@ -298,6 +298,17 @@ func _tap_at(logical_pos: Vector2) -> void:
 			return
 
 
+## Paritas `TouchButton.contains` (hud.py:73-74): `visible and
+## hit_rect.collidepoint(pos)` — sisi kanan/bawah TIDAK termasuk (semantik
+## Rect pygame; `Rect2.has_point` Godot sudah setengah-terbuka). Dipakai
+## Main untuk cabang "TAHAN tombol jeda = overlay debug" (main.py:407-413).
+func contains_button(action: String, pos: Vector2) -> bool:
+	if not _buttons.has(action):
+		return false
+	var d: Dictionary = _buttons[action]
+	return bool(d["visible"]) and (d["hit"] as Rect2).has_point(pos)
+
+
 func is_visible_button(action: String) -> bool:
 	if not _buttons.has(action):
 		return false

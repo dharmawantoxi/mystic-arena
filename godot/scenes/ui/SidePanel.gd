@@ -319,7 +319,27 @@ func _add_shop_button(grid: GridContainer, label: String, tab: String,
 #  AKSI
 # ══════════════════════════════════════════════════════════
 
+## Paritas `side.aktif` (main.py membaca tombol jeda rail HANYA saat panel
+## kanan aktif). Di Godot panel aktif = rail punya lebar.
+func rail_active() -> bool:
+	return MobileLayout.has_side_panel()
+
+
+## Paritas `side.buttons["pause"].contains(pos)` (main.py:408-410): saat panel
+## kanan aktif, tombol jeda ada di rail — TAHAN di atasnya harus memicu
+## overlay debug juga, seperti TouchHUD.
+func rail_pause_contains(pos: Vector2) -> bool:
+	if _pause_button == null or not is_instance_valid(_pause_button):
+		return false
+	if not _pause_button.visible:
+		return false
+	return _pause_button.get_global_rect().has_point(pos)
+
+
 func _on_pause_pressed() -> void:
+	# Getar 15 ms = paritas `if hit: plat.vibrate(15)` di cabang `down`
+	# main.py:423-426 (setiap sentuhan yang ditangkap panel kanan bergetar).
+	MobileLayout.vibrate(15)
 	var main = get_tree().get_first_node_in_group("main")
 	if main != null and is_instance_valid(main) and main.has_method("_toggle_pause"):
 		main.call("_toggle_pause")
@@ -328,6 +348,7 @@ func _on_pause_pressed() -> void:
 func _open_shop(tab: String) -> void:
 	if GameManager.state != "playing":
 		return
+	MobileLayout.vibrate(15)
 	GameManager.requested_shop_tab = tab
 	if GameManager.shop_open:
 		# Toko sudah terbuka: pindahkan tab langsung (open_shop() no-op).
