@@ -1,12 +1,13 @@
 extends Node2D
 class_name TowerUnit
-## TowerUnit — Menara Pertahanan MOBA (Paritas 1:1 Pygame _entity.Tower & TowerDB)
+## TowerUnit — Menara Pertahanan (Paritas Murni 1:1 Pygame _entity.Tower & TowerDB)
+## Target: Unit musuh terdekat dalam jangkauan (nearest enemy in range)
 ## Mendukung 4 Jalur Menara (Archer, Cannon, Ice, Mage), 6 Level,
-## Mekanik Tower Aggro / Tower Dive Protection, Armor Mitigasi, dan Shield.
+## Shield 40% Max HP, Out-of-Combat Regen 5 detik, dan Debuff Status.
 
 signal destroyed(tower: TowerUnit)
 
-# ═══ IDENTITAS & STAT ═══
+# ═══ IDENTITAS & STAT (Paritas TowerDB / ARCHER_LEVELS) ═══
 var tower_id: String = "archer"
 var tower_type: String = "archer"
 var tower_name: String = "Archer Tower"
@@ -42,13 +43,12 @@ var debuff_duration: float = 0.0
 
 # ═══ STATE & TARGETING ═══
 var target = null
-var aggro_target = null          # Target prioritas akibat Tower Dive (musuh memukul hero kawan)
 var _cooldown: float = 0.0
-var _no_damage_timer: float = 0.0 # Timer untuk HP/Shield out-of-combat regen (5 detik)
+var _no_damage_timer: float = 0.0 # Timer 5 detik (300 frame @60fps) untuk HP/Shield out-of-combat regen
 var _shot_to: Vector2 = Vector2.ZERO
 var _shot_t: float = 0.0
 var _flash: float = 0.0
-var _chain_targets: Array = []   # Array Vector2 untuk proyektil rantai petir Mage
+var _chain_targets: Array = []   # Proyektil rantai petir Mage
 
 # ═══ FLOATING TEXT ═══
 var _float_texts: Array = []
@@ -149,19 +149,9 @@ func is_alive() -> bool:
 	return hp > 0.0
 
 
-## Notifikasi Tower Aggro (Tower Dive Punishment 1:1 Pygame & MOBA)
-## Jika hero kawan diserang oleh unit musuh dalam jangkauan menara,
-## menara segera mengalihkan tembakan ke musuh penyerang tersebut!
-func notify_hero_attacked(allied_hero: Node2D, enemy_attacker: Node2D) -> void:
-	if allied_hero == null or enemy_attacker == null:
-		return
-	if hp <= 0.0:
-		return
-	if allied_hero.get("team") == team and enemy_attacker.get("team") != team:
-		var d: float = position.distance_to(enemy_attacker.position)
-		if d <= attack_range:
-			aggro_target = enemy_attacker
-			target = enemy_attacker
+## Hook kompabilitas aggro (di Pygame menara murni menarget musuh terdekat)
+func notify_hero_attacked(_allied_hero, _enemy_attacker) -> void:
+	pass
 
 
 ## Mitigasi Damage & Shield Menara
@@ -177,7 +167,7 @@ func take_damage(amount: float, damage_type: String = "physical", _attacker = nu
 		var red: float = (armor * 0.06) / (1.0 + armor * 0.06)
 		eff_dmg = maxf(1.0, eff_dmg * (1.0 - red))
 
-	# Penyerapan Shield Dulu
+	# Penyerapan Shield Dulu (40% Max HP)
 	if shield > 0.0:
 		if shield >= eff_dmg:
 			shield -= eff_dmg
@@ -239,7 +229,7 @@ func _process(delta: float) -> void:
 	if _cooldown > 0.0:
 		_cooldown -= delta
 
-	# Prioritas Target Menara
+	# Targeting Terdekat 1:1 Pygame _entity.py:868-874 (_find_target)
 	_update_target()
 
 	# Eksekusi Tembakan
@@ -251,66 +241,37 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 
-## Sistem Prioritas Target Menara 1:1 MOBA
-## 1. Aggro Target (Penyerang Hero Sekutu di dalam range menara)
-## 2. Target yang sedang terkunci (selama masih hidup & dalam range)
-## 3. Minion musuh terdekat
-## 4. Hero musuh terdekat
+## Paritas Murni Pygame _entity.py:868-874:
+## Menara selalu menarget musuh TERDEKAT dalam range (baik minion maupun hero)
 func _update_target() -> void:
-	# Cek apakah aggro target masih sah & dalam jarak
-	if is_instance_valid(aggro_target) and _is_unit_alive(aggro_target):
-		if position.distance_to(aggro_target.position) <= attack_range:
-			target = aggro_target
-			return
-		else:
-			aggro_target = null
-
-	# Pertahankan target terkunci jika masih valid & dalam range
-	if is_instance_valid(target) and _is_unit_alive(target):
-		if position.distance_to(target.position) <= attack_range:
-			return
-
-	# Cari musuh baru berdasarkan prioritas: Minion > Hero
-	target = _find_best_target()
+	target = _find_nearest_enemy()
 
 
-func _find_best_target():
-	var best_minion = null
-	var best_minion_d: float = attack_range
+func _find_nearest_enemy():
+	var best = null
+	var best_d: float = attack_range
 
+	# 1. Pindai Minion
 	for n in get_tree().get_nodes_in_group("minions"):
 		var m := n as MinionUnit
 		if m == null or m.team == team or not m.is_alive():
 			continue
 		var d: float = position.distance_to(m.position)
-		if d <= best_minion_d:
-			best_minion = m
-			best_minion_d = d
+		if d <= best_d:
+			best = m
+			best_d = d
 
-	if best_minion != null:
-		return best_minion
-
-	# Jika tidak ada minion, serang Hero musuh
-	var best_hero = null
-	var best_hero_d: float = attack_range
+	# 2. Pindai Hero
 	for n in get_tree().get_nodes_in_group("heroes"):
 		var h := n as HeroUnit
 		if h == null or h.team == team or not h.is_alive():
 			continue
 		var d2: float = position.distance_to(h.position)
-		if d2 <= best_hero_d:
-			best_hero = h
-			best_hero_d = d2
+		if d2 <= best_d:
+			best = h
+			best_d = d2
 
-	return best_hero
-
-
-func _is_unit_alive(u) -> bool:
-	if u == null or not is_instance_valid(u):
-		return false
-	if u.has_method("is_alive"):
-		return u.is_alive()
-	return u.get("hp") != null and u.hp > 0.0
+	return best
 
 
 ## Eksekusi Tembakan Spesifik Per Tipe Menara
