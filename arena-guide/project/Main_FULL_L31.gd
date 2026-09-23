@@ -685,11 +685,17 @@ func _on_left_click(point: Vector2) -> void:
 			side_panel.handle_click(point)
 		return
 	# klik gedung ITEM forge
-	if point.distance_to(SHOP_BLUE) <= 60.0 or point.distance_to(SHOP_RED) <= 60.0:
+	if point.distance_to(SHOP_BLUE) <= 60.0:
 		if shop != null:
-			shop.toggle()
+			shop.toggle_mode("item")
 			queue_redraw()
-			print("[Shop] klik gedung %s" % str(point))
+			print("[Shop] klik gedung ITEM %s" % str(point))
+		return
+	if point.distance_to(SHOP_RED) <= 60.0:
+		if shop != null:
+			shop.toggle_mode("hero")
+			queue_redraw()
+			print("[Shop] klik gedung SHOP %s" % str(point))
 		return
 	if hero == null:
 		return
@@ -1027,17 +1033,17 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			if k.keycode == KEY_H:
 				if shop != null and not match_over:
-					shop.toggle()
+					shop.toggle_mode("item")
 					queue_redraw()
 				return
 			if k.keycode == KEY_ESCAPE and shop != null and shop.open:
-				shop.toggle()
+				shop.toggle_mode(shop.mode)
 				queue_redraw()
 				return
 	if match_over:
 		return
 	if shop != null and shop.open and event.is_action_pressed("pause"):
-		shop.toggle()
+		shop.toggle_mode(shop.mode)
 		queue_redraw()
 		return
 	if event.is_action_pressed("pause"):
@@ -1045,7 +1051,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("toggle_shop"):
 		if shop != null and not match_over:
-			shop.toggle()
+			shop.toggle_mode("item")
 			queue_redraw()
 		return
 	if event.is_action_pressed("skill_q"):
