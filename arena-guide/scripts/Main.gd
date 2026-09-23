@@ -742,21 +742,34 @@ func _spawn_wave(n: int) -> void:
 	var waves: Dictionary = level_data["waves"]
 	var per_lane: int = int(waves.get("minions_per_lane", 3))
 	var spawned: int = 0
+
+	# Komposisi Wave Berjenjang 1:1 Pygame NEXUS_WAVE_COMPOSITION (_core.py)
+	var wave_comp: Array = ["goblin", "goblin", "goblin"]
+	match n:
+		1: wave_comp = ["goblin", "goblin", "goblin"]
+		2: wave_comp = ["goblin", "goblin", "goblin", "orc"]
+		3: wave_comp = ["goblin", "orc", "goblin", "orc", "undead"]
+		4: wave_comp = ["orc", "goblin", "orc", "undead", "goblin", "goblin"]
+		5, 6: wave_comp = ["orc", "orc", "undead", "troll", "goblin", "goblin"]
+		_: wave_comp = ["orc", "undead", "troll", "dark_rider", "goblin", "goblin"]
+
 	for li in lane_paths.size():
 		var lp: PackedVector2Array = lane_paths[li]
-		for i in per_lane:
+		var count := mini(per_lane, wave_comp.size())
+		for i in count:
+			var m_type: String = wave_comp[i]
 			var lat: float = float(i - 1) * 22.0
-			_spawn_minion("blue", lp, true, lat)
-			_spawn_minion("red", lp, false, lat)
+			_spawn_minion("blue", lp, true, lat, m_type)
+			_spawn_minion("red", lp, false, lat, m_type)
 			spawned += 2
 	Sound.play("wave")
 	print("[Main] Wave %d: %d minion turun." % [n, spawned])
 
 
-func _spawn_minion(team_name: String, lane_path: PackedVector2Array, forward: bool, lateral: float) -> void:
+func _spawn_minion(team_name: String, lane_path: PackedVector2Array, forward: bool, lateral: float, p_type: String = "goblin") -> void:
 	var m := MinionScene.instantiate() as MinionUnit
 	add_child(m)
-	m.setup(team_name, lane_path, forward, lateral)
+	m.setup(team_name, lane_path, forward, lateral, p_type)
 
 
 func _slot_at(point: Vector2) -> int:
@@ -818,6 +831,9 @@ func _on_tower_destroyed(tower: TowerUnit) -> void:
 		var s: Dictionary = slots[tower.slot_index]
 		s["taken"] = false
 		queue_redraw()
+	if tower.team == "red":
+		gold += tower.gold_reward
+		print("[Main] Menara merah runtuh! Hadiah tim: +%dG" % tower.gold_reward)
 	print("[Main] Slot %d kosong lagi." % tower.slot_index)
 
 

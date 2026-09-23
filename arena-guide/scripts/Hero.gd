@@ -63,9 +63,16 @@ func is_alive() -> bool:
 
 
 ## Mitigasi Damage Gaya MOBA 1:1 Pygame (_entity.py:176224)
-func take_damage(amount: float, damage_type: String = "physical") -> void:
+func take_damage(amount: float, damage_type: String = "physical", attacker = null) -> void:
 	if _dead > 0.0 or hp <= 0.0:
 		return
+
+	# Notifikasi Tower Dive: Hero kawan diserang musuh dalam jangkauan menara
+	if attacker != null and is_instance_valid(attacker) and attacker.get("team") != team:
+		for n in get_tree().get_nodes_in_group("towers"):
+			var t := n as TowerUnit
+			if t != null and t.team == team and is_instance_valid(t):
+				t.notify_hero_attacked(self, attacker)
 
 	# 1. Kebal Skill (Shadow Realm Zephyr / Wind Run Sylara)
 	if buff_evasion_t > 0.0:
@@ -250,14 +257,14 @@ func _combat(delta: float) -> void:
 			_add_float_text("CRIT!", Color8(255, 60, 60))
 
 		# 2. Berikan Damage ke Musuh Utama
-		_enemy.take_damage(base_dmg)
+		_enemy.take_damage(base_dmg, "physical", self)
 
 		# 3. Cleave Splash (Cleave Axe: 45% splash ke musuh lain dalam 180px)
 		if inventory.has("cleave_axe"):
 			var foes := _foes_in(180.0)
 			for f in foes:
 				if f != _enemy:
-					f.take_damage(base_dmg * 0.45)
+					f.take_damage(base_dmg * 0.45, "physical", self)
 
 		# 4. Chain Lightning (Fenrir Chain / Thunder Coil: sambaran listrik 120 damage)
 		if inventory.has("thunder_coil") or inventory.has("fenrir_chain"):

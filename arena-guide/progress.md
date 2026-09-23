@@ -43,6 +43,7 @@ Catatan langkah porting dan status verifikasi per 2026-09-23.
 | L35 | visual Item Forge 1:1 pygame (panel 1100x720, kartu 250x200, ikon 56px, grid 4x2, 6 tab kelas, inv 6 slot jual 70%, popup detail) | **VERIFIED 1.png 2026-09-23** |
 | L36 | Hero Shrine / Hero Shop (6 starter heroes Kaizen, Grimjaw, Sylara, Vex, Thorne, Zephyr, compact 480x145 cards, transfer inventory, swap QWER skill kit) | **VERIFIED 2026-09-23** |
 | L37 | Paritas Logika Tempur Hero & Item (Mitigasi Armor MOBA, Crit 25%, Cleave 45%, Lifesteal/Blood Frenzy, Out-of-combat Regen, Holy Rapier drop, Skill QWER 6 hero) | **DONE 2026-09-23** |
+| L38 | Paritas Tower AI (Tower Dive Aggro, 4 Tipe Menara Archer/Cannon/Ice/Mage, Shield) & Minion Wave (5 Tipe Goblin/Orc/Troll/Undead/Dark Rider, Last-Hit Bounty) | **DONE 2026-09-23** |
 
 ## File baru
 
@@ -51,3 +52,4 @@ Catatan langkah porting dan status verifikasi per 2026-09-23.
 - `arena-guide/scripts/Shop.gd` + `godot/scripts/Shop.gd` (visual item forge + hero shrine 1:1 pygame)
 - `arena-guide/steps/L36-hero-shrine.gd` (hero shrine compact cards & switch logic)
 - `arena-guide/scripts/Hero.gd` + `godot/scripts/Hero.gd` + `steps/L37-combat-parity.gd` (combat logic parity)
+- `arena-guide/scripts/Tower.gd` + `godot/scripts/Tower.gd` + `arena-guide/scripts/Minion.gd` + `godot/scripts/Minion.gd` + `steps/L38-tower-minion-parity.gd` (tower & minion parity)
