@@ -16,7 +16,7 @@ const SHOP_BLUE = Vector2(340, 540)
 const SHOP_RED = Vector2(940, 180)
 
 const LANE_TOP_WP = [Vector2(90, 590), Vector2(85, 460), Vector2(95, 340), Vector2(120, 220), Vector2(170, 180), Vector2(240, 100), Vector2(380, 75), Vector2(550, 70), Vector2(720, 75), Vector2(880, 85), Vector2(1030, 110), Vector2(1180, 180)]
-const LANE_MID_WP = [Vector2(170, 550), Vector2(280, 450), Vector2(400, 380), Vector2(520, 350), Vector2(640, 340), Vector2(760, 330), Vector2(880, 300), Vector2(1000, 240), Vector2(1110, 170)]
+const LANE_MID_WP = [Vector2(170, 550), Vector2(300, 420), Vector2(440, 320), Vector2(580, 400), Vector2(640, 360), Vector2(700, 320), Vector2(840, 400), Vector2(980, 300), Vector2(1110, 170)]
 const LANE_BOT_WP = [Vector2(130, 630), Vector2(260, 650), Vector2(420, 660), Vector2(600, 660), Vector2(780, 655), Vector2(940, 645), Vector2(1070, 620), Vector2(1170, 500), Vector2(1190, 340), Vector2(1195, 250), Vector2(1180, 180)]
 const LANE_SMOOTH = [10, 8, 10]
 const RIVER_WP = [Vector2(0, 200), Vector2(150, 270), Vector2(350, 350), Vector2(640, 360), Vector2(930, 370), Vector2(1130, 450), Vector2(1280, 520)]
@@ -35,6 +35,7 @@ var match_over: bool = false
 var victory: bool = false
 var hud: Hud = null
 var pause_layer: PauseMenu = null
+var shop = null # ShopUI L34
 var map_theme: Dictionary = {}
 var map_seed: int = 7
 var decor: Array = []
@@ -76,6 +77,11 @@ func _ready() -> void:
 	pause_layer = PauseMenu.new()
 	add_child(pause_layer)
 	pause_layer.setup(self)
+	# L34 shop
+	var ShopUIScript = load("res://scripts/Shop.gd")
+	shop = ShopUIScript.new()
+	add_child(shop)
+	shop.setup(self)
 
 
 func _threshold_y(x: float) -> float:
@@ -104,7 +110,7 @@ func _curved_path(waypoints: Array, smoothness: int) -> PackedVector2Array:
 			var t3 := t2 * t
 			var x := 0.5 * ((2.0 * p1.x) + (-p0.x + p2.x) * t + (2.0 * p0.x - 5.0 * p1.x + 4.0 * p2.x - p3.x) * t2 + (-p0.x + 3.0 * p1.x - 3.0 * p2.x + p3.x) * t3)
 			var y := 0.5 * ((2.0 * p1.y) + (-p0.y + p2.y) * t + (2.0 * p0.y - 5.0 * p1.y + 4.0 * p2.y - p3.y) * t2 + (-p0.y + 3.0 * p1.y - 3.0 * p2.y + p3.y) * t3)
-			out.append(Vector2(x, y))
+			out.append(Vector2(int(x), int(y))) # L32 trunc pygame — dulu float bikin bata meleset 0.5px
 	out.append(waypoints[waypoints.size() - 1])
 	return out
 
@@ -178,6 +184,8 @@ func _draw() -> void:
 		draw_arc(pos, 22.0, 0.0, TAU, 32, ring, 3.0)
 		draw_circle(pos, 5.0, ring)
 	_draw22_fog()
+	if shop != null:
+		shop.draw_on(self)
 	if match_over:
 		draw_rect(ARENA, Color(0, 0, 0, 0.72))
 		var font: Font = ThemeDB.fallback_font
@@ -670,6 +678,23 @@ func _spawn_hero() -> void:
 
 
 func _on_left_click(point: Vector2) -> void:
+	if shop != null and shop.open:
+		if shop.handle_click(point):
+			queue_redraw()
+			return
+	# klik gedung ITEM forge
+	if point.distance_to(SHOP_BLUE) <= 60.0:
+		if shop != null:
+			shop.toggle_mode("item")
+			queue_redraw()
+			print("[Shop] klik gedung ITEM %s" % str(point))
+		return
+	if point.distance_to(SHOP_RED) <= 60.0:
+		if shop != null:
+			shop.toggle_mode("hero")
+			queue_redraw()
+			print("[Shop] klik gedung SHOP %s" % str(point))
+		return
 	if hero == null:
 		return
 	if hero.position.distance_to(point) <= 30.0:
@@ -827,6 +852,124 @@ func _on_nexus_destroyed(nexus: NexusUnit) -> void:
 		print("[Main] DEFEAT... Nexus biru hancur. Tekan R untuk ulangi.")
 
 
+# --- TACTICAL COMMANDS L33 ---
+const BOSS_POS := Vector2(640, 360)
+
+func tactical_gather() -> void:
+	if hero == null or not hero.is_alive():
+		print("[Tactical] GATHER gagal — hero gugur/belum spawn.")
+		return
+	hero.move_to(Vector2(250, 580))
+	Sound.play("move")
+	print("[Tactical] GATHER → hero kumpul di base (250,580)")
+
+func tactical_protect_tower() -> void:
+	if hero == null or not hero.is_alive():
+		return
+	var t := _nearest_blue_tower()
+	if t != null:
+		hero.move_to(t.position)
+		print("[Tactical] PROTECT TOWER → %s di (%d,%d)" % [t.tower_name, int(t.position.x), int(t.position.y)])
+	else:
+		var p := _nearest_blue_slot_pos()
+		hero.move_to(p)
+		print("[Tactical] PROTECT TOWER → slot biru (%d,%d) (belum ada tower)" % [int(p.x), int(p.y)])
+	Sound.play("move")
+
+func tactical_protect_castle() -> void:
+	if hero == null or not hero.is_alive():
+		return
+	hero.move_to(BASE_BLUE)
+	Sound.play("move")
+	print("[Tactical] PROTECT CASTLE → %s" % str(BASE_BLUE))
+
+func tactical_attack_boss() -> void:
+	if hero == null or not hero.is_alive():
+		return
+	hero.move_to(BOSS_POS)
+	Sound.play("move")
+	print("[Tactical] ATTACK BOSS → tengah sungai %s" % str(BOSS_POS))
+
+func tactical_attack_dd() -> void:
+	if hero == null or not hero.is_alive():
+		return
+	var target = _nearest_enemy_for_dd()
+	if target != null:
+		hero.move_to(target.position)
+		print("[Tactical] ATTACK DD → kejar %s" % str(target.position))
+	else:
+		hero.move_to(BASE_RED)
+		print("[Tactical] ATTACK DD → fallback nexus merah")
+	Sound.play("move")
+
+func _nearest_blue_tower() -> TowerUnit:
+	var best = null
+	var best_d := 999999.0
+	for n in get_tree().get_nodes_in_group("towers"):
+		var t := n as TowerUnit
+		if t == null or t.team != "blue" or not t.is_alive():
+			continue
+		var d := hero.position.distance_to(t.position) if hero != null else 0.0
+		if d < best_d:
+			best = t
+			best_d = d
+	return best
+
+func _nearest_blue_slot_pos() -> Vector2:
+	var best := BASE_BLUE
+	var best_d := 999999.0
+	for s in slots:
+		if str(s["team"]) != "blue":
+			continue
+		var p: Vector2 = s["pos"]
+		var d := hero.position.distance_to(p) if hero != null else p.distance_to(BASE_BLUE)
+		if d < best_d:
+			best = p
+			best_d = d
+	return best
+
+func _nearest_enemy_for_dd():
+	var best = null
+	var best_d := 999999.0
+	for n in get_tree().get_nodes_in_group("heroes"):
+		var h := n as HeroUnit
+		if h == null or h.team == "blue" or not h.is_alive():
+			continue
+		var d := hero.position.distance_to(h.position)
+		if d < best_d:
+			best = h
+			best_d = d
+	if best != null:
+		return best
+	for n in get_tree().get_nodes_in_group("minions"):
+		var m := n as MinionUnit
+		if m == null or m.team == "blue" or not m.is_alive():
+			continue
+		var d := hero.position.distance_to(m.position)
+		if d < best_d:
+			best = m
+			best_d = d
+	if best != null:
+		return best
+	for n in get_tree().get_nodes_in_group("towers"):
+		var t := n as TowerUnit
+		if t == null or t.team == "blue" or not t.is_alive():
+			continue
+		var d := hero.position.distance_to(t.position)
+		if d < best_d:
+			best = t
+			best_d = d
+	for n in get_tree().get_nodes_in_group("nexus"):
+		var nx := n as NexusUnit
+		if nx == null or nx.team == "blue" or not nx.is_alive():
+			continue
+		var d := hero.position.distance_to(nx.position)
+		if d < best_d:
+			best = nx
+			best_d = d
+	return best
+# --- END TACTICAL L33 ---
+
 func cast_hero_skill(i: int) -> void:
 	if match_over or hero == null:
 		return
@@ -871,13 +1014,43 @@ func _unhandled_input(event: InputEvent) -> void:
 			if match_over and k.keycode == KEY_ESCAPE:
 				App.to_menu()
 				return
+			if k.keycode == KEY_G:
+				tactical_gather()
+				return
+			if k.keycode == KEY_T:
+				tactical_protect_tower()
+				return
+			if k.keycode == KEY_C:
+				tactical_protect_castle()
+				return
+			if k.keycode == KEY_B:
+				tactical_attack_boss()
+				return
+			if k.keycode == KEY_D:
+				tactical_attack_dd()
+				return
+			if k.keycode == KEY_H:
+				if shop != null and not match_over:
+					shop.toggle_mode("item")
+					queue_redraw()
+				return
+			if k.keycode == KEY_ESCAPE and shop != null and shop.open:
+				shop.toggle_mode(shop.mode)
+				queue_redraw()
+				return
 	if match_over:
+		return
+	if shop != null and shop.open and event.is_action_pressed("pause"):
+		shop.toggle_mode(shop.mode)
+		queue_redraw()
 		return
 	if event.is_action_pressed("pause"):
 		toggle_pause()
 		return
 	if event.is_action_pressed("toggle_shop"):
-		print("[Main] Kontrol: klik hero=pilih, klik map=jalan, klik slot=bangun, QWER=skill, ESC=pause, M=suara.")
+		if shop != null and not match_over:
+			shop.toggle_mode("item")
+			queue_redraw()
 		return
 	if event.is_action_pressed("skill_q"):
 		cast_hero_skill(0)
@@ -896,6 +1069,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
 			_on_left_click(get_global_mouse_position())
 		if mb.button_index == MOUSE_BUTTON_RIGHT and mb.pressed:
+			if shop != null and shop.open:
+				if shop.handle_right_click(get_global_mouse_position()):
+					queue_redraw()
+					return
 			if hero != null:
 				hero.set_selected(false)
 				print("[Main] Pilihan dibatalkan.")

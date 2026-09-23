@@ -260,10 +260,12 @@ func handle_click(point: Vector2) -> void:
 			return
 
 func _issue_tactical(action: String) -> void:
-	# STUB: visual feedback saja. Logika penuh = langkah berikut.
+	match action:
+		"gather": _main.tactical_gather() if _main != null else null
+		"protect_tower": _main.tactical_protect_tower() if _main != null else null
+		"protect_castle": _main.tactical_protect_castle() if _main != null else null
+		"attack_boss": _main.tactical_attack_boss() if _main != null else null
+		"attack_dd": _main.tactical_attack_dd() if _main != null else null
+		_: print("[SidePanel] unknown tactical %s" % action)
 	_feedback = "CMD: " + action.to_upper()
 	_feedback_t = 2.0
-	print("[SidePanel] tactical stub: %s (logika penuh belakangan)" % action)
-	if _main != null and _main.hero != null and action == "gather":
-		# mini-aksi: kumpulkan hero ke titik dekat nexus biru
-		_main.hero.move_to(Vector2(250, 580))
