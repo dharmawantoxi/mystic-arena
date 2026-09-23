@@ -2,7 +2,7 @@
 extends Node2D
 class_name ShopUI
 ## ITEM FORGE (biru 340,540) + HERO SHRINE (merah 940,180). H = item, klik gedung = sesuai warna.
-## VISUAL 1:1 PYGAME: Panel 1100x720, kartu 250x200, ikon 56px, grid 4x2, 6 tab kelas, inv 6 slot (jual 70%).
+## VISUAL 1:1 PYGAME: Panel 1100x720, kartu item 250x200, kartu hero compact 480x145, inv 6 slot (jual 70%).
 
 const MAX_SLOTS := 6
 const ITEMS_PER_PAGE := 8
@@ -68,11 +68,104 @@ const ITEM_CATALOG := {
 }
 const CATALOG := ITEM_CATALOG
 
+## 6 Hero Starter Pygame 1:1 (_core.py HERO_TYPES: Kaizen, Grimjaw, Sylara, Vex, Thorne, Zephyr)
 const HERO_CATALOG := {
-	"kaizen": {"name":"Kaizen","cost":100,"color":Color8(79,195,247),"glow":Color8(120,220,255),"desc":"550 HP · 22 DMG · Seimbang (Warrior)","hp":550,"dmg":22,"range":90,"move_speed":120.0,"color_hex":"#4FC3F7"},
-	"krobellus": {"name":"Krobellus","cost":120,"color":Color8(200,80,80),"glow":Color8(255,120,120),"desc":"600 HP · 20 DMG · Daya Tahan Kuat (Tank)","hp":600,"dmg":20,"range":95,"move_speed":115.0,"color_hex":"#C94A4A"},
-	"grimjaw": {"name":"Grimjaw","cost":120,"color":Color8(126,217,87),"glow":Color8(170,240,130),"desc":"480 HP · 26 DMG · Kecepatan Tinggi (Assassin)","hp":480,"dmg":26,"range":85,"move_speed":135.0,"color_hex":"#7ED957"},
-	"vex": {"name":"Vex","cost":150,"color":Color8(160,120,255),"glow":Color8(190,160,255),"desc":"520 HP · 24 DMG · Daya Rusak Magis (Mage)","hp":520,"dmg":24,"range":110,"move_speed":120.0,"color_hex":"#A078FF"},
+	"kaizen": {
+		"name": "Kaizen",
+		"title": "The Wind Blade",
+		"role": "ASSASSIN",
+		"cost": 100,
+		"hp": 550,
+		"dmg": 35,
+		"range": 90,
+		"speed": 120.0,
+		"color": Color8(100, 200, 255),
+		"glow": Color8(140, 220, 255),
+		"skills": ["Wind Slash", "Swift Dash", "Blade Ward", "Storm Gale"],
+		"short": ["Slash", "Dash", "Ward", "Gale"],
+		"cds": [4.0, 8.0, 7.0, 15.0],
+		"desc": "Assassin lincah dengan tebasan beruntun mematikan."
+	},
+	"grimjaw": {
+		"name": "Grimjaw",
+		"title": "The Berserker",
+		"role": "FIGHTER",
+		"cost": 120,
+		"hp": 800,
+		"dmg": 33,
+		"range": 85,
+		"speed": 115.0,
+		"color": Color8(200, 80, 40),
+		"glow": Color8(255, 120, 80),
+		"skills": ["Blade Fury", "Blood Rage", "Earth Smash", "Berserk"],
+		"short": ["Fury", "Rage", "Smash", "Berserk"],
+		"cds": [5.0, 9.0, 8.0, 18.0],
+		"desc": "Petarung buas dengan putaran pedang area dan amukan darah."
+	},
+	"sylara": {
+		"name": "Sylara",
+		"title": "The Wind Ranger",
+		"role": "MARKSMAN",
+		"cost": 110,
+		"hp": 470,
+		"dmg": 45,
+		"range": 130,
+		"speed": 120.0,
+		"color": Color8(100, 220, 120),
+		"glow": Color8(150, 255, 170),
+		"skills": ["Focus Fire", "Wind Run", "Powershot", "Gale Arrow"],
+		"short": ["Focus", "Run", "Shot", "Arrow"],
+		"cds": [4.0, 7.0, 6.0, 14.0],
+		"desc": "Pemanah jarak jauh dengan tembakan menembus dan kelincahan angin."
+	},
+	"vex": {
+		"name": "Vex",
+		"title": "The Void Harbinger",
+		"role": "MAGE",
+		"cost": 130,
+		"hp": 520,
+		"dmg": 34,
+		"range": 115,
+		"speed": 110.0,
+		"color": Color8(160, 120, 255),
+		"glow": Color8(200, 160, 255),
+		"skills": ["Arcane Orb", "Void Rift", "Null Field", "Supernova"],
+		"short": ["Orb", "Rift", "Field", "Nova"],
+		"cds": [3.5, 8.0, 10.0, 16.0],
+		"desc": "Penyihir kehampaan dengan daya ledak magis burst dahsyat."
+	},
+	"thorne": {
+		"name": "Thorne",
+		"title": "The Quill Sprayer",
+		"role": "TANK",
+		"cost": 140,
+		"hp": 1400,
+		"dmg": 32,
+		"range": 75,
+		"speed": 105.0,
+		"color": Color8(215, 155, 30),
+		"glow": Color8(255, 200, 80),
+		"skills": ["Viscous Nose", "Quill Spray", "Bristleback", "Warpath"],
+		"short": ["Goo", "Spray", "Spikes", "Warpath"],
+		"cds": [4.5, 6.0, 8.0, 20.0],
+		"desc": "Tank berduri tebal yang membalas serangan dan memperlambat musuh."
+	},
+	"zephyr": {
+		"name": "Zephyr",
+		"title": "Meander of Mischief",
+		"role": "TRICKSTER",
+		"cost": 120,
+		"hp": 520,
+		"dmg": 27,
+		"range": 120,
+		"speed": 130.0,
+		"color": Color8(215, 60, 90),
+		"glow": Color8(255, 100, 130),
+		"skills": ["Bramble Maze", "Shadow Realm", "Cursed Crown", "Bedlam"],
+		"short": ["Maze", "Shadow", "Crown", "Bedlam"],
+		"cds": [5.0, 8.0, 9.0, 15.0],
+		"desc": "Peri pengacau cepat dengan jebakan duri rantai dan ilusi bayangan."
+	}
 }
 
 var _main = null
@@ -146,9 +239,6 @@ func _draw() -> void:
 
 
 func draw_on(host: CanvasItem) -> void:
-	# Jika dipanggil dari Main.gd dan ShopUI sudah terpasang sebagai child node,
-	# biarkan _draw() milik node ShopUI sendiri yang merender dengan z_index = 100
-	# agar panel SELALU berada di lapisan paling depan (di atas minion, tower, dll).
 	if host != self and is_inside_tree():
 		queue_redraw()
 		return
@@ -171,16 +261,16 @@ func _render_panel(host: CanvasItem) -> void:
 	# Shadow Panel
 	host.draw_rect(Rect2(px - 10, py - 10, pw + 20, ph + 20), Color(0.0, 0.0, 0.0, 0.65))
 
-	# Panel Background (Solid gelap RPG)
+	# Panel Background
 	host.draw_rect(Rect2(px, py, pw, ph), Color8(22, 26, 44))
 
 	# Border Emas Luar & Dalam
 	var edge: Color = Color8(255, 205, 90) if mode == "item" else Color8(255, 120, 120)
 	host.draw_rect(Rect2(px, py, pw, ph), edge, false, 3.0)
-	host.draw_rect(Rect2(px + 3, py + 3, pw - 6, ph - 6), Color8(140, 110, 58), false, 1.0)
+	host.draw_rect(Rect2(px + 3, py + 3, pw - 6, ph - 6), Color8(140, 110, 58) if mode == "item" else Color8(140, 60, 60), false, 1.0)
 
 	# Corner Ticks (Sudut Emas 16 px)
-	_draw_corner_ticks(host, Rect2(px, py, pw, ph), Color8(255, 230, 140), 16.0, 2.0, 8.0)
+	_draw_corner_ticks(host, Rect2(px, py, pw, ph), Color8(255, 230, 140) if mode == "item" else Color8(255, 160, 160), 16.0, 2.0, 8.0)
 
 	var font: Font = ThemeDB.fallback_font
 
@@ -193,8 +283,8 @@ func _render_panel(host: CanvasItem) -> void:
 	host.draw_string(font, Vector2(px + 24, py + 32), gold_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 19, Color8(255, 220, 100))
 
 	# Hint Detail di kanan sebelum tombol X
-	var hint_s := "Ketuk kartu: detail · Klik kanan slot: JUAL 70%" if mode == "item" else "Pilih hero untuk rekrut"
-	host.draw_string(font, Vector2(px + pw - 380, py + 32), hint_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color8(170, 180, 205))
+	var hint_s := "Ketuk kartu: detail · Klik kanan slot: JUAL 70%" if mode == "item" else "Pilih hero untuk rekrut · Inventori & stat item tetap terbawa"
+	host.draw_string(font, Vector2(px + pw - 430, py + 32), hint_s, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(170, 180, 205))
 
 	# Tombol Tutup X (Lingkaran Merah 38 px)
 	_close_rect = Rect2(px + pw - 48, py + 8, 38, 38)
@@ -210,7 +300,7 @@ func _render_panel(host: CanvasItem) -> void:
 		_draw_item_grid(host, px, py, pw, ph, font)
 		_draw_inventory_strip(host, px, py + ph - 74, pw, font)
 
-	# Modal Detail Item Popup (Jika sedang menginspeksi item)
+	# Modal Detail Item Popup
 	if _inspect_item != "" and ITEM_CATALOG.has(_inspect_item):
 		_draw_detail_modal(host, font)
 
@@ -225,14 +315,13 @@ func _draw_corner_ticks(host: CanvasItem, rect: Rect2, color: Color, length: flo
 	host.draw_line(Vector2(x1, y1), Vector2(x1, y1 + length), color, width)
 	# Top-Right
 	host.draw_line(Vector2(x2, y1), Vector2(x2 - length, y1), color, width)
-	host.draw_line(Vector2(x2, y1), Vector2(x2 - length, y1), color, width)
 	host.draw_line(Vector2(x2, y1), Vector2(x2, y1 + length), color, width)
 	# Bottom-Left
 	host.draw_line(Vector2(x1, y2), Vector2(x1 + length, y2), color, width)
 	host.draw_line(Vector2(x1, y2), Vector2(x1, y2 - length), color, width)
 	# Bottom-Right
 	host.draw_line(Vector2(x2, y2), Vector2(x2 - length, y2), color, width)
-	host.draw_line(Vector2(x2, y2), Vector2(x2, y2 - length), color, width)
+	host.draw_line(Vector2(x2, y2), Vector2(x2 - length, y2), color, width)
 
 
 ## Baris Ringkasan Hero Aktif (Paritas _draw_hero_info pygame)
@@ -292,8 +381,7 @@ func _draw_item_icon(host: CanvasItem, id: String, rect: Rect2, data: Dictionary
 		host.draw_texture_rect(tex, rect, false)
 		return
 
-	# Fallback Prosedural Bergaya RPG / Pygame (Bukan kotak warna polos)
-	# 1. Background gelap bertingkat
+	# Fallback Prosedural Bergaya RPG / Pygame
 	host.draw_rect(rect, Color8(18, 22, 34))
 	host.draw_rect(Rect2(rect.position.x + 2, rect.position.y + 2, rect.size.x - 4, rect.size.y - 4), Color8(28, 33, 50))
 	var col: Color = data.get("color", Color.WHITE)
@@ -304,92 +392,74 @@ func _draw_item_icon(host: CanvasItem, id: String, rect: Rect2, data: Dictionary
 	var cx := rect.position.x + rect.size.x * 0.5
 	var cy := rect.position.y + rect.size.y * 0.44
 
-	# 2. Gambar Simbol Khusus per Item / Kategori
 	match id:
 		"dead_edge":
-			# Pedang melengkung merah berdarah
 			host.draw_line(Vector2(cx - 14, cy + 14), Vector2(cx + 14, cy - 14), glow, 3.5)
 			host.draw_line(Vector2(cx + 8, cy - 8), Vector2(cx + 15, cy - 15), Color.WHITE, 2.0)
 			host.draw_line(Vector2(cx - 10, cy + 6), Vector2(cx - 6, cy + 10), col, 2.0)
 		"holy_rapier":
-			# Rapier emas panjang + kilau salib
 			host.draw_line(Vector2(cx - 15, cy + 15), Vector2(cx + 15, cy - 15), glow, 2.5)
 			host.draw_line(Vector2(cx - 10, cy + 8), Vector2(cx - 6, cy + 12), Color8(255, 230, 120), 4.0)
 			host.draw_circle(Vector2(cx + 13, cy - 13), 3.0, Color.WHITE)
 		"demon_maw":
-			# Fangs / taring iblis
 			host.draw_line(Vector2(cx - 12, cy - 8), Vector2(cx, cy + 6), glow, 3.0)
 			host.draw_line(Vector2(cx + 12, cy - 8), Vector2(cx, cy + 6), glow, 3.0)
 			host.draw_circle(Vector2(cx, cy - 4), 5.0, col)
 		"cleave_axe":
-			# Gagang dan mata kapak kembar
 			host.draw_line(Vector2(cx - 12, cy + 14), Vector2(cx + 12, cy - 10), Color8(150, 120, 90), 3.0)
 			host.draw_arc(Vector2(cx + 6, cy - 6), 11.0, -PI * 0.75, PI * 0.25, 8, glow, 3.5)
 			host.draw_arc(Vector2(cx + 6, cy - 6), 11.0, PI * 0.25, PI * 1.25, 8, col, 2.0)
 		"moon_shard":
-			# Bulan sabit cyan bercahaya
 			host.draw_circle(Vector2(cx, cy), 12.0, glow)
 			host.draw_circle(Vector2(cx + 5, cy - 3), 10.0, Color8(28, 33, 50))
 		"monarch_wings":
-			# Sayap kupu-kupu pink anggun
 			host.draw_line(Vector2(cx, cy - 12), Vector2(cx, cy + 12), Color.WHITE, 2.0)
 			host.draw_arc(Vector2(cx - 7, cy - 4), 8.0, -PI * 0.8, PI * 0.4, 8, glow, 2.5)
 			host.draw_arc(Vector2(cx + 7, cy - 4), 8.0, PI * 0.6, PI * 1.8, 8, glow, 2.5)
 			host.draw_arc(Vector2(cx - 6, cy + 5), 6.0, -PI * 0.7, PI * 0.5, 6, col, 2.0)
 			host.draw_arc(Vector2(cx + 6, cy + 5), 6.0, PI * 0.5, PI * 1.7, 6, col, 2.0)
 		"corroder":
-			# Pedang beracun hijau asam
 			host.draw_line(Vector2(cx - 12, cy + 12), Vector2(cx + 12, cy - 12), glow, 3.0)
 			host.draw_circle(Vector2(cx + 4, cy - 4), 4.0, Color8(120, 255, 80))
 			host.draw_circle(Vector2(cx - 2, cy + 6), 2.5, Color8(180, 255, 120))
 		"fenrir_chain":
-			# Tautan rantai emas
 			host.draw_arc(Vector2(cx - 6, cy - 4), 7.0, 0, TAU, 10, glow, 2.0)
 			host.draw_arc(Vector2(cx + 6, cy + 4), 7.0, 0, TAU, 10, glow, 2.0)
 			host.draw_line(Vector2(cx - 3, cy - 1), Vector2(cx + 3, cy + 1), Color.WHITE, 2.0)
 		"sanguine_thorn":
-			# Jarum berduri merah
 			host.draw_line(Vector2(cx, cy + 15), Vector2(cx, cy - 15), glow, 3.0)
 			host.draw_line(Vector2(cx - 6, cy - 2), Vector2(cx + 6, cy - 2), col, 2.0)
 			host.draw_line(Vector2(cx - 4, cy + 5), Vector2(cx + 4, cy + 5), col, 2.0)
 		"thunder_coil":
-			# Petir zigzag
 			host.draw_line(Vector2(cx - 2, cy - 14), Vector2(cx + 5, cy - 3), Color.WHITE, 3.0)
 			host.draw_line(Vector2(cx + 5, cy - 3), Vector2(cx - 4, cy + 2), glow, 3.0)
 			host.draw_line(Vector2(cx - 4, cy + 2), Vector2(cx + 3, cy + 14), glow, 3.0)
 		"sundering_cudgel":
-			# Gada berduri
 			host.draw_line(Vector2(cx - 10, cy + 14), Vector2(cx + 8, cy - 8), Color8(160, 140, 100), 4.0)
 			host.draw_circle(Vector2(cx + 9, cy - 9), 7.0, glow)
 			host.draw_circle(Vector2(cx + 9, cy - 9), 4.0, col)
 		"frostbound_eye":
-			# Mata es biru
 			host.draw_circle(Vector2(cx, cy), 11.0, glow)
 			host.draw_circle(Vector2(cx, cy), 5.0, Color8(20, 40, 80))
 			host.draw_circle(Vector2(cx - 2, cy - 2), 2.0, Color.WHITE)
 		"gale_pike":
-			# Tombak angin
 			host.draw_line(Vector2(cx - 14, cy + 14), Vector2(cx + 14, cy - 14), Color.WHITE, 2.0)
 			host.draw_arc(Vector2(cx, cy), 9.0, 0, PI * 1.5, 8, glow, 2.0)
 		"basilisk_breath":
-			# Taring beracun
 			host.draw_arc(Vector2(cx - 5, cy), 10.0, -PI * 0.5, PI * 0.5, 8, glow, 3.0)
 			host.draw_circle(Vector2(cx + 6, cy + 4), 3.0, col)
 		"solar_brand":
-			# Matahari berpijar
 			host.draw_circle(Vector2(cx, cy), 7.0, Color.WHITE)
 			for a in range(8):
 				var rad: float = float(a) * TAU / 8.0
 				host.draw_line(Vector2(cx, cy) + Vector2(cos(rad), sin(rad)) * 9.0,
 					Vector2(cx, cy) + Vector2(cos(rad), sin(rad)) * 14.0, glow, 2.0)
 		"leviathan_heart":
-			# Jantung hijau
 			host.draw_circle(Vector2(cx - 4, cy - 3), 7.0, glow)
 			host.draw_circle(Vector2(cx + 4, cy - 3), 7.0, glow)
 			host.draw_line(Vector2(cx - 9, cy), Vector2(cx, cy + 12), glow, 3.0)
 			host.draw_line(Vector2(cx + 9, cy), Vector2(cx, cy + 12), glow, 3.0)
 		"steel_aegis", "scarlet_bulwark", "everfrost_guard", "searbrand", "tempest_vane", "razor_carapace":
-			# Perisai kokoh
 			var pts := PackedVector2Array([
 				Vector2(cx - 11, cy - 10), Vector2(cx + 11, cy - 10),
 				Vector2(cx + 9, cy + 3), Vector2(cx, cy + 13),
@@ -399,7 +469,6 @@ func _draw_item_icon(host: CanvasItem, id: String, rect: Rect2, data: Dictionary
 			host.draw_polyline(pts, glow, 2.0)
 			host.draw_line(Vector2(cx, cy - 8), Vector2(cx, cy + 10), col, 2.0)
 		"octarine_core", "vital_stone":
-			# Permata kristal bersegi
 			var pts2 := PackedVector2Array([
 				Vector2(cx, cy - 13), Vector2(cx + 11, cy - 4),
 				Vector2(cx + 8, cy + 10), Vector2(cx - 8, cy + 10),
@@ -409,29 +478,24 @@ func _draw_item_icon(host: CanvasItem, id: String, rect: Rect2, data: Dictionary
 			host.draw_polyline(pts2, glow, 2.0)
 			host.draw_circle(Vector2(cx, cy), 4.0, Color.WHITE)
 		"astral_codex":
-			# Buku terbuka
 			host.draw_rect(Rect2(cx - 12, cy - 8, 11, 15), glow, false, 2.0)
 			host.draw_rect(Rect2(cx + 1, cy - 8, 11, 15), glow, false, 2.0)
 			host.draw_line(Vector2(cx, cy - 9), Vector2(cx, cy + 8), Color.WHITE, 2.0)
 		"sage_scepter", "fulgur_scepter", "vine_rod":
-			# Tongkat sihir permata
 			host.draw_line(Vector2(cx - 10, cy + 14), Vector2(cx + 8, cy - 6), Color8(180, 160, 120), 3.0)
 			host.draw_circle(Vector2(cx + 9, cy - 8), 6.0, glow)
 			host.draw_circle(Vector2(cx + 9, cy - 8), 3.0, Color.WHITE)
 		"hex_idol":
-			# Topeng kutukan
 			host.draw_rect(Rect2(cx - 9, cy - 10, 18, 20), glow, false, 2.0)
 			host.draw_circle(Vector2(cx - 4, cy - 3), 2.5, Color8(255, 60, 60))
 			host.draw_circle(Vector2(cx + 4, cy - 3), 2.5, Color8(255, 60, 60))
 			host.draw_line(Vector2(cx - 5, cy + 4), Vector2(cx + 5, cy + 4), Color.WHITE, 2.0)
 		_:
-			# Default: simbol inisial & diamond
 			host.draw_line(Vector2(cx, cy - 10), Vector2(cx + 10, cy), glow, 2.0)
 			host.draw_line(Vector2(cx + 10, cy), Vector2(cx, cy + 10), glow, 2.0)
 			host.draw_line(Vector2(cx, cy + 10), Vector2(cx - 10, cy), glow, 2.0)
 			host.draw_line(Vector2(cx - 10, cy), Vector2(cx, cy - 10), glow, 2.0)
 
-	# 3. Label Singkatan 4 Huruf di Bawah Kotak Ikon
 	var abbr: String = str(data["name"]).replace(" ", "").substr(0, 4).to_upper()
 	var tw := font.get_string_size(abbr, HORIZONTAL_ALIGNMENT_LEFT, -1, 9).x
 	host.draw_string(font, Vector2(cx - tw * 0.5, rect.position.y + rect.size.y - 4), abbr, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, glow)
@@ -480,7 +544,7 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: flo
 		if can_buy:
 			_draw_corner_ticks(host, card_rect, Color8(255, 205, 90), 9.0, 1.5, 2.0)
 
-		# Ikon 56 x 56 px (Tekstur PNG atau Vektor Prosedural)
+		# Ikon 56 x 56 px
 		var icon_rect := Rect2(x + 10, y + 10, 56, 56)
 		_draw_item_icon(host, id, icon_rect, data, font)
 
@@ -495,7 +559,7 @@ func _draw_item_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: flo
 			cls_name, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, cls_col)
 
 		# Nama Item (Font 14/12 Glow, fit agar tidak menabrak badge)
-		var max_name_w: float = cw - 74.0 - 92.0 # sisa ruang sebelum badge
+		var max_name_w: float = cw - 74.0 - 92.0
 		var item_name: String = str(data["name"])
 		var name_sz: int = 14
 		if font.get_string_size(item_name, HORIZONTAL_ALIGNMENT_LEFT, -1, name_sz).x > max_name_w:
@@ -681,63 +745,126 @@ func _wrap_text(text: String, chars_per_line: int) -> Array:
 	return lines
 
 
-## Grid Hero Shrine
-func _draw_hero_grid(host: CanvasItem, px: float, py: float, pw: float, _ph: float, font: Font) -> void:
+## Grid Hero Shrine: 6 Hero Compact Horizontal Cards 1:1 Pygame (_draw_compact_card)
+func _draw_hero_grid(host: CanvasItem, px: float, py: float, pw: float, ph: float, font: Font) -> void:
 	_buy_rects.clear()
 	_hero_buy_rects.clear()
 	_inv_rects.clear()
 
 	var ids = HERO_CATALOG.keys()
-	var cols = 4
-	var cw: float = 250.0
-	var ch = 200.0
-	var gap: float = 12.0
-	var sx: float = px + (pw - (float(cols) * cw + float(cols - 1) * gap)) * 0.5
-	var sy: float = py + 134.0
+	var cols = 2
+	var cw: float = 480.0
+	var ch: float = 145.0
+	var gap_x: float = 24.0
+	var gap_y: float = 16.0
+	var grid_w := float(cols) * cw + float(cols - 1) * gap_x
+	var sx := px + (pw - grid_w) * 0.5
+	var sy := py + 108.0
 
 	for i in ids.size():
 		var r: int = int(float(i) / float(cols))
 		var c: int = i % cols
-		var x: float = sx + float(c) * (cw + gap)
-		var y: float = sy + float(r) * (ch + gap)
+		var x: float = sx + float(c) * (cw + gap_x)
+		var y: float = sy + float(r) * (ch + gap_y)
 		var id: String = ids[i]
 		var data: Dictionary = HERO_CATALOG[id]
 		var can_buy = _can_buy_hero(id)
 		var is_current: bool = _main != null and _main.hero != null and str(_main.hero.hero_id) == id
 
-		var bg = Color8(40, 30, 40) if is_current else (Color8(34, 40, 68) if can_buy else Color8(30, 30, 38))
-		host.draw_rect(Rect2(x, y, cw, ch), bg)
-		var border: Color = Color8(255, 220, 100) if is_current else (data["glow"] if can_buy else Color8(80, 80, 90))
-		host.draw_rect(Rect2(x, y, cw, ch), border, false, 2.5 if is_current else 2.0)
+		var card_rect := Rect2(x, y, cw, ch)
 
-		# Hero Circle Avatar
-		host.draw_circle(Vector2(x + cw * 0.5, y + 44), 26, Color(0, 0, 0, 0.35))
-		host.draw_circle(Vector2(x + cw * 0.5, y + 42), 24, data["color"])
+		# ── 1. CARD BACKGROUND & BORDER (Paritas _draw_compact_card) ──
+		var bg := Color8(25, 45, 35) if is_current else (Color8(25, 30, 50) if can_buy else Color8(20, 22, 34))
+		host.draw_rect(card_rect, bg)
+		var border: Color = Color8(100, 220, 100) if is_current else (data["color"] if can_buy else Color8(70, 75, 95))
+		host.draw_rect(card_rect, border, false, 2.5 if is_current else 1.8)
+		if is_current or can_buy:
+			_draw_corner_ticks(host, card_rect, data["glow"], 8.0, 1.5, 2.0)
 
-		host.draw_string(font, Vector2(x + 14, y + 90), str(data["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 16, data["glow"] if not is_current else Color8(255, 220, 100))
-		host.draw_string(font, Vector2(x + 14, y + 110), str(data["desc"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(200, 210, 230))
-		host.draw_string(font, Vector2(x + 14, y + 130), "%d GOLD" % int(data["cost"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color8(255, 220, 100) if can_buy else Color8(200, 80, 80))
+		# ── 2. PORTRAIT HERO BOX (72 x 72 px di kiri) ──
+		var pbox := Rect2(x + 16, y + (ch - 72) * 0.5, 72, 72)
+		host.draw_rect(pbox, Color8(15, 20, 30))
+		host.draw_rect(pbox, data["color"], false, 1.5)
+		# Lingkaran Avatar Hero di dalam bingkai
+		var pcx := pbox.get_center().x
+		var pcy := pbox.get_center().y
+		host.draw_circle(Vector2(pcx, pcy), 26, Color(0, 0, 0, 0.45))
+		host.draw_circle(Vector2(pcx, pcy), 23, data["color"])
+		# Emblem inisial hero di tengah avatar
+		var init_char: String = str(data["name"]).substr(0, 1).to_upper()
+		var itw := font.get_string_size(init_char, HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+		host.draw_string(font, Vector2(pcx - itw * 0.5, pcy + 7), init_char, HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE)
 
-		if is_current:
-			host.draw_string(font, Vector2(x + cw - 70, y + 130), "AKTIF", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(150, 255, 170))
+		# ── 3. INFO CENTER (Nama, Title, Role chip, Stats, Skill) ──
+		var ix := x + 104.0
+		# Baris 1: Nama Hero (Font 18 bold) + Title
+		host.draw_string(font, Vector2(ix, y + 26), str(data["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Color.WHITE if is_current else data["glow"])
+		var ntw := font.get_string_size(str(data["name"]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18).x
+		host.draw_string(font, Vector2(ix + ntw + 10, y + 25), "— " + str(data.get("title", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(180, 190, 210))
 
-		var btn := Rect2(x + 10, y + ch - 34, cw - 20, 26)
+		# Baris 2: Chip Role
+		var role_str: String = str(data.get("role", "WARRIOR")).to_upper()
+		var rchip := Rect2(ix, y + 36, 76, 18)
+		host.draw_rect(rchip, Color8(10, 14, 24))
+		host.draw_rect(rchip, data["color"], false, 1.0)
+		var rtw := font.get_string_size(role_str, HORIZONTAL_ALIGNMENT_LEFT, -1, 10).x
+		host.draw_string(font, Vector2(rchip.position.x + (76 - rtw) * 0.5, y + 49), role_str, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, data["color"])
+
+		# Baris 3: 4 Sel Stat (HP, DMG, RNG, SPD)
+		var stats_x := ix + 88.0
+		var stat_cells := [
+			["HP", int(data["hp"]), Color8(255, 120, 120)],
+			["DMG", int(data["dmg"]), Color8(255, 200, 100)],
+			["RNG", int(data["range"]), Color8(100, 200, 255)],
+			["SPD", int(data.get("speed", 120)), Color8(120, 240, 140)]
+		]
+		for s_idx in stat_cells.size():
+			var sc = stat_cells[s_idx]
+			var cell_x := stats_x + float(s_idx) * 44.0
+			host.draw_string(font, Vector2(cell_x, y + 42), str(sc[0]), HORIZONTAL_ALIGNMENT_LEFT, -1, 9, sc[2] as Color)
+			host.draw_string(font, Vector2(cell_x, y + 54), str(sc[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color.WHITE)
+
+		# Baris 4: Deskripsi & Skill Utama
+		var skill_preview: String = "Skill: " + str(data.get("skills", ["-"])[0]) + " · " + str(data.get("desc", ""))
+		var sk_lines := _wrap_text(skill_preview, 44)
+		var sky := y + 78
+		for sk_l in sk_lines.slice(0, 2):
+			host.draw_string(font, Vector2(ix, sky), sk_l, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(190, 200, 220))
+			sky += 16
+
+		# ── 4. RIGHT ACTION BUTTON PILL (96 x 34 px) ──
+		var btn := Rect2(x + cw - 114, y + (ch - 34) * 0.5, 98, 34)
 		_hero_buy_rects[id] = btn
+
 		if is_current:
-			host.draw_rect(btn, Color8(60, 60, 70))
-			host.draw_rect(btn, Color8(120, 120, 130), false, 1.0)
-			var tw := font.get_string_size("AKTIF", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
-			host.draw_string(font, Vector2(btn.position.x + (btn.size.x - tw) * 0.5, btn.position.y + 17), "AKTIF", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(170, 170, 180))
+			host.draw_rect(btn, Color8(35, 75, 45))
+			host.draw_rect(btn, Color8(100, 220, 100), false, 2.0)
+			var tw := font.get_string_size("ACTIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+			host.draw_string(font, Vector2(btn.position.x + (btn.size.x - tw) * 0.5, btn.position.y + 22),
+				"ACTIVE", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color8(150, 255, 170))
 		elif can_buy:
-			host.draw_rect(btn, Color8(80, 40, 40))
-			host.draw_rect(btn, Color8(255, 120, 120), false, 1.5)
-			var tw := font.get_string_size("GANTI HERO", HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
-			host.draw_string(font, Vector2(btn.position.x + (btn.size.x - tw) * 0.5, btn.position.y + 17), "GANTI HERO", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)
+			host.draw_rect(btn, Color8(35, 120, 50))
+			host.draw_rect(btn, Color8(100, 240, 120), false, 1.8)
+			var cost_str := "%d G" % int(data["cost"])
+			var tw := font.get_string_size(cost_str, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x
+			host.draw_string(font, Vector2(btn.position.x + (btn.size.x - tw) * 0.5, btn.position.y + 22),
+				cost_str, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color.WHITE)
 		else:
 			host.draw_rect(btn, Color8(44, 44, 54))
 			host.draw_rect(btn, Color8(90, 90, 100), false, 1.0)
-			var tw := font.get_string_size("GOLD -", HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
-			host.draw_string(font, Vector2(btn.position.x + (btn.size.x - tw) * 0.5, btn.position.y + 17), "GOLD -", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color8(170, 170, 180))
+			var label: String = "GOLD -" if _main != null and int(_main.gold) < int(data["cost"]) else "KUNCI"
+			var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x
+			host.draw_string(font, Vector2(btn.position.x + (btn.size.x - tw) * 0.5, btn.position.y + 22),
+				label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(170, 170, 180))
+
+	# Footer Status Hero
+	if _main != null and _main.hero != null:
+		var hero = _main.hero
+		var inv_cnt: int = hero.get("inventory").size() if "inventory" in hero else 0
+		var status_txt := "Hero Aktif: %s  ·  HP: %d/%d  ·  Inventori: %d/%d Item (Semua item & bonus otomatis terbawa saat ganti hero)" % [
+			hero.hero_name, int(hero.hp), int(hero.max_hp), inv_cnt, MAX_SLOTS
+		]
+		host.draw_string(font, Vector2(px + 40, py + ph - 24), status_txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color8(180, 210, 240))
 
 
 func handle_click(point: Vector2) -> bool:
@@ -965,6 +1092,7 @@ func _try_buy(id: String) -> void:
 	_main.queue_redraw()
 
 
+## Pergantian Hero (Paritas 1:1 _core.py: try_buy_hero)
 func _try_buy_hero(id: String) -> void:
 	if not _can_buy_hero(id):
 		Sound.play("error")
@@ -972,29 +1100,57 @@ func _try_buy_hero(id: String) -> void:
 	var data: Dictionary = HERO_CATALOG[id]
 	_main.gold -= int(data["cost"])
 	var hero: Variant = _main.hero
+
+	# 1. Simpan inventori item hero sebelumnya
+	var old_inv: Array = []
+	if "inventory" in hero and hero.inventory is Array:
+		old_inv = hero.inventory.duplicate()
+
+	# 2. Terapkan data dasar hero baru
 	hero.hero_id = id
 	hero.hero_name = str(data["name"])
 	hero.max_hp = float(data["hp"])
-	hero.hp = hero.max_hp
+	hero.hp = hero.max_hp # Pulihkan HP penuh saat rekrut
 	hero.damage = float(data["dmg"])
 	hero.attack_range = float(data.get("range", 90))
-	hero.move_speed = float(data.get("move_speed", 120.0))
-	hero.body_color = Color(str(data.get("color_hex", "#4FC3F7")))
-	hero.position = Vector2(250, 580)
+	hero.move_speed = float(data.get("speed", 120.0))
+	hero.body_color = data["color"]
+	hero.position = Vector2(250, 580) # Spawn di base Radiant
+	if hero.get("target_pos") != null:
+		hero.set("target_pos", hero.position)
+
+	# 3. Reset atribut bonus lama
 	if "bonus_armor" in hero:
 		hero.bonus_armor = 0.0
 	if "bonus_as" in hero:
 		hero.bonus_as = 0.0
-	hero.lifesteal = 0.0
+	if "lifesteal" in hero:
+		hero.lifesteal = 0.0
 	hero.attack_interval = 1.0
+
+	# 4. Pasang Skill Kit Hero Baru (QWER)
+	if data.has("skills") and "skill_names" in hero:
+		hero.skill_names = data["skills"].duplicate()
+	if data.has("short") and "skill_short" in hero:
+		hero.skill_short = data["short"].duplicate()
+	if data.has("cds") and "skill_cds_max" in hero:
+		hero.skill_cds_max = data["cds"].duplicate()
+		hero.skill_cds = [0.0, 0.0, 0.0, 0.0]
+
+	# 5. Pindahkan inventori dan terapkan ulang semua bonus item
+	hero.inventory = old_inv
 	for item_id in hero.inventory:
 		var idata: Dictionary = ITEM_CATALOG.get(str(item_id), {})
 		if not idata.is_empty():
 			_apply_stats(hero, idata)
+
+	# 6. Pemilihan & Audio
 	hero.set_selected(true)
 	hero.queue_redraw()
 	Sound.play("buy")
-	print("[Shop] GANTI HERO -> %s (-%d G) sisa %d" % [hero.hero_name, int(data["cost"]), int(_main.gold)])
+	print("[Hero Shrine] REKRUT HERO -> %s (-%d G) HP:%d DMG:%d (Item terbawa: %d)" % [
+		hero.hero_name, int(data["cost"]), int(hero.max_hp), int(hero.damage), hero.inventory.size()
+	])
 	queue_redraw()
 	_main.queue_redraw()
 

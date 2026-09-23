@@ -44,9 +44,11 @@
 | L33 | tactical 5 penuh G/T/C/B/D + hotkey (gather/tower/castle/boss/DD) | **SNIPPET SIAP 2026-09-23** |
 | L34 | audit visual Item Forge 1:1 pygame vs Godot (panel 1100x720, kartu 250px, ikon 56px, grid 4x2, tab kelas, inv 6) | **AUDIT DONE 2026-09-23** |
 | L35 | visual Item Forge 1:1 pygame (panel 1100x720, kartu 250x200, ikon 56px, grid 4x2, 6 tab kelas, inv 6 slot jual 70%, popup detail) | **VERIFIED 1.png 2026-09-23** |
+| L36 | Hero Shrine / Hero Shop (6 starter heroes Kaizen, Grimjaw, Sylara, Vex, Thorne, Zephyr, compact 480x145 cards, transfer inventory, swap QWER skill kit) | **DONE 2026-09-23** |
 
 ## File baru
 
 - `arena-guide/scripts/SidePanel.gd` + `steps/L31-side-panel.gd` + `steps/L33-tactical-full.gd` (tactical full)
 - `arena-guide/docs/AUDIT_ITEM_FORGE.md` (audit item forge 1:1 pygame vs godot)
-- `arena-guide/scripts/Shop.gd` + `godot/scripts/Shop.gd` (visual item forge 1:1 pygame)
+- `arena-guide/scripts/Shop.gd` + `godot/scripts/Shop.gd` (visual item forge + hero shrine 1:1 pygame)
+- `arena-guide/steps/L36-hero-shrine.gd` (hero shrine compact cards & switch logic)
