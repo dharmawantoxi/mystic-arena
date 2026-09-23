@@ -131,6 +131,7 @@ func configure(p_item_id: String, p_can_buy: bool, p_owned: int,
 		p_cb: Callable) -> ItemForgeCard:
 	item_id = p_item_id
 	pill_label = p_label
+	tooltip_text = p_tip
 	icon_texture = ItemIcons.texture(p_item_id, ICON_SIZE)
 	can_buy = p_can_buy
 	owned_count = p_owned
