@@ -4,6 +4,9 @@
 
 ## Status terakhir
 
+- **L34 2026-09-23 — AUDIT VISUAL ITEM FORGE 1:1 (PYGAME VS GODOT): AUDIT SELESAI.**
+  Audit komprehensif `hero_items.py` (ItemShopUI) vs `ShopPanel.gd`, `ItemForgeCard.gd`, `ItemIcons.gd`, `Shop.gd`:
+  Panel 1100x720 (center px=90, py=0), kartu 250x200, ikon 56x56, grid 4x2 per halaman (8 item per halaman), 6 tab kelas (PHYSICAL 1/2, 2/2, MAGIC 1/2, 2/2, TANK 1/2, 2/2), strip BUY FOR hero, banner stat hero 2-baris, dan strip inventory bawah 6 slot (54x54) dengan aksi jual 70%. Dokumentasi lengkap di `arena-guide/docs/AUDIT_ITEM_FORGE.md`.
 - **L31 (panel kanan bata + STATUS/HERO/SKILL/TACTICAL): PASANG & VERIFIED 2026-09-23.**
   Screenshot user `1.png` → panel 344px bata, STATUS GOLD/LV/Wave, HEROES Kaizen 550, SKILLS QWER, TACTICAL 5 tombol — 100% parity `mobile/sidepanel.py`. Viewport 1624x720 OK.
 - **L33 2026-09-23 — TACTICAL FULL (G/T/C/B/D): SNIPPET SIAP.** Stub L31 (`print` + gather mini) → 5 perintah penuh: GATHER (250,580), PROTECT TOWER (tower biru terdekat/slot), PROTECT CASTLE (BASE_BLUE), ATTACK BOSS (640,360 tengah sungai), ATTACK DD (musuh terdekat → nexus). + hotkey G/T/C/B/D. `scripts/Main.gd` + `SidePanel.gd` + `FULL_L31` updated, `steps/L33-tactical-full.gd` baru.
@@ -39,6 +42,7 @@
 | L31 | side panel brick + status/hero/skill/tactical | **PASANG & VERIFIED 1.png 2026-09-23** |
 | L32 | halus patah + rapat castle → **DIBATALKAN** per instruksi “samakan pygame” | **ARSIP — KEMBALI PYGAME FINAL** |
 | L33 | tactical 5 penuh G/T/C/B/D + hotkey (gather/tower/castle/boss/DD) | **SNIPPET SIAP 2026-09-23** |
+| L34 | audit visual Item Forge 1:1 pygame vs Godot (panel 1100x720, kartu 250px, ikon 56px, grid 4x2, tab kelas, inv 6) | **AUDIT DONE 2026-09-23** |
 
 ## File baru
 
