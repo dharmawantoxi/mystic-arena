@@ -12,9 +12,14 @@
   (280,450...) DIBATALKAN atas instruksi user — lane harus 1:1 pygame. L30b/c
   (hapus cobble + hide hint) TETAP. `scripts/Main.gd` + `project/Main_FULL_L31.gd`
   + `steps/L30` sudah sync ke waypoint pygame `map_components/_bundle.py`.
+- **L32 2026-09-23 — FIX PATAH + RAPAT CASTLE (dari screenshot 1.png):** TOP/BOT/MID
+  masih patah di 6 panah biru (TOP 39°×2, BOT 39°×2, MID 65°×4 zigzag). Dire castle
+  spase 35px (1145,175 vs lane end 1180,180). FIX: BASE_RED→1180,180, TOP+1wp
+  (235,125), BOT geser 2 titik, MID kembali halus L30 (280,450...), SMOOTH top/bot
+  10→14, trunc int(x),int(y). `scripts/Main.gd` + `FULL_L31` + `steps/L32` updated.
 - L29 heartbeat DONE. Audit map #1–#6 DONE. **Audit lane 2026-09-23: TOP/BOT/RIVER
-  ✅, MID ✅ setelah revisi (sebelumnya drift 20-100px).**
-- `project/Main.gd` = pasca-L29 (sudah paritas, belum L31). `scripts/Main.gd` = L15-L29 + L30b/c + L31 ready.
+  ✅ pygame, namun visual bata masih patah → L32 halus <20° (deviasi minimal).**
+- `project/Main.gd` = pasca-L29 (sudah paritas, belum L31). `scripts/Main.gd` = L15-L29 + L30b/c + L31 + L32.
 - CATATAN PLATFORM: fetch → reset --soft origin/branch → add → commit → push.
 
 ## Geometri panel (pygame paritas)
@@ -30,6 +35,7 @@
 | L15–L29 | map parity + heartbeat | DONE |
 | L30 | REVISI pygame: kembalikan mid ke (300,420...) + no cobble + hide hint | **SYNC PYGAME 2026-09-23** |
 | L31 | side panel brick + status/hero/skill/tactical | SIAP |
+| L32 | fix patah TOP/BOT/MID (<20°) + rapat Dire castle (35→0px) + smooth 14 + trunc | **FIX 1.png 2026-09-23** |
 
 ## File baru
 
