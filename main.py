@@ -409,6 +409,9 @@ def main():
                 elif event.key == pygame.K_F10:
                     # Same opt-in visual review card for the Vex V1 rig.
                     vex_review_mod.toggle()
+                elif event.key == pygame.K_F11:
+                    # Same opt-in visual review card for the Grimjaw V1 rig.
+                    grimjaw_review_mod.toggle()
                 elif event.key == pygame.K_ESCAPE:
                     if current_state == STATE_GAME:
                         ctx["request_pause"] = True
@@ -599,6 +602,7 @@ def main():
                 _log_frame_error("draw")
             _gambar_kaizen_review()
             _gambar_vex_review()
+            _gambar_grimjaw_review()
             perf.PHASES.mark("hud")
             hud.draw(screen, getattr(game, "animation_time", 0))
             perf.PHASES.end()
