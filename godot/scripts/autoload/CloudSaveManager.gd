@@ -298,7 +298,10 @@ func _python_json_string(value: String) -> String:
 				result += "\\\\"
 			_:
 				if code < 32:
-					result += "\\u" + String.num_int64(code, 16).pad_zeros(4)
+					var hex_code := String.num_int64(code, 16)
+					while hex_code.length() < 4:
+						hex_code = "0" + hex_code
+					result += "\\u" + hex_code
 				else:
 					result += value.substr(i, 1)
 	return result + "\""
