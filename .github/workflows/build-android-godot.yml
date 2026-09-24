@@ -150,10 +150,19 @@ jobs:
           mkdir -p "$HOME/.local/share/godot/export_templates"
           curl -fsSL -o /tmp/tpl.tpz \
             "https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_export_templates.tpz"
-          # .tpz = zip; isi ber-root folder <versi>.<channel>/
-          unzip -q -o /tmp/tpl.tpz -d "$HOME/.local/share/godot/export_templates"
+          # Arsip .tpz memuat template di bawah `templates/`; Godot memasang
+          # isinya ke folder bernama <versi>.<channel>.
+          TMP_TPL_DIR=/tmp/godot-export-templates
+          mkdir -p "$TMP_TPL_DIR" "$TPL_DIR"
+          unzip -q -o /tmp/tpl.tpz -d "$TMP_TPL_DIR"
+          if [ -d "$TMP_TPL_DIR/templates" ]; then
+            cp -a "$TMP_TPL_DIR/templates/." "$TPL_DIR/"
+          else
+            # Toleransi arsip yang sudah di-flatten.
+            cp -a "$TMP_TPL_DIR/." "$TPL_DIR/"
+          fi
           ls "$TPL_DIR" | grep -q "android_release.apk" \
-            || { echo "::error::template android tidak ditemukan di $TPL_DIR"; exit 1; }
+            || { echo "::error::template android tidak ditemukan di $TPL_DIR"; find "$TMP_TPL_DIR" -maxdepth 3 -type f | head -30; exit 1; }
 
       - name: Pasang template Gradle Android Godot
         run: |
