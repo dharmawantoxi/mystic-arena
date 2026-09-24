@@ -401,10 +401,13 @@ jobs:
           for path in paths:
               if not path.exists():
                   continue
-              for number, line in enumerate(path.read_text(errors='replace').splitlines(), 1):
+              lines = path.read_text(errors='replace').splitlines()
+              for index, line in enumerate(lines):
                   if pattern.search(line):
-                      messages.append(f'{path.name}:{number}: {line.strip()}')
-          message = ' || '.join(messages[-20:])[:4000]
+                      context = lines[max(0, index - 1):min(len(lines), index + 3)]
+                      excerpt = ' / '.join(part.strip() for part in context)
+                      messages.append(f'{path.name}:{index + 1}: {excerpt}')
+          message = ' || '.join(messages[-8:])[:6000]
           if not message:
               message = 'Build failed before a diagnostic log was produced.'
           message = message.replace('%', '%25').replace('\r', '%0D')
