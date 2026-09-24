@@ -398,17 +398,23 @@ jobs:
                    Path('/tmp/export.log'), Path('/tmp/script_errors.txt'),
                    Path('/tmp/verify.txt')]
           messages = []
+          script_contexts = []
           pattern = re.compile(r'error|failed|failure|exception|BUILD FAILED', re.I)
           for path in paths:
               if not path.exists():
                   continue
               lines = path.read_text(errors='replace').splitlines()
               for index, line in enumerate(lines):
-                  if pattern.search(line):
+                  if path.name == 'export.log' and 'SCRIPT ERROR:' in line:
+                      context = lines[index:min(len(lines), index + 8)]
+                      excerpt = ' / '.join(part.strip() for part in context)
+                      script_contexts.append(f'{path.name}:{index + 1}: {excerpt}')
+                  elif pattern.search(line):
                       context = lines[max(0, index - 1):min(len(lines), index + 3)]
                       excerpt = ' / '.join(part.strip() for part in context)
                       messages.append(f'{path.name}:{index + 1}: {excerpt}')
-          message = ' || '.join(messages[-8:])[:6000]
+          details = script_contexts[:12] + messages[-5:]
+          message = ' || '.join(details)[:6000]
           if not message:
               message = 'Build failed before a diagnostic log was produced.'
           message = message.replace('%', '%25').replace('\r', '%0D')
