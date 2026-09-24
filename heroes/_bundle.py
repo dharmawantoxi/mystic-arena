@@ -16743,3 +16743,14 @@ del _install_kaizen_v1
 from heroes.vex_v1 import install as _install_vex_v1
 _NS_vex = _install_vex_v1(_NS_vex)
 del _install_vex_v1
+
+# ============================================================================
+# GRIMJAW V1 PIXEL-ART OVERRIDE
+# ============================================================================
+# Same layering as the Kaizen/Vex V1 overrides above: the bundled masterwork
+# namespace stays as a compatibility base while Grimjaw's actual render path
+# is replaced by the pixel-art V1 renderer (Kaizen-style chibi, juggernaut
+# flame-blade identity preserved).
+from heroes.grimjaw_v1 import install as _install_grimjaw_v1
+_NS_grimjaw = _install_grimjaw_v1(_NS_grimjaw)
+del _install_grimjaw_v1

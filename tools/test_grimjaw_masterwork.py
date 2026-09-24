@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
-"""Regresi visual untuk Grimjaw Procedural Masterwork v2.
+"""Regresi visual untuk Grimjaw Procedural Masterwork (versi V1 pixel-art).
 
-Memastikan upgrade tidak kembali menjadi kumpulan body-part statis:
-rig tunggal ~1.5x (telapak y=+70, mane api y=-106), flame blade
-pose-driven (wind-up -> smear -> pendaratan), mask putih 5-band
-ber-strip darah, portrait LOD, ambient FX ter-cache, skill Q/W/E/R
-world-space, dan pose (idle/walk/attack/spin) semuanya dirender dari
-kode tanpa PNG / sprite sheet / image.load.
+Sejak rewrite V1 (heroes/grimjaw_v1.py, pola Kaizen/Vex V1) rig doodle
+masterwork digantikan sprite chibi pixel-art 48x48 @2.6x: mane api
+pose-driven, mask juggernaut putih ber-strip darah, torso V-taper +
+sash + harness, dan flame blade yang geometrinya TETAP memakai fungsi
+pose legacy (jembatan grimjaw_fx blade_points).  Kontrak yang dikunci:
 
-Juga menjaga PARITAS keluarga masterwork: renderer lain yang sudah
-di-upgrade ke standar v2 (termasuk Gorath di bosses/level2.py) wajib
-punya kosakata FX yang sama - `_fx_scale` dengan cap 2.6, primitif
-telegraph (`_spark_star`/`_chevron`/`_dashed_ring`/`_jagged_crack`),
-surface statis ter-cache lewat `_static`, dan FX skill world-space.
+- 100% prosedural (tanpa PNG / sprite-sheet / image.load).
+- Identitas material Grimjaw lolos ke render akhir (swatch palette).
+- Geometri blade pose-driven (atas -> bawah, warisan legacy).
+- Pose idle/walk/attack/spin/hurt/death semuanya animasi (bukan sticker).
+- Skill FX world-space dengan kompensasi _render_scale.
+- Basic attack melepas gelombang api visual (damage=0, tanpa impact FX).
+- Namespace lama tetap warisan API (legacy callables resolve).
 
 Jalankan:  python3 tools/test_grimjaw_masterwork.py
 """
@@ -31,6 +32,10 @@ pygame.init()
 pygame.display.set_mode((1, 1))
 from heroes import _ProbeEntity
 from heroes._bundle import _NS_grimjaw as G
+
+# Namespace grimjaw sekarang subclass V1 dari namespace legacy: helper dan
+# geometri lama tetap resolve lewat pewarisan, jalur gambar digantikan V1.
+from heroes.grimjaw_v1 import install as _install_v1
 
 
 def colors(surface):
@@ -61,23 +66,49 @@ def render_pose(action="idle", progress=0.0):
 def test_masterwork_is_procedural():
     source = inspect.getsource(G)
     assert "pygame.image.load" not in source
+    # Jalur gambar V1 (pixel ops + sprite assembler + layer Grimjaw).
     assert callable(G._draw_grimjaw_elite)
+    assert callable(G._draw_grimjaw_sprite)
+    assert callable(G._make_pixel_ops)
+    assert callable(G._draw_pixel_mane_back)
+    assert callable(G._draw_pixel_mask)
+    assert callable(G._draw_pixel_blade)
+    assert callable(G._draw_pixel_torso)
+    assert callable(G._draw_pixel_legs)
+    # Kontrak geometri + helper yang dikonsumsi lapisan FX hidup.
+    assert callable(G._blade_angle)
+    assert callable(G._blade_grip_local)
+    assert callable(G._blade_tip_local)
+    assert callable(G._blade_tip_position)
+    assert callable(G._attack_pose)
+    assert callable(G._fx_scale)
+    assert callable(G._ring_r)
+    assert callable(G._spark_star)
+    assert callable(G._chevron)
+    assert callable(G._dashed_ring)
+    assert callable(G._jagged_crack)
+    assert callable(G._tuft_points)
+    assert callable(G._aoe_marks)
+    assert callable(G._draw_blade_fury_ground)
+    assert callable(G._draw_fire_slash_arc)
+    assert callable(G._draw_blade_swing_trail)
+    # Namespace lama tetap resolve lewat pewarisan (API publik historis).
     assert callable(G._draw_elite_flame_blade)
     assert callable(G._draw_elite_mask)
     assert callable(G._draw_elite_flame_mane)
+    assert callable(G._draw_elite_mane_front)
     assert callable(G._draw_grimjaw_masterwork_details)
-    assert callable(G._blade_angle)
-    assert callable(G._blade_tip_local)
-    # V2.1 shared FX vocabulary stays available for renderer audits.
-    for helper in ("_fx_scale", "_spark_star", "_chevron", "_dashed_ring",
-                   "_jagged_crack", "_tuft_points"):
-        assert callable(getattr(G, helper)), helper
-    # Body-part lama sudah benar-benar diganti satu rig.
-    for old in ("_draw_torso", "_draw_pauldrons", "_draw_head_mask",
-                "_draw_hair_back", "_draw_hair_front", "_draw_sword_arm",
-                "_draw_left_arm", "_draw_muscular_arm", "_draw_fire_sword",
-                "_draw_lower_body_flowing"):
-        assert not hasattr(G, old), f"old part still present: {old}"
+    assert callable(G._draw_grimjaw_blade_fury)
+    assert callable(G._draw_grimjaw_omnislash)
+    assert callable(G.draw_hero)
+    # Skala V1: grid 48x48 pada 2.6x; helper lokal sudah canvas px
+    # (RIG_SCALE netral 1.0).
+    assert abs(G.PIXEL_SCALE - 2.6) < 1e-9
+    assert abs(G.RIG_SCALE - 1.0) < 1e-9
+    # Timeline serangan identik dengan rig lama + sinkron grimjaw_fx.
+    assert (G.ATTACK_WINDUP_END, G.ATTACK_SWING_END) == (0.25, 0.62)
+    assert (G.ATTACK_ARC_START, G.ATTACK_ARC_SWEEP,
+            G.ATTACK_ARC_END) == (-2.30, -3.05, -5.35)
 
 
 def test_material_details_and_pose():
@@ -89,17 +120,16 @@ def test_material_details_and_pose():
     assert G.PALETTE["mask_light"] in palette       # white mask
     assert G.PALETTE["blood_mid"] in palette        # blood stripes
     assert G.PALETTE["gold_mid"] in palette         # pauldron trim / buckle
-    assert G.PALETTE["red_mid"] in palette          # loincloth / chest panel
-    assert G.PALETTE["fire_mid"] in palette         # flame blade
-    assert G.PALETTE["fire_hot"] in palette         # blade hot core
-    assert G.PALETTE["metal_light"] in palette      # boot / pauldron steel
+    assert G.PALETTE["red_mid"] in palette          # sash / loincloth
+    assert G.PALETTE["fire_mid"] in palette         # blade teeth
+    assert G.PALETTE["fire_light"] in palette       # blade teeth hot
+    assert G.PALETTE["metal_light"] in palette      # pauldron / shin steel
     assert G.PALETTE["hair_mid"] in palette         # fire mane
 
-    # Rig v2 ~1.5x: telapak +70, mane api ke -106 -> bbox jauh lebih tinggi.
+    # Rig V1: telapak +70, mane api ke -105 -> bbox jauh lebih tinggi.
     rect = idle.get_bounding_rect(min_alpha=8)
     assert rect.height >= 110 and rect.width >= 70
-    # Rig besar v2 (1.5x) harus terlihat lebih tinggi dari rig lama (100px).
-    assert rect.height >= 140, f"rig v2 harus tinggi (1.5x), dapat {rect.height}"
+    assert rect.height >= 140, f"rig V1 harus tinggi, dapat {rect.height}"
     # Telapak depan menapak di y=+68 (sol boot di +66..+69, anchor 135).
     foot = idle.get_at((130 + 14, 135 + 68))
     assert foot.a > 150, f"telapak harus menapak di +68, alpha={foot.a}"
@@ -171,12 +201,22 @@ def test_rig_has_real_animation_frames():
         attacks.add(pygame.image.tobytes(surface, "RGBA"))
     assert len(attacks) == 6
 
+    spins = set()
+    for i in range(6):
+        surface = pygame.Surface((260, 240), pygame.SRCALPHA)
+        G._draw_grimjaw_elite(surface, 120, 115, 1,
+                              0.6 + i * 0.35, "spin", 0.0,
+                              spin_phase=i * 2.1)
+        spins.add(pygame.image.tobytes(surface, "RGBA"))
+    assert len(spins) == 6
+
 
 def test_skill_visuals_render_with_masterwork():
     """Q/W/E/R tetap muncul setelah body rewrite dan tetap cache-safe.
 
-    Timer memakai SKILL_VISUAL_DURATION (q=180, w=90, e=60, r=90), BUKAN
-    timer gameplay - FX phase membaca active_skill_timer di rentang visual.
+    Timer memakai SKILL_VISUAL_DURATION (q=118, w=59, e=39, r=59),
+    BUKAN timer gameplay - FX phase membaca active_skill_timer di
+    rentang visual.
     """
     from heroes import render_hero, clear_hero_sprite_cache
     clear_hero_sprite_cache()
@@ -207,7 +247,6 @@ def test_skill_fx_are_world_space():
     -> ~0 hit hangat di pita 155.
     """
     import math as _m
-    from heroes._bundle import _NS_grimjaw as G
 
     def warm(c):
         return c.a > 80 and c[0] > 140 and c[0] - c[2] > 70 and c[1] < 230
@@ -217,7 +256,7 @@ def test_skill_fx_are_world_space():
         h = _ProbeEntity("grimjaw", 380, 420)
         h.pulse = 1.3
         h.active_skill = "q"          # Blade Fury, steady -> marker penuh
-        h.active_skill_timer = 100    # progress 0.44 (fasa steady)
+        h.active_skill_timer = 100    # progress visual 0.15
         h.skill_range = 70
         h.target = _ProbeEntity("dummy", 520, 405)
         h.target.alive = True
@@ -245,6 +284,118 @@ def test_skill_fx_are_world_space():
         n = warm_hits_in_band(s, r_px)
         assert n > 10, (f"marker AOE Q tidak di radius dunia 70 saat "
                         f"fs={fs} (dapat {n}/180 hit) -> bukan world-space")
+
+
+def test_skill_state_changes_body():
+    normal = pygame.Surface((280, 300), pygame.SRCALPHA)
+    charged = pygame.Surface((280, 300), pygame.SRCALPHA)
+    G._draw_grimjaw_body(normal, 140, 155, 1, 1.0, "idle", 0, 0, False,
+                         skill_state=None)
+    G._draw_grimjaw_body(charged, 140, 155, 1, 1.0, "idle", 0, 0, False,
+                         skill_state="r")
+    assert pygame.image.tobytes(normal, "RGBA") != \
+        pygame.image.tobytes(charged, "RGBA")
+
+
+def test_v1_install_layering():
+    """install() mengembalikan subclass dari namespace legacy yang diberi."""
+    class _FakeLegacy:
+        PALETTE = {"legacy_key": (1, 2, 3)}
+
+    wrapped = _install_v1(_FakeLegacy)
+    assert issubclass(wrapped, _FakeLegacy)
+    assert wrapped.PALETTE["legacy_key"] == (1, 2, 3)
+    # Kunci kritis live FX tetap ada meski base minimal.
+    for key in ("fire_mid", "fire_light", "fire_hot", "fire_core",
+                "metal_light", "armor_mid", "armor_darkest", "rage_mid",
+                "heal_mid", "gold_light", "blood_mid", "white",
+                "shadow_deep"):
+        assert key in wrapped.PALETTE
+
+
+def test_basic_attack_spawn_wave_canvas_fallback():
+    """Serangan dasar melepas gelombang api dari ujung bilah di rilis.
+
+    Permintaan owner: "saya mau ada projectile saat melakukan basic
+    attack, projectile nya menyesuaikan heronya".  Grimjaw melee: ayunan
+    melepas FlameWaveProjectile (busur api pendek) dari ujung pedang
+    menuju target - murni visual (damage=0, tanpa impact FX).  Tidak
+    seperti hero ranged, canvas SELALU spawn walau FX live aktif karena
+    lapisan hidup melee tidak punya proyektil basic-attack sendiri.
+    """
+    surface = pygame.Surface((260, 280), pygame.SRCALPHA)
+    target = _ProbeEntity("dummy", 240, 120)
+    target.alive = True
+
+    hero = _ProbeEntity("grimjaw", 130, 140)
+    hero.pulse = 1.25
+    hero.direction = hero.facing = 1
+    hero.active_skill = None
+    hero.target = target
+    hero._gj_proj_spawned = False
+
+    saved = G._FX_LIVE.v
+    G._FX_LIVE.v = False          # paksa jalur canvas (tanpa FX live)
+    try:
+        # Sebelum titik rilis: belum ada gelombang.
+        hero._gj_attack_progress = 0.30
+        G._draw_grimjaw_attack(surface, hero, 130, 140)
+        assert len(getattr(hero, "_gj_projectiles", [])) == 0
+
+        # Di jendela rilis (ap 0.5-0.6): busur api terbang ke target.
+        hero._gj_attack_progress = 0.55
+        G._draw_grimjaw_attack(surface, hero, 130, 140)
+        items = getattr(hero, "_gj_projectiles", [])
+        assert len(items) == 1
+        wave = items[0]
+        assert type(wave) is G.FlameWaveProjectile
+        assert wave.target is target
+        assert wave.damage == 0
+
+        # Anti-dobel: frame rilis berikutnya tidak menambah gelombang.
+        G._draw_grimjaw_attack(surface, hero, 130, 140)
+        assert len(getattr(hero, "_gj_projectiles", [])) == 1
+
+        # Ayunan selesai: kunci rilis dibuka lagi untuk ayunan berikut.
+        hero._gj_attack_progress = 0.95
+        G._draw_grimjaw_attack(surface, hero, 130, 140)
+        assert hero._gj_proj_spawned is False
+
+        # Melee: canvas tetap spawn walau FX live aktif (tak ada dobel).
+        hero._gj_projectiles = []
+        hero._gj_proj_spawned = False
+        hero._gj_attack_progress = 0.55
+        G._FX_LIVE.v = True
+        G._draw_grimjaw_attack(surface, hero, 130, 140)
+        assert len(hero._gj_projectiles) == 1
+    finally:
+        G._FX_LIVE.v = saved
+
+
+def test_crit_attack_spawn_crit_wave():
+    """Serangan crit melepas gelombang emas (bukan api biasa)."""
+    surface = pygame.Surface((260, 280), pygame.SRCALPHA)
+    target = _ProbeEntity("dummy", 240, 120)
+    target.alive = True
+
+    hero = _ProbeEntity("grimjaw", 130, 140)
+    hero.pulse = 1.0
+    hero.direction = hero.facing = 1
+    hero.active_skill = "e"
+    hero.target = target
+    hero._gj_proj_spawned = False
+
+    saved = G._FX_LIVE.v
+    G._FX_LIVE.v = False
+    try:
+        hero._gj_attack_progress = 0.55
+        G._draw_grimjaw_attack(surface, hero, 130, 140, crit=True)
+        items = getattr(hero, "_gj_projectiles", [])
+        assert len(items) == 1
+        assert type(items[0]) is G.CritWaveProjectile
+        assert items[0].damage == 0
+    finally:
+        G._FX_LIVE.v = saved
 
 
 # ── paritas keluarga masterwork ──────────────────────────────────
@@ -562,6 +713,10 @@ if __name__ == "__main__":
     test_rig_has_real_animation_frames()
     test_skill_visuals_render_with_masterwork()
     test_skill_fx_are_world_space()
+    test_skill_state_changes_body()
+    test_v1_install_layering()
+    test_basic_attack_spawn_wave_canvas_fallback()
+    test_crit_attack_spawn_crit_wave()
     test_silhouette_outline_exists()
     test_family_shares_fx_vocabulary()
     test_family_skill_fx_are_world_space()
@@ -571,8 +726,9 @@ if __name__ == "__main__":
     test_family_keeps_public_names()
     test_razak_keeps_public_names()
     test_family_rigs_are_procedural()
-    print("OK - Grimjaw masterwork v2: rig 1.5x, blade pose, portrait LOD, "
-          "Q/W/E/R world-space, outline, dan 12 frame animasi tervalidasi")
+    print("OK - Grimjaw masterwork V1: rig pixel 48x48, blade pose, "
+          "portrait LOD, Q/W/E/R world-space, wave basic-attack, outline, "
+          "dan frame animasi tervalidasi")
     print("OK - paritas keluarga (gorath v2): kosakata FX, telegraph "
           "world-space W150/E85/R190, 3 tahap per skill, nama publik utuh")
     print("OK - paritas keluarga (razak v2): telegraph world-space "
