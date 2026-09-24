@@ -229,7 +229,7 @@ func _test_purchases_and_respawn() -> void:
 	_expect(not hero.is_dead and hero.visible, "Hero respawns after 10 seconds")
 	# Pengiriman forge terjadi TEPAT setelah respawn (_core.py:2181-2186):
 	# kelima item antrean masuk inventory, antrean kosong.
-	_expect(HeroItems.pending_forge_items(hero).is_empty,
+	_expect(HeroItems.pending_forge_items(hero).is_empty(),
 		"Forge queue drains the moment the hero respawns")
 	for sid in forge_ids:
 		_expect(hero.items.has(sid), "Forge delivered at respawn: " + sid)
