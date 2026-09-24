@@ -779,8 +779,27 @@ hanya jika Project ID tersedia:
   MYSTIC_GAMES_PROJECT_ID_FILE=~/mystic_games_id.txt buildozer android debug
   ```
 
-Jika tidak diset, aplikasi tetap build & jalan; cloud dalam mode
-NONAKTIF (game tetap bisa dimainkan, tapi tanpa save cloud).
+### Godot: build plugin dan export Android
+
+Godot menggunakan adapter terpisah berbasis Android Plugin v2; sumber Java
+Snapshots dipakai bersama, tetapi AAR Godot **harus** dibangun dari proyeknya:
+
+```bash
+cd godot/android_plugin/mystic_cloud
+MYSTIC_GAMES_PROJECT_ID=123456789012 gradle --no-daemon copyGodotPluginAars
+cd ../..
+```
+
+AAR debug/release tersalin otomatis ke `godot/addons/mystic_cloud/bin/`;
+berkas itu di-gitignore dan perlu dibangun ulang sebelum export. Proyek
+memakai `gradle_build/use_gradle_build=true` dan `EditorExportPlugin` untuk
+menambahkan AAR, dependency Play Games v2, serta metadata APP_ID. Build
+GitHub Actions melakukannya otomatis; simpan Project ID yang sama sebagai
+secret `MYSTIC_GAMES_PROJECT_ID`. Secara lokal bisa memakai file root
+`android_games_app_id.txt` (angka saja) saat membangun AAR dan mengekspor.
+
+Jika Project ID tidak disetel, aplikasi tetap build & jalan; cloud dalam mode
+NONAKTIF (game tetap bisa dimainkan, tetapi tanpa sinkronisasi cloud).
 
 ### Uji
 

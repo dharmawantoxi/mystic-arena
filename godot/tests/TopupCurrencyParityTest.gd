@@ -97,8 +97,11 @@ func _test_tables() -> void:
 	_cmp_dict_str("LANG_CURRENCY", TopupCurrency.LANG_CURRENCY,
 			tables["LANG_CURRENCY"])
 	_checks += 1
-	if not Array(tables["NO_DECIMAL"]).has_all(TopupCurrency.NO_DECIMAL) \
-			or TopupCurrency.NO_DECIMAL.size() != tables["NO_DECIMAL"].size():
+	var fixture_no_decimal: Array = Array(tables["NO_DECIMAL"])
+	var expected_no_decimal: Array = TopupCurrency.NO_DECIMAL.duplicate()
+	fixture_no_decimal.sort()
+	expected_no_decimal.sort()
+	if fixture_no_decimal != expected_no_decimal:
 		_fail("NO_DECIMAL beda: %s vs %s" % [TopupCurrency.NO_DECIMAL,
 				tables["NO_DECIMAL"]])
 	_checks += 1

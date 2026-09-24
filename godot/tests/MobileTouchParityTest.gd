@@ -103,11 +103,12 @@ func _mk_event(kind: String, step: Dictionary) -> InputEvent:
 		"wheel_up":
 			mb.button_index = MOUSE_BUTTON_WHEEL_UP
 			mb.pressed = true
-			mb.factor = Vector2(0.0, 1.0)
+			# InputEventMouseButton.factor is a scalar; button_index carries direction.
+			mb.factor = 1.0
 		"wheel_down":
 			mb.button_index = MOUSE_BUTTON_WHEEL_DOWN
 			mb.pressed = true
-			mb.factor = Vector2(0.0, -1.0)
+			mb.factor = 1.0
 	return mb
 
 

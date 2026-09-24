@@ -17,8 +17,8 @@
 #  2. `_device_locale()` pygame: (a) pyjnius -> Locale Java di Android,
 #     (b) `locale.setlocale(LC_ALL, "")` lalu `setlocale(LC_CTYPE)` di PC,
 #     (c) fallback env LC_ALL/LC_CTYPE/LANG. Godot tidak punya (a) dan (b):
-#     sumbernya `DisplayServer.get_locale()` (Android: Java Locale; desktop:
-#     env), LALU jalur (c) tetap ditiru persis — urutan, `.strip()`, dan
+#     sumbernya `OS.get_locale()` (Android: Java Locale; desktop: env), LALU
+#     jalur (c) tetap ditiru persis — urutan, `.strip()`, dan
 #     penolakan nilai berawalan "C". Beda bentuk: pygame (b) mengembalikan
 #     hasil parse `setlocale` yang sudah berupa "lang_REGION.CODESET"; Godot
 #     mengumpankan nama mentah ke parse_locale_name() (fungsi yang sama), jadi
@@ -174,7 +174,7 @@ static func device_locale() -> Array:
 	# 1) locale sistem: Android = Locale Java, desktop = SDL/XDG. Ini padanan
 	#    jalur `locale.setlocale` pygame (deviasi #2): hasilnya "C"/kosong di
 	#    lingkungan minim, dan itu memang ditolak pygame juga.
-	var lang_code := str(DisplayServer.get_locale()).strip_edges()
+	var lang_code := str(OS.get_locale()).strip_edges()
 	if lang_code != "" and not lang_code.begins_with("C"):
 		return parse_locale_name(lang_code)
 

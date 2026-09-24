@@ -185,7 +185,7 @@ static func device_info() -> Dictionary:
 		"model": model,
 		# padanan persis platform_utils.get_device_info(): kolom Android
 		# terisi HANYA di Android, "-" di mesin lain.
-		"android_release": (OS.get_system_version()
+		"android_release": (OS.get_version_alias()
 			if android else "-"),
 		# `ro.build.version.sdk` hanya terbaca lewat JNI/plugin; TIDAK
 		# ditebak -> "-" (kolom tetap tampil, isinya tidak diarang).
@@ -469,8 +469,8 @@ static func build_ops(s: Dictionary, lines: Array,
 				"y": int(at2.y + FULL_TEXT_AT.y) + i * int(FULL_LINE_PITCH),
 				"color": line[1] as Array})
 		if m == MODE_GRAPH:
-			ops.append_all(graph_ops(safe, s))
-	ops.append_all(touch_ops(s.get("points", []) as Array))
+			ops.append_array(graph_ops(safe, s))
+	ops.append_array(touch_ops(s.get("points", []) as Array))
 	return ops
 
 

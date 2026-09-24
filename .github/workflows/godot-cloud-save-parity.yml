@@ -1,0 +1,146 @@
+name: Godot Cloud Save Parity
+
+on:
+  push:
+    paths:
+      - 'godot/scripts/autoload/CloudSaveManager.gd'
+      - 'godot/scripts/autoload/GameManager.gd'
+      - 'godot/scripts/autoload/SaveManager.gd'
+      - 'godot/scripts/autoload/AppShell.gd'
+      - 'godot/scripts/core/ItemDB.gd'
+      - 'godot/scripts/utils/CloudSaveCodec.gd'
+      - 'godot/tests/CloudSaveParityTest.gd'
+      - 'godot/tests/CloudSaveParityTest.tscn'
+      - 'godot/tests/fixtures/cloud_save_parity.json'
+      - 'godot/project.godot'
+      - 'mobile/cloud_save.py'
+      - 'tools/test_cloud_save.py'
+      - 'tools/test_godot_cloud_save_parity.py'
+      - '.github/workflows/godot-cloud-save-parity.yml'
+  pull_request:
+    paths:
+      - 'godot/scripts/autoload/CloudSaveManager.gd'
+      - 'godot/scripts/autoload/GameManager.gd'
+      - 'godot/scripts/autoload/SaveManager.gd'
+      - 'godot/scripts/autoload/AppShell.gd'
+      - 'godot/scripts/core/ItemDB.gd'
+      - 'godot/scripts/utils/CloudSaveCodec.gd'
+      - 'godot/tests/CloudSaveParityTest.gd'
+      - 'godot/tests/CloudSaveParityTest.tscn'
+      - 'godot/tests/fixtures/cloud_save_parity.json'
+      - 'godot/project.godot'
+      - 'mobile/cloud_save.py'
+      - 'tools/test_cloud_save.py'
+      - 'tools/test_godot_cloud_save_parity.py'
+      - '.github/workflows/godot-cloud-save-parity.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: godot-cloud-save-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    name: Python oracle + Godot runtime scene
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GODOT_VERSION: '4.7.2'
+      GODOT_RELEASE: stable
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Prepare ignored binary assets
+        run: python3 tools/convert_to_godot.py --assets
+
+      - name: Verify cloud-save oracles and project references
+        run: |
+          python3 tools/test_cloud_save.py
+          python3 tools/test_godot_cloud_save_parity.py
+          python3 godot/tools/check_refs.py godot
+
+      - name: Cache Godot ${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: ~/godot-bin
+          key: godot-${{ env.GODOT_VERSION }}-${{ env.GODOT_RELEASE }}-linux-x86_64
+
+      - name: Download Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          V="${GODOT_VERSION}-${GODOT_RELEASE}"
+          mkdir -p ~/godot-bin
+          curl -fsSL -o /tmp/godot.zip \
+            "https://github.com/godotengine/godot/releases/download/${V}/Godot_v${V}_linux.x86_64.zip"
+          unzip -q -o /tmp/godot.zip -d /tmp/godot
+          mv "/tmp/godot/Godot_v${V}_linux.x86_64" ~/godot-bin/godot
+          chmod +x ~/godot-bin/godot
+
+      - name: Import Godot project
+        run: ~/godot-bin/godot --headless --path godot --import
+
+      - name: Run cloud-save parity scene
+        run: |
+          set -o pipefail
+          ~/godot-bin/godot --headless --path godot \
+            --quit-after 300 res://tests/CloudSaveParityTest.tscn \
+            2>&1 | tee /tmp/cloud-save-parity.log
+          grep -F '[CloudSaveParityTest] PASS' /tmp/cloud-save-parity.log
+
+      - name: Publish runtime diagnostics
+        if: always()
+        run: |
+          {
+            echo '### Godot cloud-save parity runtime log'
+            echo '```text'
+            if [ -f /tmp/cloud-save-parity.log ]; then
+              tail -n 250 /tmp/cloud-save-parity.log
+            else
+              echo 'Runtime log was not created.'
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -f /tmp/cloud-save-parity.log ]; then
+            python3 - <<'PY'
+          from pathlib import Path
+
+          lines = Path('/tmp/cloud-save-parity.log').read_text(errors='replace').splitlines()
+          markers = ('SCRIPT ERROR', 'Failed to load script',
+                     'Failed to instantiate an autoload', 'CloudSaveParityTest')
+          primary = []
+          secondary = []
+          for index, line in enumerate(lines):
+              if any(marker in line for marker in markers):
+                  context = lines[max(0, index - 1):min(len(lines), index + 2)]
+                  snippet = ' / '.join(part.strip() for part in context)
+                  if any(marker in line for marker in
+                         ('Parse Error', 'Invalid operands', 'Cannot infer',
+                          'CloudSaveCodec.gd')):
+                      primary.append(snippet)
+                  else:
+                      secondary.append(snippet)
+          message = ' || '.join((primary + secondary)[:15])[:5000]
+          message = message.replace('%', '%25').replace('\r', '%0D')
+          message = message.replace('\n', '%0A').replace(':', '%3A')
+          print(f'::notice title=Godot runtime diagnostics::{message}')
+          PY
+          fi
+
+      - name: Upload Godot runtime log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-save-godot-log-${{ github.run_id }}
+          path: /tmp/cloud-save-parity.log
+          if-no-files-found: ignore
+          retention-days: 7

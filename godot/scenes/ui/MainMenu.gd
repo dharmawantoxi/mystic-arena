@@ -139,6 +139,18 @@ var _slot_delete_confirm: int = -1
 ## `_open_slot_delete_dialog` sebelum dialog dibangun)
 var _slot_delete_return: int = 1
 
+# Referensi sementara ke kontrol Settings (layar dibangun ulang saat bahasa
+# berubah). Koneksi sinyal cloud dipasang sekali pada _ready, bukan per layar.
+var _cloud_status_label: Label = null
+var _cloud_note_label: Label = null
+var _cloud_signin_button: Button = null
+var _cloud_upload_button: Button = null
+var _cloud_download_button: Button = null
+var _cloud_restore_dialog: ConfirmationDialog = null
+var _cloud_restore_payload: Dictionary = {}
+var _cloud_restore_auto := false
+var _cloud_note_key := "set_cloud_note"
+
 
 ## FASE 24 — lapisan gamepad (paritas `menu.controller_mgr` pygame yang
 ## dipasang main_desktop_legacy.py:59). Diisi Main._ready.
@@ -157,6 +169,16 @@ func _ready() -> void:
 	# membangun Control sekali per layar — pola yang sama dengan
 	# ShopPanel/SkillBar/HUD/GameOverOverlay.
 	GameManager.language_changed.connect(_on_language_changed)
+	if not CloudSaveManager.state_changed.is_connected(_on_cloud_state_changed):
+		CloudSaveManager.state_changed.connect(_on_cloud_state_changed)
+	if not CloudSaveManager.status_changed.is_connected(_on_cloud_status_changed):
+		CloudSaveManager.status_changed.connect(_on_cloud_status_changed)
+	if not CloudSaveManager.operation_completed.is_connected(
+			_on_cloud_operation_completed):
+		CloudSaveManager.operation_completed.connect(
+			_on_cloud_operation_completed)
+	if not CloudSaveManager.restore_found.is_connected(_on_cloud_restore_found):
+		CloudSaveManager.restore_found.connect(_on_cloud_restore_found)
 	# Harus tetap hidup saat SceneTree di-pause (menu PAUSE dibuka justru
 	# ketika get_tree().paused = true).
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -306,6 +328,11 @@ func _show(new_state: int) -> void:
 		_menubg.visible = new_state != State.PAUSE
 	if _root != null:
 		_root.queue_free()
+	_cloud_status_label = null
+	_cloud_note_label = null
+	_cloud_signin_button = null
+	_cloud_upload_button = null
+	_cloud_download_button = null
 	# dialog konfirmasi keluar tidak boleh nyangkut di state baru (pygame
 	# memperlakukan exit_confirm sebagai modal yang menutup semua input).
 	if _confirm != null and is_instance_valid(_confirm):
@@ -1759,26 +1786,30 @@ func _build_settings() -> void:
 
 	left.add_child(_settings_header("CLOUD SAVE", "cloud",
 		UiTheme.CYAN_SOFT))
-	# Paritas _draw_cloud_buttons (_core.py:6395-6455) dalam kondisi PC
-	# (cloud tidak tersedia): status OFF + tombol upload/download + baris
-	# status. Plugin Play Games belum di-port — tombol inert dengan umpan
-	# balik status, perilaku yang sama seperti PC pygame.
-	left.add_child(PygameButton.pill_button(
-		_loc("set_cloud_off"), "locked", "cloud", 340, 32, 15))
-	var cloud_up := PygameButton.pill_button(
+	_cloud_status_label = Label.new()
+	_cloud_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UiTheme.style_label(_cloud_status_label, "", UiTheme.body_semibold(),
+		13, UiTheme.CYAN_SOFT)
+	left.add_child(_cloud_status_label)
+
+	_cloud_signin_button = PygameButton.pill_button(
+		_loc("set_cloud_sign_in"), "neutral", "cloud", 340, 32, 15)
+	_cloud_signin_button.pressed.connect(_on_cloud_signin_pressed)
+	left.add_child(_cloud_signin_button)
+	_cloud_upload_button = PygameButton.pill_button(
 		_loc("set_cloud_upload"), "neutral", "upload", 340, 32, 15)
-	var cloud_down := PygameButton.pill_button(
+	_cloud_upload_button.pressed.connect(_on_cloud_upload_pressed)
+	left.add_child(_cloud_upload_button)
+	_cloud_download_button = PygameButton.pill_button(
 		_loc("set_cloud_download"), "success", "download", 340, 32, 15)
-	left.add_child(cloud_up)
-	left.add_child(cloud_down)
-	var cloud_note := Label.new()
-	UiTheme.style_label(cloud_note,
-		_loc("set_cloud_note"),
+	_cloud_download_button.pressed.connect(_on_cloud_download_pressed)
+	left.add_child(_cloud_download_button)
+	_cloud_note_label = Label.new()
+	_cloud_note_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	UiTheme.style_label(_cloud_note_label, _loc(_cloud_note_key),
 		UiTheme.body_medium(), 12, Color(0.55, 0.59, 0.69))
-	cloud_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	left.add_child(cloud_note)
-	cloud_up.pressed.connect(_cloud_unavailable.bind(cloud_note))
-	cloud_down.pressed.connect(_cloud_unavailable.bind(cloud_note))
+	left.add_child(_cloud_note_label)
+	_refresh_cloud_controls()
 	var cloud_pad := Control.new()
 	cloud_pad.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	cloud_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -2006,10 +2037,156 @@ func _cycle_language(direction: int) -> void:
 	GameManager.set_language(str(options[idx]))
 
 
-## Umpan balik tombol cloud di PC pygame: status berubah, tanpa akses
-## (mobile/cloud_save.py hanya aktif dengan Play Games di Android).
-func _cloud_unavailable(note: Label) -> void:
-	note.text = _loc("set_cloud_unavailable")
+func _refresh_cloud_controls() -> void:
+	if _cloud_status_label == null or not is_instance_valid(_cloud_status_label):
+		return
+	var available := CloudSaveManager.available()
+	var signed := CloudSaveManager.signed_in()
+	var busy := CloudSaveManager.busy()
+	if not available:
+		_cloud_status_label.text = _loc("set_cloud_unavailable")
+	elif busy:
+		_cloud_status_label.text = _loc("set_cloud_busy")
+	elif signed:
+		_cloud_status_label.text = _loc("set_cloud_connected")
+	else:
+		_cloud_status_label.text = _loc("set_cloud_signed_out")
+	if _cloud_signin_button != null and is_instance_valid(_cloud_signin_button):
+		_cloud_signin_button.visible = available and not signed
+		_cloud_signin_button.disabled = busy or not available
+	if _cloud_upload_button != null and is_instance_valid(_cloud_upload_button):
+		_cloud_upload_button.disabled = busy or not available or not signed
+	if _cloud_download_button != null and is_instance_valid(_cloud_download_button):
+		_cloud_download_button.disabled = busy or not available or not signed
+
+
+func _on_cloud_state_changed(_available: bool, _signed_in: bool,
+		_busy: bool) -> void:
+	_refresh_cloud_controls()
+
+
+func _on_cloud_status_changed(ok: bool, _message: String) -> void:
+	if ok:
+		return
+	_set_cloud_note_key("set_cloud_operation_failed" if
+			CloudSaveManager.available() else "set_cloud_unavailable")
+
+
+func _on_cloud_operation_completed(result: Dictionary) -> void:
+	_refresh_cloud_controls()
+	var kind := str(result.get("kind", ""))
+	var ok := bool(result.get("ok", false))
+	match kind:
+		"check":
+			_set_cloud_note_key("set_cloud_sign_in_required" if
+					not CloudSaveManager.signed_in() else "set_cloud_connected")
+		"signin":
+			_set_cloud_note_key("set_cloud_connected" if ok else
+				"set_cloud_operation_failed")
+		"upload":
+			_set_cloud_note_key("set_cloud_upload_success" if ok else
+				"set_cloud_operation_failed")
+		"download":
+			if ok:
+				_set_cloud_note_key("set_cloud_download_found")
+			else:
+				_set_cloud_note_key("set_cloud_operation_failed")
+
+
+func _set_cloud_note_key(key: String) -> void:
+	_cloud_note_key = key
+	if _cloud_note_label != null and is_instance_valid(_cloud_note_label):
+		_cloud_note_label.text = _loc(key)
+
+
+func _on_cloud_signin_pressed() -> void:
+	if not CloudSaveManager.available():
+		_set_cloud_note_key("set_cloud_unavailable")
+		return
+	CloudSaveManager.sign_in()
+
+
+func _on_cloud_upload_pressed() -> void:
+	if not CloudSaveManager.available() or not CloudSaveManager.signed_in():
+		_set_cloud_note_key("set_cloud_sign_in_required")
+		return
+	var payload: Variant = CloudSaveManager.build_payload()
+	if not (payload is Dictionary):
+		_set_cloud_note_key("set_cloud_no_local_save")
+		return
+	CloudSaveManager.upload_payload(payload)
+
+
+func _on_cloud_download_pressed() -> void:
+	if not CloudSaveManager.available() or not CloudSaveManager.signed_in():
+		_set_cloud_note_key("set_cloud_sign_in_required")
+		return
+	CloudSaveManager.download_payload(_on_manual_cloud_download, false)
+
+
+func _on_manual_cloud_download(result: Dictionary) -> void:
+	if not bool(result.get("ok", false)):
+		_set_cloud_note_key("set_cloud_operation_failed")
+		return
+	var payload: Variant = result.get("payload")
+	var summary: Variant = result.get("summary", {})
+	if payload is Dictionary and summary is Dictionary:
+		_show_cloud_restore_dialog(payload, summary, false)
+
+
+func _on_cloud_restore_found(payload: Dictionary, summary: Dictionary) -> void:
+	_show_cloud_restore_dialog(payload, summary, true)
+
+
+func _show_cloud_restore_dialog(payload: Dictionary, summary: Dictionary,
+		automatic: bool) -> void:
+	if payload.is_empty() or not visible:
+		return
+	_cloud_restore_payload = payload.duplicate(true)
+	_cloud_restore_auto = automatic
+	if _cloud_restore_dialog == null or not is_instance_valid(
+			_cloud_restore_dialog):
+		_cloud_restore_dialog = ConfirmationDialog.new()
+		_cloud_restore_dialog.name = "CloudRestoreConfirmation"
+		_cloud_restore_dialog.confirmed.connect(_confirm_cloud_restore)
+		_cloud_restore_dialog.canceled.connect(_cancel_cloud_restore)
+		add_child(_cloud_restore_dialog)
+
+	var slot_count := int(summary.get("slot_count", 0))
+	var prompt_key := "set_cloud_restore_confirm"
+	if not CloudSaveManager.all_slots_empty():
+		prompt_key = "set_cloud_restore_replace"
+	var text := _loc(prompt_key) % slot_count
+	text += "\n\n" + (_loc("set_cloud_restore_summary") % [
+		int(summary.get("highest_level", 0)),
+		int(summary.get("meta_gold", 0)),
+	])
+	_cloud_restore_dialog.title = _loc("set_cloud_restore_title")
+	_cloud_restore_dialog.dialog_text = text
+	_cloud_restore_dialog.get_ok_button().text = _loc("set_cloud_restore")
+	_cloud_restore_dialog.get_cancel_button().text = _loc("menu_cancel")
+	_cloud_restore_dialog.popup_centered(Vector2i(560, 300))
+
+
+func _confirm_cloud_restore() -> void:
+	var result := CloudSaveManager.apply_payload(_cloud_restore_payload)
+	if bool(result.get("ok", false)):
+		CloudSaveManager.dismiss_restore_prompt()
+		_set_cloud_note_key("set_cloud_restore_success")
+	else:
+		push_warning("[MainMenu] Cloud restore failed: %s" %
+			str(result.get("error", "unknown")))
+		_set_cloud_note_key("set_cloud_operation_failed")
+	_cloud_restore_payload.clear()
+	_cloud_restore_auto = false
+	_refresh_cloud_controls()
+
+
+func _cancel_cloud_restore() -> void:
+	if _cloud_restore_auto:
+		CloudSaveManager.dismiss_restore_prompt()
+	_cloud_restore_payload.clear()
+	_cloud_restore_auto = false
 
 
 ## Baris toggle (paritas _draw_toggle_setting pygame): label + sakelar pil.

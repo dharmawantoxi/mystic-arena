@@ -8540,7 +8540,7 @@ def make_meta_shop_txn_fixture(core, entity):
 
 
 # ═════════════════════════════════════════════════════════════════════
-# FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY (TANPA CLOUD SAVE).
+# FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY (LOCAL STORAGE ONLY).
 #
 # Sumber kebenaran: `_system.py:746-1125` (NUM_SLOTS, LEGACY_SAVE_FILE,
 # SaveManager.migrate_legacy_save/save/load/get_empty_save/delete_slot/
@@ -8570,9 +8570,10 @@ def make_meta_shop_txn_fixture(core, entity):
 # elapsed dan elapsed + 2 detik). Cabang tanggal absolut disimpan apa
 # adanya: formatnya hanya bergantung timestamp, bukan now.
 #
-# TIDAK diuji (eksplisit): cloud save (`mobile/cloud_save.py` — di luar
-# scope FASE 21), piksel kartu (gradasi, ikon vektor, metrik font untuk
-# truncasi nama level), dan SFX (headless).
+# Cloud save diverifikasi terpisah (`CloudSaveParityTest` +
+# `tools/test_godot_cloud_save_parity.py`); fixture FASE 21 ini hanya
+# mengunci SaveManager lokal. TIDAK diuji di sini: piksel kartu (gradasi,
+# ikon vektor, metrik font untuk truncasi nama level) dan SFX (headless).
 # ═════════════════════════════════════════════════════════════════════
 
 ## Jam oracle: `time()` ter-pin, atribut lain (localtime/strftime/...) tetap
@@ -9100,7 +9101,6 @@ def make_save_slots_fixture(core, entity):
                     "month_abbr_guard": "Jan",
                     "card_w": CARD_W, "card_h": CARD_H, "gap_x": GAP_X,
                     "name_max_w": CARD_W - 40,
-                    "cloud_save": False,
                 },
                 "paths": paths,
                 "empty_save": empty,
@@ -10723,7 +10723,7 @@ def make_fixture(core, entity, levels, paths):
         # mini/true 4500) — 222 baris katalog, kasus guard/saldo/sfx/persist,
         # matriks keputusan kartu 5 state. Direplay MetaShopTxnParityTest.
         "meta_shop_txn": make_meta_shop_txn_fixture(core, entity),
-        # FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY (TANPA cloud save):
+        # FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY (local storage):
         # oracle SaveManager ASLI `_system.py` yang menulis/membaca berkas
         # beneran di direktori terisolasi (jam ter-pin, TZ=UTC) + jalur
         # draw pygame ASLI `Menu._draw_slot_select`. Mengunci jalur berkas,
