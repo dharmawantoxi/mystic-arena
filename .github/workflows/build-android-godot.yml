@@ -98,7 +98,7 @@ jobs:
           java-version: '17'
 
       - name: Android SDK
-        uses: actions/setup-android@v4
+        uses: android-actions/setup-android@v4
 
       - name: Gradle 8.12 (build Android plugin)
         uses: gradle/actions/setup-gradle@v4
