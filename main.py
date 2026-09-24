@@ -44,6 +44,7 @@ from mobile import diagnostics as diag_mod         # noqa: E402
 from mobile import bootcheck as bootcheck_mod      # noqa: E402
 from mobile import combat_audio as audio_mod       # noqa: E402
 from mobile import sidepanel as panel_mod          # noqa: E402
+from mobile import kaizen_review as kaizen_review_mod  # noqa: E402
 
 debug_mod.install_crash_handler()
 
@@ -246,6 +247,24 @@ def main():
             side.aktif = False
         perf.PHASES.end()
 
+    def _gambar_kaizen_review():
+        """Draw the opt-in Kaizen sheet after the arena frame."""
+        if not kaizen_review_mod.enabled():
+            return
+        # With a wide display the panel is outside the 1280px arena and
+        # must be drawn on the full surface.  On ordinary desktop output
+        # the render surface is the full target, so the card sits at the
+        # arena's right edge instead.
+        panel_rect = plat.get_panel_rect()
+        target = (plat.get_full_surface() if panel_rect is not None
+                  else screen)
+        try:
+            kaizen_review_mod.draw(target, panel_rect=panel_rect,
+                                   font_getter=get_font)
+        except Exception as exc:
+            # Review is a development aid; it must never interrupt combat.
+            print("[KAIZEN REVIEW] draw gagal: %s" % exc)
+
     menu = Menu(screen)
     menu.controller_mgr = None          # tidak ada controller di HP
     splash = SplashScreen(screen)
@@ -368,6 +387,10 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F8:
                     debug.toggle()
+                elif event.key == pygame.K_F9:
+                    # Optional visual review card; normal gameplay stays
+                    # unchanged unless explicitly requested.
+                    kaizen_review_mod.toggle()
                 elif event.key == pygame.K_ESCAPE:
                     if current_state == STATE_GAME:
                         ctx["request_pause"] = True
@@ -556,6 +579,7 @@ def main():
                 # Sama seperti update: render satu frame gagal tidak
                 # boleh menutup aplikasi. Log lalu lanjutkan.
                 _log_frame_error("draw")
+            _gambar_kaizen_review()
             perf.PHASES.mark("hud")
             hud.draw(screen, getattr(game, "animation_time", 0))
             perf.PHASES.end()
@@ -591,6 +615,7 @@ def main():
             frame_timer.start("draw")
             if game:
                 game.draw()
+                _gambar_kaizen_review()
             sim_acc += min(clock.get_time(), 250)
             _n = 0
             while sim_acc >= FIXED_DT_MS and _n < MAX_CATCHUP:
