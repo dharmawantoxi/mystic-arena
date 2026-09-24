@@ -13,6 +13,9 @@ var damage: float = 18.0
 var attack_range: float = 260.0
 var attack_interval: float = 1.2
 var slot_index: int = -1
+# L37 — pygame _entity.py:687: armor = 2 + level. Port ini belum punya level
+# menara, jadi semua menara dihitung level 1 → armor dasar 3.
+const BASE_ARMOR: float = 3.0
 
 var _enemy = null
 var _cooldown: float = 0.0
@@ -42,9 +45,13 @@ func is_alive() -> bool:
 	return hp > 0.0
 
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, school: String = "") -> void:
 	if hp <= 0.0:
 		return
+	# L37: pygame menara HANYA memblok school 'physical' (_entity.py:1066);
+	# tanpa school (pukulan minion) atau 'magic' (skill hero) → utuh.
+	if school == "physical":
+		amount = CombatCalc.mitigate(amount, BASE_ARMOR)
 	hp -= amount
 	_flash = 0.1
 	queue_redraw()
