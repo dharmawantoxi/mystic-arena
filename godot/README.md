@@ -1100,6 +1100,63 @@ Deviasi yang disengaja (tercatat, bukan kelupaan):
    klik. Klik kanan fisik dikirim sebagai `long_press` press-segera, jadi
    sensasinya tidak berubah.
 
+## Anggaran partikel adaptif (Fase 34 — port governor `mobile/perf.py`)
+
+Sebelum fase ini \"adaptive quality\" di port hanya mengganti batas FPS —
+
+itu tidak pernah paritas: pygame menurunkan **jumlah partikel yang muncul**
+saat layar penuh FX, bukan cuma frame rate. Modul pygame-nya, `mobile/perf.py`,
+kini diport sebagai `scripts/systems/FXLoadGovernor.gd`
+(gap #9 audit — ditutup 2026-09-24):
+
+| Pygame | Godot | Catatan |
+|---|---|---|
+| `Quality.particle_ratio` 0.20 / 0.40 / 0.70 per preset low/medium/high DITIMPA `Quality.apply` (perf.py:555-561) | `AppShell.PARTICLE_RATIO` + `particle_ratio_base()` | dipasang keduanya: `quality_level` ditetapkan di `_detect_quality` (touch→low, desktop→high) dan `_apply_quality` |
+| `Quality.particles = not low` | `AppShell.particles_enabled()` | low = partikel MATI total, bukan kecil |
+| properti `Quality.particle_ratio = _particle_ratio * fx_load()` (perf.py:626-627) | `AppShell.particle_ratio()` = `particle_ratio_base() * FXLoadGovernor.fx_load()` | satu fungsi, dibaca satu pembaca |
+| governor `set_fx_load(n)`/`fx_load()`/`reset_fx_load()` (perf.py:631-678): smoothing `0.40`, rumus `(1.0/n) ** 1.5` menjepit `[0.10, 1.0]`, n≤1 → 1.0 (maksimal nyaman), token beku (bukan di-refill) bila aim berubah | `FXLoadGovernor`: `LOAD_SMOOTH 0.40`, `LOAD_EXP 1.5`, `LOAD_MIN 0.10`, termasuk aturan "aim naik → token tetap, tidak di-refill sampai set berikutnya; aim turun → re-clamp" | `reset_fx_load()` mematikan token **dan** `_load` (perf.py:672-678) — dipanggil `GameManager.start_level` di samping `spark_fx.reset()` (paritas `_core.py:1408-1413`) |
+| token per frame `claim/refund_fx_particle` cap 140/lantai 56, `claim/refund_fx_projectile` 18/10, `allow_skill_projectile` 10/5 (perf.py:688-733); nonaktif = tanpa batas, refund saat nonaktif = no-op | sama di `FXLoadGovernor` (`PARTICLE_FLOOR 56` dst) | lantai, bukan nol — di bawah beban terberat pun 56 spark/18 proj/5 skill masih lolos per frame |
+| hook frame: `Game.draw` memanggil `begin_fx_frame(count_busy_fx_heroes(_fx_units))` SETIAP frame sebelum consume (`_core.py:2888-2892`) | `GameManager._process`: `FXLoadGovernor.set_fx_load(count_busy_fx_units(_collect_fx_units()))` + menekan `spark_fx.particle_ratio/particles_enabled` **sebelum** `spark_fx.advance(delta)` (paritas urutan) | `_collect_fx_units` = grup `heroes` + `bosses` (padanan `get_all_heroes()` + `[self.active_boss]`; dua-duanya QuickManager groups, bukan per-node autoload) |
+| `_fx_busy`/`count_busy_fx_heroes` (heroes/__init__.py AST): sibuk = tipe di **27-nama tabel `_LIVE_FX_HEROES`** + (`active_skill` ATAU `int(attack_timer) > 0` ATAU `int(timer) > 0` ATAU proyektil hidup); unit mati dilewati | `FXLoadGovernor.fx_busy`/`count_busy_fx_units` + tabel `LIVE_FX_TYPES` 27 nama | `int(0.7)` = 0 (sisa sepersekian detik BUKAN sibuk); `alive` ↔ `not is_dead`; `hero_type` kosong jatuh ke `boss_type` |
+| gate proyektil skill `_spawn_skill_projectile` → `_spawn_projectile(is_skill=True)` (`_entity.py:4469`) | `Hero.gd` `spawn_skill_projectile` + `kit_skill_proj` (2 titik, TEPAT seperti pygame: serangan dasar tidak digate) | 2 pin statik + replay |
+| konsumen token: `_HALF_HIT_PARTICLES`/FX-saluran | `VFXManager`: `sparks` claim partikel; `ring/slash/flash/streak/glow/wall` claim proyektil (wall → `null` bila ditolak) | **deviasi**: tidak ada wrap `surplus == ParticleEqual` refund otomatis — pygame menarik angka surplus dari 27 modul FX per-boss; Godot sudah punya API refund untuk dipakai nanti bila FX per-boss diport (gap #11) |
+| satu pembaca rasio: `_render.py:add_hit_particles` → `count = max(0, int(round(count * ratio)))`, return awal bila `not Quality.particles` (perf-ledakan/kematian boss TETAP rasio 1.0) | `SparkField.add_hit_particles` + `SparkField._py_round` (ties-to-even: CPython `round(2.5)=2`, bukan 3) | `spark_fx.reset()` pada `start_level` sudah cukup — SparkField tidak butuh lebih |
+
+**Angka yang sekarang nyambung:** bayangan `settings.quality` di save
+akhirnya diisi saat `_apply_quality`/`_detect_quality` berjalan (`persist=
+false` — masih tulisan sementara, jadi tetap tidak ikut migrasi slot), dan
+`max_damage_numbers` 8/16/32 milik `GameManager.start_level` akhirnya membaca
+preset yang NYATA, bukan `"low"` default yang membonsai semua angka — bug
+diam-diam yang ikut tertutup fase ini.
+
+Tiga lapis penguncian (pygame tetap satu-satunya sumber kebenaran):
+
+```bash
+# Oracle: MENJALANKAN mobile/perf.py ASLI (stub pygame minimal) untuk kurva
+# governor 36 langkah, 3 skenario claim/refund (cap 140/18/10, lantai 56/10/5,
+# token nonaktif = gratis), dan _fx_busy yang disadur AST dari
+# heroes/__init__.py untuk 10 kasus busy — lalu mem-PIN 123 literal di
+# 11 berkas sumber kedua engine.
+python3 tools/test_godot_particle_budget_parity.py
+python3 tools/test_godot_particle_budget_parity.py --write-fixture   # hanya bila perf.py/UI berubah
+
+# Replay headless (fixture lewat kelas produksi: FXLoadGovernor, AppShell,
+# GameManager hook, VFXManager, SparkField + simulasi SaveManager shadow):
+XDG_DATA_HOME=$(mktemp -d) godot --headless --path godot res://tests/ParticleBudgetParityTest.tscn --quit-after 300
+```
+
+Fixture (`godot/tests/fixtures/particle_budget.json`) deterministik — build
+kedua dari instance perf BERSIH harus byte-identik (diperiksa alat), supaya
+kebocoran state global governor tidak bisa menyamar jadi paritas.
+
+Yang sengaja TIDAK diport: refund otomatis berbasis \"surplus partikel\"
+(pygame menimbang jumlah partikel sebelum/sesudah tiap FX boss — tanpa 27
+modul FX ini tak ada yang diukur, dan menirunya berarti berpura-pura),
+`_FX_BUSY_COUNT`/kuantisasi delta tersebar perf.py, budget render hero, dan
+cloud save (tetap gap #3 audit). Lantai token DIJAGA dari atas: cap 140/18/10
+adalah batas ATAS beban ringan, bukan sasaran jumlah spawn; ratio × fx_load
+tidak pernah melebihi dasar preset (load=1.0 adalah atap).
+
 ## Mata uang dialog top-up (Fase 33 — port `topup_currency.py`)
 
 Harga paket top-up disimpan dalam IDR dan **ditampilkan** dalam mata uang

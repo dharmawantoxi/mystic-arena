@@ -9,6 +9,16 @@
 #   SECONDARY FX   (20%)  = sparks terarah        — sedikit, pendek, bertujuan
 #   ACCENT FX      (10%)  = flash / glow kecil    — kilatan singkat
 #
+# Fase 34 (gap #9 audit): spawn di sini dikonsumsi token anggaran FX
+# `FXLoadGovernor` (paritas wrap `_wrap_fx_spawn` heroes/__init__.py:790-838
+# pada spawn* ParticleSystem/ProjectileSystem pygame): `sparks` = token
+# PARTIKEL, bentuk lain (slash/ring/flash/streak/glow/wall) = token
+# PROYEKTIL. `claim` menolak -> efek dibuang (sama dengan pygame yang
+# `return None`). Pool mencuri actor tertua, jadi akuisisi tidak pernah
+# gagal -> tidak ada refund (paritas refund diuji lewat governor langsung).
+# Di luar match (token nonaktif) semua claim lolos (paritas
+# `_FX_TOKENS_ACTIVE`).
+#
 # Performa Android:
 #   * POOLING penuh — tidak ada instantiate()/queue_free() saat gameplay.
 #   * Semua actor digambar via _draw() (CPU) — aman GLES/Compatibility,
@@ -101,6 +111,8 @@ func _host(actor: Node2D) -> void:
 ## Cincin ekspansi (impact, AoE). PRIMARY/SECONDARY tergantung radius.
 func ring(pos: Vector2, radius_px: float, col: Color, delay := 0.0,
 		dur := 0.4, width := 3.0) -> void:
+	if not FXLoadGovernor.claim_fx_projectile():
+		return
 	var a = _acquire()
 	a.mode = ActorScript.Mode.RING
 	a.global_position = pos
@@ -117,6 +129,8 @@ func ring(pos: Vector2, radius_px: float, col: Color, delay := 0.0,
 func slash(pos: Vector2, angle_rad: float, radius_px: float, sweep_rad: float,
 		col: Color, delay := 0.0, dur := 0.3, spin_rad := 0.0,
 		thickness_px := 6.0) -> void:
+	if not FXLoadGovernor.claim_fx_projectile():
+		return
 	var a = _acquire()
 	a.mode = ActorScript.Mode.SLASH
 	a.global_position = pos
@@ -135,6 +149,8 @@ func slash(pos: Vector2, angle_rad: float, radius_px: float, sweep_rad: float,
 ## Kilatan singkat (aksen 10%).
 func flash(pos: Vector2, size_px: float, col: Color, delay := 0.0,
 		dur := 0.14) -> void:
+	if not FXLoadGovernor.claim_fx_projectile():
+		return
 	var a = _acquire()
 	a.mode = ActorScript.Mode.FLASH
 	a.global_position = pos
@@ -149,6 +165,8 @@ func flash(pos: Vector2, size_px: float, col: Color, delay := 0.0,
 ## Garis dash/streak dari A ke B (dash strike, proyektil cepat).
 func streak(a_pos: Vector2, b_pos: Vector2, col: Color, delay := 0.0,
 		dur := 0.26, width := 7.0) -> void:
+	if not FXLoadGovernor.claim_fx_projectile():
+		return
 	var a = _acquire()
 	a.mode = ActorScript.Mode.STREAK
 	a.global_position = a_pos
@@ -166,6 +184,8 @@ func streak(a_pos: Vector2, b_pos: Vector2, col: Color, delay := 0.0,
 ## semburan acak memenuhi layar.
 func sparks(pos: Vector2, dir_rad: float, count: int, speed: float,
 		col: Color, delay := 0.0, life := 0.34, spread_rad := 0.7) -> void:
+	if not FXLoadGovernor.claim_fx_particle():
+		return
 	var a = _acquire()
 	a.mode = ActorScript.Mode.SPARKS
 	a.global_position = pos
@@ -188,6 +208,8 @@ func sparks(pos: Vector2, dir_rad: float, count: int, speed: float,
 ## Sisa cahaya lembut (aftermath) — alpha rendah, bukan bloom.
 func glow(pos: Vector2, radius_px: float, col: Color, delay := 0.0,
 		dur := 0.6) -> void:
+	if not FXLoadGovernor.claim_fx_projectile():
+		return
 	var a = _acquire()
 	a.mode = ActorScript.Mode.GLOW
 	a.global_position = pos
@@ -202,6 +224,8 @@ func glow(pos: Vector2, radius_px: float, col: Color, delay := 0.0,
 ## Dinding/aura yang mengikuti unit (Wind Wall Kaizen).
 func wall(follow: Node2D, offset: Vector2, duration: float, radius_px: float,
 		col: Color) -> Object:
+	if not FXLoadGovernor.claim_fx_projectile():
+		return null
 	var a = _acquire()
 	a.mode = ActorScript.Mode.WALL
 	a.follow = follow
