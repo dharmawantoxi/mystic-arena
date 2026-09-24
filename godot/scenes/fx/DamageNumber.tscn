@@ -1,7 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://damage_number"]
-
-[ext_resource type="Script" path="res://scenes/fx/DamageNumber.gd" id="1"]
-
-[node name="DamageNumber" type="Label"]
-script = ExtResource("1")
-horizontal_alignment = 1

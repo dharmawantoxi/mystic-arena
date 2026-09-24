@@ -1,6 +1,0 @@
-[gd_scene load_steps=2 format=3 uid="uid://lighting_parity_test"]
-
-[ext_resource type="Script" path="res://tests/LightingParityTest.gd" id="1"]
-
-[node name="LightingParityTest" type="Node"]
-script = ExtResource("1")
