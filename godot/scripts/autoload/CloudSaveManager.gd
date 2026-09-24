@@ -156,8 +156,12 @@ func upload_payload(payload: Dictionary, callback: Callable = Callable()) -> voi
 		return
 	var payload_slots: Variant = payload.get("slots", {})
 	var payload_settings: Variant = payload.get("settings", {})
-	var has_slots := payload_slots is Dictionary and not payload_slots.is_empty()
-	var has_settings := payload_settings is Dictionary and not payload_settings.is_empty()
+	var has_slots: bool = false
+	var has_settings: bool = false
+	if payload_slots is Dictionary:
+		has_slots = not payload_slots.is_empty()
+	if payload_settings is Dictionary:
+		has_settings = not payload_settings.is_empty()
 	if payload.is_empty() or (not has_slots and not has_settings):
 		_deliver_immediate(callback, _err_result("upload", 5,
 			"Tidak ada save untuk diunggah"))
@@ -740,7 +744,7 @@ func _json_number_end(text: String, start: int) -> int:
 
 func _restore_number_markers(value: Variant, marker: String) -> Variant:
 	if value is String and value.begins_with(marker):
-		var token := value.substr(marker.length())
+		var token: String = str(value).substr(marker.length())
 		if token.find(".") < 0 and token.find("e") < 0 and token.find("E") < 0:
 			return int(token)
 		return float(token)
