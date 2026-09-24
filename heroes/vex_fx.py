@@ -73,7 +73,7 @@ MAX_PARTICLES = 102
 MAX_PROJECTILES = 10
 
 #: Panjang histori trail senjata (jumlah sample posisi staff).
-TRAIL_SAMPLES = 7
+TRAIL_SAMPLES = 8
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
 MAX_IMPACTS = 4
@@ -1374,8 +1374,8 @@ class ImpactFX:
             st = 1.0 - t / 0.55
             r0 = int((7 + 19 * pw) * (0.3 + 1.1 * t))
             for i in range(4):
-                ang = self.angle + k * math.pi / 4 + 0.19
-                L = (6 + 15 * pw) * st * (1.0 if k % 2 else 0.55)
+                ang = self.angle + i * math.pi / 4 + 0.19
+                L = (6 + 15 * pw) * st * (1.0 if i % 2 else 0.55)
                 pygame.draw.line(
                     surface, _clamp_color(
                         _mix(P["fx_deep"], P["fx_light"], st)),
@@ -1383,7 +1383,7 @@ class ImpactFX:
                      y + int(math.sin(ang) * r0)),
                     (x + int(math.cos(ang) * (r0 + L)),
                      y + int(math.sin(ang) * (r0 + L))),
-                    2 if k % 2 else 1)
+                    2 if i % 2 else 1)
 
         # ── 4. SLASH FRAGMENT — sabit tebal + busur pecah + chevron ──
         # Busurnya BERBASIS LINGKARAN BESAR (arc) yang mengembang searah

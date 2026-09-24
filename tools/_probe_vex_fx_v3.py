@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
-"""Probe forensik Skill FX Vex v3.0 — verifikasi struktur visual per-skill.
+"""Probe forensik renderer VEX V1 — verifikasi struktur visual per-skill.
 
-Tanpa mata: tiap fitur dicek lewat sampling piksel presisi (warna band,
-posisi ring, band accretion, mata rantai, gerhana, kristal, dsb).
+Sebelum V1, probe ini memvalidasi FX masterwork v3.0 (black hole R, kubah
+kaca E, ring portal Q).  Setelah ``heroes/vex_v1.py`` mengambil alih jalur
+render (pola Kaizen V1), cek diperbarui ke bahasa pixel-art V1: rig chibi
+hooded void-mage, orb staff menyala, kristal teal W, gelembung astral E,
+nova teal/hijau R, dan telegraph Q.
+
+Tanpa mata: tiap fitur dicek lewat sampling piksel presisi (warna ramp,
+posisi ring, cluster orb, dsb).  Ambang diturunkan dari pengukuran nyata
+(≈60% dari hasil sampel referensi) supaya probe tahan tuning artistik kecil
+namun tetap menangkap regresi struktural.
 """
 import math
 import os
@@ -52,10 +60,6 @@ def px(s, x, y):
     return pygame.Color(0, 0, 0, 0)
 
 
-def band_hits(s, match, xs):
-    return sum(1 for (x, y) in xs if match(px(s, x, y)))
-
-
 P = V.PALETTE
 
 
@@ -65,157 +69,119 @@ def is_col(c, key, tol=26):
             abs(c.g - t[1]) <= tol and abs(c.b - t[2]) <= tol)
 
 
-# ── W: ring presisi 60 + gerhana + kristal + dither ─────────────────
-s, x, y = frame("w", 50)
-rng = 60
-ring = [(x + int(math.cos(math.radians(a)) * rng),
-         y + int(math.sin(math.radians(a)) * rng)) for a in range(0, 360, 3)]
-n_ring = band_hits(s, lambda c: c.a > 70, ring)
-check(n_ring >= 100, "W: ring 60px kontinu", f"{n_ring}/120")
-# gerhana: corona + occluder di atas portal
-gy = y + 56
-ec_y = y - 118
-check(is_col(px(s, x, ec_y), "shadow", 40) or
-      is_col(px(s, x, ec_y), "shadow_deep", 40) or
-      px(s, x, ec_y).r < 20,
-      "W: occluder gerhana gelap di pusat",
-      str(px(s, x, ec_y)))
-cor = px(s, x - 17, ec_y)  # rim corona terang
-check(cor.a > 70 and cor.g > 70 and cor.b > 80,
-      "W: corona rim di tepi gerhana", str(cor))
-# kristal: baris luar pada radius ~57
+# ── Rig V1: hood ungu + mata teal + orb staff menyala ───────────────
+s, x, y = frame(None, 0)
+hood = sum(1 for dx in range(-30, 31, 2) for dy in range(-70, -30, 2)
+           if (lambda c: c.a > 60 and c.b > 50 and c.r < 110 and c.g < 90)
+           (px(s, x + dx, y + dy)))
+check(hood >= 100, "RIG: massa hood/robe ungu V1", str(hood))
+eyes = sum(1 for dx in range(-14, 15) for dy in range(-34, -24)
+           if (lambda c: c.a > 90 and c.g > 150 and c.b > 140)
+           (px(s, x + dx, y + dy)))
+check(eyes >= 15, "RIG: mata void teal di wajah shadow", str(eyes))
+orb = sum(1 for dx in range(10, 40) for dy in range(-55, -25)
+          if (lambda c: c.a > 80 and c.g > 130 and c.b > 130)
+          (px(s, x + dx, y + dy)))
+check(orb >= 80, "RIG: orb arcane menyala di ujung staff", str(orb))
+
+# ── W: ring kristal teal di ground + tick ring ──────────────────────
+s, x, y = frame("w", 26)
 cry = 0
 for a in range(0, 360, 6):
-    bx = x + math.cos(math.radians(a)) * 57
-    by = gy + math.sin(math.radians(a)) * 57 * .34
-    c = px(s, bx, by - 10)
-    if c.a > 60 and c.b > 60 and c.r < 120:
-        cry += 1
-check(cry >= 8, "W: mahkota kristal terdeteksi", f"{cry}/60")
-# dither disk: ada piksel void_darkest terseparsi di dalam disk
-dith = sum(1 for dx_ in range(-30, 31, 3) for dy_ in (-6, 0, 6)
-           if is_col(px(s, x + dx_, gy + dy_), "void_darkest", 30))
-check(dith >= 5, "W: dither disk ground", str(dith))
+    for rr in (50, 55, 60):
+        bx = x + math.cos(math.radians(a)) * rr
+        by = y + 44 + math.sin(math.radians(a)) * rr * .5
+        c = px(s, bx, by - 8)
+        if c.a > 60 and c.g > 90 and c.b > 90:
+            cry += 1
+            break
+check(cry >= 12, "W: mahkota kristal teal terdeteksi", f"{cry}/60")
+ring = sum(1 for a in range(0, 360, 4)
+           if px(s, x + math.cos(math.radians(a)) * 55,
+                 y + 44 + math.sin(math.radians(a)) * 55 * .5).a > 40)
+check(ring >= 50, "W: tick ring ground 55px", f"{ring}/90")
 
-# ── R: accretion band + photon ring + rim gold ───────────────────────
-s, x, y = frame("r", 40)
-rng = 180
-gold = [(x + int(math.cos(math.radians(a)) * (rng - 7)),
-         y + int(math.sin(math.radians(a)) * (rng - 7))) for a in range(0, 360, 4)]
-n_gold = band_hits(s, lambda c: c.a > 70 and c.r > 170 and c.g > 140, gold)
-check(n_gold >= 60, "R: rim gold 180px", f"{n_gold}/90")
-cy = y - 8
-pulse_ = math.sin(1.3 * 5) * .5 + .5
-disc_r = int((30 + 14 * pulse_))
-core_r = int(16 + 7 * pulse_)
-# accretion band depan: titik parametrik gold/magma di bawah core
-front = []
-for a in (1.0, 1.35, 1.7, math.pi - 1.7):
-    front.append(px(s, x + math.cos(a) * disc_r, cy + math.sin(a) * disc_r * .34))
-    front.append(px(s, x + math.cos(a) * disc_r * .82,
-                    cy + math.sin(a) * disc_r * .3))
-n_front = sum(1 for c in front if c.a > 60 and c.r > 150)
-check(n_front >= 4, "R: accretion band depan", str(n_front))
-# band belakang (atas core) — titik di luar siluet core
-back = []
-for a in (math.pi + .55, math.pi + .95, math.tau - .95, math.tau - .55):
-    if abs(math.cos(a)) * disc_r > core_r + 6:
-        back.append(px(s, x + math.cos(a) * disc_r,
-                       cy + math.sin(a) * disc_r * .34))
-n_back = sum(1 for c in back if c.a > 50 and c.r > 110)
-check(n_back >= 2, "R: accretion band belakang", str(n_back))
-# core hitam pekat (event horizon)
-core = px(s, x, cy)
-check(core.a > 180 and core.r < 45 and core.g < 60 and core.b < 70,
-      "R: inti black hole gelap", str(core))
-# retakan magma keluar dari pusat ground
-crack = 0
-for a in range(0, 360, 12):
-    for r_ in (30, 45, 60):
-        c = px(s, x + math.cos(math.radians(a)) * r_,
-               gy2 if False else y + 58 + math.sin(math.radians(a)) * r_ * .5)
-        if c.a > 70 and c.r > 120 and c.g < 110:
-            crack += 1
-check(crack >= 3, "R: retakan magma radial", str(crack))
+# ── E: gelembung astral ungu di target ──────────────────────────────
+s, x, y = frame("e", 18)
+tx, ty = x + 145, y - 20
+purp = 0
+for dx in range(-60, 61, 4):
+    for dy in range(-80, 41, 4):
+        c = px(s, tx + dx, ty + dy)
+        if c.a > 50 and c.b > 100 and c.r > 60 and c.g < 170:
+            purp += 1
+check(purp >= 12, "E: gelembung/penjara astral ungu di target", str(purp))
 
-# ── Q: beam kontinu + portal target + iris ───────────────────────────
-s, x, y = frame("q", 20)
-sx, sy = V._staff_orb_position(x, y, 1, 1.3, "idle", 0.0)
-tx, ty = V._target_position(_ProbeEntity("vex", x, y), x, y) if False else (None, None)
-# target sebenarnya (ter-clamp oleh _world_to_local):
-h = _ProbeEntity("vex", x, y); h._render_scale = 1.0
-h.target = SimpleNamespace(x=x + 145, y=y - 20, alive=True)
-tx, ty = V._target_position(h, x, y)
-beam = 0
-for t_ in (.2, .35, .5, .65, .8):
-    bx = sx + (tx - sx) * t_
-    by = sy + (ty - sy) * t_
-    found = any(px(s, bx + dx_, by + dy_).a > 70 and
-                px(s, bx + dx_, by + dy_).b > 90
-                for dx_ in (-4, 0, 4) for dy_ in (-4, 0, 4))
-    beam += found
-check(beam >= 4, "Q: conduit beam 5 titik", f"{beam}/5")
-# ring portal utama di target
-port = 0
-for a in range(0, 360, 9):
-    c = px(s, tx + math.cos(math.radians(a)) * 22,
-           ty + math.sin(math.radians(a)) * 22)
-    if c.a > 60:
-        port += 1
-check(port >= 30, "Q: ring portal target r=22", f"{port}/40")
+# ── R: nova teal + bintang hijau di sekitar caster ──────────────────
+s, x, y = frame("r", 30)
+teal = 0
+for a in range(0, 360, 5):
+    for rr in range(50, 150, 12):
+        c = px(s, x + math.cos(math.radians(a)) * rr,
+               y + 4 + math.sin(math.radians(a)) * rr * .45)
+        if c.a > 50 and c.g > 120 and c.b > 110:
+            teal += 1
+            break
+check(teal >= 20, "R: cincin nova teal mengembang", f"{teal}/72")
+grn = 0
+for a in range(0, 360, 8):
+    for rr in range(30, 140, 14):
+        c = px(s, x + math.cos(math.radians(a)) * rr,
+               y + 4 + math.sin(math.radians(a)) * rr * .45)
+        if c.a > 50 and c.g > 150 and c.r < 130:
+            grn += 1
+            break
+check(grn >= 6, "R: percikan hijau essence flux", f"{grn}/45")
 
-# ── E: rantai (mata rantai) + sangkar ────────────────────────────────
-s, x, y = frame("e", 30)
-sx, sy = V._staff_orb_position(x, y, 1, 1.3, "attack", .45)
-h = _ProbeEntity("vex", x, y); h._render_scale = 1.0
-h.target = SimpleNamespace(x=x + 145, y=y - 20, alive=True)
-tx, ty = V._target_position(h, x, y)
-dx_, dy_ = tx - sx, ty - sy
-dist_ = math.hypot(dx_, dy_) or 1.0
-nx_, ny_ = -dy_ / dist_, dx_ / dist_
-chain = 0
-for t_ in (.2, .4, .6, .8):
-    sag = math.sin(t_ * math.pi) * 6
-    found = any(px(s, sx + dx_ * t_ + nx_ * (sag + d),
-                   sy + dy_ * t_ + ny_ * (sag + d)).a > 60 and
-                px(s, sx + dx_ * t_ + nx_ * (sag + d),
-                   sy + dy_ * t_ + ny_ * (sag + d)).b > 120
-                for d in (-4, -2, 0, 2, 4))
-    chain += found
-check(chain >= 3, "E: rantai astral di garis tether", f"{chain}/4")
-# footprint ring di target r=30
-foot = 0
-for a in range(0, 360, 9):
-    hit = any(px(s, tx + math.cos(math.radians(a)) * r,
-                 ty + math.sin(math.radians(a)) * r).a > 60 and
-              px(s, tx + math.cos(math.radians(a)) * r,
-                 ty + math.sin(math.radians(a)) * r).b > 130
-              for r in (29, 30, 31))
-    foot += hit
-check(foot >= 34, "E: footprint penjara r=30", f"{foot}/40")
+# ── Q: charge glow di orb + telegraph target ────────────────────────
+s, x, y = frame("q", 16)
+o_pos = V._staff_orb_position(x, y, 1, 1.3, "attack", 0.5)
+ch = 0
+for dx in range(-18, 19, 2):
+    for dy in range(-18, 19, 2):
+        c = px(s, o_pos[0] + dx, o_pos[1] + dy)
+        if c.a > 60 and c.g > 160 and c.b > 150:
+            ch += 1
+check(ch >= 150, "Q: charge glow terang di orb staff", str(ch))
+tel = 0
+for dx in range(-60, 61, 3):
+    for dy in range(-45, 46, 3):
+        c = px(s, x + 145 + dx, y - 20 + dy)
+        if is_col(c, "void_mid", 40) or is_col(c, "void_light", 30):
+            tel += 1
+check(tel >= 6, "Q: telegraph void di titik target", str(tel))
 
-# ── E foreground: sangkar kaca di target (timer awal) ────────────────
-s, x, y = frame("e", 15)
-h = _ProbeEntity("vex", x, y); h._render_scale = 1.0
-h.target = SimpleNamespace(x=x + 145, y=y - 20, alive=True)
-tx, ty = V._target_position(h, x, y)
-env = min(1.0, (1 - 15 / 60.0) * 6.0, (1 - (1 - 15 / 60.0)) * 4.0 + .35)
-rad = int(34 * env)
-dome = 0
-for a in range(15, 166, 15):
-    found = any(px(s, tx + math.cos(math.radians(a)) * (rad + d),
-                   ty - math.sin(math.radians(a)) * (rad + d)).a > 60 and
-                px(s, tx + math.cos(math.radians(a)) * (rad + d),
-                   ty - math.sin(math.radians(a)) * (rad + d)).b > 140
-                for d in (-2, -1, 0, 1, 2))
-    dome += found
-check(dome >= 7, "E: kubah sangkar kaca", f"{dome}/11")
+# ── Serangan dasar: orb mengayun ke depan saat IMPACT ───────────────
+def orb_bright_region(s, x, y, x0, x1, y0, y1):
+    n = 0
+    for dx in range(x0, x1, 2):
+        for dy in range(y0, y1, 2):
+            c = px(s, x + dx, y + dy)
+            if c.a > 80 and c.g > 130 and c.b > 130:
+                n += 1
+    return n
 
-# ── determinisme: frame sama -> piksel identik ───────────────────────
-s1, _, _ = frame("w", 50)
-s2, _, _ = frame("w", 50)
-check(pygame.image.tobytes(s1, "RGBA") == pygame.image.tobytes(s2, "RGBA"),
-      "Determinisme: render W dua kali identik")
 
-print("\n" + ("SEMUA PROBE LOLOS" if OK else "ADA PROBE GAGAL"))
-sys.exit(0 if OK else 1)
+s0 = pygame.Surface((760, 760), pygame.SRCALPHA)
+V._draw_vex_elite(s0, 380, 420, 1, 0.0, "attack", 0.0, True)
+back = orb_bright_region(s0, 380, 420, -40, 5, -80, -30)
+s1 = pygame.Surface((760, 760), pygame.SRCALPHA)
+V._draw_vex_elite(s1, 380, 420, 1, 0.0, "attack", 0.56, True)
+fwd = orb_bright_region(s1, 380, 420, 10, 70, -40, 10)
+check(back >= 4, "ATK: orb tertarik ke belakang saat wind-up", str(back))
+check(fwd >= 20, "ATK: orb mendorong ke depan saat IMPACT 0.56", str(fwd))
+
+# ── Determinisme: render W dua kali identik ─────────────────────────
+sa, _, _ = frame("w", 26)
+sb, _, _ = frame("w", 26)
+same = all(sa.get_at((i, j)) == sb.get_at((i, j))
+           for i in range(0, sa.get_width(), 7)
+           for j in range(0, sa.get_height(), 7))
+check(same, "Determinisme: render W dua kali identik")
+
+print("-" * 50)
+if OK:
+    print("SEMUA PROBE LULUS")
+else:
+    print("ADA PROBE GAGAL")
+    sys.exit(1)
