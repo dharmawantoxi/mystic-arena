@@ -111,13 +111,23 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           if [ -f /tmp/cloud-save-parity.log ]; then
-            grep -nE 'SCRIPT ERROR|Parse Error|Failed to load|CloudSaveParityTest|ERROR:' \
-              /tmp/cloud-save-parity.log | tail -n 10 | while IFS= read -r line; do
-              line=${line//'%'/'%25'}
-              line=${line//$'\r'/'%0D'}
-              line=${line//':'/'%3A'}
-              printf '::notice title=Godot diagnostic::%s\n' "$line"
-            done
+            python3 - <<'PY'
+          from pathlib import Path
+
+          lines = Path('/tmp/cloud-save-parity.log').read_text(errors='replace').splitlines()
+          markers = ('SCRIPT ERROR', 'Parse Error', 'Failed to load',
+                     'Failed to instantiate', 'Invalid operands',
+                     'CloudSaveParityTest', 'ERROR:')
+          snippets = []
+          for index, line in enumerate(lines):
+              if any(marker in line for marker in markers):
+                  context = lines[max(0, index - 1):min(len(lines), index + 2)]
+                  snippets.append(' / '.join(part.strip() for part in context))
+          message = ' || '.join(snippets[-20:])[:5000]
+          message = message.replace('%', '%25').replace('\r', '%0D')
+          message = message.replace('\n', '%0A').replace(':', '%3A')
+          print(f'::notice title=Godot runtime diagnostics::{message}')
+          PY
           fi
 
       - name: Upload Godot runtime log
