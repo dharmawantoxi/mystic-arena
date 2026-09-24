@@ -67,7 +67,7 @@ MAX_PARTICLES = 96
 MAX_PROJECTILES = 8
 
 #: Panjang histori trail senjata (jumlah sample posisi bilah).
-TRAIL_SAMPLES = 7
+TRAIL_SAMPLES = 8
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
 MAX_IMPACTS = 4
@@ -770,9 +770,10 @@ class ParticleSystem:
         budget = particle_budget()
         if budget <= 0.0:
             return None
-        if (budget < 1.0 and not getattr(self, "_in_burst", 0)
-                and random.random() >= budget):
-            return None
+        # Burst/stream callers already quantize their requested count via
+        # _budgeted().  An explicit single spawn must stay deterministic;
+        # probabilistic dropping here made a lone particle randomly return
+        # None in tooling/tests and produced uneven trails on mobile.
         if len(self._live) >= self.cap:
             return None
         p = self._acquire().spawn(x, y, vx, vy, life, size, color, **kw)
@@ -1120,8 +1121,8 @@ class ImpactFX:
             st = 1.0 - t / 0.55
             r0 = int((6 + 18 * pw) * (0.3 + 1.1 * t))
             for i in range(4):
-                ang = self.angle + k * math.pi / 4 + 0.19
-                L = (6 + 14 * pw) * st * (1.0 if k % 2 else 0.55)
+                ang = self.angle + i * math.pi / 4 + 0.19
+                L = (6 + 14 * pw) * st * (1.0 if i % 2 else 0.55)
                 pygame.draw.line(
                     surface, _clamp_color(
                         _mix(P["fx_dark"], P["fx_bright"], st)),
@@ -1129,7 +1130,7 @@ class ImpactFX:
                      y + int(math.sin(ang) * r0)),
                     (x + int(math.cos(ang) * (r0 + L)),
                      y + int(math.sin(ang) * (r0 + L))),
-                    2 if k % 2 else 1)
+                    2 if i % 2 else 1)
 
         # ── 4. SLASH FRAGMENT — 3 busur pecah searah tebasan ────────
         if t < 0.5 and self.kind in ("slash", "crit"):
