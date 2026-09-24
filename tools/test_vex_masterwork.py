@@ -262,6 +262,87 @@ def test_v1_install_layering():
         assert key in wrapped.PALETTE
 
 
+def test_basic_attack_spawn_orb_canvas_fallback():
+    """Serangan dasar melepaskan orb arcane bertema hero di rilis ayunan.
+
+    Permintaan owner: "saya mau ada projectile saat melakukan basic
+    attack, projectile nya menyesuaikan heronya".  Jalur canvas (fallback
+    tanpa FX live) harus spawn ArcaneOrbProjectile teal dari ujung staff
+    menuju target — tanpa skill yang aktif sekalipun.
+    """
+    surface = pygame.Surface((260, 280), pygame.SRCALPHA)
+    target = _ProbeEntity("dummy", 240, 120)
+    target.alive = True
+
+    hero = _ProbeEntity("vex", 130, 140)
+    hero.pulse = 1.25
+    hero.direction = hero.facing = 1
+    hero.active_skill = None
+    hero.target = target
+    hero._vx_proj_spawned = False
+
+    saved = V._FX_LIVE.v
+    V._FX_LIVE.v = False          # paksa jalur canvas (tanpa FX live)
+    try:
+        # Sebelum titik rilis: belum ada orb.
+        hero._vx_attack_progress = 0.30
+        V._draw_vex_attack(surface, hero, 130, 140)
+        assert len(getattr(hero, "_vx_projectiles", [])) == 0
+
+        # Di jendela rilis (ap 0.5-0.6): orb arcane terbang ke target.
+        hero._vx_attack_progress = 0.55
+        V._draw_vex_attack(surface, hero, 130, 140)
+        items = getattr(hero, "_vx_projectiles", [])
+        assert len(items) == 1
+        orb = items[0]
+        assert type(orb) is V.ArcaneOrbProjectile   # teal arcane
+        assert orb.target is target
+
+        # Anti-dobel: frame rilis berikutnya tidak menambah orb.
+        V._draw_vex_attack(surface, hero, 130, 140)
+        assert len(getattr(hero, "_vx_projectiles", [])) == 1
+
+        # Ayunan selesai: kunci rilis dibuka lagi untuk ayunan berikut.
+        hero._vx_attack_progress = 0.95
+        V._draw_vex_attack(surface, hero, 130, 140)
+        assert hero._vx_proj_spawned is False
+
+        # Saat FX live aktif, canvas TIDAK spawn (director pemiliknya).
+        hero._vx_projectiles = []
+        hero._vx_proj_spawned = False
+        hero._vx_attack_progress = 0.55
+        V._FX_LIVE.v = True
+        V._draw_vex_attack(surface, hero, 130, 140)
+        assert len(hero._vx_projectiles) == 0
+    finally:
+        V._FX_LIVE.v = saved
+
+
+def test_skill_attack_masih_spawn_orb_saat_fx_live():
+    """Skill E tetap melepaskan orb astral walau lapisan FX live aktif."""
+    surface = pygame.Surface((260, 280), pygame.SRCALPHA)
+    target = _ProbeEntity("dummy", 240, 120)
+    target.alive = True
+
+    hero = _ProbeEntity("vex", 130, 140)
+    hero.pulse = 1.0
+    hero.direction = hero.facing = 1
+    hero.active_skill = "e"
+    hero.target = target
+    hero._vx_proj_spawned = False
+
+    saved = V._FX_LIVE.v
+    V._FX_LIVE.v = True
+    try:
+        hero._vx_attack_progress = 0.55
+        V._draw_vex_attack(surface, hero, 130, 140)
+        items = getattr(hero, "_vx_projectiles", [])
+        assert len(items) == 1
+        assert type(items[0]) is V.AstralOrbProjectile   # ungu astral
+    finally:
+        V._FX_LIVE.v = saved
+
+
 if __name__ == "__main__":
     test_masterwork_is_procedural()
     test_material_details_and_pose()
@@ -273,4 +354,6 @@ if __name__ == "__main__":
     test_skill_state_changes_body()
     test_silhouette_outline_exists()
     test_v1_install_layering()
+    test_basic_attack_spawn_orb_canvas_fallback()
+    test_skill_attack_masih_spawn_orb_saat_fx_live()
     print("SEMUA TEST VEX V1 MASTERWORK LULUS")

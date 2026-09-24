@@ -2451,11 +2451,13 @@ class SkillFX:
     def _draw_front_r(self, surface):
         p = self.progress
         if p < self.P_RELEASE:
-            # IMPLOSI: chevron tersedot ke dalam
+            # IMPLOSI: chevron tersedot ke dalam.  Radius minimum dijaga
+            # ≥ 0.40R (dulu 0.25R) supaya chevron tidak pernah masuk
+            # menutupi badan/wajah Vex saat konvergi.
             t = p / self.P_RELEASE
             for i in range(6):
                 a = (i / 6.0) * math.tau + self.age * 2.2
-                rr = self.radius * (0.85 - 0.6 * _ease_in(t))
+                rr = self.radius * (0.95 - 0.55 * _ease_in(t))
                 gx = self.x + math.cos(a) * rr
                 gy = self.y + 6 + math.sin(a) * rr * 0.6
                 ch = rotated_cached(("chev7", P["fx_bright"], 2),
@@ -2465,22 +2467,26 @@ class SkillFX:
                 surface.blit(ch, (int(gx) - ch.get_width() // 2,
                                   int(gy) - ch.get_height() // 2))
             return
-        # LEDAKAN: cincin emas mengembang + glide rune
+        # LEDAKAN: cincin emas mengembang + glide rune.  Cincin di-
+        # pusatkan RENDAH (y + 26, petak kaki/petak tanah) dan dipipihkan
+        # ring-width-nya supaya busur atasnya tidak melintasi wajah —
+        # badan Vex tetap terbaca saat nova R keluar (keluhan owner:
+        # "skill fx R menutupi vex").
         t = (p - self.P_RELEASE) / (1.0 - self.P_RELEASE)
         if t < 0.7:
             st = 1.0 - t / 0.7
             rr = int(self.radius * (0.2 + 1.05 * _ease_out(t)))
             surface.blit(
-                dashed_ring_surface(max(6, rr), max(2, int(4 * st) + 1),
+                dashed_ring_surface(max(6, rr), max(2, int(3 * st) + 1),
                                     P["gold"], segments=5, span=0.36,
                                     rot_step=self.age * 200.0),
-                (int(self.x) - rr - 8, int(self.y) + 8 - rr - 8))
-            # glif rune melayang keluar
+                (int(self.x) - rr - 8, int(self.y) + 26 - rr - 8))
+            # glif rune melayang keluar (band kaki, bukan badan)
             for i in range(6):
                 a = (i / 6.0) * math.tau + 0.3
                 rad = self.radius * (0.3 + 0.7 * t)
                 gx = self.x + math.cos(a) * rad
-                gy = self.y + 8 + math.sin(a) * rad * 0.55
+                gy = self.y + 24 + math.sin(a) * rad * 0.5
                 gl = rune_surface(5, P["gold_hot"], i)
                 gl.set_alpha(int(230 * st))
                 surface.blit(gl, (int(gx) - gl.get_width() // 2,
@@ -2906,6 +2912,80 @@ class VexFXDirector:
             colors=(P["fx_light"], P["fx_mid"], P["fx_bright"]),
             speed=(40, 100), squash=0.9, shape="mote", swirl=1.6)
         shake(1.3, 0.14)
+
+        # ── Proyektil TERBANG untuk serangan dasar ────────────────────
+        # Permintaan owner: "saya mau ada projectile saat melakukan
+        # basic attack, projectile nya menyesuaikan heronya".  Orb void
+        # teal berangkat dari ujung staff menuju target — temanya
+        # identitas Vex murni (draw_arcane_orb, glyph yang sama dengan
+        # proyektil damage generik _entity).  MURNI VISUAL (damage=0):
+        # saat tiba, touchdown-nya percikan lembut — KONTRAK "basic
+        # attack tanpa impact FX / hit-stop / shake"
+        # (tools/test_basic_attack_no_impact_fx.py) tetap terjaga.
+        # Ayunan skill tidak dilayani di sini: skill punya peluncur
+        # proyektilnya sendiri (_flux_burst / arcade skill spawns).
+        if int(getattr(self.hero, "skill_timer", 0) or 0) <= 0:
+            self.launch_attack_orb(facing)
+
+    def launch_attack_orb(self, facing):
+        """Lepaskan orb void serangan dasar dari ujung staff ke target.
+
+        Kecepatan ORB_SPEED sengaja mengimbangi proyektil damage
+        generik ``_entity`` (9.5 px/sim-step ≈ 570 px/s) supaya keduanya
+        terbaca satu peluru: yang generik membawa damage, yang ini
+        memperkaya visual (trail pita + glyph orb 60 fps yang tembus
+        cache sprite lane).  Homing ringan ke ``hero.target``; tanpa
+        target, orb terbang lurus searah hadap.
+        """
+        h = self.hero
+        try:
+            (_b, _g, orb), _action = staff_points(
+                h, progress=ATTACK_IMPACT_POINT)
+            ox, oy = orb
+        except Exception:                      # pragma: no cover
+            f0 = 1.0 if facing >= 0 else -1.0
+            ox = float(getattr(h, "x", 0.0)) + 16.0 * f0
+            oy = float(getattr(h, "y", 0.0)) - 30.0
+        target = getattr(h, "target", None)
+        if target is not None and not getattr(target, "alive", False):
+            target = None
+        if target is not None:
+            tx = float(getattr(target, "x", 0.0))
+            ty = float(getattr(target, "y", 0.0))
+        else:
+            f = 1.0 if facing >= 0 else -1.0
+            scale = render_scale(h)
+            tx = float(getattr(h, "x", ox)) + 170.0 * f * scale
+            ty = float(getattr(h, "y", oy)) - 14.0 * scale
+        proj = self.projectiles.spawn(
+            ox, oy, tx, ty,
+            speed=ORB_SPEED, damage=0, target=target,
+            radius=6.5, homing=3.4, kind="orb", gravity=0.0,
+            max_lifetime=1.6,
+            on_impact=self._attack_orb_touchdown)
+        if proj is not None:
+            proj.trail_life = 0.3
+
+    def _attack_orb_touchdown(self, proj):
+        """Touchdown lembut orb serangan dasar (tanpa paket impact).
+
+        Sengaja TIDAK memanggil ImpactFX, ``shake``, atau hit-stop —
+        kontrak owner: serangan dasar NOL impact FX. Litrik kecil +
+        debu cukup memberi rasa "menemukan sasaran".
+        """
+        try:
+            hx, hy = float(proj.hit_pos.x), float(proj.hit_pos.y)
+        except Exception:                      # pragma: no cover
+            return
+        self.particles.burst(
+            hx, hy, 7,
+            speed=(45, 130), life=(0.15, 0.3), size=(1, 3),
+            colors=(P["fx_bright"], P["fx_light"], P["rune_light"]),
+            spread=math.tau, drag=3.2, shape="streak")
+        self.particles.ring(
+            hx, hy, 5, 5, life=(0.12, 0.24), size=(1, 2),
+            colors=(P["fx_pale"], P["fx_light"]),
+            speed=(30, 70), squash=0.8, shape="mote", swirl=1.4)
 
     def on_cast(self, x, y, skill):
         """Skill dilepas: buat SkillFX + bahasa per-skill + shake."""

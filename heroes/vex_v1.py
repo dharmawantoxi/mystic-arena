@@ -1107,36 +1107,73 @@ def install(legacy_cls):
         # ---------- Skill FX: R Essence Flux ----------
         @staticmethod
         def _draw_essence_flux_ground(surface, boss, x, y, timer, phase):
-            P = VexV1Renderer
-            radius = P._ring_r(boss, 120, surface)
-            P._aoe_marks(surface, x, y + 44, radius, P.C_GREEN, 175,
-                         phase * 1.3, squash=.5, ticks=18, tick_len=9)
-
-        @staticmethod
-        def _draw_essence_flux(surface, boss, x, y, timer, phase):
+            # Lapisan TANAH (digambar SEBELUM badan): semua massa besar
+            # nova R hidup di petak tanah ini — badan Vex berdiri "di
+            # atas" ledakan, bukan di baliknya.  (Keluhan owner: "skill
+            # fx R menutupi vex" — sebelumnya cakram isi + 2 cincin
+            # tebal digambar di foreground, tepat menimpa sprite.)
             P = VexV1Renderer
             progress = P._skill_progress(boss, "r", timer)
             radius = P._ring_r(boss, 120, surface)
             boom = min(1.0, progress * 1.6)
-            P._aacircle(surface, (*P.C_VOID_DARK, int(70 * (1 - boom * .5))),
-                        (x, y), 24 + int(radius * .35 * boom))
-            P._dashed_ring(surface, x, y + 4, 20 + radius * .8 * boom,
-                           P.C_VOID_CORE, int(210 * (1 - boom * .4)),
-                           phase * 2.0, dashes=20, width=3, squash=.4)
-            P._dashed_ring(surface, x, y + 4, 12 + radius * .45 * boom,
-                           P.C_GREEN, int(170 * (1 - boom * .4)),
-                           -phase * 1.4, dashes=14, width=2, squash=.4)
+
+            # TELEGRAPH — tanda bahaya area skill
+            P._aoe_marks(surface, x, y + 44, radius, P.C_GREEN, 175,
+                         phase * 1.3, squash=.5, ticks=18, tick_len=9)
+
+            # Piring void + dua cincin mengembang, di-squash ke bidang
+            # tanah (y + 44, squash 0.5) supaya terbaca gelombang di
+            # tanah dan tidak memotong siluet badan.
+            gy = y + 44
+            P._aacircle(surface,
+                        (*P.C_VOID_DARK, int(62 * (1 - boom * .45))),
+                        (x, gy), 16 + int(radius * .34 * boom))
+            P._dashed_ring(surface, x, gy, 16 + radius * .80 * boom,
+                           P.C_VOID_CORE, int(205 * (1 - boom * .35)),
+                           phase * 2.0, dashes=20, width=3, squash=.5)
+            P._dashed_ring(surface, x, gy, 10 + radius * .44 * boom,
+                           P.C_GREEN, int(165 * (1 - boom * .35)),
+                           -phase * 1.4, dashes=14, width=2, squash=.5)
+
+        @staticmethod
+        def _draw_essence_flux(surface, boss, x, y, timer, phase):
+            # Lapisan DEPAN (setelah badan): HANYA aksen ringan — spark
+            # di tepi cincin (di luar siluet), streak void naik di
+            # sisi-sisi tubuh, dan flash kecil di orb staff.  Tidak ada
+            # elemen solid menimpa badan (kontrak: badan Vex tetap
+            # terbaca penuh saat R aktif).
+            P = VexV1Renderer
+            progress = P._skill_progress(boss, "r", timer)
+            radius = P._ring_r(boss, 120, surface)
+            boom = min(1.0, progress * 1.6)
+            gy = y + 44
+            ring = 16 + radius * .80 * boom
+
             for i in range(8):
                 a = phase * 1.1 + i * math.tau / 8
-                rr = 18 + radius * .6 * boom
-                P._spark_star(surface, x + math.cos(a) * rr,
-                              y + 4 + math.sin(a) * rr * .45, 4,
-                              P.C_GREEN, int(190 * (1 - progress * .3)),
+                P._spark_star(surface, x + math.cos(a) * ring,
+                              gy + math.sin(a) * ring * .5, 4,
+                              P.C_GREEN, int(180 * (1 - boom * .3)),
                               4, rot=a)
+
+            # Streak void vertikal di kiri-kanan tubuh (bukan di atasnya)
+            for i, side in enumerate((-1, 1)):
+                dx = side * (27 + i * 13)
+                h = int((34 + 52 * boom)
+                        * (0.65 + 0.35
+                           * abs(math.sin(phase * 2.4 + i * 2.2))))
+                alpha = int(150 * (1 - boom * .35))
+                P._aaline(surface, (*P.C_VOID_CORE, alpha),
+                          (x + dx, gy - 4), (x + dx, gy - 4 - h))
+                P._aacircle(surface, (*P.C_VOID_CORE, alpha),
+                            (x + dx, gy - 4 - h), 2)
+
+            # Flash di orb staff — kecil & ter-capped supaya tidak
+            # menelan kepala/hood (dulu radius s.d. 18 alpha 220).
             ox, oy = P._staff_orb_position(
                 x, y, getattr(boss, "direction", 1), phase, "attack", 0.56)
-            P._aacircle(surface, (*P.C_VOID_CORE, int(220 * boom)),
-                        (ox, oy), 6 + int(12 * boom))
+            P._aacircle(surface, (*P.C_VOID_CORE, int(190 * boom)),
+                        (ox, oy), 3 + int(6 * boom))
 
         # ---------- Attack swing trail (fallback in-canvas) ----------
         @staticmethod
@@ -1321,13 +1358,22 @@ def install(legacy_cls):
             f = getattr(boss, "direction", 1)
             portrait = bool(getattr(boss, "_portrait_hd", False))
 
-            # Basic attack tidak spawn renderer projectile (pakai generic
-            # _entity.py); orb renderer hanya saat skill aktif (pola legacy).
-            if (getattr(boss, "active_skill", None) is not None
+            # RELEASE WINDOW — ayunan melepaskan proyektil orb yang
+            # TEMAnya menyesuaikan hero tepat di titik release (ap
+            # 0.5-0.6): orb arcane teal untuk skill Q/W/R & serangan
+            # dasar, orb astral ungu khusus skill E.
+            #
+            # Pada serangan dasar orb canvas hanya di-spawn kalau lapisan
+            # FX hidup tidak aktif: saat heroes/vex_fx hidup (lane &
+            # boss path), director menembakkan orb basic attack-nya
+            # sendiri dari ``on_orb_release`` (60 fps screen-space,
+            # tembus cache sprite lane) — canvas tidak boleh dobel.
+            skill = getattr(boss, "active_skill", None)
+            if ((skill is not None or not P._FX_LIVE.v)
                     and 0.5 < progress < 0.6
                     and not getattr(boss, "_vx_proj_spawned", False)
                     and not portrait):
-                if getattr(boss, "active_skill", None) == "e":
+                if skill == "e":
                     P._spawn_astral_orb(boss, x, y)
                 else:
                     P._spawn_arcane_orb(boss, x, y)
