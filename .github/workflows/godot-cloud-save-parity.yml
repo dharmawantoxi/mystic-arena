@@ -109,6 +109,16 @@ jobs:
               line=${line//':'/'%3A'}
               printf '::notice title=Godot runtime output::%s\n' "$line"
             done
+            python3 - <<'PY'
+          import base64
+          from pathlib import Path
+
+          log = Path('/tmp/cloud-save-parity.log').read_bytes()[-20000:]
+          encoded = base64.b64encode(log).decode('ascii')
+          for index in range(0, len(encoded), 2500):
+              chunk = encoded[index:index + 2500]
+              print(f'::notice title=GODOT_LOG_BASE64_{index // 2500 + 1}::{chunk}')
+          PY
           fi
 
       - name: Upload Godot runtime log
