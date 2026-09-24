@@ -45,6 +45,7 @@ from mobile import bootcheck as bootcheck_mod      # noqa: E402
 from mobile import combat_audio as audio_mod       # noqa: E402
 from mobile import sidepanel as panel_mod          # noqa: E402
 from mobile import kaizen_review as kaizen_review_mod  # noqa: E402
+from mobile import vex_review as vex_review_mod        # noqa: E402
 
 debug_mod.install_crash_handler()
 
@@ -265,6 +266,20 @@ def main():
             # Review is a development aid; it must never interrupt combat.
             print("[KAIZEN REVIEW] draw gagal: %s" % exc)
 
+    def _gambar_vex_review():
+        """Draw the opt-in Vex sheet after the arena frame."""
+        if not vex_review_mod.enabled():
+            return
+        panel_rect = plat.get_panel_rect()
+        target = (plat.get_full_surface() if panel_rect is not None
+                  else screen)
+        try:
+            vex_review_mod.draw(target, panel_rect=panel_rect,
+                                font_getter=get_font)
+        except Exception as exc:
+            # Review is a development aid; it must never interrupt combat.
+            print("[VEX REVIEW] draw gagal: %s" % exc)
+
     menu = Menu(screen)
     menu.controller_mgr = None          # tidak ada controller di HP
     splash = SplashScreen(screen)
@@ -391,6 +406,9 @@ def main():
                     # Optional visual review card; normal gameplay stays
                     # unchanged unless explicitly requested.
                     kaizen_review_mod.toggle()
+                elif event.key == pygame.K_F10:
+                    # Same opt-in visual review card for the Vex V1 rig.
+                    vex_review_mod.toggle()
                 elif event.key == pygame.K_ESCAPE:
                     if current_state == STATE_GAME:
                         ctx["request_pause"] = True
@@ -580,6 +598,7 @@ def main():
                 # boleh menutup aplikasi. Log lalu lanjutkan.
                 _log_frame_error("draw")
             _gambar_kaizen_review()
+            _gambar_vex_review()
             perf.PHASES.mark("hud")
             hud.draw(screen, getattr(game, "animation_time", 0))
             perf.PHASES.end()
@@ -616,6 +635,7 @@ def main():
             if game:
                 game.draw()
                 _gambar_kaizen_review()
+                _gambar_vex_review()
             sim_acc += min(clock.get_time(), 250)
             _n = 0
             while sim_acc >= FIXED_DT_MS and _n < MAX_CATCHUP:

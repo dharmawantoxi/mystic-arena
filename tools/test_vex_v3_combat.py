@@ -515,6 +515,70 @@ def test_ring_dan_stream():
 
 # ═══ 5. PROJECTILE SYSTEM ════════════════════════════════════════════════
 
+def test_basic_attack_melepaskan_orb_bertema_hero():
+    """Serangan dasar Vex menembakkan orb void dari ujung staff ke target.
+
+    Kontrak owner: "saya mau ada projectile saat melakukan basic
+    attack, projectile nya menyesuaikan heronya" — director meluncurkan
+    VexProjectile kind ``"orb"`` (glyph ``draw_arcane_orb``, identitas Vex)
+    dari ujung staff di titik rilis ayunan.  Orb ini MURNI VISUAL
+    (damage 0): damage tetap pakai jalur homing generik ``_entity``.
+    """
+    h, d = fresh_director()
+    tgt = _ProbeEntity("dummy", 520.0, 200.0)
+    tgt.radius = 16
+    tgt.alive = True
+    h.target = tgt
+    run_swing(h, d)
+    assert d.projectiles.count() == 1, \
+        "basic attack harus meluncurkan tepat satu orb visual"
+    orb = d.projectiles.projectiles[0]
+    assert orb.kind == "orb"
+    assert orb.damage == 0
+    assert orb.target is tgt
+    # Berangkat dari dekat orb staff (bukan titik acak dunia).
+    (_b, _g, tip), _a = F.staff_points(h, progress=F.ATTACK_IMPACT_POINT)
+    assert orb.spawn_pos.distance_to(
+        pygame.Vector2(float(tip[0]), float(tip[1]))) < 40.0
+    # Kecepatan awal mengarah ke target (bukan arah acak).
+    dvec = pygame.Vector2(orb.target.x - orb.spawn_pos.x,
+                          orb.target.y - orb.spawn_pos.y)
+    assert dvec.length_squared() > 1.0
+    assert abs(orb.velocity.angle_to(dvec)) < 45.0
+
+
+def test_orb_basic_attack_tidak_diluncurkan_saat_skill_timer_aktif():
+    """Ayunan skill tidak menambah orb basic attack (skill punya jalurnya)."""
+    h, d = fresh_director()
+    tgt = _ProbeEntity("dummy", 520.0, 200.0)
+    tgt.radius = 16
+    tgt.alive = True
+    h.target = tgt
+    h.skill_timer = 30
+    run_swing(h, d)
+    assert d.projectiles.count() == 0
+
+
+def test_touchdown_orb_basic_attack_tanpa_paket_impact():
+    """Arrival orb serangan dasar = percikan lembut saja (tanpa impact FX).
+
+    Kontrak owner (tools/test_basic_attack_no_impact_fx.py): touchdown
+    orb serangan dasar TIDAK boleh hit-stop, TIDAK boleh shake, dan
+    TIDAK menambah ImpactFX.
+    """
+    SimpleClass = type("_TouchdownCmd", (), {})
+    cmd = SimpleClass()
+    cmd.hit_pos = pygame.Vector2(260.0, 200.0)
+
+    h, d = fresh_director()
+    before_impacts = len(d.impacts)
+    _clear_feel()
+    d._attack_orb_touchdown(cmd)
+    assert len(d.impacts) == before_impacts
+    assert FEEL.HITSTOP.frames == 0
+    assert FEEL.SHAKE.shake_strength <= 0.0
+
+
 def test_lifecycle_projectile_spawn_travel_hit_destroy():
     h, d = fresh_director()
     tgt = _ProbeEntity("vex", 420.0, 200.0)

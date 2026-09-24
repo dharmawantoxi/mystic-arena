@@ -16732,3 +16732,14 @@ class _NS_zephyr:
 from heroes.kaizen_v1 import install as _install_kaizen_v1
 _NS_kaizen = _install_kaizen_v1(_NS_kaizen)
 del _install_kaizen_v1
+
+# ============================================================================
+# VEX V1 PIXEL-ART OVERRIDE
+# ============================================================================
+# Same layering as the Kaizen V1 override above: the bundled masterwork
+# namespace stays as a compatibility base while Vex's actual render path is
+# replaced by the pixel-art V1 renderer (Kaizen-style chibi, void-mage
+# identity preserved).
+from heroes.vex_v1 import install as _install_vex_v1
+_NS_vex = _install_vex_v1(_NS_vex)
+del _install_vex_v1
