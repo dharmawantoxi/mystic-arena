@@ -146,6 +146,18 @@ def test_attack_keyframes_and_smear():
         pygame.image.tobytes(windup, "RGBA")
 
 
+def test_katana_tip_is_full_length_from_actual_hand():
+    """Live tip geometry must reach the complete cached pixel sword."""
+    progress = 0.52
+    pose = K._attack_pose(progress)
+    tip = K._katana_tip_local(0.0, "attack", progress, attack_combo=0)
+    hand = pose["hand"]
+    distance = math.hypot(tip[0] - hand[0], tip[1] - hand[1])
+    expected = K.BLADE_LEN + K._attack_extension(progress, 0) * K.PIXEL_SCALE
+    assert abs(distance - expected) < 1e-6
+    assert distance > 70.0, "katana live tip masih terlalu pendek"
+
+
 def test_portrait_lod_is_distinct():
     ui_source = open(os.path.join(ROOT, "ui_components", "_bundle.py"),
                      encoding="utf-8").read()

@@ -93,9 +93,11 @@ di luar cache untuk trail/impact 60 FPS, tanpa menggambar proyektil dua kali.
 Implementasi aktif ada di `heroes/kaizen_v1.py`, dipasang sebagai namespace
 `_NS_kaizen` dari `heroes/_bundle.py`. Renderer gameplay tetap 100% procedural:
 PNG/sprite sheet tidak pernah masuk ke cache hero. Untuk review visual saja,
-`assets/review/kaizen_v1_anim_sheet.png` dapat ditampilkan sebagai kartu di
-sisi kanan arena dengan `MYSTIC_KAIZEN_REVIEW=1` atau toggle `F9`; asset itu
-dimuat malas dan tidak mengubah gameplay normal.
+`assets/review/kaizen_v1_anim_sheet.png` dan
+`assets/review/kaizen_v1_skill_sheet.png` dapat ditampilkan sebagai dua kartu
+di sisi kanan arena dengan `MYSTIC_KAIZEN_REVIEW=1` atau toggle `F9`; asset
+tersebut dimuat malas dan tidak mengubah gameplay normal. Sheet skill dapat
+dibuat ulang lewat `python tools/kaizen_skill_demo.py`.
 
 Uji regresi:
 `python tools/test_hero_hd_render.py`,

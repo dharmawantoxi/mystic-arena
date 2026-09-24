@@ -132,7 +132,14 @@ def install(legacy_cls):
         # pipeline later normalizes this larger rig to arena size.
         PIXEL_SCALE = 2.6
         PIXEL_ORIGIN = 24.0
-        BLADE_LEN = 68.0
+        # Sword geometry is shared by the cached body and the live swing
+        # trail.  The old body used 26 source pixels while the FX tip used
+        # a shorter, hand-offset estimate, which made the kissaki look
+        # chopped off in the arena.  Keep the small pixel-art grip offset
+        # explicit so both paths terminate at the same visible point.
+        BLADE_GRIP_SOURCE = 2.0
+        BLADE_BASE_SOURCE = 28.0
+        BLADE_LEN = (BLADE_GRIP_SOURCE + BLADE_BASE_SOURCE) * PIXEL_SCALE
         SKILL_VISUAL_DURATION = {"q": 39, "w": 59, "e": 39, "r": 66}
 
         ATTACK_WINDUP_END = 0.28
@@ -534,9 +541,13 @@ def install(legacy_cls):
                     body_x = a[2] + (b[2] - a[2]) * t
                     arm = a[3] + (b[3] - a[3]) * t
                     lean = a[4] + (b[4] - a[4]) * t
-                    # hand in script-local coordinates, converted to the
-                    # same renderer-local pixels as the old public API.
-                    hx = 30.0 + arm
+                    # Match the actual hand used by
+                    # _draw_pixel_sword_arm: shoulder -> hand is an
+                    # eight-source-pixel reach plus the pose's forward
+                    # arm offset.  The previous helper omitted the reach,
+                    # so live trail/projectile geometry stopped short of
+                    # the blade rendered by the cached body.
+                    hx = 30.0 + math.cos(angle) * 8.0 + arm
                     hy = 22.0 + math.sin(angle) * 8.0
                     hpx, hpy = KaizenV1Renderer._pixel_local(hx, hy)
                     return {"angle": angle, "bob": int(round(lean * 1.5)),
@@ -544,8 +555,11 @@ def install(legacy_cls):
                             "hand": (hpx, hpy),
                             "flare": 1.0 + .25 * (1.0 - abs(ap - .5) * 2),
                             "tremble": 1 if .20 < ap < .36 else 0}
-            return {"angle": 1.4, "bob": 0, "lean": 2,
-                    "hand": KaizenV1Renderer._pixel_local(34, 22),
+            angle = 1.4
+            hx = 30.0 + math.cos(angle) * 8.0 + 4.0
+            hy = 22.0 + math.sin(angle) * 8.0
+            return {"angle": angle, "bob": 0, "lean": 2,
+                    "hand": KaizenV1Renderer._pixel_local(hx, hy),
                     "flare": 1.0, "tremble": 0}
 
         @staticmethod
@@ -557,25 +571,65 @@ def install(legacy_cls):
             return .20 + math.sin(float(phase) * .72) * .03
 
         @staticmethod
-        def _katana_tip_local(phase, action, progress=0.0):
+        def _attack_extension(progress, attack_combo=0):
+            """Return the extra source-pixel blade length for a combo.
+
+            The cached body has three combo pose tables.  Keeping this tiny
+            geometry helper beside the pose code prevents the 60 Hz live
+            trail from ending before the cached sword tip.
+            """
+            tables = (
+                (0.0, 0.0, 6.0, 8.0, 4.0),
+                (0.0, 2.0, 14.0, 10.0, 4.0),
+                (0.0, 0.0, 0.0, 0.0, 0.0),
+            )
+            keys = tables[int(attack_combo) % len(tables)]
+            ap = max(0.0, min(1.0, float(progress)))
+            spans = (0.0, 0.25, 0.50, 0.75, 1.0)
+            for i in range(len(spans) - 1):
+                if spans[i] <= ap <= spans[i + 1]:
+                    t = (ap - spans[i]) / max(1e-6, spans[i + 1] - spans[i])
+                    t = t * t * (3.0 - 2.0 * t)
+                    return keys[i] + (keys[i + 1] - keys[i]) * t
+            return keys[-1]
+
+        @staticmethod
+        def _katana_tip_local(phase, action, progress=0.0,
+                              attack_combo=None):
+            P = KaizenV1Renderer
             if action == "attack":
-                pose = KaizenV1Renderer._attack_pose(progress)
+                pose = P._attack_pose(progress)
                 hx, hy = pose["hand"]
                 angle = pose["angle"]
+                if attack_combo is None:
+                    hero = getattr(P, "_DRAW_HERO", None)
+                    attack_combo = int(getattr(hero, "_kz_combo", 0) or 0)
+                length = P.BLADE_LEN + (
+                    P._attack_extension(progress, attack_combo)
+                    * P.PIXEL_SCALE)
             elif action == "walk":
-                hx, hy = KaizenV1Renderer._pixel_local(30, 22)
-                angle = KaizenV1Renderer._katana_angle(phase, action)
+                angle = P._katana_angle(phase, action)
+                hand_x = 30.0 + math.cos(angle) * 8.0
+                hand_y = 22.0 + math.sin(angle) * 8.0
+                hx, hy = P._pixel_local(hand_x, hand_y)
+                length = P.BLADE_LEN
             else:
-                hx, hy = KaizenV1Renderer._pixel_local(30, 22)
-                angle = KaizenV1Renderer._katana_angle(phase, action)
-            return (hx + math.cos(angle) * KaizenV1Renderer.BLADE_LEN,
-                    hy + math.sin(angle) * KaizenV1Renderer.BLADE_LEN)
+                angle = P._katana_angle(phase, action)
+                hand_x = 30.0 + math.cos(angle) * 8.0
+                hand_y = 22.0 + math.sin(angle) * 8.0
+                hx, hy = P._pixel_local(hand_x, hand_y)
+                length = P.BLADE_LEN
+            return (hx + math.cos(angle) * length,
+                    hy + math.sin(angle) * length)
 
         @staticmethod
         def _katana_hand_local(phase, action, progress=0.0):
+            P = KaizenV1Renderer
             if action == "attack":
-                return KaizenV1Renderer._attack_pose(progress)["hand"]
-            return KaizenV1Renderer._pixel_local(30, 22)
+                return P._attack_pose(progress)["hand"]
+            angle = P._katana_angle(phase, action)
+            return P._pixel_local(30.0 + math.cos(angle) * 8.0,
+                                  22.0 + math.sin(angle) * 8.0)
 
         # ------------------------------------------------------------------
         # The actual V1 sprite layers, translated from the supplied script.
@@ -673,27 +727,38 @@ def install(legacy_cls):
             R(mid_x, mid_y + 1, 3, 2, P.C_SKIN_SH)
             RO(hand_x, hand_y, 4, 4, P.C_SKIN)
 
-            sword_length = 26.0 + extend
-            blade_end_x = hand_x + 2 + math.cos(angle) * sword_length
-            blade_end_y = hand_y + 2 + math.sin(angle) * sword_length
-            # segmented pixel line: dark selout, pale blade, white tip
+            sword_length = P.BLADE_BASE_SOURCE + extend
+            blade_start_x = hand_x + P.BLADE_GRIP_SOURCE
+            blade_start_y = hand_y + P.BLADE_GRIP_SOURCE
+            blade_end_x = blade_start_x + math.cos(angle) * sword_length
+            blade_end_y = blade_start_y + math.sin(angle) * sword_length
+            # Segmented pixel line: dark selout, pale blade, white tip.
+            # The extra source-pixel cap makes the kissaki read as a
+            # complete pointed blade after the HD downscale instead of a
+            # white line that appears abruptly chopped at its end.
             for i in range(12):
                 t = i / 12.0
                 t2 = (i + 1) / 12.0
-                a = point(hand_x + 2 + math.cos(angle) * sword_length * t,
-                          hand_y + 2 + math.sin(angle) * sword_length * t)
-                b = point(hand_x + 2 + math.cos(angle) * sword_length * t2,
-                          hand_y + 2 + math.sin(angle) * sword_length * t2)
-                line((hand_x + 2 + math.cos(angle) * sword_length * t,
-                      hand_y + 2 + math.sin(angle) * sword_length * t),
-                     (hand_x + 2 + math.cos(angle) * sword_length * t2,
-                      hand_y + 2 + math.sin(angle) * sword_length * t2),
+                a = point(blade_start_x + math.cos(angle) * sword_length * t,
+                          blade_start_y + math.sin(angle) * sword_length * t)
+                b = point(blade_start_x + math.cos(angle) * sword_length * t2,
+                          blade_start_y + math.sin(angle) * sword_length * t2)
+                line((blade_start_x + math.cos(angle) * sword_length * t,
+                      blade_start_y + math.sin(angle) * sword_length * t),
+                     (blade_start_x + math.cos(angle) * sword_length * t2,
+                      blade_start_y + math.sin(angle) * sword_length * t2),
                      P.C_OUTLINE, 3)
-                line((hand_x + 2 + math.cos(angle) * sword_length * t,
-                      hand_y + 2 + math.sin(angle) * sword_length * t),
-                     (hand_x + 2 + math.cos(angle) * sword_length * t2,
-                      hand_y + 2 + math.sin(angle) * sword_length * t2),
+                line((blade_start_x + math.cos(angle) * sword_length * t,
+                      blade_start_y + math.sin(angle) * sword_length * t),
+                     (blade_start_x + math.cos(angle) * sword_length * t2,
+                      blade_start_y + math.sin(angle) * sword_length * t2),
                      P.C_BLADE, 2)
+            tip_cap_a = (blade_end_x - math.cos(angle) * 1.4,
+                         blade_end_y - math.sin(angle) * 1.4)
+            tip_cap_b = (blade_end_x + math.cos(angle) * 1.4,
+                         blade_end_y + math.sin(angle) * 1.4)
+            line(tip_cap_a, tip_cap_b, P.C_OUTLINE, 3)
+            line(tip_cap_a, tip_cap_b, P.C_BLADE_HI, 1)
             R(blade_end_x, blade_end_y, 2, 2, P.C_BLADE_HI)
             R(blade_end_x - 1, blade_end_y - 1, 2, 2, P.C_BLADE)
             RO(hand_x + 1, hand_y + 1, 3, 3, P.C_HILT)

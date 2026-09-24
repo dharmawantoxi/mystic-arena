@@ -2020,13 +2020,15 @@ def katana_points(hero, x=None, y=None, progress=None):
 
     if G is not None:
         try:
-            tip_l = G._katana_tip_local(phase, action, ap)
-            if action == "attack":
-                hand_l = G._attack_pose(ap)["hand"]
-            elif action == "walk":
-                hand_l = (36, -6 + int(math.sin(phase * 1.7) * 3))
-            else:
-                hand_l = (34, -2 + int(math.sin(phase * 0.72) * 1.2))
+            combo = int(getattr(h, "_kz_combo", 0) or 0)
+            tip_l = G._katana_tip_local(
+                phase, action, ap, attack_combo=combo)
+            # Use the same hand anchor as the pixel body for every pose.
+            # The old idle/walk fallback used raw source coordinates while
+            # the tip helper returned renderer-local pixels, so the trail
+            # could detach from the sword even when the blade itself was
+            # fully present.
+            hand_l = G._katana_hand_local(phase, action, ap)
         except Exception:                  # pragma: no cover - tool minimal
             hand_l, tip_l = (34, -2), (92, 18)
     else:                                  # pragma: no cover
