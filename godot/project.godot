@@ -132,6 +132,8 @@ pointing/emulate_mouse_from_touch=true
 ; Lihat docs/PLAYSTORE_RELEASE.md (Fase 6).
 renderer/rendering_method="forward_plus"
 renderer/rendering_method.mobile="mobile"
+; Android export requires ETC2/ASTC texture imports for the Mobile renderer.
+textures/vram_compression/import_etc2_astc=true
 environment/defaults/default_clear_color=Color(0.0431373, 0.0392157, 0.0705882, 1)
 textures/canvas_textures/default_texture_filter=2
 textures/canvas_textures/default_texture_repeat=0
