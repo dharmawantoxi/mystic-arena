@@ -1,6 +1,0 @@
-[gd_scene format=3 uid="uid://bmpwb5r5fsi2m"]
-
-[ext_resource type="Script" uid="uid://cykwike10itce" path="res://scripts/Tower.gd" id="1_7itwv"]
-
-[node name="Tower" type="Node2D" unique_id=305332662]
-script = ExtResource("1_7itwv")
