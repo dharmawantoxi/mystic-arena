@@ -45,8 +45,8 @@ TIDAK DIPORT (sengaja; lihat header TopupCurrency.gd untuk daftar lengkap):
 jalur pyjnius `androidjnius` di `_device_locale` (Godot memakai
 `DisplayServer.get_locale()`), `locale.setlocale(LC_ALL, "")` yang mengubah
 locale proses (efek samping global, tidak ada padanannya yang perlu), dan
-cloud save (mobile/cloud_save.py) yang butuh plugin Android — gap #1/#6 audit
-masih terbuka dan bukan wewenang tes ini.
+cloud save (`CloudSaveManager` + plugin Android) yang merupakan subsistem
+terpisah dan bukan wewenang tes mata uang ini.
 
 Cara jalan (dari root repo):
   SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy \\

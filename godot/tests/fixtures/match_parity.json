@@ -135894,8 +135894,7 @@
       "card_w": 320,
       "card_h": 460,
       "gap_x": 30,
-      "name_max_w": 280,
-      "cloud_save": false
+      "name_max_w": 280
     },
     "paths": {
       "num_slots": 3,

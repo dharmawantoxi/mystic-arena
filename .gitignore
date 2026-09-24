@@ -47,6 +47,12 @@ godot/addons/mystic_splash/bin/*.dll
 godot/addons/mystic_splash/bin/*.dylib
 godot/addons/mystic_splash/bin/*.framework/
 godot/addons/mystic_splash/bin/*.wasm
+# Godot Android v2 cloud-save plugin is built from source before Android export.
+godot/addons/mystic_cloud/bin/
+godot/android/build/
+godot/android/.build_version
+godot/android_plugin/mystic_cloud/.gradle/
+godot/android_plugin/mystic_cloud/plugin/build/
 godot/gdext/mystic_skills/godot-cpp/
 godot/gdext/mystic_skills/godot-cpp
 godot/gdext/mystic_levels/godot-cpp/

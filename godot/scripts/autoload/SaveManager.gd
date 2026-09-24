@@ -15,7 +15,7 @@
 # Kunci lama ("gold", "unlocked_heroes") tetap dipertahankan supaya save
 # Godot yang sudah ada tidak rusak; end_match() sekarang menulis ke "meta_gold".
 # ══════════════════════════════════════════════════════════
-#  FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY (TANPA CLOUD)
+#  FASE 21 — MULTI-SLOT SAVE + MIGRASI LEGACY
 # ══════════════════════════════════════════════════════════
 # Paritas _system.py:746-1020: tiga slot (`slot_1.json` .. `slot_3.json`),
 # metadata per slot (`slot_created` / `slot_last_played` /
@@ -31,8 +31,8 @@
 # dihapus: migrasi hanya jalan kalau slot 1 masih kosong, dan berkas lama
 # tidak dibuang (cuma di-rename).
 #
-# CLOUD SAVE (`mobile/cloud_save.py`) TIDAK ikut diport - di luar scope
-# FASE 21; ketiadaannya tidak mengubah state yang dikunci oracle.
+# Cloud save sekarang ditangani autoload CloudSaveManager setelah write lokal
+# selesai; kegagalan provider tidak membatalkan atau menghapus working copy.
 extends Node
 
 ## Dipancarkan SETELAH file ditutup. Harness mengamati write asli pada
@@ -183,9 +183,9 @@ func migrate_legacy_save() -> bool:
 
 ## Tulis `data` ke slot (default = slot aktif) — paritas `save`
 ## _system.py:847-876: `slot_last_played` SELALU diperbarui, `slot_created`
-## hanya dibuat kalau belum ada. CLOUD auto-upload pygame sengaja tidak
-## diport (lihat catatan FASE 21 di kepala berkas).
-func save(slot_num: int = -1) -> void:
+## hanya dibuat kalau belum ada. Setelah file lokal ditutup, cloud manager
+## mencoba auto-upload secara non-blocking; kegagalannya tidak membatalkan save.
+func save(slot_num: int = -1, sync_cloud: bool = true) -> void:
 	_backfill(data)
 	var target := current_slot if slot_num < 0 else slot_num
 	var now := Time.get_unix_time_from_system()
@@ -200,6 +200,10 @@ func save(slot_num: int = -1) -> void:
 	f.close()
 	saved.emit()
 	print("[SaveManager] Slot %d saved!" % target)
+	# Jalur cloud best-effort seperti _system.SaveManager.save(): data lokal
+	# sudah aman di disk sebelum jaringan / Google Play dipanggil.
+	if sync_cloud:
+		CloudSaveManager.auto_upload()
 
 
 ## Baca slot (default = slot aktif) — paritas `load` _system.py:878-911:

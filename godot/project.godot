@@ -26,10 +26,17 @@ config/icon="res://assets/icon.png"
 boot_splash/bg_color=Color(0.0431373, 0.0392157, 0.0705882, 1)
 boot_splash/image="res://assets/presplash.png"
 
+[editor_plugins]
+
+; Godot Android v2 export bridge. Desktop/headless runs keep the plugin
+; inactive at runtime; Android exports package its AAR via this EditorPlugin.
+enabled=PackedStringArray("res://addons/mystic_cloud/plugin.cfg")
+
 [autoload]
 
 GameManager="*res://scripts/autoload/GameManager.gd"
 SaveManager="*res://scripts/autoload/SaveManager.gd"
+CloudSaveManager="*res://scripts/autoload/CloudSaveManager.gd"
 HeroDB="*res://scripts/core/HeroDB.gd"
 BossDB="*res://scripts/core/BossDB.gd"
 TowerDB="*res://scripts/core/TowerDB.gd"

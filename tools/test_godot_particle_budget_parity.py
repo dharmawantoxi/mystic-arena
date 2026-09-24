@@ -39,7 +39,7 @@ kali wajib menghasilkan berkas identik (diverifikasi di main()).
 TIDAK DIPORT (sengaja; terdaftar di header FXLoadGovernor.gd): wrap refund
 berbasis "jumlah partikel tidak bertambah" (Godot tidak punya 27 modul FX
 per-boss — refund diport sebagai API), `_FX_BUSY_COUNT`/kuantisasi pose,
-budget render hero, dan cloud save (gap #6 audit).
+budget render hero. Cloud save merupakan subsistem Android terpisah.
 
 Cara jalan (dari root repo):
   python3 tools/test_godot_particle_budget_parity.py

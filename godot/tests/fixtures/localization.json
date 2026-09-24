@@ -484,6 +484,21 @@
       "set_cloud_download",
       "set_cloud_note",
       "set_cloud_unavailable",
+      "set_cloud_sign_in",
+      "set_cloud_connected",
+      "set_cloud_signed_out",
+      "set_cloud_busy",
+      "set_cloud_sign_in_required",
+      "set_cloud_upload_success",
+      "set_cloud_download_found",
+      "set_cloud_restore_title",
+      "set_cloud_restore_confirm",
+      "set_cloud_restore_replace",
+      "set_cloud_restore_summary",
+      "set_cloud_restore",
+      "set_cloud_restore_success",
+      "set_cloud_no_local_save",
+      "set_cloud_operation_failed",
       "set_diff_note",
       "set_fps_unlimited",
       "set_progression",
@@ -695,6 +710,21 @@
       "set_cloud_download",
       "set_cloud_note",
       "set_cloud_unavailable",
+      "set_cloud_sign_in",
+      "set_cloud_connected",
+      "set_cloud_signed_out",
+      "set_cloud_busy",
+      "set_cloud_sign_in_required",
+      "set_cloud_upload_success",
+      "set_cloud_download_found",
+      "set_cloud_restore_title",
+      "set_cloud_restore_confirm",
+      "set_cloud_restore_replace",
+      "set_cloud_restore_summary",
+      "set_cloud_restore",
+      "set_cloud_restore_success",
+      "set_cloud_no_local_save",
+      "set_cloud_operation_failed",
       "set_diff_note",
       "set_fps_unlimited",
       "set_progression",
@@ -916,11 +946,26 @@
       "count"
     ],
     "rail_pause_tip": [],
+    "set_cloud_busy": [],
+    "set_cloud_connected": [],
     "set_cloud_download": [],
+    "set_cloud_download_found": [],
+    "set_cloud_no_local_save": [],
     "set_cloud_note": [],
     "set_cloud_off": [],
+    "set_cloud_operation_failed": [],
+    "set_cloud_restore": [],
+    "set_cloud_restore_confirm": [],
+    "set_cloud_restore_replace": [],
+    "set_cloud_restore_success": [],
+    "set_cloud_restore_summary": [],
+    "set_cloud_restore_title": [],
+    "set_cloud_sign_in": [],
+    "set_cloud_sign_in_required": [],
+    "set_cloud_signed_out": [],
     "set_cloud_unavailable": [],
     "set_cloud_upload": [],
+    "set_cloud_upload_success": [],
     "set_delete_save": [],
     "set_diff_note": [],
     "set_fps_unlimited": [],
@@ -1234,11 +1279,26 @@
       "queued": "+{count} queued",
       "queued_item_count": "({count} item(s) queued)",
       "rail_pause_tip": "Pause (P / ESC)",
+      "set_cloud_busy": "SYNC IN PROGRESS...",
+      "set_cloud_connected": "SIGNED IN TO GOOGLE PLAY GAMES",
       "set_cloud_download": "DOWNLOAD SAVE FROM CLOUD",
+      "set_cloud_download_found": "Cloud save found.",
+      "set_cloud_no_local_save": "No local save is available to upload.",
       "set_cloud_note": "Cloud syncs through your Google account (Android)",
       "set_cloud_off": "CLOUD: OFF (PC / not configured)",
+      "set_cloud_operation_failed": "Cloud operation failed. Try again.",
+      "set_cloud_restore": "RESTORE",
+      "set_cloud_restore_confirm": "Restore %d slot(s) from this Google account?",
+      "set_cloud_restore_replace": "REPLACE local saves with %d cloud slot(s)? Local progress will be overwritten.",
+      "set_cloud_restore_success": "Cloud save restored.",
+      "set_cloud_restore_summary": "Highest level: %d  ·  Gold: %d",
+      "set_cloud_restore_title": "RESTORE CLOUD SAVE?",
+      "set_cloud_sign_in": "SIGN IN TO CLOUD",
+      "set_cloud_sign_in_required": "Sign in to Google Play Games first.",
+      "set_cloud_signed_out": "NOT SIGNED IN TO GOOGLE PLAY GAMES",
       "set_cloud_unavailable": "Cloud is not available in this build (Android + Play Games only)",
       "set_cloud_upload": "UPLOAD SAVE TO CLOUD",
+      "set_cloud_upload_success": "Save uploaded to cloud.",
       "set_delete_save": "DELETE SAVE GAME %d",
       "set_diff_note": "Picked on the SELECT LEVEL screen, before the match starts.",
       "set_fps_unlimited": "UNLIMITED",
@@ -1445,11 +1505,26 @@
       "queued": "+{count} antrean",
       "queued_item_count": "({count} item diantrikan)",
       "rail_pause_tip": "Jeda (P / ESC)",
+      "set_cloud_busy": "SEDANG MENYINKRONKAN...",
+      "set_cloud_connected": "TERHUBUNG KE GOOGLE PLAY GAMES",
       "set_cloud_download": "DOWNLOAD SAVE DARI CLOUD",
+      "set_cloud_download_found": "Save cloud ditemukan.",
+      "set_cloud_no_local_save": "Belum ada save lokal untuk diunggah.",
       "set_cloud_note": "Cloud disinkronkan via akun Google (Android)",
       "set_cloud_off": "CLOUD: OFF (PC / belum diset)",
+      "set_cloud_operation_failed": "Operasi cloud gagal. Coba lagi.",
+      "set_cloud_restore": "PULIHKAN",
+      "set_cloud_restore_confirm": "Pulihkan %d slot dari akun Google ini?",
+      "set_cloud_restore_replace": "GANTI save lokal dengan %d slot cloud? Progres lokal akan ditimpa.",
+      "set_cloud_restore_success": "Save cloud berhasil dipulihkan.",
+      "set_cloud_restore_summary": "Level tertinggi: %d  ·  Gold: %d",
+      "set_cloud_restore_title": "PULIHKAN SAVE CLOUD?",
+      "set_cloud_sign_in": "MASUK KE CLOUD",
+      "set_cloud_sign_in_required": "Masuk ke Google Play Games dulu.",
+      "set_cloud_signed_out": "BELUM MASUK KE GOOGLE PLAY GAMES",
       "set_cloud_unavailable": "Cloud tidak tersedia di build ini (hanya Android + Play Games)",
       "set_cloud_upload": "UPLOAD SAVE KE CLOUD",
+      "set_cloud_upload_success": "Save berhasil diunggah ke cloud.",
       "set_delete_save": "HAPUS SAVE GAME %d",
       "set_diff_note": "Dipilih di layar PILIH LEVEL, sebelum match dimulai.",
       "set_fps_unlimited": "TANPA BATAS",
@@ -2620,6 +2695,96 @@
       "key": "set_cloud_unavailable",
       "lang": "id",
       "out": "Cloud tidak tersedia di build ini (hanya Android + Play Games)",
+      "values": []
+    },
+    {
+      "key": "set_cloud_sign_in",
+      "lang": "id",
+      "out": "MASUK KE CLOUD",
+      "values": []
+    },
+    {
+      "key": "set_cloud_connected",
+      "lang": "id",
+      "out": "TERHUBUNG KE GOOGLE PLAY GAMES",
+      "values": []
+    },
+    {
+      "key": "set_cloud_signed_out",
+      "lang": "id",
+      "out": "BELUM MASUK KE GOOGLE PLAY GAMES",
+      "values": []
+    },
+    {
+      "key": "set_cloud_busy",
+      "lang": "id",
+      "out": "SEDANG MENYINKRONKAN...",
+      "values": []
+    },
+    {
+      "key": "set_cloud_sign_in_required",
+      "lang": "id",
+      "out": "Masuk ke Google Play Games dulu.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_upload_success",
+      "lang": "id",
+      "out": "Save berhasil diunggah ke cloud.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_download_found",
+      "lang": "id",
+      "out": "Save cloud ditemukan.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_title",
+      "lang": "id",
+      "out": "PULIHKAN SAVE CLOUD?",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_confirm",
+      "lang": "id",
+      "out": "Pulihkan %d slot dari akun Google ini?",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_replace",
+      "lang": "id",
+      "out": "GANTI save lokal dengan %d slot cloud? Progres lokal akan ditimpa.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_summary",
+      "lang": "id",
+      "out": "Level tertinggi: %d  ·  Gold: %d",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore",
+      "lang": "id",
+      "out": "PULIHKAN",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_success",
+      "lang": "id",
+      "out": "Save cloud berhasil dipulihkan.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_no_local_save",
+      "lang": "id",
+      "out": "Belum ada save lokal untuk diunggah.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_operation_failed",
+      "lang": "id",
+      "out": "Operasi cloud gagal. Coba lagi.",
       "values": []
     },
     {
@@ -3955,6 +4120,96 @@
       "key": "set_cloud_unavailable",
       "lang": "en",
       "out": "Cloud is not available in this build (Android + Play Games only)",
+      "values": []
+    },
+    {
+      "key": "set_cloud_sign_in",
+      "lang": "en",
+      "out": "SIGN IN TO CLOUD",
+      "values": []
+    },
+    {
+      "key": "set_cloud_connected",
+      "lang": "en",
+      "out": "SIGNED IN TO GOOGLE PLAY GAMES",
+      "values": []
+    },
+    {
+      "key": "set_cloud_signed_out",
+      "lang": "en",
+      "out": "NOT SIGNED IN TO GOOGLE PLAY GAMES",
+      "values": []
+    },
+    {
+      "key": "set_cloud_busy",
+      "lang": "en",
+      "out": "SYNC IN PROGRESS...",
+      "values": []
+    },
+    {
+      "key": "set_cloud_sign_in_required",
+      "lang": "en",
+      "out": "Sign in to Google Play Games first.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_upload_success",
+      "lang": "en",
+      "out": "Save uploaded to cloud.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_download_found",
+      "lang": "en",
+      "out": "Cloud save found.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_title",
+      "lang": "en",
+      "out": "RESTORE CLOUD SAVE?",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_confirm",
+      "lang": "en",
+      "out": "Restore %d slot(s) from this Google account?",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_replace",
+      "lang": "en",
+      "out": "REPLACE local saves with %d cloud slot(s)? Local progress will be overwritten.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_summary",
+      "lang": "en",
+      "out": "Highest level: %d  ·  Gold: %d",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore",
+      "lang": "en",
+      "out": "RESTORE",
+      "values": []
+    },
+    {
+      "key": "set_cloud_restore_success",
+      "lang": "en",
+      "out": "Cloud save restored.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_no_local_save",
+      "lang": "en",
+      "out": "No local save is available to upload.",
+      "values": []
+    },
+    {
+      "key": "set_cloud_operation_failed",
+      "lang": "en",
+      "out": "Cloud operation failed. Try again.",
       "values": []
     },
     {

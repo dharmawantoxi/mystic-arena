@@ -15,12 +15,16 @@ on:
     paths:
       - 'godot/**'
       - 'tools/**'
+      - 'mobile/cloud_save.py'
+      - 'localization.py'
       - '.github/workflows/godot-check.yml'
   push:
     branches: [main]
     paths:
       - 'godot/**'
       - 'tools/**'
+      - 'mobile/cloud_save.py'
+      - 'localization.py'
       - '.github/workflows/godot-check.yml'
   workflow_dispatch:
 
@@ -46,6 +50,12 @@ jobs:
 
       - name: Salin aset biner (gitignored)
         run: python3 tools/convert_to_godot.py --assets
+
+      - name: Cloud save oracle + localization fixtures
+        run: |
+          python3 tools/test_cloud_save.py
+          python3 tools/test_godot_cloud_save_parity.py
+          python3 tools/test_godot_localization_parity.py
 
       - name: Linter statis (30 detik)
         run: |

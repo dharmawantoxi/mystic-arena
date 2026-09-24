@@ -36,7 +36,8 @@
 #     dengan pemetaan eksplisit LABEL_MAP terhadap label pygame.
 #   * Truncasi nama level (`ui_theme.fit_ellipsis`) adalah FITUR PIKSEL —
 #     yang dibandingkan nama level MENTAHNYA.
-#   * Cloud save (mobile/cloud_save.py) TIDAK diport — di luar scope.
+#   * Cloud save provider diuji terpisah di CloudSaveParityTest; fixture ini
+#     hanya mengunci perilaku SaveManager lokal.
 #
 # Jalankan dengan XDG_DATA_HOME=$(mktemp -d) agar user:// TERISOLASI.
 extends Node
@@ -97,9 +98,6 @@ func _run() -> void:
 		return
 	_fx = fixture["save_slots"]
 	_now_pin = float(_fx["meta"]["now_pin"])
-	_expect(int(_fx["meta"]["cloud_save"]) == 0,
-		"scope FASE 21: oracle dibuat TANPA cloud save")
-
 	_menu = MainMenuScript.new()
 	add_child(_menu)
 

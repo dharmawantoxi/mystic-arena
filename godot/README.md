@@ -333,8 +333,9 @@ Pilih difficulty di menu PILIH LEVEL sebelum match.
   trauma), Damage Numbers (live), info difficulty (dipilih di PILIH LEVEL),
   cycler Game Speed + FPS Limit, **baris BAHASA** (`< Bahasa Indonesia >` —
   port `localization.py`, lihat "Lokalisasi teks UI" di bawah), HAPUS SAVE
-  slot aktif (dialog konfirmasi), dan catatan jujur bahwa cloud save Play
-  Games belum di-port.
+  slot aktif (dialog konfirmasi), dan Cloud Save Play Games (sign-in,
+  status, upload/download, restore terkonfirmasi). Android memerlukan Project
+  ID/OAuth yang cocok; tanpa konfigurasi, kontrol cloud tampil unavailable.
 
 ### Tombol debug
 
@@ -502,7 +503,7 @@ itu sendiri. SDK Android tidak dibutuhkan untuk menjalankan versi desktop dengan
 
 ### Deviasi yang disengaja (dicatat, bukan bug)
 
-- **Menu utama disederhanakan dari pygame.** Tidak diport: multi-slot save (SLOT_SELECT), dialog TOP UP hero gold + voucher, cloud save Play Games, slider master/voice volume, dan kunci difficulty `run_difficulty` (di Godot difficulty bebas diganti; pygame menguncinya sampai semua level tamat — `_core.py:2416-2430`). Sisanya (state, kunci level, reward, hero shop) paritas.
+- **Menu utama disederhanakan dari pygame.** Tidak diport: multi-slot save (SLOT_SELECT), dialog TOP UP hero gold + voucher, slider master/voice volume, dan kunci difficulty `run_difficulty` (di Godot difficulty bebas diganti; pygame menguncinya sampai semua level tamat — `_core.py:2416-2430`). Cloud Save Play Games kini diport sebagai fitur Android bersyarat. Sisanya (state, kunci level, reward, hero shop) paritas.
 - **`hp_regen` item sekarang benar-benar dipakai.** Di pygame `HeroItemInventory.get_hp_regen()` ada tapi tidak pernah dipanggil `_entity.py`; di Godot diterapkan sebagai HP/detik (dekat base 180 HP/s, di luar base 9 HP/s + regen item).
 - **17 item aktif SUDAH diport** (`ItemInventory.tick()`), tapi **tanpa tombol** — dan itu memang benar: di pygame item aktif semuanya *auto-trigger*, tiap deskripsi menulis "(auto)" (`hero_items.py:628/668/1283`). Pemicunya cuma tiga: `hp_threshold` (HP turun), `trigger_enemies` (N musuh dekat), atau punya target. Menambah hotbar justru menyimpang dari sumber kebenaran. Satu pengecualian: Static Charge (`thunder_coil`) terpicu saat pemilik KENA damage dengan peluang 20% (`on_damage_taken` `hero_items.py:2449`), bukan saat menyerang — disambung lewat `Hero.take_damage`.
 - **Efek on-attack** (Bash, Piercing Bash, Arc Chain/Lightning, Frostbite, Miasma + Polycephaly multishot, Empower Strike, Entangle) dipanggil dari `Hero.try_attack` untuk melee dan `TowerBullet._on_hit` untuk proyektil hero — meniru dua pintu pygame (`on_basic_attack_hit` / `on_ranged_attack_hit`). Keduanya bermuara ke `ItemInventory.on_attack_hit()`, padanan `_on_hit_common` (`hero_items.py:2519-2666`), dengan urutan proc yang sama persis. Lifesteal & cleave TIDAK ikut di jalur ranged karena di pygame sudah dibayar saat proyektil dilepas.
@@ -1152,8 +1153,9 @@ kebocoran state global governor tidak bisa menyamar jadi paritas.
 Yang sengaja TIDAK diport: refund otomatis berbasis \"surplus partikel\"
 (pygame menimbang jumlah partikel sebelum/sesudah tiap FX boss — tanpa 27
 modul FX ini tak ada yang diukur, dan menirunya berarti berpura-pura),
-`_FX_BUSY_COUNT`/kuantisasi delta tersebar perf.py, budget render hero, dan
-cloud save (tetap gap #3 audit). Lantai token DIJAGA dari atas: cap 140/18/10
+`_FX_BUSY_COUNT`/kuantisasi delta tersebar perf.py, dan budget render hero.
+Cloud save adalah subsistem Android terpisah (`CloudSaveManager`). Lantai token
+DIJAGA dari atas: cap 140/18/10
 adalah batas ATAS beban ringan, bukan sasaran jumlah spawn; ratio × fx_load
 tidak pernah melebihi dasar preset (load=1.0 adalah atap).
 
@@ -1214,9 +1216,9 @@ Fixture (`godot/tests/fixtures/topup_currency.json`) HANYA berisi fungsi murni
 — tidak ada state modul, waktu, atau angka runtime, sehingga dua kali
 `--write-fixture` wajib menghasilkan berkas identik (diperiksa alat oracle).
 
-Yang TIDAK diport (sengaja): pyjnius + `locale.setlocale` (lihat tabel), dan
-cloud save (tetap gap #6 audit — mata uang tidak bergantung padanya). Tabel
-kurs di modul ini STATIS dan hanya untuk TAMPILAN: kalau nanti disambung ke
+Yang TIDAK diport (sengaja): pyjnius + `locale.setlocale` (lihat tabel).
+Cloud save berjalan terpisah dan tidak menjadi dependensi tampilan mata uang.
+Tabel kurs di modul ini STATIS dan hanya untuk TAMPILAN: kalau nanti disambung ke
 gateway nyata (Midtrans/Xendit/Stripe), invoice dibuat dengan mata uang hasil
 deteksi dan kurs gateway, bukan dari tabel ini (`topup_currency.py:13-16`).
 Catatan yang masih terbuka dari fase ini: pygame mencetak baris
