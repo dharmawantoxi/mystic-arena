@@ -103,17 +103,8 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
           if [ -f /tmp/cloud-save-parity.log ]; then
-            tail -n 25 /tmp/cloud-save-parity.log | while IFS= read -r line; do
-              line=${line//'%'/'%25'}
-              line=${line//$'\r'/'%0D'}
-              line=${line//':'/'%3A'}
-              printf '::notice title=Godot runtime output::%s\n' "$line"
-            done
-            {
-              head -n 20 /tmp/cloud-save-parity.log
-              grep -nE 'SCRIPT ERROR|Parse Error|Failed to load|CloudSaveParityTest' \
-                /tmp/cloud-save-parity.log || true
-            } | while IFS= read -r line; do
+            grep -nE 'SCRIPT ERROR|Parse Error|Failed to load|CloudSaveParityTest|ERROR:' \
+              /tmp/cloud-save-parity.log | tail -n 10 | while IFS= read -r line; do
               line=${line//'%'/'%25'}
               line=${line//$'\r'/'%0D'}
               line=${line//':'/'%3A'}
