@@ -300,7 +300,7 @@ func _python_json_string(value: String) -> String:
 				if code < 32:
 					result += "\\u" + String.num_int64(code, 16).pad_zeros(4)
 				else:
-				result += value.substr(i, 1)
+					result += value.substr(i, 1)
 	return result + "\""
 
 
