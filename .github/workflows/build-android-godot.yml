@@ -44,7 +44,8 @@ on:
           - release
 
   push:
-    tags: ['v*']
+    branches:
+      - 'arena/01a0d146-mystic-arena'
 
 # Build baru membatalkan build lama yang masih jalan di ref sama
 concurrency:
@@ -217,7 +218,8 @@ jobs:
         run: |
           set -euo pipefail
           cd godot/android_plugin/mystic_cloud
-          gradle --no-daemon --console=plain copyGodotPluginAars
+          gradle --no-daemon --console=plain copyGodotPluginAars \
+            2>&1 | tee /tmp/plugin-build.log
           test -s ../../addons/mystic_cloud/bin/debug/MysticCloudSave-debug.aar
           test -s ../../addons/mystic_cloud/bin/release/MysticCloudSave-release.aar
 
@@ -366,6 +368,7 @@ jobs:
         with:
           name: godot-export-logs
           path: |
+            /tmp/plugin-build.log
             /tmp/import.log
             /tmp/export.log
             /tmp/script_errors.txt
@@ -373,3 +376,29 @@ jobs:
             /tmp/manifest.bin
             /tmp/manifest.tree
           retention-days: 7
+
+      - name: Publish Android build diagnostics
+        if: failure()
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          paths = [Path('/tmp/plugin-build.log'), Path('/tmp/import.log'),
+                   Path('/tmp/export.log'), Path('/tmp/script_errors.txt'),
+                   Path('/tmp/verify.txt')]
+          messages = []
+          pattern = re.compile(r'error|failed|failure|exception|BUILD FAILED', re.I)
+          for path in paths:
+              if not path.exists():
+                  continue
+              for number, line in enumerate(path.read_text(errors='replace').splitlines(), 1):
+                  if pattern.search(line):
+                      messages.append(f'{path.name}:{number}: {line.strip()}')
+          message = ' || '.join(messages[-20:])[:4000]
+          if not message:
+              message = 'Build failed before a diagnostic log was produced.'
+          message = message.replace('%', '%25').replace('\r', '%0D')
+          message = message.replace('\n', '%0A').replace(':', '%3A')
+          print(f'::notice title=Android build diagnostics::{message}')
+          PY
