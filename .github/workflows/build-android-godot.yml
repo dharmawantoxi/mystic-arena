@@ -289,11 +289,12 @@ jobs:
 
       - name: Export ${{ steps.cfg.outputs.type }} (Godot ${{ env.GODOT_VERSION }})
         run: |
-          set -o pipefail
-          mkdir -p godot/build
+          set -euo pipefail
+          EXPORT_FILE="$GITHUB_WORKSPACE/godot/build/MysticArena.${{ steps.patch.outputs.ext }}"
+          mkdir -p "$(dirname "$EXPORT_FILE")"
           ~/godot-bin/godot --headless --path godot \
             --export-${{ steps.cfg.outputs.type }} "Android" \
-            "godot/build/MysticArena.${{ steps.patch.outputs.ext }}" 2>&1 | tee /tmp/export.log
+            "$EXPORT_FILE" 2>&1 | tee /tmp/export.log
 
       # ── 8. GERBANG MUTU: hasilnya harus benar-benar layak Play ──
       - name: Gerbang mutu (script error, tanda tangan, targetSdk >= 36)
