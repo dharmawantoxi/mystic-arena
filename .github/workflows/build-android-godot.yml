@@ -44,8 +44,7 @@ on:
           - release
 
   push:
-    branches:
-      - 'arena/01a0d146-mystic-arena'
+    tags: ['v*']
 
 # Build baru membatalkan build lama yang masih jalan di ref sama
 concurrency:
