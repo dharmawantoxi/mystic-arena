@@ -198,7 +198,7 @@ func _run() -> void:
 	# untouched.
 	var slot_one_path := SaveManager.slot_path(1)
 	var slot_one_before := FileAccess.get_file_as_string(slot_one_path)
-	var invalid_payload := _download_result["payload"].duplicate(true)
+	var invalid_payload: Dictionary = _download_result["payload"].duplicate(true)
 	invalid_payload["checksum"] = "invalid"
 	var invalid_result := CloudSaveManager.apply_payload(invalid_payload)
 	_expect(not bool(invalid_result.get("ok", false)),

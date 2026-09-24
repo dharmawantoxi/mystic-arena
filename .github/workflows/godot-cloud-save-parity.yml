@@ -4,6 +4,10 @@ on:
   push:
     paths:
       - 'godot/scripts/autoload/CloudSaveManager.gd'
+      - 'godot/scripts/autoload/GameManager.gd'
+      - 'godot/scripts/autoload/SaveManager.gd'
+      - 'godot/scripts/autoload/AppShell.gd'
+      - 'godot/scripts/core/ItemDB.gd'
       - 'godot/scripts/utils/CloudSaveCodec.gd'
       - 'godot/tests/CloudSaveParityTest.gd'
       - 'godot/tests/CloudSaveParityTest.tscn'
@@ -16,6 +20,10 @@ on:
   pull_request:
     paths:
       - 'godot/scripts/autoload/CloudSaveManager.gd'
+      - 'godot/scripts/autoload/GameManager.gd'
+      - 'godot/scripts/autoload/SaveManager.gd'
+      - 'godot/scripts/autoload/AppShell.gd'
+      - 'godot/scripts/core/ItemDB.gd'
       - 'godot/scripts/utils/CloudSaveCodec.gd'
       - 'godot/tests/CloudSaveParityTest.gd'
       - 'godot/tests/CloudSaveParityTest.tscn'

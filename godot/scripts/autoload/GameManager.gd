@@ -1622,7 +1622,7 @@ func forge_equip_block_reason(hero, item_id: String) -> String:
 	if inv.has(item_id):
 		return "OWNED"
 	if int(inv.count) + HeroItems.pending_forge_items(hero).size() \
-			>= ItemDB.max_slots:
+			>= ItemDB.max_slots():
 		return "FULL"
 	if ItemDB.is_melee_only(item_id) and not inv.is_melee_for_equip:
 		return "MELEE ONLY"
@@ -1648,7 +1648,7 @@ func try_buy_item(item_id: String) -> bool:
 	# paritas `_try_buy`): alasannya langsung dihitung, bukan lewat
 	# forge_equip_block_reason, supaya jalur API tetap satu sumber angka.
 	var pending: Array = HeroItems.pending_forge_items(h)
-	if int(h.items.count) + pending.size() >= ItemDB.max_slots:
+	if int(h.items.count) + pending.size() >= ItemDB.max_slots():
 		print("[Shop] 6 slot item %s sudah penuh" % h.name)
 		return false
 	if not h.items.can_equip(item_id):
