@@ -7,6 +7,10 @@ signal destroyed(nexus: NexusUnit)
 var team: String = "blue"
 var max_hp: float = 1500.0
 var hp: float = 1500.0
+# L37 — castle pygame TIDAK pakai armor; proteksinya SHIELD (absorb +88%
+# reduksi, _entity.py:1758). Shield nexus = langkah tersendiri (belum ada,
+# sama seperti sebelum L37). Angka ini disiapkan supaya signature seragam.
+var armor: float = 0.0
 
 var _flash: float = 0.0
 
@@ -27,9 +31,13 @@ func is_alive() -> bool:
 	return hp > 0.0
 
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, school: String = "") -> void:
 	if hp <= 0.0:
 		return
+	# L37: signature seragam unit lain (armor 0 → damage utuh, sama persis
+	# perilaku lama). Gate 'physical' agar siap saat shield/castle diport.
+	if school == "physical":
+		amount = CombatCalc.mitigate(amount, armor)
 	hp -= amount
 	_flash = 0.1
 	queue_redraw()

@@ -198,7 +198,7 @@ func _draw() -> void:
 		draw_string(font, Vector2((1280.0 - w2) * 0.5, 410.0), sub, HORIZONTAL_ALIGNMENT_LEFT, -1, 32, Color.WHITE)
 
 
-func _draw_terrain() ... (sampai sebelum _draw_terrain_details)
+# 1) Ganti SELURUH func _draw_terrain() ... (sampai sebelum _draw_terrain_details)
 # 2) Ganti SELURUH func _draw_terrain_details() ... (sampai sebelum _draw_river)
 # Hook: sudah dipanggil di _draw() — tidak perlu ubah urutan.
 #
@@ -1271,7 +1271,7 @@ func _draw17_shadow(p: Vector2, w: float) -> void:
 	draw_circle(Vector2.ZERO, w, Color(0, 0, 0, 0.45))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-func _draw17_slashes() yang sudah ada (blok L17).
+# Ganti func _draw17_slashes() yang sudah ada (blok L17).
 # Hook: sudah dipanggil dari _draw_decor17() — tidak ubah _draw() / urutan.
 #
 # Masalah: L17 lama garis 2px + highlight, panjang 10–18px → terlalu "darah tebal".

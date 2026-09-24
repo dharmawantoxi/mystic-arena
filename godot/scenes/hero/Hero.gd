@@ -753,6 +753,10 @@ func kit_popup(text: String, critical: bool = false) -> void:
 func kit_skill_proj(target, _speed := 13.0) -> void:
 	if kit_no_projectiles or target == null or not is_instance_valid(target):
 		return
+	# Proyektil skill jalur kit -> gate yang sama dengan spawn_skill_projectile
+	# (Fase 34, paritas _entity.py:4469: semua spawn is_skill=True kepotong).
+	if not FXLoadGovernor.allow_skill_projectile():
+		return
 	var p := SkillProjectileScript.new()
 	p.setup(target, hero_type, self)
 	var host := get_tree().current_scene
@@ -955,6 +959,11 @@ func spawn_skill_projectile(t: Node2D) -> void:
 	if t == null or not is_instance_valid(t) or bool(t.get("is_dead")):
 		# Paritas _spawn_projectile _entity.py:4460-4462: target hilang/mati
 		# -> tidak ada proyektil sama sekali.
+		return
+	# Gate anggaran per frame (Fase 34, paritas _entity.py:4466-4472):
+	# proyektil SKILL wajib lolos allow_skill_projectile(); serangan dasar
+	# (TowerBullet) tidak digate — sama seperti pygame.
+	if not FXLoadGovernor.allow_skill_projectile():
 		return
 	# Batas 6 proyektil per hero (paritas _HERO_PROJ_MAX _entity.py:3225-3232).
 	# pygame saat penuh MEMBUANG proyektil skill paling tua (4474-4482), jadi di

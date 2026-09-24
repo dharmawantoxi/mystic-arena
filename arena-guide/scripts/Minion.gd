@@ -10,6 +10,9 @@ var speed: float = 60.0
 var attack_range: float = 42.0
 var attack_interval: float = 1.0
 var arrived: bool = false
+# L37 — pygame MINION_TYPES (_core.py): minion dasar (goblin) armor 0.
+# Formula sudah terpasang; tipe berat masa depan (troll = 2) tinggal angka.
+var armor: float = 0.0
 
 var path := PackedVector2Array()
 var _path_i: int = 1
@@ -41,9 +44,13 @@ func is_alive() -> bool:
 	return hp > 0.0
 
 
-func take_damage(amount: float) -> void:
+func take_damage(amount: float, school: String = "") -> void:
 	if hp <= 0.0:
 		return
+	# L37: pygame minion HANYA memblok school 'physical' (_entity.py:5812);
+	# tanpa school (tembakan menara, pukulan minion lain) damage utuh.
+	if school == "physical":
+		amount = CombatCalc.mitigate(amount, armor)
 	hp -= amount
 	_flash = 0.1
 	queue_redraw()

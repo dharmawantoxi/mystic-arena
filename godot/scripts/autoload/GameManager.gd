@@ -486,6 +486,17 @@ func _process(delta):
 	_update_hero_respawns(delta)
 	_tick_combo(delta)
 	world_popups.advance(delta)
+	# ── Governor beban FX (Fase 34, paritas _core.py:2888-2893) ──
+	# `Game.draw` pygame memanggil `begin_fx_frame(count_busy_fx_heroes(..))`
+	# sekali per frame sebelum EffectManager berjalan; governor menurunkan
+	# fx_load saat combat ramai. Rasio EFEKTIF = preset(AppShell) × fx_load
+	# (properti Quality.particle_ratio, mobile/perf.py:487-494) lalu dibaca
+	# EffectManager.add_hit_particles. Urutan yang sama dipertahankan:
+	# hitung beban -> set_fx_load -> salin rasio ke SparkField -> advance.
+	FXLoadGovernor.set_fx_load(FXLoadGovernor.count_busy_fx_units(
+		_collect_fx_units()))
+	spark_fx.particle_ratio = AppShell.particle_ratio()
+	spark_fx.particles_enabled = AppShell.particles_enabled()
 	# Percikan/ledakan ikut kadens frame pygame (EffectManager.update dipanggil
 	# sekali per Game.update). Path preview di-tick node-nya sendiri karena
 	# state-nya milik scene (jalur lane dibaca dari ArenaMap).
@@ -530,6 +541,10 @@ func start_level(lv: int, replay: bool = false):
 	achievements_unlocked.clear()
 	world_popups.reset()
 	spark_fx.reset()
+	# Intensitas FX kembali penuh di awal match baru — paritas `reset_fx_load`
+	# di `Game.reset` (_core.py:1410-1411): sisa beban rendah dari match
+	# sebelumnya tidak boleh terbawa.
+	FXLoadGovernor.reset_fx_load()
 	_load_gameplay_settings()
 	var popup_settings: Dictionary = SaveManager.data.get("settings", {})
 	var quality := str(popup_settings.get("quality", "medium"))
@@ -1498,6 +1513,21 @@ func owned_heroes(team: String = "blue") -> Array:
 		if is_instance_valid(hero) and not hero.is_queued_for_deletion() and hero.team == team:
 			result.append(hero)
 	return result
+
+
+## `self.get_all_heroes()` + `[active_boss]` (_core.py:2889-2891): daftar
+## unit untuk penghitung beban FX. Godot tidak punya variabel active_boss —
+## seluruh grup "bosses" dikumpulkan; predikat sibuk governor menyaring
+## yang mati/idle (deviasi #4 di header FXLoadGovernor.gd).
+func _collect_fx_units() -> Array:
+	var out: Array = []
+	for u in get_tree().get_nodes_in_group("heroes"):
+		if is_instance_valid(u) and not u.is_queued_for_deletion():
+			out.append(u)
+	for b in get_tree().get_nodes_in_group("bosses"):
+		if is_instance_valid(b) and not b.is_queued_for_deletion():
+			out.append(b)
+	return out
 
 func owns_hero(hero_type: String, team: String = "blue") -> bool:
 	for hero in owned_heroes(team):

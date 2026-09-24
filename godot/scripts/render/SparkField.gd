@@ -39,11 +39,13 @@ const FPS := 60.0
 
 var particles: Array = []
 var explosions: Array = []
-## Padanan `Quality.particle_ratio` / `Quality.particles` (`mobile/perf.py:483-508`)
-## yang dibaca `add_hit_particles` pygame. Sengaja 1.0/true: lapisan adaptive
-## quality belum diport (lihat AUDIT_ULANG_DARI_AWAL.md §3), jadi preset kualitas
-## belum memangkas partikel di Godot. Knob-nya ada supaya port perf nanti tidak
-## perlu menyentuh berkas ini.
+## Padanan `Quality.particle_ratio` / `Quality.particles` (`mobile/perf.py:487-508`)
+## yang dibaca `add_hit_particles` pygame (`_render.py:712-718`). Sejak Fase 34
+## nilainya DI-DRIVE `GameManager._process` satu frame lebih dulu daripada
+## `advance()`: `particle_ratio = AppShell.particle_ratio()` (preset 0.20/0.40/
+## 0.70 × `FXLoadGovernor.fx_load()`) dan `particles_enabled =
+## AppShell.particles_enabled()` (false hanya di LOW). Default 1.0/true tetap
+## berlaku untuk harness yang memakai SparkField tanpa match penuh.
 var particle_ratio := 1.0
 var particles_enabled := true
 ## RNG terkontrol untuk harness (lihat DeathBurst._init); null = RNG global.

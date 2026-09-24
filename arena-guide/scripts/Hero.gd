@@ -31,6 +31,9 @@ var inventory: Array = [] # L34 item ids (max 6)
 var lifesteal: float = 0.0 # dari Demon Maw
 var bonus_armor: float = 0.0
 var bonus_as: float = 0.0
+# L37 — armor dasar hero. Pygame _entity.py:4650: armor hero MURNI dari item
+# (inv.get_armor()), base = 0 → total = BASE_ARMOR + bonus_armor (dari toko).
+const BASE_ARMOR: float = 0.0
 
 
 func _ready() -> void:
@@ -41,9 +44,17 @@ func is_alive() -> bool:
 	return _dead <= 0.0 and hp > 0.0
 
 
-func take_damage(amount: float) -> void:
+func total_armor() -> float:
+	return BASE_ARMOR + bonus_armor
+
+
+func take_damage(amount: float, school: String = "") -> void:
 	if _dead > 0.0 or hp <= 0.0:
 		return
+	# L37: target HERO — SEMUA damage non-'fire' dikurangi armor
+	# (pygame _entity.py:4650 gate damage_type != 'fire', BUKAN gate school).
+	if school != "fire":
+		amount = CombatCalc.mitigate(amount, total_armor())
 	hp -= amount
 	_flash = 0.1
 	_flash_col = Color(1.0, 0.4, 0.4)
@@ -127,7 +138,8 @@ func _combat(delta: float) -> void:
 		_enemy = _find_enemy()
 	if _enemy != null and _cooldown <= 0.0:
 		var dmg := _atk_damage()
-		_enemy.take_damage(dmg)
+		# L37: serangan dasar hero = school PHYSICAL (pygame dmg_school Kaizen)
+		_enemy.take_damage(dmg, "physical")
 		# lifesteal (Demon Maw)
 		if lifesteal > 0.0 and dmg > 0.0:
 			hp = minf(max_hp, hp + dmg * lifesteal)
@@ -183,7 +195,9 @@ func _cast_q() -> void:
 		return
 	foes.sort_custom(func(a, b): return position.distance_to(a.position) < position.distance_to(b.position))
 	var target = foes[0]
-	target.take_damage(60.0)
+	# L37: skill = school MAGIC → tembus armor target (paritas school pygame;
+	# magic_resist semua target port ini 0, jadi damage tetap penuh).
+	target.take_damage(60.0, "magic")
 	Sound.play("hit")
 	print("[Skill] Tebas Baja: 60 damage.")
 
@@ -207,7 +221,8 @@ func _cast_e() -> void:
 	foes.sort_custom(func(a, b): return position.distance_to(a.position) < position.distance_to(b.position))
 	var n: int = mini(3, foes.size())
 	for i in n:
-		foes[i].take_damage(35.0)
+		# L37: skill = school MAGIC → tembus armor (lihat _cast_q).
+		foes[i].take_damage(35.0, "magic")
 	Sound.play("hit")
 	print("[Skill] Rantai: 35 damage ke %d musuh." % n)
 

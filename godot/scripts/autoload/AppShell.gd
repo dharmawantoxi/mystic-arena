@@ -59,6 +59,15 @@ const ADAPTIVE_HIGH_FPS := 52.0
 const ADAPTIVE_COOLDOWN_DOWN := 180
 const ADAPTIVE_COOLDOWN_UP := 300
 
+## `_Quality.apply` (`mobile/perf.py:508`): rasio partikel DASAR per preset.
+## Komentar basi di `_render.py:706` (0.35/0.65/1.0) sengaja tidak diikuti —
+## yang berlaku dan di-pin dari kode pygame adalah 0.20/0.40/0.70.
+const PARTICLE_RATIO := {
+	QUALITY_LOW: 0.20,
+	QUALITY_MEDIUM: 0.40,
+	QUALITY_HIGH: 0.70,
+}
+
 ## ══ AUDIO BOOT (paritas main.py:163-164) ══
 ## pygame memutar BGM + ambient SEKALU di awal aplikasi (fade 3000 ms),
 ## jadi menu utama sudah berbunyi — bukan baru saat match dimulai.
@@ -177,6 +186,17 @@ func _check_loop_policy() -> void:
 ## pemain bisa menaikkan di SETTINGS), desktop HIGH.
 func _detect_quality() -> void:
 	quality_level = QUALITY_LOW if touch_mode() else QUALITY_HIGH
+	_sync_quality_setting()
+
+
+## Bayang kunci save `settings.quality`: slot lama menulis placeholder
+## statis "medium" yang tidak pernah berubah, padahal pygame mengikat
+## jumlah maksimal damage number pada preset AKTIF (Quality.max_damage_
+## numbers, dibaca `_render.py:644-647`). Tulis preset live-nya di sini
+## (runtime saja, persist=false) supaya sumbernya sama-sama "preset yang
+## sedang berlaku" — bukan angka membeku dari template save.
+func _sync_quality_setting() -> void:
+	SaveManager.set_setting_str("quality", quality_level, false)
 
 
 ## Laporan user 2026-09-14: "jendela game keluar layar" di desktop. Jendela
@@ -232,6 +252,27 @@ func target_fps() -> int:
 	return int(TARGET_FPS.get(quality_level, 60))
 
 
+## `_Quality._particle_ratio` — dasar rasio partikel untuk preset aktif.
+func particle_ratio_base() -> float:
+	return float(PARTICLE_RATIO.get(quality_level, 0.70))
+
+
+## `Quality.particles` (`mobile/perf.py:507` `self.particles = not low`):
+## percikan/ledakan SparkField padat-bubar total hanya di preset LOW.
+func particles_enabled() -> bool:
+	return quality_level != QUALITY_LOW
+
+
+## `Quality.particle_ratio` properti (`mobile/perf.py:487-494`): rasio
+## EFEKTIF = dasar × fx_load() governor. Di pygame dibaca di dalam
+## `EffectManager.add_hit_particles` setiap spawn; di Godot pembaca
+## tunggalnya `SparkField`, jadi GameManager menyalin nilai ini ke sana
+## sekali per frame setelah `FXLoadGovernor.set_fx_load` — setiap pembaca
+## pada frame yang sama melihat angka yang sama dengan pygame.
+func particle_ratio() -> float:
+	return particle_ratio_base() * FXLoadGovernor.fx_load()
+
+
 ## Terjemahkan setting pemain -> batas FPS:
 ##   0 (atau tidak ada) = ikut target preset kualitas,
 ##   di perangkat sentuh setting hanya boleh MENURUNKAN, bukan menaikkan.
@@ -285,9 +326,10 @@ func _update_adaptive_quality() -> void:
 
 func _apply_quality(level: String) -> void:
 	quality_level = level
+	_sync_quality_setting() # preset berubah -> shadow + rasio ikut frame ini
 	_apply_fps_limit()
 	print("[PERF] adaptive quality -> %s (target %d FPS, batas %d)"
-			% [quality_level, target_fps(), Engine.max_fps])
+		% [quality_level, target_fps(), Engine.max_fps])
 
 
 func _process(_delta: float) -> void:
