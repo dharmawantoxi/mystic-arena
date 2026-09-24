@@ -101,11 +101,25 @@ func _run() -> void:
 		return
 
 	var first: Dictionary = cases[0]
-	var parsed_result := CloudSaveManager.parse_payload(
-		str(first.get("payload_json", "")))
+	var payload_json := str(first.get("payload_json", ""))
+	var parsed_result := CloudSaveManager.parse_payload(payload_json)
 	_expect(parsed_result.get("payload") is Dictionary,
-		"Pygame payload/checksum accepted by Godot")
+		"Pygame payload/checksum accepted by Godot: " +
+		str(parsed_result.get("error", "unknown error")))
 	if not (parsed_result.get("payload") is Dictionary):
+		var typed_result: Dictionary = CloudSaveManager._parse_json_typed(payload_json)
+		var typed_payload: Variant = typed_result.get("value")
+		if typed_payload is Dictionary:
+			var debug_body: Dictionary = typed_payload.duplicate(true)
+			debug_body.erase("checksum")
+			print("[CloudSaveParityTest] expected checksum: ",
+				str(first.get("expected_checksum", "")))
+			print("[CloudSaveParityTest] actual checksum: ",
+				CloudSaveManager.compute_checksum(typed_payload))
+			print("[CloudSaveParityTest] expected canonical: ",
+				str(first.get("expected_canonical", "")))
+			print("[CloudSaveParityTest] actual canonical: ",
+				CloudSaveManager.canonical_json(debug_body))
 		_finish()
 		return
 	var payload: Dictionary = parsed_result["payload"]
