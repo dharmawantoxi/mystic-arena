@@ -46,6 +46,7 @@ from mobile import combat_audio as audio_mod       # noqa: E402
 from mobile import sidepanel as panel_mod          # noqa: E402
 from mobile import kaizen_review as kaizen_review_mod  # noqa: E402
 from mobile import vex_review as vex_review_mod        # noqa: E402
+from mobile import grimjaw_review as grimjaw_review_mod  # noqa: E402
 
 debug_mod.install_crash_handler()
 
