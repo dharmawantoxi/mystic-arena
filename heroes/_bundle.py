@@ -16721,3 +16721,14 @@ class _NS_zephyr:
     # ===================================================================
     def draw_boss(surface, boss, x, y):
         _NS_zephyr.draw_zephyr(surface, boss, x, y)
+
+# ============================================================================
+# KAIZEN V1 PIXEL-ART OVERRIDE
+# ============================================================================
+# The original bundled namespace remains as a compatibility base.  The
+# supplied Godot renderer is adapted to pygame in a small subclass so all
+# historical imports (`heroes.kaizen`, live FX and portrait tools) continue
+# to resolve the same public namespace.
+from heroes.kaizen_v1 import install as _install_kaizen_v1
+_NS_kaizen = _install_kaizen_v1(_NS_kaizen)
+del _install_kaizen_v1

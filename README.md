@@ -73,26 +73,36 @@ tetap 100% procedural.
 Uji regresi: `python tools/test_hero_hd_render.py` dan
 `python tools/test_kaizen_masterwork.py`.
 
-### Upgrade terkini: Kaizen v2 Pixel Masterwork + Skill FX v2.1
+### Upgrade terkini: Kaizen V1.0 Pixel Art + Wind Magic
 
-Renderer Kaizen ditulis ulang mengikuti standar **Thorne v2 / v2.1**
-(detail lengkap: [docs/AUDIT_ULANG_DARI_AWAL.md](docs/AUDIT_ULANG_DARI_AWAL.md)).
-Rig native dibesarkan ~1.5x (bbox idle 104x112 -> 158x168) sehingga
-kepadatan detail di layar naik tanpa mengubah ukuran di arena (pipeline
-menormalkan). Disiplin pixel-art: ramp hue-shift 4-5 band, selout,
-siluet bergerigi (`_tuft_points`), specular cluster, dither band,
-key light kiri-atas. Katana kini punya sori/hamon/kissaki/tsuba 4-lobe.
-Animasi: foot solver, inersia rambut-scarf-pita, idle hidup, serangan
-7 keyframe dengan frame IMPACT + smear sabit berlapis.
+Renderer Kaizen sekarang mengikuti spesifikasi **Wandering Swordsman**
+yang diadaptasi dari prototype Godot ke pipeline pygame procedural.
+Palette blue-samurai memakai outline gelap, kain indigo, rambut cokelat,
+kulit hangat, scarf biru, tabi putih, dan katana baja terang. Rig sprite
+menggambar layer dari belakang ke depan dengan blok pixel native 2.6x,
+sehingga siluet tetap tajam setelah sprite-cache menormalkan ukuran hero.
 
-Skill FX kini **world-space** (kompensasi `1/_render_scale`, cap 2.6)
-sehingga cincin/telegraph tidak menyusut bersama sprite cache: tiap
-skill punya fase TELEGRAPH -> AKTIVASI -> STEADY dengan primitif
-`_spark_star/_chevron/_dashed_ring/_jagged_crack`, rune ring berputar,
-pilar cahaya, dan badan ikut bereaksi (scarf/bilah menyala saat W,
-mata + hachimaki menyala saat R). Ring telegraph E tepat 100 px dunia
-dan R tepat 150 px dunia pada skala apa pun (teraudit 180/180 hit);
-biaya cache-miss rata-rata 2.1-3.2 ms.
+Pose yang tersedia: idle, walk, attack combo tiga pola, dash, windwall,
+sweep, tornado, hurt, dan death. Rambut ponytail serta scarf bergerak
+berdasarkan fase animasi; serangan memakai ayunan katana bertahap dengan
+sword glint dan wind crescent. Fallback canvas juga memiliki wind pulse,
+wind wall, sweep AOE, tornado bertingkat, katana trail, dan partikel yang
+mengikuti skala dunia. Lapisan FX hidup `heroes/kaizen_fx.py` tetap berada
+di luar cache untuk trail/impact 60 FPS, tanpa menggambar proyektil dua kali.
+
+Implementasi aktif ada di `heroes/kaizen_v1.py`, dipasang sebagai namespace
+`_NS_kaizen` dari `heroes/_bundle.py`. Renderer gameplay tetap 100% procedural:
+PNG/sprite sheet tidak pernah masuk ke cache hero. Untuk review visual saja,
+`assets/review/kaizen_v1_anim_sheet.png` dan
+`assets/review/kaizen_v1_skill_sheet.png` dapat ditampilkan sebagai dua kartu
+di sisi kanan arena dengan `MYSTIC_KAIZEN_REVIEW=1` atau toggle `F9`; asset
+tersebut dimuat malas dan tidak mengubah gameplay normal. Sheet skill dapat
+dibuat ulang lewat `python tools/kaizen_skill_demo.py`.
+
+Uji regresi:
+`python tools/test_hero_hd_render.py`,
+`python tools/test_kaizen_masterwork.py`, dan
+`python -m pytest tools/test_kaizen_fx_combat.py -q`.
 
 ### Upgrade terbaru: Varkul V3 Combat FX + Swing Arc
 

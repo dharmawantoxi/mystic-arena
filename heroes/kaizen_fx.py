@@ -67,7 +67,7 @@ MAX_PARTICLES = 96
 MAX_PROJECTILES = 8
 
 #: Panjang histori trail senjata (jumlah sample posisi bilah).
-TRAIL_SAMPLES = 7
+TRAIL_SAMPLES = 8
 
 #: Batas dampak aktif per director & skill sekaligus di layar.
 MAX_IMPACTS = 4
@@ -770,9 +770,10 @@ class ParticleSystem:
         budget = particle_budget()
         if budget <= 0.0:
             return None
-        if (budget < 1.0 and not getattr(self, "_in_burst", 0)
-                and random.random() >= budget):
-            return None
+        # Burst/stream callers already quantize their requested count via
+        # _budgeted().  An explicit single spawn must stay deterministic;
+        # probabilistic dropping here made a lone particle randomly return
+        # None in tooling/tests and produced uneven trails on mobile.
         if len(self._live) >= self.cap:
             return None
         p = self._acquire().spawn(x, y, vx, vy, life, size, color, **kw)
@@ -1120,8 +1121,8 @@ class ImpactFX:
             st = 1.0 - t / 0.55
             r0 = int((6 + 18 * pw) * (0.3 + 1.1 * t))
             for i in range(4):
-                ang = self.angle + k * math.pi / 4 + 0.19
-                L = (6 + 14 * pw) * st * (1.0 if k % 2 else 0.55)
+                ang = self.angle + i * math.pi / 4 + 0.19
+                L = (6 + 14 * pw) * st * (1.0 if i % 2 else 0.55)
                 pygame.draw.line(
                     surface, _clamp_color(
                         _mix(P["fx_dark"], P["fx_bright"], st)),
@@ -1129,7 +1130,7 @@ class ImpactFX:
                      y + int(math.sin(ang) * r0)),
                     (x + int(math.cos(ang) * (r0 + L)),
                      y + int(math.sin(ang) * (r0 + L))),
-                    2 if k % 2 else 1)
+                    2 if i % 2 else 1)
 
         # ── 4. SLASH FRAGMENT — 3 busur pecah searah tebasan ────────
         if t < 0.5 and self.kind in ("slash", "crit"):
@@ -2019,13 +2020,15 @@ def katana_points(hero, x=None, y=None, progress=None):
 
     if G is not None:
         try:
-            tip_l = G._katana_tip_local(phase, action, ap)
-            if action == "attack":
-                hand_l = G._attack_pose(ap)["hand"]
-            elif action == "walk":
-                hand_l = (36, -6 + int(math.sin(phase * 1.7) * 3))
-            else:
-                hand_l = (34, -2 + int(math.sin(phase * 0.72) * 1.2))
+            combo = int(getattr(h, "_kz_combo", 0) or 0)
+            tip_l = G._katana_tip_local(
+                phase, action, ap, attack_combo=combo)
+            # Use the same hand anchor as the pixel body for every pose.
+            # The old idle/walk fallback used raw source coordinates while
+            # the tip helper returned renderer-local pixels, so the trail
+            # could detach from the sword even when the blade itself was
+            # fully present.
+            hand_l = G._katana_hand_local(phase, action, ap)
         except Exception:                  # pragma: no cover - tool minimal
             hand_l, tip_l = (34, -2), (92, 18)
     else:                                  # pragma: no cover
