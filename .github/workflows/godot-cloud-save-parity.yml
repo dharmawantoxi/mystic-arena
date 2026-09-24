@@ -109,16 +109,16 @@ jobs:
               line=${line//':'/'%3A'}
               printf '::notice title=Godot runtime output::%s\n' "$line"
             done
-            python3 - <<'PY'
-          import base64
-          from pathlib import Path
-
-          log = Path('/tmp/cloud-save-parity.log').read_bytes()[-20000:]
-          encoded = base64.b64encode(log).decode('ascii')
-          for index in range(0, len(encoded), 2500):
-              chunk = encoded[index:index + 2500]
-              print(f'::notice title=GODOT_LOG_BASE64_{index // 2500 + 1}::{chunk}')
-          PY
+            {
+              head -n 20 /tmp/cloud-save-parity.log
+              grep -nE 'SCRIPT ERROR|Parse Error|Failed to load|CloudSaveParityTest' \
+                /tmp/cloud-save-parity.log || true
+            } | while IFS= read -r line; do
+              line=${line//'%'/'%25'}
+              line=${line//$'\r'/'%0D'}
+              line=${line//':'/'%3A'}
+              printf '::notice title=Godot diagnostic::%s\n' "$line"
+            done
           fi
 
       - name: Upload Godot runtime log
