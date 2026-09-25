@@ -6,12 +6,16 @@ on:
     paths:
       - 'godot_rebuild/**'
       - '_core.py'
+      - '_entity.py'
+      - 'towers/_bundle.py'
       - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
   push:
     paths:
       - 'godot_rebuild/**'
       - '_core.py'
+      - '_entity.py'
+      - 'towers/_bundle.py'
       - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
 
@@ -39,6 +43,7 @@ jobs:
           python -m pip install gdtoolkit==4.5.0
           python godot_rebuild/tests/validate_project.py
           python godot_rebuild/tests/check_source_contract.py
+          python godot_rebuild/tests/structure_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

@@ -25,9 +25,14 @@ var _next_id := 1
 
 
 func spawn_unit(definition: Definition, team: int, lane: int) -> UnitState:
-	if definition == null or not definition.is_valid():
+	if not is_running() or definition == null or not definition.is_valid():
 		return null
-	if team not in [BLUE, RED] or lane < 0 or lane >= paths.size():
+	if (
+		definition.speed_px_per_tick <= 0
+		or team not in [BLUE, RED]
+		or lane < 0
+		or lane >= paths.size()
+	):
 		return null
 	if units.size() >= MAX_UNITS:
 		return null
@@ -49,7 +54,13 @@ func spawn_unit(definition: Definition, team: int, lane: int) -> UnitState:
 
 func spawn_wave(definition: Definition) -> bool:
 	# Validate the whole request before modifying state: no half-spawned waves at the cap.
-	if definition == null or not definition.is_valid() or units.size() + 6 > MAX_UNITS:
+	if (
+		not is_running()
+		or definition == null
+		or not definition.is_valid()
+		or units.size() + 6 > MAX_UNITS
+		or definition.speed_px_per_tick <= 0
+	):
 		return false
 	for lane in range(3):
 		spawn_unit(definition, BLUE, lane)
@@ -62,9 +73,17 @@ func get_unit(id: int) -> UnitState:
 	return _by_id.get(id) as UnitState
 
 
+func is_running() -> bool:
+	return true
+
+
 func step_tick() -> void:
+	if not is_running():
+		return
 	tick_count += 1
 	for unit in units:
+		if not is_running():
+			break
 		if not unit.alive:
 			continue
 		unit.cooldown_ticks = maxi(0, unit.cooldown_ticks - 1)
@@ -84,37 +103,62 @@ func step_tick() -> void:
 func apply_hit(attacker_id: int, target_id: int, school: String = "physical") -> bool:
 	var attacker := get_unit(attacker_id)
 	var target := get_unit(target_id)
-	if attacker == null or target == null or not attacker.alive or not target.alive:
+	if not is_running() or attacker == null or target == null:
 		return false
-	if attacker.team == target.team or attacker.cooldown_ticks > 0:
+	if not attacker.alive or not target.alive or attacker.cooldown_ticks > 0:
 		return false
 	if attacker.position.distance_to(target.position) > attacker.definition.attack_range_px:
 		return false
-	var damage := DamageRules.resolve(
-		attacker.definition.damage, target.definition.armor, target.definition.magic_resist, school
-	)
-	if damage <= 0:
+	if not _deliver_hit(
+		attacker.id, attacker.team, target, attacker.definition.damage, school, attacker.position
+	):
 		return false
 	attacker.cooldown_ticks = attacker.definition.attack_cooldown_ticks
 	attacker.facing = -1.0 if target.position.x < attacker.position.x else 1.0
+	return true
+
+
+func _deliver_hit(
+	source_id: int,
+	source_team: int,
+	target: UnitState,
+	raw_damage: int,
+	school: String,
+	origin: Vector2
+) -> bool:
+	# Shared one-shot damage path for melee and projectile impacts. Visuals never call this.
+	if not is_running() or target == null or not target.alive or source_team == target.team:
+		return false
+	if raw_damage <= 0 or school not in ["physical", "magic"]:
+		return false
+	var damage := _damage_amount(target, raw_damage, school)
 	target.hp = maxf(0, target.hp - damage)
 	_record(
 		{
 			"kind": "hit",
-			"source_id": attacker.id,
+			"source_id": source_id,
 			"target_id": target.id,
-			"from": attacker.position,
+			"from": origin,
 			"to": target.position,
 			"damage": damage
 		}
 	)
 	if target.hp <= 0:
-		# Mark first, then publish/credit. Further hits in this tick must reject this target.
 		target.alive = false
-		kills[attacker.team] += 1
-		credited_gold[attacker.team] += target.definition.gold_reward
-		_record({"kind": "death", "source_id": attacker.id, "target_id": target.id})
+		_record({"kind": "death", "source_id": source_id, "target_id": target.id})
+		_on_death(source_team, target)
 	return true
+
+
+func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:
+	return DamageRules.resolve(
+		raw_damage, target.definition.armor, target.definition.magic_resist, school
+	)
+
+
+func _on_death(source_team: int, target: UnitState) -> void:
+	kills[source_team] += 1
+	credited_gold[source_team] += target.definition.gold_reward
 
 
 func select_at(point: Vector2) -> int:

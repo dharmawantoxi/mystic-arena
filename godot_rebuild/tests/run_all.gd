@@ -1,6 +1,7 @@
 extends SceneTree
 ## Native, dependency-free headless regression runner. Exit code 1 means failure.
 
+const SiegeChecks = preload("res://tests/siege_checks.gd")
 const CombatChecks = preload("res://tests/combat_checks.gd")
 const APP = preload("res://app/App.tscn")
 const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
@@ -36,6 +37,7 @@ func _run() -> void:
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
 	_test_simulation()
 	CombatChecks.new().run(_check)
+	SiegeChecks.new().run(_check)
 	var app = APP.instantiate()
 	root.add_child(app)
 	await _settle()

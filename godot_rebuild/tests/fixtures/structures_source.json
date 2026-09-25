@@ -1,0 +1,621 @@
+{
+  "stats": {
+    "tower": {
+      "max_hp": 2000,
+      "damage": 20,
+      "attack_range_px": 180,
+      "attack_cooldown_ticks": 35,
+      "shield_capacity": 800,
+      "armor": 3,
+      "magic_resist": 0.0,
+      "regen_per_tick": 0.3,
+      "hp_regen_delay_ticks": 300,
+      "gold_reward": 100,
+      "shield_regen_enabled": false,
+      "shield_regen_delay_ticks": 180,
+      "shield_regen_per_tick": 1.8,
+      "projectile_speed_px_per_tick": 8,
+      "projectile_hit_radius_px": 4
+    },
+    "nexus": {
+      "max_hp": 4000,
+      "damage": 35,
+      "attack_range_px": 150,
+      "attack_cooldown_ticks": 45,
+      "shield_capacity": 4000,
+      "shield_regen_delay_ticks": 120,
+      "shield_regen_per_tick": 3.5,
+      "shield_damage_reduction": 0.88,
+      "free_shield_waves": 10,
+      "projectile_speed_px_per_tick": 8,
+      "projectile_hit_radius_px": 4
+    }
+  },
+  "damage": [
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 0,
+      "amount": 1,
+      "hp": 999,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 0,
+      "amount": 5,
+      "hp": 996,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 0,
+      "amount": 20,
+      "hp": 983,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 0,
+      "amount": 100,
+      "hp": 915,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 0,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 3,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 2
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 3,
+      "amount": 5,
+      "hp": 999,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 3,
+      "amount": 20,
+      "hp": 986,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 3,
+      "amount": 100,
+      "hp": 918,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 3,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 100,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 99
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 100,
+      "amount": 5,
+      "hp": 1000,
+      "shield_after": 96
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 100,
+      "amount": 20,
+      "hp": 1000,
+      "shield_after": 83
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 100,
+      "amount": 100,
+      "hp": 1000,
+      "shield_after": 15
+    },
+    {
+      "kind": "tower",
+      "school": "physical",
+      "shield": 100,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 0,
+      "amount": 1,
+      "hp": 999,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 0,
+      "amount": 5,
+      "hp": 995,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 0,
+      "amount": 20,
+      "hp": 980,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 0,
+      "amount": 100,
+      "hp": 900,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 0,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 3,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 2
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 3,
+      "amount": 5,
+      "hp": 998,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 3,
+      "amount": 20,
+      "hp": 983,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 3,
+      "amount": 100,
+      "hp": 903,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 3,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 100,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 99
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 100,
+      "amount": 5,
+      "hp": 1000,
+      "shield_after": 95
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 100,
+      "amount": 20,
+      "hp": 1000,
+      "shield_after": 80
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 100,
+      "amount": 100,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "tower",
+      "school": "magic",
+      "shield": 100,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 0,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 0,
+      "amount": 5,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 0,
+      "amount": 20,
+      "hp": 998,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 0,
+      "amount": 100,
+      "hp": 988,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 0,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 3,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 2
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 3,
+      "amount": 5,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 3,
+      "amount": 20,
+      "hp": 998,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 3,
+      "amount": 100,
+      "hp": 989,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 3,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 100,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 99
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 100,
+      "amount": 5,
+      "hp": 1000,
+      "shield_after": 95
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 100,
+      "amount": 20,
+      "hp": 1000,
+      "shield_after": 80
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 100,
+      "amount": 100,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "physical",
+      "shield": 100,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 0,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 0,
+      "amount": 5,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 0,
+      "amount": 20,
+      "hp": 998,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 0,
+      "amount": 100,
+      "hp": 988,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 0,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 3,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 2
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 3,
+      "amount": 5,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 3,
+      "amount": 20,
+      "hp": 998,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 3,
+      "amount": 100,
+      "hp": 989,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 3,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 100,
+      "amount": 1,
+      "hp": 1000,
+      "shield_after": 99
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 100,
+      "amount": 5,
+      "hp": 1000,
+      "shield_after": 95
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 100,
+      "amount": 20,
+      "hp": 1000,
+      "shield_after": 80
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 100,
+      "amount": 100,
+      "hp": 1000,
+      "shield_after": 0
+    },
+    {
+      "kind": "nexus",
+      "school": "magic",
+      "shield": 100,
+      "amount": 10000,
+      "hp": 0,
+      "shield_after": 0
+    }
+  ],
+  "regen": {
+    "tower_before": 1999.9,
+    "tower_at": 2000.0,
+    "tower_shield": 0,
+    "nexus_before": 3998,
+    "nexus_at": 4000
+  },
+  "muzzle": [
+    {
+      "at": [
+        100,
+        200
+      ],
+      "face": -1,
+      "expected": [
+        95,
+        178
+      ]
+    },
+    {
+      "at": [
+        100,
+        200
+      ],
+      "face": 1,
+      "expected": [
+        104,
+        178
+      ]
+    },
+    {
+      "at": [
+        500,
+        340
+      ],
+      "face": -1,
+      "expected": [
+        495,
+        318
+      ]
+    },
+    {
+      "at": [
+        500,
+        340
+      ],
+      "face": 1,
+      "expected": [
+        504,
+        318
+      ]
+    },
+    {
+      "at": [
+        1090,
+        550
+      ],
+      "face": -1,
+      "expected": [
+        1085,
+        528
+      ]
+    },
+    {
+      "at": [
+        1090,
+        550
+      ],
+      "face": 1,
+      "expected": [
+        1094,
+        528
+      ]
+    }
+  ],
+  "positions": {
+    "blue": [
+      [
+        200,
+        180
+      ],
+      [
+        500,
+        340
+      ],
+      [
+        640,
+        640
+      ]
+    ],
+    "red": [
+      [
+        650,
+        90
+      ],
+      [
+        780,
+        400
+      ],
+      [
+        1090,
+        550
+      ]
+    ]
+  }
+}
