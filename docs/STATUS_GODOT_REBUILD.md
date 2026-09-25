@@ -1,12 +1,13 @@
 # Status & handoff — Godot Rebuild
 
-Diperbarui: 25 September 2026. Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
+Diperbarui: 25 September 2026 (sesi lanjutan nexus). Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
 
 ## Aturan pekerjaan
 
 - Gunakan proyek **`godot_rebuild/`**, bukan migrasi lama. Python/Pygame tetap referensi; jangan mengubahnya agar port lolos.
-- Branch tetap **`arena/01a0d776-mystic-arena`**. Push checkpoint berkala sebelum sesi habis; tidak ada indikator batas sesi yang pasti.
-- [PR #278](https://github.com/dharmawantoxi/mystic-arena/pull/278) **OPEN, belum di-merge**. Push memperbarui PR yang sama. Jangan pindah branch atau membuat PR pengganti.
+- Branch sesi baru **`arena/01a0d939-mystic-arena`**, bercabang dari `main` pada merge commit `64e45e9` (PR #278). Jangan memakai branch sesi lama `arena/01a0d776-mystic-arena`.
+- [PR #278](https://github.com/dharmawantoxi/mystic-arena/pull/278) **sudah MERGED** ke `main` (`64e45e9`). Catatan historis yang menyebut PR #278 OPEN adalah status sebelum merge.
+- Push checkpoint berkala ke branch sesi baru sebelum sesi habis; tidak ada indikator batas sesi yang pasti. Jangan menunggu batas sesi untuk push.
 - Jangan mengklaim seluruh migrasi selesai karena laboratorium/prototipe ini berjalan.
 
 ## Checkpoint yang sudah dipush dan diverifikasi
@@ -67,13 +68,26 @@ Ringkasan aturan yang rawan salah:
 - Archer HP efektif 2000 + shield 800; armor sebelum shield. Nexus shield dulu, lalu reduksi 88% saat perlindungan aktif; jangan menyamakan formulanya. Nexus wave 11 mematikan shield gratis.
 - Batas prototipe: 120 minion / 20 struktur / 256 projectile / 64 event; antrean menahan spawn bila penuh. Hasil nexus membekukan economy/world dan membatalkan antrean.
 
+## Tahap berjalan: upgrade nexus + dependensi (sesi baru)
+
+Scope tahap ini (belum selesai): upgrade nexus biru level 1–5 **bersama** scaling stat minion, AI tier 1–5, komposisi wave per-tier, serta aturan HP/shield nexus. Bukan hanya menaikkan HP nexus.
+
+Rencana bertahap:
+
+1. Oracle/fixture sumber nexus (`nexus_source_oracle.py` + `nexus_source.json`): `NEXUS_LEVELS`, `NEXUS_WAVE_COMPOSITION`, `Castle._apply_level_stats/upgrade/upgrade_cost/set_wave`, formula scaling `Minion.__init__`, `_get_wave_composition`, `_find_target_smart` tier 1–5.
+2. Domain Godot: resource nexus 2–5, katalog `nexus_upgrades`, `shield_max`/purchased/free di `StructureState`, `ai_level` di `UnitState`, scheduler per-tim, spawn scaling saat spawn (bukan retroaktif), targeting AI tier, transaksi `upgrade_nexus` dengan expected-level.
+3. UI/session: tombol upgrade nexus, quote dinamis, guard pause/focus/stale/max/result, ledger tetap seimbang.
+4. Tes native `nexus_checks` + scene, seluruh suite lama tetap lulus, CI 4.7.2 Linux. Windows/Android tetap belum diuji langsung.
+
+Keputusan scope sementara: lawan tetap builder terjadwal tiga Archer tanpa auto-scaling castle (`_auto_scale_ai_castle` tetap nonaktif di prototipe agar replay lama stabil). Pembelian paid shield nexus belum diaktifkan sebagai transaksi UI; flag purchased hanya dipakai internal untuk aturan resize shield saat upgrade. Hero/boss/AI penuh, tower selain Archer, dan 54 level tetap di luar scope.
+
 ## Langkah berikutnya
 
 1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal**; perbaiki error sebelum menambah konten.
-2. Archer 1–6 sudah selesai untuk scope ini. Berikutnya nexus **bersama** minion scaling/AI tier dan composition: jangan hanya mengganti HP castle. Lihat audit dependency pada `UPGRADE_CONTRACT.md`.
+2. Selesaikan tahap nexus di atas dengan fixture + tes native. Lihat audit dependency pada `UPGRADE_CONTRACT.md` dan kontrak baru `NEXUS_CONTRACT.md` (akan ditambahkan).
 3. Audit satu hero/skill dan AI sumber secara bertahap. Ganti lawan sementara hanya setelah perilakunya diuji; jangan mengklaim scripted builder sebagai AI penuh.
 4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.
-5. Push bertahap pada branch yang sama, pantau CI dan perbarui handoff ini.
+5. Push bertahap pada branch sesi baru, pantau CI dan perbarui handoff ini.
 
 ## Perintah praktis
 
@@ -83,9 +97,10 @@ python godot_rebuild/tests/check_source_contract.py
 python godot_rebuild/tests/structure_source_oracle.py
 python godot_rebuild/tests/match_source_oracle.py
 python godot_rebuild/tests/upgrade_source_oracle.py
-gh run list --branch arena/01a0d776-mystic-arena --limit 5 --json databaseId,status,conclusion,headSha,url
+python godot_rebuild/tests/nexus_source_oracle.py
+gh run list --branch arena/01a0d939-mystic-arena --limit 5 --json databaseId,status,conclusion,headSha,url
 gh api repos/dharmawantoxi/mystic-arena/check-runs/CHECK_ID/annotations
-git push origin arena/01a0d776-mystic-arena
+git push origin arena/01a0d939-mystic-arena
 ```
 
 Windows: `powershell -ExecutionPolicy Bypass -File .\tests\run_windows.ps1 -Godot "C:\Tools\Godot_v4.7.2-stable_win64_console.exe"` dari `godot_rebuild/`.
