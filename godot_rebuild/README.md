@@ -2,7 +2,7 @@
 
 **Proyek baru, native GDScript. Target editor: Godot 4.7.2 standard, Windows 11.**
 
-Ini implementasi fondasi tahap 1, **bukan migrasi seluruh game**. Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
+Tahap 1 (fondasi) dan tahap 2 (laboratorium combat minion) telah diimplementasikan dan lolos tes native CI. **Ini belum migrasi seluruh game.** Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
 
 ## Buka di Windows (tanpa membuat scene/script manual)
 
@@ -11,11 +11,23 @@ Ini implementasi fondasi tahap 1, **bukan migrasi seluruh game**. Tidak mengguna
 3. Pilih **`godot_rebuild/project.godot`**. Jangan memilih proyek migrasi lama.
 4. Klik **Import & Edit**, tunggu import font selesai.
 5. Tekan **F5**. Main scene sudah diatur ke `app/App.tscn`.
-6. Klik **Buka arena percobaan**.
+6. Klik **Laboratorium minion** untuk melihat combat, atau **Uji input** untuk sandbox penanda lama.
 
 Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan client ini. Font yang dibutuhkan sudah disertakan. Export template belum diperlukan untuk menjalankan lewat editor.
 
-### Kontrol
+### Laboratorium minion (baru)
+
+- Satu wave Goblin muncul pada awal simulasi: kedua tim, tiga lane.
+- Minion mengikuti jalur, mencari musuh, menyerang, kehilangan HP dan mati.
+- Klik/ketuk minion untuk melihat HP, cooldown dan target.
+- Pilih Goblin/Orc/Troll/Undead/Dark Rider lalu klik **Tambah wave kedua tim**.
+- Wave tambahan adalah fasilitas uji, bukan scheduler produksi. Batas 120 unit.
+- Esc/Jeda menghentikan seluruh simulasi. Restart membuat dunia baru.
+- Base hanya penanda; unit di ujung rute keluar arena, bukan menyerang base. Belum ada menang/kalah.
+
+Lima definisi minion menggunakan stat nexus level 1 dari sumber. Tiga lane berisi **277 titik** yang dibandingkan dengan generator Python. Lihat [kontrak combat dan perbedaan yang disengaja](COMBAT_CONTRACT.md), termasuk regen Troll yang bisa membuat duel seimbang tidak selesai.
+
+### Kontrol mode Uji input
 
 | Aksi | Kontrol |
 |---|---|
@@ -29,14 +41,16 @@ Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan clien
 
 Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HUD tidak semestinya diteruskan sebagai command arena. Ketika aplikasi kehilangan fokus, arena dijeda; pemain melanjutkan secara eksplisit. Perintah gerak sementara dibatalkan saat pause/background agar tidak tersisa setelah resume.
 
-**Penanda hijau bukan hero hasil porting.** Bentuk peta, lane, slot dan base adalah ilustrasi placeholder baru; bukan data navigasi level Python. Tidak ada damage, wave, reward, atau kondisi menang/kalah pada tahap ini.
+**Khusus mode Uji input:** penanda hijau bukan hero hasil porting. Lane/slot di mode ini tetap ilustrasi placeholder. Mode Laboratorium minion yang baru memakai jalur sumber dan combat dasar. Keduanya belum pertandingan penuh.
 
 ## Yang sudah diimplementasikan
 
 - Proyek mandiri: Compatibility, viewport 1280 × 720, stretch `canvas_items` + `keep`.
 - Menu dengan theme, font lokal, tombol, fokus keyboard dan artwork prosedural baru.
 - `App` sebagai pengendali perpindahan screen; aktivasi ganda dalam frame yang sama dijaga.
-- Arena placeholder untuk mencoba seleksi dan perintah gerak.
+- Arena placeholder terpisah untuk mencoba seleksi dan perintah gerak.
+- Laboratorium combat: tiga lane sumber, lima definisi minion, targeting tier 1, cooldown, regen, damage physical/magic dasar, death dan kredit uji satu kali.
+- Inspeksi minion, wave uji manual, cap unit/event dan restart world yang bersih.
 - Simulasi demonstrasi dengan 60 physics tick/detik, terpisah dari render/UI.
 - Pause/resume, restart, kembali ke menu, cleanup screen, dan pause saat kehilangan fokus.
 - Adapter input mouse/touch; event mouse sintetis tidak menggandakan command touch.
@@ -45,7 +59,7 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 
 ## Yang belum dimigrasikan
 
-Hero/skill/animasi produksi, minion, combat, tower/upgrade, castle/nexus, wave, AI, ekonomi, item, boss, 54 level, progression, UI produksi, audio, save/migrasi save, cloud, pembayaran, Android export dan optimasi perangkat. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
+Hero/skill/animasi produksi, combat lanjutan/status effect, tower/upgrade, castle/nexus yang dapat diserang, scheduler wave produksi, AI tier lebih tinggi, ekonomi pemain, item, boss, 54 level, progression, UI produksi, audio, save/migrasi save, cloud, pembayaran, Android export dan optimasi perangkat. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
 
 ## Struktur
 
@@ -60,7 +74,20 @@ scenes/match/
   Match.tscn                  Arena, HUD dan menu pause
   match.gd                    Adapter input dan UI pause
   arena_view.gd               Visual placeholder tanpa state gameplay
+scenes/combat/
+  MinionArena.tscn             Laboratorium minion dan HUD
+  combat_screen.gd            Input, inspeksi, wave uji, pause
+  minion_view.gd              Presentasi read-only
+scripts/combat/
+  minion_battle.gd            Simulasi deterministik tanpa dependency scene
+  unit_state.gd               State tiap unit
+  damage_rules.gd             Mitigasi/pembulatan dasar
+scripts/data/
+  lane_layout.gd              Port jalur dari sumber Python
+  minion_definition.gd        Schema Resource stat minion
+data/minions/                Lima resource .tres
 scripts/simulation/
+  combat_session.gd          Penghubung physics tick ke world combat
   sandbox_simulation.gd       Tick dan state penanda percobaan per instance
 scripts/ui/
   rebuild_theme.gd            Theme dan helper presentasi
@@ -71,6 +98,9 @@ assets/
 tests/
   validate_project.py         Guardrail statis (Python stdlib)
   run_all.gd                  Runner native Godot, exit code nonzero jika gagal
+  combat_checks.gd            Fixture, combat, batas unit dan determinisme
+  check_source_contract.py    Membandingkan fixture dengan Python asli
+  fixtures/                  Snapshot stat dan 277 titik lane sumber
   run_windows.ps1             Import + tes native di Windows
 ```
 
@@ -78,14 +108,14 @@ Font disalin dari `assets/fonts/` di root repo, bukan dari hasil migrasi lama. L
 
 ## Pengujian
 
-### Status validasi pada pembuatan awal
+### Status validasi (25 September 2026)
 
-- **Lulus:** 107 pemeriksaan statis referensi file, konfigurasi, nama node unik, isolasi proyek, dan aturan dasar simulasi. Validator juga diuji untuk menolak frekuensi physics salah dan font hilang.
-- **Lulus:** parsing, lint, dan format GDScript menggunakan `gdtoolkit 4.5.0`.
-- **Lulus:** syntax tiga scene TSCN diperiksa menggunakan parser independen `godot-parser 0.1.7` (bukan engine Godot).
-- **Belum dijalankan:** engine import, runner native, pengujian GUI/resize secara visual, Windows nyata, touchscreen dan Android.
+- **Lulus di GitHub Actions:** import engine **Godot 4.7.2**, seluruh tes native **745 pemeriksaan** pada commit `741b660`.
+- Bukti: [run 36114379895](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36114379895), job `validate`; hasil juga diterbitkan sebagai annotation **Native Godot tests**.
+- **Lulus lokal:** 254 pemeriksaan statis; kontrak lima minion dan 277 titik lane terhadap Python; parsing/lint/format GDScript; syntax scene/resource.
+- **Belum diverifikasi:** tampilan GPU/screenshot, resize secara visual, Windows fisik, touchscreen, Android dan performa perangkat. CI headless bukan pengganti tes ini.
 
-Engine belum tersedia di sandbox pembuatan; unduhan binary resmi gagal pada koneksi TLS ke host aset GitHub. Karena itu, keberadaan runner/CI **bukan** klaim bahwa runtime sudah lulus. Parser pihak ketiga tidak memeriksa seluruh tipe/API engine atau scene runtime. Jalankan pemeriksaan native berikut atau tunggu hasil workflow setelah perubahan dipush sebelum menganggap fondasi ini terverifikasi penuh.
+Unduhan binary di sandbox masih terkendala TLS, tetapi tes runtime berhasil dijalankan pada runner GitHub. Hasil native yang dahulu tertunda pada tahap 1 sekarang sudah ada. Lihat workflow terbaru pada branch untuk hasil perubahan setelah checkpoint tersebut.
 
 ### Cara mudah di Windows
 
@@ -107,9 +137,13 @@ $Godot = "C:\Tools\Godot_v4.7.2-stable_win64_console.exe"
 
 Pastikan import tidak menampilkan `ERROR` dan runner mengeluarkan `PASS: ... checks`. Exit code saja pada tahap import tidak cukup.
 
-### Cakupan tes native yang disiapkan
+### Cakupan tes native yang sudah dijalankan di CI
 
-- State terpisah antar instance, satuan gerak per tick, 600 langkah simulasi.
+- Seluruh 277 titik lane dan lima definisi minion dibandingkan fixture sumber Python.
+- Damage, pembulatan Python, cooldown tepat 45 tick, tie target stabil, satu death/kredit dan pembersihan ID.
+- Regen, cap spawn atomik, keluar rute tanpa reward, event terbatas, dua simulasi identik selama 2.400 tick.
+- Tiga siklus laboratorium combat: pause, wave antrean, input berskala, restart, cleanup dan simulasi tanpa render.
+- State terpisah antar instance, satuan gerak per tick, 600 langkah simulasi penanda.
 - Penolakan gerak tanpa seleksi atau di luar bounds.
 - Boot menu, aktivasi tombol Main ganda, satu screen aktif.
 - Tick maju saat berjalan dan berhenti saat pause.
@@ -125,25 +159,27 @@ Dari root repo:
 
 ```text
 python godot_rebuild/tests/validate_project.py
+python godot_rebuild/tests/check_source_contract.py
 ```
 
 Untuk parser/linter, pasang `gdtoolkit==4.5.0` dalam virtualenv terpisah. Tidak perlu memasangnya di komputer pemain.
 
-Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot-rebuild.yml` hanya memeriksa proyek baru. Ia tidak menjalankan converter atau tes migrasi lama. Workflow menjalankan guardrail, import dengan engine 4.7.2, tes native, dan menyimpan log. Workflow baru belum dijalankan pada penyusunan awal; akan terpicu oleh push/PR yang menyentuh path terkait.
+Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot-rebuild.yml` hanya memeriksa proyek baru. Ia tidak menjalankan converter atau tes migrasi lama. Workflow menjalankan guardrail, import dengan engine 4.7.2, tes native, dan menyimpan log. Workflow telah lulus untuk fondasi dan laboratorium minion. Ia terpicu pada push/PR yang menyentuh proyek baru atau sumber kontrak terkait. Parser pihak ketiga tidak menggantikan hasil engine.
 
 ## Pemeriksaan visual singkat
 
-1. F5 menampilkan judul Mystic Arena dan tombol arena/keluar.
+1. F5 menampilkan judul Mystic Arena, Laboratorium minion, Uji input, dan Keluar.
 2. Resize ke rasio berbeda: tampilan tetap proporsional, letterbox diperbolehkan.
-3. Buka arena; pilih penanda, klik kanan, pastikan marker bergerak.
-4. Klik panel HUD: penanda tidak hilang seleksinya karena klik tembus.
-5. Esc: angka tick harus berhenti; Lanjutkan: angka tick maju lagi.
-6. Alt+Tab: arena pause ketika kehilangan fokus.
-7. Restart mengembalikan penanda ke posisi awal tanpa seleksi.
-8. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
+3. Buka **Uji input**; pilih penanda, klik kanan, pastikan marker bergerak.
+4. Buka **Laboratorium minion**; pastikan tiga lane terlihat, unit bergerak/menyerang, HP turun; tambah wave dan inspeksi unit.
+5. Klik panel HUD: penanda tidak hilang seleksinya karena klik tembus.
+6. Esc: angka tick harus berhenti; Lanjutkan: angka tick maju lagi.
+7. Alt+Tab: arena pause ketika kehilangan fokus.
+8. Restart mengembalikan penanda ke posisi awal tanpa seleksi.
+9. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
 
 ## Langkah pengembangan berikutnya
 
-Setelah fondasi lulus runtime: inventaris data level pertama dan kontrak stat/satuan → lane asli dan minion → combat kecil yang teruji → satu pertandingan utuh → perluasan sistem dan konten. Lihat [rencana lengkap](../docs/RENCANA_MIGRASI_GODOT_DARI_NOL.md).
+Fondasi dan combat minion sudah lulus runtime CI. Berikutnya: audit tower/nexus dan damage khususnya → satu tower + projectile → siege base → scheduler wave/ekonomi → satu pertandingan utuh → perluasan sistem dan konten. Lihat [rencana lengkap](../docs/RENCANA_MIGRASI_GODOT_DARI_NOL.md).
 
 Jangan mengedit game Python atau mengaktifkan converter lama untuk membuat proyek ini berjalan. Jika menemukan error, simpan pesan lengkap beserta versi Godot dan langkah reproduksi, lalu perbaiki di proyek baru.

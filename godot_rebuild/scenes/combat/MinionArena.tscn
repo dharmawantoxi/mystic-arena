@@ -73,7 +73,7 @@ text = "Menu"
 
 [node name="BottomBar" type="PanelContainer" parent="HUD"]
 offset_left = 24.0
-offset_top = 622.0
+offset_top = 606.0
 offset_right = 1256.0
 offset_bottom = 712.0
 

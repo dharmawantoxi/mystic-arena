@@ -134,6 +134,7 @@ func _target_and_cooldown(check: Callable) -> void:
 	ties.step_tick()
 	check.call(blue.target_id == red.id, "equal-distance targets resolve by stable spawn ID")
 	check.call(other.hp == 45, "one attack cannot damage two targets")
+	red.cooldown_ticks = 0
 	check.call(not ties.apply_hit(red.id, other.id), "friendly fire rejected")
 	blue.cooldown_ticks = 0
 	red.position = Vector2(1000, 100)
@@ -208,7 +209,7 @@ func _deterministic_soak(check: Callable) -> void:
 	var second := Battle.new()
 	for tick in range(2400):
 		if tick % 300 == 0:
-			var definition: Definition = Session.DEFINITIONS[(tick / 300) % 2]
+			var definition: Definition = Session.DEFINITIONS[int(tick / 300.0) % 2]
 			first.spawn_wave(definition)
 			second.spawn_wave(definition)
 		first.step_tick()

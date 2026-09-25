@@ -109,7 +109,7 @@ func _run() -> void:
 	if failures.is_empty():
 		print(
 			(
-				"PASS: %d checks; fixed ticks, input, pause, lifecycle, 10 navigation/restart cycles."
+				"PASS: %d checks; fixed ticks, source fixtures, minion combat, input, pause, lifecycle."
 				% checks
 			)
 		)
