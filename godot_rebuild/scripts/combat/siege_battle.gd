@@ -203,15 +203,21 @@ func select_at(point: Vector2) -> int:
 
 
 func _find_target(unit: UnitState) -> UnitState:
+	# Both arrays are ID-sorted; merge once for stable global spawn order.
 	var ordered: Array[UnitState] = []
-	for candidate in units:
-		if not candidate.alive or candidate.team == unit.team:
+	var ui := 0
+	var si := 0
+	while ui < units.size() or si < structures.size():
+		var cand: UnitState = null
+		if si >= structures.size() or (ui < units.size() and units[ui].id < structures[si].id):
+			cand = units[ui]
+			ui += 1
+		else:
+			cand = structures[si]
+			si += 1
+		if not cand.alive or cand.team == unit.team:
 			continue
-		ordered.append(candidate)
-	for structure in structures:
-		if not structure.alive or structure.team == unit.team:
-			continue
-		ordered.append(structure)
+		ordered.append(cand)
 	return _select_ai_target(unit, ordered)
 
 

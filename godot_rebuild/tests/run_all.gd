@@ -1,6 +1,8 @@
 extends SceneTree
 ## Native, dependency-free headless regression runner. Exit code 1 means failure.
 
+const NexusSceneChecks = preload("res://tests/nexus_scene_checks.gd")
+const NexusChecks = preload("res://tests/nexus_checks.gd")
 const UpgradeSceneChecks = preload("res://tests/upgrade_scene_checks.gd")
 const UpgradeChecks = preload("res://tests/upgrade_checks.gd")
 const PrototypeChecks = preload("res://tests/prototype_checks.gd")
@@ -43,6 +45,7 @@ func _run() -> void:
 	SiegeChecks.new().run(_check)
 	PrototypeChecks.new().run(_check)
 	UpgradeChecks.new().run(_check)
+	NexusChecks.new().run(_check)
 	var app = APP.instantiate()
 	root.add_child(app)
 	await _settle()
@@ -113,6 +116,7 @@ func _run() -> void:
 	await _test_siege_scene(app)
 	await _test_prototype_scene(app)
 	await UpgradeSceneChecks.new().run(self, app, _check)
+	await NexusSceneChecks.new().run(self, app, _check)
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
