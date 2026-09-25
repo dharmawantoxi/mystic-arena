@@ -4,7 +4,7 @@ Disusun: 25 September 2026. Referensi sumber: checkout Python/Pygame pada commit
 
 **Dokumen ini adalah rencana baru, bukan kelanjutan migrasi Godot sebelumnya.** Kode, scene, generator, plugin, dan hasil pengujian migrasi lama tidak dijadikan fondasi atau bukti keberhasilan.
 
-**Pembaruan pelaksanaan:** pengguna kemudian meminta implementasi langsung di repo karena keterbatasan waktu. Fondasi baru kini dibuat di [`godot_rebuild/`](../godot_rebuild/README.md), ditargetkan untuk Windows 11 dan Godot 4.7.2. Langkah manual di bawah tetap menjadi acuan, tetapi pengguna tidak perlu membuat ulang file yang sudah disediakan. Status checkpoint: menu/input/pause dan laboratorium minion dengan lane sumber/combat dasar telah diimplementasikan; CI Godot 4.7.2 lulus 745 pemeriksaan native pada commit `741b660`. Lihat [status implementasi dan handoff](STATUS_GODOT_REBUILD.md). Ini belum migrasi gameplay penuh dan game Python tidak diubah.
+**Pembaruan pelaksanaan:** pengguna kemudian meminta implementasi langsung di repo karena keterbatasan waktu. Fondasi baru kini dibuat di [`godot_rebuild/`](../godot_rebuild/README.md), ditargetkan untuk Windows 11 dan Godot 4.7.2. Langkah manual di bawah tetap menjadi acuan, tetapi pengguna tidak perlu membuat ulang file yang sudah disediakan. Status checkpoint: menu/input/pause, minion, dan mode tower/projectile/nexus tier 1 telah diimplementasikan; CI Godot 4.7.2 lulus 1.158 pemeriksaan native pada commit `d09ce35`. Lihat [status implementasi dan handoff](STATUS_GODOT_REBUILD.md). Ini belum migrasi gameplay penuh dan game Python tidak diubah.
 
 ## 1. Keputusan dasar
 

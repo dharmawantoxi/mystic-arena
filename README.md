@@ -1,6 +1,6 @@
 # Mystic Arena — MOBA Tower Defense (pygame → Android)
 
-> **Godot — proyek baru dari nol:** buka [`godot_rebuild/project.godot`](godot_rebuild/project.godot) dengan Godot **4.7.2 standard**. [Panduan menjalankan di Windows dan status pengujian](godot_rebuild/README.md). Sudah ada fondasi menu/input/pause dan laboratorium minion dengan lane sumber serta combat dasar yang lulus tes native; **belum port gameplay penuh**. Tidak memakai hasil migrasi Godot lama. Bagian Python dan panduan lama di bawah tetap disimpan sebagai referensi.
+> **Godot — proyek baru dari nol:** buka [`godot_rebuild/project.godot`](godot_rebuild/project.godot) dengan Godot **4.7.2 standard**. [Panduan menjalankan di Windows dan status pengujian](godot_rebuild/README.md). Sudah ada fondasi menu/input/pause dan laboratorium minion serta mode tower/projectile/nexus yang lulus tes native; **belum port gameplay penuh**. Tidak memakai hasil migrasi Godot lama. Bagian Python dan panduan lama di bawah tetap disimpan sebagai referensi.
 
 Game tower-defense/MOBA berbasis **pygame-ce**, 54 level, 200+ boss,
 6 hero dengan skill Q/W/E/R, dan 20+ tema peta.

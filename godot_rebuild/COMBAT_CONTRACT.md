@@ -1,5 +1,7 @@
 # Kontrak laboratorium minion — tahap 2
 
+Dokumen ini menjelaskan mode **Laboratorium minion**, yang tetap terpisah. Mode baru **Tower & nexus** dan perbedaannya dijelaskan di [SIEGE_CONTRACT.md](SIEGE_CONTRACT.md).
+
 Tujuan: memindahkan bagian kecil perilaku minion secara teruji sebelum tower, hero, status effect dan ekonomi ditambahkan. Bukan pengganti pertandingan Python.
 
 ## Sumber dan batas kesetaraan
@@ -72,4 +74,4 @@ Arena menggunakan transform uniform 0.7 untuk menampilkan seluruh koordinat 1280
 - Restart/pause/menu tidak menyisakan antrean atau state dunia lama.
 - Fitur berikutnya menambah tes sendiri; jangan mengganti baseline dengan hasil implementasi baru tanpa membandingkan sumber.
 
-Tahap berikut yang disarankan: kontrak tower/nexus → satu tower + jalur projectile → siege base → scheduler wave/ekonomi → satu pertandingan kecil utuh. Audit formula sumber dan urutan efek sebelum porting; jangan menganggap aturan damage minion otomatis benar untuk hero/tower/boss.
+Milestone tower/nexus tier 1, projectile dan hasil siege sudah ditambahkan sebagai mode terpisah. Berikutnya: scheduler wave/ekonomi → build/sell minimum → satu pertandingan kecil utuh. Audit formula sumber dan urutan efek sebelum porting; jangan menganggap aturan damage minion otomatis benar untuk hero/tower/boss.
