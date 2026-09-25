@@ -115,7 +115,7 @@ func _run() -> void:
 	if failures.is_empty():
 		print(
 			(
-				"PASS: %d checks; fixed ticks, source fixtures, combat/siege, input, pause, lifecycle."
+				"PASS: %d checks; fixed ticks, source parity, combat/siege/prototype, input and lifecycle."
 				% checks
 			)
 		)

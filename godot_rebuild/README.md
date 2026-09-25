@@ -2,7 +2,7 @@
 
 **Proyek baru, native GDScript. Target editor: Godot 4.7.2 standard, Windows 11.**
 
-Milestone 1 (fondasi), 2 (combat minion), dan 3 (tower/projectile/nexus) telah diimplementasikan dan lolos tes native CI. **Ini belum migrasi seluruh game.** Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
+Milestone 1 (fondasi), 2 (combat minion), 3 (tower/projectile/nexus), dan 4 (prototipe wave/ekonomi/build-sell) telah diimplementasikan dan lolos tes native CI. **Ini belum migrasi seluruh game.** Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
 
 ## Buka di Windows (tanpa membuat scene/script manual)
 
@@ -11,13 +11,26 @@ Milestone 1 (fondasi), 2 (combat minion), dan 3 (tower/projectile/nexus) telah d
 3. Pilih **`godot_rebuild/project.godot`**. Jangan memilih proyek migrasi lama.
 4. Klik **Import & Edit**, tunggu import font selesai.
 5. Tekan **F5**. Main scene sudah diatur ke `app/App.tscn`.
-6. Klik **Tower & nexus** untuk fitur terbaru. **Laboratorium minion** dan **Uji input** tetap tersedia.
+6. Klik **Pertandingan awal** untuk prototipe terbaru. Ketiga laboratorium tetap tersedia.
 
 Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan client ini. Font yang dibutuhkan sudah disertakan. Export template belum diperlukan untuk menjalankan lewat editor.
 
-### Tower & nexus (baru)
+### Pertandingan awal (baru)
 
-- Enam Archer level 1 dan dua nexus tersedia sejak awal; belum ada toko/build/upgrade.
+- Subset **level 1 / normal**: mulai dengan 1000 G dan dua nexus, belum ada tower. Gold hanya berlaku dalam pertandingan ini.
+- Klik lingkaran slot biru kosong → **Bangun Archer · 100 G**. Tersedia sembilan slot biru dari jalur sumber. Lingkaran merah milik lawan.
+- Klik tower biru hidup → **Jual tower · 50 G**. Tidak bisa menjual nexus, tower lawan/mati atau menjual tower yang sama dua kali.
+- Wave pertama muncul setelah sekitar 5 detik; unit keluar bertahap setiap 20 tick. Wave berikutnya menunggu timer dan lapangan bersih, bukan selalu muncul ketika countdown mencapai nol.
+- Gold pasif bertambah tiap detik; kill memberi reward. HUD menampilkan saldo, wave dan HP/shield nexus. Slot/range preview ditampilkan ketika dipilih.
+- **Lawan sementara, bukan AI asli:** membeli tiga Archer berbayar pada detik 5/10/15. Belum ada upgrade, hero/boss atau castle scaling.
+- Nexus hancur membuka hasil otomatis dan menghentikan simulasi. **Mulai ulang** mereset seluruh saldo, slot, queue dan hasil; **Menu** kembali ke menu utama. Tidak ada progres disimpan.
+- Esc/Jeda dan kehilangan fokus menghentikan wave, combat dan income serta membatalkan transaksi tertunda. Lanjutkan secara eksplisit; hasil akhir tidak bisa dilanjutkan.
+
+Lihat [kontrak prototipe pertandingan](MATCH_CONTRACT.md) untuk oracle sumber, ledger, transaksi atomik, komposisi wave dan perbedaan yang disengaja. Ini belum seluruh aturan level Python atau build game produksi.
+
+### Tower & nexus (laboratorium)
+
+- Enam Archer level 1 dan dua nexus tersedia sejak awal; mode uji ini tidak memakai build/sell/upgrade.
 - Tower/nexus menembakkan projectile. Minion dapat menghancurkan bangunan dan melanjutkan lane menuju nexus musuh.
 - Pilih jenis minion serta **Kedua tim / Biru / Merah**, lalu **Kirim wave uji**. Mengirim satu tim membantu menguji siege; ini bukan ekonomi/scheduler produksi.
 - Klik bangunan untuk melihat HP, shield dan radius serangan; klik minion untuk melihat stat/target.
@@ -65,6 +78,8 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 - Laboratorium combat: tiga lane sumber, lima definisi minion, targeting tier 1, cooldown, regen, damage physical/magic dasar, death dan kredit uji satu kali.
 - Inspeksi minion, wave uji manual, cap unit/event dan restart world yang bersih.
 - Mode siege: Archer/nexus tier 1, shield/regen, projectile satu hit, inspeksi struktur, wave uji satu/dua tim dan hasil nexus.
+- Prototipe terpisah: scheduler sumber, gold lokal, 18 slot, transaksi Archer build/sell, hasil otomatis dan lawan builder terjadwal.
+- Oracle wave/income/slot dan harga melalui metode Python asli; ledger/replay/lifecycle teruji.
 - Fixture dari metode numerik Tower/Castle asli; aturan minion dan bangunan tidak dipaksa menjadi satu formula.
 - Simulasi demonstrasi dengan 60 physics tick/detik, terpisah dari render/UI.
 - Pause/resume, restart, kembali ke menu, cleanup screen, dan pause saat kehilangan fokus.
@@ -74,7 +89,7 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 
 ## Yang belum dimigrasikan
 
-Hero/skill/animasi produksi, combat lanjutan/status effect, build/sell/upgrade tower, tower selain Archer, nexus upgrade/paid shield, scheduler wave produksi, AI tier lebih tinggi, ekonomi pemain, item, boss, 54 level, progression, UI produksi, audio, save/migrasi save, cloud, pembayaran, Android export dan optimasi perangkat. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
+Hero/skill/animasi produksi, combat lanjutan/status effect, upgrade tower, tower selain Archer, nexus upgrade/paid shield, wave lengkap dengan boss/scaling, AI asli, ekonomi permanen, item, boss, 54 level, progression, UI produksi, audio, save/migrasi save, cloud, pembayaran, Android export dan optimasi perangkat. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
 
 ## Struktur
 
@@ -97,6 +112,16 @@ scenes/siege/
   SiegeArena.tscn             Mode tower & nexus
   siege_screen.gd             UI tim/wave, inspeksi dan hasil
   siege_view.gd               Visual bangunan/projectile read-only
+scenes/prototype/
+  PrototypeMatch.tscn         Pertandingan awal dengan build/sell dan hasil otomatis
+  prototype_screen.gd        HUD/input/pause hasil; bukan UI wave manual
+  prototype_view.gd          Slot/range dan view siege read-only
+scripts/match/
+  prototype_battle.gd         World pertandingan terbatas level 1 / normal
+  wave_scheduler.gd          Clock, komposisi dan FIFO spawn
+  match_economy.gd            Gold integer, income milli, debit/refund/ledger
+  slot_layout.gd             Posisi 18 slot dari sumber
+  build_slot.gd              Identitas/ownership dan struktur yang mengisi slot
 scripts/combat/
   siege_battle.gd             Perluasan combat: bangunan, projectile dan hasil
   structure_state.gd          Shield/regen dan aturan damage struktur
@@ -110,6 +135,7 @@ scripts/data/
 data/minions/                Lima resource .tres
 data/structures/             Archer dan nexus level 1 (.tres)
 scripts/simulation/
+  prototype_session.gd       Command build/sale ID, cancel pause dan seleksi slot
   combat_session.gd          Penghubung physics tick ke world combat
   siege_session.gd           Antrean wave/tim dan batas lifecycle hasil
   sandbox_simulation.gd       Tick dan state penanda percobaan per instance
@@ -124,6 +150,8 @@ tests/
   run_all.gd                  Runner native Godot, exit code nonzero jika gagal
   combat_checks.gd            Fixture, combat, batas unit dan determinisme
   siege_checks.gd             Shield/regen, projectile, siege, result dan replay
+  prototype_checks.gd        Wave/ledger/transaksi, result dan replay
+  match_source_oracle.py      Metode sumber wave/income/slot/build-sale
   structure_source_oracle.py  Metode sumber numerik Tower/Castle/muzzle
   check_source_contract.py    Membandingkan fixture dengan Python asli
   fixtures/                  Snapshot stat dan 277 titik lane sumber
@@ -136,9 +164,9 @@ Font disalin dari `assets/fonts/` di root repo, bukan dari hasil migrasi lama. L
 
 ### Status validasi (25 September 2026)
 
-- **Lulus di GitHub Actions:** import engine **Godot 4.7.2**, seluruh tes native **1.158 pemeriksaan** pada commit `d09ce35`.
-- Bukti: [run 36117033161](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36117033161), job `validate`; hasil juga diterbitkan sebagai annotation **Native Godot tests**.
-- **Lulus lokal:** 381 pemeriksaan statis; kontrak lima minion, 277 titik lane, stat bangunan dan 60 kasus damage terhadap Python; parsing/lint/format GDScript; syntax scene/resource.
+- **Lulus di GitHub Actions:** import engine **Godot 4.7.2**, seluruh tes native **1.511 pemeriksaan** pada commit `ff5d2af`.
+- Bukti: [run 36152202295](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36152202295), job `validate`; hasil juga diterbitkan sebagai annotation **Native Godot tests**.
+- **Lulus lokal:** 511 pemeriksaan statis; kontrak lima minion, 277 titik lane, stat bangunan, 60 kasus damage, wave, income dan slot terhadap Python; parsing/lint/format GDScript; syntax scene/resource.
 - **Belum diverifikasi:** tampilan GPU/screenshot, resize secara visual, Windows fisik, touchscreen, Android dan performa perangkat. CI headless bukan pengganti tes ini.
 
 Unduhan binary di sandbox masih terkendala TLS, tetapi tes runtime berhasil dijalankan pada runner GitHub. Hasil native yang dahulu tertunda pada tahap 1 sekarang sudah ada. Lihat workflow terbaru pada branch untuk hasil perubahan setelah checkpoint tersebut.
@@ -165,6 +193,10 @@ Pastikan import tidak menampilkan `ERROR` dan runner mengeluarkan `PASS: ... che
 
 ### Cakupan tes native yang sudah dijalankan di CI
 
+- Prototipe: dua trace source 3.800 tick, komposisi wave, 18 slot, 12 skenario income, source build/UI-sale prices, ledger dan backpressure.
+- Transaksi: build/sale ganda, stale entity IDs, tower mati, ownership, saldo kurang, pelepasan slot, kill credit, projectile sale cancellation dan hasil freeze.
+- Replay prototipe 4.200 tick; tiga lifecycle UI, capture immutable command, pause/focus, scaled mouse/touch adapter, HUD bounds, hasil kedua tim dan restart/cleanup.
+
 - Tower/nexus: stat efektif, 60 fixture shield/armor/reduction, muzzle sumber, cooldown 35 tick, batas regen dan shield wave 10/11.
 - Projectile: launch tanpa damage instan, satu impact, target/owner mati, TTL/cap dan kredit satu kali.
 - Siege: endpoint menuju nexus, hasil membekukan world, replay deterministik dan tiga siklus UI/pause/restart/hasil.
@@ -190,15 +222,16 @@ Dari root repo:
 python godot_rebuild/tests/validate_project.py
 python godot_rebuild/tests/check_source_contract.py
 python godot_rebuild/tests/structure_source_oracle.py
+python godot_rebuild/tests/match_source_oracle.py
 ```
 
 Untuk parser/linter, pasang `gdtoolkit==4.5.0` dalam virtualenv terpisah. Tidak perlu memasangnya di komputer pemain.
 
-Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot-rebuild.yml` hanya memeriksa proyek baru. Ia tidak menjalankan converter atau tes migrasi lama. Workflow menjalankan guardrail, import dengan engine 4.7.2, tes native, dan menyimpan log. Workflow telah lulus untuk fondasi, minion, serta tower/projectile/nexus. Ia terpicu pada push/PR yang menyentuh proyek baru atau sumber kontrak terkait. Parser pihak ketiga tidak menggantikan hasil engine.
+Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot-rebuild.yml` hanya memeriksa proyek baru. Ia tidak menjalankan converter atau tes migrasi lama. Workflow menjalankan guardrail, import dengan engine 4.7.2, tes native, dan menyimpan log. Workflow telah lulus untuk fondasi, minion, tower/projectile/nexus, dan prototipe wave/ekonomi/build-sell. Ia terpicu pada push/PR yang menyentuh proyek baru atau sumber kontrak terkait. Parser pihak ketiga tidak menggantikan hasil engine.
 
 ## Pemeriksaan visual singkat
 
-1. F5 menampilkan judul Mystic Arena, Tower & nexus, Laboratorium minion, Uji input, dan Keluar.
+1. F5 menampilkan judul Mystic Arena, Pertandingan awal, Tower & nexus, Laboratorium minion, Uji input, dan Keluar.
 2. Resize ke rasio berbeda: tampilan tetap proporsional, letterbox diperbolehkan.
 3. Buka **Uji input**; pilih penanda, klik kanan, pastikan marker bergerak.
 4. Buka **Laboratorium minion**; pastikan tiga lane terlihat, unit bergerak/menyerang, HP turun; tambah wave dan inspeksi unit.
@@ -207,10 +240,11 @@ Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot
 7. Alt+Tab: arena pause ketika kehilangan fokus.
 8. Restart mengembalikan penanda ke posisi awal tanpa seleksi.
 9. Buka **Tower & nexus**, inspeksi bangunan, kirim wave satu tim, amati projectile dan shield/HP.
-10. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
+10. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Pause harus membekukan keduanya; restart mengembalikan 1000 G.
+11. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
 
 ## Langkah pengembangan berikutnya
 
-Fondasi, combat minion dan siege tier 1 sudah lulus runtime CI. Berikutnya: audit scheduler wave/ekonomi/build slot → transaksi build/sell minimum → satu pertandingan utuh → hero/skill → perluasan sistem dan konten. Lihat [rencana lengkap](../docs/RENCANA_MIGRASI_GODOT_DARI_NOL.md).
+Fondasi, combat minion, siege tier 1 dan prototipe wave/ekonomi/build-sell sudah lulus runtime CI. Berikutnya: uji Windows → audit upgrade/tower tambahan → hero/skill dan AI asli → lengkapi satu pertandingan kecil → perluasan sistem/konten. Lihat [rencana lengkap](../docs/RENCANA_MIGRASI_GODOT_DARI_NOL.md).
 
 Jangan mengedit game Python atau mengaktifkan converter lama untuk membuat proyek ini berjalan. Jika menemukan error, simpan pesan lengkap beserta versi Godot dan langkah reproduksi, lalu perbaiki di proyek baru.

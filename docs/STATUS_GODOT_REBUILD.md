@@ -1,139 +1,89 @@
 # Status & handoff — Godot Rebuild
 
-Diperbarui: 25 September 2026. Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo, bukan tutorial pengerjaan manual.
+Diperbarui: 25 September 2026. Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
 
 ## Aturan pekerjaan
 
-- Gunakan proyek **`godot_rebuild/`**, bukan migrasi Godot lama.
-- Python/Pygame tetap menjadi referensi; jangan mengubah game Python untuk membuat port baru lolos.
-- Branch sesi: **`arena/01a0d776-mystic-arena`**.
-- Pengguna meminta push sebelum sesi habis. Lakukan checkpoint/push berkala, jangan menunggu batas sesi yang tidak memiliki indikator pasti.
-- Jangan menandai seluruh migrasi selesai hanya karena laboratorium ini berjalan.
+- Gunakan proyek **`godot_rebuild/`**, bukan migrasi lama. Python/Pygame tetap referensi; jangan mengubahnya agar port lolos.
+- Branch tetap **`arena/01a0d776-mystic-arena`**. Push checkpoint berkala sebelum sesi habis; tidak ada indikator batas sesi yang pasti.
+- [PR #278](https://github.com/dharmawantoxi/mystic-arena/pull/278) **OPEN, belum di-merge**. Push memperbarui PR yang sama. Jangan pindah branch atau membuat PR pengganti.
+- Jangan mengklaim seluruh migrasi selesai karena laboratorium/prototipe ini berjalan.
 
-## Checkpoint yang sudah dipush
+## Checkpoint yang sudah dipush dan diverifikasi
 
-1. **`f4a71ee`** — fondasi baru: menu, sandbox input, 60 Hz, pause/restart/navigasi, tests/CI, rencana migrasi.
-   - [CI fondasi lulus](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36113676693).
-2. **`741b660`** — laboratorium combat minion, fixture sumber, tes domain/lifecycle.
-   - [CI tahap 2 lulus](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36114379895).
-   - Job `validate`, annotation `Native Godot tests`: **PASS: 745 checks**.
-3. **`5d2d0e0`** — inti siege: Archer/nexus tier 1, projectile, shield/regen dan oracle sumber numerik. CI lulus 1.072 pemeriksaan.
-4. **`d09ce35`** — UI Tower & nexus, hasil, wave pilihan tim, lifecycle dan replay.
-   - [CI tahap 3 lulus](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36117033161).
-   - Job `validate`, annotation `Native Godot tests`: **PASS: 1158 checks**.
-5. Perbaikan dokumentasi/handoff setelah checkpoint tersebut tercatat di `git log`. Periksa workflow terbaru pada branch untuk hasil paling baru.
+| Commit | Cakupan | Bukti native |
+|---|---|---|
+| `f4a71ee` | Fondasi menu, sandbox, pause/restart, tests/CI | [CI fondasi](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36113676693) |
+| `741b660` | Combat minion dan fixture sumber | [745 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36114379895) |
+| `5d2d0e0` | Archer/nexus/projectile, oracle numerik | [1.072 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36116716287) |
+| `d09ce35` | UI siege, hasil dan lifecycle | [1.158 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36117033161) |
+| `e3b592d` | Dokumen siege/handoff | [1.158 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36117480660) |
+| `868cfc2` → `a218073` | Wave otomatis, ledger, slot dan transaksi; perbaikan pembanding JSON tes | [1.418 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36151766743) |
+| `ff5d2af` | Mode **Pertandingan awal**, HUD/build/sell/hasil dan lifecycle | [1.511 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36152202295) |
 
-[PR #278](https://github.com/dharmawantoxi/mystic-arena/pull/278) sudah dibuka atas permintaan pengguna; **belum di-merge**. Push ke branch sesi memperbarui PR yang sama. Nomor milestone implementasi di dokumen ini berbeda dari nomor bab rencana manual awal.
+Commit dokumentasi setelahnya tercatat di `git log`; periksa CI terbaru pada branch untuk hasil HEAD terbaru. Check-run untuk checkpoint UI: **108127972332**, annotation `Native Godot tests`, PASS 1511.
 
 ## Yang tersedia saat F5
 
-- **Tower & nexus**: enam Archer level 1, dua nexus, projectile homing, shield/regen, seleksi bangunan, wave manual untuk satu/dua tim, dan hasil setelah nexus hancur.
-- **Laboratorium minion**: tiga lane asli (277 titik), lima tipe minion tier 1, targeting, movement, cooldown, physical/magic dasar, regen, kematian/kredit uji satu kali, inspeksi unit, wave manual, pause/restart.
-- **Uji input**: sandbox penanda hijau lama untuk regression test seleksi, perintah gerak, transform input dan cleanup.
+Import `godot_rebuild/project.godot` → F5; tidak perlu membuat scene/script manual.
+
+- **Pertandingan awal**: subset level 1/normal, 1000 G, 9 slot biru, Archer 100 G / refund 50 G; wave otomatis; lawan sementara membeli tiga Archer berbayar; hasil nexus, pause/restart. Bukan AI asli atau seluruh level Python.
+- **Tower & nexus**: enam Archer dan dua nexus, projectile/shield, wave manual satu/dua tim, hasil. Laboratorium ini tidak diganti prototipe.
+- **Laboratorium minion**: tiga lane asli, lima tipe minion, combat/regen/death, wave manual, inspeksi.
+- **Uji input**: sandbox penanda hijau untuk regresi input/lifecycle. Bukan hero hasil porting.
 - **Keluar**.
 
-Semua scene dan script sudah dibuat. Pengguna cukup mengimpor `godot_rebuild/project.godot` lalu F5.
+## Validasi dan batas bukti
 
-## Validasi yang ada
+- Import + **1.511 native checks Godot 4.7.2** di GitHub Actions Linux telah lulus untuk UI prototipe. Termasuk suite fondasi/minion/siege, fixture wave/income/slots/build-sale, ledger, stale/dead/duplicate transactions, replay 4.200 tick, tiga lifecycle prototype serta kedua pemenang.
+- Lokal: 511 guardrail, tiga checker/oracle Python sumber, parser/lint/format GDScript. Scene/resource syntax juga diperiksa; parser pihak ketiga bukan pengganti engine.
+- **Belum diuji:** tampilan GPU/screenshots, Windows fisik, resize visual, pertandingan manual panjang/balance, Android export, multi-touch HP, thermal/performa, save/cloud/pembayaran.
+- Binary engine di sandbox gagal diunduh karena TLS host aset; jangan mengulang probe atau memakai binary tidak tepercaya. Bukti runtime melalui engine resmi yang dipin dalam CI.
+- Log archive CI dapat gagal diunduh; hasil penting diterbitkan sebagai **Checks annotations**, bisa dibaca lewat `gh api`.
+- Kegagalan pertama inti (6 dari 1.418 checks) disebabkan nested Array comparison terhadap angka float JSON. Sudah diperbaiki dengan perbandingan scalar exact, tanpa truncation/toleransi dan tanpa mengubah scheduler; CI sesudahnya lulus.
 
-- Native Godot **4.7.2** dijalankan lewat GitHub Actions Linux: import dan runner berhasil.
-- 1.158 native checks: stat bangunan, 60 fixture damage sumber, muzzle, regen/shield, projectile sekali hit/owner-target death/TTL, hasil dan replay siege; ditambah 277 titik lane, stat resource, damage/rounding/cooldown, target tie, death/credit, capacity/regen, determinisme 2.400 tick, sandbox lama 10 siklus, combat baru 3 siklus, pause, scaled input, rendering-independent simulation dan cleanup.
-- Lokal: parser/linter/formatter GDScript, TSCN/TRES parser, 381 guardrail statis dan fixture-versus-source checker lulus.
-- **Belum diuji:** tampilan GPU/screenshots, Windows nyata, resize visual, export Android, multi-touch HP, thermal/performa, save/cloud/pembayaran.
-- Binary Godot belum dapat diunduh di sandbox akibat koneksi TLS ke host aset. CI berhasil mengunduh dan menjalankannya, jadi runtime dibuktikan melalui CI, bukan engine lokal.
-- Unduhan log CI juga dapat gagal pada host log. Hasil tes penting diterbitkan sebagai annotation GitHub Checks agar dapat dibaca melalui `gh api`.
+## File utama dan aturan penting
 
-## File penting
+- [`../godot_rebuild/README.md`](../godot_rebuild/README.md): cara menjalankan di Windows dan checklist manual.
+- [`../godot_rebuild/COMBAT_CONTRACT.md`](../godot_rebuild/COMBAT_CONTRACT.md), [`SIEGE_CONTRACT.md`](../godot_rebuild/SIEGE_CONTRACT.md), [`MATCH_CONTRACT.md`](../godot_rebuild/MATCH_CONTRACT.md): aturan sumber, batas scope, deviasi yang disengaja.
+- `app/app.gd`: navigasi deferred/satu screen; `start_prototype`, `start_siege`, `start_combat`, `start_match` (sandbox). Restart terikat ke scene asal.
+- `scripts/combat/`: RefCounted worlds, ID monotonic, satu death/credit, shield dan projectile. `structure_limit()` default 16, override prototipe 20.
+- `scripts/match/`: `wave_scheduler`, `match_economy`, `slot_layout`, `build_slot`, `prototype_battle`.
+- `scripts/simulation/prototype_session.gd`: immutable command IDs, satu command/tick, cancel saat pause/focus. Tidak ada manual wave dalam mode ini.
+- `scenes/prototype/`: HUD, hasil otomatis, input berskala dan view read-only yang memakai renderer siege.
+- `tests/match_source_oracle.py`: potongan AST sumber asli; `fixtures/match_source.json`; `prototype_checks.gd` dan `run_all.gd` untuk domain/lifecycle.
+- `tests/check_source_contract.py`, `structure_source_oracle.py`: minion/lane serta metode numerik Tower/Castle.
+- `.github/workflows/godot-rebuild.yml`: engine resmi 4.7.2, oracle/parser/lint, import + tes native. Memantau sumber kontrak termasuk `levels/level_data.py`.
 
-- [`../godot_rebuild/README.md`](../godot_rebuild/README.md): cara membuka di Windows dan status.
-- [`../godot_rebuild/COMBAT_CONTRACT.md`](../godot_rebuild/COMBAT_CONTRACT.md): sumber perilaku, batas scope, perbedaan yang disengaja.
-- `godot_rebuild/app/app.gd`: satu pemilik screen/navigasi.
-- `godot_rebuild/scripts/combat/minion_battle.gd`: simulasi murni `RefCounted`.
-- `godot_rebuild/scripts/combat/damage_rules.gd`: **hanya** damage dasar minion, bukan damage generik semua entitas.
-- [`../godot_rebuild/SIEGE_CONTRACT.md`](../godot_rebuild/SIEGE_CONTRACT.md): aturan sumber tower/nexus, lifecycle, dan batas scope.
-- `godot_rebuild/scripts/combat/siege_battle.gd`: memperluas world minion; bangunan dan projectile.
-- `godot_rebuild/scripts/combat/structure_state.gd`: shield/regen/absorb khusus struktur.
-- `godot_rebuild/scripts/simulation/siege_session.gd`: antrean tim/wave dan state terminal.
-- `godot_rebuild/scenes/siege/`: scene, HUD hasil, visual read-only.
-- `godot_rebuild/tests/structure_source_oracle.py`: mengeksekusi metode numerik asli Tower/Castle, bukan mengimpor Pygame.
-- `godot_rebuild/tests/siege_checks.gd`: tes domain siege dan determinisme.
-- `godot_rebuild/scripts/simulation/combat_session.gd`: physics tick dan antrean command wave.
-- `godot_rebuild/scripts/data/lane_layout.gd`: port generator jalur.
-- `godot_rebuild/data/minions/*.tres`: lima definisi read-only.
-- `godot_rebuild/tests/run_all.gd`, `combat_checks.gd`: runner native tanpa addon.
-- `godot_rebuild/tests/check_source_contract.py`: fixture lawan Python asli, tanpa import Pygame.
-- `.github/workflows/godot-rebuild.yml`: workflow baru terisolasi dari converter/migrasi lama.
+Ringkasan aturan yang rawan salah:
 
-## Batasan penting, jangan dianggap bug/fitur selesai secara keliru
+- Wave pertama **tick 301**, queue tetap dikuras setiap 20 tick saat timer 1500 berjalan; wave berikutnya menunggu lapangan bersih. Komposisi berdasarkan castle tier 1, bukan indeks nomor wave.
+- Level 1 normal **1000 G**; lawan 350 G. Passive milli-gold memakai ties-to-even Python; income sebelum scheduler. Jual tier 1 **50 G** berasal dari fallback UI, bukan `Tower.sell_value()` yang bernilai 0.
+- Build/sale harus validasi sebelum mutasi; dead/duplicate/stale sale tidak memberi refund. Death membebaskan slot (perbaikan bug sumber yang disengaja). Sale membatalkan projectile terkait tanpa kill reward.
+- Lawan sementara membeli pada tick 300/600/900, bukan AIPlayer asli. Tidak ada castle auto-scaling, upgrade, hero/boss, save, ekonomi permanen atau paid shield.
+- Archer HP efektif 2000 + shield 800; armor sebelum shield. Nexus shield dulu, lalu reduksi 88% saat perlindungan aktif; jangan menyamakan formulanya. Nexus wave 11 mematikan shield gratis.
+- Batas prototipe: 120 minion / 20 struktur / 256 projectile / 64 event; antrean menahan spawn bila penuh. Hasil nexus membekukan economy/world dan membatalkan antrean.
 
-- Wave manual berisi 6 unit kedua tim, atau 3 unit satu tim pada mode siege. Bukan jadwal/komposisi wave produksi.
-- **Mode minion lama:** base hanya penanda dan unit keluar di ujung rute. **Mode siege:** unit melanjutkan ke nexus yang dapat diserang; kematian nexus mengakhiri laboratorium.
-- Random spawn jitter belum dipindahkan. Urutan update deterministik menggunakan spawn ID.
-- Belum ada physics separation antar minion, build/sell/upgrade, tower selain Archer, paid shield, hero, item/debuff, ekonomi pemain, boss, 54 level, save atau audio. Hasil siege belum sama dengan seluruh aturan kemenangan level/boss produksi.
-- Archer: HP final 2000 + shield 800; armor sebelum shield. Nexus: shield dulu, lalu reduksi 88% saat perlindungan aktif; damage HP bisa 0. Jangan menyamakan dua formula.
-- Tower tidak boleh menggunakan hit instan; hanya projectile. Owner/target mati membatalkan shot. TTL 180 tick dan cap 256 projectile merupakan guard laboratorium.
-- Wave uji ikut menentukan perlindungan nexus sampai wave 10. Paid shield/regen belum ada; jangan menyebutnya sistem ekonomi lengkap.
-- HP kematian dijepit ke 0, perbedaan normalisasi terdokumentasi.
-- Kredit gold adalah counter uji, bukan currency yang disimpan.
-- Troll memiliki regen sumber 0.6 per tick, sehingga duel seimbang bisa tidak selesai. Jangan mengubah menjadi per detik secara diam-diam.
-- Penampilan masih placeholder. Tes headless bukan jaminan kualitas visual/performa.
+## Langkah berikutnya
 
-## Langkah berikutnya (disarankan)
+1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal**; perbaiki error sebelum menambah konten.
+2. Audit upgrade Archer/nexus, harga/refund sesudah upgrade serta formula level sebelum memperluas transaksi; buat oracle baru, jangan menebak tabel stat mentah.
+3. Audit satu hero/skill dan AI sumber secara bertahap. Ganti lawan sementara hanya setelah perilakunya diuji; jangan mengklaim scripted builder sebagai AI penuh.
+4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.
+5. Push bertahap pada branch yang sama, pantau CI dan perbarui handoff ini.
 
-1. Audit `Game.update_waves` dan `NEXUS_WAVE_COMPOSITION`, termasuk field-clear gating, delay spawn, timer pertama dan per-level/difficulty modifiers.
-2. Tulis fixture ekonomi awal/pasif serta harga build/sell/upgrade dari sumber. Jangan hanya menyalin konstanta atas bila ada fungsi penyesuaian runtime.
-3. Tambahkan scheduler wave dan ekonomi minimum dalam mode pertandingan terpisah dari kontrol laboratorium, dengan tes transaksi atomik.
-4. Port satu jalur build/sell tower dan slot dari lane; tegaskan sumber reward audit vs currency pemain.
-5. Selesaikan loop pertandingan kecil, lalu hero/skill dan perluasan konten.
-6. Tambahkan validasi visual Windows/GPU bila tersedia; native CI saat ini headless Linux.
-7. Pertahankan seluruh tes lama; push checkpoint dan tunggu native CI sebelum menyebut lulus.
-
-## Perintah pemeriksaan
-
-Dari root repo:
+## Perintah praktis
 
 ```text
 python godot_rebuild/tests/validate_project.py
 python godot_rebuild/tests/check_source_contract.py
 python godot_rebuild/tests/structure_source_oracle.py
-```
-
-Jika engine tersedia:
-
-```text
-godot --headless --path godot_rebuild --editor --import
-godot --headless --path godot_rebuild --script res://tests/run_all.gd
-```
-
-Untuk Windows, script siap pakai ada di `godot_rebuild/tests/run_windows.ps1` (lihat README).
-
-GitHub:
-
-```text
-gh run list --branch arena/01a0d776-mystic-arena --limit 5
-gh run view RUN_ID --json status,conclusion,jobs,headSha,url
-gh api repos/dharmawantoxi/mystic-arena/commits/COMMIT_SHA/check-runs
-```
-
-Baca annotations pada check-run `validate` bila unduhan log gagal. Untuk push:
-
-```text
+python godot_rebuild/tests/match_source_oracle.py
+gh run list --branch arena/01a0d776-mystic-arena --limit 5 --json databaseId,status,conclusion,headSha,url
+gh api repos/dharmawantoxi/mystic-arena/check-runs/CHECK_ID/annotations
 git push origin arena/01a0d776-mystic-arena
 ```
 
-Jangan menyimpan key, credential, binary engine, `.godot/`, save nyata atau output build dalam repo.
+Windows: `powershell -ExecutionPolicy Bypass -File .\tests\run_windows.ps1 -Godot "C:\Tools\Godot_v4.7.2-stable_win64_console.exe"` dari `godot_rebuild/`.
 
-## Checkpoint lanjutan — inti prototipe pertandingan (belum ada menu/UI)
-
-- Ditambahkan scheduler otomatis, ledger gold lokal pertandingan, 18 slot sumber, transaksi Archer 100 G / jual 50 G, pelepasan slot hancur, serta session command yang dibatalkan saat pause.
-- Prototipe terpisah dari ketiga laboratorium: level 1 / normal, nexus tier 1, tanpa AI asli. Lawan sementara membeli tiga Archer berbayar secara terjadwal.
-- `tests/match_source_oracle.py` menjalankan potongan AST Python asli untuk dua trace wave 3.800 tick, komposisi, slot, 12 skenario pemasukan, dan jalur build → UI sale. Stub hanya dependensi di luar scope (render/audio/boss/auto-upgrade AI).
-- Guardrail lokal 448 checks, lint/format dan oracle sumber lulus. **Native untuk checkpoint inti ini masih menunggu CI**; angka 1.158 di atas milik milestone siege sebelumnya.
-- Berikutnya: tunggu/fix CI inti, lalu buat scene/HUD/menu build-sell, tes input/lifecycle, dokumentasi kontrak prototipe dan push berikutnya. Jangan menganggap inti ini sudah tersedia saat F5.
-
-### Perkembangan checkpoint UI prototipe
-
-- Inti dipush sebagai `868cfc2`, pembanding nested JSON diperbaiki di `a218073`. [CI inti lulus](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36151766743): **1.418 native checks**, termasuk trace wave dan ledger.
-- Ditambahkan `scenes/prototype/PrototypeMatch.tscn`, tombol **Pertandingan awal**, slot/range preview, build/sell, HUD, hasil otomatis dan restart mode yang sama. Ketiga laboratorium tetap tersedia.
-- Tes UI mencakup tiga lifecycle, immutable command IDs, duplicate input, stale sale, pause/focus, scaled mouse/touch adapter, lawan slot, hasil kedua tim dan cleanup.
-- **Validasi native UI menunggu CI checkpoint ini.** Lint/format dan 511 guardrail lokal lulus. Scope tetap subset level 1 / normal; bukan seluruh level Python atau AI aslinya.
+`gh pr edit` pada versi CLI sandbox pernah gagal karena Projects classic deprecated. Gunakan REST PATCH `gh api --method PATCH repos/dharmawantoxi/mystic-arena/pulls/278` untuk title/body. Jangan menyimpan credential, binary engine, `.godot/`, save nyata atau output build di repo. Jangan menjalankan generator migrasi lama atau scratch script lama yang dapat menimpa proyek ini.
