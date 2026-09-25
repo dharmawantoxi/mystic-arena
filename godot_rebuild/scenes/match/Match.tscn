@@ -1,0 +1,148 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/match/match.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/match/arena_view.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/simulation/sandbox_simulation.gd" id="3"]
+
+[node name="Match" type="Control"]
+process_mode = 3
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1")
+
+[node name="Simulation" type="Node" parent="."]
+process_mode = 1
+script = ExtResource("3")
+
+[node name="Arena" type="Node2D" parent="."]
+process_mode = 1
+script = ExtResource("2")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="TopBar" type="PanelContainer" parent="HUD"]
+offset_left = 24.0
+offset_top = 20.0
+offset_right = 1256.0
+offset_bottom = 104.0
+
+[node name="Row" type="HBoxContainer" parent="HUD/TopBar"]
+layout_mode = 2
+theme_override_constants/separation = 22
+
+[node name="Names" type="VBoxContainer" parent="HUD/TopBar/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="ArenaTitle" type="Label" parent="HUD/TopBar/Row/Names"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Arena Percobaan"
+
+[node name="Description" type="Label" parent="HUD/TopBar/Row/Names"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.59, 0.67, 0.66, 1)
+text = "Placeholder baru · bukan peta atau hero final"
+
+[node name="TickLabel" type="Label" parent="HUD/TopBar/Row"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+text = "SIMULASI  000000 tick  ·  0.0 s"
+
+[node name="PauseButton" type="Button" parent="HUD/TopBar/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 52)
+layout_mode = 2
+text = "Jeda  [Esc]"
+
+[node name="BackButton" type="Button" parent="HUD/TopBar/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(100, 52)
+layout_mode = 2
+text = "Menu"
+
+[node name="BottomBar" type="PanelContainer" parent="HUD"]
+offset_left = 24.0
+offset_top = 634.0
+offset_right = 1256.0
+offset_bottom = 700.0
+
+[node name="Column" type="VBoxContainer" parent="HUD/BottomBar"]
+layout_mode = 2
+
+[node name="SelectionLabel" type="Label" parent="HUD/BottomBar/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Klik / ketuk penanda hijau untuk memilih"
+
+[node name="Scope" type="Label" parent="HUD/BottomBar/Column"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(0.59, 0.67, 0.66, 1)
+text = "Uji input & fixed tick saja. Combat, wave, skill, ekonomi dan save belum dimigrasikan."
+
+[node name="PauseOverlay" type="ColorRect" parent="HUD"]
+unique_name_in_owner = true
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.015, 0.03, 0.04, 0.88)
+
+[node name="Center" type="CenterContainer" parent="HUD/PauseOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Card" type="PanelContainer" parent="HUD/PauseOverlay/Center"]
+custom_minimum_size = Vector2(430, 0)
+layout_mode = 2
+
+[node name="Column" type="VBoxContainer" parent="HUD/PauseOverlay/Center/Card"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="PauseTitle" type="Label" parent="HUD/PauseOverlay/Center/Card/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Permainan Dijeda"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="HUD/PauseOverlay/Center/Card/Column"]
+layout_mode = 2
+text = "Simulasi berhenti. Tidak ada progres yang disimpan."
+theme_override_font_sizes/font_size = 17
+horizontal_alignment = 1
+
+[node name="ResumeButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 54)
+text = "Lanjutkan"
+
+[node name="RestartButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 54)
+text = "Mulai ulang arena"
+
+[node name="MenuButton" type="Button" parent="HUD/PauseOverlay/Center/Card/Column"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(0, 54)
+text = "Kembali ke menu"

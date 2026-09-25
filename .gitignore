@@ -154,3 +154,8 @@ godot/gdext/mystic_maps/.sconsign.dblite
 godot/gdext/mystic_maps/src/*.os
 godot/gdext/mystic_splash/.sconsign.dblite
 godot/gdext/mystic_splash/src/*.os
+
+# Proyek Godot baru (independen dari migrasi lama)
+godot_rebuild/.godot/
+godot_rebuild/exports/
+godot_rebuild/android/build/

@@ -1,0 +1,43 @@
+; Fresh native project. Does not import the previous Godot migration.
+config_version=5
+
+[application]
+config/name="Mystic Arena Rebuild"
+run/main_scene="res://app/App.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/description="Fondasi migrasi baru — arena percobaan, belum gameplay penuh."
+config/icon="res://assets/icon.svg"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="MysticArenaRebuildDev"
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation=0
+
+[input]
+pause={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":4194305)]
+}
+select={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"button_index":1)]
+}
+command_move={
+"deadzone": 0.5,
+"events": [Object(InputEventMouseButton,"button_index":2)]
+}
+
+[physics]
+common/physics_ticks_per_second=60
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.035, 0.055, 0.07, 1)
+textures/default_filters/use_nearest_mipmap_filter=false
