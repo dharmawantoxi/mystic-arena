@@ -25,15 +25,27 @@ func _physics_process(_delta: float) -> void:
 		var accepted := false
 		if command.kind == "build":
 			accepted = match_world.build_tower(0, command.id)
-			if accepted:
+			if accepted and selected_slot_id == command.id:
 				selected_id = match_world.get_slot(command.id).structure_id
 		else:
 			accepted = match_world.sell_tower(0, command.id)
-			if accepted:
+			if accepted and selected_id == command.id:
 				selected_id = -1
-		last_action = (
-			"Transaksi berhasil." if accepted else "Ditolak: " + match_world.transaction_error
-		)
+		if accepted:
+			last_action = (
+				"Archer dibangun: −100 G." if command.kind == "build" else "Tower dijual: +50 G."
+			)
+		else:
+			last_action = (
+				{
+					"finished": "Pertandingan sudah selesai.",
+					"owner": "Pilih slot atau tower biru yang masih hidup.",
+					"occupied": "Slot sudah terisi.",
+					"gold": "Gold tidak cukup: Archer membutuhkan 100 G.",
+					"capacity": "Batas bangunan tercapai."
+				}
+				. get(match_world.transaction_error, "Transaksi ditolak.")
+			)
 		command.clear()
 	world.step_tick()
 	if world.get_unit(selected_id) == null:

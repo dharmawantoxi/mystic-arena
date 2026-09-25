@@ -108,6 +108,7 @@ func _run() -> void:
 	await _test_input(app)
 	await _test_combat_scene(app)
 	await _test_siege_scene(app)
+	await _test_prototype_scene(app)
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
@@ -394,3 +395,226 @@ func _test_siege_scene(app: Node) -> void:
 		await _settle()
 		_check(not paused and app.current_screen.name == "MainMenu", "result exits cleanly to menu")
 		_check(get_node_count() == baseline, "siege cycles leave no orphan scene nodes")
+
+
+func _test_prototype_scene(app: Node) -> void:
+	var baseline: int = get_node_count()
+	for cycle in range(3):
+		app.current_screen.get_node("%PrototypeButton").pressed.emit()
+		app.current_screen.get_node("%PrototypeButton").pressed.emit()
+		await _settle()
+		var screen = app.current_screen
+		var session = screen.simulation
+		var world = session.world
+		session.set_physics_process(false)
+		world.defender_enabled = false
+		_check(
+			screen.name == "PrototypeMatch" and app.screen_root.get_child_count() == 1,
+			"prototype has its own guarded menu route"
+		)
+		_check(
+			(
+				world.structures.size() == 2
+				and world.units.is_empty()
+				and world.economy.gold == [1000, 350]
+			),
+			"playable match starts empty with source budgets"
+		)
+		var click := InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = true
+		click.position = screen.arena.get_global_transform_with_canvas() * world.slots[2].position
+		root.push_input(click, true)
+		await _settle()
+		_check(session.selected_slot_id == 2, "scaled mouse input selects blue build slot")
+		_check(
+			(
+				not screen.get_node("%BuildButton").disabled
+				and screen.get_node("%SellButton").disabled
+			),
+			"empty owned slot enables build, not sale"
+		)
+		click = InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = true
+		click.position = Vector2(500, 50)
+		root.push_input(click, true)
+		await _settle()
+		_check(session.selected_slot_id == 2, "match HUD consumes clicks without changing slot")
+		screen.get_node("%BuildButton").pressed.emit()
+		screen.get_node("%BuildButton").pressed.emit()
+		_check(
+			session.command.id == 2 and world.economy.gold[0] == 1000,
+			"build UI captures one command with no immediate charge"
+		)
+		session.select_at(world.slots[5].position)
+		session._physics_process(1.0 / 60.0)
+		var old_tower_id: int = world.slots[2].structure_id
+		_check(
+			old_tower_id > 0 and world.slots[5].structure_id == -1 and world.economy.gold[0] == 900,
+			"build uses captured slot, not later selection"
+		)
+		_check(
+			session.selected_slot_id == 5 and session.selected_id == -1,
+			"completed build does not steal a newer selection"
+		)
+		session._physics_process(1.0 / 60.0)
+		_check(
+			world.economy.gold[0] == 900 and session.command.is_empty(), "build is consumed once"
+		)
+		session.select_at(world.slots[2].position)
+		await _settle()
+		_check(
+			(
+				screen.get_node("%BuildButton").disabled
+				and not screen.get_node("%SellButton").disabled
+			),
+			"built own tower enables sale only"
+		)
+		_check(session.request_sell(old_tower_id), "sale ID captured")
+		# Simulate invalidation between request and execution; the new ID must remain untouched.
+		world.sell_tower(0, old_tower_id)
+		world.build_tower(0, 2)
+		var replacement_id: int = world.slots[2].structure_id
+		session._physics_process(1.0 / 60.0)
+		_check(
+			world.economy.gold[0] == 850 and world.slots[2].structure_id == replacement_id,
+			"queued stale sale cannot refund or remove a replacement"
+		)
+		session.select_at(world.slots[2].position)
+		await _settle()
+		screen.get_node("%SellButton").pressed.emit()
+		screen.get_node("%SellButton").pressed.emit()
+		session._physics_process(1.0 / 60.0)
+		_check(
+			world.economy.gold[0] == 900 and world.slots[2].structure_id == -1,
+			"sale UI refunds exactly once"
+		)
+		_check(session.request_build(2), "build queues before pause")
+		var ticks: int = world.tick_count
+		var remaining: int = world.scheduler.remaining_ticks
+		session.set_physics_process(true)
+		screen.pause_match()
+		await _physics_steps(3)
+		_check(
+			(
+				session.command.is_empty()
+				and world.tick_count == ticks
+				and world.scheduler.remaining_ticks == remaining
+				and world.economy.gold[0] == 900
+			),
+			"pause cancels transactions and freezes income/wave clocks"
+		)
+		_check(
+			not session.request_build(2) and not session.request_sell(replacement_id),
+			"paused match rejects new transactions"
+		)
+		screen.resume_match()
+		screen.arena.process_mode = Node.PROCESS_MODE_DISABLED
+		await _physics_steps(3)
+		_check(world.tick_count > ticks, "prototype simulation is independent of rendering")
+		screen.arena.process_mode = Node.PROCESS_MODE_PAUSABLE
+		session.set_physics_process(false)
+		session.request_build(2)
+		app._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
+		_check(paused and session.command.is_empty(), "focus loss cancels match transaction")
+		screen.resume_match()
+		var tap := InputEventScreenTouch.new()
+		tap.pressed = true
+		tap.position = screen.arena.get_global_transform_with_canvas() * world.slots[9].position
+		screen._unhandled_input(tap)
+		await _settle()
+		_check(
+			session.selected_slot_id == 9 and screen.get_node("%BuildButton").disabled,
+			"touch adapter can inspect enemy slot but cannot build there"
+		)
+		session.request_build(9)
+		session._physics_process(1.0 / 60.0)
+		_check(
+			world.slots[9].structure_id == -1 and world.economy.gold[0] == 900,
+			"execution rejects enemy slot even when UI is bypassed"
+		)
+		click = InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = true
+		click.device = InputEvent.DEVICE_ID_EMULATION
+		click.position = screen.arena.get_global_transform_with_canvas() * world.slots[2].position
+		screen._unhandled_input(click)
+		_check(session.selected_slot_id == 9, "touch emulation does not double-dispatch selection")
+		_check(world.economy.is_balanced(), "UI transactions preserve ledger invariant")
+		_check(
+			(
+				screen.get_node("HUD/TopBar").get_global_rect().end.x <= 1280.0
+				and screen.get_node("HUD/BottomBar").get_global_rect().end.y <= 720.0
+			),
+			"prototype HUD fits reference viewport"
+		)
+		var winner: int = cycle % 2
+		var nexus = world.nexuses[1 - winner]
+		nexus.shield_active = false
+		nexus.shield = 0
+		nexus.hp = 1
+		var attacker = world.spawn_unit(session.DEFINITIONS[0], winner, 1)
+		attacker.position = nexus.position - Vector2(20, 0)
+		world.apply_hit(attacker.id, nexus.id)
+		await _settle()
+		var title := "BIRU MENANG" if winner == 0 else "MERAH MENANG"
+		_check(
+			(
+				paused
+				and screen.get_node("%PauseOverlay").visible
+				and screen.get_node("%PauseTitle").text == title
+			),
+			"match result opens automatically for either team"
+		)
+		_check(
+			(
+				not screen.get_node("%ResumeButton").visible
+				and screen.get_node("%BuildButton").disabled
+				and screen.get_node("%SellButton").disabled
+			),
+			"result offers restart/menu, no resume or transactions"
+		)
+		screen.resume_match()
+		_check(paused and not session.request_build(2), "result cannot resume or accept build")
+		var old_screen_id: int = screen.get_instance_id()
+		screen.get_node("%RestartButton").pressed.emit()
+		await _settle()
+		screen = app.current_screen
+		session = screen.simulation
+		world = session.world
+		_check(
+			(
+				not is_instance_id_valid(old_screen_id)
+				and not paused
+				and screen.name == "PrototypeMatch"
+			),
+			"restart disposes old scene and retains prototype mode"
+		)
+		_check(
+			(
+				world.economy.gold == [1000, 350]
+				and world.economy.spent == [0, 0]
+				and world.structures.size() == 2
+				and world.wave_count == 0
+				and world.winner == -1
+			),
+			"restart resets economy, slots, waves and result"
+		)
+		_check(
+			(
+				session.selected_slot_id == -1
+				and session.command.is_empty()
+				and world.scheduler.pending_count() == 0
+				and world.projectiles.is_empty()
+			),
+			"restart leaves no stale input, queue or projectile"
+		)
+		screen.pause_match()
+		screen.get_node("%MenuButton").pressed.emit()
+		await _settle()
+		_check(
+			not paused and app.current_screen.name == "MainMenu",
+			"prototype exits paused/result cleanly"
+		)
+		_check(get_node_count() == baseline, "prototype cycles do not leak scene nodes")

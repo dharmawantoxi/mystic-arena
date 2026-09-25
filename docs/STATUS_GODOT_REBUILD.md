@@ -130,3 +130,10 @@ Jangan menyimpan key, credential, binary engine, `.godot/`, save nyata atau outp
 - `tests/match_source_oracle.py` menjalankan potongan AST Python asli untuk dua trace wave 3.800 tick, komposisi, slot, 12 skenario pemasukan, dan jalur build → UI sale. Stub hanya dependensi di luar scope (render/audio/boss/auto-upgrade AI).
 - Guardrail lokal 448 checks, lint/format dan oracle sumber lulus. **Native untuk checkpoint inti ini masih menunggu CI**; angka 1.158 di atas milik milestone siege sebelumnya.
 - Berikutnya: tunggu/fix CI inti, lalu buat scene/HUD/menu build-sell, tes input/lifecycle, dokumentasi kontrak prototipe dan push berikutnya. Jangan menganggap inti ini sudah tersedia saat F5.
+
+### Perkembangan checkpoint UI prototipe
+
+- Inti dipush sebagai `868cfc2`, pembanding nested JSON diperbaiki di `a218073`. [CI inti lulus](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36151766743): **1.418 native checks**, termasuk trace wave dan ledger.
+- Ditambahkan `scenes/prototype/PrototypeMatch.tscn`, tombol **Pertandingan awal**, slot/range preview, build/sell, HUD, hasil otomatis dan restart mode yang sama. Ketiga laboratorium tetap tersedia.
+- Tes UI mencakup tiga lifecycle, immutable command IDs, duplicate input, stale sale, pause/focus, scaled mouse/touch adapter, lawan slot, hasil kedua tim dan cleanup.
+- **Validasi native UI menunggu CI checkpoint ini.** Lint/format dan 511 guardrail lokal lulus. Scope tetap subset level 1 / normal; bukan seluruh level Python atau AI aslinya.

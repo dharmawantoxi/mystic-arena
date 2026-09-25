@@ -1,5 +1,6 @@
 extends Control
 
+signal prototype_requested
 signal siege_requested
 signal combat_requested
 signal play_requested
@@ -17,4 +18,5 @@ func _ready() -> void:
 	%QuitButton.pressed.connect(func() -> void: quit_requested.emit())
 	%CombatButton.pressed.connect(func() -> void: combat_requested.emit())
 	%SiegeButton.pressed.connect(func() -> void: siege_requested.emit())
-	%SiegeButton.grab_focus()
+	%PrototypeButton.pressed.connect(func() -> void: prototype_requested.emit())
+	%PrototypeButton.grab_focus()

@@ -67,6 +67,12 @@ layout_mode = 2
 theme_override_constants/separation = 12
 mouse_filter = 2
 
+[node name="PrototypeButton" type="Button" parent="Content/Column/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(250, 60)
+layout_mode = 2
+text = "Pertandingan awal  →"
+
 [node name="SiegeButton" type="Button" parent="Content/Column/Actions"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(200, 60)
@@ -95,8 +101,8 @@ text = "Keluar"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 17
-text = "TAHAP 03 · Tower, projectile & nexus
-Laboratorium bertahap; belum mencakup hero, boss, ekonomi atau save."
+text = "TAHAP 04 · Wave otomatis, gold & build/sell
+Prototipe level 1 / normal. Belum AI asli, upgrade, hero, boss atau save."
 
 [node name="Fill" type="Control" parent="Content/Column"]
 layout_mode = 2
