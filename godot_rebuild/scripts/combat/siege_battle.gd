@@ -140,17 +140,38 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 		return false
 	if source.position.distance_to(target.position) > source.definition.attack_range_px:
 		return false
-	var shot := Projectile.new()
-	shot.id = _next_projectile_id
-	_next_projectile_id += 1
-	shot.source_id = source.id
-	shot.target_id = target.id
-	shot.team = source.team
-	shot.damage = source.definition.damage
-	shot.speed = source.settings().projectile_speed_px_per_tick
-	shot.hit_radius = source.settings().projectile_hit_radius_px
-	shot.position = muzzle_position(source, target.position)
-	projectiles.append(shot)
+	# Reserve the entire volley before mutation: never a partially emitted paid upgrade attack.
+	var count := source.settings().volley_count
+	if projectiles.size() + count > MAX_PROJECTILES:
+		return false
+	var targets: Array[UnitState] = [target]
+	for candidate in units:
+		if targets.size() >= count:
+			break
+		if candidate == target or not candidate.alive or candidate.team == source.team:
+			continue
+		if source.position.distance_to(candidate.position) <= source.definition.attack_range_px:
+			targets.append(candidate)
+	while targets.size() < count:
+		targets.append(target)
+	var offsets := [Vector2.ZERO]
+	if count == 2:
+		offsets = [Vector2(-5, 0), Vector2(5, 0)]
+	elif count == 3:
+		offsets = [Vector2(-7, 2), Vector2(0, -1), Vector2(7, 2)]
+	var muzzle := muzzle_position(source, target.position)
+	for index in range(count):
+		var shot := Projectile.new()
+		shot.id = _next_projectile_id
+		_next_projectile_id += 1
+		shot.source_id = source.id
+		shot.target_id = targets[index].id
+		shot.team = source.team
+		shot.damage = source.definition.damage
+		shot.speed = source.settings().projectile_speed_px_per_tick
+		shot.hit_radius = source.settings().projectile_hit_radius_px
+		shot.position = muzzle + offsets[index]
+		projectiles.append(shot)
 	source.cooldown_ticks = source.definition.attack_cooldown_ticks
 	return true
 
@@ -158,11 +179,11 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 func muzzle_position(source: StructureState, target: Vector2) -> Vector2:
 	if source.settings().structure_kind == "nexus":
 		return source.position + Vector2(0, -25)
-	# Exact level-1 bow helper: scalar doubles before Python-style int truncation.
+	# Exact source bow helper: scalar doubles before Python-style int truncation.
 	var side := 7.0 if target.x > source.position.x else -7.0
 	return Vector2(
 		int(float(source.position.x) + side * 0.7),
-		int(float(source.position.y) - 94.0 + 104.0 * 0.7)
+		int(float(source.position.y) - 94.0 + (142.0 - source.settings().bow_platform_height) * 0.7)
 	)
 
 

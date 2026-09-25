@@ -1,6 +1,7 @@
 extends "res://scripts/combat/siege_battle.gd"
 ## Playable normal/level-1 subset. Wave/ledger/build rules are separate from the old manual labs.
 
+const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
@@ -135,7 +136,7 @@ func sell_tower(team: int, entity_id: int) -> bool:
 		else:
 			flying.append(shot)
 	projectiles = flying
-	economy.credit_sale(team)
+	economy.credit_sale(team, tower.settings().sale_refund)
 	_record({"kind": "sale", "team": team, "target_id": entity_id})
 	return true
 
@@ -163,3 +164,47 @@ func _step_defender() -> void:
 		return
 	if build_tower(RED, [11, 14, 17][_defender_built]):
 		_defender_built += 1
+
+
+func upgrade_price(entity_id: int) -> int:
+	var tower := _owned_archer(entity_id)
+	if tower == null or tower.settings().level >= Upgrades.LEVELS.size():
+		return 0
+	return Upgrades.LEVELS[tower.settings().level].upgrade_price
+
+
+func upgrade_tower(entity_id: int, expected_level: int) -> bool:
+	transaction_error = ""
+	var tower := _owned_archer(entity_id)
+	var cost := upgrade_price(entity_id)
+	if not is_running():
+		transaction_error = "finished"
+	elif tower == null:
+		transaction_error = "owner"
+	elif tower.settings().level != expected_level:
+		transaction_error = "stale"
+	elif cost <= 0:
+		transaction_error = "max_level"
+	elif economy.gold[BLUE] < cost:
+		transaction_error = "gold"
+	if not transaction_error.is_empty():
+		return false
+	# Source resets HP/shield fully but retains cooldown, target, regen timer and in-flight shots.
+	economy.spend(BLUE, cost)
+	tower.definition = Upgrades.LEVELS[expected_level]
+	tower.hp = tower.definition.max_hp
+	tower.shield = tower.settings().shield_capacity
+	_record({"kind": "upgrade", "target_id": tower.id, "level": tower.settings().level})
+	return true
+
+
+func _owned_archer(entity_id: int) -> StructureState:
+	var tower := get_unit(entity_id) as StructureState
+	if tower == null or not tower.alive or tower.team != BLUE:
+		return null
+	if tower.settings().structure_kind != "tower":
+		return null
+	for slot in slots:
+		if slot.team == BLUE and slot.structure_id == entity_id:
+			return tower
+	return null

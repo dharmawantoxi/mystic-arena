@@ -1,6 +1,7 @@
 extends SceneTree
 ## Native, dependency-free headless regression runner. Exit code 1 means failure.
 
+const UpgradeChecks = preload("res://tests/upgrade_checks.gd")
 const PrototypeChecks = preload("res://tests/prototype_checks.gd")
 const SiegeChecks = preload("res://tests/siege_checks.gd")
 const CombatChecks = preload("res://tests/combat_checks.gd")
@@ -40,6 +41,7 @@ func _run() -> void:
 	CombatChecks.new().run(_check)
 	SiegeChecks.new().run(_check)
 	PrototypeChecks.new().run(_check)
+	UpgradeChecks.new().run(_check)
 	var app = APP.instantiate()
 	root.add_child(app)
 	await _settle()

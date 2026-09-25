@@ -57,9 +57,11 @@ func credit_kill(team: int, amount: int) -> void:
 		earned[team] += amount
 
 
-func credit_sale(team: int) -> void:
-	gold[team] += SELL_REFUND
-	refunded[team] += SELL_REFUND
+func credit_sale(team: int, amount: int = SELL_REFUND) -> void:
+	if team not in [0, 1] or amount <= 0:
+		return
+	gold[team] += amount
+	refunded[team] += amount
 
 
 func is_balanced() -> bool:

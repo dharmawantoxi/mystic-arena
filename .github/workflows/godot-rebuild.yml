@@ -47,6 +47,7 @@ jobs:
           python godot_rebuild/tests/check_source_contract.py
           python godot_rebuild/tests/structure_source_oracle.py
           python godot_rebuild/tests/match_source_oracle.py
+          python godot_rebuild/tests/upgrade_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

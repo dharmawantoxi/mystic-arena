@@ -1,6 +1,11 @@
 extends "res://scripts/data/minion_definition.gd"
 ## Same common combat fields, separate stationary validation and shield/regen configuration.
 
+@export var level: int = 1
+@export var volley_count: int = 1
+@export var bow_platform_height: float = 38.0
+@export var upgrade_price: int = 0
+@export var sale_refund: int = 50
 @export_enum("tower", "nexus") var structure_kind: String = "tower"
 @export var shield_capacity: float = 800.0
 @export var hp_regen_delay_ticks: int = 300
@@ -16,6 +21,13 @@ extends "res://scripts/data/minion_definition.gd"
 func is_valid() -> bool:
 	return (
 		structure_kind in ["tower", "nexus"]
+		and level >= 1
+		and level <= 6
+		and volley_count >= 1
+		and volley_count <= 3
+		and bow_platform_height > 0
+		and upgrade_price >= 0
+		and sale_refund >= 0
 		and not id.is_empty()
 		and max_hp > 0
 		and damage > 0

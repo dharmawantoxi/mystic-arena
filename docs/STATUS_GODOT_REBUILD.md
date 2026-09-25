@@ -87,3 +87,10 @@ git push origin arena/01a0d776-mystic-arena
 Windows: `powershell -ExecutionPolicy Bypass -File .\tests\run_windows.ps1 -Godot "C:\Tools\Godot_v4.7.2-stable_win64_console.exe"` dari `godot_rebuild/`.
 
 `gh pr edit` pada versi CLI sandbox pernah gagal karena Projects classic deprecated. Gunakan REST PATCH `gh api --method PATCH repos/dharmawantoxi/mystic-arena/pulls/278` untuk title/body. Jangan menyimpan credential, binary engine, `.godot/`, save nyata atau output build di repo. Jangan menjalankan generator migrasi lama atau scratch script lama yang dapat menimpa proyek ini.
+
+## Checkpoint lanjutan: inti upgrade Archer (native CI menunggu)
+
+- Audit nexus menunjukkan dependensi minion scaling/composition/AI tier; belum diaktifkan agar tidak menjadi upgrade HP parsial.
+- Archer level 1–6: resource native, full HP/shield reset saat upgrade, cooldown/regen timer/shot yang sudah terbang tetap; harga 175/325/550/850/1300 G, refund 50/87/250/525/950/1600 G.
+- Level 5 dua panah, level 6 tiga; source `_shoot_archer` menentukan perilaku, bukan label tabel “double shot”. Whole-volley cap atomik merupakan guard tambahan.
+- `upgrade_source_oracle.py` menjalankan metode asli upgrade/refund/muzzle/volley; 36 skenario volley. Tes domain ditambahkan. Inti belum ada tombol UI pada checkpoint ini; menunggu native CI sebelum klaim runtime.
