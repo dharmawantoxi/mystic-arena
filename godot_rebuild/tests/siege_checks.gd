@@ -4,6 +4,7 @@ const Siege = preload("res://scripts/combat/siege_battle.gd")
 const Definition = preload("res://scripts/data/minion_definition.gd")
 const Projectile = preload("res://scripts/combat/projectile_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
+const RIDER = preload("res://data/minions/dark_rider.tres")
 const ORC = preload("res://data/minions/orc.tres")
 
 
@@ -15,6 +16,7 @@ func run(check: Callable) -> void:
 	_regen_and_shields(check)
 	_siege_result(check)
 	_capacity(check)
+	_deterministic_siege(check)
 
 
 func _fixtures(check: Callable) -> void:
@@ -267,3 +269,43 @@ func _capacity(check: Callable) -> void:
 		not world.fire_projectile(tower.id, target.id) and tower.cooldown_ticks == 0,
 		"projectile cap rejects without consuming cooldown"
 	)
+
+
+func _deterministic_siege(check: Callable) -> void:
+	var first := Siege.new()
+	var second := Siege.new()
+	first.setup_arena()
+	second.setup_arena()
+	for tick in range(2400):
+		if tick % 120 == 0:
+			first.spawn_assault_wave(RIDER, 0)
+			second.spawn_assault_wave(RIDER, 0)
+		first.step_tick()
+		second.step_tick()
+		if tick % 120 == 0:
+			check.call(
+				_snapshot(first) == _snapshot(second),
+				"siege replay deterministic at tick %d" % tick
+			)
+	check.call(first._next_projectile_id > 1, "natural siege runs emit projectiles")
+	check.call(
+		first.projectiles.size() <= Siege.MAX_PROJECTILES, "siege projectile count stays bounded"
+	)
+	check.call(first.recent_events.size() <= Siege.MAX_EVENTS, "siege event history stays bounded")
+
+
+func _snapshot(world: Siege) -> Array:
+	var result: Array = [
+		world.tick_count,
+		world.winner,
+		world.kills.duplicate(),
+		world.tower_kills.duplicate(),
+		world.credited_gold.duplicate()
+	]
+	for unit in world.units:
+		result.append([unit.id, unit.position, unit.hp, unit.cooldown_ticks, unit.target_id])
+	for structure in world.structures:
+		result.append([structure.id, structure.hp, structure.shield, structure.cooldown_ticks])
+	for shot in world.projectiles:
+		result.append([shot.id, shot.position, shot.target_id, shot.ttl_ticks])
+	return result

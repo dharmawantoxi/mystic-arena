@@ -105,6 +105,7 @@ func _run() -> void:
 		)
 	await _test_input(app)
 	await _test_combat_scene(app)
+	await _test_siege_scene(app)
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
@@ -286,3 +287,108 @@ func _test_combat_scene(app: Node) -> void:
 			"combat exits cleanly while paused"
 		)
 		_check(get_node_count() == baseline_count, "combat navigation does not accumulate nodes")
+
+
+func _test_siege_scene(app: Node) -> void:
+	var baseline: int = get_node_count()
+	for cycle in range(3):
+		app.current_screen.get_node("%SiegeButton").pressed.emit()
+		await _settle()
+		await _physics_steps(2)
+		var screen = app.current_screen
+		var session = screen.simulation
+		var world = session.world
+		_check(screen.name == "SiegeArena", "new siege menu opens correct scene")
+		_check(
+			world.structures.size() == 8 and world.units.size() == 6,
+			"siege starts six towers, two nexuses, and one two-team wave"
+		)
+		screen.get_node("%TeamMode").select(1)
+		screen.get_node("%SpawnButton").pressed.emit()
+		screen.get_node("%SpawnButton").pressed.emit()
+		_check(
+			session.pending_team_mode == 0 and world.units.size() == 6,
+			"UI captures blue-team command without immediate world mutation"
+		)
+		await _physics_steps(2)
+		_check(world.units.size() == 9, "blue-only UI wave spawns once")
+		var tower = world.structures[0]
+		var victim = world.units[3]
+		victim.position = tower.position + Vector2(60, 0)
+		tower.cooldown_ticks = 0
+		_check(world.fire_projectile(tower.id, victim.id), "scene can launch projectile")
+		var shot = world.projectiles[-1]
+		var position: Vector2 = shot.position
+		var ticks: int = world.tick_count
+		_check(session.request_assault(0, 1), "red-only wave queues before pause")
+		screen.pause_match()
+		await _physics_steps(3)
+		_check(
+			world.tick_count == ticks and shot.position == position,
+			"pause freezes projectiles and structure clocks"
+		)
+		_check(
+			session.pending_wave == -1 and session.pending_team_mode == -1,
+			"pause clears both queued type and team"
+		)
+		_check(not session.request_assault(0, 0), "paused siege rejects waves")
+		screen.resume_match()
+		screen.arena.process_mode = Node.PROCESS_MODE_DISABLED
+		await _physics_steps(2)
+		_check(world.tick_count > ticks, "siege does not depend on visual processing")
+		screen.arena.process_mode = Node.PROCESS_MODE_PAUSABLE
+		session.set_physics_process(false)
+		var click := InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = true
+		click.position = screen.arena.get_global_transform_with_canvas() * tower.position
+		root.push_input(click, true)
+		await _settle()
+		_check(session.selected_id == tower.id, "scaled structure selection works")
+		var old_id: int = screen.get_instance_id()
+		screen.pause_match()
+		screen.get_node("%RestartButton").pressed.emit()
+		await _settle()
+		await _physics_steps(2)
+		_check(not is_instance_id_valid(old_id), "restart disposes siege scene")
+		screen = app.current_screen
+		session = screen.simulation
+		world = session.world
+		_check(not paused and screen.name == "SiegeArena", "restart retains siege mode")
+		_check(
+			world.is_running() and world.wave_count == 1 and world.structures.size() == 8,
+			"restart resets structures, wave count and result"
+		)
+		_check(
+			world.projectiles.is_empty() and world.credited_gold == [0, 0],
+			"restart leaves no old projectiles or credit"
+		)
+		# Finish via a real minion hit against a deliberately weakened test nexus.
+		var nexus = world.nexuses[1]
+		nexus.shield_active = false
+		nexus.shield = 0
+		nexus.hp = 1
+		var attacker = world.spawn_unit(session.DEFINITIONS[0], 0, 1)
+		attacker.position = nexus.position - Vector2(20, 0)
+		await _physics_steps(2)
+		await _settle()
+		_check(
+			world.winner == 0 and screen.get_node("%ArenaTitle").text == "BIRU MENANG",
+			"nexus defeat is presented in the UI"
+		)
+		_check(
+			screen.get_node("%SpawnButton").disabled and not session.request_assault(0, 0),
+			"finished scene cannot queue new combat"
+		)
+		ticks = world.tick_count
+		await _physics_steps(3)
+		_check(world.tick_count == ticks, "terminal siege stays frozen")
+		screen.pause_match()
+		_check(
+			not screen.get_node("%ResumeButton").visible,
+			"result menu offers restart/menu, not resume"
+		)
+		screen.get_node("%MenuButton").pressed.emit()
+		await _settle()
+		_check(not paused and app.current_screen.name == "MainMenu", "result exits cleanly to menu")
+		_check(get_node_count() == baseline, "siege cycles leave no orphan scene nodes")

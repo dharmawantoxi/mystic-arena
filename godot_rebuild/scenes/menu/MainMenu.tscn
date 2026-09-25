@@ -67,6 +67,12 @@ layout_mode = 2
 theme_override_constants/separation = 12
 mouse_filter = 2
 
+[node name="SiegeButton" type="Button" parent="Content/Column/Actions"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 2
+text = "Tower & nexus  →"
+
 [node name="CombatButton" type="Button" parent="Content/Column/Actions"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(235, 60)
@@ -89,8 +95,8 @@ text = "Keluar"
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 17
-text = "TAHAP 01 · Menu, navigasi, input & pause
-Arena ini belum memuat combat, hero, boss, atau progres game."
+text = "TAHAP 03 · Tower, projectile & nexus
+Laboratorium bertahap; belum mencakup hero, boss, ekonomi atau save."
 
 [node name="Fill" type="Control" parent="Content/Column"]
 layout_mode = 2
