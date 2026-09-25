@@ -1,6 +1,6 @@
 # Kontrak upgrade Archer — level 1–6
 
-Tersedia hanya lewat mode **Pertandingan awal**. Laboratorium siege tetap memulai Archer tier 1 tanpa tombol upgrade. Nexus tetap tier 1; tidak ada Cannon/Ice/Mage, paid shield atau upgrade AI.
+Tersedia hanya lewat mode **Pertandingan awal**. Laboratorium siege tetap memulai Archer tier 1 tanpa tombol upgrade. Tidak ada Cannon/Ice/Mage atau paid regen shield. Upgrade nexus kini tersedia terpisah, lihat [kontrak nexus](NEXUS_CONTRACT.md).
 
 ## Sumber dan angka yang diuji
 
@@ -43,16 +43,16 @@ Tabel level 6 menyebut “DOUBLE SHOT”, tetapi metode `_shoot_archer` menghasi
 8. **Safety extension:** reservasi kapasitas seluruh volley sebelum spawn. Jika tidak cukup tempat dalam cap 256, tidak ada panah parsial, ID atau cooldown yang terpakai. Source Python tidak mempunyai cap ini.
 9. Sale/kematian owner membatalkan seluruh panah miliknya, mengikuti lifecycle projectile yang sudah ada.
 
-## Mengapa upgrade nexus belum diaktifkan
+## Upgrade nexus (terpisah, sudah diimplementasikan)
 
-Audit menemukan ketergantungan yang tidak boleh diabaikan:
+Audit awal menemukan ketergantungan yang tidak boleh diabaikan, kini semuanya dipindahkan bersama tombol nexus:
 
 - `NEXUS_LEVELS` mengubah minion scale **dan AI level**, bukan hanya HP/damage castle.
 - Komposisi wave dipilih berdasarkan tier nexus pada awal wave. Queue sumber menyimpan kind/lane; constructor minion membaca tier nexus **ketika spawn**, sehingga upgrade saat queue berjalan dapat memengaruhi spawn berikutnya, tanpa mengubah unit lama.
 - Castle memakai formula HP berbeda dari tower: `int(new_max × old_hp / old_max) + (new_max − old_max)`, lalu bonus 500 dan cap. Bukan full heal sederhana.
 - Kapasitas/persentase shield saat upgrade hanya diperbarui `_apply_level_stats` bila shield berbayar sudah dibeli. Jangan menyamakan dengan reset shield Archer atau diam-diam “membetulkan” sumber.
 
-Tahap nexus berikut harus mencakup aturan tersebut dan oracle tambahan. Mengaktifkan tombol upgrade nexus hanya dengan mengganti resource HP akan menjadi port parsial yang menyesatkan.
+Detail angka, quirk `tower_kind`, urutan ID vs spatial-hash, dan batas auto-scaling: [kontrak nexus](NEXUS_CONTRACT.md). Jalur Archer (`upgrade_tower`) tetap menolak nexus; nexus memakai `upgrade_nexus` dengan formula HP/shield sendiri.
 
 ## Bukti
 

@@ -2,7 +2,7 @@
 
 **Proyek baru, native GDScript. Target editor: Godot 4.7.2 standard, Windows 11.**
 
-Milestone 1 (fondasi), 2 (combat minion), 3 (tower/projectile/nexus), 4 (prototipe wave/ekonomi/build-sell), dan 5 (upgrade Archer level 1–6) telah diimplementasikan dan lolos tes native CI. **Ini belum migrasi seluruh game.** Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
+Milestone 1 (fondasi), 2 (combat minion), 3 (tower/projectile/nexus), 4 (prototipe wave/ekonomi/build-sell), 5 (upgrade Archer 1–6), dan 6 (upgrade nexus 1–5 + scaling/AI/komposisi) telah diimplementasikan; CI native sedang/diverifikasi pada branch sesi baru. **Ini belum migrasi seluruh game.** Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
 
 ## Buka di Windows (tanpa membuat scene/script manual)
 
@@ -20,14 +20,15 @@ Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan clien
 - Subset **level 1 / normal**: mulai dengan 1000 G dan dua nexus, belum ada tower. Gold hanya berlaku dalam pertandingan ini.
 - Klik lingkaran slot biru kosong → **Bangun Archer · 100 G**. Tersedia sembilan slot biru dari jalur sumber. Lingkaran merah milik lawan.
 - Klik tower biru hidup → **Upgrade Lv.2 · 175 G**, lalu naik bertahap sampai level 6. Harga berikutnya dan refund selalu ditampilkan; level 5 menembak dua panah, level 6 tiga.
+- Klik nexus biru → **Nexus Lv.2 · 500 G** sampai level 5 (900/1500/2400). Menaikkan HP/damage/range nexus **dan** stat/AI minion biru serta komposisi wave berikutnya; unit lama tidak berubah.
 - **Jual** memberi 50 G untuk tier 1, atau refund sesuai tier setelah upgrade. Tidak bisa menjual nexus, tower lawan/mati atau menjual tower yang sama dua kali.
 - Wave pertama muncul setelah sekitar 5 detik; unit keluar bertahap setiap 20 tick. Wave berikutnya menunggu timer dan lapangan bersih, bukan selalu muncul ketika countdown mencapai nol.
 - Gold pasif bertambah tiap detik; kill memberi reward. HUD menampilkan saldo, wave dan HP/shield nexus. Slot/range preview ditampilkan ketika dipilih.
-- **Lawan sementara, bukan AI asli:** membeli tiga Archer berbayar pada detik 5/10/15. Lawan belum melakukan upgrade; hero/boss dan castle scaling belum ada.
+- **Lawan sementara, bukan AI asli:** membeli tiga Archer berbayar pada detik 5/10/15. Lawan belum melakukan upgrade; hero/boss dan castle auto-scaling belum ada.
 - Nexus hancur membuka hasil otomatis dan menghentikan simulasi. **Mulai ulang** mereset seluruh saldo, slot, queue dan hasil; **Menu** kembali ke menu utama. Tidak ada progres disimpan.
 - Esc/Jeda dan kehilangan fokus menghentikan wave, combat dan income serta membatalkan transaksi tertunda. Lanjutkan secara eksplisit; hasil akhir tidak bisa dilanjutkan.
 
-Detail harga, reset HP/shield dan pola tembak: [kontrak upgrade Archer](UPGRADE_CONTRACT.md).
+Detail harga, reset HP/shield dan pola tembak: [kontrak upgrade Archer](UPGRADE_CONTRACT.md) dan [kontrak nexus](NEXUS_CONTRACT.md).
 
 Lihat [kontrak prototipe pertandingan](MATCH_CONTRACT.md) untuk oracle sumber, ledger, transaksi atomik, komposisi wave dan perbedaan yang disengaja. Ini belum seluruh aturan level Python atau build game produksi.
 
@@ -82,9 +83,10 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 - Inspeksi minion, wave uji manual, cap unit/event dan restart world yang bersih.
 - Mode siege: Archer/nexus tier 1, shield/regen, projectile satu hit, inspeksi struktur, wave uji satu/dua tim dan hasil nexus.
 - Upgrade Archer level 1–6, volley source dua/tiga panah, expected-level guard dan refund dinamis.
-- Prototipe terpisah: scheduler sumber, gold lokal, 18 slot, transaksi Archer build/sell, hasil otomatis dan lawan builder terjadwal.
-- Oracle wave/income/slot dan harga melalui metode Python asli; ledger/replay/lifecycle teruji.
-- Fixture dari metode numerik Tower/Castle asli; aturan minion dan bangunan tidak dipaksa menjadi satu formula.
+- Upgrade nexus 1–5 dengan scaling/AI minion, komposisi per-tier, dan formula HP/shield sumber.
+- Prototipe terpisah: scheduler per-tim, gold lokal, 18 slot, transaksi Archer + nexus, hasil otomatis dan lawan builder terjadwal.
+- Oracle wave/income/slot/harga/nexus melalui metode Python asli; ledger/replay/lifecycle teruji.
+- Fixture dari metode numerik Tower/Castle/Minion asli; aturan minion dan bangunan tidak dipaksa menjadi satu formula.
 - Simulasi demonstrasi dengan 60 physics tick/detik, terpisah dari render/UI.
 - Pause/resume, restart, kembali ke menu, cleanup screen, dan pause saat kehilangan fokus.
 - Adapter input mouse/touch; event mouse sintetis tidak menggandakan command touch.
@@ -93,7 +95,7 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 
 ## Yang belum dimigrasikan
 
-Hero/skill/animasi produksi, combat lanjutan/status effect, jalur upgrade/tower selain Archer, nexus upgrade/paid shield, wave lengkap dengan boss/scaling, AI asli, ekonomi permanen, item, boss, 54 level, progression, UI produksi, audio, save/migrasi save, cloud, pembayaran, Android export dan optimasi perangkat. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
+Hero/skill/animasi produksi, combat lanjutan/status effect, jalur upgrade/tower selain Archer, paid shield sebagai transaksi, wave lengkap dengan boss, AI asli, ekonomi permanen, item, boss, 54 level, progression, UI produksi, audio, save/migrasi save, cloud, pembayaran, Android export dan optimasi perangkat. Jangan menggunakan sandbox ini sebagai build pengganti game yang sudah rilis.
 
 ## Struktur
 
@@ -122,8 +124,9 @@ scenes/prototype/
   prototype_view.gd          Slot/range dan view siege read-only
 scripts/match/
   archer_upgrades.gd          Katalog resource Archer level 1–6
+  nexus_upgrades.gd           Katalog nexus 1–5 + tabel scale/AI
   prototype_battle.gd         World pertandingan terbatas level 1 / normal
-  wave_scheduler.gd          Clock, komposisi dan FIFO spawn
+  wave_scheduler.gd          Clock, komposisi per-tier dan FIFO spawn
   match_economy.gd            Gold integer, income milli, debit/refund/ledger
   slot_layout.gd             Posisi 18 slot dari sumber
   build_slot.gd              Identitas/ownership dan struktur yang mengisi slot
@@ -138,7 +141,7 @@ scripts/data/
   lane_layout.gd              Port jalur dari sumber Python
   minion_definition.gd        Schema Resource stat minion
 data/minions/                Lima resource .tres
-data/structures/             Archer level 1–6 dan nexus level 1 (.tres)
+data/structures/             Archer level 1–6 dan nexus level 1–5 (.tres)
 scripts/simulation/
   prototype_session.gd       Command build/sale ID, cancel pause dan seleksi slot
   combat_session.gd          Penghubung physics tick ke world combat
@@ -158,6 +161,9 @@ tests/
   upgrade_checks.gd          Tier/refund/volley/impact/cap dan guard transaksi
   upgrade_scene_checks.gd    UI quote/refund, stale command dan lifecycle
   upgrade_source_oracle.py   Metode asli upgrade/muzzle/volley Archer
+  nexus_checks.gd            Tier/HP/shield/scaling/komposisi/AI dan guard
+  nexus_scene_checks.gd      UI nexus, stale/pause/focus/result dan lifecycle
+  nexus_source_oracle.py     Metode asli Castle/Minion/wave/AI
   prototype_checks.gd        Wave/ledger/transaksi, result dan replay
   match_source_oracle.py      Metode sumber wave/income/slot/build-sale
   structure_source_oracle.py  Metode sumber numerik Tower/Castle/muzzle
@@ -170,11 +176,11 @@ Font disalin dari `assets/fonts/` di root repo, bukan dari hasil migrasi lama. L
 
 ## Pengujian
 
-### Status validasi (25 September 2026)
+### Status validasi (25 September 2026, sesi nexus)
 
-- **Lulus di GitHub Actions:** import engine **Godot 4.7.2**, seluruh tes native **1.905 pemeriksaan** pada commit `7c96c83`.
-- Bukti: [run 36153883271](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153883271), job `validate`; hasil juga diterbitkan sebagai annotation **Native Godot tests**.
-- **Lulus lokal:** 585 pemeriksaan statis; kontrak lima minion, 277 titik lane, stat bangunan, 60 kasus damage, wave, income, slot, upgrade dan 36 skenario volley terhadap Python; parsing/lint/format GDScript; syntax scene/resource.
+- **Checkpoint merged `main`:** import engine **Godot 4.7.2**, **1.905 pemeriksaan** pada commit `7c96c83` ([run 36153883271](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153883271)), annotation **Native Godot tests**.
+- **Sesi baru `arena/01a0d939-mystic-arena`:** domain + tes nexus sudah di-push; menunggu/memeriksa CI terbaru pada branch ini untuk angka final. Lihat `gh run list --branch arena/01a0d939-mystic-arena`.
+- **Lulus lokal:** 667 guardrail statis; kontrak minion/lane/bangunan/wave/income/slot/upgrade Archer plus oracle nexus (tier/HP/shield/scaling/komposisi/AI) terhadap Python; parsing/lint/format GDScript.
 - **Belum diverifikasi:** tampilan GPU/screenshot, resize secara visual, Windows fisik, touchscreen, Android dan performa perangkat. CI headless bukan pengganti tes ini.
 
 Unduhan binary di sandbox masih terkendala TLS, tetapi tes runtime berhasil dijalankan pada runner GitHub. Hasil native yang dahulu tertunda pada tahap 1 sekarang sudah ada. Lihat workflow terbaru pada branch untuk hasil perubahan setelah checkpoint tersebut.
@@ -201,6 +207,7 @@ Pastikan import tidak menampilkan `ERROR` dan runner mengeluarkan `PASS: ... che
 
 ### Cakupan tes native yang sudah dijalankan di CI
 
+- Nexus 1–5: tier/harga, formula HP + bonus 500/cap, shield resize hanya-bila-purchased, `set_wave` 10/11, 25 scaling minion, komposisi 5 tier, 20 kasus AI, queue-tetap-scaling-berubah, guard stale/max/poor/dead/enemy/result, UI nexus/pause/focus/restart.
 - Archer level 1–6: resource/harga/refund, full heal/shield restore tanpa reset cooldown, resource isolation, 36 source volleys, whole-volley cap, impact/overkill, UI upgrade/stale-level/pause/focus/restart.
 
 - Prototipe: dua trace source 3.800 tick, komposisi wave, 18 slot, 12 skenario income, source build/UI-sale prices, ledger dan backpressure.
@@ -234,6 +241,7 @@ python godot_rebuild/tests/check_source_contract.py
 python godot_rebuild/tests/structure_source_oracle.py
 python godot_rebuild/tests/match_source_oracle.py
 python godot_rebuild/tests/upgrade_source_oracle.py
+python godot_rebuild/tests/nexus_source_oracle.py
 ```
 
 Untuk parser/linter, pasang `gdtoolkit==4.5.0` dalam virtualenv terpisah. Tidak perlu memasangnya di komputer pemain.
@@ -251,11 +259,11 @@ Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot
 7. Alt+Tab: arena pause ketika kehilangan fokus.
 8. Restart mengembalikan penanda ke posisi awal tanpa seleksi.
 9. Buka **Tower & nexus**, inspeksi bangunan, kirim wave satu tim, amati projectile dan shield/HP.
-10. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Upgrade Archer dan periksa perubahan harga/refund/HP/shield serta jumlah panah. Pause harus membekukan keduanya; restart mengembalikan 1000 G.
+10. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Upgrade Archer dan periksa perubahan harga/refund/HP/shield serta jumlah panah. Pilih nexus biru, upgrade ke level 2+ dan amati HP/shield/komposisi/minion menguat. Pause harus membekukan keduanya; restart mengembalikan 1000 G dan nexus level 1.
 11. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
 
 ## Langkah pengembangan berikutnya
 
-Fondasi, combat minion, siege tier 1 dan prototipe wave/ekonomi/build-sell sudah lulus runtime CI. Berikutnya: uji Windows → nexus upgrade bersama minion scaling/AI tier → tower tambahan → hero/skill dan AI asli → lengkapi satu pertandingan kecil → perluasan sistem/konten. Lihat [rencana lengkap](../docs/RENCANA_MIGRASI_GODOT_DARI_NOL.md).
+Fondasi, combat minion, siege tier 1, prototipe wave/ekonomi/build-sell, upgrade Archer, dan upgrade nexus + scaling/AI/komposisi sudah diimplementasikan (CI sesi baru menyusul). Berikutnya: uji Windows → tower tambahan → hero/skill dan AI asli → lengkapi satu pertandingan kecil → perluasan sistem/konten. Lihat [rencana lengkap](../docs/RENCANA_MIGRASI_GODOT_DARI_NOL.md).
 
 Jangan mengedit game Python atau mengaktifkan converter lama untuk membuat proyek ini berjalan. Jika menemukan error, simpan pesan lengkap beserta versi Godot dan langkah reproduksi, lalu perbaiki di proyek baru.
