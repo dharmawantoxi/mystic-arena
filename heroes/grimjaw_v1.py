@@ -33,6 +33,16 @@ Yang TIDAK berubah (identitas & gameplay Grimjaw):
 Gameplay, kontrol sentuh, generasi dunia, dan damage tetap milik Mystic
 Arena; modul ini hanya memiliki pose visual Grimjaw dan efek canvas
 fallback-nya. 100% PROSEDURAL - tidak ada PNG/JPG/GIF/sprite-sheet.
+
+Catatan pass kebersihan (review pemain):
+  * KAKI digambar sebagai rect grid (pola Kaizen): paha + greave baja +
+    boot dengan sol gelap - bukan lagi garis tebal/poligon bot raksasa.
+  * PEDANG digambar sebagai bilah segmen garis (pola katana Kaizen)
+    dengan garda emas tegak-lurus sumbu bilah (ikut rotasi), hilt wrap
+    merah + pommel emas, dan kepalan yang MENUTUP pangkal bilah sehingga
+    bilah selalu terlihat menyatu dengan tangan.
+  * Detail sub-piksel (garis 0.6px, titik api melayang) dibuang supaya
+    hasil downscale HD bersih dan mulus.
 """
 
 import math
@@ -916,19 +926,18 @@ def install(legacy_cls):
 
         @staticmethod
         def _draw_pixel_rear_arm(R, RO, line, elbow, hand, detail=False):
-            """Lengan belakang (tinju): bahu -> siku -> kepalan."""
+            """Lengan belakang (tinju): 2 pass bersih + kepalan."""
             P = GrimjawV1Renderer
             sh = (19.5, 21.0)
-            line(sh, elbow, P.C_OUTLINE, 5.0)
-            line(sh, elbow, P.C_SKIN_DARK, 3.6)
-            line(elbow, hand, P.C_OUTLINE, 4.6)
-            line(elbow, hand, P.C_SKIN_MID, 3.2)
-            line(elbow, hand, P.C_SKIN_LIGHT, 1.0)
-            RO(hand[0] - 1.5, hand[1] - 1.5, 3, 3, P.C_SKIN_DARK)
+            line(sh, elbow, P.C_OUTLINE, 4.8)
+            line(sh, elbow, P.C_SKIN_DARK, 3.4)
+            line(elbow, hand, P.C_OUTLINE, 4.4)
+            line(elbow, hand, P.C_SKIN_DARK, 3.0)
+            RO(hand[0] - 1.6, hand[1] - 1.6, 3.2, 3.2, P.C_SKIN_DARK)
+            R(hand[0] - 1.0, hand[1] - 1.2, 2.0, 0.8, P.C_SKIN_MID)
             if detail:
-                for kn in (-1, 0, 1):
-                    R(hand[0] + kn - 0.3, hand[1] + 0.8, 0.6, 0.9,
-                      P.C_OUTLINE)
+                for kn in (-0.9, 0.1):
+                    R(hand[0] + kn, hand[1] + 0.7, 0.7, 0.9, P.C_OUTLINE)
 
         @staticmethod
         def _draw_pixel_cloth_teeth(surface, point, spine_src, top_src,
@@ -984,48 +993,43 @@ def install(legacy_cls):
         @staticmethod
         def _draw_pixel_legs(surface, R, RO, point, line, front_step,
                              rear_step, front_lift, rear_lift, walking):
-            """Kaki: foot solver (menapak / terangkat), stance mekar."""
+            """Kaki: rect grid bersih (pola Kaizen) - paha, greave baja,
+            boot kokoh dengan sol gelap.  Tanpa garis spageti/poligon
+            raksasa supaya tetap tajam setelah downscale HD."""
             P = GrimjawV1Renderer
             for side, step, lift, dark in (
                     (-1, rear_step, rear_lift, True),
                     (1, front_step, front_lift, False)):
-                hip = (24.0 + side * 3.5, 32.5)
-                knee = (24.0 + side * 4.0 + step * 0.25, 38.5 - lift * 0.35)
-                ankle = (24.0 + side * 4.5 + step * 0.40, 43.5 - lift * 0.40)
-                fx = 24.0 + side * 5.0 + step
-                thigh = P.C_SKIN_DARK if dark else P.C_SKIN_MID
-                hi = P.C_SKIN_MID if dark else P.C_SKIN_LIGHT
-                line(hip, knee, P.C_OUTLINE, 4.6)
-                line(hip, knee, thigh, 3.4)
-                line(hip, knee, hi, 1.0)
-                line(knee, ankle, P.C_OUTLINE, 4.2)
-                line(knee, ankle, P.C_METAL_MID, 3.0)
-                line(knee, ankle, P.C_METAL_LIGHT, 1.0)
-                band = (knee[0], knee[1] + 1.5)
-                R(band[0] - 2.2, band[1] - 0.6, 4.4, 1.2, P.C_GOLD_DARK)
-                R(band[0] - 1.8, band[1] + 0.8, 3.6, 0.8, P.C_GOLD_MID)
+                bx = 22.0 if side < 0 else 27.5
+                off = int(round(step))
+                up = int(round(lift))
+                skin = P.C_SKIN_DARK if dark else P.C_SKIN_MID
+                # Paha: menempel di hip (tidak ikut melangkah).
+                RO(bx - 2.6, 32.5, 5.2, 5.5, skin)
+                R(bx - 1.8, 33.4, 1.5, 3.4,
+                  P.C_SKIN_MID if dark else P.C_SKIN_LIGHT)
+                # Lutut: band emas.
+                kx = bx - 2.0 + off * 0.5
+                R(kx, 37.3, 4.0, 1.3, P.C_GOLD_DARK)
+                R(kx + 0.6, 37.4, 2.8, 0.8, P.C_GOLD_MID)
+                # Greave baja (menyusut saat kaki terangkat = lutut menekuk).
+                gx0 = bx - 2.2 + off
+                gy0 = 38.4 - up * 0.9
+                RO(gx0, gy0, 4.4, 6.2 - up * 0.7,
+                   P.C_METAL_DARK if dark else P.C_METAL_MID)
+                R(gx0 + 0.8, gy0 + 1.0, 1.2, 3.8 - up * 0.5,
+                  P.C_METAL_MID if dark else P.C_METAL_LIGHT)
+                # Boot: badan + toe depan + sol gelap tebal.
+                fx0 = bx - 3.0 + off
+                fy0 = 44.4 - up
                 boot = P.C_BOOT_DARK if dark else P.C_BOOT_MID
-                bpts = [(fx - 8, 43 - lift), (fx + 8, 43 - lift),
-                        (fx + 10, 46 - lift), (fx + 12, 49.5 - lift),
-                        (fx + 6, 50.5 - lift), (fx - 9, 50.5 - lift)]
-                cpts = [point(*q) for q in bpts]
-                P._poly(surface, P.C_OUTLINE,
-                        [(x - 1.5, y) for x, y in cpts])
-                P._poly(surface, boot, cpts)
-                s0 = point(fx - 9, 48.5 - lift)
-                s1 = point(fx + 12, 48.5 - lift)
-                pygame.draw.line(surface, P.C_OUTLINE,
-                                 (int(s0[0]), int(s0[1])),
-                                 (int(s1[0]), int(s1[1])), 3)
-                t0 = point(fx + 5, 44 - lift)
-                t1 = point(fx + 11, 47.5 - lift)
-                pygame.draw.line(surface, P.C_BOOT_LIGHT,
-                                 (int(t0[0]), int(t0[1])),
-                                 (int(t1[0]), int(t1[1])), 2)
-                if lift == 0 and walking:
-                    gx, gy = point(fx, 52)
-                    P._ellipse(surface, (*P.C_OUTLINE, 70),
-                               (int(gx - 12), int(gy - 3), 24, 6))
+                RO(fx0, fy0, 7.4, 5.0, boot)
+                if not dark:
+                    RO(fx0 + 6.2, fy0 + 1.5, 3.4, 3.5, boot)
+                    R(fx0 + 6.4, fy0 + 1.8, 1.3, 2.6, P.C_BOOT_LIGHT)
+                R(fx0 + 0.6, fy0 + 0.6, 4.4, 1.0,
+                  P.C_BOOT_LIGHT if not dark else boot)
+                R(fx0 - 0.4, fy0 + 4.4, 10.4, 1.5, P.C_OUTLINE)
 
         @staticmethod
         def _draw_pixel_torso(R, RO, line, detail=False):
@@ -1036,8 +1040,6 @@ def install(legacy_cls):
             RO(18.0, 26.0, 12.0, 3.5, P.C_SKIN_MID)
             R(28.5, 19.0, 3.0, 9.0, P.C_SKIN_DARK)
             R(17.5, 19.0, 5.0, 2.0, P.C_SKIN_LIGHT)
-            line((19.0, 22.0), (22.0, 23.0), P.C_SKIN_DARK, 0.6)
-            line((28.5, 22.0), (25.5, 23.0), P.C_SKIN_DARK, 0.6)
             line((23.5, 19.0), (23.5, 28.0), P.C_MASK_LINE, 0.6)
             line((20.0, 25.0), (27.0, 25.0), P.C_SKIN_DARK, 0.6)
             # Sash diagonal (tali merah).
@@ -1099,28 +1101,31 @@ def install(legacy_cls):
 
         @staticmethod
         def _draw_pixel_front_arm(R, RO, line, elbow_src, grip_src):
-            """Lengan blade: bahu -> siku -> gagang + bracer baja."""
+            """Lengan blade: 2 pass bersih + bracer baja kotak."""
             P = GrimjawV1Renderer
             sh = (32.0, 21.0)
             line(sh, elbow_src, P.C_OUTLINE, 4.6)
-            line(sh, elbow_src, P.C_SKIN_MID, 3.4)
-            line(sh, elbow_src, P.C_SKIN_LIGHT, 1.0)
+            line(sh, elbow_src, P.C_SKIN_MID, 3.2)
             line(elbow_src, grip_src, P.C_OUTLINE, 4.2)
-            line(elbow_src, grip_src, P.C_SKIN_LIGHT, 3.0)
-            mx = elbow_src[0] * 0.7 + grip_src[0] * 0.3
-            my = elbow_src[1] * 0.7 + grip_src[1] * 0.3
-            line(elbow_src, (mx, my), P.C_METAL_DARK, 4.4)
-            line(elbow_src, (mx, my), P.C_METAL_MID, 3.2)
-            R(elbow_src[0] - 1.8, elbow_src[1] + 1.0, 3.6, 0.8,
-              P.C_GOLD_MID)
+            line(elbow_src, grip_src, P.C_SKIN_LIGHT, 2.8)
+            # Bracer: kotak baja di lengan bawah (bukan garis tipis).
+            mx = elbow_src[0] * 0.72 + grip_src[0] * 0.28
+            my = elbow_src[1] * 0.72 + grip_src[1] * 0.28
+            RO(mx - 1.8, my - 1.6, 3.6, 3.2, P.C_METAL_MID)
+            R(mx - 1.1, my - 1.1, 1.1, 2.4, P.C_METAL_LIGHT)
+            R(mx - 1.8, my + 0.6, 3.6, 0.8, P.C_GOLD_DARK)
 
         @staticmethod
-        def _draw_pixel_blade(surface, R, RO, point, grip_src, tip_src,
+        def _draw_pixel_blade(surface, R, RO, point, line, grip_src, tip_src,
                               phase, hot=False, detail=False):
-            """Flame blade pixel: tangga anti-sudut + gigi api.
+            """Flame blade: bilah baja bersegmen + garda emas terputar.
 
-            Gagang & ujung berasal dari geometri lokal renderer sehingga
-            trail lapisan hidup menempel PERSIS di bilah yang digambar.
+            Pola bilah mengikuti Kaizen V1 (segmen garis outline + isi)
+            supaya terbaca sebagai PEDANG, bukan tangga kotak.  Garda,
+            hilt, dan pommel dihitung pada sumbu bilah sehingga selalu
+            menempel di genggaman pada sudut apa pun.  Gagang & ujung
+            tetap berasal dari geometri lokal renderer sehingga trail
+            lapisan hidup menempel PERSIS di bilah yang digambar.
             """
             P = GrimjawV1Renderer
             gx, gy = grip_src
@@ -1129,49 +1134,78 @@ def install(legacy_cls):
             L = max(1e-6, math.hypot(dx, dy))
             ux, uy = dx / L, dy / L
             nx, ny = -uy, ux
-            steps = 12
-            for pas, wmul in ((0, 2.2), (1, 1.7), (2, 0.7)):
-                for i in range(steps):
-                    t = (i + 0.5) / steps
-                    taper = 1.0 - (i / steps) * 0.55
-                    cx = gx + ux * L * t
-                    cy = gy + uy * L * t
-                    half = 2.0 * wmul * 0.5 * taper + 0.15
-                    if pas == 0:
-                        col = P.C_OUTLINE
-                    elif pas == 1:
-                        col = (P.C_METAL_DARK if t < 0.3
-                               else P.C_METAL_MID if t < 0.7
-                               else P.C_METAL_LIGHT)
-                    else:
-                        col = P.C_METAL_SHINE
-                    R(cx - half, cy - half, half * 2, half * 2, col)
-            # Gigi api di tepi luar (flicker deterministik).
-            ramp = (P.C_FIRE_DARK, P.C_FIRE_MID, P.C_FIRE_LIGHT,
-                    P.C_FIRE_HOT if hot else P.C_FIRE_LIGHT)
-            for i in range(7):
-                t = 0.12 + 0.76 * i / 6
-                fl = 1.0 + math.sin(phase * 5.0 + i * 2.1) * 0.3
-                bx = gx + ux * L * t + nx * 1.9 * fl
-                by = gy + uy * L * t + ny * 1.9 * fl
-                sz = (0.9 + 0.9 * math.sin(i * 2.4 + 1.0) ** 2) * fl
-                col = ramp[min(len(ramp) - 1, int(t * len(ramp)))]
-                R(bx - sz * 0.5, by - sz * 0.5, sz, sz, col)
-            # Guard emas + wrap gagang + kepalan menutup gagang.
-            R(gx - 2.2, gy - 0.9, 4.4, 1.8, P.C_GOLD_DARK)
-            R(gx - 1.8, gy - 0.6, 3.6, 1.2, P.C_GOLD_LIGHT)
-            R(gx - 1.0, gy - 1.0, 2, 2, P.C_ARMOR_DARK)
-            RO(gx - 1.6, gy - 1.6, 3.2, 3.2, P.C_SKIN_MID)
-            R(gx - 1.0, gy - 1.4, 2, 0.8, P.C_SKIN_HIGH)
-            # Tip cap: titik terang di ujung bilah.
-            R(tx - 0.9, ty - 0.9, 1.8, 1.8,
+
+            # 1) Hilt: wrap merah + pommel emas di BELAKANG genggaman.
+            h0 = (gx - ux * 1.0, gy - uy * 1.0)
+            h1 = (gx - ux * 4.6, gy - uy * 4.6)
+            line(h0, h1, P.C_OUTLINE, 2.6)
+            line(h0, h1, P.C_RED_DARKEST, 1.6)
+            p0 = (gx - ux * 5.2, gy - uy * 5.2)
+            p1 = (gx - ux * 6.2, gy - uy * 6.2)
+            line(p0, p1, P.C_OUTLINE, 2.4)
+            line(p0, p1, P.C_GOLD_DARK, 1.4)
+            line(p0, p1, P.C_GOLD_LIGHT, 0.6)
+
+            # 2) Bilah: segmen outline + baja, gradasi gelap->terang ke
+            #    ujung, menirus pada 25% terakhir (kissaki).
+            N = 14
+            for i in range(N):
+                t0, t1 = i / N, (i + 1) / N
+                a = (gx + dx * t0, gy + dy * t0)
+                b = (gx + dx * t1, gy + dy * t1)
+                w_out = 3.0 if t1 < 0.75 else 2.4
+                line(a, b, P.C_OUTLINE, w_out)
+                steel = (P.C_METAL_DARK if t0 < 0.2 else
+                         P.C_METAL_MID if t0 < 0.55 else P.C_METAL_LIGHT)
+                line(a, b, steel, w_out - 1.2)
+            # Kilau sisi dalam bilah (edge shine) - satu garis tipis.
+            e0 = (gx + ux * L * 0.12 - nx * 1.0, gy + uy * L * 0.12 - ny * 1.0)
+            e1 = (gx + ux * L * 0.80 - nx * 1.0, gy + uy * L * 0.80 - ny * 1.0)
+            line(e0, e1, P.C_METAL_SHINE, 0.7)
+
+            # 3) Ujung: cap kissaki terang.
+            a = (tx - ux * 1.8, ty - uy * 1.8)
+            line(a, (tx, ty), P.C_OUTLINE, 2.4)
+            line(a, (tx, ty), P.C_METAL_SHINE, 1.0)
+            R(tx - 0.8, ty - 0.8, 1.6, 1.6,
               P.C_FIRE_HOT if hot else P.C_METAL_SHINE)
+
+            # 4) Garda emas: palang tegak-lurus sumbu bilah (ikut rotasi).
+            g0 = (gx + nx * 2.6, gy + ny * 2.6)
+            g1 = (gx - nx * 2.6, gy - ny * 2.6)
+            line(g0, g1, P.C_OUTLINE, 3.2)
+            line(g0, g1, P.C_GOLD_DARK, 2.0)
+            line((gx + nx * 0.2, gy + ny * 0.2),
+                 (gx + nx * 1.4, gy + ny * 1.4), P.C_GOLD_LIGHT, 0.8)
+
+            # 5) Gigi api rapi di tepi luar (identitas flame blade).
+            for i in range(3):
+                t = 0.28 + i * 0.22
+                fl = 1.0 + math.sin(phase * 4.2 + i * 2.0) * 0.35
+                b0 = (gx + ux * L * t + nx * 1.1, gy + uy * L * t + ny * 1.1)
+                b1 = (gx + ux * L * t + nx * (1.3 + 1.7 * fl),
+                      gy + uy * L * t + ny * (1.3 + 1.7 * fl))
+                line(b0, b1, P.C_FIRE_DARK, 1.4)
+                line(b0, b1,
+                     P.C_FIRE_LIGHT if i == 1 else P.C_FIRE_MID, 0.8)
             if hot:
+                line((gx + ux * L * 0.2 + nx * 1.0, gy + uy * L * 0.2 + ny * 1.0),
+                     (tx + nx * 0.8, ty + ny * 0.8), P.C_FIRE_LIGHT, 0.8)
                 hx, hy = point(tx, ty)
                 P._spark_star(surface, hx, hy, 9, P.C_FIRE_HOT, 200,
                               4, rot=phase)
             if detail:
-                pass
+                R(gx + ux * L * 0.45 + nx * 1.5, gy + uy * L * 0.45 + ny * 1.5,
+                  0.8, 0.8, P.C_GOLD_MID)
+
+            # 6) Kepalan MENUTUP pangkal bilah (digambar terakhir ->
+            #    bilah selalu nyambung ke tangan, tidak melayang).
+            RO(gx - 1.9, gy - 1.8, 3.8, 3.6, P.C_SKIN_MID)
+            R(gx - 1.3, gy - 1.5, 2.6, 0.9, P.C_SKIN_HIGH)
+            R(gx - 1.9, gy + 0.7, 3.8, 0.7, P.C_SKIN_DARK)
+            line((gx - 1.3 - ux * 0.6, gy - 1.0 - uy * 0.6),
+                 (gx + 1.3 - ux * 0.6, gy + 0.3 - uy * 0.6),
+                 P.C_SKIN_DARK, 0.9)
 
         @staticmethod
         def _draw_pixel_mask(R, RO, line, phase, anim_name, ward=False,
@@ -1369,7 +1403,7 @@ def install(legacy_cls):
             if anim_name == "spin":
                 P._draw_spin_flame_sweep(surface, origin[0], origin[1],
                                          facing, spin_phase, phase)
-            P._draw_pixel_blade(surface, R, RO, point, grip_s, tip_s,
+            P._draw_pixel_blade(surface, R, RO, point, line, grip_s, tip_s,
                                 phase, hot=bool(crit or omni),
                                 detail=detail)
             P._draw_pixel_mask(R2, RO2, line2, phase, anim_name, ward,
@@ -1390,9 +1424,6 @@ def install(legacy_cls):
                     ey = origin[1] - 55 - (i % 2) * 8
                     P._spark_star(surface, ex, ey, 4, P.C_HAIR_LIGHT,
                                   150, 4, rot=phase + i)
-            ex = origin[0] + facing * 2 + math.sin(phase * 1.3) * 4
-            P._spark_star(surface, ex, origin[1] - 58, 3, P.C_EMBER,
-                          110, 4, rot=phase * 0.7)
 
         @staticmethod
         def draw_grimjaw_sprite(surface, origin, flip_left, anim_name,
@@ -1437,9 +1468,6 @@ def install(legacy_cls):
                 crit=crit, omni=omni, detail=detail,
                 death_frame=death_frame)
             f = -1 if facing < 0 else 1
-            # Cluster api menjaga ramp flame tetap hidup after downscale.
-            P._rect(surface, (*P.C_HAIR_MID, 225),
-                    (cx + f * 15, cy - 12, 2, 1))
             if anim == "attack":
                 tip = P._blade_tip_local(float(phase), "attack",
                                          float(attack_progress))
