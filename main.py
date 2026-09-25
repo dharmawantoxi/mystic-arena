@@ -47,6 +47,7 @@ from mobile import sidepanel as panel_mod          # noqa: E402
 from mobile import kaizen_review as kaizen_review_mod  # noqa: E402
 from mobile import vex_review as vex_review_mod        # noqa: E402
 from mobile import grimjaw_review as grimjaw_review_mod  # noqa: E402
+from mobile import sylara_review as sylara_review_mod  # noqa: E402
 
 debug_mod.install_crash_handler()
 
@@ -281,6 +282,20 @@ def main():
             # Review is a development aid; it must never interrupt combat.
             print("[VEX REVIEW] draw gagal: %s" % exc)
 
+    def _gambar_sylara_review():
+        """Draw the opt-in Sylara sheet after the arena frame."""
+        if not sylara_review_mod.enabled():
+            return
+        panel_rect = plat.get_panel_rect()
+        target = (plat.get_full_surface() if panel_rect is not None
+                  else screen)
+        try:
+            sylara_review_mod.draw(target, panel_rect=panel_rect,
+                                   font_getter=get_font)
+        except Exception as exc:
+            # Review is a development aid; it must never interrupt combat.
+            print("[SYLARA REVIEW] draw gagal: %s" % exc)
+
     def _gambar_grimjaw_review():
         """Draw the opt-in Grimjaw sheet after the arena frame."""
         if not grimjaw_review_mod.enabled():
@@ -415,7 +430,10 @@ def main():
 
             # ── keyboard: hanya untuk pengembangan di PC ──
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_F8:
+                if event.key == pygame.K_F7:
+                    # Same opt-in visual review card for the Sylara V1 rig.
+                    sylara_review_mod.toggle()
+                elif event.key == pygame.K_F8:
                     debug.toggle()
                 elif event.key == pygame.K_F9:
                     # Optional visual review card; normal gameplay stays
@@ -618,6 +636,7 @@ def main():
             _gambar_kaizen_review()
             _gambar_vex_review()
             _gambar_grimjaw_review()
+            _gambar_sylara_review()
             perf.PHASES.mark("hud")
             hud.draw(screen, getattr(game, "animation_time", 0))
             perf.PHASES.end()
@@ -656,6 +675,7 @@ def main():
                 _gambar_kaizen_review()
                 _gambar_vex_review()
                 _gambar_grimjaw_review()
+                _gambar_sylara_review()
             sim_acc += min(clock.get_time(), 250)
             _n = 0
             while sim_acc >= FIXED_DT_MS and _n < MAX_CATCHUP:
