@@ -2,7 +2,6 @@ extends "res://scripts/combat/minion_battle.gd"
 ## Tier-1 siege laboratory. Reuses minion simulation and one authoritative damage path.
 
 const StructureDefinition = preload("res://scripts/data/structure_definition.gd")
-const StructureState = preload("res://scripts/combat/structure_state.gd")
 const Projectile = preload("res://scripts/combat/projectile_state.gd")
 const ARCHER = preload("res://data/structures/archer_level_1.tres")
 const NEXUS = preload("res://data/structures/nexus_level_1.tres")
