@@ -4,20 +4,20 @@
 
 [resource]
 script = ExtResource("1")
-id = "nexus_level_1"
-display_name = "Nexus Lv.1"
-max_hp = 4000
-damage = 35
+id = "nexus_level_3"
+display_name = "Nexus Lv.3"
+max_hp = 8500
+damage = 80
 speed_px_per_tick = 0.0
-attack_range_px = 150.0
-attack_cooldown_ticks = 45
+attack_range_px = 180.0
+attack_cooldown_ticks = 35
 gold_reward = 0
 radius_px = 45.0
 regen_per_tick = 0.0
 armor = 0.0
 magic_resist = 0.0
 structure_kind = "nexus"
-shield_capacity = 4000.0
+shield_capacity = 8500.0
 hp_regen_delay_ticks = 0
 shield_regen_enabled = true
 shield_regen_delay_ticks = 120
@@ -26,6 +26,6 @@ shield_damage_reduction = 0.88
 free_shield_waves = 10
 projectile_speed_px_per_tick = 8.0
 projectile_hit_radius_px = 4.0
-level = 1
-upgrade_price = 0
+level = 3
+upgrade_price = 900
 sale_refund = 0

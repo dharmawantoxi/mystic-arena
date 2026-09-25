@@ -24,6 +24,9 @@ func _ready() -> void:
 	%UpgradeButton.pressed.connect(
 		func() -> void: match_session.request_upgrade(match_session.selected_id)
 	)
+	%NexusButton.pressed.connect(
+		func() -> void: match_session.request_nexus_upgrade(match_session.selected_id)
+	)
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -68,7 +71,10 @@ func _process(_delta: float) -> void:
 	)
 	var price := world.upgrade_price(simulation.selected_id)
 	%UpgradeButton.disabled = locked or price <= 0 or world.economy.gold[0] < price
+	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
+	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
 	%UpgradeButton.text = "Upgrade Archer"
+	%NexusButton.text = "Upgrade Nexus"
 	%SellButton.text = "Jual tower"
 	if tower != null and tower.settings().structure_kind == "tower":
 		%SellButton.text = "Jual · %d G" % tower.settings().sale_refund
@@ -77,6 +83,15 @@ func _process(_delta: float) -> void:
 			if price > 0
 			else "Archer maksimum" if tower.settings().level == 6 else "Tower lawan"
 		)
+	if tower != null and tower.settings().structure_kind == "nexus":
+		if tower.team == 0:
+			%NexusButton.text = (
+				"Nexus Lv.%d · %d G" % [tower.settings().level + 1, nexus_price]
+				if nexus_price > 0
+				else "Nexus maksimum"
+			)
+		else:
+			%NexusButton.text = "Nexus lawan"
 	%SelectionLabel.text = "Slot biru: bangun Archer. Tower biru: jual kembali."
 	if selected != null:
 		%SelectionLabel.text = (
@@ -89,10 +104,14 @@ func _process(_delta: float) -> void:
 				selected.definition.max_hp
 			]
 		)
-		if tower != null:
+		if tower != null and tower.settings().structure_kind == "tower":
 			%SelectionLabel.text += (
 				" · Shield %.0f · DMG %d · %d panah"
 				% [tower.shield, tower.definition.damage, tower.settings().volley_count]
+			)
+		elif tower != null:
+			%SelectionLabel.text += (
+				" · Shield %.0f · DMG %d" % [tower.shield, tower.definition.damage]
 			)
 	elif slot != null:
 		%SelectionLabel.text = (

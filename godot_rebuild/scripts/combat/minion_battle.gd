@@ -6,6 +6,7 @@ const Definition = preload("res://scripts/data/minion_definition.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
 const DamageRules = preload("res://scripts/combat/damage_rules.gd")
+const StructureState = preload("res://scripts/combat/structure_state.gd")
 const MAX_UNITS := 120
 const MAX_EVENTS := 64
 const BLUE := 0
@@ -175,16 +176,109 @@ func select_at(point: Vector2) -> int:
 
 
 func _find_target(unit: UnitState) -> UnitState:
-	var nearest: UnitState = null
-	var best_distance := unit.definition.attack_range_px + 30.0
+	var ordered: Array[UnitState] = []
 	for candidate in units:
 		if not candidate.alive or candidate.team == unit.team:
 			continue
-		var distance := unit.position.distance_to(candidate.position)
-		if distance < best_distance:
-			best_distance = distance
-			nearest = candidate
-	return nearest
+		ordered.append(candidate)
+	return _select_ai_target(unit, ordered)
+
+
+func _select_ai_target(unit: UnitState, ordered: Array[UnitState]) -> UnitState:
+	# Port of Minion._find_target_smart 1-5. Stable ID order replaces the
+	# spatial-hash order; ties keep the first candidate (strict < scans).
+	var in_range: Array = []
+	for candidate in ordered:
+		var dist := unit.position.distance_to(candidate.position)
+		if dist <= unit.definition.attack_range_px:
+			in_range.append([candidate, dist])
+	if in_range.is_empty():
+		return _fallback_target(unit, ordered)
+	var chosen: UnitState = null
+	match unit.ai_level:
+		2:
+			chosen = _ai_same_lane(in_range, unit.lane)
+		3:
+			chosen = _lowest_hp(in_range)
+		4:
+			chosen = _ai_minion_or_nearest(in_range)
+		5:
+			chosen = _ai_siege_priority(in_range)
+		_:
+			chosen = _nearest(in_range)
+	return chosen
+
+
+func _fallback_target(unit: UnitState, ordered: Array[UnitState]) -> UnitState:
+	var best: UnitState = null
+	var best_dist := unit.definition.attack_range_px + 30.0
+	for candidate in ordered:
+		var dist := unit.position.distance_to(candidate.position)
+		if dist < best_dist:
+			best_dist = dist
+			best = candidate
+	return best
+
+
+func _ai_same_lane(pairs: Array, lane: int) -> UnitState:
+	for pair in pairs:
+		var cand: UnitState = pair[0]
+		if not (cand is StructureState) and cand.lane == lane:
+			return cand
+	return pairs[0][0] as UnitState
+
+
+func _ai_minion_or_nearest(pairs: Array) -> UnitState:
+	var minions: Array = []
+	for pair in pairs:
+		if not (pair[0] is StructureState):
+			minions.append(pair)
+	if not minions.is_empty():
+		return _lowest_hp(minions)
+	return _nearest(pairs)
+
+
+func _ai_siege_priority(pairs: Array) -> UnitState:
+	for pair in pairs:
+		var cand: UnitState = pair[0]
+		if cand.definition.max_hp >= 1500:
+			return cand
+	var towers: Array = []
+	for pair in pairs:
+		var cand := pair[0] as StructureState
+		# Source checks hasattr(tower_kind), which Tower never sets;
+		# observable behavior is identical because every tower is
+		# already captured by the max_hp>=1500 branch above.
+		if cand != null and cand.settings().structure_kind == "tower":
+			towers.append(pair)
+	if not towers.is_empty():
+		return _lowest_hp(towers)
+	var minions: Array = []
+	for pair in pairs:
+		if not (pair[0] is StructureState):
+			minions.append(pair)
+	if not minions.is_empty():
+		return _lowest_hp(minions)
+	return pairs[0][0] as UnitState
+
+
+func _nearest(pairs: Array) -> UnitState:
+	var best: UnitState = pairs[0][0]
+	var best_dist: float = pairs[0][1]
+	for pair in pairs:
+		if pair[1] < best_dist:
+			best_dist = pair[1]
+			best = pair[0]
+	return best
+
+
+func _lowest_hp(pairs: Array) -> UnitState:
+	var best: UnitState = pairs[0][0]
+	for pair in pairs:
+		var cand: UnitState = pair[0]
+		if cand.hp < best.hp:
+			best = cand
+	return best
 
 
 func _follow_lane(unit: UnitState) -> void:

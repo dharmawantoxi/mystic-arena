@@ -13,3 +13,4 @@ var cooldown_ticks := 0
 var target_id := -1
 var alive := true
 var facing := 1.0
+var ai_level := 1

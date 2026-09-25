@@ -58,7 +58,10 @@ func spawn_structure(
 	structure.position = at
 	structure.definition = data
 	structure.hp = data.max_hp
+	structure.shield_max = data.shield_capacity
 	structure.shield = data.shield_capacity
+	structure.castle_shield_purchased = false
+	structure.free_shield_active = true
 	structure.set_wave(wave_count)
 	structures.append(structure)
 	_by_id[structure.id] = structure
@@ -200,20 +203,16 @@ func select_at(point: Vector2) -> int:
 
 
 func _find_target(unit: UnitState) -> UnitState:
-	var nearest := super._find_target(unit)
-	var distance := (
-		unit.position.distance_to(nearest.position)
-		if nearest != null
-		else unit.definition.attack_range_px + 30.0
-	)
+	var ordered: Array[UnitState] = []
+	for candidate in units:
+		if not candidate.alive or candidate.team == unit.team:
+			continue
+		ordered.append(candidate)
 	for structure in structures:
 		if not structure.alive or structure.team == unit.team:
 			continue
-		var candidate_distance := unit.position.distance_to(structure.position)
-		if candidate_distance < distance:
-			distance = candidate_distance
-			nearest = structure
-	return nearest
+		ordered.append(structure)
+	return _select_ai_target(unit, ordered)
 
 
 func _follow_lane(unit: UnitState) -> void:

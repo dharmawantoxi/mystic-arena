@@ -3,7 +3,10 @@ extends "res://scripts/combat/unit_state.gd"
 const Damage = preload("res://scripts/combat/damage_rules.gd")
 const StructureDefinition = preload("res://scripts/data/structure_definition.gd")
 var shield := 0.0
+var shield_max := 0.0
 var shield_active := true
+var free_shield_active := true
+var castle_shield_purchased := false
 var no_damage_ticks := 0
 
 
@@ -14,12 +17,16 @@ func settings() -> StructureDefinition:
 func set_wave(wave: int) -> void:
 	if settings().structure_kind != "nexus" or not alive:
 		return
-	# Paid nexus shields and nexus upgrades are not present in this milestone.
-	shield_active = wave <= settings().free_shield_waves
-	if not shield_active:
+	free_shield_active = wave <= settings().free_shield_waves
+	if free_shield_active:
+		shield_active = true
+		if shield <= 0:
+			shield = shield_max
+	elif not castle_shield_purchased:
+		shield_active = false
 		shield = 0
-	elif shield <= 0:
-		shield = settings().shield_capacity
+	else:
+		shield_active = true
 
 
 func tick_regen() -> void:
@@ -31,7 +38,7 @@ func tick_regen() -> void:
 		hp = minf(data.max_hp, hp + data.regen_per_tick)
 	if data.shield_regen_enabled and shield_active:
 		if no_damage_ticks >= data.shield_regen_delay_ticks:
-			shield = minf(data.shield_capacity, shield + data.shield_regen_per_tick)
+			shield = minf(shield_max, shield + data.shield_regen_per_tick)
 
 
 func absorb(raw_damage: int, school: String) -> float:
