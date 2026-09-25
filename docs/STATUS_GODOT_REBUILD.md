@@ -122,3 +122,11 @@ git push origin arena/01a0d776-mystic-arena
 ```
 
 Jangan menyimpan key, credential, binary engine, `.godot/`, save nyata atau output build dalam repo.
+
+## Checkpoint lanjutan — inti prototipe pertandingan (belum ada menu/UI)
+
+- Ditambahkan scheduler otomatis, ledger gold lokal pertandingan, 18 slot sumber, transaksi Archer 100 G / jual 50 G, pelepasan slot hancur, serta session command yang dibatalkan saat pause.
+- Prototipe terpisah dari ketiga laboratorium: level 1 / normal, nexus tier 1, tanpa AI asli. Lawan sementara membeli tiga Archer berbayar secara terjadwal.
+- `tests/match_source_oracle.py` menjalankan potongan AST Python asli untuk dua trace wave 3.800 tick, komposisi, slot, 12 skenario pemasukan, dan jalur build → UI sale. Stub hanya dependensi di luar scope (render/audio/boss/auto-upgrade AI).
+- Guardrail lokal 448 checks, lint/format dan oracle sumber lulus. **Native untuk checkpoint inti ini masih menunggu CI**; angka 1.158 di atas milik milestone siege sebelumnya.
+- Berikutnya: tunggu/fix CI inti, lalu buat scene/HUD/menu build-sell, tes input/lifecycle, dokumentasi kontrak prototipe dan push berikutnya. Jangan menganggap inti ini sudah tersedia saat F5.

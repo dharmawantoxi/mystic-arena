@@ -37,12 +37,16 @@ func setup_arena() -> bool:
 	return true
 
 
+func structure_limit() -> int:
+	return MAX_STRUCTURES
+
+
 func spawn_structure(
 	data: StructureDefinition, team: int, at: Vector2, lane: int = -1
 ) -> StructureState:
 	if not is_running() or data == null or not data.is_valid() or team not in [BLUE, RED]:
 		return null
-	if structures.size() >= MAX_STRUCTURES or not at.is_finite():
+	if structures.size() >= structure_limit() or not at.is_finite():
 		return null
 	if data.structure_kind == "nexus" and nexuses[team] != null:
 		return null
