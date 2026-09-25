@@ -100,9 +100,9 @@ func _fixtures(check: Callable) -> void:
 						scheduler.queues[1].size()
 					]
 				)
-		check.call(starts == trace.starts, "source wave boundary/field-clear trace")
-		check.call(spawns == trace.spawns, "source continuous spawn queue trace")
-		check.call(snapshots == trace.snapshots, "source wave clocks and queue lengths")
+		check.call(_same_trace(starts, trace.starts), "source wave boundary/field-clear trace")
+		check.call(_same_trace(spawns, trace.spawns), "source continuous spawn queue trace")
+		check.call(_same_trace(snapshots, trace.snapshots), "source wave clocks and queue lengths")
 
 
 func _capacity(check: Callable) -> void:
@@ -326,3 +326,18 @@ func _snapshot(world: Prototype) -> Array:
 	for tower in world.structures:
 		result.append([tower.id, tower.hp, tower.shield, tower.cooldown_ticks])
 	return result
+
+
+func _same_trace(actual: Array, expected: Array) -> bool:
+	# JSON numbers are floats; nested Array equality compares Variant types strictly.
+	# Compare scalar values, retaining fractional mismatches rather than truncating them.
+	if actual.size() != expected.size():
+		return false
+	for row in range(actual.size()):
+		if actual[row].size() != expected[row].size():
+			return false
+		for column in range(actual[row].size()):
+			if actual[row][column] != expected[row][column]:
+				printerr("TRACE mismatch: actual=%s expected=%s" % [actual[row], expected[row]])
+				return false
+	return true
