@@ -1,0 +1,59 @@
+{
+  "goblin": {
+    "name": "Goblin",
+    "hp": 45,
+    "damage": 5,
+    "speed": 1.5,
+    "range": 25,
+    "attack_cooldown": 45,
+    "gold_reward": 8,
+    "radius": 9
+  },
+  "orc": {
+    "name": "Orc",
+    "hp": 110,
+    "damage": 13,
+    "speed": 0.95,
+    "range": 30,
+    "attack_cooldown": 60,
+    "gold_reward": 18,
+    "radius": 12
+  },
+  "troll": {
+    "name": "Troll",
+    "hp": 320,
+    "damage": 18,
+    "speed": 0.65,
+    "range": 28,
+    "attack_cooldown": 75,
+    "gold_reward": 45,
+    "radius": 14,
+    "regen": 0.6,
+    "armor": 2,
+    "magic_resist": 0.05
+  },
+  "undead": {
+    "name": "Undead",
+    "hp": 65,
+    "damage": 11,
+    "speed": 0.85,
+    "range": 100,
+    "attack_cooldown": 60,
+    "gold_reward": 16,
+    "radius": 10,
+    "armor": 0,
+    "magic_resist": 0.15
+  },
+  "dark_rider": {
+    "name": "Dark Rider",
+    "hp": 280,
+    "damage": 32,
+    "speed": 2.0,
+    "range": 35,
+    "attack_cooldown": 50,
+    "gold_reward": 65,
+    "radius": 13,
+    "armor": 1,
+    "magic_resist": 0.05
+  }
+}

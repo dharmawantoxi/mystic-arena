@@ -1,0 +1,752 @@
+[
+  {
+    "level": 1,
+    "price": 0,
+    "hp": 2000,
+    "max_hp": 2000,
+    "shield": 800,
+    "damage": 20,
+    "range": 180,
+    "cooldown": 35,
+    "armor": 3,
+    "refund": 50,
+    "next_price": 175,
+    "timer": 0,
+    "no_damage_timer": 0,
+    "volleys": [
+      {
+        "side": -1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              495,
+              318
+            ],
+            "target": 1,
+            "damage": 20
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              495,
+              318
+            ],
+            "target": 1,
+            "damage": 20
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              495,
+              318
+            ],
+            "target": 1,
+            "damage": 20
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              504,
+              318
+            ],
+            "target": 1,
+            "damage": 20
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              504,
+              318
+            ],
+            "target": 1,
+            "damage": 20
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              504,
+              318
+            ],
+            "target": 1,
+            "damage": 20
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "level": 2,
+    "price": 175,
+    "hp": 2625,
+    "max_hp": 2625,
+    "shield": 1050,
+    "damage": 33,
+    "range": 190,
+    "cooldown": 32,
+    "armor": 4,
+    "refund": 87,
+    "next_price": 325,
+    "timer": 17,
+    "no_damage_timer": 9,
+    "volleys": [
+      {
+        "side": -1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              495,
+              316
+            ],
+            "target": 1,
+            "damage": 33
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              495,
+              316
+            ],
+            "target": 1,
+            "damage": 33
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              495,
+              316
+            ],
+            "target": 1,
+            "damage": 33
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              504,
+              316
+            ],
+            "target": 1,
+            "damage": 33
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              504,
+              316
+            ],
+            "target": 1,
+            "damage": 33
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              504,
+              316
+            ],
+            "target": 1,
+            "damage": 33
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "level": 3,
+    "price": 325,
+    "hp": 3375,
+    "max_hp": 3375,
+    "shield": 1350,
+    "damage": 50,
+    "range": 200,
+    "cooldown": 30,
+    "armor": 5,
+    "refund": 250,
+    "next_price": 550,
+    "timer": 17,
+    "no_damage_timer": 9,
+    "volleys": [
+      {
+        "side": -1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              495,
+              313
+            ],
+            "target": 1,
+            "damage": 50
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              495,
+              313
+            ],
+            "target": 1,
+            "damage": 50
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              495,
+              313
+            ],
+            "target": 1,
+            "damage": 50
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              504,
+              313
+            ],
+            "target": 1,
+            "damage": 50
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              504,
+              313
+            ],
+            "target": 1,
+            "damage": 50
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              504,
+              313
+            ],
+            "target": 1,
+            "damage": 50
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "level": 4,
+    "price": 550,
+    "hp": 4375,
+    "max_hp": 4375,
+    "shield": 1750,
+    "damage": 72,
+    "range": 210,
+    "cooldown": 27,
+    "armor": 6,
+    "refund": 525,
+    "next_price": 850,
+    "timer": 17,
+    "no_damage_timer": 9,
+    "volleys": [
+      {
+        "side": -1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              495,
+              309
+            ],
+            "target": 1,
+            "damage": 72
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              495,
+              309
+            ],
+            "target": 1,
+            "damage": 72
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              495,
+              309
+            ],
+            "target": 1,
+            "damage": 72
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              504,
+              309
+            ],
+            "target": 1,
+            "damage": 72
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              504,
+              309
+            ],
+            "target": 1,
+            "damage": 72
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              504,
+              309
+            ],
+            "target": 1,
+            "damage": 72
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "level": 5,
+    "price": 850,
+    "hp": 5500,
+    "max_hp": 5500,
+    "shield": 2200,
+    "damage": 98,
+    "range": 220,
+    "cooldown": 24,
+    "armor": 7,
+    "refund": 950,
+    "next_price": 1300,
+    "timer": 17,
+    "no_damage_timer": 9,
+    "volleys": [
+      {
+        "side": -1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              490,
+              306
+            ],
+            "target": 1,
+            "damage": 98
+          },
+          {
+            "position": [
+              500,
+              306
+            ],
+            "target": 1,
+            "damage": 98
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              490,
+              306
+            ],
+            "target": 1,
+            "damage": 98
+          },
+          {
+            "position": [
+              500,
+              306
+            ],
+            "target": 2,
+            "damage": 98
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              490,
+              306
+            ],
+            "target": 1,
+            "damage": 98
+          },
+          {
+            "position": [
+              500,
+              306
+            ],
+            "target": 2,
+            "damage": 98
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              499,
+              306
+            ],
+            "target": 1,
+            "damage": 98
+          },
+          {
+            "position": [
+              509,
+              306
+            ],
+            "target": 1,
+            "damage": 98
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              499,
+              306
+            ],
+            "target": 1,
+            "damage": 98
+          },
+          {
+            "position": [
+              509,
+              306
+            ],
+            "target": 2,
+            "damage": 98
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              499,
+              306
+            ],
+            "target": 1,
+            "damage": 98
+          },
+          {
+            "position": [
+              509,
+              306
+            ],
+            "target": 2,
+            "damage": 98
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "level": 6,
+    "price": 1300,
+    "hp": 7000,
+    "max_hp": 7000,
+    "shield": 2800,
+    "damage": 130,
+    "range": 230,
+    "cooldown": 22,
+    "armor": 8,
+    "refund": 1600,
+    "next_price": 0,
+    "timer": 17,
+    "no_damage_timer": 9,
+    "volleys": [
+      {
+        "side": -1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              488,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          },
+          {
+            "position": [
+              495,
+              301
+            ],
+            "target": 1,
+            "damage": 130
+          },
+          {
+            "position": [
+              502,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              488,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          },
+          {
+            "position": [
+              495,
+              301
+            ],
+            "target": 2,
+            "damage": 130
+          },
+          {
+            "position": [
+              502,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          }
+        ]
+      },
+      {
+        "side": -1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              488,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          },
+          {
+            "position": [
+              495,
+              301
+            ],
+            "target": 2,
+            "damage": 130
+          },
+          {
+            "position": [
+              502,
+              304
+            ],
+            "target": 3,
+            "damage": 130
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 1,
+        "shots": [
+          {
+            "position": [
+              497,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          },
+          {
+            "position": [
+              504,
+              301
+            ],
+            "target": 1,
+            "damage": 130
+          },
+          {
+            "position": [
+              511,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 2,
+        "shots": [
+          {
+            "position": [
+              497,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          },
+          {
+            "position": [
+              504,
+              301
+            ],
+            "target": 2,
+            "damage": 130
+          },
+          {
+            "position": [
+              511,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          }
+        ]
+      },
+      {
+        "side": 1,
+        "count": 4,
+        "shots": [
+          {
+            "position": [
+              497,
+              304
+            ],
+            "target": 1,
+            "damage": 130
+          },
+          {
+            "position": [
+              504,
+              301
+            ],
+            "target": 2,
+            "damage": 130
+          },
+          {
+            "position": [
+              511,
+              304
+            ],
+            "target": 3,
+            "damage": 130
+          }
+        ]
+      }
+    ]
+  }
+]

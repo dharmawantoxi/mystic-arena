@@ -1,0 +1,33 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/structure_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "archer_level_4"
+display_name = "Archer Lv.4"
+max_hp = 4375
+damage = 72
+speed_px_per_tick = 0.0
+attack_range_px = 210.0
+attack_cooldown_ticks = 27
+gold_reward = 100
+radius_px = 24.0
+regen_per_tick = 0.3
+armor = 6.0
+magic_resist = 0.0
+structure_kind = "tower"
+shield_capacity = 1750.0
+hp_regen_delay_ticks = 300
+shield_regen_enabled = false
+shield_regen_delay_ticks = 180
+shield_regen_per_tick = 1.8
+shield_damage_reduction = 0.0
+free_shield_waves = 10
+projectile_speed_px_per_tick = 8.0
+projectile_hit_radius_px = 4.0
+level = 4
+volley_count = 1
+bow_platform_height = 52.0
+upgrade_price = 550
+sale_refund = 525

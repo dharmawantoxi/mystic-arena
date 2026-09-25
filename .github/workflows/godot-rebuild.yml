@@ -1,0 +1,95 @@
+name: Godot Rebuild (native, fresh project)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'godot_rebuild/**'
+      - '_core.py'
+      - 'levels/level_data.py'
+      - '_entity.py'
+      - 'towers/_bundle.py'
+      - 'map_components/_bundle.py'
+      - '.github/workflows/godot-rebuild.yml'
+  push:
+    paths:
+      - 'godot_rebuild/**'
+      - '_core.py'
+      - 'levels/level_data.py'
+      - '_entity.py'
+      - 'towers/_bundle.py'
+      - 'map_components/_bundle.py'
+      - '.github/workflows/godot-rebuild.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: godot-rebuild-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GODOT_VERSION: '4.7.2'
+      GODOT_SILENCE_ROOT_WARNING: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Static guardrails and GDScript lint
+        run: |
+          python -m pip install gdtoolkit==4.5.0
+          python godot_rebuild/tests/validate_project.py
+          python godot_rebuild/tests/check_source_contract.py
+          python godot_rebuild/tests/structure_source_oracle.py
+          python godot_rebuild/tests/match_source_oracle.py
+          python godot_rebuild/tests/upgrade_source_oracle.py
+          gdparse $(find godot_rebuild -name '*.gd')
+          gdlint $(find godot_rebuild -name '*.gd')
+          gdformat --check $(find godot_rebuild -name '*.gd')
+      - name: Install the pinned official engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          binary="Godot_v${GODOT_VERSION}-stable_linux.x86_64"
+          mkdir -p "$RUNNER_TEMP/godot-rebuild-engine"
+          curl --fail --location --retry 3 \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/${archive}" \
+            --output "$RUNNER_TEMP/godot-rebuild-engine/$archive"
+          unzip -q "$RUNNER_TEMP/godot-rebuild-engine/$archive" -d "$RUNNER_TEMP/godot-rebuild-engine"
+          chmod +x "$RUNNER_TEMP/godot-rebuild-engine/$binary"
+          echo "GODOT=$RUNNER_TEMP/godot-rebuild-engine/$binary" >> "$GITHUB_ENV"
+          "$RUNNER_TEMP/godot-rebuild-engine/$binary" --version
+      - name: Native import (not the old converter)
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=0
+          timeout 120 "$GODOT" --headless --path godot_rebuild --editor --import 2>&1 | tee /tmp/rebuild-import.log || code=$?
+          if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:' /tmp/rebuild-import.log; then
+            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-import.log
+            exit 1
+          fi
+      - name: Native simulation, input and screen lifecycle tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          code=0
+          timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
+          if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then
+            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log
+            exit 1
+          fi
+          grep -E 'PASS: .* checks; fixed ticks' /tmp/rebuild-tests.log | sed 's/^/::notice title=Native Godot tests::/'
+      - name: Save test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-rebuild-test-logs
+          path: /tmp/rebuild-*.log
+          if-no-files-found: ignore
