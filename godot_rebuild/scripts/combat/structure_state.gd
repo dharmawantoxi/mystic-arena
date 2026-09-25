@@ -14,7 +14,7 @@ func settings() -> StructureDefinition:
 func set_wave(wave: int) -> void:
 	if settings().structure_kind != "nexus" or not alive:
 		return
-	# Paid shields/upgrade shops are not present in this milestone.
+	# Paid nexus shields and nexus upgrades are not present in this milestone.
 	shield_active = wave <= settings().free_shield_waves
 	if not shield_active:
 		shield = 0

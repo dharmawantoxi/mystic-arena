@@ -48,9 +48,9 @@ Wave memanggil aturan shield nexus sumber: gratis sampai wave 10, tidak dibeli/d
 - Blue atas/bawah: 0,15 / 0,30 / 0,45; tengah 0,10 / 0,25 / 0,40.
 - Red atas/bawah: 0,85 / 0,70 / 0,55; tengah 0,90 / 0,75 / 0,60.
 - Archer tier 1 berharga **100 G**. Verifikasi match aktif, ownership, slot kosong, saldo dan kapasitas **sebelum** spawn/debit. Tidak ada `await`/callback di tengah transaksi.
-- Jual tower blue yang hidup mengembalikan **50 G**. `Tower.sell_value()` level 1 di Python sendiri bernilai 0; refund 50 berasal dari fallback **UI** `_try_sell_tower`. Memeriksa entity saja menghasilkan harga salah.
+- Jual tower blue **tier 1** yang hidup mengembalikan **50 G**; refund tier 2–6 mengikuti [kontrak upgrade](UPGRADE_CONTRACT.md). `Tower.sell_value()` level 1 di Python sendiri bernilai 0; refund 50 berasal dari fallback **UI** `_try_sell_tower`. Memeriksa entity saja menghasilkan harga salah.
 - Sale bukan death: tidak menambah kill atau memberi lawan gold. Bersihkan registry, slot dan projectile terkait. ID tidak didaur ulang; repeat/stale sale tidak dapat menyentuh pengganti tower di slot yang sama.
-- UI hanya menangkap satu command build-slot/sell-entity per tick. Pergantian seleksi tidak mengubah target command yang sudah ditangkap. Domain memvalidasi ulang ketika dieksekusi. Pause/focus loss membatalkan command tertunda.
+- UI hanya menangkap satu command build-slot/sell-entity/upgrade-entity per tick. Upgrade juga membawa expected level. Pergantian seleksi tidak mengubah target command yang sudah ditangkap. Domain memvalidasi ulang ketika dieksekusi. Pause/focus loss membatalkan command tertunda.
 - UI tidak boleh menjual nexus, tower lawan, tower mati atau membuat tower di slot lawan. Meskipun UI dilewati, domain tetap menolak.
 
 ## Lawan sementara dan perbedaan disengaja
@@ -68,4 +68,4 @@ Checkpoint UI `ff5d2af`: [CI Godot 4.7.2 Linux](https://github.com/dharmawantoxi
 
 JSON memuat angka sebagai float. Trace membandingkan nilai scalar numerik secara exact, bukan nested `Array` yang membedakan tipe Variant. Tidak menggunakan toleransi untuk gold/tick/spawn.
 
-**Belum diuji:** GPU/screenshot, Windows fisik, multi-touch/perangkat Android, pertandingan manual panjang dan balance/performa. Headless lifecycle/input adapter bukan pengganti pengujian tersebut. Scope berikutnya: audit upgrade/tower tambahan dan hero/AI sebelum memperluas konten; jangan mengklaim prototipe ini sudah game lengkap.
+**Belum diuji:** GPU/screenshot, Windows fisik, multi-touch/perangkat Android, pertandingan manual panjang dan balance/performa. Headless lifecycle/input adapter bukan pengganti pengujian tersebut. Upgrade Archer sudah ditambahkan dengan [kontrak tersendiri](UPGRADE_CONTRACT.md) dan 1.905 checks pada checkpoint UI `7c96c83`. Scope berikutnya: nexus/minion scaling, tower tambahan dan hero/AI sebelum memperluas konten; jangan mengklaim prototipe ini sudah game lengkap.
