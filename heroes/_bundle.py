@@ -16754,3 +16754,16 @@ del _install_vex_v1
 from heroes.grimjaw_v1 import install as _install_grimjaw_v1
 _NS_grimjaw = _install_grimjaw_v1(_NS_grimjaw)
 del _install_grimjaw_v1
+
+# ============================================================================
+# SYLARA V1 PIXEL-ART OVERRIDE
+# ============================================================================
+# Same layering as the Kaizen/Vex/Grimjaw V1 overrides above: the bundled
+# masterwork namespace stays as a compatibility base (public names, palette,
+# skill timers, animation controller contract) while Sylara's actual render
+# path is replaced by the pixel-art V1 renderer (Kaizen-style chibi, wind
+# ranger identity preserved, bow geometry still the single source of truth
+# for the live FX layer in heroes/sylara_fx.py).
+from heroes.sylara_v1 import install as _install_sylara_v1
+_NS_sylara = _install_sylara_v1(_NS_sylara)
+del _install_sylara_v1
