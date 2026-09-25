@@ -94,3 +94,9 @@ Windows: `powershell -ExecutionPolicy Bypass -File .\tests\run_windows.ps1 -Godo
 - Archer level 1–6: resource native, full HP/shield reset saat upgrade, cooldown/regen timer/shot yang sudah terbang tetap; harga 175/325/550/850/1300 G, refund 50/87/250/525/950/1600 G.
 - Level 5 dua panah, level 6 tiga; source `_shoot_archer` menentukan perilaku, bukan label tabel “double shot”. Whole-volley cap atomik merupakan guard tambahan.
 - `upgrade_source_oracle.py` menjalankan metode asli upgrade/refund/muzzle/volley; 36 skenario volley. Tes domain ditambahkan. Inti belum ada tombol UI pada checkpoint ini; menunggu native CI sebelum klaim runtime.
+
+### Upgrade: hasil checkpoint inti dan UI
+
+- `6e115e4` dipush; [CI inti](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153624268) lulus **1.879 native checks**, check-run `108132740607`.
+- Ditambahkan tombol upgrade, quote/refund dinamis, jumlah panah pada inspeksi, penanda tier sederhana, captured expected level serta tes stale/duplicate/pause/focus/result/restart. Pesan sale sekarang menampilkan refund aktual, bukan konstanta 50 G.
+- **UI upgrade menunggu native CI checkpoint berikut ini.** Tes impact juga memeriksa tiga hit terpisah dan overkill tidak menggandakan reward.

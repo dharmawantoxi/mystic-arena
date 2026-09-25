@@ -1,5 +1,6 @@
 extends "res://scripts/simulation/combat_session.gd"
 
+const Structure = preload("res://scripts/combat/structure_state.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 var selected_slot_id := -1
 var command: Dictionary = {}
@@ -23,26 +24,33 @@ func _physics_process(_delta: float) -> void:
 	var match_world := world as Prototype
 	if not command.is_empty():
 		var accepted := false
+		var balance_before: int = match_world.economy.gold[0]
 		if command.kind == "build":
 			accepted = match_world.build_tower(0, command.id)
 			if accepted and selected_slot_id == command.id:
 				selected_id = match_world.get_slot(command.id).structure_id
+		elif command.kind == "upgrade":
+			accepted = match_world.upgrade_tower(command.id, command.level)
 		else:
 			accepted = match_world.sell_tower(0, command.id)
 			if accepted and selected_id == command.id:
 				selected_id = -1
 		if accepted:
-			last_action = (
-				"Archer dibangun: −100 G." if command.kind == "build" else "Tower dijual: +50 G."
-			)
+			var delta_gold: int = match_world.economy.gold[0] - balance_before
+			var action: String = {
+				"build": "Archer dibangun", "sell": "Tower dijual", "upgrade": "Archer ditingkatkan"
+			}[command.kind]
+			last_action = "%s: %+d G." % [action, delta_gold]
 		else:
 			last_action = (
 				{
 					"finished": "Pertandingan sudah selesai.",
 					"owner": "Pilih slot atau tower biru yang masih hidup.",
 					"occupied": "Slot sudah terisi.",
-					"gold": "Gold tidak cukup: Archer membutuhkan 100 G.",
-					"capacity": "Batas bangunan tercapai."
+					"gold": "Gold tidak cukup untuk transaksi ini.",
+					"capacity": "Batas bangunan tercapai.",
+					"stale": "Level tower sudah berubah; pilih upgrade kembali.",
+					"max_level": "Archer sudah level maksimum (6)."
 				}
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
@@ -58,6 +66,14 @@ func request_build(slot_id: int) -> bool:
 
 func request_sell(entity_id: int) -> bool:
 	return _queue("sell", entity_id)
+
+
+func request_upgrade(entity_id: int) -> bool:
+	var tower := world.get_unit(entity_id) as Structure
+	if tower == null or not _queue("upgrade", entity_id):
+		return false
+	command.level = tower.settings().level
+	return true
 
 
 func request_wave(_type_index: int) -> bool:

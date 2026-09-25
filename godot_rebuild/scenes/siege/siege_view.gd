@@ -39,6 +39,9 @@ func _draw_structure(structure: Structure) -> void:
 		draw_rect(
 			Rect2(point + Vector2(offset * radius * 0.5 - 4, -radius - 8), Vector2(8, 14)), color
 		)
+	if data.structure_kind == "tower":
+		for tier in range(data.level):
+			draw_circle(point + Vector2((tier - (data.level - 1) * 0.5) * 6, 9), 2, color)
 	var width := radius * 2
 	var health := structure.hp / data.max_hp
 	var shield := structure.shield / maxf(1, data.shield_capacity)

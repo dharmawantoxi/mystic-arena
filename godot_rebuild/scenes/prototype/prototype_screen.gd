@@ -21,6 +21,9 @@ func _ready() -> void:
 	%SellButton.pressed.connect(
 		func() -> void: match_session.request_sell(match_session.selected_id)
 	)
+	%UpgradeButton.pressed.connect(
+		func() -> void: match_session.request_upgrade(match_session.selected_id)
+	)
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -63,6 +66,17 @@ func _process(_delta: float) -> void:
 		or tower.team != 0
 		or tower.settings().structure_kind != "tower"
 	)
+	var price := world.upgrade_price(simulation.selected_id)
+	%UpgradeButton.disabled = locked or price <= 0 or world.economy.gold[0] < price
+	%UpgradeButton.text = "Upgrade Archer"
+	%SellButton.text = "Jual tower"
+	if tower != null and tower.settings().structure_kind == "tower":
+		%SellButton.text = "Jual · %d G" % tower.settings().sale_refund
+		%UpgradeButton.text = (
+			"Upgrade Lv.%d · %d G" % [tower.settings().level + 1, price]
+			if price > 0
+			else "Archer maksimum" if tower.settings().level == 6 else "Tower lawan"
+		)
 	%SelectionLabel.text = "Slot biru: bangun Archer. Tower biru: jual kembali."
 	if selected != null:
 		%SelectionLabel.text = (
@@ -76,7 +90,10 @@ func _process(_delta: float) -> void:
 			]
 		)
 		if tower != null:
-			%SelectionLabel.text += " · Shield %.0f" % tower.shield
+			%SelectionLabel.text += (
+				" · Shield %.0f · DMG %d · %d panah"
+				% [tower.shield, tower.definition.damage, tower.settings().volley_count]
+			)
 	elif slot != null:
 		%SelectionLabel.text = (
 			"Slot %d · %s · Lane %s"

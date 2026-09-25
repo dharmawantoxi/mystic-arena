@@ -214,6 +214,31 @@ func _guards(check: Callable) -> void:
 		not finished.upgrade_tower(finished.slots[0].structure_id, 1), "result blocks upgrade"
 	)
 
+	var impact_world := _world()
+	var archer = impact_world.get_unit(impact_world.slots[0].structure_id)
+	for level in range(1, 6):
+		impact_world.upgrade_tower(archer.id, level)
+	var victim = impact_world.spawn_unit(GOBLIN, 1, 0)
+	victim.position = archer.position + Vector2(40, 0)
+	victim.hp = 500
+	impact_world.fire_projectile(archer.id, victim.id)
+	for arrow in impact_world.projectiles:
+		arrow.position = victim.position
+	impact_world._update_projectiles(archer)
+	check.call(victim.hp == 110, "three arrows deliver three independent source damage hits")
+	impact_world._update_projectiles(archer)
+	check.call(victim.hp == 110, "processed volley cannot hit twice")
+	archer.cooldown_ticks = 0
+	impact_world.projectiles.clear()
+	impact_world.fire_projectile(archer.id, victim.id)
+	for arrow in impact_world.projectiles:
+		arrow.position = victim.position
+	impact_world._update_projectiles(archer)
+	check.call(
+		not victim.alive and impact_world.kills[0] == 1 and impact_world.credited_gold[0] == 8,
+		"fallback volley overkill rewards victim once, not once per arrow"
+	)
+
 
 func _world() -> World:
 	var world := World.new()
