@@ -1,5 +1,6 @@
 extends Control
 
+signal combat_requested
 signal play_requested
 signal quit_requested
 
@@ -13,4 +14,5 @@ func _ready() -> void:
 	UI_THEME.muted(%Scope)
 	%PlayButton.pressed.connect(func() -> void: play_requested.emit())
 	%QuitButton.pressed.connect(func() -> void: quit_requested.emit())
-	%PlayButton.grab_focus()
+	%CombatButton.pressed.connect(func() -> void: combat_requested.emit())
+	%CombatButton.grab_focus()

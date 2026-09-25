@@ -1,6 +1,7 @@
 extends SceneTree
 ## Native, dependency-free headless regression runner. Exit code 1 means failure.
 
+const CombatChecks = preload("res://tests/combat_checks.gd")
 const APP = preload("res://app/App.tscn")
 const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
 
@@ -34,6 +35,7 @@ func _physics_steps(count: int) -> void:
 func _run() -> void:
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
 	_test_simulation()
+	CombatChecks.new().run(_check)
 	var app = APP.instantiate()
 	root.add_child(app)
 	await _settle()
@@ -100,6 +102,7 @@ func _run() -> void:
 			"node count stable after full cycle"
 		)
 	await _test_input(app)
+	await _test_combat_scene(app)
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
@@ -213,3 +216,71 @@ func _test_input(app: Node) -> void:
 	_check(not sim.has_move_target, "synthetic mouse does not duplicate touch")
 	app.show_menu()
 	await _settle()
+
+
+func _test_combat_scene(app: Node) -> void:
+	var baseline_count: int = get_node_count()
+	for cycle in range(3):
+		app.current_screen.get_node("%CombatButton").pressed.emit()
+		await _settle()
+		await _physics_steps(2)
+		var screen = app.current_screen
+		var session = screen.simulation
+		_check(screen.name == "MinionArena", "combat menu opens new lab")
+		_check(session.world.units.size() == 6, "initial wave contains both teams in three lanes")
+		_check(session.request_wave(1), "valid wave request queued")
+		_check(not session.request_wave(1), "same-frame duplicate wave rejected")
+		_check(session.world.units.size() == 6, "UI command does not mutate world before physics")
+		await _physics_steps(2)
+		_check(session.world.units.size() == 12, "queued wave consumed once on physics tick")
+		_check(session.request_wave(0), "second wave can be queued")
+		screen.pause_match()
+		var ticks: int = session.world.tick_count
+		_check(session.pending_wave == -1, "pause cancels queued spawn")
+		_check(not session.request_wave(0), "paused session rejects new spawn")
+		await _physics_steps(3)
+		_check(
+			session.world.tick_count == ticks and session.world.units.size() == 12,
+			"pause freezes minion movement, combat, regen, cooldown and wave"
+		)
+		screen.resume_match()
+		screen.arena.process_mode = Node.PROCESS_MODE_DISABLED
+		await _physics_steps(3)
+		_check(session.world.tick_count > ticks, "simulation runs with visual processing disabled")
+		screen.arena.process_mode = Node.PROCESS_MODE_PAUSABLE
+		session.set_physics_process(false)
+		var unit = session.world.units[0]
+		var click := InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = true
+		click.position = screen.arena.get_global_transform_with_canvas() * unit.position
+		root.push_input(click, true)
+		await _settle()
+		_check(session.selected_id == unit.id, "scaled arena input maps to correct world unit")
+		click = InputEventMouseButton.new()
+		click.button_index = MOUSE_BUTTON_LEFT
+		click.pressed = true
+		click.position = Vector2(500, 50)
+		root.push_input(click, true)
+		await _settle()
+		_check(session.selected_id == unit.id, "combat HUD click does not clear selection")
+		var old_id: int = screen.get_instance_id()
+		screen.pause_match()
+		screen.get_node("%RestartButton").pressed.emit()
+		await _settle()
+		await _physics_steps(2)
+		_check(not is_instance_id_valid(old_id), "restart frees prior combat screen")
+		_check(
+			not paused and app.current_screen.name == "MinionArena",
+			"restart keeps correct arena type"
+		)
+		_check(app.current_screen.simulation.world.wave_count == 1, "restart resets waves")
+		_check(app.current_screen.simulation.world.kills == [0, 0], "restart resets kill state")
+		app.current_screen.pause_match()
+		app.current_screen.get_node("%MenuButton").pressed.emit()
+		await _settle()
+		_check(
+			not paused and app.current_screen.name == "MainMenu",
+			"combat exits cleanly while paused"
+		)
+		_check(get_node_count() == baseline_count, "combat navigation does not accumulate nodes")

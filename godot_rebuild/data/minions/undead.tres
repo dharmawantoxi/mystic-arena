@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/minion_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "undead"
+display_name = "Undead"
+max_hp = 65
+damage = 11
+speed_px_per_tick = 0.85
+attack_range_px = 100
+attack_cooldown_ticks = 60
+gold_reward = 16
+radius_px = 10
+armor = 0
+magic_resist = 0.15

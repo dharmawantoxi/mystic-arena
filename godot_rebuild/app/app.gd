@@ -2,6 +2,7 @@ extends Node
 ## Sole owner of screen lifetime. Transitions are deferred out of UI/input callbacks.
 
 const MENU = preload("res://scenes/menu/MainMenu.tscn")
+const COMBAT = preload("res://scenes/combat/MinionArena.tscn")
 const MATCH = preload("res://scenes/match/Match.tscn")
 const UI_THEME = preload("res://scripts/ui/rebuild_theme.gd")
 
@@ -19,6 +20,10 @@ func _ready() -> void:
 
 func show_menu() -> void:
 	_request_screen(MENU)
+
+
+func start_combat() -> void:
+	_request_screen(COMBAT)
 
 
 func start_match() -> void:
@@ -41,10 +46,11 @@ func _install_screen(scene: PackedScene) -> void:
 	screen_root.add_child(current_screen)
 	if scene == MENU:
 		current_screen.connect("play_requested", start_match)
+		current_screen.connect("combat_requested", start_combat)
 		current_screen.connect("quit_requested", _quit)
 	else:
 		current_screen.connect("menu_requested", show_menu)
-		current_screen.connect("restart_requested", start_match)
+		current_screen.connect("restart_requested", _request_screen.bind(scene))
 	transition_pending = false
 
 

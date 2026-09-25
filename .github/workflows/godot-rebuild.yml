@@ -5,10 +5,14 @@ on:
   pull_request:
     paths:
       - 'godot_rebuild/**'
+      - '_core.py'
+      - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
   push:
     paths:
       - 'godot_rebuild/**'
+      - '_core.py'
+      - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
 
 permissions:
@@ -34,6 +38,7 @@ jobs:
         run: |
           python -m pip install gdtoolkit==4.5.0
           python godot_rebuild/tests/validate_project.py
+          python godot_rebuild/tests/check_source_contract.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')
@@ -55,15 +60,23 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          timeout 120 "$GODOT" --headless --path godot_rebuild --editor --import 2>&1 | tee /tmp/rebuild-import.log
-          if grep -E 'SCRIPT ERROR:|ERROR:' /tmp/rebuild-import.log; then exit 1; fi
+          code=0
+          timeout 120 "$GODOT" --headless --path godot_rebuild --editor --import 2>&1 | tee /tmp/rebuild-import.log || code=$?
+          if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:' /tmp/rebuild-import.log; then
+            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-import.log
+            exit 1
+          fi
       - name: Native simulation, input and screen lifecycle tests
         shell: bash
         run: |
           set -euo pipefail
-          timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log
-          if grep -E 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then exit 1; fi
-          grep -E 'PASS: .* checks; fixed ticks' /tmp/rebuild-tests.log
+          code=0
+          timeout 120 "$GODOT" --headless --path godot_rebuild --script res://tests/run_all.gd 2>&1 | tee /tmp/rebuild-tests.log || code=$?
+          if [[ "$code" != 0 ]] || grep -qE 'SCRIPT ERROR:|ERROR:|FAIL:' /tmp/rebuild-tests.log; then
+            python godot_rebuild/tests/annotate_failure.py /tmp/rebuild-tests.log
+            exit 1
+          fi
+          grep -E 'PASS: .* checks; fixed ticks' /tmp/rebuild-tests.log | sed 's/^/::notice title=Native Godot tests::/'
       - name: Save test logs
         if: always()
         uses: actions/upload-artifact@v4

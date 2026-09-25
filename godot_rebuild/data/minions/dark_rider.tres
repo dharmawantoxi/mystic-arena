@@ -1,0 +1,17 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/minion_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "dark_rider"
+display_name = "Dark Rider"
+max_hp = 280
+damage = 32
+speed_px_per_tick = 2.0
+attack_range_px = 35
+attack_cooldown_ticks = 50
+gold_reward = 65
+radius_px = 13
+armor = 1
+magic_resist = 0.05

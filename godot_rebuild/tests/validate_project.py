@@ -29,7 +29,7 @@ for setting in (
 ):
     check(setting in project, f"Missing project contract: {setting}")
 
-source_files = [ROOT / "project.godot", *ROOT.rglob("*.gd"), *ROOT.rglob("*.tscn")]
+source_files = [ROOT / "project.godot", *ROOT.rglob("*.gd"), *ROOT.rglob("*.tscn"), *ROOT.rglob("*.tres")]
 for path in source_files:
     if ".godot" in path.parts:
         continue

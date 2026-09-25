@@ -1,0 +1,15 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/minion_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "goblin"
+display_name = "Goblin"
+max_hp = 45
+damage = 5
+speed_px_per_tick = 1.5
+attack_range_px = 25
+attack_cooldown_ticks = 45
+gold_reward = 8
+radius_px = 9
