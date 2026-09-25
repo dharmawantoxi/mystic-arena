@@ -70,18 +70,18 @@ Ringkasan aturan yang rawan salah:
 - Minion lama tidak berubah retroaktif; AI tier dari nexus pemilik saat spawn. Urutan Godot ID stabil, bukan spatial-hash; quirk `tower_kind` sumber didokumentasikan.
 - Batas prototipe: 120 minion / 20 struktur / 256 projectile / 64 event; antrean menahan spawn bila penuh. Hasil nexus membekukan economy/world dan membatalkan antrean.
 
-## Tahap berjalan: upgrade nexus + dependensi (sesi baru)
+## Tahap nexus: selesai di CI Linux (sesi baru)
 
-Scope tahap ini: upgrade nexus biru 1–5 **bersama** scaling stat minion, AI tier 1–5, komposisi per-tier, serta aturan HP/shield. Implementasi + tes sudah di-push ke `arena/01a0d939-mystic-arena`; CI terbaru sedang dipantau (lihat perintah `gh run list` di bawah).
+Upgrade nexus biru 1–5 **bersama** scaling minion, AI tier 1–5, komposisi per-tier, dan aturan HP/shield — **lulus 3.418 native checks** Godot 4.7.2 di Linux.
 
-Yang sudah di-push:
+| Commit (branch `arena/01a0d939-mystic-arena`) | Cakupan | Bukti native |
+|---|---|---|
+| `f80b411` | Oracle/fixture nexus (5 tier, 120 HP, 36 wave, 25 scaling, 5×10 komposisi, 20 AI) | [CI oracle](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36156238323) |
+| `94778bf` + `1029828` | Domain + tes nexus (gagal import: konstanta ganda) | [gagal 36156714136](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36156714136), [gagal 36157084685](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36157084685) |
+| `07b87ed` | Fix duplikat `StructureState` di `siege_battle` | [3.418 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36157214557), check-run `108144581314` |
+| `4f2cfac` | Kontrak nexus + README/match/upgrade/handoff | [3.418 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36157499177), check-run `108145527681` |
 
-1. Oracle/fixture `nexus_source_oracle.py` + `nexus_source.json` (5 tier, 120 HP, 36 `set_wave`, 25 scaling, komposisi 5×10, 20 AI) — lulus lokal + CI `f80b411`.
-2. Domain: resource nexus 2–5, `nexus_upgrades`, `shield_max`/purchased/free, `ai_level`, scheduler per-tim, scaling saat spawn, AI 1–5, `upgrade_nexus` expected-level.
-3. UI/session: tombol **Upgrade Nexus** terpisah, quote 500/900/1500/2400, guard stale/max/poor/pause/focus/result.
-4. Tes native `nexus_checks` + `nexus_scene_checks` terintegrasi di `run_all.gd`. Perbaikan konstanta ganda `StructureState` (`07b87ed`) setelah dua run gagal import.
-
-Keputusan scope: lawan tetap builder terjadwal tanpa `_auto_scale_ai_castle` agar replay lama stabil. Paid shield belum transaksi UI; flag purchased hanya untuk resize shield. Hero/boss/AI penuh, tower selain Archer, 54 level tetap di luar scope.
+Keputusan scope: lawan tetap builder terjadwal tanpa `_auto_scale_ai_castle` agar replay lama stabil. Paid shield belum transaksi UI; flag purchased hanya untuk resize shield. Hero/boss/AI penuh, tower selain Archer, 54 level tetap di luar scope. Windows/Android belum diuji langsung.
 
 ## Langkah berikutnya
 

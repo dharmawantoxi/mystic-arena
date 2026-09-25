@@ -179,7 +179,7 @@ Font disalin dari `assets/fonts/` di root repo, bukan dari hasil migrasi lama. L
 ### Status validasi (25 September 2026, sesi nexus)
 
 - **Checkpoint merged `main`:** import engine **Godot 4.7.2**, **1.905 pemeriksaan** pada commit `7c96c83` ([run 36153883271](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153883271)), annotation **Native Godot tests**.
-- **Sesi baru `arena/01a0d939-mystic-arena`:** domain + tes nexus sudah di-push; menunggu/memeriksa CI terbaru pada branch ini untuk angka final. Lihat `gh run list --branch arena/01a0d939-mystic-arena`.
+- **Sesi baru `arena/01a0d939-mystic-arena`:** **3.418 pemeriksaan** lulus pada commit `4f2cfac` ([run 36157499177](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36157499177)), termasuk suite nexus + seluruh suite lama. Check-run `108145527681`.
 - **Lulus lokal:** 667 guardrail statis; kontrak minion/lane/bangunan/wave/income/slot/upgrade Archer plus oracle nexus (tier/HP/shield/scaling/komposisi/AI) terhadap Python; parsing/lint/format GDScript.
 - **Belum diverifikasi:** tampilan GPU/screenshot, resize secara visual, Windows fisik, touchscreen, Android dan performa perangkat. CI headless bukan pengganti tes ini.
 
