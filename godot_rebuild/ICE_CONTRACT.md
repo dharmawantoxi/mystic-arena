@@ -1,6 +1,6 @@
 # Kontrak jalur Ice — level 2–6, slow + attack-slow
 
-Tersedia hanya lewat mode **Pertandingan awal**. Tower level 1 memilih jalur **Archer**, **Cannon**, atau **Ice** secara eksplisit; level 2+ mengabaikan argumen jalur dan mempertahankan jalurnya (quirk sumber yang dikunci fixture). Belum ada Mage, paid regen shield, atau efek status selain burn/slow/atk-slow.
+Tersedia hanya lewat mode **Pertandingan awal**. Tower level 1 memilih jalur **Archer**, **Cannon**, **Ice**, atau **Mage** secara eksplisit; level 2+ mengabaikan argumen jalur dan mempertahankan jalurnya (quirk sumber yang dikunci fixture). Belum ada paid regen shield atau efek status selain burn/slow/atk-slow/skill-down/anti-heal. Jalur Mage didokumentasikan terpisah, lihat [kontrak mage](MAGE_CONTRACT.md).
 
 ## Sumber dan angka yang diuji
 
@@ -41,7 +41,7 @@ Biaya/refund per tier identik dengan Archer/Cannon karena tabel `cost` sama. HP/
 
 ## UI dan transaksi
 
-- Visibilitas kontekstual: **Cannon/Ice tampil ⟺ tower biru level 1 dipilih**; tombol Nexus menyingkir saat itu. Maksimal lima dari enam tombol tampil sehingga HUD 1280 tidak berubah.
+- Visibilitas kontekstual: baris **Paths** (Cannon/Ice/Mage) tampil ⟺ tower biru level 1 dipilih; tombol Nexus menyingkir saat itu. Maksimal enam dari tujuh tombol tampil dalam dua baris sehingga HUD 1280 tidak berubah.
 - Command membawa ID + expected level + path; seleksi baru tidak mengubah target tertunda. Level 2+ mengunci pilihan. Guard stale/max/poor/dead/enemy/result/pause/focus sama dengan Archer/Cannon; error `path` berpesan khusus.
 - Inspeksi Ice menyebut **kristal**, bukan panah. String harga lama dipertahankan.
 

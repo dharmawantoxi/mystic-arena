@@ -1,6 +1,6 @@
 # Kontrak jalur Cannon — level 2–6, splash + burn
 
-Tersedia hanya lewat mode **Pertandingan awal**. Tower level 1 memilih jalur **Archer**, **Cannon**, atau **Ice** secara eksplisit; level 2+ mengabaikan argumen jalur dan mempertahankan jalurnya (quirk sumber yang dikunci fixture). Belum ada Mage, paid regen shield, atau efek status selain burn/slow/atk-slow. Jalur Ice didokumentasikan terpisah, lihat [kontrak ice](ICE_CONTRACT.md).
+Tersedia hanya lewat mode **Pertandingan awal**. Tower level 1 memilih jalur **Archer**, **Cannon**, **Ice**, atau **Mage** secara eksplisit; level 2+ mengabaikan argumen jalur dan mempertahankan jalurnya (quirk sumber yang dikunci fixture). Belum ada paid regen shield atau efek status selain burn/slow/atk-slow/skill-down/anti-heal. Jalur Ice dan Mage didokumentasikan terpisah, lihat [kontrak ice](ICE_CONTRACT.md) dan [kontrak mage](MAGE_CONTRACT.md).
 
 ## Sumber dan angka yang diuji
 
@@ -47,9 +47,9 @@ Biaya/refund per tier identik dengan Archer karena tabel `cost` sama. HP/shield 
 
 ## UI dan transaksi
 
-- Tower biru level 1 menampilkan tiga pilihan: **Upgrade** (Archer), **Cannon Lv.2 · 175 G**, dan **Ice Lv.2 · 175 G**; Cannon/Ice tampil hanya untuk tower biru level 1 (Nexus menyingkir saat itu). Command membawa ID + expected level + path; seleksi baru tidak mengubah target tertunda.
+- Tower biru level 1 menampilkan empat pilihan: **Upgrade** (Archer), **Cannon Lv.2 · 175 G**, **Ice Lv.2 · 175 G**, dan **Mage Lv.2 · 175 G**; baris Paths tampil hanya untuk tower biru level 1 (Nexus menyingkir saat itu). Command membawa ID + expected level + path; seleksi baru tidak mengubah target tertunda.
 - Level 2+ mengunci pilihan: tombol Cannon nonaktif (dan disembunyikan), tombol Upgrade melanjutkan jalur yang terkunci. Guard stale/max/poor/dead/enemy/result/pause/focus sama dengan Archer; error `path` berpesan khusus.
-- Enam tombol perintah (maksimal lima tampil) muat dalam HUD 1280; `%StatusLabel` pindah ke baris sendiri. Inspeksi Cannon menyebut **peluru**, bukan panah.
+- Tujuh tombol perintah dalam dua baris (maksimal enam tampil) muat dalam HUD 1280; `%StatusLabel` pindah ke baris sendiri. Inspeksi Cannon menyebut **peluru**, bukan panah.
 
 ## Bukti
 

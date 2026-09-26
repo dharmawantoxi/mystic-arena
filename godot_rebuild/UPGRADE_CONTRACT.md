@@ -1,6 +1,6 @@
 # Kontrak upgrade Archer — level 1–6
 
-Tersedia hanya lewat mode **Pertandingan awal**. Laboratorium siege tetap memulai Archer tier 1 tanpa tombol upgrade. Jalur Cannon level 2–6 kini tersedia terpisah, lihat [kontrak cannon](CANNON_CONTRACT.md). Jalur Ice level 2–6 kini tersedia terpisah, lihat [kontrak ice](ICE_CONTRACT.md). Belum ada Mage atau paid regen shield. Upgrade nexus kini tersedia terpisah, lihat [kontrak nexus](NEXUS_CONTRACT.md).
+Tersedia hanya lewat mode **Pertandingan awal**. Laboratorium siege tetap memulai Archer tier 1 tanpa tombol upgrade. Jalur Cannon level 2–6 kini tersedia terpisah, lihat [kontrak cannon](CANNON_CONTRACT.md). Jalur Ice level 2–6 kini tersedia terpisah, lihat [kontrak ice](ICE_CONTRACT.md). Jalur Mage level 2–6 kini tersedia terpisah, lihat [kontrak mage](MAGE_CONTRACT.md). Belum ada paid regen shield. Upgrade nexus kini tersedia terpisah, lihat [kontrak nexus](NEXUS_CONTRACT.md).
 
 ## Sumber dan angka yang diuji
 

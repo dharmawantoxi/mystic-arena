@@ -109,10 +109,22 @@ Jalur Ice 2–6 **bersama** slow gerak + attack-slow, AOE slow L6, muzzle krista
 
 Temuan yang dikunci: `apply_slow`/`atk_slow` overwrite saat stronger ATAU longer (weaker+longer menimpa amount — quirk sumber); tick decrement lalu nolkan amount; `_eff_speed` f64 exact; attack-cd 45→53/60/75 dan 22→26/29/37; AOE L6 inklusif 80px tanpa damage ke korban AOE, ally/mati diskip; muzzle kristal x=500 face-independen + offset aim 5px dalam double (Vector2 f32 dilarang sebelum penjumlahan akhir). Skema UI: 6 tombol, Cannon/Ice visible ⟺ tower biru L1 dipilih, Nexus disembunyikan saat itu (maksimal 5 tampil).
 
+## Tahap mage: selesai di CI Linux (sesi lanjutan)
+
+Jalur Mage 2–6 **bersama** chain 2–4 tanpa refill, skill-down + anti-heal, muzzle kristal sumber, pilihan 4 jalur eksplisit, dan baris UI Paths — **lulus 4.452 native checks** Godot 4.7.2 di Linux.
+
+| Commit (branch `arena/01a0d939-mystic-arena`) | Cakupan | Bukti native |
+|---|---|---|
+| `c10de78` | Oracle/fixture Mage (path, 5 tier, muzzle kristal 5×8 arah, volley chain 5×3, on-hit 3 level, stacking 2 debuff + tick + regen anti-heal) | [CI oracle](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36208070832) |
+| `fbace74` | Domain + tes Mage (skill-down/anti-heal, chain tanpa refill, muzzle f64, `_mage_impact`, 5 tier `.tres`, `mage_checks.gd`) | [4.425 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36208534296) |
+| `f1b80b9` | Tombol Mage + baris Paths + scene checks UI/lifecycle | [4.452 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36208792355) |
+
+Temuan yang dikunci: chain melewati identitas-target/mati/luar-range sesuai urutan, cap chain, tanpa refill (solo = 1 bolt); semua bolt satu muzzle target utama; stack rule quirk sama (weaker+longer menimpa); anti-heal di setter HP dengan quirk cap-then-scale (44.8→44.9) dan full-block 1.0 di L6; mati = clear debuff; skill-down tanpa efek pada minion (konsumen `Hero.skill_damage` di luar scope). UI: 7 tombol dua baris, Paths visible ⟺ tower biru L1, Nexus menyingkir (maksimal 6 tampil). Keempat jalur tower selesai; berikutnya hero/skill + AI.
+
 ## Langkah berikutnya
 
 1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal** (termasuk pilih Cannon); perbaiki error sebelum menambah konten.
-2. Cannon selesai di CI (`81765fd`, 3.713 checks). Lihat `CANNON_CONTRACT.md`. Ice selesai di CI (`3e8ad59`, 4.035 checks). Lihat `ICE_CONTRACT.md`.
+2. Cannon selesai di CI (`81765fd`, 3.713 checks). Lihat `CANNON_CONTRACT.md`. Ice selesai di CI (`3e8ad59`, 4.035 checks). Lihat `ICE_CONTRACT.md`. Mage selesai di CI (`f1b80b9`, 4.452 checks). Lihat `MAGE_CONTRACT.md`.
 3. Audit satu hero/skill dan AI sumber secara bertahap. Ganti lawan sementara hanya setelah perilakunya diuji; jangan mengklaim scripted builder sebagai AI penuh.
 4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.
 5. Push bertahap pada branch sesi baru, pantau CI dan perbarui handoff ini.
