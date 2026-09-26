@@ -19,6 +19,7 @@ const MINIONS := {
 }
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const HERO_SPAWN := Vector2(220, 540)
+const HERO_HUNT_RANGE := 900.0
 
 var economy := Economy.new()
 var scheduler := Scheduler.new()
@@ -116,7 +117,7 @@ func step_tick() -> void:
 	super.step_tick()
 	if is_running():
 		_step_defender()
-		_step_hero_melee()
+		_step_hero_act()
 
 
 func get_slot(id: int) -> Slot:
@@ -215,35 +216,37 @@ func _step_defender() -> void:
 		_defender_built += 1
 
 
-func _step_hero_melee() -> void:
-	# Kaizen-1 auto-swing only: no lane march, no W/E/R, no pathfinding.
+func _step_hero_act() -> void:
+	# Port of Hero.update states 4–5 only: melee if in range, else hunt.
+	# No retreat, destination, follow, push, auto-cast, or W/E/R.
 	var hero := blue_hero()
-	if hero == null or not hero.alive or hero.stun_timer > 0:
+	if hero == null or not hero.alive or hero.stun_timer > 0 or hero.is_dashing:
 		return
-	if hero.attack_timer != 0:
+	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
+	if melee != null:
+		if hero.attack_timer == 0:
+			hero_basic_attack(hero.id, melee.id)
 		return
-	var target := _hero_melee_target(hero)
-	if target == null:
-		return
-	hero_basic_attack(hero.id, target.id)
+	var hunted := _hero_pick_target(hero, HERO_HUNT_RANGE, false)
+	if hunted != null:
+		_move_toward(hero, hunted.position)
 
 
-func _hero_melee_target(hero: HeroState) -> UnitState:
-	var reach := hero.eff_attack_range()
+func _hero_pick_target(hero: HeroState, reach: float, inclusive: bool) -> UnitState:
 	var best: UnitState = null
 	var best_dist := reach
 	for unit in units:
 		if not unit.alive or unit.team == hero.team or unit.id == hero.id:
 			continue
 		var distance := hero.position.distance_to(unit.position)
-		if distance <= best_dist:
+		if (distance <= best_dist) if inclusive else (distance < best_dist):
 			best = unit
 			best_dist = distance
 	for structure in structures:
 		if not structure.alive or structure.team == hero.team:
 			continue
 		var distance := hero.position.distance_to(structure.position)
-		if distance <= best_dist:
+		if (distance <= best_dist) if inclusive else (distance < best_dist):
 			best = structure
 			best_dist = distance
 	return best

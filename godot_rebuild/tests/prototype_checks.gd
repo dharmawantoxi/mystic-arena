@@ -318,11 +318,13 @@ func _replay(check: Callable) -> void:
 func _hero_melee(check: Callable) -> void:
 	var world := _world()
 	var hero = world.blue_hero()
+	var planted := hero.position
 	var foe = world.spawn_unit(GOBLIN, 1, 1)
 	foe.position = hero.position + Vector2(20, 0)
 	var hp: float = foe.hp
 	world.step_tick()
 	check.call(foe.hp < hp and hero.attack_timer > 0, "in-range hero autoswings once")
+	check.call(hero.position == planted, "in-range hero does not chase")
 	var far = world.spawn_unit(GOBLIN, 1, 1)
 	far.position = hero.position + Vector2(400, 0)
 	var far_hp: float = far.hp
@@ -334,6 +336,24 @@ func _hero_melee(check: Callable) -> void:
 	var bait_hp: float = bait.hp
 	world.step_tick()
 	check.call(bait.hp == bait_hp, "dead hero does not swing")
+	var hunt := _world()
+	var hunter = hunt.blue_hero()
+	var start := hunter.position
+	var quarry = hunt.spawn_unit(GOBLIN, 1, 1)
+	quarry.position = start + Vector2(200, 0)
+	var quarry_hp: float = quarry.hp
+	hunt.step_tick()
+	check.call(
+		hunter.position.x > start.x and quarry.hp == quarry_hp,
+		"hero hunts inside 900 without swinging"
+	)
+	var beyond := _world()
+	var idle = beyond.blue_hero()
+	var parked := idle.position
+	var ghost = beyond.spawn_unit(GOBLIN, 1, 1)
+	ghost.position = parked + Vector2(950, 0)
+	beyond.step_tick()
+	check.call(idle.position == parked, "beyond hunt range the hero stays")
 
 
 func _world() -> Prototype:
