@@ -22,7 +22,10 @@ func _ready() -> void:
 		func() -> void: match_session.request_sell(match_session.selected_id)
 	)
 	%UpgradeButton.pressed.connect(
-		func() -> void: match_session.request_upgrade(match_session.selected_id)
+		func() -> void: match_session.request_upgrade(match_session.selected_id, "archer")
+	)
+	%CannonButton.pressed.connect(
+		func() -> void: match_session.request_upgrade(match_session.selected_id, "cannon")
 	)
 	%NexusButton.pressed.connect(
 		func() -> void: match_session.request_nexus_upgrade(match_session.selected_id)
@@ -71,9 +74,20 @@ func _process(_delta: float) -> void:
 	)
 	var price := world.upgrade_price(simulation.selected_id)
 	%UpgradeButton.disabled = locked or price <= 0 or world.economy.gold[0] < price
+	var cannon_price := world.upgrade_price(simulation.selected_id, "cannon")
+	var cannon_choice := (
+		tower != null
+		and tower.settings().structure_kind == "tower"
+		and tower.team == 0
+		and tower.settings().level == 1
+	)
+	%CannonButton.disabled = (
+		locked or not cannon_choice or cannon_price <= 0 or world.economy.gold[0] < cannon_price
+	)
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
 	%UpgradeButton.text = "Upgrade Archer"
+	%CannonButton.text = "Cannon Lv.2"
 	%NexusButton.text = "Upgrade Nexus"
 	%SellButton.text = "Jual tower"
 	if tower != null and tower.settings().structure_kind == "tower":
@@ -83,6 +97,10 @@ func _process(_delta: float) -> void:
 			if price > 0
 			else "Archer maksimum" if tower.settings().level == 6 else "Tower lawan"
 		)
+		if tower.team == 0 and tower.settings().level == 1 and cannon_price > 0:
+			%CannonButton.text = "Cannon Lv.2 · %d G" % cannon_price
+		elif tower.team != 0:
+			%CannonButton.text = "Tower lawan"
 	if tower != null and tower.settings().structure_kind == "nexus":
 		if tower.team == 0:
 			%NexusButton.text = (
@@ -105,9 +123,10 @@ func _process(_delta: float) -> void:
 			]
 		)
 		if tower != null and tower.settings().structure_kind == "tower":
+			var ammo := "peluru" if tower.settings().tower_path == "cannon" else "panah"
 			%SelectionLabel.text += (
-				" · Shield %.0f · DMG %d · %d panah"
-				% [tower.shield, tower.definition.damage, tower.settings().volley_count]
+				" · Shield %.0f · DMG %d · %d %s"
+				% [tower.shield, tower.definition.damage, tower.settings().volley_count, ammo]
 			)
 		elif tower != null:
 			%SelectionLabel.text += (
