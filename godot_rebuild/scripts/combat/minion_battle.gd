@@ -126,11 +126,12 @@ func apply_hit(attacker_id: int, target_id: int, school: String = "physical") ->
 
 func apply_burn(target_id: int, dps: float, duration: int, team: int) -> bool:
 	# Port of TowerDebuffMixin.apply_debuff("burn"): structures have no
-	# debuff API in the source, so only living enemy units accept burn.
+	# debuff API in the source, so only living units accept burn. The
+	# source performs no team check; credit stays victim-based instead.
 	var target := get_unit(target_id)
 	if not is_running() or target == null or target is StructureState:
 		return false
-	if not target.alive or target.team == team or dps <= 0 or duration <= 0:
+	if not target.alive or dps <= 0 or duration <= 0:
 		return false
 	if target.burn_timer <= 0:
 		target.burn_dps = dps

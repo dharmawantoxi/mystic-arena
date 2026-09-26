@@ -360,7 +360,7 @@ func _falloff_and_death(check: Callable) -> void:
 	dying.hp = 3
 	world.apply_burn(dying.id, 60, 180, 0)
 	var kills_before: int = world.kills[0]
-	var gold_before: int = world.economy.gold[0]
+	var earned_before: int = world.economy.earned[0]
 	for _index in range(60):
 		world.step_tick()
 	check.call(not dying.alive, "burn damage kills")
@@ -369,7 +369,7 @@ func _falloff_and_death(check: Callable) -> void:
 		"burn death credits the victim's enemy exactly once"
 	)
 	check.call(
-		world.economy.gold[0] == gold_before + GOBLIN.gold_reward,
+		world.economy.earned[0] == earned_before + GOBLIN.gold_reward,
 		"burn kill pays the victim reward once"
 	)
 	check.call(world.economy.is_balanced(), "burn kill keeps ledger balanced")
@@ -397,7 +397,10 @@ func _guards(check: Callable) -> void:
 	var tower = world.get_unit(world.slots[0].structure_id)
 	check.call(not world.apply_burn(tower.id, 8, 120, 1), "structures cannot burn")
 	var ally = world.spawn_unit(GOBLIN, 0, 0)
-	check.call(not world.apply_burn(ally.id, 8, 120, 0), "burn rejects friendly fire")
+	check.call(
+		world.apply_burn(ally.id, 8, 120, 0),
+		"source burn has no team check; credit stays victim-based"
+	)
 	var enemy = world.spawn_unit(GOBLIN, 1, 0)
 	check.call(
 		(
