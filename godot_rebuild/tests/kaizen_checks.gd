@@ -320,6 +320,9 @@ func _quirk(check: Callable, q1: Dictionary) -> void:
 		battle.step_tick()
 	check.call(hero.q_stack == 0, "reset expires first")
 	check.call(hero.skill_timer == int(q1["skill_timer"]) - 180, "cooldown still running")
+	for _index in range(120):
+		battle.step_tick()
+	check.call(hero.skill_timer == 0, "cooldown finishes later")
 	# Minions skirmish during the wait; pin the lineup so the
 	# follow-up gate is deterministic.
 	units[0].position = Vector2(560.0, 340.0)
@@ -339,7 +342,7 @@ func _qtimers(check: Callable) -> void:
 		battle.step_tick()
 	check.call(not hero.is_dashing, "dash flag clears")
 	check.call(hero.dash_timer == 0, "dash timer clears")
-	check.call(hero.q_stack == 1, "stack survives dash")
+	check.call(hero.q_stack == 0, "stack stays spent through dash")
 	check.call(hero.q_reset_timer == 165, "reset ticks through dash")
 	for _index in range(165):
 		battle.step_tick()
