@@ -329,6 +329,9 @@ func _hero_melee(check: Callable) -> void:
 	var planted: Vector2 = hero.position
 	var foe = world.spawn_unit(GOBLIN, 1, 1)
 	foe.position = hero.position + Vector2(20, 0)
+	# Unkillable dummy: the auto-cast R (140) would otherwise drop the 45 hp
+	# goblin before the melee swing this assertion exists to verify.
+	foe.hp = 100000.0
 	var hp: float = foe.hp
 	world.step_tick()
 	check.call(foe.hp < hp and hero.attack_timer > 0, "in-range hero autoswings once")
@@ -383,6 +386,7 @@ func _hero_melee(check: Callable) -> void:
 	hold.set_hero_destination(escort.id, origin + Vector2(80, 0))
 	var blocker = hold.spawn_unit(GOBLIN, 1, 1)
 	blocker.position = escort.position + Vector2(20, 0)
+	blocker.hp = 100000.0
 	var blocker_hp: float = blocker.hp
 	hold.step_tick()
 	check.call(
@@ -589,13 +593,72 @@ func _hero_auto(check: Callable) -> void:
 	dummy.hp = 100000.0
 	off.step_tick()
 	check.call(mute.r_cooldown == 0 and mute.skill_timer == 0, "disabled auto-cast does not fire")
-	var blue := _world()
-	var player: HeroState = blue.blue_hero()
-	var near = blue.spawn_unit(GOBLIN, 1, 1)
-	near.position = player.position + Vector2(40, 0)
-	near.hp = 100000.0
-	blue.step_tick()
-	check.call(not player.auto_cast_enabled and player.skill_timer == 0, "blue Kaizen stays manual")
+	# Source v27: the player's Kaizen auto-casts exactly like the red copy.
+	var parity := _world()
+	var player: HeroState = parity.blue_hero()
+	check.call(
+		player.auto_cast_enabled and player.auto_cast_check_timer == 0,
+		"blue spawns with auto-cast on"
+	)
+	var hook = parity.spawn_unit(GOBLIN, 1, 1)
+	hook.position = player.position + Vector2(40, 0)
+	hook.hp = 100000.0
+	parity.step_tick()
+	check.call(
+		player.ulti_active and player.r_cooldown > 0 and player.skill_timer == 0,
+		"blue auto-cast R when a foe is in skill range"
+	)
+	var calm := _world()
+	var still: HeroState = calm.blue_hero()
+	for tick in range(25):
+		calm.step_tick()
+	check.call(
+		still.r_cooldown == 0 and still.skill_timer == 0, "blue auto-cast idles without a target"
+	)
+	var duo := _world()
+	var pair: HeroState = duo.blue_hero()
+	pair.r_cooldown = 900
+	var left = duo.spawn_unit(GOBLIN, 1, 1)
+	var right = duo.spawn_unit(GOBLIN, 1, 1)
+	left.position = pair.position + Vector2(30, 0)
+	right.position = pair.position + Vector2(0, 30)
+	left.hp = 100000.0
+	right.hp = 100000.0
+	duo.step_tick()
+	check.call(pair.e_cooldown > 0 and not pair.ulti_active, "blue auto-cast E with two foes")
+	var tired := _world()
+	var saver: HeroState = tired.blue_hero()
+	saver.r_cooldown = 900
+	saver.e_cooldown = 420
+	saver.w_cooldown = 240
+	var lone = tired.spawn_unit(GOBLIN, 1, 1)
+	lone.position = saver.position + Vector2(40, 0)
+	lone.hp = 100000.0
+	tired.step_tick()
+	check.call(saver.skill_timer > 0 and saver.q_stack == 1, "blue auto-cast Q last")
+	var muted := _world()
+	var quiet2: HeroState = muted.blue_hero()
+	quiet2.auto_cast_enabled = false
+	var dummy2 = muted.spawn_unit(GOBLIN, 1, 1)
+	dummy2.position = quiet2.position + Vector2(40, 0)
+	dummy2.hp = 100000.0
+	muted.step_tick()
+	check.call(
+		quiet2.r_cooldown == 0 and quiet2.skill_timer == 0, "muted blue auto-cast does not fire"
+	)
+	check.call(muted._set_hero_autocast(quiet2.id), "status command re-enables blue auto-cast")
+	muted.step_tick()
+	check.call(
+		quiet2.auto_cast_enabled and quiet2.ulti_active and quiet2.r_cooldown > 0,
+		"re-enabled blue auto-cast fires"
+	)
+	check.call(not muted._set_hero_autocast(9999), "autocast rejects unknown id")
+	var rival = _foe_hero(muted)
+	check.call(not muted._set_hero_autocast(rival.id), "autocast refuses the red hero")
+	quiet2.alive = false
+	check.call(not muted._set_hero_autocast(quiet2.id), "autocast refuses a dead hero")
+	muted.winner = 1
+	check.call(not muted._set_hero_autocast(rival.id), "autocast refuses a finished match")
 
 
 func _foe_hero(world: Prototype) -> HeroState:

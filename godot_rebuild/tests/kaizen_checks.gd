@@ -105,6 +105,10 @@ func _identity(check: Callable, expected: Dictionary) -> void:
 	check.call(hero.target_id == -1 and hero.target_struct == null, "no target at spawn")
 	check.call(hero.attack_timer == 0 and hero.skill_timer == 0, "timers zero at spawn")
 	check.call(hero.deaths == 0 and hero.killed_by == -1, "no deaths at spawn")
+	check.call(
+		hero.auto_cast_enabled and hero.auto_cast_check_timer == 0,
+		"blue auto-cast on at spawn (source v27)"
+	)
 	var qstate: Array = expected["q_state"]
 	check.call(
 		(
