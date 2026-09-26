@@ -11,3 +11,7 @@ var speed := 8.0
 var hit_radius := 4.0
 var ttl_ticks := 180
 var active := true
+var kind := "normal"
+var splash_radius := 0.0
+var burn_dps := 0.0
+var burn_duration := 0

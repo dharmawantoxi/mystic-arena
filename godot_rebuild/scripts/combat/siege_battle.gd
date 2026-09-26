@@ -181,6 +181,14 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 func muzzle_position(source: StructureState, target: Vector2) -> Vector2:
 	if source.settings().structure_kind == "nexus":
 		return source.position + Vector2(0, -25)
+	if source.settings().tower_path == "cannon":
+		# Exact source helper order: float scale, then Python-style int truncation.
+		var row: Array = CANNON_MUZZLE[clampi(source.settings().level, 1, 6) - 1]
+		var face := 1.0 if target.x > source.position.x else -1.0
+		var center_y := 153.0 - float(row[0]) - 5.0 - 2.0 - 7.0
+		var muzzle_x := source.position.x + float(row[1]) * face * 0.7
+		var muzzle_y := source.position.y - 94.0 + center_y * 0.7
+		return Vector2(int(muzzle_x), int(muzzle_y))
 	# Exact source bow helper: scalar doubles before Python-style int truncation.
 	var side := 7.0 if target.x > source.position.x else -7.0
 	return Vector2(
@@ -280,8 +288,31 @@ func _update_projectiles(source: StructureState) -> void:
 			# Deactivate BEFORE delivery: duplicate updates cannot apply the hit again.
 			shot.active = false
 			_deliver_hit(shot.source_id, shot.team, target, shot.damage, "physical", shot.position)
+			if shot.kind == "cannon":
+				_cannon_impact(shot, target)
 		else:
 			shot.position += offset.normalized() * shot.speed
+
+
+func _cannon_impact(shot: Projectile, main: UnitState) -> void:
+	# Port of Bullet._on_hit "cannon": burn the main target, then 60%
+	# splash + burn to enemy units within radius of the impact point.
+	# Source all_units never contains structures, so towers take no splash.
+	if main.alive and shot.burn_dps > 0:
+		apply_burn(main.id, shot.burn_dps, shot.burn_duration, shot.team)
+	if shot.splash_radius <= 0:
+		return
+	var splash_damage := int(float(shot.damage) * 0.6)
+	if splash_damage <= 0:
+		return
+	for victim in units:
+		if victim == main or victim.team == shot.team or not victim.alive:
+			continue
+		if victim.position.distance_to(main.position) > shot.splash_radius:
+			continue
+		_deliver_hit(shot.source_id, shot.team, victim, splash_damage, "physical", shot.position)
+		if victim.alive and shot.burn_dps > 0:
+			apply_burn(victim.id, shot.burn_dps, shot.burn_duration, shot.team)
 
 
 func _retire_dead() -> void:

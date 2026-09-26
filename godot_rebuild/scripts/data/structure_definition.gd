@@ -7,6 +7,10 @@ extends "res://scripts/data/minion_definition.gd"
 @export var upgrade_price: int = 0
 @export var sale_refund: int = 50
 @export_enum("tower", "nexus") var structure_kind: String = "tower"
+@export_enum("archer", "cannon") var tower_path: String = "archer"
+@export var splash_radius_px: float = 0.0
+@export var burn_dps: float = 0.0
+@export var burn_duration_ticks: int = 0
 @export var shield_capacity: float = 800.0
 @export var hp_regen_delay_ticks: int = 300
 @export var shield_regen_enabled: bool = false
@@ -21,6 +25,10 @@ extends "res://scripts/data/minion_definition.gd"
 func is_valid() -> bool:
 	return (
 		structure_kind in ["tower", "nexus"]
+		and tower_path in ["archer", "cannon"]
+		and splash_radius_px >= 0
+		and burn_dps >= 0
+		and burn_duration_ticks >= 0
 		and level >= 1
 		and level <= 6
 		and volley_count >= 1

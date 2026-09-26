@@ -88,6 +88,9 @@ func step_tick() -> void:
 		if not unit.alive:
 			continue
 		unit.cooldown_ticks = maxi(0, unit.cooldown_ticks - 1)
+		_tick_burn(unit)
+		if not unit.alive:
+			continue
 		unit.hp = minf(unit.definition.max_hp, unit.hp + unit.definition.regen_per_tick)
 		var target := _find_target(unit)
 		unit.target_id = target.id if target != null else -1
@@ -117,6 +120,60 @@ func apply_hit(attacker_id: int, target_id: int, school: String = "physical") ->
 	attacker.cooldown_ticks = attacker.definition.attack_cooldown_ticks
 	attacker.facing = -1.0 if target.position.x < attacker.position.x else 1.0
 	return true
+
+
+func apply_burn(target_id: int, dps: float, duration: int, team: int) -> bool:
+	# Port of TowerDebuffMixin.apply_debuff("burn"): structures have no
+	# debuff API in the source, so only living enemy units accept burn.
+	var target := get_unit(target_id)
+	if not is_running() or target == null or target is StructureState:
+		return false
+	if not target.alive or target.team == team or dps <= 0 or duration <= 0:
+		return false
+	if target.burn_timer <= 0:
+		target.burn_dps = dps
+		target.burn_accum = 0.0
+		target.burn_tick_cd = BURN_TICK_INTERVAL
+	else:
+		target.burn_dps = maxf(target.burn_dps, dps)
+	target.burn_timer = maxi(target.burn_timer, duration)
+	target.burn_team = team
+	return true
+
+
+func _tick_burn(unit: UnitState) -> void:
+	# Port of the burn branch in _tick_tower_debuffs. Damage ticks every
+	# 30 frames from a per-tick dps/60 accumulator with int truncation.
+	# Credit follows the source victim-based rule: the victim's enemy.
+	if unit.burn_timer <= 0:
+		return
+	unit.burn_timer -= 1
+	unit.burn_accum += unit.burn_dps / BURN_TICKS_PER_SECOND
+	unit.burn_tick_cd -= 1
+	if unit.burn_tick_cd <= 0:
+		unit.burn_tick_cd = BURN_TICK_INTERVAL
+		var damage := int(unit.burn_accum)
+		if damage > 0 and unit.alive:
+			unit.burn_accum -= damage
+			unit.hp = maxf(0, unit.hp - damage)
+			_record(
+				{
+					"kind": "hit",
+					"burn": true,
+					"source_id": -1,
+					"target_id": unit.id,
+					"from": unit.position,
+					"to": unit.position,
+					"damage": damage
+				}
+			)
+			if unit.hp <= 0:
+				unit.alive = false
+				_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
+				_on_death(1 - unit.team, unit)
+	if unit.burn_timer <= 0:
+		unit.burn_dps = 0.0
+		unit.burn_accum = 0.0
 
 
 func _deliver_hit(

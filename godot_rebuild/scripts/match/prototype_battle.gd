@@ -295,7 +295,7 @@ func _owned_nexus(entity_id: int) -> StructureState:
 	return nexus
 
 
-func _owned_archer(entity_id: int) -> StructureState:
+func _owned_tower(entity_id: int) -> StructureState:
 	var tower := get_unit(entity_id) as StructureState
 	if tower == null or not tower.alive or tower.team != BLUE:
 		return null

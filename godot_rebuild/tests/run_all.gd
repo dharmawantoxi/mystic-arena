@@ -3,6 +3,7 @@ extends SceneTree
 
 const NexusSceneChecks = preload("res://tests/nexus_scene_checks.gd")
 const NexusChecks = preload("res://tests/nexus_checks.gd")
+const CannonChecks = preload("res://tests/cannon_checks.gd")
 const UpgradeSceneChecks = preload("res://tests/upgrade_scene_checks.gd")
 const UpgradeChecks = preload("res://tests/upgrade_checks.gd")
 const PrototypeChecks = preload("res://tests/prototype_checks.gd")
