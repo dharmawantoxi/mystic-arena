@@ -40,6 +40,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var foe = world.spawn_unit(world.MINIONS["goblin"], 1, 1)
 	foe.position = hero.position + Vector2(40, 0)
 	foe.hp = 100000.0
+	foe.waypoint_index = 8
 	session.selected_id = hero.id
 	await _settle(tree)
 	check.call(not screen.get_node("%SkillQButton").disabled, "Q enables with a target")
@@ -94,8 +95,11 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"pause cancels move"
 	)
 	screen.resume_match()
+	if foe == null or not foe.alive or world.get_unit(foe.id) == null:
+		foe = world.spawn_unit(world.MINIONS["goblin"], 1, 1)
 	foe.alive = true
 	foe.hp = 100000.0
+	foe.waypoint_index = 8
 	foe.position = hero.position + Vector2(80, 0)
 	session.selected_id = hero.id
 	check.call(session.request_hero_follow(hero.id, foe.id), "follow queues")
@@ -120,16 +124,22 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		hero.wind_wall_timer > 0 and session.last_action.contains("Wind Wall"),
 		"queued W raises the wall"
 	)
+	if world.get_unit(foe.id) == null:
+		foe = world.spawn_unit(world.MINIONS["goblin"], 1, 1)
 	foe.alive = true
 	foe.hp = 100000.0
+	foe.waypoint_index = 8
 	foe.position = hero.position + Vector2(40, 0)
 	hero.e_cooldown = 0
 	session.selected_id = hero.id
 	screen.get_node("%SkillEButton").pressed.emit()
 	session._physics_process(1.0 / 60.0)
 	check.call(hero.e_cooldown > 0 and session.last_action.contains("Sweep"), "queued E sweeps")
+	if world.get_unit(foe.id) == null:
+		foe = world.spawn_unit(world.MINIONS["goblin"], 1, 1)
 	foe.alive = true
 	foe.hp = 100000.0
+	foe.waypoint_index = 8
 	foe.position = hero.position + Vector2(40, 0)
 	hero.r_cooldown = 0
 	session.selected_id = hero.id

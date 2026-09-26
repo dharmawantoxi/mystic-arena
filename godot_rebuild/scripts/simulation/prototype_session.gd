@@ -156,8 +156,9 @@ func request_skill_r(entity_id: int) -> bool:
 
 
 func request_hero_upgrade(entity_id: int) -> bool:
-	var hero := world.get_unit(entity_id) as HeroState
-	if hero == null or not _queue("hero_upgrade", entity_id):
+	var match_world := world as Prototype
+	var hero: HeroState = match_world.blue_hero()
+	if hero == null or hero.id != entity_id or not _queue("hero_upgrade", entity_id):
 		return false
 	command.level = hero.level
 	return true
