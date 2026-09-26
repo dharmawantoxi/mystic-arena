@@ -24,6 +24,7 @@ Diperbarui: 26 September 2026 (Push C ditutup: Kaizen-1 prototipe). Pengguna mem
 | `6e115e4` | Inti upgrade Archer 1–6, resource/refund/source volley | [1.879 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153624268) |
 | `7c96c83` | UI upgrade/refund, expected-level command, impact/overkill | [1.905 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153883271) |
 | `0078e79` | Kaizen-1 prototipe: QWER, dest/follow, hunt/push, retreat, heal, upgrade, respawn | [4.780 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36218349274) |
+| `21dd08c` | Kaizen merah: spawn `(1120, 130)`, loop retreat/push/hunt/respawn, tanpa perintah pemain | [4.789 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36218605585) |
 
 Commit dokumentasi setelahnya tercatat di `git log`. Native HEAD Kaizen-1: run **36218349274**, PASS 4780.
 
