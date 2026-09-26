@@ -46,7 +46,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	session._physics_process(1.0 / 60.0)
 	check.call(
 		(
-			hero.skill_timer == hero.skill_cd_max
+			hero.skill_timer == hero.skill_cd_max - 1
 			and hero.q_stack == 1
 			and session.last_action.contains("Steel Wind")
 		),

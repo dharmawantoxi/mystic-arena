@@ -380,6 +380,11 @@ func blue_hero() -> HeroState:
 	return null
 
 
+func blue_q_ready() -> bool:
+	var hero := blue_hero()
+	return hero != null and can_cast_hero_q(hero.id, structures)
+
+
 func cast_blue_q(hero_id: int) -> bool:
 	transaction_error = ""
 	var hero := get_unit(hero_id) as HeroState

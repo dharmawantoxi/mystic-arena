@@ -113,7 +113,7 @@ func _process(_delta: float) -> void:
 	%NexusButton.visible = not path_choice
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
-	var hero_ready := hero != null and hero.alive and hero.team == 0 and hero.skill_timer == 0
+	var hero_ready := hero != null and hero.team == 0 and world.blue_q_ready()
 	%SkillQButton.visible = hero != null and hero.team == 0
 	%SkillQButton.disabled = locked or not hero_ready
 	%SkillQButton.text = (

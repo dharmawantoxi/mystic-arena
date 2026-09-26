@@ -573,6 +573,15 @@ func upgrade_hero(hero_id: int) -> bool:
 	return hero.upgrade()
 
 
+func can_cast_hero_q(hero_id: int, structures: Array = []) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.skill_timer > 0:
+		return false
+	return _has_q_target(hero, structures)
+
+
 func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 	# Port of KaizenSkills.cast_q: Q1 Steel Wind at stack 0, Q2 Dash
 	# Strike at stack 1. Structures (towers, then bases) mirror the

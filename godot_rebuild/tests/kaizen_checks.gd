@@ -409,3 +409,8 @@ func _guards(check: Callable) -> void:
 	check.call(not battle.cast_hero_q(hero.id), "dead hero cannot cast")
 	var lonely = _hero(Battle.new(), 500.0, 340.0)
 	check.call(lonely != null, "lonely hero spawns")
+	var ready := _battle()
+	var caster = _hero(ready, 500.0, 340.0)
+	check.call(not ready.can_cast_hero_q(caster.id), "lonely Q has no target")
+	_victim(ready, 530.0, 340.0, RED, FAT_HP)
+	check.call(ready.can_cast_hero_q(caster.id), "live hero readies Q on foe")
