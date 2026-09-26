@@ -78,6 +78,14 @@ func get_unit(id: int) -> UnitState:
 	return _by_id.get(id) as UnitState
 
 
+func living_minion_count() -> int:
+	var count := 0
+	for unit in units:
+		if unit.alive and not unit.is_hero:
+			count += 1
+	return count
+
+
 func is_running() -> bool:
 	return true
 

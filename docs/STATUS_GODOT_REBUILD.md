@@ -1,11 +1,11 @@
 # Status & handoff — Godot Rebuild
 
-Diperbarui: 25 September 2026 (sesi lanjutan nexus). Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
+Diperbarui: 26 September 2026 (Push C: hero UI prototipe). Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
 
 ## Aturan pekerjaan
 
 - Gunakan proyek **`godot_rebuild/`**, bukan migrasi lama. Python/Pygame tetap referensi; jangan mengubahnya agar port lolos.
-- Branch sesi baru **`arena/01a0d939-mystic-arena`**, bercabang dari `main` pada merge commit `64e45e9` (PR #278). Jangan memakai branch sesi lama `arena/01a0d776-mystic-arena`.
+- Branch sesi **`arena/01a0db9f-mystic-arena`**, bercabang dari `main` pada merge `8a940fd` (PR #279). Jangan memakai branch sesi lama.
 - [PR #278](https://github.com/dharmawantoxi/mystic-arena/pull/278) **sudah MERGED** ke `main` (`64e45e9`). Catatan historis yang menyebut PR #278 OPEN adalah status sebelum merge.
 - Push checkpoint berkala ke branch sesi baru sebelum sesi habis; tidak ada indikator batas sesi yang pasti. Jangan menunggu batas sesi untuk push.
 - Jangan mengklaim seluruh migrasi selesai karena laboratorium/prototipe ini berjalan.
@@ -123,9 +123,9 @@ Temuan yang dikunci: chain melewati identitas-target/mati/luar-range sesuai urut
 
 ## Langkah berikutnya
 
-1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal** (termasuk pilih Cannon); perbaiki error sebelum menambah konten.
-2. Cannon selesai di CI (`81765fd`, 3.713 checks). Lihat `CANNON_CONTRACT.md`. Ice selesai di CI (`3e8ad59`, 4.035 checks). Lihat `ICE_CONTRACT.md`. Mage selesai di CI (`f1b80b9`, 4.452 checks). Lihat `MAGE_CONTRACT.md`.
-3. Audit satu hero/skill dan AI sumber secara bertahap. Ganti lawan sementara hanya setelah perilakunya diuji; jangan mengklaim scripted builder sebagai AI penuh.
+1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal** (Kaizen + Q); perbaiki error sebelum menambah konten.
+2. Domain Kaizen-1 sudah di `main` (PR #279). Push C: spawn prototipe, tombol Q, inspeksi — lihat `HERO_CONTRACT.md`.
+3. Berikutnya: auto-attack/movement hero, W/E/R, atau ganti lawan sementara **hanya** setelah AI sumber diuji. Jangan mengklaim scripted builder sebagai AI penuh.
 4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.
 5. Push bertahap pada branch sesi baru, pantau CI dan perbarui handoff ini.
 

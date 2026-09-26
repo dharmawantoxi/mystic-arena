@@ -170,7 +170,7 @@ func _scheduler_teams(check: Callable, fixture: Dictionary) -> void:
 	var world := _rich_world()
 	for tick in range(301):
 		world.step_tick()
-	check.call(world.wave_count == 1 and world.units.size() == 2, "wave one pair")
+	check.call(world.wave_count == 1 and world.living_minion_count() == 2, "wave one pair")
 	var pending: int = world.scheduler.pending_count()
 	check.call(pending == 16, "tier-one wave one queue holds remainder")
 	world.upgrade_nexus(world.nexuses[0].id, 1)

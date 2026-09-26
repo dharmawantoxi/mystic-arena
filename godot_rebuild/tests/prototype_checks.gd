@@ -26,6 +26,15 @@ func _fixtures(check: Callable) -> void:
 	check.call(
 		world.setup_arena() and world.structures.size() == 2, "match starts with only two nexuses"
 	)
+	check.call(
+		(
+			world.blue_hero() != null
+			and world.blue_hero().settings().id == "kaizen"
+			and world.blue_hero().position == world.HERO_SPAWN
+			and world.living_minion_count() == 0
+		),
+		"match starts with Kaizen and no minions"
+	)
 	check.call(not world.setup_arena(), "match setup is idempotent")
 	check.call(
 		world.economy.gold == [int(data.normal_start), int(data.ai_start)],
@@ -242,19 +251,20 @@ func _progress_and_result(check: Callable) -> void:
 	for tick in range(300):
 		world.step_tick()
 	check.call(
-		world.wave_count == 0 and world.units.is_empty(), "initial 300-tick preparation window"
+		world.wave_count == 0 and world.living_minion_count() == 0,
+		"initial 300-tick preparation window"
 	)
 	check.call(world.economy.gold == [1015, 365], "passive gold is active during preparation")
 	world.step_tick()
 	check.call(
-		world.wave_count == 1 and world.units.size() == 2,
+		world.wave_count == 1 and world.living_minion_count() == 2,
 		"tick 301 starts and immediately spawns first pair"
 	)
 	for tick in range(19):
 		world.step_tick()
-	check.call(world.units.size() == 2, "no early second spawn")
+	check.call(world.living_minion_count() == 2, "no early second spawn")
 	world.step_tick()
-	check.call(world.units.size() == 4, "tick 321 spawns next pair during wave timer")
+	check.call(world.living_minion_count() == 4, "tick 321 spawns next pair during wave timer")
 	var nexus = world.nexuses[1]
 	nexus.shield_active = false
 	nexus.shield = 0

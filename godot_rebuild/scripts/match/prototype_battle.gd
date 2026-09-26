@@ -17,6 +17,9 @@ const MINIONS := {
 	"undead": preload("res://data/minions/undead.tres"),
 	"dark_rider": preload("res://data/minions/dark_rider.tres")
 }
+const KAIZEN = preload("res://data/heroes/kaizen.tres")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
+const HERO_SPAWN := Vector2(220, 540)
 
 var economy := Economy.new()
 var scheduler := Scheduler.new()
@@ -40,6 +43,8 @@ func setup_arena() -> bool:
 	_arena_initialized = true
 	spawn_structure(NEXUS, BLUE, LaneLayout.BLUE_BASE)
 	spawn_structure(NEXUS, RED, LaneLayout.RED_BASE)
+	# Kaizen-1 only: one free blue hero. Not a catalog purchase.
+	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
 	return true
 
 
@@ -97,11 +102,8 @@ func step_tick() -> void:
 		return
 	# Input transactions are handled by the session before this method.
 	economy.step_tick(wave_count)
-	var field_clear := true
-	for unit in units:
-		if unit.alive:
-			field_clear = false
-			break
+	# Source wave gate ignores heroes; only living minions hold the field.
+	var field_clear := living_minion_count() == 0
 	var batch := scheduler.step_tick(
 		field_clear, MAX_UNITS - units.size(), nexus_level(BLUE), nexus_level(RED)
 	)
@@ -335,3 +337,26 @@ func _owned_tower(entity_id: int) -> StructureState:
 		if slot.team == BLUE and slot.structure_id == entity_id:
 			return tower
 	return null
+
+
+func blue_hero() -> HeroState:
+	for unit in units:
+		if unit.is_hero and unit.team == BLUE:
+			return unit as HeroState
+	return null
+
+
+func cast_blue_q(hero_id: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	if not cast_hero_q(hero.id, structures):
+		transaction_error = "skill"
+		return false
+	_record({"kind": "skill_q", "target_id": hero.id})
+	return true

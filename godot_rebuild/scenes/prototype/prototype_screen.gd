@@ -4,6 +4,7 @@ extends "res://scenes/combat/combat_screen.gd"
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
 const Structure = preload("res://scripts/combat/structure_state.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 
 var result_shown := false
 @onready var match_session: PrototypeSession = $Simulation
@@ -36,6 +37,9 @@ func _ready() -> void:
 	%NexusButton.pressed.connect(
 		func() -> void: match_session.request_nexus_upgrade(match_session.selected_id)
 	)
+	%SkillQButton.pressed.connect(
+		func() -> void: match_session.request_skill_q(match_session.selected_id)
+	)
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -61,6 +65,7 @@ func _process(_delta: float) -> void:
 	var slot := world.get_slot(match_session.selected_slot_id)
 	var selected := world.get_unit(simulation.selected_id)
 	var tower := selected as Structure
+	var hero := selected as HeroState
 	var locked := (
 		get_tree().paused or not world.is_running() or not match_session.command.is_empty()
 	)
@@ -108,6 +113,12 @@ func _process(_delta: float) -> void:
 	%NexusButton.visible = not path_choice
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
+	var hero_ready := hero != null and hero.alive and hero.team == 0 and hero.skill_timer == 0
+	%SkillQButton.visible = hero != null and hero.team == 0
+	%SkillQButton.disabled = locked or not hero_ready
+	%SkillQButton.text = (
+		"Q · CD %d" % hero.skill_timer if hero != null and hero.skill_timer > 0 else "Skill Q"
+	)
 	%UpgradeButton.text = "Upgrade Archer"
 	%CannonButton.text = "Cannon Lv.2"
 	%IceButton.text = "Ice Lv.2"
@@ -144,6 +155,9 @@ func _process(_delta: float) -> void:
 			%NexusButton.text = "Nexus lawan"
 	%SelectionLabel.text = "Slot biru: bangun Archer. Tower biru: jual kembali."
 	if selected != null:
+		var max_hp := selected.definition.max_hp
+		if hero != null:
+			max_hp = int(hero.max_hp)
 		%SelectionLabel.text = (
 			"%s #%d · %s · HP %.0f/%d"
 			% [
@@ -151,10 +165,14 @@ func _process(_delta: float) -> void:
 				selected.id,
 				"BIRU" if selected.team == 0 else "MERAH",
 				selected.hp,
-				selected.definition.max_hp
+				max_hp
 			]
 		)
-		if tower != null and tower.settings().structure_kind == "tower":
+		if hero != null:
+			%SelectionLabel.text += (
+				" · Lv.%d · Q stack %d · skill CD %d" % [hero.level, hero.q_stack, hero.skill_timer]
+			)
+		elif tower != null and tower.settings().structure_kind == "tower":
 			var ammo := "panah"
 			var shots: int = tower.settings().volley_count
 			if tower.settings().tower_path == "cannon":
@@ -187,6 +205,19 @@ func _process(_delta: float) -> void:
 		%ArenaTitle.text = "BIRU MENANG" if world.winner == 0 else "MERAH MENANG"
 		%PauseButton.text = "Hasil [Esc]"
 		pause_match()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.physical_keycode == KEY_Q
+	):
+		match_session.request_skill_q(match_session.selected_id)
+		get_viewport().set_input_as_handled()
+		return
+	super._unhandled_input(event)
 
 
 func _select(point: Vector2) -> void:

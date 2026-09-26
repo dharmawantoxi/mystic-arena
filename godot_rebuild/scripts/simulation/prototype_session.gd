@@ -35,26 +35,31 @@ func _physics_process(_delta: float) -> void:
 			)
 		elif command.kind == "nexus":
 			accepted = match_world.upgrade_nexus(command.id, command.level)
+		elif command.kind == "skill_q":
+			accepted = match_world.cast_blue_q(command.id)
 		else:
 			accepted = match_world.sell_tower(0, command.id)
 			if accepted and selected_id == command.id:
 				selected_id = -1
 		if accepted:
-			var delta_gold: int = match_world.economy.gold[0] - balance_before
-			var upgrade_label := "Archer ditingkatkan"
-			if command.get("path") == "cannon":
-				upgrade_label = "Cannon ditingkatkan"
-			elif command.get("path") == "ice":
-				upgrade_label = "Ice ditingkatkan"
-			elif command.get("path") == "mage":
-				upgrade_label = "Mage ditingkatkan"
-			var action: String = {
-				"build": "Archer dibangun",
-				"sell": "Tower dijual",
-				"upgrade": upgrade_label,
-				"nexus": "Nexus ditingkatkan"
-			}[command.kind]
-			last_action = "%s: %+d G." % [action, delta_gold]
+			if command.kind == "skill_q":
+				last_action = "Kaizen memakai Steel Wind (Q)."
+			else:
+				var delta_gold: int = match_world.economy.gold[0] - balance_before
+				var upgrade_label := "Archer ditingkatkan"
+				if command.get("path") == "cannon":
+					upgrade_label = "Cannon ditingkatkan"
+				elif command.get("path") == "ice":
+					upgrade_label = "Ice ditingkatkan"
+				elif command.get("path") == "mage":
+					upgrade_label = "Mage ditingkatkan"
+				var action: String = {
+					"build": "Archer dibangun",
+					"sell": "Tower dijual",
+					"upgrade": upgrade_label,
+					"nexus": "Nexus ditingkatkan"
+				}[command.kind]
+				last_action = "%s: %+d G." % [action, delta_gold]
 		else:
 			var max_text := "Tower sudah level maksimum (6)."
 			var stale_text := "Level tower sudah berubah; pilih upgrade kembali."
@@ -70,7 +75,8 @@ func _physics_process(_delta: float) -> void:
 					"capacity": "Batas bangunan tercapai.",
 					"stale": stale_text,
 					"path": "Pilih jalur upgrade yang valid.",
-					"max_level": max_text
+					"max_level": max_text,
+					"skill": "Q tidak siap atau tidak ada target."
 				}
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
@@ -103,6 +109,10 @@ func request_nexus_upgrade(entity_id: int) -> bool:
 		return false
 	command.level = nexus.settings().level
 	return true
+
+
+func request_skill_q(entity_id: int) -> bool:
+	return _queue("skill_q", entity_id)
 
 
 func request_wave(_type_index: int) -> bool:
