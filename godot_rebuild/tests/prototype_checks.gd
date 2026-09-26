@@ -503,6 +503,7 @@ func _hero_foe(check: Callable) -> void:
 	)
 	var flee := _world()
 	var runner: HeroState = _foe_hero(flee)
+	runner.position = Vector2(640, 360)
 	var flee_from: Vector2 = runner.position
 	runner.hp = runner.max_hp * 0.1
 	flee.step_tick()

@@ -19,7 +19,8 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 			rival = unit
 			break
 	check.call(
-		rival != null and rival.position == world.RED_HERO_SPAWN, "prototype spawns red Kaizen"
+		rival != null and rival.settings().id == "kaizen" and rival.team == 1,
+		"prototype spawns red Kaizen"
 	)
 	session.selected_id = rival.id
 	await _settle(tree)
