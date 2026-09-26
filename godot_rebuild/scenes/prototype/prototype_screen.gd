@@ -52,6 +52,9 @@ func _ready() -> void:
 	%HeroUpgradeButton.pressed.connect(
 		func() -> void: match_session.request_hero_upgrade(match_session.selected_id)
 	)
+	%AutoCastButton.pressed.connect(
+		func() -> void: match_session.request_autocast(match_session.selected_id)
+	)
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -155,6 +158,14 @@ func _process(_delta: float) -> void:
 	%SkillRButton.text = (
 		"R · CD %d" % hero.r_cooldown if hero != null and hero.r_cooldown > 0 else "Skill R"
 	)
+	# Hero row: the QWER, auto-cast and hero-upgrade controls share a
+	# dedicated row so all of them stay inside the 1280x720 viewport.
+	var hero_row := hero != null and hero.team == 0
+	%HeroCommands.visible = hero_row
+	%AutoCastButton.visible = hero_row
+	%AutoCastButton.disabled = locked or not hero_row or not hero.alive
+	if hero_row:
+		%AutoCastButton.text = ("Auto-cast · ON" if hero.auto_cast_enabled else "Auto-cast · OFF")
 	var hero_cost := 0
 	if hero != null and hero.alive and hero.team == 0:
 		hero_cost = hero.upgrade_cost()

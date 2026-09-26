@@ -24,7 +24,14 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	)
 	session.selected_id = rival.id
 	await _settle(tree)
-	check.call(not screen.get_node("%SkillQButton").visible, "red inspect hides blue skills")
+	check.call(
+		(
+			not screen.get_node("%SkillQButton").visible
+			and not screen.get_node("%AutoCastButton").visible
+			and not screen.get_node("%HeroCommands").visible
+		),
+		"red inspect hides blue skills"
+	)
 	session.selected_id = hero.id
 	session.selected_slot_id = -1
 	await _settle(tree)
@@ -161,6 +168,50 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	await _settle(tree)
 	session.selected_id = hero.id
 	session.command.clear()
+	# Auto-cast status (source v29: the button can only force ON).
+	check.call(
+		(
+			screen.get_node("%HeroCommands").visible
+			and screen.get_node("%AutoCastButton").visible
+			and screen.get_node("%AutoCastButton").text == "Auto-cast · ON"
+			and not screen.get_node("%AutoCastButton").disabled
+		),
+		"blue hero shows the auto-cast status"
+	)
+	check.call(session.request_autocast(hero.id), "autocast queues")
+	screen.get_node("%AutoCastButton").pressed.emit()
+	check.call(
+		session.command.kind == "autocast" and session.command.id == hero.id,
+		"autocast click captures hero ID once"
+	)
+	session._physics_process(1.0 / 60.0)
+	check.call(
+		hero.auto_cast_enabled and session.last_action.contains("sudah aktif"),
+		"already-on autocast confirms status"
+	)
+	hero.auto_cast_enabled = false
+	await _settle(tree)
+	check.call(
+		(
+			screen.get_node("%AutoCastButton").text == "Auto-cast · OFF"
+			and not screen.get_node("%AutoCastButton").disabled
+		),
+		"muted hero flips the status to OFF"
+	)
+	check.call(session.request_autocast(hero.id), "re-enable queues")
+	session._physics_process(1.0 / 60.0)
+	check.call(
+		hero.auto_cast_enabled and session.last_action.contains("diaktifkan"),
+		"pressed status re-enables auto-cast"
+	)
+	check.call(session.request_autocast(hero.id), "autocast queues before pause")
+	screen.pause_match()
+	check.call(
+		session.command.is_empty() and not session.request_autocast(hero.id),
+		"pause cancels autocast"
+	)
+	screen.resume_match()
+	await _settle(tree)
 	check.call(not screen.get_node("%HeroUpgradeButton").disabled, "hero upgrade offered")
 	var purse: int = world.economy.gold[0]
 	check.call(session.request_hero_upgrade(hero.id), "hero upgrade queues")
@@ -176,7 +227,11 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	world.winner = 1
 	await _settle(tree)
 	check.call(
-		screen.get_node("%SkillQButton").disabled and not session.request_skill_q(hero.id),
+		(
+			screen.get_node("%SkillQButton").disabled
+			and screen.get_node("%AutoCastButton").disabled
+			and not session.request_skill_q(hero.id)
+		),
 		"result disables Q"
 	)
 	var old_id: int = screen.get_instance_id()
@@ -185,7 +240,11 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(not is_instance_id_valid(old_id) and not tree.paused, "hero scene disposed")
 	world = app.current_screen.simulation.world
 	check.call(
-		world.blue_hero() != null and world.blue_hero().skill_timer == 0,
+		(
+			world.blue_hero() != null
+			and world.blue_hero().skill_timer == 0
+			and world.blue_hero().auto_cast_enabled
+		),
 		"restart respawns a fresh Kaizen"
 	)
 	var revived := 0

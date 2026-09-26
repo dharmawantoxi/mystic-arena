@@ -535,9 +535,9 @@ func spawn_hero(definition: HeroDefinition, team: int, pos: Vector2, level: int 
 	hero.position = pos
 	hero.facing = 1.0 if team == BLUE else -1.0
 	hero.attack_facing = hero.facing
-	# Source defaults auto-cast on; prototype keeps the player's Kaizen
-	# manual (QWER) and leaves the red copy on auto-cast like AIPlayer.
-	hero.auto_cast_enabled = team == RED
+	# Source v27: auto-cast is ON for every hero, player or not. Source
+	# v29 removed the off path: the status button can only force it on.
+	hero.auto_cast_enabled = true
 	units.append(hero)
 	_by_id[hero.id] = hero
 	return hero

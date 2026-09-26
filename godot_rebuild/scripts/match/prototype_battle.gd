@@ -239,6 +239,21 @@ func set_hero_destination(hero_id: int, point: Vector2) -> bool:
 	return true
 
 
+func _set_hero_autocast(hero_id: int) -> bool:
+	# Port of the source toggle_autocast button (v29): the flag can only
+	# be forced true, there is no off path. Blue only, like other orders.
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	hero.auto_cast_enabled = true
+	return true
+
+
 func _set_hero_follow(hero_id: int, target_id: int) -> bool:
 	transaction_error = ""
 	var hero := get_unit(hero_id) as HeroState

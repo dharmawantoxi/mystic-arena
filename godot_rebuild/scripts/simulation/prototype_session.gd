@@ -26,6 +26,10 @@ func _physics_process(_delta: float) -> void:
 	if not command.is_empty():
 		var accepted := false
 		var balance_before: int = match_world.economy.gold[0]
+		var autocast_was_on := false
+		if command.kind == "autocast":
+			var caster := match_world.get_unit(command.id) as HeroState
+			autocast_was_on = caster != null and caster.auto_cast_enabled
 		if command.kind == "build":
 			accepted = match_world.build_tower(0, command.id)
 			if accepted and selected_slot_id == command.id:
@@ -46,6 +50,8 @@ func _physics_process(_delta: float) -> void:
 			accepted = match_world._cast_blue_r(command.id)
 		elif command.kind == "hero_upgrade":
 			accepted = match_world._upgrade_blue_hero(command.id, command.level)
+		elif command.kind == "autocast":
+			accepted = match_world._set_hero_autocast(command.id)
 		elif command.kind == "move":
 			accepted = match_world.set_hero_destination(command.id, command.point)
 		elif command.kind == "follow":
@@ -66,6 +72,10 @@ func _physics_process(_delta: float) -> void:
 				last_action = "Kaizen memakai Tornado (R)."
 			elif command.kind == "hero_upgrade":
 				last_action = "Kaizen naik level: %+d G." % delta_gold
+			elif command.kind == "autocast":
+				last_action = (
+					"Auto-cast diaktifkan." if not autocast_was_on else "Auto-cast sudah aktif."
+				)
 			elif command.kind == "move":
 				last_action = "Kaizen menuju titik yang dipilih."
 			elif command.kind == "follow":
@@ -153,6 +163,11 @@ func request_skill_e(entity_id: int) -> bool:
 
 func request_skill_r(entity_id: int) -> bool:
 	return _queue("skill_r", entity_id)
+
+
+func request_autocast(entity_id: int) -> bool:
+	# Source v29: pressing can only force auto-cast ON (no off path).
+	return _queue("autocast", entity_id)
 
 
 func request_hero_upgrade(entity_id: int) -> bool:
