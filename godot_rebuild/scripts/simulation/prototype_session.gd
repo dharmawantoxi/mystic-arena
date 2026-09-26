@@ -37,6 +37,8 @@ func _physics_process(_delta: float) -> void:
 			accepted = match_world.upgrade_nexus(command.id, command.level)
 		elif command.kind == "skill_q":
 			accepted = match_world.cast_blue_q(command.id)
+		elif command.kind == "move":
+			accepted = match_world.set_hero_destination(command.id, command.point)
 		else:
 			accepted = match_world.sell_tower(0, command.id)
 			if accepted and selected_id == command.id:
@@ -44,6 +46,8 @@ func _physics_process(_delta: float) -> void:
 		if accepted:
 			if command.kind == "skill_q":
 				last_action = "Kaizen memakai Steel Wind (Q)."
+			elif command.kind == "move":
+				last_action = "Kaizen menuju titik yang dipilih."
 			else:
 				var delta_gold: int = match_world.economy.gold[0] - balance_before
 				var upgrade_label := "Archer ditingkatkan"
@@ -113,6 +117,13 @@ func request_nexus_upgrade(entity_id: int) -> bool:
 
 func request_skill_q(entity_id: int) -> bool:
 	return _queue("skill_q", entity_id)
+
+
+func request_hero_move(entity_id: int, point: Vector2) -> bool:
+	if not _queue("move", entity_id):
+		return false
+	command.point = point
+	return true
 
 
 func request_wave(_type_index: int) -> bool:

@@ -69,6 +69,23 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	app._notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
 	check.call(session.command.is_empty() and tree.paused, "focus cancels Q")
 	screen.resume_match()
+	var dest: Vector2 = hero.position + Vector2(40, 0)
+	check.call(session.request_hero_move(hero.id, dest), "move queues")
+	session.request_hero_move(hero.id, dest)
+	check.call(
+		session.command.kind == "move" and session.command.point == dest, "move captures point once"
+	)
+	session._physics_process(1.0 / 60.0)
+	check.call(
+		hero.has_destination and session.last_action.contains("titik"),
+		"queued move sets destination"
+	)
+	screen.pause_match()
+	check.call(
+		session.command.is_empty() and not session.request_hero_move(hero.id, dest),
+		"pause cancels move"
+	)
+	screen.resume_match()
 	world.winner = 1
 	await _settle(tree)
 	check.call(

@@ -216,11 +216,28 @@ func _step_defender() -> void:
 		_defender_built += 1
 
 
+func set_hero_destination(hero_id: int, point: Vector2) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	hero.has_destination = true
+	hero.destination = point
+	return true
+
+
 func _step_hero_act() -> void:
-	# Port of Hero.update states 4–5 only: melee if in range, else hunt.
-	# No retreat, destination, follow, push, auto-cast, or W/E/R.
+	# Port of Hero.update: manual destination (state 2), then melee (4), hunt (5).
+	# No retreat, follow, push, auto-cast, or W/E/R.
 	var hero := blue_hero()
 	if hero == null or not hero.alive or hero.stun_timer > 0 or hero.is_dashing:
+		return
+	if hero.has_destination:
+		_step_hero_destination(hero)
 		return
 	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
 	if melee != null:
@@ -230,6 +247,21 @@ func _step_hero_act() -> void:
 	var hunted := _hero_pick_target(hero, HERO_HUNT_RANGE, false)
 	if hunted != null:
 		_move_toward(hero, hunted.position)
+
+
+func _step_hero_destination(hero: HeroState) -> void:
+	# Source: walk first, still swing if someone is in melee, then return
+	# (hunt does not override a player click).
+	var offset := hero.destination - hero.position
+	var speed := _eff_speed(hero)
+	if offset.length() < speed:
+		hero.position = hero.destination
+		hero.has_destination = false
+	else:
+		_move_toward(hero, hero.destination)
+	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
+	if melee != null and hero.attack_timer == 0:
+		hero_basic_attack(hero.id, melee.id)
 
 
 func _hero_pick_target(hero: HeroState, reach: float, inclusive: bool) -> UnitState:

@@ -217,7 +217,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		match_session.request_skill_q(match_session.selected_id)
 		get_viewport().set_input_as_handled()
 		return
+	if (
+		event is InputEventMouseButton
+		and event.pressed
+		and event.button_index == MOUSE_BUTTON_RIGHT
+		and event.device != InputEvent.DEVICE_ID_EMULATION
+	):
+		_command_move(event.position)
+		return
 	super._unhandled_input(event)
+
+
+func _command_move(point: Vector2) -> void:
+	if not simulation.world.is_running():
+		return
+	var local := arena.get_global_transform_with_canvas().affine_inverse() * point
+	match_session.request_hero_move(match_session.selected_id, local)
+	get_viewport().set_input_as_handled()
 
 
 func _select(point: Vector2) -> void:

@@ -45,6 +45,8 @@ var wind_wall_timer := 0
 var ulti_active := false
 var ulti_timer := 0
 var target_struct: StructureState = null
+var has_destination := false
+var destination := Vector2.ZERO
 
 
 func _init() -> void:

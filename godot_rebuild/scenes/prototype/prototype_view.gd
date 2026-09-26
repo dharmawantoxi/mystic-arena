@@ -31,6 +31,13 @@ func _draw() -> void:
 		draw_arc(slot.position, 19, 0, TAU, 36, Color(color, 0.95 if selected else 0.5), 2, true)
 		draw_line(slot.position - Vector2(6, 0), slot.position + Vector2(6, 0), color, 2, true)
 		draw_line(slot.position - Vector2(0, 6), slot.position + Vector2(0, 6), color, 2, true)
+	var hero := world.blue_hero()
+	if hero != null and hero.has_destination:
+		var mark := hero.destination
+		var color := Color("f4d491")
+		draw_arc(mark, 8, 0, TAU, 20, color, 1.5, true)
+		draw_line(mark - Vector2(5, 5), mark + Vector2(5, 5), color, 1.5, true)
+		draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), color, 1.5, true)
 
 
 func _draw_unit(unit: UnitState) -> void:

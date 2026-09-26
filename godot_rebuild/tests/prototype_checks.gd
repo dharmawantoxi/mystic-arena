@@ -354,6 +354,31 @@ func _hero_melee(check: Callable) -> void:
 	ghost.position = parked + Vector2(950, 0)
 	beyond.step_tick()
 	check.call(idle.position == parked, "beyond hunt range the hero stays")
+	var walk := _world()
+	var mover = walk.blue_hero()
+	var from := mover.position
+	var dest := from + Vector2(80, 0)
+	check.call(walk.set_hero_destination(mover.id, dest), "manual destination accepted")
+	walk.step_tick()
+	check.call(mover.position.x > from.x and mover.has_destination, "click-move walks toward point")
+	check.call(not walk.set_hero_destination(999, dest), "bad id cannot set destination")
+	for tick in range(40):
+		walk.step_tick()
+	check.call(
+		mover.position == dest and not mover.has_destination, "hero snaps and clears on arrival"
+	)
+	var hold := _world()
+	var escort = hold.blue_hero()
+	var origin := escort.position
+	hold.set_hero_destination(escort.id, origin + Vector2(80, 0))
+	var blocker = hold.spawn_unit(GOBLIN, 1, 1)
+	blocker.position = escort.position + Vector2(20, 0)
+	var blocker_hp: float = blocker.hp
+	hold.step_tick()
+	check.call(
+		escort.position.x > origin.x and blocker.hp < blocker_hp,
+		"destination still allows an in-range swing"
+	)
 
 
 func _world() -> Prototype:
