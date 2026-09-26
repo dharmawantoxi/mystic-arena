@@ -15,6 +15,7 @@ func run(check: Callable) -> void:
 	_hero_melee(check)
 	_hero_wall(check)
 	_hero_respawn(check)
+	_hero_loop(check)
 	_replay(check)
 
 
@@ -355,7 +356,7 @@ func _hero_melee(check: Callable) -> void:
 	var ghost = beyond.spawn_unit(GOBLIN, 1, 1)
 	ghost.position = parked + Vector2(950, 0)
 	beyond.step_tick()
-	check.call(idle.position == parked, "beyond hunt range the hero stays")
+	check.call(idle.position.x > parked.x, "beyond hunt range the hero pushes")
 	var walk := _world()
 	var mover = walk.blue_hero()
 	var from := mover.position
@@ -403,9 +404,8 @@ func _hero_melee(check: Callable) -> void:
 	corpse.position = chaser.position + Vector2(180, 0)
 	again._set_hero_follow(chaser.id, corpse.id)
 	corpse.alive = false
-	var parked_follow := chaser.position
 	again.step_tick()
-	check.call(chaser.follow_id == -1 and chaser.position == parked_follow, "dead follow drops")
+	check.call(chaser.follow_id == -1, "dead follow drops")
 
 
 func _hero_wall(check: Callable) -> void:
@@ -448,6 +448,36 @@ func _hero_respawn(check: Callable) -> void:
 		),
 		"hero respawns at spawn after 600 ticks"
 	)
+
+
+func _hero_loop(check: Callable) -> void:
+	var flee := _world()
+	var runner = flee.blue_hero()
+	var flee_from := runner.position
+	runner.hp = runner.max_hp * 0.1
+	flee.step_tick()
+	check.call(
+		(
+			runner.is_retreating
+			and (
+				runner.position.distance_to(flee.LaneLayout.BLUE_BASE)
+				< flee_from.distance_to(flee.LaneLayout.BLUE_BASE)
+			)
+		),
+		"low HP retreats toward own nexus"
+	)
+	var shop := _world()
+	var pupil = shop.blue_hero()
+	var gold_before: int = shop.economy.gold[0]
+	var cost: int = pupil.upgrade_cost()
+	check.call(shop._upgrade_blue_hero(pupil.id, 1), "hero upgrade spends")
+	check.call(
+		pupil.level == 2 and shop.economy.gold[0] == gold_before - cost,
+		"level 2 costs source 300 G"
+	)
+	check.call(not shop._upgrade_blue_hero(pupil.id, 1), "stale hero level rejected")
+	shop.economy.gold[0] = 0
+	check.call(not shop._upgrade_blue_hero(pupil.id, 2), "poor hero upgrade rejected")
 
 
 func _world() -> Prototype:

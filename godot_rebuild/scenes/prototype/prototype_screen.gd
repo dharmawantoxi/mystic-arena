@@ -49,6 +49,9 @@ func _ready() -> void:
 	%SkillRButton.pressed.connect(
 		func() -> void: match_session.request_skill_r(match_session.selected_id)
 	)
+	%HeroUpgradeButton.pressed.connect(
+		func() -> void: match_session.request_hero_upgrade(match_session.selected_id)
+	)
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -152,6 +155,22 @@ func _process(_delta: float) -> void:
 	%SkillRButton.text = (
 		"R · CD %d" % hero.r_cooldown if hero != null and hero.r_cooldown > 0 else "Skill R"
 	)
+	var hero_cost := 0
+	if hero != null and hero.alive and hero.team == 0:
+		hero_cost = hero.upgrade_cost()
+	%HeroUpgradeButton.visible = hero != null and hero.team == 0
+	%HeroUpgradeButton.disabled = (
+		locked
+		or hero == null
+		or not hero.alive
+		or hero_cost <= 0
+		or world.economy.gold[0] < hero_cost
+	)
+	%HeroUpgradeButton.text = (
+		"Hero Lv.%d · %d G" % [hero.level + 1, hero_cost]
+		if hero != null and hero_cost > 0
+		else "Hero maksimum"
+	)
 	%UpgradeButton.text = "Upgrade Archer"
 	%CannonButton.text = "Cannon Lv.2"
 	%IceButton.text = "Ice Lv.2"
@@ -205,6 +224,10 @@ func _process(_delta: float) -> void:
 			%SelectionLabel.text += (
 				" · Lv.%d · Q stack %d · skill CD %d" % [hero.level, hero.q_stack, hero.skill_timer]
 			)
+			if not hero.alive:
+				%SelectionLabel.text += " · respawn %d" % hero.respawn_timer
+			elif hero.is_retreating:
+				%SelectionLabel.text += " · mundur"
 		elif tower != null and tower.settings().structure_kind == "tower":
 			var ammo := "panah"
 			var shots: int = tower.settings().volley_count

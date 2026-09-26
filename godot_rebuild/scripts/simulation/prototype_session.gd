@@ -2,6 +2,7 @@ extends "res://scripts/simulation/combat_session.gd"
 
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 var selected_slot_id := -1
 var command: Dictionary = {}
 var last_action := "Pilih slot biru, lalu bangun Archer (100 G)."
@@ -43,6 +44,8 @@ func _physics_process(_delta: float) -> void:
 			accepted = match_world._cast_blue_e(command.id)
 		elif command.kind == "skill_r":
 			accepted = match_world._cast_blue_r(command.id)
+		elif command.kind == "hero_upgrade":
+			accepted = match_world._upgrade_blue_hero(command.id, command.level)
 		elif command.kind == "move":
 			accepted = match_world.set_hero_destination(command.id, command.point)
 		elif command.kind == "follow":
@@ -52,6 +55,7 @@ func _physics_process(_delta: float) -> void:
 			if accepted and selected_id == command.id:
 				selected_id = -1
 		if accepted:
+			var delta_gold: int = match_world.economy.gold[0] - balance_before
 			if command.kind == "skill_q":
 				last_action = "Kaizen memakai Steel Wind (Q)."
 			elif command.kind == "skill_w":
@@ -60,12 +64,13 @@ func _physics_process(_delta: float) -> void:
 				last_action = "Kaizen memakai Sweep (E)."
 			elif command.kind == "skill_r":
 				last_action = "Kaizen memakai Tornado (R)."
+			elif command.kind == "hero_upgrade":
+				last_action = "Kaizen naik level: %+d G." % delta_gold
 			elif command.kind == "move":
 				last_action = "Kaizen menuju titik yang dipilih."
 			elif command.kind == "follow":
 				last_action = "Kaizen mengikuti musuh."
 			else:
-				var delta_gold: int = match_world.economy.gold[0] - balance_before
 				var upgrade_label := "Archer ditingkatkan"
 				if command.get("path") == "cannon":
 					upgrade_label = "Cannon ditingkatkan"
@@ -83,6 +88,9 @@ func _physics_process(_delta: float) -> void:
 		else:
 			var max_text := "Tower sudah level maksimum (6)."
 			var stale_text := "Level tower sudah berubah; pilih upgrade kembali."
+			if command.kind == "hero_upgrade":
+				max_text = "Hero sudah level maksimum (15)."
+				stale_text = "Level hero sudah berubah; pilih upgrade kembali."
 			if command.kind == "nexus":
 				max_text = "Nexus sudah level maksimum (5)."
 				stale_text = "Level nexus sudah berubah; pilih upgrade kembali."
@@ -145,6 +153,14 @@ func request_skill_e(entity_id: int) -> bool:
 
 func request_skill_r(entity_id: int) -> bool:
 	return _queue("skill_r", entity_id)
+
+
+func request_hero_upgrade(entity_id: int) -> bool:
+	var hero := world.get_unit(entity_id) as HeroState
+	if hero == null or not _queue("hero_upgrade", entity_id):
+		return false
+	command.level = hero.level
+	return true
 
 
 func request_hero_move(entity_id: int, point: Vector2) -> bool:

@@ -20,6 +20,11 @@ const MINIONS := {
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const HERO_SPAWN := Vector2(220, 540)
 const HERO_HUNT_RANGE := 900.0
+const HERO_RETREAT_HP := 0.2
+const HERO_HEAL_RATIO := 0.8
+const HERO_BASE_HEAL := 3.0
+const HERO_PASSIVE_HEAL := 0.15
+const HERO_BASE_NEAR := 100.0
 
 var economy := Economy.new()
 var scheduler := Scheduler.new()
@@ -249,30 +254,38 @@ func _set_hero_follow(hero_id: int, target_id: int) -> bool:
 
 
 func _step_hero_act() -> void:
-	# Port of Hero.update: dest (2), follow (3), melee (4), hunt (5).
-	# Respawn is Game.update's 600-tick timer, not a lab concern.
-	# No retreat, push, or auto-cast.
+	# Port of Hero.update states 1–6 plus Game respawn. No auto-cast/items.
 	var hero := blue_hero()
 	if hero == null:
 		return
 	if not hero.alive:
 		_step_hero_respawn(hero)
-		return
-	if hero.stun_timer > 0 or hero.is_dashing:
-		return
-	if hero.has_destination:
-		_step_hero_destination(hero)
-		return
-	if _step_hero_follow(hero):
-		return
-	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
-	if melee != null:
-		if hero.attack_timer == 0:
-			hero_basic_attack(hero.id, melee.id)
-		return
-	var hunted := _hero_pick_target(hero, HERO_HUNT_RANGE, false)
-	if hunted != null:
-		_move_toward(hero, hunted.position)
+	elif hero.stun_timer > 0 or hero.is_dashing:
+		pass
+	else:
+		_hero_passive_heal(hero)
+		var ratio := hero.hp / maxf(1.0, hero.max_hp)
+		if ratio < HERO_RETREAT_HP:
+			hero.is_retreating = true
+		if hero.is_retreating and ratio >= HERO_HEAL_RATIO:
+			hero.is_retreating = false
+		if hero.is_retreating:
+			_step_hero_retreat(hero)
+		elif hero.has_destination:
+			_step_hero_destination(hero)
+		elif _step_hero_follow(hero):
+			pass
+		else:
+			var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
+			if melee != null:
+				if hero.attack_timer == 0:
+					hero_basic_attack(hero.id, melee.id)
+			else:
+				var hunted := _hero_pick_target(hero, HERO_HUNT_RANGE, false)
+				if hunted != null:
+					_move_toward(hero, hunted.position)
+				else:
+					_move_toward(hero, LaneLayout.RED_BASE)
 
 
 func _step_hero_respawn(hero: HeroState) -> void:
@@ -316,6 +329,27 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	hero.stun_timer = 0
 	hero.target_id = -1
 	hero.target_struct = null
+	hero.is_retreating = false
+	hero.respawn_timer = 0
+
+
+func _hero_passive_heal(hero: HeroState) -> void:
+	if hero.hp < hero.max_hp:
+		hero.hp = minf(hero.max_hp, hero.hp + HERO_PASSIVE_HEAL)
+
+
+func _hero_near_own_base(hero: HeroState) -> bool:
+	return hero.position.distance_to(LaneLayout.BLUE_BASE) < HERO_BASE_NEAR
+
+
+func _step_hero_retreat(hero: HeroState) -> void:
+	if _hero_near_own_base(hero):
+		hero.hp = minf(hero.max_hp, hero.hp + HERO_BASE_HEAL)
+	else:
+		_move_toward(hero, LaneLayout.BLUE_BASE)
+	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
+	if melee != null and hero.attack_timer == 0:
+		hero_basic_attack(hero.id, melee.id)
 
 
 func _step_hero_destination(hero: HeroState) -> void:
@@ -566,4 +600,28 @@ func _cast_blue_r(hero_id: int) -> bool:
 		transaction_error = "skill"
 		return false
 	_record({"kind": "skill_r", "target_id": hero.id})
+	return true
+
+
+func _upgrade_blue_hero(hero_id: int, expected_level: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	var cost := 0
+	if hero != null:
+		cost = hero.upgrade_cost()
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	elif hero.level != expected_level:
+		transaction_error = "stale"
+	elif cost <= 0:
+		transaction_error = "max_level"
+	elif economy.gold[BLUE] < cost:
+		transaction_error = "gold"
+	if not transaction_error.is_empty():
+		return false
+	economy.spend(BLUE, cost)
+	upgrade_hero(hero.id)
+	_record({"kind": "hero_upgrade", "target_id": hero.id, "level": hero.level})
 	return true

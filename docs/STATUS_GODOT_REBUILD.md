@@ -1,6 +1,6 @@
 # Status & handoff — Godot Rebuild
 
-Diperbarui: 26 September 2026 (Push C: hero UI prototipe). Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
+Diperbarui: 26 September 2026 (Push C ditutup: Kaizen-1 prototipe). Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
 
 ## Aturan pekerjaan
 
@@ -123,9 +123,9 @@ Temuan yang dikunci: chain melewati identitas-target/mati/luar-range sesuai urut
 
 ## Langkah berikutnya
 
-1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal** (Kaizen + Q); perbaiki error sebelum menambah konten.
-2. Domain Kaizen-1 sudah di `main` (PR #279). Push C: spawn prototipe, tombol Q, inspeksi — lihat `HERO_CONTRACT.md`.
-3. Berikutnya: auto-attack/movement hero, W/E/R, atau ganti lawan sementara **hanya** setelah AI sumber diuji. Jangan mengklaim scripted builder sebagai AI penuh.
+1. Uji Windows F5 → **Pertandingan awal** (Kaizen QWER, klik-kanan, retreat/push, upgrade, respawn).
+2. Kaizen-1 prototipe ditutup di `HERO_CONTRACT.md`. Jangan klaim 6 hero / item / AIPlayer.
+3. Berikutnya: hero starter kedua **atau** ganti lawan Archer terjadwal setelah AI sumber diuji. 54 level, Android, audio tetap di luar.
 4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.
 5. Push bertahap pada branch sesi baru, pantau CI dan perbarui handoff ini.
 

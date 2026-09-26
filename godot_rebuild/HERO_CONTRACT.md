@@ -1,22 +1,23 @@
-# Kontrak hero prototipe — Kaizen-1 di pertandingan awal
+# Kontrak hero prototipe — Kaizen-1 selesai di pertandingan awal
 
-Mode **Pertandingan awal** men-spawn **satu Kaizen biru** saat arena diinisialisasi. Ini bukan katalog pembelian, bukan roster 6 hero, dan bukan AI hero. Domain Q/level/death sudah dikunci di `tests/kaizen_checks.gd` + `fixtures/kaizen_source.json`.
+Mode **Pertandingan awal** men-spawn **satu Kaizen biru** saat arena diinisialisasi. Domain angka Q/level/death tetap di `tests/kaizen_checks.gd` + `fixtures/kaizen_source.json`. Ini menutup kit + loop Hero.update state 1–6 untuk **satu** hero, bukan roster 6, bukan AIPlayer, bukan item.
 
-## Yang masuk scope
+## Scope yang dikunci
 
-- Spawn gratis di `HERO_SPAWN` `(220, 540)` dekat nexus biru. Lawan tidak mendapat hero.
-- Hero dihitung sebagai unit (`MAX_UNITS`) tetapi **bukan** minion: tidak mengikuti lane, tidak memblokir `field_clear` wave, kill tidak memberi gold (`gold_reward = 0`), dan jenazah tetap addressable.
-- Auto-act prototipe: **klik kanan tanah** = destination (state 2); **klik kanan musuh** = follow (state 3). Destination menimpa follow dan sebaliknya. Follow: kejar target, melee jika `<=` range; target mati/ally → clear. Tanpa perintah: melee atau hunt `< 900`. Stun/dash/mati = diam.
-- Tombol **Skill Q** (dan tombol fisik Q) hanya ketika hero biru dipilih. Cast lewat `cast_hero_q` sumber: butuh target dalam jangkauan, satu command per tick, fizzle tanpa cooldown bila tidak ada target.
-- **Skill W** / tombol W: Wind Wall 180 tick, CD 240, tanpa target. Memantulkan proyektil fisik (bukan magic/mage, bukan melee).
-- **Skill E** / tombol E: Sweep AOE 100px, `skill_damage * 1.0`, butuh target seperti Q, CD 420. Bukan jump visual.
-- **Skill R** / tombol R: Tornado AOE 150px, `skill_damage * 2.0`, butuh target, CD 900, `ulti_timer` 90. Bukan VFX tornado.
-- Inspeksi menampilkan nama, HP/`max_hp` level, Q stack, dan skill CD.
-- Pause, kehilangan fokus, dan hasil membatalkan command Q. Restart men-spawn Kaizen baru (timer/stack nol).
-- Respawn 600 tick (10 dtk) di `HERO_SPAWN`, HP penuh, perintah/debuff/CD skill di-clear. Bukan gold/item forge.
+- Spawn gratis `HERO_SPAWN` `(220, 540)`. Lawan tidak mendapat hero.
+- Bukan minion: tidak lane-march, tidak menahan `field_clear`, kill gold 0, jenazah addressable.
+- **State 1 retreat:** HP `< 20%` → jalan ke nexus biru; dekat `< 100` px heal `+3` HP/tick; keluar retreat pada `≥ 80%`. Tetap boleh melee dalam range.
+- **State 2 destination:** klik kanan tanah. Hunt tidak menimpa. Snap-clear `dist < speed`.
+- **State 3 follow:** klik kanan musuh. Destination dan follow saling menimpa. Target mati → clear.
+- **State 4 melee:** `<= eff_attack_range`, tidak jalan.
+- **State 5 hunt:** musuh terdekat jarak **`< 900`**.
+- **State 6 push:** tidak ada hunt → jalan ke `RED_BASE`.
+- Passive heal `+0.15` HP/tick bila tidak penuh.
+- **Q** Steel Wind (butuh target, CD skill), **W** Wind Wall 180/CD 240 memantulkan proyektil fisik, **E** Sweep AOE 100 `skill×1` CD 420, **R** Tornado AOE 150 `skill×2` CD 900 / ulti 90.
+- Upgrade hero UI: harga `HERO_LEVELS` (Lv.1→2 = **300 G**), expected-level, tanpa mengubah HP (quirk item-inventory sumber).
+- Respawn **600** tick di spawn, HP penuh, perintah/debuff/CD clear.
+- Stun/dash: tidak act. Pause/fokus/hasil membatalkan command antrean.
 
-## Yang sengaja ditunda
+## Sengaja di luar
 
-Dash visual penuh, item, unlock gold 400, hero merah, retreat/push ke nexus, auto-cast, upgrade hero via UI, dan lima hero starter lainnya. Hunt/klik-gerak prototipe **bukan** port AIPlayer.
-
-Angka kit tetap milik resource `data/heroes/kaizen.tres` dan tabel `HERO_LEVELS` global.
+Item/forge, unlock 400 G, hero merah, auto-cast, dash/jump/tornado VFX, lima hero starter lain, AIPlayer. Jangan mengklaim pertandingan Python selesai.
