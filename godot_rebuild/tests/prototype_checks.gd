@@ -384,8 +384,8 @@ func _hero_melee(check: Callable) -> void:
 		"destination still allows an in-range swing"
 	)
 	var chase := _world()
-	var stalker = chase.blue_hero()
-	var chase_from := stalker.position
+	var stalker: HeroState = chase.blue_hero()
+	var chase_from: Vector2 = stalker.position
 	var mark = chase.spawn_unit(GOBLIN, 1, 1)
 	mark.position = chase_from + Vector2(180, 0)
 	var mark_hp: float = mark.hp
