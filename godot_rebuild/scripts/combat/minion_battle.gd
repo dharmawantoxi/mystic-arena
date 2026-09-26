@@ -90,11 +90,15 @@ func step_tick() -> void:
 		if not unit.alive:
 			continue
 		unit.cooldown_ticks = maxi(0, unit.cooldown_ticks - 1)
-		_tick_slow(unit)
+		_tick_debuffs(unit)
 		_tick_burn(unit)
 		if not unit.alive:
 			continue
-		unit.hp = minf(unit.definition.max_hp, unit.hp + unit.definition.regen_per_tick)
+		var capped := minf(unit.definition.max_hp, unit.hp + unit.definition.regen_per_tick)
+		if capped > unit.hp and unit.anti_heal_timer > 0:
+			unit.hp = unit.hp + (capped - unit.hp) * (1.0 - unit.anti_heal_amount)
+		else:
+			unit.hp = capped
 		var target := _find_target(unit)
 		unit.target_id = target.id if target != null else -1
 		if target == null:
@@ -208,7 +212,35 @@ func apply_atk_slow(target_id: int, amount: float, duration: int) -> bool:
 	return true
 
 
-func _tick_slow(unit: UnitState) -> void:
+func apply_skill_down(target_id: int, amount: float, duration: int) -> bool:
+	# Port of TowerDebuffMixin.apply_debuff("skill_down"). Minions have
+	# no skills, so this only stores state; Hero.skill_damage reads it.
+	var target := get_unit(target_id)
+	if not is_running() or target == null or target is StructureState:
+		return false
+	if not target.alive or amount <= 0 or duration <= 0:
+		return false
+	if amount > target.skill_down_amount or target.skill_down_timer < duration:
+		target.skill_down_amount = amount
+		target.skill_down_timer = duration
+	return true
+
+
+func apply_anti_heal(target_id: int, amount: float, duration: int) -> bool:
+	# Port of TowerDebuffMixin.apply_debuff("anti_heal"). The HP gain
+	# scaling lives in the regen step, mirroring the source hp setter.
+	var target := get_unit(target_id)
+	if not is_running() or target == null or target is StructureState:
+		return false
+	if not target.alive or amount <= 0 or duration <= 0:
+		return false
+	if amount > target.anti_heal_amount or target.anti_heal_timer < duration:
+		target.anti_heal_amount = amount
+		target.anti_heal_timer = duration
+	return true
+
+
+func _tick_debuffs(unit: UnitState) -> void:
 	if unit.slow_timer > 0:
 		unit.slow_timer -= 1
 		if unit.slow_timer <= 0:
@@ -217,6 +249,14 @@ func _tick_slow(unit: UnitState) -> void:
 		unit.atk_slow_timer -= 1
 		if unit.atk_slow_timer <= 0:
 			unit.atk_slow_amount = 0.0
+	if unit.skill_down_timer > 0:
+		unit.skill_down_timer -= 1
+		if unit.skill_down_timer <= 0:
+			unit.skill_down_amount = 0.0
+	if unit.anti_heal_timer > 0:
+		unit.anti_heal_timer -= 1
+		if unit.anti_heal_timer <= 0:
+			unit.anti_heal_amount = 0.0
 
 
 func _eff_speed(unit: UnitState) -> float:

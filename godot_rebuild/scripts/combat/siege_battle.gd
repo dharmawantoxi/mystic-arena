@@ -14,6 +14,8 @@ const MAX_PROJECTILES := 256
 const CANNON_MUZZLE := [[38, 17], [42, 17], [46, 18], [52, 20], [56, 15], [62, 22]]
 # Ice crystal rows per level 1-6: tower_h from towers/_bundle.py LEVEL_CONFIGS.
 const ICE_CRYSTAL := [40, 44, 48, 54, 58, 64]
+# Mage crystal rows per level 1-6: tower_h from towers/_bundle.py LEVEL_CONFIGS.
+const MAGE_CRYSTAL := [45, 48, 52, 56, 60, 66]
 const BLUE_POSITIONS := [Vector2(200, 180), Vector2(500, 340), Vector2(640, 640)]
 const RED_POSITIONS := [Vector2(650, 90), Vector2(780, 400), Vector2(1090, 550)]
 
@@ -149,7 +151,8 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 	if source.position.distance_to(target.position) > source.definition.attack_range_px:
 		return false
 	# Reserve the entire volley before mutation: never a partially emitted paid upgrade attack.
-	var count := source.settings().volley_count
+	var is_mage := source.settings().tower_path == "mage"
+	var count := source.settings().chain_count if is_mage else source.settings().volley_count
 	if projectiles.size() + count > MAX_PROJECTILES:
 		return false
 	var targets: Array[UnitState] = [target]
@@ -160,15 +163,19 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 			continue
 		if source.position.distance_to(candidate.position) <= source.definition.attack_range_px:
 			targets.append(candidate)
-	while targets.size() < count:
-		targets.append(target)
+	# Archer refills missing shots with the main target; mage fires fewer
+	# bolts instead. All mage bolts share the main-target muzzle point.
+	if not is_mage:
+		while targets.size() < count:
+			targets.append(target)
 	var offsets := [Vector2.ZERO]
-	if count == 2:
-		offsets = [Vector2(-5, 0), Vector2(5, 0)]
-	elif count == 3:
-		offsets = [Vector2(-7, 2), Vector2(0, -1), Vector2(7, 2)]
+	if not is_mage:
+		if count == 2:
+			offsets = [Vector2(-5, 0), Vector2(5, 0)]
+		elif count == 3:
+			offsets = [Vector2(-7, 2), Vector2(0, -1), Vector2(7, 2)]
 	var muzzle := muzzle_position(source, target.position)
-	for index in range(count):
+	for index in range(targets.size()):
 		var shot := Projectile.new()
 		shot.id = _next_projectile_id
 		_next_projectile_id += 1
@@ -178,7 +185,7 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 		shot.damage = source.definition.damage
 		shot.speed = source.settings().projectile_speed_px_per_tick
 		shot.hit_radius = source.settings().projectile_hit_radius_px
-		shot.position = muzzle + offsets[index]
+		shot.position = muzzle if is_mage else muzzle + offsets[index]
 		if source.settings().tower_path == "cannon":
 			shot.kind = "cannon"
 			shot.splash_radius = source.settings().splash_radius_px
@@ -190,6 +197,11 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 			shot.slow_duration = source.settings().slow_duration_ticks
 			shot.atk_slow_amount = source.settings().atk_slow_amount
 			shot.slow_aoe = source.settings().slow_aoe_px
+		elif is_mage:
+			shot.kind = "mage"
+			shot.skill_down_amount = source.settings().skill_down_amount
+			shot.anti_heal_amount = source.settings().anti_heal_amount
+			shot.debuff_duration = source.settings().debuff_duration_ticks
 		projectiles.append(shot)
 	source.cooldown_ticks = source.definition.attack_cooldown_ticks
 	return true
@@ -212,6 +224,17 @@ func muzzle_position(source: StructureState, target: Vector2) -> Vector2:
 		var tower_h: int = ICE_CRYSTAL[clampi(source.settings().level, 1, 6) - 1]
 		var crystal := Vector2(
 			int(source.position.x), int(source.position.y - 94.0 + (143.0 - tower_h) * 0.7)
+		)
+		var aim := atan2(
+			float(target.y) - float(source.position.y), float(target.x) - float(source.position.x)
+		)
+		return Vector2(float(crystal.x) + cos(aim) * 5.0, float(crystal.y) + sin(aim) * 5.0)
+	if source.settings().tower_path == "mage":
+		# Mage crystal helper, then a 5px aim offset. Angle math stays
+		# in 64-bit doubles so the result matches CPython bit-for-bit.
+		var tower_h: int = MAGE_CRYSTAL[clampi(source.settings().level, 1, 6) - 1]
+		var crystal := Vector2(
+			int(source.position.x), int(source.position.y - 94.0 + (138.0 - tower_h) * 0.7)
 		)
 		var aim := atan2(
 			float(target.y) - float(source.position.y), float(target.x) - float(source.position.x)
@@ -320,6 +343,8 @@ func _update_projectiles(source: StructureState) -> void:
 				_cannon_impact(shot, target)
 			elif shot.kind == "ice":
 				_ice_impact(shot, target)
+			elif shot.kind == "mage":
+				_mage_impact(shot, target)
 		else:
 			shot.position += offset.normalized() * shot.speed
 
@@ -363,6 +388,17 @@ func _ice_impact(shot: Projectile, main: UnitState) -> void:
 		apply_slow(victim.id, shot.slow_amount, shot.slow_duration)
 		if shot.atk_slow_amount > 0:
 			apply_atk_slow(victim.id, shot.atk_slow_amount, shot.slow_duration)
+
+
+func _mage_impact(shot: Projectile, main: UnitState) -> void:
+	# Port of Bullet._on_hit "mage": skill-down + anti-heal the main
+	# target only. Each chain bolt is a separate projectile, so every
+	# chain victim runs this once.
+	if main.alive:
+		if shot.skill_down_amount > 0:
+			apply_skill_down(main.id, shot.skill_down_amount, shot.debuff_duration)
+		if shot.anti_heal_amount > 0:
+			apply_anti_heal(main.id, shot.anti_heal_amount, shot.debuff_duration)
 
 
 func _retire_dead() -> void:

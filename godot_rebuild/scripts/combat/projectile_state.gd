@@ -19,3 +19,6 @@ var slow_amount := 0.0
 var slow_duration := 0
 var atk_slow_amount := 0.0
 var slow_aoe := 0.0
+var skill_down_amount := 0.0
+var anti_heal_amount := 0.0
+var debuff_duration := 0

@@ -36,7 +36,7 @@ func _path_selection(check: Callable, expected: Dictionary) -> void:
 		world.upgrade_price(tower.id) == int(expected.default_price),
 		"upgrade keeps archer default path"
 	)
-	check.call(world.upgrade_price(tower.id, "mage") == 0, "unported mage path quotes zero")
+	check.call(world.upgrade_price(tower.id, "bogus") == 0, "unknown path quotes zero")
 	var before: int = world.economy.gold[0]
 	check.call(
 		not world.upgrade_tower(tower.id, 1, "") and world.transaction_error == "path",

@@ -7,7 +7,7 @@ extends "res://scripts/data/minion_definition.gd"
 @export var upgrade_price: int = 0
 @export var sale_refund: int = 50
 @export_enum("tower", "nexus") var structure_kind: String = "tower"
-@export_enum("archer", "cannon", "ice") var tower_path: String = "archer"
+@export_enum("archer", "cannon", "ice", "mage") var tower_path: String = "archer"
 @export var splash_radius_px: float = 0.0
 @export var burn_dps: float = 0.0
 @export var burn_duration_ticks: int = 0
@@ -15,6 +15,10 @@ extends "res://scripts/data/minion_definition.gd"
 @export var slow_duration_ticks: int = 0
 @export var atk_slow_amount: float = 0.0
 @export var slow_aoe_px: float = 0.0
+@export var skill_down_amount: float = 0.0
+@export var anti_heal_amount: float = 0.0
+@export var debuff_duration_ticks: int = 0
+@export var chain_count: int = 1
 @export var shield_capacity: float = 800.0
 @export var hp_regen_delay_ticks: int = 300
 @export var shield_regen_enabled: bool = false
@@ -29,7 +33,7 @@ extends "res://scripts/data/minion_definition.gd"
 func is_valid() -> bool:
 	return (
 		structure_kind in ["tower", "nexus"]
-		and tower_path in ["archer", "cannon", "ice"]
+		and tower_path in ["archer", "cannon", "ice", "mage"]
 		and splash_radius_px >= 0
 		and burn_dps >= 0
 		and burn_duration_ticks >= 0
@@ -39,6 +43,12 @@ func is_valid() -> bool:
 		and atk_slow_amount >= 0
 		and atk_slow_amount <= 1
 		and slow_aoe_px >= 0
+		and skill_down_amount >= 0
+		and skill_down_amount <= 1
+		and anti_heal_amount >= 0
+		and anti_heal_amount <= 1
+		and debuff_duration_ticks >= 0
+		and chain_count >= 1
 		and level >= 1
 		and level <= 6
 		and volley_count >= 1

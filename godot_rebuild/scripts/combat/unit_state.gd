@@ -23,3 +23,7 @@ var slow_amount := 0.0
 var slow_timer := 0
 var atk_slow_amount := 0.0
 var atk_slow_timer := 0
+var skill_down_amount := 0.0
+var skill_down_timer := 0
+var anti_heal_amount := 0.0
+var anti_heal_timer := 0
