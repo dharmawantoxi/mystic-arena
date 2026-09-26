@@ -146,12 +146,13 @@ func _skill_prop(check: Callable, expected: Dictionary) -> void:
 	var hero = _hero(battle, 500.0, 340.0)
 	var cases: Dictionary = expected["cases"]
 	check.call(hero.skill_damage() == int(cases["none"]), "skill unpenalized")
-	for amount in [0.2, 0.5, 1.0]:
+	# Explicit keys: str(1.0) is "1", not "1.0".
+	for pair in [["0.2", 0.2], ["0.5", 0.5], ["1.0", 1.0]]:
 		var probe = _hero(battle, 500.0, 340.0)
-		probe.skill_down_amount = amount
+		probe.skill_down_amount = float(pair[1])
 		probe.skill_down_timer = 60
 		check.call(
-			probe.skill_damage() == int(cases[str(amount)]), "skill at down %s" % str(amount)
+			probe.skill_damage() == int(cases[str(pair[0])]), "skill at down %s" % str(pair[0])
 		)
 
 
@@ -160,12 +161,12 @@ func _eff(check: Callable, expected: Dictionary) -> void:
 	var hero = _hero(battle, 500.0, 340.0)
 	var cases: Dictionary = expected["attack_cd"]
 	check.call(hero.eff_attack_cd(hero.attack_cd_base) == int(cases["none"]), "cd unslowed")
-	for amount in [0.15, 0.4, 1.0]:
+	for pair in [["0.15", 0.15], ["0.4", 0.4], ["1.0", 1.0]]:
 		var probe = _hero(battle, 500.0, 340.0)
-		check.call(battle.apply_atk_slow(probe.id, amount, 60), "atk slow applies")
+		check.call(battle.apply_atk_slow(probe.id, float(pair[1]), 60), "atk slow applies")
 		check.call(
-			probe.eff_attack_cd(probe.attack_cd_base) == int(cases["slow_" + str(amount)]),
-			"cd at slow %s" % str(amount)
+			probe.eff_attack_cd(probe.attack_cd_base) == int(cases["slow_" + str(pair[0])]),
+			"cd at slow %s" % str(pair[0])
 		)
 	var stunned = _hero(battle, 500.0, 340.0)
 	stunned.stun_timer = 30
@@ -313,12 +314,16 @@ func _quirk(check: Callable, q1: Dictionary) -> void:
 	# update ticks both clocks; mirror that with full step_ticks.
 	var battle := _battle()
 	var hero = _hero(battle, 500.0, 340.0)
-	_q_lineup(battle)
+	var units: Array = _q_lineup(battle)
 	check.call(battle.cast_hero_q(hero.id), "quirk q1 opens")
 	for _index in range(180):
 		battle.step_tick()
 	check.call(hero.q_stack == 0, "reset expires first")
 	check.call(hero.skill_timer == int(q1["skill_timer"]) - 180, "cooldown still running")
+	# Minions skirmish during the wait; pin the lineup so the
+	# follow-up gate is deterministic.
+	units[0].position = Vector2(560.0, 340.0)
+	units[1].position = Vector2(600.0, 340.0)
 	check.call(battle.cast_hero_q(hero.id), "follow-up still casts")
 	check.call(hero.q_stack == 1, "follow-up is q1 again")
 
@@ -353,6 +358,7 @@ func _take(check: Callable, expected: Dictionary) -> void:
 	check.call(hero.alive == bool(expected["alive"]), "hero survives hit")
 	hero.hp = 10.0
 	check.call(battle.apply_slow(hero.id, 0.3, 60), "slow applies to hero")
+	killer.cooldown_ticks = 0
 	var gold_before: int = battle.credited_gold[RED]
 	check.call(battle.apply_hit(killer.id, hero.id), "minion kills hero")
 	var death: Dictionary = expected["death"]
