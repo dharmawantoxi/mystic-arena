@@ -338,13 +338,13 @@ func _hero_melee(check: Callable) -> void:
 	check.call(bait.hp == bait_hp, "dead hero does not swing")
 	var hunt := _world()
 	var hunter = hunt.blue_hero()
-	var start := hunter.position
+	var hunt_from := hunter.position
 	var quarry = hunt.spawn_unit(GOBLIN, 1, 1)
-	quarry.position = start + Vector2(200, 0)
+	quarry.position = hunt_from + Vector2(200, 0)
 	var quarry_hp: float = quarry.hp
 	hunt.step_tick()
 	check.call(
-		hunter.position.x > start.x and quarry.hp == quarry_hp,
+		hunter.position.x > hunt_from.x and quarry.hp == quarry_hp,
 		"hero hunts inside 900 without swinging"
 	)
 	var beyond := _world()
@@ -381,14 +381,14 @@ func _hero_melee(check: Callable) -> void:
 	)
 	var chase := _world()
 	var stalker = chase.blue_hero()
-	var start := stalker.position
+	var chase_from := stalker.position
 	var mark = chase.spawn_unit(GOBLIN, 1, 1)
-	mark.position = start + Vector2(180, 0)
+	mark.position = chase_from + Vector2(180, 0)
 	var mark_hp: float = mark.hp
 	check.call(chase._set_hero_follow(stalker.id, mark.id), "follow accepted")
 	chase.step_tick()
 	check.call(
-		stalker.follow_id == mark.id and stalker.position.x > start.x and mark.hp == mark_hp,
+		stalker.follow_id == mark.id and stalker.position.x > chase_from.x and mark.hp == mark_hp,
 		"follow walks without swinging out of melee"
 	)
 	check.call(not chase._set_hero_follow(stalker.id, stalker.id), "cannot follow self")
