@@ -11,6 +11,8 @@ const MAX_UNITS := 120
 const MAX_EVENTS := 64
 const BLUE := 0
 const RED := 1
+const BURN_TICK_INTERVAL := 30
+const BURN_TICKS_PER_SECOND := 60.0
 
 var paths: Array[PackedVector2Array] = LaneLayout.create_paths()
 var units: Array[UnitState] = []

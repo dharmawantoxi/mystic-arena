@@ -8,6 +8,10 @@ const NEXUS = preload("res://data/structures/nexus_level_1.tres")
 const MAX_STRUCTURES := 16
 const MAX_PROJECTILES := 256
 # One selected position per lane/team from _core.BLUE_TOWERS / RED_TOWERS.
+# Cannon muzzle rows per level 1-6: [tower_h, forward barrel pixels].
+# Derived from towers/_bundle.py LEVEL_CONFIGS + get_cannon_muzzle_position
+# with recoil 0 (the source recoil branch is unreachable at fire time).
+const CANNON_MUZZLE := [[38, 17], [42, 17], [46, 18], [52, 20], [56, 15], [62, 22]]
 const BLUE_POSITIONS := [Vector2(200, 180), Vector2(500, 340), Vector2(640, 640)]
 const RED_POSITIONS := [Vector2(650, 90), Vector2(780, 400), Vector2(1090, 550)]
 
@@ -173,6 +177,11 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 		shot.speed = source.settings().projectile_speed_px_per_tick
 		shot.hit_radius = source.settings().projectile_hit_radius_px
 		shot.position = muzzle + offsets[index]
+		if source.settings().tower_path == "cannon":
+			shot.kind = "cannon"
+			shot.splash_radius = source.settings().splash_radius_px
+			shot.burn_dps = source.settings().burn_dps
+			shot.burn_duration = source.settings().burn_duration_ticks
 		projectiles.append(shot)
 	source.cooldown_ticks = source.definition.attack_cooldown_ticks
 	return true

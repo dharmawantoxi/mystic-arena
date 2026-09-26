@@ -2,6 +2,7 @@ extends "res://scripts/combat/siege_battle.gd"
 ## Playable normal/level-1 subset. Wave/ledger/build rules are separate from the old manual labs.
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
+const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
 const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
@@ -210,23 +211,29 @@ func _step_defender() -> void:
 		_defender_built += 1
 
 
-func upgrade_price(entity_id: int) -> int:
-	var tower := _owned_archer(entity_id)
-	if tower == null or tower.settings().level >= Upgrades.LEVELS.size():
+func upgrade_price(entity_id: int, target_path: String = "archer") -> int:
+	var tower := _owned_tower(entity_id)
+	if tower == null:
 		return 0
-	return Upgrades.LEVELS[tower.settings().level].upgrade_price
+	var target := _upgrade_target(tower.settings().level, tower.settings().tower_path, target_path)
+	return target.upgrade_price if target != null else 0
 
 
-func upgrade_tower(entity_id: int, expected_level: int) -> bool:
+func upgrade_tower(entity_id: int, expected_level: int, target_path: String = "archer") -> bool:
 	transaction_error = ""
-	var tower := _owned_archer(entity_id)
-	var cost := upgrade_price(entity_id)
+	var tower := _owned_tower(entity_id)
+	var target: StructureDefinition = null
+	if tower != null:
+		target = _upgrade_target(tower.settings().level, tower.settings().tower_path, target_path)
+	var cost := target.upgrade_price if target != null else 0
 	if not is_running():
 		transaction_error = "finished"
 	elif tower == null:
 		transaction_error = "owner"
 	elif tower.settings().level != expected_level:
 		transaction_error = "stale"
+	elif tower.settings().level == 1 and target == null:
+		transaction_error = "path"
 	elif cost <= 0:
 		transaction_error = "max_level"
 	elif economy.gold[BLUE] < cost:
@@ -235,12 +242,27 @@ func upgrade_tower(entity_id: int, expected_level: int) -> bool:
 		return false
 	# Source resets HP/shield fully but retains cooldown, target, regen timer and in-flight shots.
 	economy.spend(BLUE, cost)
-	tower.definition = Upgrades.LEVELS[expected_level]
+	tower.definition = target
 	tower.hp = tower.definition.max_hp
 	tower.shield_max = tower.settings().shield_capacity
 	tower.shield = tower.settings().shield_capacity
 	_record({"kind": "upgrade", "target_id": tower.id, "level": tower.settings().level})
 	return true
+
+
+func _upgrade_target(current: int, current_path: String, target_path: String):
+	# Source: level 1 requires an explicit valid path; later levels ignore
+	# the argument and keep their path. Cannon starts at level 2.
+	if current < 1 or current >= 6:
+		return null
+	var path := current_path
+	if current == 1:
+		if target_path not in ["archer", "cannon"]:
+			return null
+		path = target_path
+	if path == "cannon":
+		return CannonUpgrades.LEVELS.get(current + 1) as StructureDefinition
+	return Upgrades.LEVELS[current] as StructureDefinition
 
 
 func nexus_upgrade_price(entity_id: int) -> int:

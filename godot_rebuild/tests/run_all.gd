@@ -47,6 +47,7 @@ func _run() -> void:
 	PrototypeChecks.new().run(_check)
 	UpgradeChecks.new().run(_check)
 	NexusChecks.new().run(_check)
+	CannonChecks.new().run(_check)
 	var app = APP.instantiate()
 	root.add_child(app)
 	await _settle()
