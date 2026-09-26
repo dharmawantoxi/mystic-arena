@@ -37,7 +37,7 @@ func run(check: Callable) -> void:
 	_guards(check)
 
 
-func _battle():
+func _battle() -> Battle:
 	return Battle.new()
 
 
