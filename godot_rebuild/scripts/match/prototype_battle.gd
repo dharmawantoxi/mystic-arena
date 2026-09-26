@@ -18,7 +18,6 @@ const MINIONS := {
 	"dark_rider": preload("res://data/minions/dark_rider.tres")
 }
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
-const HeroState = preload("res://scripts/combat/hero_state.gd")
 const HERO_SPAWN := Vector2(220, 540)
 
 var economy := Economy.new()
@@ -117,6 +116,7 @@ func step_tick() -> void:
 	super.step_tick()
 	if is_running():
 		_step_defender()
+		_step_hero_melee()
 
 
 func get_slot(id: int) -> Slot:
@@ -213,6 +213,40 @@ func _step_defender() -> void:
 		return
 	if build_tower(RED, [11, 14, 17][_defender_built]):
 		_defender_built += 1
+
+
+func _step_hero_melee() -> void:
+	# Kaizen-1 auto-swing only: no lane march, no W/E/R, no pathfinding.
+	var hero := blue_hero()
+	if hero == null or not hero.alive or hero.stun_timer > 0:
+		return
+	if hero.attack_timer != 0:
+		return
+	var target := _hero_melee_target(hero)
+	if target == null:
+		return
+	hero_basic_attack(hero.id, target.id)
+
+
+func _hero_melee_target(hero: HeroState) -> UnitState:
+	var reach := hero.eff_attack_range()
+	var best: UnitState = null
+	var best_dist := reach
+	for unit in units:
+		if not unit.alive or unit.team == hero.team or unit.id == hero.id:
+			continue
+		var distance := hero.position.distance_to(unit.position)
+		if distance <= best_dist:
+			best = unit
+			best_dist = distance
+	for structure in structures:
+		if not structure.alive or structure.team == hero.team:
+			continue
+		var distance := hero.position.distance_to(structure.position)
+		if distance <= best_dist:
+			best = structure
+			best_dist = distance
+	return best
 
 
 func upgrade_price(entity_id: int, target_path: String = "archer") -> int:

@@ -3,7 +3,6 @@ extends "res://scenes/siege/siege_view.gd"
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const UnitState = preload("res://scripts/combat/unit_state.gd")
 
 
 func _draw() -> void:

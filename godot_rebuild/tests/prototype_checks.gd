@@ -12,6 +12,7 @@ func run(check: Callable) -> void:
 	_transactions(check)
 	_death_and_stale_ids(check)
 	_progress_and_result(check)
+	_hero_melee(check)
 	_replay(check)
 
 
@@ -312,6 +313,27 @@ func _replay(check: Callable) -> void:
 	check.call(
 		first.wave_count > 0 and first._next_projectile_id > 1, "scheduled waves lead to combat"
 	)
+
+
+func _hero_melee(check: Callable) -> void:
+	var world := _world()
+	var hero = world.blue_hero()
+	var foe = world.spawn_unit(GOBLIN, 1, 1)
+	foe.position = hero.position + Vector2(20, 0)
+	var hp: float = foe.hp
+	world.step_tick()
+	check.call(foe.hp < hp and hero.attack_timer > 0, "in-range hero autoswings once")
+	var far = world.spawn_unit(GOBLIN, 1, 1)
+	far.position = hero.position + Vector2(400, 0)
+	var far_hp: float = far.hp
+	world.step_tick()
+	check.call(far.hp == far_hp and foe.hp < hp, "out-of-range minion is not swung")
+	hero.alive = false
+	var bait = world.spawn_unit(GOBLIN, 1, 1)
+	bait.position = hero.position + Vector2(10, 0)
+	var bait_hp: float = bait.hp
+	world.step_tick()
+	check.call(bait.hp == bait_hp, "dead hero does not swing")
 
 
 func _world() -> Prototype:
