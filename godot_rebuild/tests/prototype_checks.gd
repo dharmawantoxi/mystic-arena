@@ -3,6 +3,7 @@ extends RefCounted
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 
 
@@ -320,8 +321,8 @@ func _replay(check: Callable) -> void:
 
 func _hero_melee(check: Callable) -> void:
 	var world := _world()
-	var hero = world.blue_hero()
-	var planted := hero.position
+	var hero: HeroState = world.blue_hero()
+	var planted: Vector2 = hero.position
 	var foe = world.spawn_unit(GOBLIN, 1, 1)
 	foe.position = hero.position + Vector2(20, 0)
 	var hp: float = foe.hp
@@ -340,8 +341,8 @@ func _hero_melee(check: Callable) -> void:
 	world.step_tick()
 	check.call(bait.hp == bait_hp, "dead hero does not swing")
 	var hunt := _world()
-	var hunter = hunt.blue_hero()
-	var hunt_from := hunter.position
+	var hunter: HeroState = hunt.blue_hero()
+	var hunt_from: Vector2 = hunter.position
 	var quarry = hunt.spawn_unit(GOBLIN, 1, 1)
 	quarry.position = hunt_from + Vector2(200, 0)
 	var quarry_hp: float = quarry.hp
@@ -351,16 +352,16 @@ func _hero_melee(check: Callable) -> void:
 		"hero hunts inside 900 without swinging"
 	)
 	var beyond := _world()
-	var idle = beyond.blue_hero()
-	var parked := idle.position
+	var idle: HeroState = beyond.blue_hero()
+	var parked: Vector2 = idle.position
 	var ghost = beyond.spawn_unit(GOBLIN, 1, 1)
 	ghost.position = parked + Vector2(950, 0)
 	beyond.step_tick()
 	check.call(idle.position.x > parked.x, "beyond hunt range the hero pushes")
 	var walk := _world()
-	var mover = walk.blue_hero()
-	var from := mover.position
-	var dest := from + Vector2(80, 0)
+	var mover: HeroState = walk.blue_hero()
+	var from: Vector2 = mover.position
+	var dest: Vector2 = from + Vector2(80, 0)
 	check.call(walk.set_hero_destination(mover.id, dest), "manual destination accepted")
 	walk.step_tick()
 	check.call(mover.position.x > from.x and mover.has_destination, "click-move walks toward point")
@@ -371,8 +372,8 @@ func _hero_melee(check: Callable) -> void:
 		mover.position == dest and not mover.has_destination, "hero snaps and clears on arrival"
 	)
 	var hold := _world()
-	var escort = hold.blue_hero()
-	var origin := escort.position
+	var escort: HeroState = hold.blue_hero()
+	var origin: Vector2 = escort.position
 	hold.set_hero_destination(escort.id, origin + Vector2(80, 0))
 	var blocker = hold.spawn_unit(GOBLIN, 1, 1)
 	blocker.position = escort.position + Vector2(20, 0)
@@ -395,11 +396,11 @@ func _hero_melee(check: Callable) -> void:
 		"follow walks without swinging out of melee"
 	)
 	check.call(not chase._set_hero_follow(stalker.id, stalker.id), "cannot follow self")
-	chase.set_hero_destination(stalker.id, start)
+	chase.set_hero_destination(stalker.id, chase_from)
 	check.call(stalker.follow_id == -1 and stalker.has_destination, "destination clears follow")
 	mark.alive = false
 	var again := _world()
-	var chaser = again.blue_hero()
+	var chaser: HeroState = again.blue_hero()
 	var corpse = again.spawn_unit(GOBLIN, 1, 1)
 	corpse.position = chaser.position + Vector2(180, 0)
 	again._set_hero_follow(chaser.id, corpse.id)
@@ -410,7 +411,7 @@ func _hero_melee(check: Callable) -> void:
 
 func _hero_wall(check: Callable) -> void:
 	var cover := _world()
-	var shielded = cover.blue_hero()
+	var shielded: HeroState = cover.blue_hero()
 	check.call(cover.cast_hero_w(shielded.id), "prototype W casts")
 	cover.build_tower(1, 9)
 	var tower = cover.get_unit(cover.slots[9].structure_id)
@@ -427,7 +428,7 @@ func _hero_wall(check: Callable) -> void:
 
 func _hero_respawn(check: Callable) -> void:
 	var world := _world()
-	var hero = world.blue_hero()
+	var hero: HeroState = world.blue_hero()
 	hero.alive = false
 	hero.hp = 0.0
 	hero.position = Vector2(800, 200)
@@ -452,8 +453,8 @@ func _hero_respawn(check: Callable) -> void:
 
 func _hero_loop(check: Callable) -> void:
 	var flee := _world()
-	var runner = flee.blue_hero()
-	var flee_from := runner.position
+	var runner: HeroState = flee.blue_hero()
+	var flee_from: Vector2 = runner.position
 	runner.hp = runner.max_hp * 0.1
 	flee.step_tick()
 	check.call(
@@ -467,7 +468,7 @@ func _hero_loop(check: Callable) -> void:
 		"low HP retreats toward own nexus"
 	)
 	var shop := _world()
-	var pupil = shop.blue_hero()
+	var pupil: HeroState = shop.blue_hero()
 	var gold_before: int = shop.economy.gold[0]
 	var cost: int = pupil.upgrade_cost()
 	check.call(shop._upgrade_blue_hero(pupil.id, 1), "hero upgrade spends")
