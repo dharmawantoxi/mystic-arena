@@ -83,10 +83,24 @@ Upgrade nexus biru 1–5 **bersama** scaling minion, AI tier 1–5, komposisi pe
 
 Keputusan scope: lawan tetap builder terjadwal tanpa `_auto_scale_ai_castle` agar replay lama stabil. Paid shield belum transaksi UI; flag purchased hanya untuk resize shield. Hero/boss/AI penuh, tower selain Archer, 54 level tetap di luar scope. Windows/Android belum diuji langsung.
 
+## Tahap cannon: selesai di CI Linux (sesi lanjutan)
+
+Jalur Cannon 2–6 **bersama** splash 60% + burn DOT, muzzle sumber, dan pilihan jalur eksplisit — **lulus 3.713 native checks** Godot 4.7.2 di Linux.
+
+| Commit (branch `arena/01a0d939-mystic-arena`) | Cakupan | Bukti native |
+|---|---|---|
+| `e17b717` | Oracle/fixture Cannon (path, 5 tier, muzzle 5×2, volley, splash 3 level, burn stacking + tick) | [CI oracle](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36203891056) |
+| `57a83b5` + `8cf3352` + `1c5283a` | Domain + tes Cannon (tiga run gagal: edit hilang, inferensi tipe) | [gagal 36204165113](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36204165113), [gagal 36204324548](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36204324548), [gagal 36204407681](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36204407681) |
+| `96e72a2` | Fix aritas burn test | [gagal 5/3688](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36204618819) → diperbaiki |
+| `76a7676` | Burn tanpa cek tim + kredit via earned (paritas sumber) | [3.688 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36204725077) |
+| `81765fd` | Tombol pilih jalur + scene checks UI/lifecycle | [3.713 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36204985361) |
+
+Temuan yang dikunci: burn dps 8 memberi 3/5/4/4 (float exact); `burn_team` selalu ditimpa penerap terbaru; apply tanpa cek tim; kredit selalu ke lawan korban; splash inklusif + bangunan kebal; recoil muzzle tak terjangkau (0); argumen jalur diabaikan setelah level 1. Deviasi: splash lewat mitigasi physical Godot (sumber None) — pass school-None umum ditunda. Lawan tetap Archer; Ice/Mage, hero/boss/AI penuh, 54 level tetap di luar scope.
+
 ## Langkah berikutnya
 
-1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal**; perbaiki error sebelum menambah konten.
-2. Tunggu CI `07b87ed` (+ docs) lulus; catat angka checks final di handoff ini. Lihat `NEXUS_CONTRACT.md`.
+1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal** (termasuk pilih Cannon); perbaiki error sebelum menambah konten.
+2. Cannon selesai di CI (`81765fd`, 3.713 checks). Lihat `CANNON_CONTRACT.md`.
 3. Audit satu hero/skill dan AI sumber secara bertahap. Ganti lawan sementara hanya setelah perilakunya diuji; jangan mengklaim scripted builder sebagai AI penuh.
 4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.
 5. Push bertahap pada branch sesi baru, pantau CI dan perbarui handoff ini.

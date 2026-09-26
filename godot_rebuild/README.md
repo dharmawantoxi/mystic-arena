@@ -2,7 +2,7 @@
 
 **Proyek baru, native GDScript. Target editor: Godot 4.7.2 standard, Windows 11.**
 
-Milestone 1 (fondasi), 2 (combat minion), 3 (tower/projectile/nexus), 4 (prototipe wave/ekonomi/build-sell), 5 (upgrade Archer 1–6), dan 6 (upgrade nexus 1–5 + scaling/AI/komposisi) telah diimplementasikan; CI native sedang/diverifikasi pada branch sesi baru. **Ini belum migrasi seluruh game.** Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
+Milestone 1 (fondasi), 2 (combat minion), 3 (tower/projectile/nexus), 4 (prototipe wave/ekonomi/build-sell), 5 (upgrade Archer 1–6), 6 (upgrade nexus 1–5 + scaling/AI/komposisi), dan 7 (jalur Cannon 2–6 + splash/burn) telah diimplementasikan; CI native diverifikasi pada branch sesi baru. **Ini belum migrasi seluruh game.** Tidak menggunakan scene, script, generator, GDExtension, atau plugin Godot dari migrasi sebelumnya. Python hanya menjadi referensi untuk pekerjaan migrasi berikutnya.
 
 ## Buka di Windows (tanpa membuat scene/script manual)
 
@@ -19,7 +19,7 @@ Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan clien
 
 - Subset **level 1 / normal**: mulai dengan 1000 G dan dua nexus, belum ada tower. Gold hanya berlaku dalam pertandingan ini.
 - Klik lingkaran slot biru kosong → **Bangun Archer · 100 G**. Tersedia sembilan slot biru dari jalur sumber. Lingkaran merah milik lawan.
-- Klik tower biru hidup → **Upgrade Lv.2 · 175 G**, lalu naik bertahap sampai level 6. Harga berikutnya dan refund selalu ditampilkan; level 5 menembak dua panah, level 6 tiga.
+- Klik tower biru hidup → **Upgrade Lv.2 · 175 G** (Archer) atau **Cannon Lv.2 · 175 G**, lalu naik bertahap sampai level 6. Harga berikutnya dan refund selalu ditampilkan; Archer level 5 menembak dua panah, level 6 tiga; Cannon menembak satu peluru splash + burn.
 - Klik nexus biru → **Nexus Lv.2 · 500 G** sampai level 5 (900/1500/2400). Menaikkan HP/damage/range nexus **dan** stat/AI minion biru serta komposisi wave berikutnya; unit lama tidak berubah.
 - **Jual** memberi 50 G untuk tier 1, atau refund sesuai tier setelah upgrade. Tidak bisa menjual nexus, tower lawan/mati atau menjual tower yang sama dua kali.
 - Wave pertama muncul setelah sekitar 5 detik; unit keluar bertahap setiap 20 tick. Wave berikutnya menunggu timer dan lapangan bersih, bukan selalu muncul ketika countdown mencapai nol.
@@ -83,6 +83,7 @@ Keyboard Tab dan Enter juga dapat digunakan untuk navigasi tombol. Klik panel HU
 - Inspeksi minion, wave uji manual, cap unit/event dan restart world yang bersih.
 - Mode siege: Archer/nexus tier 1, shield/regen, projectile satu hit, inspeksi struktur, wave uji satu/dua tim dan hasil nexus.
 - Upgrade Archer level 1–6, volley source dua/tiga panah, expected-level guard dan refund dinamis.
+- Jalur Cannon level 2–6: pilihan eksplisit di level 1, muzzle sumber, splash 60% + burn DOT dengan akumulasi float exact.
 - Upgrade nexus 1–5 dengan scaling/AI minion, komposisi per-tier, dan formula HP/shield sumber.
 - Prototipe terpisah: scheduler per-tim, gold lokal, 18 slot, transaksi Archer + nexus, hasil otomatis dan lawan builder terjadwal.
 - Oracle wave/income/slot/harga/nexus melalui metode Python asli; ledger/replay/lifecycle teruji.
@@ -180,6 +181,7 @@ Font disalin dari `assets/fonts/` di root repo, bukan dari hasil migrasi lama. L
 
 - **Checkpoint merged `main`:** import engine **Godot 4.7.2**, **1.905 pemeriksaan** pada commit `7c96c83` ([run 36153883271](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153883271)), annotation **Native Godot tests**.
 - **Sesi baru `arena/01a0d939-mystic-arena`:** **3.418 pemeriksaan** lulus pada commit `4f2cfac` ([run 36157499177](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36157499177)), termasuk suite nexus + seluruh suite lama. Check-run `108145527681`.
+- **Jalur Cannon:** **3.713 pemeriksaan** lulus pada commit `81765fd` ([run 36204985361](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36204985361)), termasuk suite Cannon (domain + UI) + seluruh suite lama.
 - **Lulus lokal:** 667 guardrail statis; kontrak minion/lane/bangunan/wave/income/slot/upgrade Archer plus oracle nexus (tier/HP/shield/scaling/komposisi/AI) terhadap Python; parsing/lint/format GDScript.
 - **Belum diverifikasi:** tampilan GPU/screenshot, resize secara visual, Windows fisik, touchscreen, Android dan performa perangkat. CI headless bukan pengganti tes ini.
 
@@ -208,6 +210,7 @@ Pastikan import tidak menampilkan `ERROR` dan runner mengeluarkan `PASS: ... che
 ### Cakupan tes native yang sudah dijalankan di CI
 
 - Nexus 1–5: tier/harga, formula HP + bonus 500/cap, shield resize hanya-bila-purchased, `set_wave` 10/11, 25 scaling minion, komposisi 5 tier, 20 kasus AI, queue-tetap-scaling-berubah, guard stale/max/poor/dead/enemy/result, UI nexus/pause/focus/restart.
+- Cannon 2–6: pilihan jalur eksplisit, stat/refund 5 tier, muzzle exact 5×2, volley tunggal splash+burn, boundary splash, burn stacking/tick 3-5-4-4, kredit korban, guard path/stale/max/poor/dead/enemy/result, UI pilih-jalur/pause/focus/restart.
 - Archer level 1–6: resource/harga/refund, full heal/shield restore tanpa reset cooldown, resource isolation, 36 source volleys, whole-volley cap, impact/overkill, UI upgrade/stale-level/pause/focus/restart.
 
 - Prototipe: dua trace source 3.800 tick, komposisi wave, 18 slot, 12 skenario income, source build/UI-sale prices, ledger dan backpressure.
