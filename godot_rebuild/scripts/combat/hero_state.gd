@@ -48,6 +48,7 @@ var target_struct: StructureState = null
 var has_destination := false
 var destination := Vector2.ZERO
 var follow_id := -1
+var respawn_timer := 0
 
 
 func _init() -> void:

@@ -250,9 +250,15 @@ func _set_hero_follow(hero_id: int, target_id: int) -> bool:
 
 func _step_hero_act() -> void:
 	# Port of Hero.update: dest (2), follow (3), melee (4), hunt (5).
-	# No retreat, push, auto-cast, or W/E/R.
+	# Respawn is Game.update's 600-tick timer, not a lab concern.
+	# No retreat, push, or auto-cast.
 	var hero := blue_hero()
-	if hero == null or not hero.alive or hero.stun_timer > 0 or hero.is_dashing:
+	if hero == null:
+		return
+	if not hero.alive:
+		_step_hero_respawn(hero)
+		return
+	if hero.stun_timer > 0 or hero.is_dashing:
 		return
 	if hero.has_destination:
 		_step_hero_destination(hero)
@@ -267,6 +273,49 @@ func _step_hero_act() -> void:
 	var hunted := _hero_pick_target(hero, HERO_HUNT_RANGE, false)
 	if hunted != null:
 		_move_toward(hero, hunted.position)
+
+
+func _step_hero_respawn(hero: HeroState) -> void:
+	# Source: first sighting sets 600, then the same frame decrements.
+	if hero.respawn_timer <= 0:
+		hero.respawn_timer = 600
+	hero.respawn_timer -= 1
+	if hero.respawn_timer > 0:
+		return
+	hero.slow_amount = 0.0
+	hero.slow_timer = 0
+	hero.atk_slow_amount = 0.0
+	hero.atk_slow_timer = 0
+	hero.skill_down_amount = 0.0
+	hero.skill_down_timer = 0
+	hero.anti_heal_amount = 0.0
+	hero.anti_heal_timer = 0
+	hero.burn_dps = 0.0
+	hero.burn_timer = 0
+	hero.burn_accum = 0.0
+	hero.alive = true
+	hero.hp = hero.max_hp
+	hero.killed_by = -1
+	hero.position = HERO_SPAWN
+	hero.has_destination = false
+	hero.follow_id = -1
+	hero.skill_timer = 0
+	hero.w_cooldown = 0
+	hero.e_cooldown = 0
+	hero.r_cooldown = 0
+	hero.attack_timer = 0
+	hero.q_stack = 0
+	hero.q_reset_timer = 0
+	hero.wind_wall_timer = 0
+	hero.ulti_active = false
+	hero.ulti_timer = 0
+	hero.active_skill = ""
+	hero.active_skill_timer = 0
+	hero.is_dashing = false
+	hero.dash_timer = 0
+	hero.stun_timer = 0
+	hero.target_id = -1
+	hero.target_struct = null
 
 
 func _step_hero_destination(hero: HeroState) -> void:

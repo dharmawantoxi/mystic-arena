@@ -13,9 +13,10 @@ Mode **Pertandingan awal** men-spawn **satu Kaizen biru** saat arena diinisialis
 - **Skill R** / tombol R: Tornado AOE 150px, `skill_damage * 2.0`, butuh target, CD 900, `ulti_timer` 90. Bukan VFX tornado.
 - Inspeksi menampilkan nama, HP/`max_hp` level, Q stack, dan skill CD.
 - Pause, kehilangan fokus, dan hasil membatalkan command Q. Restart men-spawn Kaizen baru (timer/stack nol).
+- Respawn 600 tick (10 dtk) di `HERO_SPAWN`, HP penuh, perintah/debuff/CD skill di-clear. Bukan gold/item forge.
 
 ## Yang sengaja ditunda
 
-Dash visual penuh, respawn, item, unlock gold 400, hero merah, retreat/push ke nexus, auto-cast, upgrade hero via UI, dan lima hero starter lainnya. Hunt/klik-gerak prototipe **bukan** port AIPlayer.
+Dash visual penuh, item, unlock gold 400, hero merah, retreat/push ke nexus, auto-cast, upgrade hero via UI, dan lima hero starter lainnya. Hunt/klik-gerak prototipe **bukan** port AIPlayer.
 
 Angka kit tetap milik resource `data/heroes/kaizen.tres` dan tabel `HERO_LEVELS` global.

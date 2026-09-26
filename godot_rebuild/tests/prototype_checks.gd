@@ -13,6 +13,8 @@ func run(check: Callable) -> void:
 	_death_and_stale_ids(check)
 	_progress_and_result(check)
 	_hero_melee(check)
+	_hero_wall(check)
+	_hero_respawn(check)
 	_replay(check)
 
 
@@ -404,17 +406,48 @@ func _hero_melee(check: Callable) -> void:
 	var parked_follow := chaser.position
 	again.step_tick()
 	check.call(chaser.follow_id == -1 and chaser.position == parked_follow, "dead follow drops")
+
+
+func _hero_wall(check: Callable) -> void:
 	var cover := _world()
 	var shielded = cover.blue_hero()
 	check.call(cover.cast_hero_w(shielded.id), "prototype W casts")
 	cover.build_tower(1, 9)
 	var tower = cover.get_unit(cover.slots[9].structure_id)
 	tower.position = shielded.position + Vector2(40, 0)
-	var hp: float = shielded.hp
+	var shielded_hp: float = shielded.hp
 	check.call(cover.fire_projectile(tower.id, shielded.id), "red archer looses a shot")
 	cover.projectiles[0].position = shielded.position
 	cover.step_tick()
-	check.call(shielded.hp == hp and shielded.wind_wall_timer > 0, "wind wall blocks physical shot")
+	check.call(
+		shielded.hp == shielded_hp and shielded.wind_wall_timer > 0,
+		"wind wall blocks physical shot"
+	)
+
+
+func _hero_respawn(check: Callable) -> void:
+	var world := _world()
+	var hero = world.blue_hero()
+	hero.alive = false
+	hero.hp = 0.0
+	hero.position = Vector2(800, 200)
+	hero.has_destination = true
+	var waited := 0
+	while waited < 599:
+		world.step_tick()
+		waited += 1
+	check.call(not hero.alive and hero.respawn_timer == 1, "still dead on tick 599")
+	world.step_tick()
+	check.call(
+		(
+			hero.alive
+			and hero.hp == hero.max_hp
+			and hero.position == world.HERO_SPAWN
+			and not hero.has_destination
+			and hero.respawn_timer == 0
+		),
+		"hero respawns at spawn after 600 ticks"
+	)
 
 
 func _world() -> Prototype:
