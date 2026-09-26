@@ -338,7 +338,10 @@ func _update_projectiles(source: StructureState) -> void:
 		if offset.length() < shot.speed + shot.hit_radius:
 			# Deactivate BEFORE delivery: duplicate updates cannot apply the hit again.
 			shot.active = false
-			_deliver_hit(shot.source_id, shot.team, target, shot.damage, "physical", shot.position)
+			var school := "magic" if shot.kind == "mage" else "physical"
+			if _hero_blocks_projectile(target, school):
+				continue
+			_deliver_hit(shot.source_id, shot.team, target, shot.damage, school, shot.position)
 			if shot.kind == "cannon":
 				_cannon_impact(shot, target)
 			elif shot.kind == "ice":
@@ -347,6 +350,13 @@ func _update_projectiles(source: StructureState) -> void:
 				_mage_impact(shot, target)
 		else:
 			shot.position += offset.normalized() * shot.speed
+
+
+func _hero_blocks_projectile(target: UnitState, school: String) -> bool:
+	# Port of Hero.take_damage Wind Wall: physical projectiles only.
+	if not target.is_hero or school == "magic":
+		return false
+	return (target as HeroState).wind_wall_timer > 0
 
 
 func _cannon_impact(shot: Projectile, main: UnitState) -> void:
@@ -364,6 +374,8 @@ func _cannon_impact(shot: Projectile, main: UnitState) -> void:
 		if victim == main or victim.team == shot.team or not victim.alive:
 			continue
 		if victim.position.distance_to(main.position) > shot.splash_radius:
+			continue
+		if _hero_blocks_projectile(victim, "physical"):
 			continue
 		_deliver_hit(shot.source_id, shot.team, victim, splash_damage, "physical", shot.position)
 		if victim.alive and shot.burn_dps > 0:

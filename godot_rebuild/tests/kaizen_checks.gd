@@ -414,3 +414,19 @@ func _guards(check: Callable) -> void:
 	check.call(not ready.can_cast_hero_q(caster.id), "lonely Q has no target")
 	_victim(ready, 530.0, 340.0, RED, FAT_HP)
 	check.call(ready.can_cast_hero_q(caster.id), "live hero readies Q on foe")
+	var wall := _battle()
+	var caster_w = _hero(wall, 500.0, 340.0)
+	check.call(wall.can_cast_hero_w(caster_w.id), "W ready without a target")
+	check.call(wall.cast_hero_w(caster_w.id), "W casts")
+	check.call(
+		(
+			caster_w.wind_wall_timer == 180
+			and caster_w.w_cooldown == caster_w.w_cooldown_max
+			and caster_w.active_skill == "w"
+		),
+		"W sets wall and cooldown"
+	)
+	check.call(not wall.cast_hero_w(caster_w.id), "W blocked while cooling")
+	caster_w.alive = false
+	caster_w.w_cooldown = 0
+	check.call(not wall.cast_hero_w(caster_w.id), "dead hero cannot W")

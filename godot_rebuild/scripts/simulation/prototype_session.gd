@@ -37,6 +37,8 @@ func _physics_process(_delta: float) -> void:
 			accepted = match_world.upgrade_nexus(command.id, command.level)
 		elif command.kind == "skill_q":
 			accepted = match_world.cast_blue_q(command.id)
+		elif command.kind == "skill_w":
+			accepted = match_world._cast_blue_w(command.id)
 		elif command.kind == "move":
 			accepted = match_world.set_hero_destination(command.id, command.point)
 		elif command.kind == "follow":
@@ -48,6 +50,8 @@ func _physics_process(_delta: float) -> void:
 		if accepted:
 			if command.kind == "skill_q":
 				last_action = "Kaizen memakai Steel Wind (Q)."
+			elif command.kind == "skill_w":
+				last_action = "Kaizen memakai Wind Wall (W)."
 			elif command.kind == "move":
 				last_action = "Kaizen menuju titik yang dipilih."
 			elif command.kind == "follow":
@@ -121,6 +125,10 @@ func request_nexus_upgrade(entity_id: int) -> bool:
 
 func request_skill_q(entity_id: int) -> bool:
 	return _queue("skill_q", entity_id)
+
+
+func request_skill_w(entity_id: int) -> bool:
+	return _queue("skill_w", entity_id)
 
 
 func request_hero_move(entity_id: int, point: Vector2) -> bool:

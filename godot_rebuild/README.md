@@ -24,7 +24,7 @@ Tidak memerlukan Python, pip, converter, addon, atau C++ untuk menjalankan clien
 - **Jual** memberi 50 G untuk tier 1, atau refund sesuai tier setelah upgrade. Tidak bisa menjual nexus, tower lawan/mati atau menjual tower yang sama dua kali.
 - Wave pertama muncul setelah sekitar 5 detik; unit keluar bertahap setiap 20 tick. Wave berikutnya menunggu timer dan lapangan bersih, bukan selalu muncul ketika countdown mencapai nol.
 - Gold pasif bertambah tiap detik; kill memberi reward. HUD menampilkan saldo, wave dan HP/shield nexus. Slot/range preview ditampilkan ketika dipilih.
-- **Kaizen biru** muncul di dekat nexus (bukan pembelian). Auto-melee dalam range, kejar musuh `< 900` px; **klik kanan** tanah = jalan, **klik kanan musuh** = ikuti. Klik hero → inspeksi HP/Q; **Skill Q**. Bukan retreat/W/E/R atau roster penuh.
+- **Kaizen biru** muncul di dekat nexus (bukan pembelian). Auto-melee dalam range, kejar musuh `< 900` px; **klik kanan** tanah = jalan, **klik kanan musuh** = ikuti. **Skill Q** butuh target; **Skill W** Wind Wall tanpa target (memantulkan proyektil fisik). Bukan E/R/retreat atau roster penuh.
 - **Lawan sementara, bukan AI asli:** membeli tiga Archer berbayar pada detik 5/10/15. Lawan belum melakukan upgrade; hero merah/boss dan castle auto-scaling belum ada.
 - Nexus hancur membuka hasil otomatis dan menghentikan simulasi. **Mulai ulang** mereset seluruh saldo, slot, queue dan hasil; **Menu** kembali ke menu utama. Tidak ada progres disimpan.
 - Esc/Jeda dan kehilangan fokus menghentikan wave, combat dan income serta membatalkan transaksi tertunda. Lanjutkan secara eksplisit; hasil akhir tidak bisa dilanjutkan.

@@ -404,6 +404,17 @@ func _hero_melee(check: Callable) -> void:
 	var parked_follow := chaser.position
 	again.step_tick()
 	check.call(chaser.follow_id == -1 and chaser.position == parked_follow, "dead follow drops")
+	var cover := _world()
+	var shielded = cover.blue_hero()
+	check.call(cover.cast_hero_w(shielded.id), "prototype W casts")
+	cover.build_tower(1, 9)
+	var tower = cover.get_unit(cover.slots[9].structure_id)
+	tower.position = shielded.position + Vector2(40, 0)
+	var hp: float = shielded.hp
+	check.call(cover.fire_projectile(tower.id, shielded.id), "red archer looses a shot")
+	cover.projectiles[0].position = shielded.position
+	cover.step_tick()
+	check.call(shielded.hp == hp and shielded.wind_wall_timer > 0, "wind wall blocks physical shot")
 
 
 func _world() -> Prototype:

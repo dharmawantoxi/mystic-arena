@@ -25,6 +25,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"hero inspection names Kaizen and Q"
 	)
 	check.call(screen.get_node("%SkillQButton").disabled, "Q stays gated without a target")
+	check.call(
+		screen.get_node("%SkillWButton").visible and not screen.get_node("%SkillWButton").disabled,
+		"W is ready without a target"
+	)
 	screen.get_node("%SkillQButton").pressed.emit()
 	session._physics_process(1.0 / 60.0)
 	check.call(
@@ -100,6 +104,13 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 			and session.last_action.contains("mengikuti")
 		),
 		"queued follow replaces destination"
+	)
+	hero.w_cooldown = 0
+	screen.get_node("%SkillWButton").pressed.emit()
+	session._physics_process(1.0 / 60.0)
+	check.call(
+		hero.wind_wall_timer > 0 and session.last_action.contains("Wind Wall"),
+		"queued W raises the wall"
 	)
 	world.winner = 1
 	await _settle(tree)

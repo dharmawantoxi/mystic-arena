@@ -573,6 +573,25 @@ func upgrade_hero(hero_id: int) -> bool:
 	return hero.upgrade()
 
 
+func can_cast_hero_w(hero_id: int) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	return hero.w_cooldown <= 0
+
+
+func cast_hero_w(hero_id: int) -> bool:
+	# Port of KaizenSkills.cast_w: self Wind Wall, no target gate.
+	var hero := get_unit(hero_id) as HeroState
+	if not can_cast_hero_w(hero_id):
+		return false
+	hero.wind_wall_timer = 180
+	hero.w_cooldown = hero.w_cooldown_max
+	hero.active_skill = "w"
+	hero.active_skill_timer = 90
+	return true
+
+
 func can_cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not is_running() or hero == null or not hero.alive:
