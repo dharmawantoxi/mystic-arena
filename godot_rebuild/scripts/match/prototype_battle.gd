@@ -215,7 +215,9 @@ func upgrade_price(entity_id: int, target_path: String = "archer") -> int:
 	var tower := _owned_tower(entity_id)
 	if tower == null:
 		return 0
-	var target := _upgrade_target(tower.settings().level, tower.settings().tower_path, target_path)
+	var level: int = tower.settings().level
+	var path_now: String = tower.settings().tower_path
+	var target: StructureDefinition = _upgrade_target(level, path_now, target_path)
 	return target.upgrade_price if target != null else 0
 
 
