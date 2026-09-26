@@ -573,7 +573,32 @@ func upgrade_hero(hero_id: int) -> bool:
 	return hero.upgrade()
 
 
-func can_cast_hero_w(hero_id: int) -> bool:
+func _can_cast_hero_e(hero_id: int, structures: Array = []) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.e_cooldown > 0:
+		return false
+	return _has_q_target(hero, structures)
+
+
+func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
+	# Port of KaizenSkills.cast_e: Sweep AOE 100px, skill * 1.0, needs a target.
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.e_cooldown > 0:
+		return false
+	if not _has_q_target(hero, structures):
+		return false
+	_deal_hero_aoe(hero, hero.position, 100.0, hero.skill_damage(), structures)
+	hero.e_cooldown = hero.e_cooldown_max
+	hero.active_skill = "e"
+	hero.active_skill_timer = 60
+	return true
+
+
+func _can_cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not is_running() or hero == null or not hero.alive:
 		return false
@@ -583,7 +608,7 @@ func can_cast_hero_w(hero_id: int) -> bool:
 func cast_hero_w(hero_id: int) -> bool:
 	# Port of KaizenSkills.cast_w: self Wind Wall, no target gate.
 	var hero := get_unit(hero_id) as HeroState
-	if not can_cast_hero_w(hero_id):
+	if not _can_cast_hero_w(hero_id):
 		return false
 	hero.wind_wall_timer = 180
 	hero.w_cooldown = hero.w_cooldown_max

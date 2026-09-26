@@ -416,7 +416,7 @@ func _guards(check: Callable) -> void:
 	check.call(ready.can_cast_hero_q(caster.id), "live hero readies Q on foe")
 	var wall := _battle()
 	var caster_w = _hero(wall, 500.0, 340.0)
-	check.call(wall.can_cast_hero_w(caster_w.id), "W ready without a target")
+	check.call(wall._can_cast_hero_w(caster_w.id), "W ready without a target")
 	check.call(wall.cast_hero_w(caster_w.id), "W casts")
 	check.call(
 		(
@@ -430,3 +430,19 @@ func _guards(check: Callable) -> void:
 	caster_w.alive = false
 	caster_w.w_cooldown = 0
 	check.call(not wall.cast_hero_w(caster_w.id), "dead hero cannot W")
+	var sweep := _battle()
+	var caster_e = _hero(sweep, 500.0, 340.0)
+	check.call(not sweep._can_cast_hero_e(caster_e.id), "lonely E has no target")
+	var swept = _victim(sweep, 530.0, 340.0, RED, FAT_HP)
+	check.call(sweep._can_cast_hero_e(caster_e.id), "E readies on foe")
+	var swept_hp: float = swept.hp
+	check.call(sweep.cast_hero_e(caster_e.id), "E casts")
+	check.call(
+		(
+			swept.hp < swept_hp
+			and caster_e.e_cooldown == caster_e.e_cooldown_max
+			and caster_e.active_skill == "e"
+		),
+		"E damages and cools"
+	)
+	check.call(not sweep.cast_hero_e(caster_e.id), "E blocked while cooling")

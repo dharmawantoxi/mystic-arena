@@ -486,3 +486,19 @@ func _cast_blue_w(hero_id: int) -> bool:
 		return false
 	_record({"kind": "skill_w", "target_id": hero.id})
 	return true
+
+
+func _cast_blue_e(hero_id: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	if not cast_hero_e(hero.id, structures):
+		transaction_error = "skill"
+		return false
+	_record({"kind": "skill_e", "target_id": hero.id})
+	return true

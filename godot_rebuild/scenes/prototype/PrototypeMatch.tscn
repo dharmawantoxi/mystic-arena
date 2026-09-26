@@ -137,6 +137,14 @@ disabled = true
 visible = false
 text = "Skill W"
 
+[node name="SkillEButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(150, 42)
+disabled = true
+visible = false
+text = "Skill E"
+
 [node name="Paths" type="HBoxContainer" parent="HUD/BottomBar/Column"]
 unique_name_in_owner = true
 layout_mode = 2
