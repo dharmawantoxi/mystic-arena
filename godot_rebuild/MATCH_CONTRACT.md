@@ -64,7 +64,7 @@ Wave memanggil aturan shield nexus sumber: gratis sampai wave 10. Paid shield be
 
 ## Bukti dan batas pengujian
 
-Checkpoint UI `ff5d2af`: [CI Godot 4.7.2 Linux](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36152202295), **1.511 native checks** termasuk suite sebelumnya. Mencakup fixture sumber, kapasitas antrean, seluruh slot, ledger, duplicate/stale/dead transactions, reward, projectile sale cancellation, hasil freeze, replay identik 4.200 tick serta tiga lifecycle UI untuk kedua pemenang, pause/focus, input berskala, HUD bounds dan cleanup.
+Checkpoint Kaizen-1 `0078e79`: [CI Godot 4.7.2 Linux](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36218349274), **4.780 native checks** termasuk suite sebelumnya. Mencakup fixture sumber, kapasitas antrean, seluruh slot, ledger, duplicate/stale/dead transactions, reward, projectile sale cancellation, hasil freeze, replay identik 4.200 tick serta tiga lifecycle UI untuk kedua pemenang, pause/focus, input berskala, HUD bounds dan cleanup.
 
 JSON memuat angka sebagai float. Trace membandingkan nilai scalar numerik secara exact, bukan nested `Array` yang membedakan tipe Variant. Tidak menggunakan toleransi untuk gold/tick/spawn.
 

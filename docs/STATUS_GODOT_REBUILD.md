@@ -23,14 +23,15 @@ Diperbarui: 26 September 2026 (Push C ditutup: Kaizen-1 prototipe). Pengguna mem
 | `ff5d2af` | Mode **Pertandingan awal**, HUD/build/sell/hasil dan lifecycle | [1.511 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36152202295) |
 | `6e115e4` | Inti upgrade Archer 1–6, resource/refund/source volley | [1.879 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153624268) |
 | `7c96c83` | UI upgrade/refund, expected-level command, impact/overkill | [1.905 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153883271) |
+| `0078e79` | Kaizen-1 prototipe: QWER, dest/follow, hunt/push, retreat, heal, upgrade, respawn | [4.780 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36218349274) |
 
-Commit dokumentasi setelahnya tercatat di `git log`; periksa CI terbaru pada branch untuk hasil HEAD terbaru. Check-run untuk checkpoint UI: **108133593312**, annotation `Native Godot tests`, PASS 1905.
+Commit dokumentasi setelahnya tercatat di `git log`. Native HEAD Kaizen-1: run **36218349274**, PASS 4780.
 
 ## Yang tersedia saat F5
 
 Import `godot_rebuild/project.godot` → F5; tidak perlu membuat scene/script manual.
 
-- **Pertandingan awal**: subset level 1/normal, 1000 G, 9 slot biru, Archer 100 G, upgrade sampai level 6 / refund dinamis; wave otomatis; lawan sementara membeli tiga Archer berbayar; hasil nexus, pause/restart. Bukan AI asli atau seluruh level Python.
+- **Pertandingan awal**: subset level 1/normal, 1000 G, 9 slot biru, Archer 100 G, upgrade sampai level 6 / refund dinamis; wave otomatis; **Kaizen biru** (QWER, klik-kanan, hunt/push/retreat, upgrade, respawn); lawan sementara membeli tiga Archer berbayar; hasil nexus, pause/restart. Bukan AI asli, item, hero merah, atau seluruh level Python.
 - **Tower & nexus**: enam Archer dan dua nexus, projectile/shield, wave manual satu/dua tim, hasil. Laboratorium ini tidak diganti prototipe.
 - **Laboratorium minion**: tiga lane asli, lima tipe minion, combat/regen/death, wave manual, inspeksi.
 - **Uji input**: sandbox penanda hijau untuk regresi input/lifecycle. Bukan hero hasil porting.
