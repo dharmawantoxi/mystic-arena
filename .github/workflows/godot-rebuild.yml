@@ -52,6 +52,7 @@ jobs:
           python godot_rebuild/tests/cannon_source_oracle.py
           python godot_rebuild/tests/ice_source_oracle.py
           python godot_rebuild/tests/mage_source_oracle.py
+          python godot_rebuild/tests/kaizen_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

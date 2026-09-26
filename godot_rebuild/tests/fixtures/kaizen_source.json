@@ -1,0 +1,477 @@
+{
+  "basic": {
+    "attack_facing": 1,
+    "attack_timer": 28,
+    "blocked_calls": 1,
+    "blocked_timer": 28,
+    "dead_target_calls": 0,
+    "facing": 1,
+    "facing_above": 1,
+    "facing_above_calls": 1,
+    "facing_left": -1,
+    "facing_left_calls": 1,
+    "hit": {
+      "alive": true,
+      "calls": [
+        {
+          "alive_after": true,
+          "damage": 45,
+          "damage_type": "normal",
+          "from_team": "blue",
+          "hp_after": 99955,
+          "hp_before": 100000
+        }
+      ],
+      "hp": 99955,
+      "id": "t1"
+    },
+    "out_of_range_calls": 0,
+    "out_of_range_timer": 0,
+    "seq": 1
+  },
+  "eff": {
+    "attack_cd": {
+      "none": 28,
+      "slow_0.15": 33,
+      "slow_0.4": 47,
+      "slow_1.0": 560,
+      "stunned": 9999
+    },
+    "attack_range": 70
+  },
+  "hero": {
+    "aggro_range": 250,
+    "attack_cd_base": 28,
+    "attack_cd_prop": 28,
+    "catalog_cost": 400,
+    "catalog_unlock_cost": 0,
+    "damage": 45,
+    "dmg_school": "physical",
+    "facing": 1,
+    "hero_type": "kaizen",
+    "hp": 770,
+    "hunt_range": 900,
+    "is_melee_hero": true,
+    "level": 1,
+    "max_hp": 770,
+    "name": "Kaizen",
+    "q_state": [
+      0,
+      0,
+      false,
+      0,
+      0,
+      false,
+      0
+    ],
+    "radius": 16,
+    "range": 70,
+    "role": "Assassin",
+    "skill_cooldown_max": 300,
+    "skill_damage": 70,
+    "skill_range": 100,
+    "skills_handler": "hero_skills._bundle.KaizenSkills",
+    "spawn": [
+      500.0,
+      340.0
+    ],
+    "spawn_default": [
+      160.0,
+      590.0
+    ],
+    "speed": 2.6,
+    "title": "The Wind Blade"
+  },
+  "levels": [
+    {
+      "accepted": true,
+      "damage": 45,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 1,
+      "max_hp": 770,
+      "skill_damage": 70,
+      "upgrade_cost": 300
+    },
+    {
+      "accepted": true,
+      "damage": 56,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 2,
+      "max_hp": 1001,
+      "skill_damage": 84,
+      "upgrade_cost": 500
+    },
+    {
+      "accepted": true,
+      "damage": 69,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 3,
+      "max_hp": 1270,
+      "skill_damage": 101,
+      "upgrade_cost": 800
+    },
+    {
+      "accepted": true,
+      "damage": 85,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 4,
+      "max_hp": 1617,
+      "skill_damage": 122,
+      "upgrade_cost": 1200
+    },
+    {
+      "accepted": true,
+      "damage": 108,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 5,
+      "max_hp": 2079,
+      "skill_damage": 147,
+      "upgrade_cost": 1800
+    },
+    {
+      "accepted": true,
+      "damage": 130,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 6,
+      "max_hp": 2579,
+      "skill_damage": 175,
+      "upgrade_cost": 2600
+    },
+    {
+      "accepted": true,
+      "damage": 155,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 7,
+      "max_hp": 3118,
+      "skill_damage": 206,
+      "upgrade_cost": 3600
+    },
+    {
+      "accepted": true,
+      "damage": 182,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 8,
+      "max_hp": 3696,
+      "skill_damage": 241,
+      "upgrade_cost": 4800
+    },
+    {
+      "accepted": true,
+      "damage": 211,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 9,
+      "max_hp": 4312,
+      "skill_damage": 280,
+      "upgrade_cost": 6200
+    },
+    {
+      "accepted": true,
+      "damage": 243,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 10,
+      "max_hp": 5005,
+      "skill_damage": 322,
+      "upgrade_cost": 8000
+    },
+    {
+      "accepted": true,
+      "damage": 279,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 11,
+      "max_hp": 5775,
+      "skill_damage": 364,
+      "upgrade_cost": 10200
+    },
+    {
+      "accepted": true,
+      "damage": 315,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 12,
+      "max_hp": 6622,
+      "skill_damage": 413,
+      "upgrade_cost": 12800
+    },
+    {
+      "accepted": true,
+      "damage": 355,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 13,
+      "max_hp": 7546,
+      "skill_damage": 462,
+      "upgrade_cost": 15800
+    },
+    {
+      "accepted": true,
+      "damage": 400,
+      "hp": 1,
+      "hp_after": 1,
+      "level": 14,
+      "max_hp": 8547,
+      "skill_damage": 518,
+      "upgrade_cost": 19200
+    },
+    {
+      "accepted": false,
+      "damage": 450,
+      "hp": 1,
+      "level": 15,
+      "max_hp": 9625,
+      "skill_damage": 574,
+      "upgrade_cost": 0
+    }
+  ],
+  "meta": {
+    "skills_source": "hero_skills (impor nyata + stub)",
+    "timer_mirror": "attack/skill/w/e/r/active 2-baris decrement"
+  },
+  "q1": {
+    "active_skill": "q",
+    "active_skill_timer": 60,
+    "pos": [
+      500.0,
+      340.0
+    ],
+    "q_reset_timer": 180,
+    "q_stack": 1,
+    "result": true,
+    "skill_timer": 300,
+    "target_id": "e1",
+    "tower_hp": 2000,
+    "tower_pre": {
+      "armor": 3,
+      "hp": 2000,
+      "magic_resist": 0.0,
+      "shield": 800
+    },
+    "tower_shield": 741,
+    "victims": [
+      {
+        "alive": true,
+        "calls": [
+          {
+            "alive_after": true,
+            "damage": 70,
+            "damage_type": "normal",
+            "from_team": "blue",
+            "hp_after": 99930,
+            "hp_before": 100000
+          }
+        ],
+        "hp": 99930,
+        "id": "e1"
+      },
+      {
+        "alive": true,
+        "calls": [
+          {
+            "alive_after": true,
+            "damage": 70,
+            "damage_type": "normal",
+            "from_team": "blue",
+            "hp_after": 99930,
+            "hp_before": 100000
+          }
+        ],
+        "hp": 99930,
+        "id": "e2"
+      },
+      {
+        "alive": true,
+        "calls": [],
+        "hp": 100000,
+        "id": "e3"
+      },
+      {
+        "alive": true,
+        "calls": [],
+        "hp": 100000,
+        "id": "e4"
+      },
+      {
+        "alive": false,
+        "calls": [],
+        "hp": 100000,
+        "id": "dead"
+      },
+      {
+        "alive": true,
+        "calls": [],
+        "hp": 100000,
+        "id": "ally"
+      }
+    ]
+  },
+  "q1_cooldown": {
+    "calls": 0,
+    "result": false,
+    "skill_timer": 10
+  },
+  "q1_fizzle": {
+    "calls": 0,
+    "q_stack": 0,
+    "result": false,
+    "skill_timer": 0
+  },
+  "q1_kill": {
+    "alive": false,
+    "calls": 1,
+    "hp": 0
+  },
+  "q2": {
+    "active_skill": "q",
+    "active_skill_timer": 60,
+    "dash_timer": 15,
+    "is_dashing": true,
+    "pos": [
+      542.0,
+      340.0
+    ],
+    "q_reset_timer": 180,
+    "q_stack": 0,
+    "result": true,
+    "skill_timer": 300,
+    "target_id": "e1",
+    "tower_hp": 2000,
+    "victims": [
+      {
+        "alive": true,
+        "calls": [
+          {
+            "alive_after": true,
+            "damage": 70,
+            "damage_type": "normal",
+            "from_team": "blue",
+            "hp_after": 99930,
+            "hp_before": 100000
+          },
+          {
+            "alive_after": true,
+            "damage": 105,
+            "damage_type": "normal",
+            "from_team": "blue",
+            "hp_after": 99825,
+            "hp_before": 99930
+          }
+        ],
+        "hp": 99825,
+        "id": "e1"
+      },
+      {
+        "alive": true,
+        "calls": [
+          {
+            "alive_after": true,
+            "damage": 70,
+            "damage_type": "normal",
+            "from_team": "blue",
+            "hp_after": 99930,
+            "hp_before": 100000
+          },
+          {
+            "alive_after": true,
+            "damage": 105,
+            "damage_type": "normal",
+            "from_team": "blue",
+            "hp_after": 99825,
+            "hp_before": 99930
+          }
+        ],
+        "hp": 99825,
+        "id": "e2"
+      },
+      {
+        "alive": true,
+        "calls": [
+          {
+            "alive_after": true,
+            "damage": 105,
+            "damage_type": "normal",
+            "from_team": "blue",
+            "hp_after": 99895,
+            "hp_before": 100000
+          }
+        ],
+        "hp": 99895,
+        "id": "e3"
+      },
+      {
+        "alive": true,
+        "calls": [
+          {
+            "alive_after": true,
+            "damage": 105,
+            "damage_type": "normal",
+            "from_team": "blue",
+            "hp_after": 99895,
+            "hp_before": 100000
+          }
+        ],
+        "hp": 99895,
+        "id": "e4"
+      },
+      {
+        "alive": false,
+        "calls": [],
+        "hp": 100000,
+        "id": "dead"
+      },
+      {
+        "alive": true,
+        "calls": [],
+        "hp": 100000,
+        "id": "ally"
+      }
+    ]
+  },
+  "qtimers": {
+    "dash_timer": 0,
+    "is_dashing": false,
+    "q_reset_timer": 165,
+    "q_stack": 0,
+    "reset_after_180": 0,
+    "stack_after_180": 0
+  },
+  "quirk": {
+    "reset_after_180": 0,
+    "skill_timer_after_180": 300,
+    "stack_after_180": 0
+  },
+  "skill_prop": {
+    "base": 70,
+    "cases": {
+      "0.2": 56,
+      "0.5": 35,
+      "1.0": 0,
+      "none": 70
+    }
+  },
+  "take": {
+    "alive": true,
+    "dealt": 100,
+    "death": {
+      "alive": false,
+      "dealt": 100,
+      "deaths": 1,
+      "hp": 0,
+      "killed_by_src2": true,
+      "slow_cleared": true
+    },
+    "hp_after": 670,
+    "hp_before": 770,
+    "overkill_alive": false,
+    "overkill_hp": 0
+  }
+}
