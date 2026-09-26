@@ -30,6 +30,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"W is ready without a target"
 	)
 	check.call(screen.get_node("%SkillEButton").disabled, "E stays gated without a target")
+	check.call(screen.get_node("%SkillRButton").disabled, "R stays gated without a target")
 	screen.get_node("%SkillQButton").pressed.emit()
 	session._physics_process(1.0 / 60.0)
 	check.call(
@@ -43,6 +44,7 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	await _settle(tree)
 	check.call(not screen.get_node("%SkillQButton").disabled, "Q enables with a target")
 	check.call(not screen.get_node("%SkillEButton").disabled, "E enables with a target")
+	check.call(not screen.get_node("%SkillRButton").disabled, "R enables with a target")
 	screen.get_node("%SkillQButton").pressed.emit()
 	screen.get_node("%SkillQButton").pressed.emit()
 	check.call(
@@ -118,6 +120,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	screen.get_node("%SkillEButton").pressed.emit()
 	session._physics_process(1.0 / 60.0)
 	check.call(hero.e_cooldown > 0 and session.last_action.contains("Sweep"), "queued E sweeps")
+	hero.r_cooldown = 0
+	screen.get_node("%SkillRButton").pressed.emit()
+	session._physics_process(1.0 / 60.0)
+	check.call(hero.ulti_active and session.last_action.contains("Tornado"), "queued R tornados")
 	world.winner = 1
 	await _settle(tree)
 	check.call(

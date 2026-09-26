@@ -46,6 +46,9 @@ func _ready() -> void:
 	%SkillEButton.pressed.connect(
 		func() -> void: match_session.request_skill_e(match_session.selected_id)
 	)
+	%SkillRButton.pressed.connect(
+		func() -> void: match_session.request_skill_r(match_session.selected_id)
+	)
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -140,6 +143,14 @@ func _process(_delta: float) -> void:
 	%SkillEButton.disabled = locked or not e_ready
 	%SkillEButton.text = (
 		"E · CD %d" % hero.e_cooldown if hero != null and hero.e_cooldown > 0 else "Skill E"
+	)
+	var r_ready := (
+		hero != null and hero.team == 0 and world._can_cast_hero_r(hero.id, world.structures)
+	)
+	%SkillRButton.visible = hero != null and hero.team == 0
+	%SkillRButton.disabled = locked or not r_ready
+	%SkillRButton.text = (
+		"R · CD %d" % hero.r_cooldown if hero != null and hero.r_cooldown > 0 else "Skill R"
 	)
 	%UpgradeButton.text = "Upgrade Archer"
 	%CannonButton.text = "Cannon Lv.2"
@@ -255,6 +266,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		and event.physical_keycode == KEY_E
 	):
 		match_session.request_skill_e(match_session.selected_id)
+		get_viewport().set_input_as_handled()
+		return
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.physical_keycode == KEY_R
+	):
+		match_session.request_skill_r(match_session.selected_id)
 		get_viewport().set_input_as_handled()
 		return
 	if (

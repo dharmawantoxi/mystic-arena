@@ -446,3 +446,23 @@ func _guards(check: Callable) -> void:
 		"E damages and cools"
 	)
 	check.call(not sweep.cast_hero_e(caster_e.id), "E blocked while cooling")
+	var storm := _battle()
+	var caster_r = _hero(storm, 500.0, 340.0)
+	check.call(not storm._can_cast_hero_r(caster_r.id), "lonely R has no target")
+	var blasted = _victim(storm, 540.0, 340.0, RED, FAT_HP)
+	var far = _victim(storm, 700.0, 340.0, RED, FAT_HP)
+	check.call(storm._can_cast_hero_r(caster_r.id), "R readies on foe")
+	var blasted_hp: float = blasted.hp
+	var far_hp: float = far.hp
+	check.call(storm._cast_hero_r(caster_r.id), "R casts")
+	check.call(
+		(
+			blasted.hp < blasted_hp
+			and far.hp == far_hp
+			and caster_r.ulti_active
+			and caster_r.r_cooldown == caster_r.r_cooldown_max
+			and caster_r.active_skill == "r"
+		),
+		"R hits inside 150 and cools"
+	)
+	check.call(not storm._cast_hero_r(caster_r.id), "R blocked while cooling")

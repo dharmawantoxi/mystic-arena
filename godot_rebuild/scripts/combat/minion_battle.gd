@@ -598,6 +598,33 @@ func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 	return true
 
 
+func _can_cast_hero_r(hero_id: int, structures: Array = []) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.r_cooldown > 0:
+		return false
+	return _has_q_target(hero, structures)
+
+
+func _cast_hero_r(hero_id: int, structures: Array = []) -> bool:
+	# Port of KaizenSkills.cast_r: Tornado AOE 150px, skill * 2.0.
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.r_cooldown > 0:
+		return false
+	if not _has_q_target(hero, structures):
+		return false
+	_deal_hero_aoe(hero, hero.position, 150.0, hero.skill_damage() * 2, structures)
+	hero.ulti_active = true
+	hero.ulti_timer = 90
+	hero.r_cooldown = hero.r_cooldown_max
+	hero.active_skill = "r"
+	hero.active_skill_timer = 100
+	return true
+
+
 func _can_cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not is_running() or hero == null or not hero.alive:
