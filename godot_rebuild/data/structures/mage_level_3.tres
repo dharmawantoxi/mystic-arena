@@ -1,0 +1,38 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/structure_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "mage_level_3"
+display_name = "Mage Lv.3"
+max_hp = 2750
+damage = 26
+speed_px_per_tick = 0.0
+attack_range_px = 190.0
+attack_cooldown_ticks = 18
+gold_reward = 100
+radius_px = 24.0
+regen_per_tick = 0.3
+armor = 5.0
+magic_resist = 0.0
+structure_kind = "tower"
+tower_path = "mage"
+skill_down_amount = 0.25
+anti_heal_amount = 0.5
+debuff_duration_ticks = 130
+chain_count = 2
+shield_capacity = 1100.0
+hp_regen_delay_ticks = 300
+shield_regen_enabled = false
+shield_regen_delay_ticks = 180
+shield_regen_per_tick = 1.8
+shield_damage_reduction = 0.0
+free_shield_waves = 10
+projectile_speed_px_per_tick = 8.0
+projectile_hit_radius_px = 4.0
+level = 3
+volley_count = 1
+bow_platform_height = 38.0
+upgrade_price = 325
+sale_refund = 250

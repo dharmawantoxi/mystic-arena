@@ -1,0 +1,38 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/structure_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ice_level_6"
+display_name = "Ice Lv.6"
+max_hp = 6500
+damage = 78
+speed_px_per_tick = 0.0
+attack_range_px = 220.0
+attack_cooldown_ticks = 14
+gold_reward = 100
+radius_px = 24.0
+regen_per_tick = 0.3
+armor = 8.0
+magic_resist = 0.0
+structure_kind = "tower"
+tower_path = "ice"
+slow_amount = 0.65
+slow_duration_ticks = 150
+atk_slow_amount = 0.4
+slow_aoe_px = 80.0
+shield_capacity = 2600.0
+hp_regen_delay_ticks = 300
+shield_regen_enabled = false
+shield_regen_delay_ticks = 180
+shield_regen_per_tick = 1.8
+shield_damage_reduction = 0.0
+free_shield_waves = 10
+projectile_speed_px_per_tick = 8.0
+projectile_hit_radius_px = 4.0
+level = 6
+volley_count = 1
+bow_platform_height = 38.0
+upgrade_price = 1300
+sale_refund = 1600

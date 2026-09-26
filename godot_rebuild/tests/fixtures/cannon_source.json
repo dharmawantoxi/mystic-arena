@@ -1,0 +1,851 @@
+{
+  "burn": [
+    {
+      "case": "stacking",
+      "first": {
+        "accum": 0.0,
+        "dps": 8,
+        "team": "blue",
+        "tick_cd": 30,
+        "timer": 120
+      },
+      "stronger": {
+        "dps": 30,
+        "team": "red",
+        "timer": 200
+      },
+      "weaker": {
+        "dps": 8,
+        "team": "red",
+        "timer": 200
+      }
+    },
+    {
+      "accum": 0.0,
+      "case": "ticks",
+      "dps": 8,
+      "dps_after": 0.0,
+      "duration": 120,
+      "events": [
+        {
+          "damage": 3,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 30
+        },
+        {
+          "damage": 5,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 60
+        },
+        {
+          "damage": 4,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 90
+        },
+        {
+          "damage": 4,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 120
+        }
+      ],
+      "hp": 9984,
+      "timer": 0
+    },
+    {
+      "accum": 0.0,
+      "case": "ticks",
+      "dps": 30,
+      "dps_after": 0.0,
+      "duration": 180,
+      "events": [
+        {
+          "damage": 15,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 30
+        },
+        {
+          "damage": 15,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 60
+        },
+        {
+          "damage": 15,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 90
+        },
+        {
+          "damage": 15,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 120
+        },
+        {
+          "damage": 15,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 150
+        },
+        {
+          "damage": 15,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "tick": 180
+        }
+      ],
+      "hp": 9910,
+      "timer": 0
+    },
+    {
+      "case": "fallback_team",
+      "damage": 30,
+      "from_team": "red"
+    },
+    {
+      "accum": 0.0,
+      "alive": false,
+      "calls": [
+        {
+          "alive_after": false,
+          "damage": 30,
+          "damage_type": "fire",
+          "from_team": "blue",
+          "hp_after": 0,
+          "hp_before": 3
+        }
+      ],
+      "case": "death",
+      "dps": 0.0,
+      "timer": 0
+    },
+    {
+      "calls": [],
+      "case": "already_dead",
+      "tick_cd": 25,
+      "timer": 145
+    }
+  ],
+  "levels": [
+    {
+      "armor": 4,
+      "burn_dps": 8,
+      "burn_duration": 120,
+      "chain": 1,
+      "cooldown": 44,
+      "damage": 42,
+      "double_shot": false,
+      "hp": 3000,
+      "level": 2,
+      "magic_resist": 0.0,
+      "max_hp": 3000,
+      "next_price": 325,
+      "no_damage_timer": 0,
+      "price": 175,
+      "range": 165,
+      "refund": 87,
+      "shield": 1200,
+      "splash": 45,
+      "timer": 0
+    },
+    {
+      "armor": 5,
+      "burn_dps": 12,
+      "burn_duration": 150,
+      "chain": 1,
+      "cooldown": 40,
+      "damage": 60,
+      "double_shot": false,
+      "hp": 3750,
+      "level": 3,
+      "magic_resist": 0.0,
+      "max_hp": 3750,
+      "next_price": 550,
+      "no_damage_timer": 9,
+      "price": 325,
+      "range": 175,
+      "refund": 250,
+      "shield": 1500,
+      "splash": 55,
+      "timer": 17
+    },
+    {
+      "armor": 6,
+      "burn_dps": 16,
+      "burn_duration": 150,
+      "chain": 1,
+      "cooldown": 36,
+      "damage": 84,
+      "double_shot": false,
+      "hp": 4750,
+      "level": 4,
+      "magic_resist": 0.0,
+      "max_hp": 4750,
+      "next_price": 850,
+      "no_damage_timer": 9,
+      "price": 550,
+      "range": 185,
+      "refund": 525,
+      "shield": 1900,
+      "splash": 65,
+      "timer": 17
+    },
+    {
+      "armor": 7,
+      "burn_dps": 22,
+      "burn_duration": 180,
+      "chain": 1,
+      "cooldown": 32,
+      "damage": 116,
+      "double_shot": false,
+      "hp": 6000,
+      "level": 5,
+      "magic_resist": 0.0,
+      "max_hp": 6000,
+      "next_price": 1300,
+      "no_damage_timer": 9,
+      "price": 850,
+      "range": 195,
+      "refund": 950,
+      "shield": 2400,
+      "splash": 80,
+      "timer": 17
+    },
+    {
+      "armor": 8,
+      "burn_dps": 30,
+      "burn_duration": 180,
+      "chain": 1,
+      "cooldown": 28,
+      "damage": 155,
+      "double_shot": false,
+      "hp": 7500,
+      "level": 6,
+      "magic_resist": 0.0,
+      "max_hp": 7500,
+      "next_price": 0,
+      "no_damage_timer": 9,
+      "price": 1300,
+      "range": 210,
+      "refund": 1600,
+      "shield": 3000,
+      "splash": 100,
+      "timer": 17
+    }
+  ],
+  "muzzle": [
+    {
+      "cannon_tier": "basic",
+      "cooldown": 44,
+      "faces": {
+        "-1": [
+          488,
+          313
+        ],
+        "1": [
+          511,
+          313
+        ]
+      },
+      "level": 2,
+      "recoil_at_fire": 0,
+      "tower_h": 42
+    },
+    {
+      "cannon_tier": "bronze",
+      "cooldown": 40,
+      "faces": {
+        "-1": [
+          487,
+          311
+        ],
+        "1": [
+          512,
+          311
+        ]
+      },
+      "level": 3,
+      "recoil_at_fire": 0,
+      "tower_h": 46
+    },
+    {
+      "cannon_tier": "iron",
+      "cooldown": 36,
+      "faces": {
+        "-1": [
+          486,
+          306
+        ],
+        "1": [
+          514,
+          306
+        ]
+      },
+      "level": 4,
+      "recoil_at_fire": 0,
+      "tower_h": 52
+    },
+    {
+      "cannon_tier": "twin",
+      "cooldown": 32,
+      "faces": {
+        "-1": [
+          489,
+          304
+        ],
+        "1": [
+          510,
+          304
+        ]
+      },
+      "level": 5,
+      "recoil_at_fire": 0,
+      "tower_h": 56
+    },
+    {
+      "cannon_tier": "legendary",
+      "cooldown": 28,
+      "faces": {
+        "-1": [
+          484,
+          299
+        ],
+        "1": [
+          515,
+          299
+        ]
+      },
+      "level": 6,
+      "recoil_at_fire": 0,
+      "tower_h": 62
+    }
+  ],
+  "path_selection": {
+    "archer_price": 175,
+    "cannon_level": 2,
+    "cannon_max_price": 0,
+    "cannon_maxed": true,
+    "cannon_next_archer_arg": 325,
+    "cannon_next_default": 325,
+    "cannon_price": 175,
+    "cannon_type": "cannon",
+    "default_price": 175,
+    "ice_price": 175,
+    "kept_level": 3,
+    "kept_type": "cannon",
+    "level": 1,
+    "mage_price": 175,
+    "still_level": 1,
+    "still_type": "archer",
+    "tower_type": "archer",
+    "upgrade_bogus": false,
+    "upgrade_none": false
+  },
+  "splash": [
+    {
+      "damage": 42,
+      "level": 2,
+      "main_burn": {
+        "dps": 8,
+        "team": "blue",
+        "timer": 120
+      },
+      "main_calls": [
+        {
+          "alive_after": true,
+          "damage": 42,
+          "damage_type": "projectile",
+          "from_team": "blue",
+          "hp_after": 9958,
+          "hp_before": 10000
+        }
+      ],
+      "splash": 45,
+      "splash_damage": 25,
+      "victims": [
+        {
+          "burn": {
+            "dps": 8,
+            "team": "blue",
+            "timer": 120
+          },
+          "calls": [
+            {
+              "alive_after": true,
+              "damage": 25,
+              "damage_type": "normal",
+              "from_team": "blue",
+              "hp_after": 9975,
+              "hp_before": 10000
+            }
+          ],
+          "id": 2
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 3
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [
+            {
+              "alive_after": false,
+              "damage": 25,
+              "damage_type": "normal",
+              "from_team": "blue",
+              "hp_after": 0,
+              "hp_before": 5
+            }
+          ],
+          "id": 4
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 5
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 6
+        },
+        {
+          "burn": null,
+          "calls": [
+            [
+              "25",
+              "blue"
+            ]
+          ],
+          "id": 7
+        }
+      ]
+    },
+    {
+      "damage": 84,
+      "level": 4,
+      "main_burn": {
+        "dps": 16,
+        "team": "blue",
+        "timer": 150
+      },
+      "main_calls": [
+        {
+          "alive_after": true,
+          "damage": 84,
+          "damage_type": "projectile",
+          "from_team": "blue",
+          "hp_after": 9916,
+          "hp_before": 10000
+        }
+      ],
+      "splash": 65,
+      "splash_damage": 50,
+      "victims": [
+        {
+          "burn": {
+            "dps": 16,
+            "team": "blue",
+            "timer": 150
+          },
+          "calls": [
+            {
+              "alive_after": true,
+              "damage": 50,
+              "damage_type": "normal",
+              "from_team": "blue",
+              "hp_after": 9950,
+              "hp_before": 10000
+            }
+          ],
+          "id": 2
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 3
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [
+            {
+              "alive_after": false,
+              "damage": 50,
+              "damage_type": "normal",
+              "from_team": "blue",
+              "hp_after": 0,
+              "hp_before": 5
+            }
+          ],
+          "id": 4
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 5
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 6
+        },
+        {
+          "burn": null,
+          "calls": [
+            [
+              "50",
+              "blue"
+            ]
+          ],
+          "id": 7
+        }
+      ]
+    },
+    {
+      "damage": 155,
+      "level": 6,
+      "main_burn": {
+        "dps": 30,
+        "team": "blue",
+        "timer": 180
+      },
+      "main_calls": [
+        {
+          "alive_after": true,
+          "damage": 155,
+          "damage_type": "projectile",
+          "from_team": "blue",
+          "hp_after": 9845,
+          "hp_before": 10000
+        }
+      ],
+      "splash": 100,
+      "splash_damage": 93,
+      "victims": [
+        {
+          "burn": {
+            "dps": 30,
+            "team": "blue",
+            "timer": 180
+          },
+          "calls": [
+            {
+              "alive_after": true,
+              "damage": 93,
+              "damage_type": "normal",
+              "from_team": "blue",
+              "hp_after": 9907,
+              "hp_before": 10000
+            }
+          ],
+          "id": 2
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 3
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [
+            {
+              "alive_after": false,
+              "damage": 93,
+              "damage_type": "normal",
+              "from_team": "blue",
+              "hp_after": 0,
+              "hp_before": 5
+            }
+          ],
+          "id": 4
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 5
+        },
+        {
+          "burn": {
+            "dps": 0.0,
+            "team": null,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 6
+        },
+        {
+          "burn": null,
+          "calls": [
+            [
+              "93",
+              "blue"
+            ]
+          ],
+          "id": 7
+        }
+      ]
+    }
+  ],
+  "volleys": [
+    {
+      "flash": 10,
+      "level": 2,
+      "shots": [
+        {
+          "damage": 42,
+          "kind": "cannon",
+          "position": [
+            488,
+            313
+          ],
+          "special": {
+            "burn_dps": 8,
+            "burn_duration": 120,
+            "splash": 45
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 10,
+      "level": 2,
+      "shots": [
+        {
+          "damage": 42,
+          "kind": "cannon",
+          "position": [
+            511,
+            313
+          ],
+          "special": {
+            "burn_dps": 8,
+            "burn_duration": 120,
+            "splash": 45
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    },
+    {
+      "flash": 10,
+      "level": 3,
+      "shots": [
+        {
+          "damage": 60,
+          "kind": "cannon",
+          "position": [
+            487,
+            311
+          ],
+          "special": {
+            "burn_dps": 12,
+            "burn_duration": 150,
+            "splash": 55
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 10,
+      "level": 3,
+      "shots": [
+        {
+          "damage": 60,
+          "kind": "cannon",
+          "position": [
+            512,
+            311
+          ],
+          "special": {
+            "burn_dps": 12,
+            "burn_duration": 150,
+            "splash": 55
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    },
+    {
+      "flash": 10,
+      "level": 4,
+      "shots": [
+        {
+          "damage": 84,
+          "kind": "cannon",
+          "position": [
+            486,
+            306
+          ],
+          "special": {
+            "burn_dps": 16,
+            "burn_duration": 150,
+            "splash": 65
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 10,
+      "level": 4,
+      "shots": [
+        {
+          "damage": 84,
+          "kind": "cannon",
+          "position": [
+            514,
+            306
+          ],
+          "special": {
+            "burn_dps": 16,
+            "burn_duration": 150,
+            "splash": 65
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    },
+    {
+      "flash": 10,
+      "level": 5,
+      "shots": [
+        {
+          "damage": 116,
+          "kind": "cannon",
+          "position": [
+            489,
+            304
+          ],
+          "special": {
+            "burn_dps": 22,
+            "burn_duration": 180,
+            "splash": 80
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 10,
+      "level": 5,
+      "shots": [
+        {
+          "damage": 116,
+          "kind": "cannon",
+          "position": [
+            510,
+            304
+          ],
+          "special": {
+            "burn_dps": 22,
+            "burn_duration": 180,
+            "splash": 80
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    },
+    {
+      "flash": 10,
+      "level": 6,
+      "shots": [
+        {
+          "damage": 155,
+          "kind": "cannon",
+          "position": [
+            484,
+            299
+          ],
+          "special": {
+            "burn_dps": 30,
+            "burn_duration": 180,
+            "splash": 100
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 10,
+      "level": 6,
+      "shots": [
+        {
+          "damage": 155,
+          "kind": "cannon",
+          "position": [
+            515,
+            299
+          ],
+          "special": {
+            "burn_dps": 30,
+            "burn_duration": 180,
+            "splash": 100
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    }
+  ]
+}

@@ -1,0 +1,1324 @@
+{
+ "debuff": [
+  {
+   "case": "stacking_skill_down",
+   "first": {
+    "amount": 0.2,
+    "timer": 120
+   },
+   "stronger": {
+    "amount": 0.5,
+    "timer": 50
+   },
+   "weaker_longer": {
+    "amount": 0.1,
+    "timer": 200
+   },
+   "weaker_shorter": {
+    "amount": 0.2,
+    "timer": 120
+   }
+  },
+  {
+   "case": "stacking_anti_heal",
+   "first": {
+    "amount": 0.4,
+    "timer": 120
+   },
+   "stronger": {
+    "amount": 0.75,
+    "timer": 50
+   },
+   "weaker_longer": {
+    "amount": 0.1,
+    "timer": 200
+   },
+   "weaker_shorter": {
+    "amount": 0.4,
+    "timer": 120
+   }
+  },
+  {
+   "case": "ticks",
+   "ticks": [
+    {
+     "anti_amount": 0.75,
+     "anti_timer": 1,
+     "skill_amount": 0.5,
+     "skill_timer": 2
+    },
+    {
+     "anti_amount": 0.0,
+     "anti_timer": 0,
+     "skill_amount": 0.5,
+     "skill_timer": 1
+    },
+    {
+     "anti_amount": 0.0,
+     "anti_timer": 0,
+     "skill_amount": 0.0,
+     "skill_timer": 0
+    },
+    {
+     "anti_amount": 0.0,
+     "anti_timer": 0,
+     "skill_amount": 0.0,
+     "skill_timer": 0
+    },
+    {
+     "anti_amount": 0.0,
+     "anti_timer": 0,
+     "skill_amount": 0.0,
+     "skill_timer": 0
+    }
+   ]
+  },
+  {
+   "case": "regen",
+   "rows": [
+    {
+     "amount": 0.0,
+     "hp_after": 40.6,
+     "hp_before": 40.0,
+     "max_hp": 45,
+     "regen": 0.6,
+     "timer": 0
+    },
+    {
+     "amount": 0.4,
+     "hp_after": 40.36,
+     "hp_before": 40.0,
+     "max_hp": 45,
+     "regen": 0.6,
+     "timer": 120
+    },
+    {
+     "amount": 1.0,
+     "hp_after": 40.0,
+     "hp_before": 40.0,
+     "max_hp": 45,
+     "regen": 0.6,
+     "timer": 180
+    },
+    {
+     "amount": 0.5,
+     "hp_after": 44.9,
+     "hp_before": 44.8,
+     "max_hp": 45,
+     "regen": 0.6,
+     "timer": 130
+    },
+    {
+     "amount": 0.5,
+     "hp_after": 45,
+     "hp_before": 45.0,
+     "max_hp": 45,
+     "regen": 0.6,
+     "timer": 130
+    },
+    {
+     "amount": 0.75,
+     "hp_after": 44.15,
+     "hp_before": 44.0,
+     "max_hp": 45,
+     "regen": 0.6,
+     "timer": 150
+    }
+   ]
+  }
+ ],
+ "levels": [
+  {
+   "anti_heal": 0.4,
+   "armor": 4,
+   "chain": 2,
+   "cooldown": 20,
+   "damage": 17,
+   "debuff_duration": 120,
+   "hp": 2125,
+   "level": 2,
+   "magic_resist": 0.0,
+   "max_hp": 2125,
+   "next_price": 325,
+   "no_damage_timer": 0,
+   "price": 175,
+   "range": 180,
+   "refund": 87,
+   "shield": 850,
+   "skill_down": 0.2,
+   "timer": 0
+  },
+  {
+   "anti_heal": 0.5,
+   "armor": 5,
+   "chain": 2,
+   "cooldown": 18,
+   "damage": 26,
+   "debuff_duration": 130,
+   "hp": 2750,
+   "level": 3,
+   "magic_resist": 0.0,
+   "max_hp": 2750,
+   "next_price": 550,
+   "no_damage_timer": 9,
+   "price": 325,
+   "range": 190,
+   "refund": 250,
+   "shield": 1100,
+   "skill_down": 0.25,
+   "timer": 17
+  },
+  {
+   "anti_heal": 0.6,
+   "armor": 6,
+   "chain": 3,
+   "cooldown": 16,
+   "damage": 39,
+   "debuff_duration": 140,
+   "hp": 3625,
+   "level": 4,
+   "magic_resist": 0.0,
+   "max_hp": 3625,
+   "next_price": 850,
+   "no_damage_timer": 9,
+   "price": 550,
+   "range": 200,
+   "refund": 525,
+   "shield": 1450,
+   "skill_down": 0.3,
+   "timer": 17
+  },
+  {
+   "anti_heal": 0.75,
+   "armor": 7,
+   "chain": 3,
+   "cooldown": 14,
+   "damage": 55,
+   "debuff_duration": 150,
+   "hp": 4625,
+   "level": 5,
+   "magic_resist": 0.0,
+   "max_hp": 4625,
+   "next_price": 1300,
+   "no_damage_timer": 9,
+   "price": 850,
+   "range": 210,
+   "refund": 950,
+   "shield": 1850,
+   "skill_down": 0.4,
+   "timer": 17
+  },
+  {
+   "anti_heal": 1.0,
+   "armor": 8,
+   "chain": 4,
+   "cooldown": 12,
+   "damage": 70,
+   "debuff_duration": 180,
+   "hp": 5875,
+   "level": 6,
+   "magic_resist": 0.0,
+   "max_hp": 5875,
+   "next_price": 0,
+   "no_damage_timer": 9,
+   "price": 1300,
+   "range": 230,
+   "refund": 1600,
+   "shield": 2350,
+   "skill_down": 0.5,
+   "timer": 17
+  }
+ ],
+ "muzzle": [
+  {
+   "aims": {
+    "E": {
+     "angle": 0.0,
+     "position": [
+      505.0,
+      309.0
+     ]
+    },
+    "N": {
+     "angle": -1.5707963267948966,
+     "position": [
+      500.0,
+      304.0
+     ]
+    },
+    "NE": {
+     "angle": -0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      305.4644660940673
+     ]
+    },
+    "NW": {
+     "angle": -2.356194490192345,
+     "position": [
+      496.4644660940673,
+      305.46446609406723
+     ]
+    },
+    "S": {
+     "angle": 1.5707963267948966,
+     "position": [
+      500.0,
+      314.0
+     ]
+    },
+    "SE": {
+     "angle": 0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      312.5355339059327
+     ]
+    },
+    "SW": {
+     "angle": 2.356194490192345,
+     "position": [
+      496.4644660940673,
+      312.53553390593277
+     ]
+    },
+    "W": {
+     "angle": 3.141592653589793,
+     "position": [
+      495.0,
+      309.0
+     ]
+    }
+   },
+   "crystal_minus": [
+    500,
+    309
+   ],
+   "crystal_plus": [
+    500,
+    309
+   ],
+   "crystal_tier": "small",
+   "level": 2,
+   "tower_h": 48
+  },
+  {
+   "aims": {
+    "E": {
+     "angle": 0.0,
+     "position": [
+      505.0,
+      306.0
+     ]
+    },
+    "N": {
+     "angle": -1.5707963267948966,
+     "position": [
+      500.0,
+      301.0
+     ]
+    },
+    "NE": {
+     "angle": -0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      302.4644660940673
+     ]
+    },
+    "NW": {
+     "angle": -2.356194490192345,
+     "position": [
+      496.4644660940673,
+      302.46446609406723
+     ]
+    },
+    "S": {
+     "angle": 1.5707963267948966,
+     "position": [
+      500.0,
+      311.0
+     ]
+    },
+    "SE": {
+     "angle": 0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      309.5355339059327
+     ]
+    },
+    "SW": {
+     "angle": 2.356194490192345,
+     "position": [
+      496.4644660940673,
+      309.53553390593277
+     ]
+    },
+    "W": {
+     "angle": 3.141592653589793,
+     "position": [
+      495.0,
+      306.0
+     ]
+    }
+   },
+   "crystal_minus": [
+    500,
+    306
+   ],
+   "crystal_plus": [
+    500,
+    306
+   ],
+   "crystal_tier": "medium",
+   "level": 3,
+   "tower_h": 52
+  },
+  {
+   "aims": {
+    "E": {
+     "angle": 0.0,
+     "position": [
+      505.0,
+      303.0
+     ]
+    },
+    "N": {
+     "angle": -1.5707963267948966,
+     "position": [
+      500.0,
+      298.0
+     ]
+    },
+    "NE": {
+     "angle": -0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      299.4644660940673
+     ]
+    },
+    "NW": {
+     "angle": -2.356194490192345,
+     "position": [
+      496.4644660940673,
+      299.46446609406723
+     ]
+    },
+    "S": {
+     "angle": 1.5707963267948966,
+     "position": [
+      500.0,
+      308.0
+     ]
+    },
+    "SE": {
+     "angle": 0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      306.5355339059327
+     ]
+    },
+    "SW": {
+     "angle": 2.356194490192345,
+     "position": [
+      496.4644660940673,
+      306.53553390593277
+     ]
+    },
+    "W": {
+     "angle": 3.141592653589793,
+     "position": [
+      495.0,
+      303.0
+     ]
+    }
+   },
+   "crystal_minus": [
+    500,
+    303
+   ],
+   "crystal_plus": [
+    500,
+    303
+   ],
+   "crystal_tier": "medium",
+   "level": 4,
+   "tower_h": 56
+  },
+  {
+   "aims": {
+    "E": {
+     "angle": 0.0,
+     "position": [
+      505.0,
+      300.0
+     ]
+    },
+    "N": {
+     "angle": -1.5707963267948966,
+     "position": [
+      500.0,
+      295.0
+     ]
+    },
+    "NE": {
+     "angle": -0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      296.4644660940673
+     ]
+    },
+    "NW": {
+     "angle": -2.356194490192345,
+     "position": [
+      496.4644660940673,
+      296.46446609406723
+     ]
+    },
+    "S": {
+     "angle": 1.5707963267948966,
+     "position": [
+      500.0,
+      305.0
+     ]
+    },
+    "SE": {
+     "angle": 0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      303.5355339059327
+     ]
+    },
+    "SW": {
+     "angle": 2.356194490192345,
+     "position": [
+      496.4644660940673,
+      303.53553390593277
+     ]
+    },
+    "W": {
+     "angle": 3.141592653589793,
+     "position": [
+      495.0,
+      300.0
+     ]
+    }
+   },
+   "crystal_minus": [
+    500,
+    300
+   ],
+   "crystal_plus": [
+    500,
+    300
+   ],
+   "crystal_tier": "twin",
+   "level": 5,
+   "tower_h": 60
+  },
+  {
+   "aims": {
+    "E": {
+     "angle": 0.0,
+     "position": [
+      505.0,
+      296.0
+     ]
+    },
+    "N": {
+     "angle": -1.5707963267948966,
+     "position": [
+      500.0,
+      291.0
+     ]
+    },
+    "NE": {
+     "angle": -0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      292.4644660940673
+     ]
+    },
+    "NW": {
+     "angle": -2.356194490192345,
+     "position": [
+      496.4644660940673,
+      292.46446609406723
+     ]
+    },
+    "S": {
+     "angle": 1.5707963267948966,
+     "position": [
+      500.0,
+      301.0
+     ]
+    },
+    "SE": {
+     "angle": 0.7853981633974483,
+     "position": [
+      503.53553390593277,
+      299.5355339059327
+     ]
+    },
+    "SW": {
+     "angle": 2.356194490192345,
+     "position": [
+      496.4644660940673,
+      299.53553390593277
+     ]
+    },
+    "W": {
+     "angle": 3.141592653589793,
+     "position": [
+      495.0,
+      296.0
+     ]
+    }
+   },
+   "crystal_minus": [
+    500,
+    296
+   ],
+   "crystal_plus": [
+    500,
+    296
+   ],
+   "crystal_tier": "legendary",
+   "level": 6,
+   "tower_h": 66
+  }
+ ],
+ "on_hit": [
+  {
+   "anti_heal": 0.4,
+   "damage": 17,
+   "debuff_duration": 120,
+   "frail_alive": false,
+   "frail_anti": {
+    "amount": 0.0,
+    "timer": 0
+   },
+   "frail_calls": [
+    {
+     "alive_after": false,
+     "damage": 17,
+     "damage_type": "projectile",
+     "from_team": "blue",
+     "hp_after": 0,
+     "hp_before": 5
+    }
+   ],
+   "frail_skill": {
+    "amount": 0.0,
+    "timer": 0
+   },
+   "level": 2,
+   "main_alive": true,
+   "main_anti": {
+    "amount": 0.4,
+    "timer": 120
+   },
+   "main_calls": [
+    {
+     "alive_after": true,
+     "damage": 17,
+     "damage_type": "projectile",
+     "from_team": "blue",
+     "hp_after": 9983,
+     "hp_before": 10000
+    }
+   ],
+   "main_skill": {
+    "amount": 0.2,
+    "timer": 120
+   },
+   "skill_down": 0.2
+  },
+  {
+   "anti_heal": 0.6,
+   "damage": 39,
+   "debuff_duration": 140,
+   "frail_alive": false,
+   "frail_anti": {
+    "amount": 0.0,
+    "timer": 0
+   },
+   "frail_calls": [
+    {
+     "alive_after": false,
+     "damage": 39,
+     "damage_type": "projectile",
+     "from_team": "blue",
+     "hp_after": 0,
+     "hp_before": 5
+    }
+   ],
+   "frail_skill": {
+    "amount": 0.0,
+    "timer": 0
+   },
+   "level": 4,
+   "main_alive": true,
+   "main_anti": {
+    "amount": 0.6,
+    "timer": 140
+   },
+   "main_calls": [
+    {
+     "alive_after": true,
+     "damage": 39,
+     "damage_type": "projectile",
+     "from_team": "blue",
+     "hp_after": 9961,
+     "hp_before": 10000
+    }
+   ],
+   "main_skill": {
+    "amount": 0.3,
+    "timer": 140
+   },
+   "skill_down": 0.3
+  },
+  {
+   "anti_heal": 1.0,
+   "damage": 70,
+   "debuff_duration": 180,
+   "frail_alive": false,
+   "frail_anti": {
+    "amount": 0.0,
+    "timer": 0
+   },
+   "frail_calls": [
+    {
+     "alive_after": false,
+     "damage": 70,
+     "damage_type": "projectile",
+     "from_team": "blue",
+     "hp_after": 0,
+     "hp_before": 5
+    }
+   ],
+   "frail_skill": {
+    "amount": 0.0,
+    "timer": 0
+   },
+   "level": 6,
+   "main_alive": true,
+   "main_anti": {
+    "amount": 1.0,
+    "timer": 180
+   },
+   "main_calls": [
+    {
+     "alive_after": true,
+     "damage": 70,
+     "damage_type": "projectile",
+     "from_team": "blue",
+     "hp_after": 9930,
+     "hp_before": 10000
+    }
+   ],
+   "main_skill": {
+    "amount": 0.5,
+    "timer": 180
+   },
+   "skill_down": 0.5
+  }
+ ],
+ "path_selection": {
+  "kept_level": 3,
+  "kept_type": "mage",
+  "mage_level": 2,
+  "mage_max_price": 0,
+  "mage_maxed": true,
+  "mage_next_default": 325,
+  "mage_price": 175,
+  "mage_type": "mage",
+  "still_level": 1,
+  "still_type": "archer",
+  "upgrade_bogus": false,
+  "upgrade_none": false
+ },
+ "volleys": [
+  {
+   "flash": 8,
+   "level": 2,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 17,
+     "kind": "mage",
+     "position": [
+      495.0,
+      309.0
+     ],
+     "special": {
+      "anti_heal": 0.4,
+      "debuff_duration": 120,
+      "skill_down": 0.2
+     },
+     "target": 7
+    },
+    {
+     "damage": 17,
+     "kind": "mage",
+     "position": [
+      495.0,
+      309.0
+     ],
+     "special": {
+      "anti_heal": 0.4,
+      "debuff_duration": 120,
+      "skill_down": 0.2
+     },
+     "target": 30
+    }
+   ],
+   "side": -1
+  },
+  {
+   "flash": 8,
+   "level": 2,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 17,
+     "kind": "mage",
+     "position": [
+      505.0,
+      309.0
+     ],
+     "special": {
+      "anti_heal": 0.4,
+      "debuff_duration": 120,
+      "skill_down": 0.2
+     },
+     "target": 7
+    },
+    {
+     "damage": 17,
+     "kind": "mage",
+     "position": [
+      505.0,
+      309.0
+     ],
+     "special": {
+      "anti_heal": 0.4,
+      "debuff_duration": 120,
+      "skill_down": 0.2
+     },
+     "target": 30
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 2,
+   "mode": "solo",
+   "shots": [
+    {
+     "damage": 17,
+     "kind": "mage",
+     "position": [
+      505.0,
+      309.0
+     ],
+     "special": {
+      "anti_heal": 0.4,
+      "debuff_duration": 120,
+      "skill_down": 0.2
+     },
+     "target": 7
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 3,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 26,
+     "kind": "mage",
+     "position": [
+      495.0,
+      306.0
+     ],
+     "special": {
+      "anti_heal": 0.5,
+      "debuff_duration": 130,
+      "skill_down": 0.25
+     },
+     "target": 7
+    },
+    {
+     "damage": 26,
+     "kind": "mage",
+     "position": [
+      495.0,
+      306.0
+     ],
+     "special": {
+      "anti_heal": 0.5,
+      "debuff_duration": 130,
+      "skill_down": 0.25
+     },
+     "target": 30
+    }
+   ],
+   "side": -1
+  },
+  {
+   "flash": 8,
+   "level": 3,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 26,
+     "kind": "mage",
+     "position": [
+      505.0,
+      306.0
+     ],
+     "special": {
+      "anti_heal": 0.5,
+      "debuff_duration": 130,
+      "skill_down": 0.25
+     },
+     "target": 7
+    },
+    {
+     "damage": 26,
+     "kind": "mage",
+     "position": [
+      505.0,
+      306.0
+     ],
+     "special": {
+      "anti_heal": 0.5,
+      "debuff_duration": 130,
+      "skill_down": 0.25
+     },
+     "target": 30
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 3,
+   "mode": "solo",
+   "shots": [
+    {
+     "damage": 26,
+     "kind": "mage",
+     "position": [
+      505.0,
+      306.0
+     ],
+     "special": {
+      "anti_heal": 0.5,
+      "debuff_duration": 130,
+      "skill_down": 0.25
+     },
+     "target": 7
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 4,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 39,
+     "kind": "mage",
+     "position": [
+      495.0,
+      303.0
+     ],
+     "special": {
+      "anti_heal": 0.6,
+      "debuff_duration": 140,
+      "skill_down": 0.3
+     },
+     "target": 7
+    },
+    {
+     "damage": 39,
+     "kind": "mage",
+     "position": [
+      495.0,
+      303.0
+     ],
+     "special": {
+      "anti_heal": 0.6,
+      "debuff_duration": 140,
+      "skill_down": 0.3
+     },
+     "target": 20
+    },
+    {
+     "damage": 39,
+     "kind": "mage",
+     "position": [
+      495.0,
+      303.0
+     ],
+     "special": {
+      "anti_heal": 0.6,
+      "debuff_duration": 140,
+      "skill_down": 0.3
+     },
+     "target": 30
+    }
+   ],
+   "side": -1
+  },
+  {
+   "flash": 8,
+   "level": 4,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 39,
+     "kind": "mage",
+     "position": [
+      505.0,
+      303.0
+     ],
+     "special": {
+      "anti_heal": 0.6,
+      "debuff_duration": 140,
+      "skill_down": 0.3
+     },
+     "target": 7
+    },
+    {
+     "damage": 39,
+     "kind": "mage",
+     "position": [
+      505.0,
+      303.0
+     ],
+     "special": {
+      "anti_heal": 0.6,
+      "debuff_duration": 140,
+      "skill_down": 0.3
+     },
+     "target": 20
+    },
+    {
+     "damage": 39,
+     "kind": "mage",
+     "position": [
+      505.0,
+      303.0
+     ],
+     "special": {
+      "anti_heal": 0.6,
+      "debuff_duration": 140,
+      "skill_down": 0.3
+     },
+     "target": 30
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 4,
+   "mode": "solo",
+   "shots": [
+    {
+     "damage": 39,
+     "kind": "mage",
+     "position": [
+      505.0,
+      303.0
+     ],
+     "special": {
+      "anti_heal": 0.6,
+      "debuff_duration": 140,
+      "skill_down": 0.3
+     },
+     "target": 7
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 5,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 55,
+     "kind": "mage",
+     "position": [
+      495.0,
+      300.0
+     ],
+     "special": {
+      "anti_heal": 0.75,
+      "debuff_duration": 150,
+      "skill_down": 0.4
+     },
+     "target": 7
+    },
+    {
+     "damage": 55,
+     "kind": "mage",
+     "position": [
+      495.0,
+      300.0
+     ],
+     "special": {
+      "anti_heal": 0.75,
+      "debuff_duration": 150,
+      "skill_down": 0.4
+     },
+     "target": 20
+    },
+    {
+     "damage": 55,
+     "kind": "mage",
+     "position": [
+      495.0,
+      300.0
+     ],
+     "special": {
+      "anti_heal": 0.75,
+      "debuff_duration": 150,
+      "skill_down": 0.4
+     },
+     "target": 30
+    }
+   ],
+   "side": -1
+  },
+  {
+   "flash": 8,
+   "level": 5,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 55,
+     "kind": "mage",
+     "position": [
+      505.0,
+      300.0
+     ],
+     "special": {
+      "anti_heal": 0.75,
+      "debuff_duration": 150,
+      "skill_down": 0.4
+     },
+     "target": 7
+    },
+    {
+     "damage": 55,
+     "kind": "mage",
+     "position": [
+      505.0,
+      300.0
+     ],
+     "special": {
+      "anti_heal": 0.75,
+      "debuff_duration": 150,
+      "skill_down": 0.4
+     },
+     "target": 20
+    },
+    {
+     "damage": 55,
+     "kind": "mage",
+     "position": [
+      505.0,
+      300.0
+     ],
+     "special": {
+      "anti_heal": 0.75,
+      "debuff_duration": 150,
+      "skill_down": 0.4
+     },
+     "target": 30
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 5,
+   "mode": "solo",
+   "shots": [
+    {
+     "damage": 55,
+     "kind": "mage",
+     "position": [
+      505.0,
+      300.0
+     ],
+     "special": {
+      "anti_heal": 0.75,
+      "debuff_duration": 150,
+      "skill_down": 0.4
+     },
+     "target": 7
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 6,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      495.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 7
+    },
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      495.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 20
+    },
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      495.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 21
+    },
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      495.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 30
+    }
+   ],
+   "side": -1
+  },
+  {
+   "flash": 8,
+   "level": 6,
+   "mode": "full",
+   "shots": [
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      505.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 7
+    },
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      505.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 20
+    },
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      505.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 21
+    },
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      505.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 30
+    }
+   ],
+   "side": 1
+  },
+  {
+   "flash": 8,
+   "level": 6,
+   "mode": "solo",
+   "shots": [
+    {
+     "damage": 70,
+     "kind": "mage",
+     "position": [
+      505.0,
+      296.0
+     ],
+     "special": {
+      "anti_heal": 1.0,
+      "debuff_duration": 180,
+      "skill_down": 0.5
+     },
+     "target": 7
+    }
+   ],
+   "side": 1
+  }
+ ]
+}

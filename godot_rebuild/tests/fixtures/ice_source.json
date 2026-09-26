@@ -1,0 +1,934 @@
+{
+  "levels": [
+    {
+      "armor": 4,
+      "atk_slow": 0.15,
+      "chain": 1,
+      "cooldown": 26,
+      "damage": 20,
+      "hp": 2375,
+      "level": 2,
+      "magic_resist": 0.0,
+      "max_hp": 2375,
+      "next_price": 325,
+      "no_damage_timer": 0,
+      "price": 175,
+      "range": 170,
+      "refund": 87,
+      "shield": 950,
+      "slow": 0.25,
+      "slow_aoe": 0,
+      "slow_duration": 90,
+      "timer": 0
+    },
+    {
+      "armor": 5,
+      "atk_slow": 0.2,
+      "chain": 1,
+      "cooldown": 22,
+      "damage": 32,
+      "hp": 3125,
+      "level": 3,
+      "magic_resist": 0.0,
+      "max_hp": 3125,
+      "next_price": 550,
+      "no_damage_timer": 9,
+      "price": 325,
+      "range": 180,
+      "refund": 250,
+      "shield": 1250,
+      "slow": 0.35,
+      "slow_aoe": 0,
+      "slow_duration": 100,
+      "timer": 17
+    },
+    {
+      "armor": 6,
+      "atk_slow": 0.25,
+      "chain": 1,
+      "cooldown": 18,
+      "damage": 45,
+      "hp": 4000,
+      "level": 4,
+      "magic_resist": 0.0,
+      "max_hp": 4000,
+      "next_price": 850,
+      "no_damage_timer": 9,
+      "price": 550,
+      "range": 190,
+      "refund": 525,
+      "shield": 1600,
+      "slow": 0.45,
+      "slow_aoe": 0,
+      "slow_duration": 110,
+      "timer": 17
+    },
+    {
+      "armor": 7,
+      "atk_slow": 0.3,
+      "chain": 1,
+      "cooldown": 16,
+      "damage": 60,
+      "hp": 5125,
+      "level": 5,
+      "magic_resist": 0.0,
+      "max_hp": 5125,
+      "next_price": 1300,
+      "no_damage_timer": 9,
+      "price": 850,
+      "range": 200,
+      "refund": 950,
+      "shield": 2050,
+      "slow": 0.55,
+      "slow_aoe": 0,
+      "slow_duration": 120,
+      "timer": 17
+    },
+    {
+      "armor": 8,
+      "atk_slow": 0.4,
+      "chain": 1,
+      "cooldown": 14,
+      "damage": 78,
+      "hp": 6500,
+      "level": 6,
+      "magic_resist": 0.0,
+      "max_hp": 6500,
+      "next_price": 0,
+      "no_damage_timer": 9,
+      "price": 1300,
+      "range": 220,
+      "refund": 1600,
+      "shield": 2600,
+      "slow": 0.65,
+      "slow_aoe": 80,
+      "slow_duration": 150,
+      "timer": 17
+    }
+  ],
+  "muzzle": [
+    {
+      "aims": {
+        "E": {
+          "angle": 0.0,
+          "position": [
+            505.0,
+            315.0
+          ]
+        },
+        "N": {
+          "angle": -1.5707963267948966,
+          "position": [
+            500.0,
+            310.0
+          ]
+        },
+        "NE": {
+          "angle": -0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            311.4644660940673
+          ]
+        },
+        "NW": {
+          "angle": -2.356194490192345,
+          "position": [
+            496.4644660940673,
+            311.46446609406723
+          ]
+        },
+        "S": {
+          "angle": 1.5707963267948966,
+          "position": [
+            500.0,
+            320.0
+          ]
+        },
+        "SE": {
+          "angle": 0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            318.5355339059327
+          ]
+        },
+        "SW": {
+          "angle": 2.356194490192345,
+          "position": [
+            496.4644660940673,
+            318.53553390593277
+          ]
+        },
+        "W": {
+          "angle": 3.141592653589793,
+          "position": [
+            495.0,
+            315.0
+          ]
+        }
+      },
+      "crystal_minus": [
+        500,
+        315
+      ],
+      "crystal_plus": [
+        500,
+        315
+      ],
+      "crystal_tier": "small",
+      "level": 2,
+      "tower_h": 44
+    },
+    {
+      "aims": {
+        "E": {
+          "angle": 0.0,
+          "position": [
+            505.0,
+            312.0
+          ]
+        },
+        "N": {
+          "angle": -1.5707963267948966,
+          "position": [
+            500.0,
+            307.0
+          ]
+        },
+        "NE": {
+          "angle": -0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            308.4644660940673
+          ]
+        },
+        "NW": {
+          "angle": -2.356194490192345,
+          "position": [
+            496.4644660940673,
+            308.46446609406723
+          ]
+        },
+        "S": {
+          "angle": 1.5707963267948966,
+          "position": [
+            500.0,
+            317.0
+          ]
+        },
+        "SE": {
+          "angle": 0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            315.5355339059327
+          ]
+        },
+        "SW": {
+          "angle": 2.356194490192345,
+          "position": [
+            496.4644660940673,
+            315.53553390593277
+          ]
+        },
+        "W": {
+          "angle": 3.141592653589793,
+          "position": [
+            495.0,
+            312.0
+          ]
+        }
+      },
+      "crystal_minus": [
+        500,
+        312
+      ],
+      "crystal_plus": [
+        500,
+        312
+      ],
+      "crystal_tier": "medium",
+      "level": 3,
+      "tower_h": 48
+    },
+    {
+      "aims": {
+        "E": {
+          "angle": 0.0,
+          "position": [
+            505.0,
+            308.0
+          ]
+        },
+        "N": {
+          "angle": -1.5707963267948966,
+          "position": [
+            500.0,
+            303.0
+          ]
+        },
+        "NE": {
+          "angle": -0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            304.4644660940673
+          ]
+        },
+        "NW": {
+          "angle": -2.356194490192345,
+          "position": [
+            496.4644660940673,
+            304.46446609406723
+          ]
+        },
+        "S": {
+          "angle": 1.5707963267948966,
+          "position": [
+            500.0,
+            313.0
+          ]
+        },
+        "SE": {
+          "angle": 0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            311.5355339059327
+          ]
+        },
+        "SW": {
+          "angle": 2.356194490192345,
+          "position": [
+            496.4644660940673,
+            311.53553390593277
+          ]
+        },
+        "W": {
+          "angle": 3.141592653589793,
+          "position": [
+            495.0,
+            308.0
+          ]
+        }
+      },
+      "crystal_minus": [
+        500,
+        308
+      ],
+      "crystal_plus": [
+        500,
+        308
+      ],
+      "crystal_tier": "medium",
+      "level": 4,
+      "tower_h": 54
+    },
+    {
+      "aims": {
+        "E": {
+          "angle": 0.0,
+          "position": [
+            505.0,
+            305.0
+          ]
+        },
+        "N": {
+          "angle": -1.5707963267948966,
+          "position": [
+            500.0,
+            300.0
+          ]
+        },
+        "NE": {
+          "angle": -0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            301.4644660940673
+          ]
+        },
+        "NW": {
+          "angle": -2.356194490192345,
+          "position": [
+            496.4644660940673,
+            301.46446609406723
+          ]
+        },
+        "S": {
+          "angle": 1.5707963267948966,
+          "position": [
+            500.0,
+            310.0
+          ]
+        },
+        "SE": {
+          "angle": 0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            308.5355339059327
+          ]
+        },
+        "SW": {
+          "angle": 2.356194490192345,
+          "position": [
+            496.4644660940673,
+            308.53553390593277
+          ]
+        },
+        "W": {
+          "angle": 3.141592653589793,
+          "position": [
+            495.0,
+            305.0
+          ]
+        }
+      },
+      "crystal_minus": [
+        500,
+        305
+      ],
+      "crystal_plus": [
+        500,
+        305
+      ],
+      "crystal_tier": "twin",
+      "level": 5,
+      "tower_h": 58
+    },
+    {
+      "aims": {
+        "E": {
+          "angle": 0.0,
+          "position": [
+            505.0,
+            301.0
+          ]
+        },
+        "N": {
+          "angle": -1.5707963267948966,
+          "position": [
+            500.0,
+            296.0
+          ]
+        },
+        "NE": {
+          "angle": -0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            297.4644660940673
+          ]
+        },
+        "NW": {
+          "angle": -2.356194490192345,
+          "position": [
+            496.4644660940673,
+            297.46446609406723
+          ]
+        },
+        "S": {
+          "angle": 1.5707963267948966,
+          "position": [
+            500.0,
+            306.0
+          ]
+        },
+        "SE": {
+          "angle": 0.7853981633974483,
+          "position": [
+            503.53553390593277,
+            304.5355339059327
+          ]
+        },
+        "SW": {
+          "angle": 2.356194490192345,
+          "position": [
+            496.4644660940673,
+            304.53553390593277
+          ]
+        },
+        "W": {
+          "angle": 3.141592653589793,
+          "position": [
+            495.0,
+            301.0
+          ]
+        }
+      },
+      "crystal_minus": [
+        500,
+        301
+      ],
+      "crystal_plus": [
+        500,
+        301
+      ],
+      "crystal_tier": "legendary",
+      "level": 6,
+      "tower_h": 64
+    }
+  ],
+  "on_hit": [
+    {
+      "atk_slow": 0.15,
+      "damage": 20,
+      "level": 2,
+      "main_atk": {
+        "amount": 0.15,
+        "timer": 90
+      },
+      "main_calls": [
+        {
+          "alive_after": true,
+          "damage": 20,
+          "damage_type": "projectile",
+          "from_team": "blue",
+          "hp_after": 9980,
+          "hp_before": 10000
+        }
+      ],
+      "main_slow": {
+        "amount": 0.25,
+        "timer": 90
+      },
+      "slow": 0.25,
+      "slow_aoe": 0,
+      "slow_duration": 90,
+      "victims": []
+    },
+    {
+      "atk_slow": 0.25,
+      "damage": 45,
+      "level": 4,
+      "main_atk": {
+        "amount": 0.25,
+        "timer": 110
+      },
+      "main_calls": [
+        {
+          "alive_after": true,
+          "damage": 45,
+          "damage_type": "projectile",
+          "from_team": "blue",
+          "hp_after": 9955,
+          "hp_before": 10000
+        }
+      ],
+      "main_slow": {
+        "amount": 0.45,
+        "timer": 110
+      },
+      "slow": 0.45,
+      "slow_aoe": 0,
+      "slow_duration": 110,
+      "victims": []
+    },
+    {
+      "atk_slow": 0.4,
+      "damage": 78,
+      "level": 6,
+      "main_atk": {
+        "amount": 0.4,
+        "timer": 150
+      },
+      "main_calls": [
+        {
+          "alive_after": true,
+          "damage": 78,
+          "damage_type": "projectile",
+          "from_team": "blue",
+          "hp_after": 9922,
+          "hp_before": 10000
+        }
+      ],
+      "main_slow": {
+        "amount": 0.65,
+        "timer": 150
+      },
+      "slow": 0.65,
+      "slow_aoe": 80,
+      "slow_duration": 150,
+      "victims": [
+        {
+          "atk": {
+            "amount": 0.4,
+            "timer": 150
+          },
+          "calls": [],
+          "id": 2,
+          "slow": {
+            "amount": 0.65,
+            "timer": 150
+          }
+        },
+        {
+          "atk": {
+            "amount": 0.0,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 3,
+          "slow": {
+            "amount": 0.0,
+            "timer": 0
+          }
+        },
+        {
+          "atk": {
+            "amount": 0.0,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 4,
+          "slow": {
+            "amount": 0.0,
+            "timer": 0
+          }
+        },
+        {
+          "atk": {
+            "amount": 0.0,
+            "timer": 0
+          },
+          "calls": [],
+          "id": 5,
+          "slow": {
+            "amount": 0.0,
+            "timer": 0
+          }
+        }
+      ]
+    }
+  ],
+  "path_selection": {
+    "ice_level": 2,
+    "ice_max_price": 0,
+    "ice_maxed": true,
+    "ice_next_default": 325,
+    "ice_price": 175,
+    "ice_type": "ice",
+    "kept_level": 3,
+    "kept_type": "ice",
+    "still_level": 1,
+    "still_type": "archer",
+    "upgrade_bogus": false,
+    "upgrade_none": false
+  },
+  "slow": [
+    {
+      "case": "stacking",
+      "first": {
+        "amount": 0.25,
+        "timer": 90
+      },
+      "stronger": {
+        "amount": 0.65,
+        "timer": 50
+      },
+      "weaker_longer": {
+        "amount": 0.1,
+        "timer": 200
+      },
+      "weaker_shorter": {
+        "amount": 0.25,
+        "timer": 90
+      }
+    },
+    {
+      "case": "ticks",
+      "ticks": [
+        {
+          "atk_amount": 0.4,
+          "atk_timer": 1,
+          "slow_amount": 0.5,
+          "slow_timer": 2
+        },
+        {
+          "atk_amount": 0.0,
+          "atk_timer": 0,
+          "slow_amount": 0.5,
+          "slow_timer": 1
+        },
+        {
+          "atk_amount": 0.0,
+          "atk_timer": 0,
+          "slow_amount": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "atk_amount": 0.0,
+          "atk_timer": 0,
+          "slow_amount": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "atk_amount": 0.0,
+          "atk_timer": 0,
+          "slow_amount": 0.0,
+          "slow_timer": 0
+        }
+      ]
+    },
+    {
+      "case": "speed",
+      "rows": [
+        {
+          "amount": 0.0,
+          "eff": 1.5,
+          "inline": 1.5,
+          "timer": 0
+        },
+        {
+          "amount": 0.25,
+          "eff": 1.125,
+          "inline": 1.125,
+          "timer": 90
+        },
+        {
+          "amount": 0.65,
+          "eff": 0.5249999999999999,
+          "inline": 0.5249999999999999,
+          "timer": 150
+        }
+      ]
+    },
+    {
+      "case": "attack_cd",
+      "rows": [
+        {
+          "amount": 0.0,
+          "eff22": 22,
+          "eff45": 45,
+          "timer": 0
+        },
+        {
+          "amount": 0.15,
+          "eff22": 26,
+          "eff45": 53,
+          "timer": 90
+        },
+        {
+          "amount": 0.25,
+          "eff22": 29,
+          "eff45": 60,
+          "timer": 110
+        },
+        {
+          "amount": 0.4,
+          "eff22": 37,
+          "eff45": 75,
+          "timer": 150
+        }
+      ]
+    }
+  ],
+  "volleys": [
+    {
+      "flash": 8,
+      "level": 2,
+      "shots": [
+        {
+          "damage": 20,
+          "kind": "ice",
+          "position": [
+            495.0,
+            315.0
+          ],
+          "special": {
+            "atk_slow": 0.15,
+            "slow": 0.25,
+            "slow_duration": 90
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 8,
+      "level": 2,
+      "shots": [
+        {
+          "damage": 20,
+          "kind": "ice",
+          "position": [
+            505.0,
+            315.0
+          ],
+          "special": {
+            "atk_slow": 0.15,
+            "slow": 0.25,
+            "slow_duration": 90
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    },
+    {
+      "flash": 8,
+      "level": 3,
+      "shots": [
+        {
+          "damage": 32,
+          "kind": "ice",
+          "position": [
+            495.0,
+            312.0
+          ],
+          "special": {
+            "atk_slow": 0.2,
+            "slow": 0.35,
+            "slow_duration": 100
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 8,
+      "level": 3,
+      "shots": [
+        {
+          "damage": 32,
+          "kind": "ice",
+          "position": [
+            505.0,
+            312.0
+          ],
+          "special": {
+            "atk_slow": 0.2,
+            "slow": 0.35,
+            "slow_duration": 100
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    },
+    {
+      "flash": 8,
+      "level": 4,
+      "shots": [
+        {
+          "damage": 45,
+          "kind": "ice",
+          "position": [
+            495.0,
+            308.0
+          ],
+          "special": {
+            "atk_slow": 0.25,
+            "slow": 0.45,
+            "slow_duration": 110
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 8,
+      "level": 4,
+      "shots": [
+        {
+          "damage": 45,
+          "kind": "ice",
+          "position": [
+            505.0,
+            308.0
+          ],
+          "special": {
+            "atk_slow": 0.25,
+            "slow": 0.45,
+            "slow_duration": 110
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    },
+    {
+      "flash": 8,
+      "level": 5,
+      "shots": [
+        {
+          "damage": 60,
+          "kind": "ice",
+          "position": [
+            495.0,
+            305.0
+          ],
+          "special": {
+            "atk_slow": 0.3,
+            "slow": 0.55,
+            "slow_duration": 120
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 8,
+      "level": 5,
+      "shots": [
+        {
+          "damage": 60,
+          "kind": "ice",
+          "position": [
+            505.0,
+            305.0
+          ],
+          "special": {
+            "atk_slow": 0.3,
+            "slow": 0.55,
+            "slow_duration": 120
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    },
+    {
+      "flash": 8,
+      "level": 6,
+      "shots": [
+        {
+          "damage": 78,
+          "kind": "ice",
+          "position": [
+            495.0,
+            301.0
+          ],
+          "special": {
+            "atk_slow": 0.4,
+            "slow": 0.65,
+            "slow_aoe": 80,
+            "slow_duration": 150
+          },
+          "target": 7
+        }
+      ],
+      "side": -1
+    },
+    {
+      "flash": 8,
+      "level": 6,
+      "shots": [
+        {
+          "damage": 78,
+          "kind": "ice",
+          "position": [
+            505.0,
+            301.0
+          ],
+          "special": {
+            "atk_slow": 0.4,
+            "slow": 0.65,
+            "slow_aoe": 80,
+            "slow_duration": 150
+          },
+          "target": 7
+        }
+      ],
+      "side": 1
+    }
+  ]
+}

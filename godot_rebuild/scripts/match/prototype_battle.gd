@@ -2,6 +2,10 @@ extends "res://scripts/combat/siege_battle.gd"
 ## Playable normal/level-1 subset. Wave/ledger/build rules are separate from the old manual labs.
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
+const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
+const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
+const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
+const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
@@ -47,6 +51,47 @@ func spawn_assault_wave(_definition: Definition, _team_mode: int) -> bool:
 	return false
 
 
+func spawn_unit(definition: Definition, team: int, lane: int) -> UnitState:
+	if team not in [BLUE, RED]:
+		return super.spawn_unit(definition, team, lane)
+	var current := nexus_level(team)
+	if current <= 1:
+		var plain := super.spawn_unit(definition, team, lane)
+		if plain != null:
+			plain.ai_level = 1
+		return plain
+	var scaled := scaled_minion_definition(definition, current)
+	if scaled == null:
+		return null
+	var unit := super.spawn_unit(scaled, team, lane)
+	if unit != null:
+		unit.ai_level = NexusUpgrades.MINION_AI[current - 1]
+	return unit
+
+
+func scaled_minion_definition(base: Definition, nexus_level: int) -> Definition:
+	if base == null or nexus_level <= 1:
+		return base
+	if nexus_level < 1 or nexus_level > NexusUpgrades.MINION_SCALES.size():
+		return null
+	var scale: float = NexusUpgrades.MINION_SCALES[nexus_level - 1]
+	var copy := base.duplicate() as Definition
+	copy.max_hp = int(base.max_hp * scale)
+	copy.damage = int(base.damage * scale)
+	copy.speed_px_per_tick = base.speed_px_per_tick * (1.0 + (scale - 1.0) * 0.3)
+	var haste := 1.0 + (scale - 1.0) * 0.2
+	copy.attack_cooldown_ticks = maxi(10, int(base.attack_cooldown_ticks / haste))
+	copy.gold_reward = int(base.gold_reward * scale)
+	copy.regen_per_tick = base.regen_per_tick * scale
+	return copy
+
+
+func nexus_level(team: int) -> int:
+	if team not in [BLUE, RED] or nexuses[team] == null:
+		return 1
+	return nexuses[team].settings().level
+
+
 func step_tick() -> void:
 	if not is_running():
 		return
@@ -57,7 +102,9 @@ func step_tick() -> void:
 		if unit.alive:
 			field_clear = false
 			break
-	var batch := scheduler.step_tick(field_clear, MAX_UNITS - units.size())
+	var batch := scheduler.step_tick(
+		field_clear, MAX_UNITS - units.size(), nexus_level(BLUE), nexus_level(RED)
+	)
 	wave_count = scheduler.wave
 	if batch.started:
 		for nexus in nexuses:
@@ -166,23 +213,31 @@ func _step_defender() -> void:
 		_defender_built += 1
 
 
-func upgrade_price(entity_id: int) -> int:
-	var tower := _owned_archer(entity_id)
-	if tower == null or tower.settings().level >= Upgrades.LEVELS.size():
+func upgrade_price(entity_id: int, target_path: String = "archer") -> int:
+	var tower := _owned_tower(entity_id)
+	if tower == null:
 		return 0
-	return Upgrades.LEVELS[tower.settings().level].upgrade_price
+	var level: int = tower.settings().level
+	var path_now: String = tower.settings().tower_path
+	var target: StructureDefinition = _upgrade_target(level, path_now, target_path)
+	return target.upgrade_price if target != null else 0
 
 
-func upgrade_tower(entity_id: int, expected_level: int) -> bool:
+func upgrade_tower(entity_id: int, expected_level: int, target_path: String = "archer") -> bool:
 	transaction_error = ""
-	var tower := _owned_archer(entity_id)
-	var cost := upgrade_price(entity_id)
+	var tower := _owned_tower(entity_id)
+	var target: StructureDefinition = null
+	if tower != null:
+		target = _upgrade_target(tower.settings().level, tower.settings().tower_path, target_path)
+	var cost := target.upgrade_price if target != null else 0
 	if not is_running():
 		transaction_error = "finished"
 	elif tower == null:
 		transaction_error = "owner"
 	elif tower.settings().level != expected_level:
 		transaction_error = "stale"
+	elif tower.settings().level == 1 and target == null:
+		transaction_error = "path"
 	elif cost <= 0:
 		transaction_error = "max_level"
 	elif economy.gold[BLUE] < cost:
@@ -191,14 +246,86 @@ func upgrade_tower(entity_id: int, expected_level: int) -> bool:
 		return false
 	# Source resets HP/shield fully but retains cooldown, target, regen timer and in-flight shots.
 	economy.spend(BLUE, cost)
-	tower.definition = Upgrades.LEVELS[expected_level]
+	tower.definition = target
 	tower.hp = tower.definition.max_hp
+	tower.shield_max = tower.settings().shield_capacity
 	tower.shield = tower.settings().shield_capacity
 	_record({"kind": "upgrade", "target_id": tower.id, "level": tower.settings().level})
 	return true
 
 
-func _owned_archer(entity_id: int) -> StructureState:
+func _upgrade_target(current: int, current_path: String, target_path: String):
+	# Source: level 1 requires an explicit valid path; later levels ignore
+	# the argument and keep their path. Cannon, Ice and Mage start at level 2.
+	if current < 1 or current >= 6:
+		return null
+	var path := current_path
+	if current == 1:
+		if target_path not in ["archer", "cannon", "ice", "mage"]:
+			return null
+		path = target_path
+	if path == "cannon":
+		return CannonUpgrades.LEVELS.get(current + 1) as StructureDefinition
+	if path == "ice":
+		return IceUpgrades.LEVELS.get(current + 1) as StructureDefinition
+	if path == "mage":
+		return MageUpgrades.LEVELS.get(current + 1) as StructureDefinition
+	return Upgrades.LEVELS[current] as StructureDefinition
+
+
+func nexus_upgrade_price(entity_id: int) -> int:
+	var nexus := _owned_nexus(entity_id)
+	if nexus == null or nexus.settings().level >= NexusUpgrades.LEVELS.size():
+		return 0
+	return NexusUpgrades.LEVELS[nexus.settings().level].upgrade_price
+
+
+func upgrade_nexus(entity_id: int, expected_level: int) -> bool:
+	transaction_error = ""
+	var nexus := _owned_nexus(entity_id)
+	var cost := nexus_upgrade_price(entity_id)
+	if not is_running():
+		transaction_error = "finished"
+	elif nexus == null:
+		transaction_error = "owner"
+	elif nexus.settings().level != expected_level:
+		transaction_error = "stale"
+	elif cost <= 0:
+		transaction_error = "max_level"
+	elif economy.gold[BLUE] < cost:
+		transaction_error = "gold"
+	if not transaction_error.is_empty():
+		return false
+	economy.spend(BLUE, cost)
+	var old_max: int = nexus.definition.max_hp
+	var old_hp: float = nexus.hp
+	var target = NexusUpgrades.LEVELS[expected_level]
+	var new_max: int = target.max_hp
+	var ratio := old_hp / float(old_max)
+	var healed := int(new_max * ratio) + (new_max - old_max)
+	nexus.definition = target
+	nexus.hp = mini(new_max, healed + 500)
+	if nexus.castle_shield_purchased:
+		var old_shield_max := maxf(1.0, nexus.shield_max)
+		var shield_ratio := clampf(nexus.shield / old_shield_max, 0.0, 1.0)
+		nexus.shield_max = target.shield_capacity
+		nexus.shield = int(nexus.shield_max * shield_ratio)
+	_record({"kind": "nexus_upgrade", "target_id": nexus.id, "level": nexus.settings().level})
+	return true
+
+
+func _owned_nexus(entity_id: int) -> StructureState:
+	var nexus := get_unit(entity_id) as StructureState
+	if nexus == null or not nexus.alive or nexus.team != BLUE:
+		return null
+	if nexus.settings().structure_kind != "nexus":
+		return null
+	if nexuses[BLUE] == null or nexuses[BLUE].id != entity_id:
+		return null
+	return nexus
+
+
+func _owned_tower(entity_id: int) -> StructureState:
 	var tower := get_unit(entity_id) as StructureState
 	if tower == null or not tower.alive or tower.team != BLUE:
 		return null

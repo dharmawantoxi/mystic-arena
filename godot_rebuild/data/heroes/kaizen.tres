@@ -1,0 +1,36 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kaizen"
+display_name = "Kaizen"
+max_hp = 770
+damage = 45
+speed_px_per_tick = 2.6
+attack_range_px = 70.0
+attack_cooldown_ticks = 28
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Wind Blade"
+role = "Assassin"
+cost = 400
+unlock_cost = 0
+base_skill = 70
+skill_cooldown_max = 300
+skill_range_px = 100.0
+dmg_school = "physical"
+is_melee = true
+q_reset_ticks = 180
+q_dash_ticks = 15
+q2_radius_px = 80.0
+q2_mult = 1.5
+q_reach_slack = 1.15
+q_visual_ticks = 60
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900

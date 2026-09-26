@@ -30,18 +30,37 @@ func _physics_process(_delta: float) -> void:
 			if accepted and selected_slot_id == command.id:
 				selected_id = match_world.get_slot(command.id).structure_id
 		elif command.kind == "upgrade":
-			accepted = match_world.upgrade_tower(command.id, command.level)
+			accepted = match_world.upgrade_tower(
+				command.id, command.level, command.get("path", "archer")
+			)
+		elif command.kind == "nexus":
+			accepted = match_world.upgrade_nexus(command.id, command.level)
 		else:
 			accepted = match_world.sell_tower(0, command.id)
 			if accepted and selected_id == command.id:
 				selected_id = -1
 		if accepted:
 			var delta_gold: int = match_world.economy.gold[0] - balance_before
+			var upgrade_label := "Archer ditingkatkan"
+			if command.get("path") == "cannon":
+				upgrade_label = "Cannon ditingkatkan"
+			elif command.get("path") == "ice":
+				upgrade_label = "Ice ditingkatkan"
+			elif command.get("path") == "mage":
+				upgrade_label = "Mage ditingkatkan"
 			var action: String = {
-				"build": "Archer dibangun", "sell": "Tower dijual", "upgrade": "Archer ditingkatkan"
+				"build": "Archer dibangun",
+				"sell": "Tower dijual",
+				"upgrade": upgrade_label,
+				"nexus": "Nexus ditingkatkan"
 			}[command.kind]
 			last_action = "%s: %+d G." % [action, delta_gold]
 		else:
+			var max_text := "Tower sudah level maksimum (6)."
+			var stale_text := "Level tower sudah berubah; pilih upgrade kembali."
+			if command.kind == "nexus":
+				max_text = "Nexus sudah level maksimum (5)."
+				stale_text = "Level nexus sudah berubah; pilih upgrade kembali."
 			last_action = (
 				{
 					"finished": "Pertandingan sudah selesai.",
@@ -49,8 +68,9 @@ func _physics_process(_delta: float) -> void:
 					"occupied": "Slot sudah terisi.",
 					"gold": "Gold tidak cukup untuk transaksi ini.",
 					"capacity": "Batas bangunan tercapai.",
-					"stale": "Level tower sudah berubah; pilih upgrade kembali.",
-					"max_level": "Archer sudah level maksimum (6)."
+					"stale": stale_text,
+					"path": "Pilih jalur upgrade yang valid.",
+					"max_level": max_text
 				}
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
@@ -68,11 +88,20 @@ func request_sell(entity_id: int) -> bool:
 	return _queue("sell", entity_id)
 
 
-func request_upgrade(entity_id: int) -> bool:
+func request_upgrade(entity_id: int, target_path: String = "archer") -> bool:
 	var tower := world.get_unit(entity_id) as Structure
 	if tower == null or not _queue("upgrade", entity_id):
 		return false
 	command.level = tower.settings().level
+	command.path = target_path
+	return true
+
+
+func request_nexus_upgrade(entity_id: int) -> bool:
+	var nexus := world.get_unit(entity_id) as Structure
+	if nexus == null or not _queue("nexus", entity_id):
+		return false
+	command.level = nexus.settings().level
 	return true
 
 

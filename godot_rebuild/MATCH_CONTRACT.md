@@ -1,6 +1,6 @@
 # Kontrak prototipe pertandingan — wave, gold, build/sell
 
-Mode **Pertandingan awal** di `scenes/prototype/PrototypeMatch.tscn` merupakan subset **level 1 / normal**, nexus tier 1. Bukan port seluruh `LEVEL_1`, bukan AI asli, dan bukan pengganti game Python yang sudah rilis. Ketiga laboratorium lama tetap terpisah.
+Mode **Pertandingan awal** di `scenes/prototype/PrototypeMatch.tscn` merupakan subset **level 1 / normal**. Bukan port seluruh `LEVEL_1`, bukan AI asli, dan bukan pengganti game Python yang sudah rilis. Ketiga laboratorium lama tetap terpisah. Nexus biru bisa di-upgrade 1–5, lihat [kontrak nexus](NEXUS_CONTRACT.md); merah tetap tier 1.
 
 ## Sumber perilaku
 
@@ -20,9 +20,9 @@ Semua waktu adalah **physics tick 60 Hz**, bukan frame render.
 4. Antrean spawn terus dikuras saat timer wave berjalan. Maksimal satu minion per tim setiap 20 tick; blue lalu red; lane atas → tengah → bawah.
 5. Spawn timer tetap bertambah ketika idle. Pasangan pertama muncul **tick 301**, berikutnya 321/341/…/461 untuk wave 1 (9 unit per tim).
 6. Timer setelah mulai wave = 1500. Jika lapangan selalu bersih, wave berikutnya paling cepat tick **1802**, lalu **3303**. Bila unit masih hidup, timer boleh nol tetapi wave tidak melompat.
-7. Komposisi didasarkan pada **castle level**, bukan baris tabel berdasarkan nomor wave. Kedua nexus tetap level 1 dalam prototipe.
+7. Komposisi didasarkan pada **castle level per tim + nomor wave**, bukan baris tabel berdasarkan nomor wave saja. Tabel tier-1 di bawah adalah kasus awal; tier 2–5 memakai base berbeda, lihat [kontrak nexus](NEXUS_CONTRACT.md).
 
-| Wave | Komposisi per lane/per tim |
+| Wave | Komposisi tier-1 per lane/per tim |
 |---|---|
 | 1–3 | Goblin ×3 |
 | 4–6 | Goblin ×3, Orc |
@@ -30,7 +30,7 @@ Semua waktu adalah **physics tick 60 Hz**, bukan frame render.
 | 10–12 | Goblin ×3, Troll, Dark Rider, Undead |
 | 13+ | Goblin ×3, Troll ×2, Dark Rider ×2, Undead |
 
-Wave memanggil aturan shield nexus sumber: gratis sampai wave 10, tidak dibeli/di-upgrade dalam prototipe. Tidak ada tombol skip/manual wave. Pertarungan tertentu dapat menahan wave karena unit yang masih hidup; jangan menghapus gate ini hanya agar countdown selalu maju.
+Wave memanggil aturan shield nexus sumber: gratis sampai wave 10. Paid shield belum dibeli via UI. Tidak ada tombol skip/manual wave. Pertarungan tertentu dapat menahan wave karena unit yang masih hidup; jangan menghapus gate ini hanya agar countdown selalu maju.
 
 ## Ekonomi lokal pertandingan
 
@@ -50,7 +50,7 @@ Wave memanggil aturan shield nexus sumber: gratis sampai wave 10, tidak dibeli/d
 - Archer tier 1 berharga **100 G**. Verifikasi match aktif, ownership, slot kosong, saldo dan kapasitas **sebelum** spawn/debit. Tidak ada `await`/callback di tengah transaksi.
 - Jual tower blue **tier 1** yang hidup mengembalikan **50 G**; refund tier 2–6 mengikuti [kontrak upgrade](UPGRADE_CONTRACT.md). `Tower.sell_value()` level 1 di Python sendiri bernilai 0; refund 50 berasal dari fallback **UI** `_try_sell_tower`. Memeriksa entity saja menghasilkan harga salah.
 - Sale bukan death: tidak menambah kill atau memberi lawan gold. Bersihkan registry, slot dan projectile terkait. ID tidak didaur ulang; repeat/stale sale tidak dapat menyentuh pengganti tower di slot yang sama.
-- UI hanya menangkap satu command build-slot/sell-entity/upgrade-entity per tick. Upgrade juga membawa expected level. Pergantian seleksi tidak mengubah target command yang sudah ditangkap. Domain memvalidasi ulang ketika dieksekusi. Pause/focus loss membatalkan command tertunda.
+- UI hanya menangkap satu command build/sell/upgrade/nexus per tick. Upgrade Archer dan nexus membawa expected level. Pergantian seleksi tidak mengubah target command yang sudah ditangkap. Domain memvalidasi ulang ketika dieksekusi. Pause/focus loss membatalkan command tertunda.
 - UI tidak boleh menjual nexus, tower lawan, tower mati atau membuat tower di slot lawan. Meskipun UI dilewati, domain tetap menolak.
 
 ## Lawan sementara dan perbedaan disengaja
@@ -68,4 +68,4 @@ Checkpoint UI `ff5d2af`: [CI Godot 4.7.2 Linux](https://github.com/dharmawantoxi
 
 JSON memuat angka sebagai float. Trace membandingkan nilai scalar numerik secara exact, bukan nested `Array` yang membedakan tipe Variant. Tidak menggunakan toleransi untuk gold/tick/spawn.
 
-**Belum diuji:** GPU/screenshot, Windows fisik, multi-touch/perangkat Android, pertandingan manual panjang dan balance/performa. Headless lifecycle/input adapter bukan pengganti pengujian tersebut. Upgrade Archer sudah ditambahkan dengan [kontrak tersendiri](UPGRADE_CONTRACT.md) dan 1.905 checks pada checkpoint UI `7c96c83`. Scope berikutnya: nexus/minion scaling, tower tambahan dan hero/AI sebelum memperluas konten; jangan mengklaim prototipe ini sudah game lengkap.
+**Belum diuji:** GPU/screenshot, Windows fisik, multi-touch/perangkat Android, pertandingan manual panjang dan balance/performa. Headless lifecycle/input adapter bukan pengganti pengujian tersebut. Upgrade Archer ([kontrak](UPGRADE_CONTRACT.md), 1.905 checks pada `7c96c83`), upgrade nexus ([kontrak](NEXUS_CONTRACT.md)), jalur Cannon ([kontrak](CANNON_CONTRACT.md), 3.713 checks pada `81765fd`), jalur Ice ([kontrak](ICE_CONTRACT.md), 4.035 checks pada `3e8ad59`), dan jalur Mage ([kontrak](MAGE_CONTRACT.md), 4.452 checks pada `f1b80b9`) sudah tersedia di mode ini. Scope berikutnya: hero/AI sebelum memperluas konten; jangan mengklaim prototipe ini sudah game lengkap.
