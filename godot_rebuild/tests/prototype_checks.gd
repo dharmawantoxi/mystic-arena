@@ -18,6 +18,7 @@ func run(check: Callable) -> void:
 	_hero_respawn(check)
 	_hero_loop(check)
 	_hero_foe(check)
+	_hero_auto(check)
 	_replay(check)
 
 
@@ -532,6 +533,69 @@ func _hero_foe(check: Callable) -> void:
 		fallen.alive and fallen.position == rest.RED_HERO_SPAWN,
 		"red respawns at red spawn after 600 ticks"
 	)
+
+
+func _hero_auto(check: Callable) -> void:
+	var idle := _world()
+	var quiet: HeroState = _foe_hero(idle)
+	for tick in range(25):
+		idle.step_tick()
+	check.call(quiet.r_cooldown == 0 and quiet.skill_timer == 0, "auto-cast idles without a target")
+	var storm := _world()
+	var caster: HeroState = _foe_hero(storm)
+	var bait = storm.spawn_unit(GOBLIN, 0, 1)
+	bait.position = caster.position + Vector2(40, 0)
+	bait.hp = 100000.0
+	storm.step_tick()
+	check.call(
+		caster.ulti_active and caster.r_cooldown > 0, "auto-cast R when any foe is in skill range"
+	)
+	var sweep := _world()
+	var blade: HeroState = _foe_hero(sweep)
+	blade.r_cooldown = 900
+	var one = sweep.spawn_unit(GOBLIN, 0, 1)
+	var two = sweep.spawn_unit(GOBLIN, 0, 1)
+	one.position = blade.position + Vector2(30, 0)
+	two.position = blade.position + Vector2(0, 30)
+	one.hp = 100000.0
+	two.hp = 100000.0
+	sweep.step_tick()
+	check.call(blade.e_cooldown > 0 and not blade.ulti_active, "auto-cast E when two foes are near")
+	var wall := _world()
+	var guard: HeroState = _foe_hero(wall)
+	guard.r_cooldown = 900
+	guard.e_cooldown = 420
+	guard.hp = guard.max_hp * 0.3
+	var poke = wall.spawn_unit(GOBLIN, 0, 1)
+	poke.position = guard.position + Vector2(40, 0)
+	poke.hp = 100000.0
+	wall.step_tick()
+	check.call(guard.wind_wall_timer > 0, "auto-cast W under 40% HP")
+	var steel := _world()
+	var cutter: HeroState = _foe_hero(steel)
+	cutter.r_cooldown = 900
+	cutter.e_cooldown = 420
+	cutter.w_cooldown = 240
+	var mark = steel.spawn_unit(GOBLIN, 0, 1)
+	mark.position = cutter.position + Vector2(40, 0)
+	mark.hp = 100000.0
+	steel.step_tick()
+	check.call(cutter.skill_timer > 0 and cutter.q_stack == 1, "auto-cast Q last")
+	var off := _world()
+	var mute: HeroState = _foe_hero(off)
+	mute.auto_cast_enabled = false
+	var dummy = off.spawn_unit(GOBLIN, 0, 1)
+	dummy.position = mute.position + Vector2(40, 0)
+	dummy.hp = 100000.0
+	off.step_tick()
+	check.call(mute.r_cooldown == 0 and mute.skill_timer == 0, "disabled auto-cast does not fire")
+	var blue := _world()
+	var player: HeroState = blue.blue_hero()
+	var near = blue.spawn_unit(GOBLIN, 1, 1)
+	near.position = player.position + Vector2(40, 0)
+	near.hp = 100000.0
+	blue.step_tick()
+	check.call(not player.auto_cast_enabled and player.skill_timer == 0, "blue Kaizen stays manual")
 
 
 func _foe_hero(world: Prototype) -> HeroState:

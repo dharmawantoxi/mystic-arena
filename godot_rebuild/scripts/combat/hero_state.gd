@@ -50,6 +50,8 @@ var destination := Vector2.ZERO
 var follow_id := -1
 var respawn_timer := 0
 var is_retreating := false
+var auto_cast_enabled := false
+var auto_cast_check_timer := 0
 
 
 func _init() -> void:

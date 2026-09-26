@@ -257,7 +257,7 @@ func _set_hero_follow(hero_id: int, target_id: int) -> bool:
 
 
 func _step_hero_act() -> void:
-	# Port of Hero.update states 1–6 plus Game respawn. No auto-cast/items.
+	# Port of Hero.update states 1–6 plus Game respawn. No items.
 	var roster: Array = []
 	for unit in units:
 		if unit.is_hero:
@@ -273,6 +273,7 @@ func _step_one_hero(hero: HeroState) -> void:
 		pass
 	else:
 		_hero_passive_heal(hero)
+		_step_hero_auto_cast(hero)
 		var ratio := hero.hp / maxf(1.0, hero.max_hp)
 		if ratio < HERO_RETREAT_HP:
 			hero.is_retreating = true
@@ -340,6 +341,42 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	hero.target_struct = null
 	hero.is_retreating = false
 	hero.respawn_timer = 0
+
+
+func _step_hero_auto_cast(hero: HeroState) -> void:
+	# Port of Hero._try_auto_cast: every 20 ticks, only with a living
+	# enemy inside skill_range. Priority R, then E (2+), W (HP < 40%), Q.
+	if hero.auto_cast_enabled and hero.stun_timer <= 0:
+		hero.auto_cast_check_timer -= 1
+		if hero.auto_cast_check_timer <= 0:
+			hero.auto_cast_check_timer = 20
+			var nearby := _hero_skill_nearby(hero)
+			if nearby > 0:
+				var used := false
+				if hero.r_cooldown <= 0:
+					used = _cast_hero_r(hero.id, structures)
+				if not used and hero.e_cooldown <= 0 and nearby >= 2:
+					used = cast_hero_e(hero.id, structures)
+				if not used and hero.w_cooldown <= 0 and hero.hp / maxf(1.0, hero.max_hp) < 0.4:
+					used = cast_hero_w(hero.id)
+				if not used and hero.skill_timer <= 0:
+					cast_hero_q(hero.id, structures)
+
+
+func _hero_skill_nearby(hero: HeroState) -> int:
+	var reach: float = hero.skill_range
+	var count := 0
+	for unit in units:
+		if not unit.alive or unit.team == hero.team or unit.id == hero.id:
+			continue
+		if hero.position.distance_to(unit.position) <= reach:
+			count += 1
+	for structure in structures:
+		if not structure.alive or structure.team == hero.team:
+			continue
+		if hero.position.distance_to(structure.position) <= reach:
+			count += 1
+	return count
 
 
 func _hero_passive_heal(hero: HeroState) -> void:

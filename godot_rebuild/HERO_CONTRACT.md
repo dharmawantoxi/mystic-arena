@@ -17,8 +17,9 @@ Mode **Pertandingan awal** men-spawn **satu Kaizen biru** dan **satu Kaizen mera
 - Upgrade hero UI: harga `HERO_LEVELS` (Lv.1→2 = **300 G**), expected-level, tanpa mengubah HP (quirk item-inventory sumber). Hanya biru.
 - Respawn **600** tick di spawn timnya, HP penuh, perintah/debuff/CD clear.
 - Stun/dash: tidak act. Pause/fokus/hasil membatalkan command antrean.
-- Pemain **tidak** memerintah hero merah. Merah memakai loop yang sama tanpa dest/follow pemain dan tanpa auto-cast.
+- Pemain **tidak** memerintah hero merah. Merah memakai loop yang sama tanpa dest/follow pemain.
+- **Auto-cast (merah):** setiap 20 tick, hanya jika ada musuh hidup dalam `skill_range`. Prioritas R → E (2+ target) → W (HP `< 40%`) → Q. Biru tetap manual (QWER). Stun membatalkan.
 
 ## Sengaja di luar
 
-Item/forge, unlock 400 G, auto-cast, dash/jump/tornado VFX, lima hero starter lain, AIPlayer (beli hero/upgrade lawan). Jangan mengklaim pertandingan Python selesai.
+Item/forge, unlock 400 G, auto-cast pemain, dash/jump/tornado VFX, lima hero starter lain, AIPlayer (beli hero/upgrade lawan). Jangan mengklaim pertandingan Python selesai.
