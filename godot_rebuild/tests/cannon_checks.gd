@@ -317,9 +317,9 @@ func _burn(check: Callable, cases: Array) -> void:
 		),
 		"source stronger burn wins without shortening timer"
 	)
-	for burn_case in cases.slice(1, 3):
+	for burn_case in cases.slice(1, 2):
 		_burn_ticks(check, burn_case)
-	_falloff_and_death(check, cases)
+	_falloff_and_death(check)
 
 
 func _burn_ticks(check: Callable, burn_case: Dictionary) -> void:
