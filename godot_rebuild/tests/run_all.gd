@@ -3,6 +3,7 @@ extends SceneTree
 
 const CannonSceneChecks = preload("res://tests/cannon_scene_checks.gd")
 const IceSceneChecks = preload("res://tests/ice_scene_checks.gd")
+const MageSceneChecks = preload("res://tests/mage_scene_checks.gd")
 const NexusSceneChecks = preload("res://tests/nexus_scene_checks.gd")
 const NexusChecks = preload("res://tests/nexus_checks.gd")
 const CannonChecks = preload("res://tests/cannon_checks.gd")
@@ -127,6 +128,7 @@ func _run() -> void:
 	await NexusSceneChecks.new().run(self, app, _check)
 	await CannonSceneChecks.new().run(self, app, _check)
 	await IceSceneChecks.new().run(self, app, _check)
+	await MageSceneChecks.new().run(self, app, _check)
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
