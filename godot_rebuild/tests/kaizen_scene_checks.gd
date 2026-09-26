@@ -94,6 +94,10 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"pause cancels move"
 	)
 	screen.resume_match()
+	foe.alive = true
+	foe.hp = 100000.0
+	foe.position = hero.position + Vector2(80, 0)
+	session.selected_id = hero.id
 	check.call(session.request_hero_follow(hero.id, foe.id), "follow queues")
 	session.request_hero_follow(hero.id, foe.id)
 	check.call(
@@ -116,15 +120,24 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		hero.wind_wall_timer > 0 and session.last_action.contains("Wind Wall"),
 		"queued W raises the wall"
 	)
+	foe.alive = true
+	foe.hp = 100000.0
+	foe.position = hero.position + Vector2(40, 0)
 	hero.e_cooldown = 0
+	session.selected_id = hero.id
 	screen.get_node("%SkillEButton").pressed.emit()
 	session._physics_process(1.0 / 60.0)
 	check.call(hero.e_cooldown > 0 and session.last_action.contains("Sweep"), "queued E sweeps")
+	foe.alive = true
+	foe.hp = 100000.0
+	foe.position = hero.position + Vector2(40, 0)
 	hero.r_cooldown = 0
+	session.selected_id = hero.id
 	screen.get_node("%SkillRButton").pressed.emit()
 	session._physics_process(1.0 / 60.0)
 	check.call(hero.ulti_active and session.last_action.contains("Tornado"), "queued R tornados")
 	await _settle(tree)
+	session.selected_id = hero.id
 	check.call(not screen.get_node("%HeroUpgradeButton").disabled, "hero upgrade offered")
 	screen.get_node("%HeroUpgradeButton").pressed.emit()
 	session._physics_process(1.0 / 60.0)

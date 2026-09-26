@@ -357,7 +357,7 @@ func _step_hero_destination(hero: HeroState) -> void:
 	# (hunt does not override a player click).
 	var offset := hero.destination - hero.position
 	var speed := _eff_speed(hero)
-	if offset.length() < speed:
+	if offset.length() <= speed:
 		hero.position = hero.destination
 		hero.has_destination = false
 	else:

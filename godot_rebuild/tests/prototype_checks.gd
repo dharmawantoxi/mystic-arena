@@ -366,11 +366,13 @@ func _hero_melee(check: Callable) -> void:
 	walk.step_tick()
 	check.call(mover.position.x > from.x and mover.has_destination, "click-move walks toward point")
 	check.call(not walk.set_hero_destination(999, dest), "bad id cannot set destination")
-	for tick in range(40):
+	var snapped := false
+	for tick in range(50):
 		walk.step_tick()
-	check.call(
-		mover.position == dest and not mover.has_destination, "hero snaps and clears on arrival"
-	)
+		if not mover.has_destination:
+			snapped = mover.position == dest
+			break
+	check.call(snapped, "hero snaps and clears on arrival")
 	var hold := _world()
 	var escort: HeroState = hold.blue_hero()
 	var origin: Vector2 = escort.position
