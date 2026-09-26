@@ -4,6 +4,8 @@ extends RefCounted
 
 const Definition = preload("res://scripts/data/minion_definition.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
+const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
 const DamageRules = preload("res://scripts/combat/damage_rules.gd")
 const StructureState = preload("res://scripts/combat/structure_state.gd")
@@ -88,6 +90,13 @@ func step_tick() -> void:
 		if not is_running():
 			break
 		if not unit.alive:
+			continue
+		if unit.is_hero:
+			# Heroes tick their own timers + shared debuffs. No lane
+			# march, no AI orders, no passive heal in Kaizen-1.
+			_tick_hero(unit as HeroState)
+			_tick_debuffs(unit)
+			_tick_burn(unit)
 			continue
 		unit.cooldown_ticks = maxi(0, unit.cooldown_ticks - 1)
 		_tick_debuffs(unit)
@@ -179,6 +188,8 @@ func _tick_burn(unit: UnitState) -> void:
 				unit.alive = false
 				_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
 				_on_death(1 - unit.team, unit)
+				if unit.is_hero:
+					_on_hero_death(unit as HeroState, -1)
 	if unit.burn_timer <= 0:
 		unit.burn_dps = 0.0
 		unit.burn_accum = 0.0
@@ -302,10 +313,16 @@ func _deliver_hit(
 		target.alive = false
 		_record({"kind": "death", "source_id": source_id, "target_id": target.id})
 		_on_death(source_team, target)
+		if target.is_hero:
+			_on_hero_death(target as HeroState, source_id)
 	return true
 
 
 func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:
+	if target is StructureState:
+		# Structures absorb through armor + shield. Previously only the
+		# siege override did this; hero AOE needs it at this level too.
+		return (target as StructureState).absorb(raw_damage, school)
 	return DamageRules.resolve(
 		raw_damage, target.definition.armor, target.definition.magic_resist, school
 	)
@@ -462,7 +479,9 @@ func _move_toward(unit: UnitState, target: Vector2) -> void:
 func _retire_dead() -> void:
 	var survivors: Array[UnitState] = []
 	for unit in units:
-		if unit.alive:
+		# Dead heroes stay addressable (death inspection now, respawn
+		# later); only dead minions are retired.
+		if unit.alive or unit.is_hero:
 			survivors.append(unit)
 		else:
 			_by_id.erase(unit.id)
@@ -470,6 +489,257 @@ func _retire_dead() -> void:
 	for unit in units:
 		if not _by_id.has(unit.target_id):
 			unit.target_id = -1
+		if unit.is_hero:
+			var hero := unit as HeroState
+			if hero.target_struct != null and not hero.target_struct.alive:
+				hero.target_struct = null
+
+
+func spawn_hero(definition: HeroDefinition, team: int, pos: Vector2, level: int = 1) -> HeroState:
+	if not is_running() or definition == null or not definition.is_valid():
+		return null
+	if team not in [BLUE, RED]:
+		return null
+	if units.size() >= MAX_UNITS:
+		return null
+	var hero := HeroState.new()
+	hero.id = _next_id
+	_next_id += 1
+	hero.team = team
+	hero.lane = -1
+	hero.definition = definition
+	hero.level = clampi(level, 1, HeroDefinition.MAX_HERO_LEVEL)
+	hero.base_hp = definition.max_hp
+	hero.base_damage = definition.damage
+	hero.skill_base = definition.base_skill
+	hero.speed = definition.speed_px_per_tick
+	hero.attack_range = definition.attack_range_px
+	hero.attack_cd_base = definition.attack_cooldown_ticks
+	hero.skill_cd_max = definition.skill_cooldown_max
+	hero.skill_range = definition.skill_range_px
+	hero.dmg_school = definition.dmg_school
+	hero.is_melee = definition.is_melee
+	hero.w_cooldown_max = definition.w_cooldown_max
+	hero.e_cooldown_max = definition.e_cooldown_max
+	hero.r_cooldown_max = definition.r_cooldown_max
+	hero.apply_level_stats()
+	hero.hp = hero.max_hp
+	hero.position = pos
+	hero.facing = 1.0 if team == BLUE else -1.0
+	hero.attack_facing = hero.facing
+	units.append(hero)
+	_by_id[hero.id] = hero
+	return hero
+
+
+func hero_basic_attack(hero_id: int, target_id: int) -> bool:
+	# Port of Hero._do_attack (melee path, empty inventory). Guards,
+	# facing lock, sequence count, and timer order match the source.
+	var hero := get_unit(hero_id) as HeroState
+	var target := get_unit(target_id)
+	if not is_running() or hero == null or target == null:
+		return false
+	if not hero.alive or not target.alive:
+		return false
+	if hero.stun_timer > 0:
+		return false
+	if hero.position.distance_to(target.position) > hero.eff_attack_range():
+		return false
+	if hero.attack_timer != 0:
+		return false
+	var dx := target.position.x - hero.position.x
+	if dx != 0.0:
+		hero.facing = 1.0 if dx > 0.0 else -1.0
+	hero.attack_facing = hero.facing
+	hero.attack_seq += 1
+	hero.attack_timer = hero.eff_attack_cd(hero.attack_cd_base)
+	# Same-team delivery is refused here; the source lacks the team
+	# check but can never aim at allies (AI targets enemies only).
+	return _deliver_hit(hero.id, hero.team, target, hero.damage, hero.dmg_school, hero.position)
+
+
+func upgrade_hero(hero_id: int) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if hero == null:
+		return false
+	return hero.upgrade()
+
+
+func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
+	# Port of KaizenSkills.cast_q: Q1 Steel Wind at stack 0, Q2 Dash
+	# Strike at stack 1. Structures (towers, then bases) mirror the
+	# source all_towers/all_bases arguments.
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.skill_timer > 0:
+		return false
+	if not _has_q_target(hero, structures):
+		return false
+	if hero.q_stack == 0:
+		_deal_hero_aoe(hero, hero.position, hero.skill_range, hero.skill_damage(), structures)
+		hero.q_stack = 1
+	else:
+		_cast_dash_strike(hero, structures)
+		hero.q_stack = 0
+	var data := hero.settings()
+	hero.q_reset_timer = data.q_reset_ticks
+	hero.skill_timer = hero.skill_cd_max
+	hero.active_skill = "q"
+	hero.active_skill_timer = data.q_visual_ticks
+	return true
+
+
+func _has_q_target(hero: HeroState, structures: Array) -> bool:
+	# Port of BaseSkill._has_target/_acquire_target: keep a valid
+	# current target, else nearest enemy in reach; ties keep the LAST
+	# candidate (source `<=` scan), units before structures.
+	var data := hero.settings()
+	var reach := maxf(hero.attack_range, hero.skill_range) * data.q_reach_slack
+	if hero.target_id >= 0:
+		var current := get_unit(hero.target_id)
+		if (
+			current != null
+			and current.alive
+			and current.team != hero.team
+			and hero.position.distance_to(current.position) <= reach
+		):
+			hero.target_struct = null
+			return true
+	if hero.target_struct != null:
+		var kept := hero.target_struct
+		if (
+			kept.alive
+			and kept.team != hero.team
+			and hero.position.distance_to(kept.position) <= reach
+		):
+			return true
+	var best_unit: UnitState = null
+	var best_struct: StructureState = null
+	var best_dist := reach
+	for unit in units:
+		if not unit.alive or unit.team == hero.team:
+			continue
+		var unit_dist := hero.position.distance_to(unit.position)
+		if unit_dist <= best_dist:
+			best_unit = unit
+			best_struct = null
+			best_dist = unit_dist
+	for entry in structures:
+		var structure := entry as StructureState
+		if structure == null or not structure.alive or structure.team == hero.team:
+			continue
+		var struct_dist := hero.position.distance_to(structure.position)
+		if struct_dist <= best_dist:
+			best_unit = null
+			best_struct = structure
+			best_dist = struct_dist
+	if best_unit == null and best_struct == null:
+		return false
+	if best_unit != null:
+		hero.target_id = best_unit.id
+		hero.target_struct = null
+	else:
+		hero.target_id = -1
+		hero.target_struct = best_struct
+	return true
+
+
+func _deal_hero_aoe(
+	hero: HeroState, center: Vector2, radius: float, raw_damage: int, structures: Array
+) -> void:
+	# Port of BaseSkill._deal_aoe_damage: every living enemy at most
+	# `radius` from center takes int(skill * mult) with hero school.
+	# Zero raw damage is a no-op in both codebases (0 never kills).
+	if raw_damage <= 0:
+		return
+	for unit in units:
+		if not unit.alive or unit.team == hero.team:
+			continue
+		if center.distance_to(unit.position) <= radius:
+			_deliver_hit(hero.id, hero.team, unit, raw_damage, hero.dmg_school, center)
+	for entry in structures:
+		var structure := entry as StructureState
+		if structure == null or not structure.alive or structure.team == hero.team:
+			continue
+		if center.distance_to(structure.position) <= radius:
+			_deliver_hit(hero.id, hero.team, structure, raw_damage, hero.dmg_school, center)
+
+
+func _cast_dash_strike(hero: HeroState, structures: Array) -> void:
+	var data := hero.settings()
+	var dest := hero.position
+	if hero.target_id >= 0:
+		var target := get_unit(hero.target_id)
+		if target != null:
+			dest = target.position
+	elif hero.target_struct != null:
+		dest = hero.target_struct.position
+	var delta := dest - hero.position
+	# The source divides by distance with no zero guard (unreachable:
+	# radii keep units apart); the guard below only avoids a crash.
+	if delta.length() > 0.0:
+		hero.position += delta * 0.7
+	hero.is_dashing = true
+	hero.dash_timer = data.q_dash_ticks
+	_deal_hero_aoe(
+		hero, hero.position, data.q2_radius_px, int(hero.skill_damage() * data.q2_mult), structures
+	)
+
+
+func _tick_hero(hero: HeroState) -> void:
+	if hero.attack_timer > 0:
+		hero.attack_timer -= 1
+	if hero.skill_timer > 0:
+		hero.skill_timer -= 1
+	if hero.w_cooldown > 0:
+		hero.w_cooldown -= 1
+	if hero.e_cooldown > 0:
+		hero.e_cooldown -= 1
+	if hero.r_cooldown > 0:
+		hero.r_cooldown -= 1
+	if hero.active_skill_timer > 0:
+		hero.active_skill_timer -= 1
+		if hero.active_skill_timer <= 0:
+			hero.active_skill = ""
+	if hero.q_reset_timer > 0:
+		hero.q_reset_timer -= 1
+		if hero.q_reset_timer <= 0:
+			hero.q_stack = 0
+	if hero.dash_timer > 0:
+		hero.dash_timer -= 1
+		if hero.dash_timer <= 0:
+			hero.is_dashing = false
+	if hero.wind_wall_timer > 0:
+		hero.wind_wall_timer -= 1
+	if hero.ulti_timer > 0:
+		hero.ulti_timer -= 1
+		if hero.ulti_timer <= 0:
+			hero.ulti_active = false
+	if hero.stun_timer > 0:
+		hero.stun_timer -= 1
+
+
+func _on_hero_death(hero: HeroState, source_id: int) -> void:
+	# Port of the Hero.take_damage death branch: deaths+1, killer id,
+	# and a full debuff clear. No gold is credited (hero definitions
+	# carry gold_reward 0, locked by kaizen_checks).
+	hero.deaths += 1
+	hero.killed_by = source_id
+	hero.slow_amount = 0.0
+	hero.slow_timer = 0
+	hero.atk_slow_amount = 0.0
+	hero.atk_slow_timer = 0
+	hero.skill_down_amount = 0.0
+	hero.skill_down_timer = 0
+	hero.anti_heal_amount = 0.0
+	hero.anti_heal_timer = 0
+	hero.burn_dps = 0.0
+	hero.burn_timer = 0
+	hero.burn_accum = 0.0
+	hero.burn_tick_cd = 0
+	hero.burn_team = -1
+	hero.stun_timer = 0
 
 
 func _record(event: Dictionary) -> void:

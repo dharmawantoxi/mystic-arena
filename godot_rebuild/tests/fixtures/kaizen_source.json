@@ -345,6 +345,7 @@
     "skill_timer": 300,
     "target_id": "e1",
     "tower_hp": 2000,
+    "tower_shield": 652,
     "victims": [
       {
         "alive": true,

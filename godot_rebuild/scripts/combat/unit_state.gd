@@ -12,6 +12,7 @@ var hp := 0.0
 var cooldown_ticks := 0
 var target_id := -1
 var alive := true
+var is_hero := false
 var facing := 1.0
 var ai_level := 1
 var burn_dps := 0.0

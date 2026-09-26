@@ -477,6 +477,7 @@ def source_fixture():
         "active_skill": q2.active_skill,
         "active_skill_timer": q2.active_skill_timer,
         "tower_hp": tower2.hp,
+        "tower_shield": tower2.shield,
         "victims": [victim_summary(v) for v in units2],
     }
 
