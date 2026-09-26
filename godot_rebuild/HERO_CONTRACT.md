@@ -6,7 +6,7 @@ Mode **Pertandingan awal** men-spawn **satu Kaizen biru** saat arena diinisialis
 
 - Spawn gratis di `HERO_SPAWN` `(220, 540)` dekat nexus biru. Lawan tidak mendapat hero.
 - Hero dihitung sebagai unit (`MAX_UNITS`) tetapi **bukan** minion: tidak mengikuti lane, tidak memblokir `field_clear` wave, kill tidak memberi gold (`gold_reward = 0`), dan jenazah tetap addressable.
-- Auto-act prototipe: **klik kanan** (state 2 sumber) memasang destination manual — hero jalan dulu, tetap boleh melee sambil jalan, hunt **tidak** menimpa klik pemain; sampai (`dist < speed`) lalu clear. Tanpa destination: melee `<=` range tanpa jalan, else hunt `< 900`. Stun/dash/mati = diam.
+- Auto-act prototipe: **klik kanan tanah** = destination (state 2); **klik kanan musuh** = follow (state 3). Destination menimpa follow dan sebaliknya. Follow: kejar target, melee jika `<=` range; target mati/ally → clear. Tanpa perintah: melee atau hunt `< 900`. Stun/dash/mati = diam.
 - Tombol **Skill Q** (dan tombol fisik Q) hanya ketika hero biru dipilih. Cast lewat `cast_hero_q` sumber: butuh target dalam jangkauan, satu command per tick, fizzle tanpa cooldown bila tidak ada target.
 - Inspeksi menampilkan nama, HP/`max_hp` level, Q stack, dan skill CD.
 - Pause, kehilangan fokus, dan hasil membatalkan command Q. Restart men-spawn Kaizen baru (timer/stack nol).

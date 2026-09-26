@@ -86,6 +86,21 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		"pause cancels move"
 	)
 	screen.resume_match()
+	check.call(session.request_hero_follow(hero.id, foe.id), "follow queues")
+	session.request_hero_follow(hero.id, foe.id)
+	check.call(
+		session.command.kind == "follow" and session.command.target_id == foe.id,
+		"follow captures once"
+	)
+	session._physics_process(1.0 / 60.0)
+	check.call(
+		(
+			hero.follow_id == foe.id
+			and not hero.has_destination
+			and session.last_action.contains("mengikuti")
+		),
+		"queued follow replaces destination"
+	)
 	world.winner = 1
 	await _settle(tree)
 	check.call(

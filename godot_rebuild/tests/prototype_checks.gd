@@ -379,6 +379,31 @@ func _hero_melee(check: Callable) -> void:
 		escort.position.x > origin.x and blocker.hp < blocker_hp,
 		"destination still allows an in-range swing"
 	)
+	var chase := _world()
+	var stalker = chase.blue_hero()
+	var start := stalker.position
+	var mark = chase.spawn_unit(GOBLIN, 1, 1)
+	mark.position = start + Vector2(180, 0)
+	var mark_hp: float = mark.hp
+	check.call(chase._set_hero_follow(stalker.id, mark.id), "follow accepted")
+	chase.step_tick()
+	check.call(
+		stalker.follow_id == mark.id and stalker.position.x > start.x and mark.hp == mark_hp,
+		"follow walks without swinging out of melee"
+	)
+	check.call(not chase._set_hero_follow(stalker.id, stalker.id), "cannot follow self")
+	chase.set_hero_destination(stalker.id, start)
+	check.call(stalker.follow_id == -1 and stalker.has_destination, "destination clears follow")
+	mark.alive = false
+	var again := _world()
+	var chaser = again.blue_hero()
+	var corpse = again.spawn_unit(GOBLIN, 1, 1)
+	corpse.position = chaser.position + Vector2(180, 0)
+	again._set_hero_follow(chaser.id, corpse.id)
+	corpse.alive = false
+	var parked_follow := chaser.position
+	again.step_tick()
+	check.call(chaser.follow_id == -1 and chaser.position == parked_follow, "dead follow drops")
 
 
 func _world() -> Prototype:

@@ -232,7 +232,13 @@ func _command_move(point: Vector2) -> void:
 	if not simulation.world.is_running():
 		return
 	var local := arena.get_global_transform_with_canvas().affine_inverse() * point
-	match_session.request_hero_move(match_session.selected_id, local)
+	var world := simulation.world as Prototype
+	var marked := world.select_at(local)
+	var target := world.get_unit(marked)
+	if target != null and target.alive and target.team != 0:
+		match_session.request_hero_follow(match_session.selected_id, marked)
+	else:
+		match_session.request_hero_move(match_session.selected_id, local)
 	get_viewport().set_input_as_handled()
 
 

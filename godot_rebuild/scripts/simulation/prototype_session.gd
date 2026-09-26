@@ -39,6 +39,8 @@ func _physics_process(_delta: float) -> void:
 			accepted = match_world.cast_blue_q(command.id)
 		elif command.kind == "move":
 			accepted = match_world.set_hero_destination(command.id, command.point)
+		elif command.kind == "follow":
+			accepted = match_world._set_hero_follow(command.id, command.target_id)
 		else:
 			accepted = match_world.sell_tower(0, command.id)
 			if accepted and selected_id == command.id:
@@ -48,6 +50,8 @@ func _physics_process(_delta: float) -> void:
 				last_action = "Kaizen memakai Steel Wind (Q)."
 			elif command.kind == "move":
 				last_action = "Kaizen menuju titik yang dipilih."
+			elif command.kind == "follow":
+				last_action = "Kaizen mengikuti musuh."
 			else:
 				var delta_gold: int = match_world.economy.gold[0] - balance_before
 				var upgrade_label := "Archer ditingkatkan"
@@ -123,6 +127,13 @@ func request_hero_move(entity_id: int, point: Vector2) -> bool:
 	if not _queue("move", entity_id):
 		return false
 	command.point = point
+	return true
+
+
+func request_hero_follow(entity_id: int, target_id: int) -> bool:
+	if not _queue("follow", entity_id):
+		return false
+	command.target_id = target_id
 	return true
 
 

@@ -47,6 +47,7 @@ var ulti_timer := 0
 var target_struct: StructureState = null
 var has_destination := false
 var destination := Vector2.ZERO
+var follow_id := -1
 
 
 func _init() -> void:

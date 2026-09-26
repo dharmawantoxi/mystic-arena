@@ -227,17 +227,37 @@ func set_hero_destination(hero_id: int, point: Vector2) -> bool:
 		return false
 	hero.has_destination = true
 	hero.destination = point
+	hero.follow_id = -1
+	return true
+
+
+func _set_hero_follow(hero_id: int, target_id: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	var target := get_unit(target_id)
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	elif target == null or not target.alive or target.team == BLUE or target.id == hero.id:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	hero.follow_id = target.id
+	hero.has_destination = false
 	return true
 
 
 func _step_hero_act() -> void:
-	# Port of Hero.update: manual destination (state 2), then melee (4), hunt (5).
-	# No retreat, follow, push, auto-cast, or W/E/R.
+	# Port of Hero.update: dest (2), follow (3), melee (4), hunt (5).
+	# No retreat, push, auto-cast, or W/E/R.
 	var hero := blue_hero()
 	if hero == null or not hero.alive or hero.stun_timer > 0 or hero.is_dashing:
 		return
 	if hero.has_destination:
 		_step_hero_destination(hero)
+		return
+	if _step_hero_follow(hero):
 		return
 	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
 	if melee != null:
@@ -262,6 +282,22 @@ func _step_hero_destination(hero: HeroState) -> void:
 	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
 	if melee != null and hero.attack_timer == 0:
 		hero_basic_attack(hero.id, melee.id)
+
+
+func _step_hero_follow(hero: HeroState) -> bool:
+	if hero.follow_id < 0:
+		return false
+	var target := get_unit(hero.follow_id)
+	if target == null or not target.alive or target.team == hero.team:
+		hero.follow_id = -1
+		return false
+	var reach := hero.eff_attack_range()
+	if hero.position.distance_to(target.position) <= reach:
+		if hero.attack_timer == 0:
+			hero_basic_attack(hero.id, target.id)
+	else:
+		_move_toward(hero, target.position)
+	return true
 
 
 func _hero_pick_target(hero: HeroState, reach: float, inclusive: bool) -> UnitState:
