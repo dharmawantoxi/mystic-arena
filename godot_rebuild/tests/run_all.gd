@@ -4,6 +4,7 @@ extends SceneTree
 const CannonSceneChecks = preload("res://tests/cannon_scene_checks.gd")
 const IceSceneChecks = preload("res://tests/ice_scene_checks.gd")
 const MageSceneChecks = preload("res://tests/mage_scene_checks.gd")
+const KaizenSceneChecks = preload("res://tests/kaizen_scene_checks.gd")
 const NexusSceneChecks = preload("res://tests/nexus_scene_checks.gd")
 const NexusChecks = preload("res://tests/nexus_checks.gd")
 const CannonChecks = preload("res://tests/cannon_checks.gd")
@@ -131,6 +132,7 @@ func _run() -> void:
 	await CannonSceneChecks.new().run(self, app, _check)
 	await IceSceneChecks.new().run(self, app, _check)
 	await MageSceneChecks.new().run(self, app, _check)
+	await KaizenSceneChecks.new().run(self, app, _check)
 	app.queue_free()
 	await _settle()
 	_check(not paused, "app exit does not leave tree paused")
@@ -437,7 +439,8 @@ func _test_prototype_scene(app: Node) -> void:
 		_check(
 			(
 				world.structures.size() == 2
-				and world.units.is_empty()
+				and world.living_minion_count() == 0
+				and world.blue_hero() != null
 				and world.economy.gold == [1000, 350]
 			),
 			"playable match starts empty with source budgets"

@@ -3,6 +3,7 @@ extends RefCounted
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 
 
@@ -12,6 +13,12 @@ func run(check: Callable) -> void:
 	_transactions(check)
 	_death_and_stale_ids(check)
 	_progress_and_result(check)
+	_hero_melee(check)
+	_hero_wall(check)
+	_hero_respawn(check)
+	_hero_loop(check)
+	_hero_foe(check)
+	_hero_auto(check)
 	_replay(check)
 
 
@@ -25,6 +32,17 @@ func _fixtures(check: Callable) -> void:
 	var world := Prototype.new()
 	check.call(
 		world.setup_arena() and world.structures.size() == 2, "match starts with only two nexuses"
+	)
+	check.call(
+		(
+			world.blue_hero() != null
+			and world.blue_hero().settings().id == "kaizen"
+			and world.blue_hero().position == world.HERO_SPAWN
+			and _foe_hero(world) != null
+			and _foe_hero(world).position == world.RED_HERO_SPAWN
+			and world.living_minion_count() == 0
+		),
+		"match starts with a Kaizen pair and no minions"
 	)
 	check.call(not world.setup_arena(), "match setup is idempotent")
 	check.call(
@@ -242,19 +260,20 @@ func _progress_and_result(check: Callable) -> void:
 	for tick in range(300):
 		world.step_tick()
 	check.call(
-		world.wave_count == 0 and world.units.is_empty(), "initial 300-tick preparation window"
+		world.wave_count == 0 and world.living_minion_count() == 0,
+		"initial 300-tick preparation window"
 	)
 	check.call(world.economy.gold == [1015, 365], "passive gold is active during preparation")
 	world.step_tick()
 	check.call(
-		world.wave_count == 1 and world.units.size() == 2,
+		world.wave_count == 1 and world.living_minion_count() == 2,
 		"tick 301 starts and immediately spawns first pair"
 	)
 	for tick in range(19):
 		world.step_tick()
-	check.call(world.units.size() == 2, "no early second spawn")
+	check.call(world.living_minion_count() == 2, "no early second spawn")
 	world.step_tick()
-	check.call(world.units.size() == 4, "tick 321 spawns next pair during wave timer")
+	check.call(world.living_minion_count() == 4, "tick 321 spawns next pair during wave timer")
 	var nexus = world.nexuses[1]
 	nexus.shield_active = false
 	nexus.shield = 0
@@ -302,6 +321,288 @@ func _replay(check: Callable) -> void:
 	check.call(
 		first.wave_count > 0 and first._next_projectile_id > 1, "scheduled waves lead to combat"
 	)
+
+
+func _hero_melee(check: Callable) -> void:
+	var world := _world()
+	var hero: HeroState = world.blue_hero()
+	var planted: Vector2 = hero.position
+	var foe = world.spawn_unit(GOBLIN, 1, 1)
+	foe.position = hero.position + Vector2(20, 0)
+	var hp: float = foe.hp
+	world.step_tick()
+	check.call(foe.hp < hp and hero.attack_timer > 0, "in-range hero autoswings once")
+	check.call(hero.position == planted, "in-range hero does not chase")
+	var far = world.spawn_unit(GOBLIN, 1, 1)
+	far.position = hero.position + Vector2(400, 0)
+	var far_hp: float = far.hp
+	world.step_tick()
+	check.call(far.hp == far_hp and foe.hp < hp, "out-of-range minion is not swung")
+	hero.alive = false
+	var bait = world.spawn_unit(GOBLIN, 1, 1)
+	bait.position = hero.position + Vector2(10, 0)
+	var bait_hp: float = bait.hp
+	world.step_tick()
+	check.call(bait.hp == bait_hp, "dead hero does not swing")
+	var hunt := _world()
+	var hunter: HeroState = hunt.blue_hero()
+	var hunt_from: Vector2 = hunter.position
+	var quarry = hunt.spawn_unit(GOBLIN, 1, 1)
+	quarry.position = hunt_from + Vector2(200, 0)
+	var quarry_hp: float = quarry.hp
+	hunt.step_tick()
+	check.call(
+		hunter.position.x > hunt_from.x and quarry.hp == quarry_hp,
+		"hero hunts inside 900 without swinging"
+	)
+	var beyond := _world()
+	var idle: HeroState = beyond.blue_hero()
+	var parked: Vector2 = idle.position
+	var ghost = beyond.spawn_unit(GOBLIN, 1, 1)
+	ghost.position = parked + Vector2(950, 0)
+	beyond.step_tick()
+	check.call(idle.position.x > parked.x, "beyond hunt range the hero pushes")
+	var walk := _world()
+	var mover: HeroState = walk.blue_hero()
+	var from: Vector2 = mover.position
+	var dest: Vector2 = from + Vector2(80, 0)
+	check.call(walk.set_hero_destination(mover.id, dest), "manual destination accepted")
+	walk.step_tick()
+	check.call(mover.position.x > from.x and mover.has_destination, "click-move walks toward point")
+	check.call(not walk.set_hero_destination(999, dest), "bad id cannot set destination")
+	var snapped := false
+	for tick in range(50):
+		walk.step_tick()
+		if not mover.has_destination:
+			snapped = mover.position == dest
+			break
+	check.call(snapped, "hero snaps and clears on arrival")
+	var hold := _world()
+	var escort: HeroState = hold.blue_hero()
+	var origin: Vector2 = escort.position
+	hold.set_hero_destination(escort.id, origin + Vector2(80, 0))
+	var blocker = hold.spawn_unit(GOBLIN, 1, 1)
+	blocker.position = escort.position + Vector2(20, 0)
+	var blocker_hp: float = blocker.hp
+	hold.step_tick()
+	check.call(
+		escort.position.x > origin.x and blocker.hp < blocker_hp,
+		"destination still allows an in-range swing"
+	)
+	var chase := _world()
+	var stalker: HeroState = chase.blue_hero()
+	var chase_from: Vector2 = stalker.position
+	var mark = chase.spawn_unit(GOBLIN, 1, 1)
+	mark.position = chase_from + Vector2(180, 0)
+	var mark_hp: float = mark.hp
+	check.call(chase._set_hero_follow(stalker.id, mark.id), "follow accepted")
+	chase.step_tick()
+	check.call(
+		stalker.follow_id == mark.id and stalker.position.x > chase_from.x and mark.hp == mark_hp,
+		"follow walks without swinging out of melee"
+	)
+	check.call(not chase._set_hero_follow(stalker.id, stalker.id), "cannot follow self")
+	chase.set_hero_destination(stalker.id, chase_from)
+	check.call(stalker.follow_id == -1 and stalker.has_destination, "destination clears follow")
+	mark.alive = false
+	var again := _world()
+	var chaser: HeroState = again.blue_hero()
+	var corpse = again.spawn_unit(GOBLIN, 1, 1)
+	corpse.position = chaser.position + Vector2(180, 0)
+	again._set_hero_follow(chaser.id, corpse.id)
+	corpse.alive = false
+	again.step_tick()
+	check.call(chaser.follow_id == -1, "dead follow drops")
+
+
+func _hero_wall(check: Callable) -> void:
+	var cover := _world()
+	var shielded: HeroState = cover.blue_hero()
+	check.call(cover.cast_hero_w(shielded.id), "prototype W casts")
+	cover.build_tower(1, 9)
+	var tower = cover.get_unit(cover.slots[9].structure_id)
+	tower.position = shielded.position + Vector2(40, 0)
+	var shielded_hp: float = shielded.hp
+	check.call(cover.fire_projectile(tower.id, shielded.id), "red archer looses a shot")
+	cover.projectiles[0].position = shielded.position
+	cover.step_tick()
+	check.call(
+		shielded.hp == shielded_hp and shielded.wind_wall_timer > 0,
+		"wind wall blocks physical shot"
+	)
+
+
+func _hero_respawn(check: Callable) -> void:
+	var world := _world()
+	var hero: HeroState = world.blue_hero()
+	hero.alive = false
+	hero.hp = 0.0
+	hero.position = Vector2(800, 200)
+	hero.has_destination = true
+	var waited := 0
+	while waited < 599:
+		world.step_tick()
+		waited += 1
+	check.call(not hero.alive and hero.respawn_timer == 1, "still dead on tick 599")
+	world.step_tick()
+	check.call(
+		(
+			hero.alive
+			and hero.hp == hero.max_hp
+			and hero.position == world.HERO_SPAWN
+			and not hero.has_destination
+			and hero.respawn_timer == 0
+		),
+		"hero respawns at spawn after 600 ticks"
+	)
+
+
+func _hero_loop(check: Callable) -> void:
+	var flee := _world()
+	var runner: HeroState = flee.blue_hero()
+	var flee_from: Vector2 = runner.position
+	runner.hp = runner.max_hp * 0.1
+	flee.step_tick()
+	check.call(
+		(
+			runner.is_retreating
+			and (
+				runner.position.distance_to(flee.LaneLayout.BLUE_BASE)
+				< flee_from.distance_to(flee.LaneLayout.BLUE_BASE)
+			)
+		),
+		"low HP retreats toward own nexus"
+	)
+	var shop := _world()
+	var pupil: HeroState = shop.blue_hero()
+	var gold_before: int = shop.economy.gold[0]
+	var cost: int = pupil.upgrade_cost()
+	check.call(shop._upgrade_blue_hero(pupil.id, 1), "hero upgrade spends")
+	check.call(
+		pupil.level == 2 and shop.economy.gold[0] == gold_before - cost,
+		"level 2 costs source 300 G"
+	)
+	check.call(not shop._upgrade_blue_hero(pupil.id, 1), "stale hero level rejected")
+	shop.economy.gold[0] = 0
+	check.call(not shop._upgrade_blue_hero(pupil.id, 2), "poor hero upgrade rejected")
+
+
+func _hero_foe(check: Callable) -> void:
+	var world := _world()
+	var stalker: HeroState = _foe_hero(world)
+	check.call(
+		not world.set_hero_destination(stalker.id, stalker.position), "player cannot order red"
+	)
+	var from: Vector2 = stalker.position
+	world.step_tick()
+	check.call(
+		(
+			stalker.position.distance_to(world.LaneLayout.BLUE_BASE)
+			< from.distance_to(world.LaneLayout.BLUE_BASE)
+		),
+		"red Kaizen pushes toward the blue nexus"
+	)
+	var flee := _world()
+	var runner: HeroState = _foe_hero(flee)
+	runner.position = Vector2(640, 360)
+	var flee_from: Vector2 = runner.position
+	runner.hp = runner.max_hp * 0.1
+	flee.step_tick()
+	check.call(
+		(
+			runner.is_retreating
+			and (
+				runner.position.distance_to(flee.LaneLayout.RED_BASE)
+				< flee_from.distance_to(flee.LaneLayout.RED_BASE)
+			)
+		),
+		"low HP red retreats toward own nexus"
+	)
+	var rest := _world()
+	var fallen: HeroState = _foe_hero(rest)
+	fallen.alive = false
+	fallen.hp = 0.0
+	fallen.position = Vector2(400, 400)
+	var waited := 0
+	while waited < 599:
+		rest.step_tick()
+		waited += 1
+	check.call(not fallen.alive and fallen.respawn_timer == 1, "red still dead on tick 599")
+	rest.step_tick()
+	check.call(
+		fallen.alive and fallen.position == rest.RED_HERO_SPAWN,
+		"red respawns at red spawn after 600 ticks"
+	)
+
+
+func _hero_auto(check: Callable) -> void:
+	var idle := _world()
+	var quiet: HeroState = _foe_hero(idle)
+	for tick in range(25):
+		idle.step_tick()
+	check.call(quiet.r_cooldown == 0 and quiet.skill_timer == 0, "auto-cast idles without a target")
+	var storm := _world()
+	var caster: HeroState = _foe_hero(storm)
+	var bait = storm.spawn_unit(GOBLIN, 0, 1)
+	bait.position = caster.position + Vector2(40, 0)
+	bait.hp = 100000.0
+	storm.step_tick()
+	check.call(
+		caster.ulti_active and caster.r_cooldown > 0, "auto-cast R when any foe is in skill range"
+	)
+	var sweep := _world()
+	var blade: HeroState = _foe_hero(sweep)
+	blade.r_cooldown = 900
+	var one = sweep.spawn_unit(GOBLIN, 0, 1)
+	var two = sweep.spawn_unit(GOBLIN, 0, 1)
+	one.position = blade.position + Vector2(30, 0)
+	two.position = blade.position + Vector2(0, 30)
+	one.hp = 100000.0
+	two.hp = 100000.0
+	sweep.step_tick()
+	check.call(blade.e_cooldown > 0 and not blade.ulti_active, "auto-cast E when two foes are near")
+	var wall := _world()
+	var guard: HeroState = _foe_hero(wall)
+	guard.r_cooldown = 900
+	guard.e_cooldown = 420
+	guard.hp = guard.max_hp * 0.3
+	var poke = wall.spawn_unit(GOBLIN, 0, 1)
+	poke.position = guard.position + Vector2(40, 0)
+	poke.hp = 100000.0
+	wall.step_tick()
+	check.call(guard.wind_wall_timer > 0, "auto-cast W under 40% HP")
+	var steel := _world()
+	var cutter: HeroState = _foe_hero(steel)
+	cutter.r_cooldown = 900
+	cutter.e_cooldown = 420
+	cutter.w_cooldown = 240
+	var mark = steel.spawn_unit(GOBLIN, 0, 1)
+	mark.position = cutter.position + Vector2(40, 0)
+	mark.hp = 100000.0
+	steel.step_tick()
+	check.call(cutter.skill_timer > 0 and cutter.q_stack == 1, "auto-cast Q last")
+	var off := _world()
+	var mute: HeroState = _foe_hero(off)
+	mute.auto_cast_enabled = false
+	var dummy = off.spawn_unit(GOBLIN, 0, 1)
+	dummy.position = mute.position + Vector2(40, 0)
+	dummy.hp = 100000.0
+	off.step_tick()
+	check.call(mute.r_cooldown == 0 and mute.skill_timer == 0, "disabled auto-cast does not fire")
+	var blue := _world()
+	var player: HeroState = blue.blue_hero()
+	var near = blue.spawn_unit(GOBLIN, 1, 1)
+	near.position = player.position + Vector2(40, 0)
+	near.hp = 100000.0
+	blue.step_tick()
+	check.call(not player.auto_cast_enabled and player.skill_timer == 0, "blue Kaizen stays manual")
+
+
+func _foe_hero(world: Prototype) -> HeroState:
+	for unit in world.units:
+		if unit.is_hero and unit.team == 1:
+			return unit as HeroState
+	return null
 
 
 func _world() -> Prototype:

@@ -17,6 +17,16 @@ const MINIONS := {
 	"undead": preload("res://data/minions/undead.tres"),
 	"dark_rider": preload("res://data/minions/dark_rider.tres")
 }
+const KAIZEN = preload("res://data/heroes/kaizen.tres")
+const HERO_SPAWN := Vector2(220, 540)
+# Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
+const RED_HERO_SPAWN := Vector2(1120, 130)
+const HERO_HUNT_RANGE := 900.0
+const HERO_RETREAT_HP := 0.2
+const HERO_HEAL_RATIO := 0.8
+const HERO_BASE_HEAL := 3.0
+const HERO_PASSIVE_HEAL := 0.15
+const HERO_BASE_NEAR := 100.0
 
 var economy := Economy.new()
 var scheduler := Scheduler.new()
@@ -40,6 +50,9 @@ func setup_arena() -> bool:
 	_arena_initialized = true
 	spawn_structure(NEXUS, BLUE, LaneLayout.BLUE_BASE)
 	spawn_structure(NEXUS, RED, LaneLayout.RED_BASE)
+	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
+	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
+	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
 	return true
 
 
@@ -97,11 +110,8 @@ func step_tick() -> void:
 		return
 	# Input transactions are handled by the session before this method.
 	economy.step_tick(wave_count)
-	var field_clear := true
-	for unit in units:
-		if unit.alive:
-			field_clear = false
-			break
+	# Source wave gate ignores heroes; only living minions hold the field.
+	var field_clear := living_minion_count() == 0
 	var batch := scheduler.step_tick(
 		field_clear, MAX_UNITS - units.size(), nexus_level(BLUE), nexus_level(RED)
 	)
@@ -115,6 +125,7 @@ func step_tick() -> void:
 	super.step_tick()
 	if is_running():
 		_step_defender()
+		_step_hero_act()
 
 
 func get_slot(id: int) -> Slot:
@@ -211,6 +222,243 @@ func _step_defender() -> void:
 		return
 	if build_tower(RED, [11, 14, 17][_defender_built]):
 		_defender_built += 1
+
+
+func set_hero_destination(hero_id: int, point: Vector2) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	hero.has_destination = true
+	hero.destination = point
+	hero.follow_id = -1
+	return true
+
+
+func _set_hero_follow(hero_id: int, target_id: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	var target := get_unit(target_id)
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	elif target == null or not target.alive or target.team == BLUE or target.id == hero.id:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	hero.follow_id = target.id
+	hero.has_destination = false
+	return true
+
+
+func _step_hero_act() -> void:
+	# Port of Hero.update states 1–6 plus Game respawn. No items.
+	var roster: Array = []
+	for unit in units:
+		if unit.is_hero:
+			roster.append(unit)
+	for entry in roster:
+		_step_one_hero(entry as HeroState)
+
+
+func _step_one_hero(hero: HeroState) -> void:
+	if not hero.alive:
+		_step_hero_respawn(hero)
+	elif hero.stun_timer > 0 or hero.is_dashing:
+		pass
+	else:
+		_hero_passive_heal(hero)
+		_step_hero_auto_cast(hero)
+		var ratio := hero.hp / maxf(1.0, hero.max_hp)
+		if ratio < HERO_RETREAT_HP:
+			hero.is_retreating = true
+		if hero.is_retreating and ratio >= HERO_HEAL_RATIO:
+			hero.is_retreating = false
+		if hero.is_retreating:
+			_step_hero_retreat(hero)
+		elif hero.has_destination:
+			_step_hero_destination(hero)
+		elif _step_hero_follow(hero):
+			pass
+		else:
+			var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
+			if melee != null:
+				if hero.attack_timer == 0:
+					hero_basic_attack(hero.id, melee.id)
+			else:
+				var hunted := _hero_pick_target(hero, HERO_HUNT_RANGE, false)
+				if hunted != null:
+					_move_toward(hero, hunted.position)
+				else:
+					_move_toward(hero, _hero_push_point(hero))
+
+
+func _step_hero_respawn(hero: HeroState) -> void:
+	# Source: first sighting sets 600, then the same frame decrements.
+	if hero.respawn_timer <= 0:
+		hero.respawn_timer = 600
+	hero.respawn_timer -= 1
+	if hero.respawn_timer > 0:
+		return
+	hero.slow_amount = 0.0
+	hero.slow_timer = 0
+	hero.atk_slow_amount = 0.0
+	hero.atk_slow_timer = 0
+	hero.skill_down_amount = 0.0
+	hero.skill_down_timer = 0
+	hero.anti_heal_amount = 0.0
+	hero.anti_heal_timer = 0
+	hero.burn_dps = 0.0
+	hero.burn_timer = 0
+	hero.burn_accum = 0.0
+	hero.alive = true
+	hero.hp = hero.max_hp
+	hero.killed_by = -1
+	hero.position = _hero_spawn_point(hero)
+	hero.has_destination = false
+	hero.follow_id = -1
+	hero.skill_timer = 0
+	hero.w_cooldown = 0
+	hero.e_cooldown = 0
+	hero.r_cooldown = 0
+	hero.attack_timer = 0
+	hero.q_stack = 0
+	hero.q_reset_timer = 0
+	hero.wind_wall_timer = 0
+	hero.ulti_active = false
+	hero.ulti_timer = 0
+	hero.active_skill = ""
+	hero.active_skill_timer = 0
+	hero.is_dashing = false
+	hero.dash_timer = 0
+	hero.stun_timer = 0
+	hero.target_id = -1
+	hero.target_struct = null
+	hero.is_retreating = false
+	hero.respawn_timer = 0
+
+
+func _step_hero_auto_cast(hero: HeroState) -> void:
+	# Port of Hero._try_auto_cast: every 20 ticks, only with a living
+	# enemy inside skill_range. Priority R, then E (2+), W (HP < 40%), Q.
+	if hero.auto_cast_enabled and hero.stun_timer <= 0:
+		hero.auto_cast_check_timer -= 1
+		if hero.auto_cast_check_timer <= 0:
+			hero.auto_cast_check_timer = 20
+			var nearby := _hero_skill_nearby(hero)
+			if nearby > 0:
+				var used := false
+				if hero.r_cooldown <= 0:
+					used = _cast_hero_r(hero.id, structures)
+				if not used and hero.e_cooldown <= 0 and nearby >= 2:
+					used = cast_hero_e(hero.id, structures)
+				if not used and hero.w_cooldown <= 0 and hero.hp / maxf(1.0, hero.max_hp) < 0.4:
+					used = cast_hero_w(hero.id)
+				if not used and hero.skill_timer <= 0:
+					cast_hero_q(hero.id, structures)
+
+
+func _hero_skill_nearby(hero: HeroState) -> int:
+	var reach: float = hero.skill_range
+	var count := 0
+	for unit in units:
+		if not unit.alive or unit.team == hero.team or unit.id == hero.id:
+			continue
+		if hero.position.distance_to(unit.position) <= reach:
+			count += 1
+	for structure in structures:
+		if not structure.alive or structure.team == hero.team:
+			continue
+		if hero.position.distance_to(structure.position) <= reach:
+			count += 1
+	return count
+
+
+func _hero_passive_heal(hero: HeroState) -> void:
+	if hero.hp < hero.max_hp:
+		hero.hp = minf(hero.max_hp, hero.hp + HERO_PASSIVE_HEAL)
+
+
+func _hero_home(hero: HeroState) -> Vector2:
+	return LaneLayout.BLUE_BASE if hero.team == BLUE else LaneLayout.RED_BASE
+
+
+func _hero_push_point(hero: HeroState) -> Vector2:
+	return LaneLayout.RED_BASE if hero.team == BLUE else LaneLayout.BLUE_BASE
+
+
+func _hero_spawn_point(hero: HeroState) -> Vector2:
+	return HERO_SPAWN if hero.team == BLUE else RED_HERO_SPAWN
+
+
+func _hero_near_own_base(hero: HeroState) -> bool:
+	return hero.position.distance_to(_hero_home(hero)) < HERO_BASE_NEAR
+
+
+func _step_hero_retreat(hero: HeroState) -> void:
+	if _hero_near_own_base(hero):
+		hero.hp = minf(hero.max_hp, hero.hp + HERO_BASE_HEAL)
+	else:
+		_move_toward(hero, _hero_home(hero))
+	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
+	if melee != null and hero.attack_timer == 0:
+		hero_basic_attack(hero.id, melee.id)
+
+
+func _step_hero_destination(hero: HeroState) -> void:
+	# Source: walk first, still swing if someone is in melee, then return
+	# (hunt does not override a player click).
+	var offset := hero.destination - hero.position
+	var speed := _eff_speed(hero)
+	if offset.length() <= speed:
+		hero.position = hero.destination
+		hero.has_destination = false
+	else:
+		_move_toward(hero, hero.destination)
+	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
+	if melee != null and hero.attack_timer == 0:
+		hero_basic_attack(hero.id, melee.id)
+
+
+func _step_hero_follow(hero: HeroState) -> bool:
+	if hero.follow_id < 0:
+		return false
+	var target := get_unit(hero.follow_id)
+	if target == null or not target.alive or target.team == hero.team:
+		hero.follow_id = -1
+		return false
+	var reach := hero.eff_attack_range()
+	if hero.position.distance_to(target.position) <= reach:
+		if hero.attack_timer == 0:
+			hero_basic_attack(hero.id, target.id)
+	else:
+		_move_toward(hero, target.position)
+	return true
+
+
+func _hero_pick_target(hero: HeroState, reach: float, inclusive: bool) -> UnitState:
+	var best: UnitState = null
+	var best_dist := reach
+	for unit in units:
+		if not unit.alive or unit.team == hero.team or unit.id == hero.id:
+			continue
+		var distance := hero.position.distance_to(unit.position)
+		if (distance <= best_dist) if inclusive else (distance < best_dist):
+			best = unit
+			best_dist = distance
+	for structure in structures:
+		if not structure.alive or structure.team == hero.team:
+			continue
+		var distance := hero.position.distance_to(structure.position)
+		if (distance <= best_dist) if inclusive else (distance < best_dist):
+			best = structure
+			best_dist = distance
+	return best
 
 
 func upgrade_price(entity_id: int, target_path: String = "archer") -> int:
@@ -335,3 +583,103 @@ func _owned_tower(entity_id: int) -> StructureState:
 		if slot.team == BLUE and slot.structure_id == entity_id:
 			return tower
 	return null
+
+
+func blue_hero() -> HeroState:
+	for unit in units:
+		if unit.is_hero and unit.team == BLUE:
+			return unit as HeroState
+	return null
+
+
+func blue_q_ready() -> bool:
+	var hero := blue_hero()
+	return hero != null and can_cast_hero_q(hero.id, structures)
+
+
+func cast_blue_q(hero_id: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	if not cast_hero_q(hero.id, structures):
+		transaction_error = "skill"
+		return false
+	_record({"kind": "skill_q", "target_id": hero.id})
+	return true
+
+
+func _cast_blue_w(hero_id: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	if not cast_hero_w(hero.id):
+		transaction_error = "skill"
+		return false
+	_record({"kind": "skill_w", "target_id": hero.id})
+	return true
+
+
+func _cast_blue_e(hero_id: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	if not cast_hero_e(hero.id, structures):
+		transaction_error = "skill"
+		return false
+	_record({"kind": "skill_e", "target_id": hero.id})
+	return true
+
+
+func _cast_blue_r(hero_id: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	if not transaction_error.is_empty():
+		return false
+	if not _cast_hero_r(hero.id, structures):
+		transaction_error = "skill"
+		return false
+	_record({"kind": "skill_r", "target_id": hero.id})
+	return true
+
+
+func _upgrade_blue_hero(hero_id: int, expected_level: int) -> bool:
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	var cost := 0
+	if hero != null:
+		cost = hero.upgrade_cost()
+	if not is_running():
+		transaction_error = "finished"
+	elif hero == null or not hero.alive or hero.team != BLUE:
+		transaction_error = "owner"
+	elif hero.level != expected_level:
+		transaction_error = "stale"
+	elif cost <= 0:
+		transaction_error = "max_level"
+	elif economy.gold[BLUE] < cost:
+		transaction_error = "gold"
+	if not transaction_error.is_empty():
+		return false
+	economy.spend(BLUE, cost)
+	upgrade_hero(hero.id)
+	_record({"kind": "hero_upgrade", "target_id": hero.id, "level": hero.level})
+	return true

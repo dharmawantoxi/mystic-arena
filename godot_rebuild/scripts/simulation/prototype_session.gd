@@ -2,6 +2,7 @@ extends "res://scripts/simulation/combat_session.gd"
 
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 var selected_slot_id := -1
 var command: Dictionary = {}
 var last_action := "Pilih slot biru, lalu bangun Archer (100 G)."
@@ -35,29 +36,61 @@ func _physics_process(_delta: float) -> void:
 			)
 		elif command.kind == "nexus":
 			accepted = match_world.upgrade_nexus(command.id, command.level)
+		elif command.kind == "skill_q":
+			accepted = match_world.cast_blue_q(command.id)
+		elif command.kind == "skill_w":
+			accepted = match_world._cast_blue_w(command.id)
+		elif command.kind == "skill_e":
+			accepted = match_world._cast_blue_e(command.id)
+		elif command.kind == "skill_r":
+			accepted = match_world._cast_blue_r(command.id)
+		elif command.kind == "hero_upgrade":
+			accepted = match_world._upgrade_blue_hero(command.id, command.level)
+		elif command.kind == "move":
+			accepted = match_world.set_hero_destination(command.id, command.point)
+		elif command.kind == "follow":
+			accepted = match_world._set_hero_follow(command.id, command.target_id)
 		else:
 			accepted = match_world.sell_tower(0, command.id)
 			if accepted and selected_id == command.id:
 				selected_id = -1
 		if accepted:
 			var delta_gold: int = match_world.economy.gold[0] - balance_before
-			var upgrade_label := "Archer ditingkatkan"
-			if command.get("path") == "cannon":
-				upgrade_label = "Cannon ditingkatkan"
-			elif command.get("path") == "ice":
-				upgrade_label = "Ice ditingkatkan"
-			elif command.get("path") == "mage":
-				upgrade_label = "Mage ditingkatkan"
-			var action: String = {
-				"build": "Archer dibangun",
-				"sell": "Tower dijual",
-				"upgrade": upgrade_label,
-				"nexus": "Nexus ditingkatkan"
-			}[command.kind]
-			last_action = "%s: %+d G." % [action, delta_gold]
+			if command.kind == "skill_q":
+				last_action = "Kaizen memakai Steel Wind (Q)."
+			elif command.kind == "skill_w":
+				last_action = "Kaizen memakai Wind Wall (W)."
+			elif command.kind == "skill_e":
+				last_action = "Kaizen memakai Sweep (E)."
+			elif command.kind == "skill_r":
+				last_action = "Kaizen memakai Tornado (R)."
+			elif command.kind == "hero_upgrade":
+				last_action = "Kaizen naik level: %+d G." % delta_gold
+			elif command.kind == "move":
+				last_action = "Kaizen menuju titik yang dipilih."
+			elif command.kind == "follow":
+				last_action = "Kaizen mengikuti musuh."
+			else:
+				var upgrade_label := "Archer ditingkatkan"
+				if command.get("path") == "cannon":
+					upgrade_label = "Cannon ditingkatkan"
+				elif command.get("path") == "ice":
+					upgrade_label = "Ice ditingkatkan"
+				elif command.get("path") == "mage":
+					upgrade_label = "Mage ditingkatkan"
+				var action: String = {
+					"build": "Archer dibangun",
+					"sell": "Tower dijual",
+					"upgrade": upgrade_label,
+					"nexus": "Nexus ditingkatkan"
+				}[command.kind]
+				last_action = "%s: %+d G." % [action, delta_gold]
 		else:
 			var max_text := "Tower sudah level maksimum (6)."
 			var stale_text := "Level tower sudah berubah; pilih upgrade kembali."
+			if command.kind == "hero_upgrade":
+				max_text = "Hero sudah level maksimum (15)."
+				stale_text = "Level hero sudah berubah; pilih upgrade kembali."
 			if command.kind == "nexus":
 				max_text = "Nexus sudah level maksimum (5)."
 				stale_text = "Level nexus sudah berubah; pilih upgrade kembali."
@@ -70,7 +103,8 @@ func _physics_process(_delta: float) -> void:
 					"capacity": "Batas bangunan tercapai.",
 					"stale": stale_text,
 					"path": "Pilih jalur upgrade yang valid.",
-					"max_level": max_text
+					"max_level": max_text,
+					"skill": "Q tidak siap atau tidak ada target."
 				}
 				. get(match_world.transaction_error, "Transaksi ditolak.")
 			)
@@ -102,6 +136,45 @@ func request_nexus_upgrade(entity_id: int) -> bool:
 	if nexus == null or not _queue("nexus", entity_id):
 		return false
 	command.level = nexus.settings().level
+	return true
+
+
+func request_skill_q(entity_id: int) -> bool:
+	return _queue("skill_q", entity_id)
+
+
+func request_skill_w(entity_id: int) -> bool:
+	return _queue("skill_w", entity_id)
+
+
+func request_skill_e(entity_id: int) -> bool:
+	return _queue("skill_e", entity_id)
+
+
+func request_skill_r(entity_id: int) -> bool:
+	return _queue("skill_r", entity_id)
+
+
+func request_hero_upgrade(entity_id: int) -> bool:
+	var match_world := world as Prototype
+	var hero: HeroState = match_world.blue_hero()
+	if hero == null or hero.id != entity_id or not _queue("hero_upgrade", entity_id):
+		return false
+	command.level = hero.level
+	return true
+
+
+func request_hero_move(entity_id: int, point: Vector2) -> bool:
+	if not _queue("move", entity_id):
+		return false
+	command.point = point
+	return true
+
+
+func request_hero_follow(entity_id: int, target_id: int) -> bool:
+	if not _queue("follow", entity_id):
+		return false
+	command.target_id = target_id
 	return true
 
 

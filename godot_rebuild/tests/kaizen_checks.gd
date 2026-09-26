@@ -409,3 +409,60 @@ func _guards(check: Callable) -> void:
 	check.call(not battle.cast_hero_q(hero.id), "dead hero cannot cast")
 	var lonely = _hero(Battle.new(), 500.0, 340.0)
 	check.call(lonely != null, "lonely hero spawns")
+	var ready := _battle()
+	var caster = _hero(ready, 500.0, 340.0)
+	check.call(not ready.can_cast_hero_q(caster.id), "lonely Q has no target")
+	_victim(ready, 530.0, 340.0, RED, FAT_HP)
+	check.call(ready.can_cast_hero_q(caster.id), "live hero readies Q on foe")
+	var wall := _battle()
+	var caster_w = _hero(wall, 500.0, 340.0)
+	check.call(wall._can_cast_hero_w(caster_w.id), "W ready without a target")
+	check.call(wall.cast_hero_w(caster_w.id), "W casts")
+	check.call(
+		(
+			caster_w.wind_wall_timer == 180
+			and caster_w.w_cooldown == caster_w.w_cooldown_max
+			and caster_w.active_skill == "w"
+		),
+		"W sets wall and cooldown"
+	)
+	check.call(not wall.cast_hero_w(caster_w.id), "W blocked while cooling")
+	caster_w.alive = false
+	caster_w.w_cooldown = 0
+	check.call(not wall.cast_hero_w(caster_w.id), "dead hero cannot W")
+	var sweep := _battle()
+	var caster_e = _hero(sweep, 500.0, 340.0)
+	check.call(not sweep._can_cast_hero_e(caster_e.id), "lonely E has no target")
+	var swept = _victim(sweep, 530.0, 340.0, RED, FAT_HP)
+	check.call(sweep._can_cast_hero_e(caster_e.id), "E readies on foe")
+	var swept_hp: float = swept.hp
+	check.call(sweep.cast_hero_e(caster_e.id), "E casts")
+	check.call(
+		(
+			swept.hp < swept_hp
+			and caster_e.e_cooldown == caster_e.e_cooldown_max
+			and caster_e.active_skill == "e"
+		),
+		"E damages and cools"
+	)
+	check.call(not sweep.cast_hero_e(caster_e.id), "E blocked while cooling")
+	var storm := _battle()
+	var caster_r = _hero(storm, 500.0, 340.0)
+	check.call(not storm._can_cast_hero_r(caster_r.id), "lonely R has no target")
+	var blasted = _victim(storm, 540.0, 340.0, RED, FAT_HP)
+	var far = _victim(storm, 700.0, 340.0, RED, FAT_HP)
+	check.call(storm._can_cast_hero_r(caster_r.id), "R readies on foe")
+	var blasted_hp: float = blasted.hp
+	var far_hp: float = far.hp
+	check.call(storm._cast_hero_r(caster_r.id), "R casts")
+	check.call(
+		(
+			blasted.hp < blasted_hp
+			and far.hp == far_hp
+			and caster_r.ulti_active
+			and caster_r.r_cooldown == caster_r.r_cooldown_max
+			and caster_r.active_skill == "r"
+		),
+		"R hits inside 150 and cools"
+	)
+	check.call(not storm._cast_hero_r(caster_r.id), "R blocked while cooling")

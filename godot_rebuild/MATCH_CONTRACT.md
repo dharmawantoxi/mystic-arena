@@ -16,7 +16,7 @@ Semua waktu adalah **physics tick 60 Hz**, bukan frame render.
 
 1. Reset: wave 0, timer 300, spawn timer kedua tim 0, antrean kosong.
 2. Income diproses sebelum scheduler. Timer wave positif dikurangi satu; pemeriksaan wave baru ada pada cabang `elif`, bukan pada tick timer baru menjadi nol.
-3. Wave baru hanya dimulai bila timer habis, kedua antrean kosong, dan tidak ada minion hidup. Bangunan tidak menghalangi pemeriksaan ini.
+3. Wave baru hanya dimulai bila timer habis, kedua antrean kosong, dan tidak ada minion hidup. Bangunan **dan hero** tidak menghalangi pemeriksaan ini.
 4. Antrean spawn terus dikuras saat timer wave berjalan. Maksimal satu minion per tim setiap 20 tick; blue lalu red; lane atas → tengah → bawah.
 5. Spawn timer tetap bertambah ketika idle. Pasangan pertama muncul **tick 301**, berikutnya 321/341/…/461 untuk wave 1 (9 unit per tim).
 6. Timer setelah mulai wave = 1500. Jika lapangan selalu bersih, wave berikutnya paling cepat tick **1802**, lalu **3303**. Bila unit masih hidup, timer boleh nol tetapi wave tidak melompat.
@@ -64,7 +64,7 @@ Wave memanggil aturan shield nexus sumber: gratis sampai wave 10. Paid shield be
 
 ## Bukti dan batas pengujian
 
-Checkpoint UI `ff5d2af`: [CI Godot 4.7.2 Linux](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36152202295), **1.511 native checks** termasuk suite sebelumnya. Mencakup fixture sumber, kapasitas antrean, seluruh slot, ledger, duplicate/stale/dead transactions, reward, projectile sale cancellation, hasil freeze, replay identik 4.200 tick serta tiga lifecycle UI untuk kedua pemenang, pause/focus, input berskala, HUD bounds dan cleanup.
+Checkpoint Kaizen-1 `0078e79`: [CI Godot 4.7.2 Linux](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36218349274), **4.780 native checks** termasuk suite sebelumnya. Mencakup fixture sumber, kapasitas antrean, seluruh slot, ledger, duplicate/stale/dead transactions, reward, projectile sale cancellation, hasil freeze, replay identik 4.200 tick serta tiga lifecycle UI untuk kedua pemenang, pause/focus, input berskala, HUD bounds dan cleanup.
 
 JSON memuat angka sebagai float. Trace membandingkan nilai scalar numerik secara exact, bukan nested `Array` yang membedakan tipe Variant. Tidak menggunakan toleransi untuk gold/tick/spawn.
 

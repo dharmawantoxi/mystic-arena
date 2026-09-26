@@ -78,6 +78,14 @@ func get_unit(id: int) -> UnitState:
 	return _by_id.get(id) as UnitState
 
 
+func living_minion_count() -> int:
+	var count := 0
+	for unit in units:
+		if unit.alive and not unit.is_hero:
+			count += 1
+	return count
+
+
 func is_running() -> bool:
 	return true
 
@@ -527,6 +535,9 @@ func spawn_hero(definition: HeroDefinition, team: int, pos: Vector2, level: int 
 	hero.position = pos
 	hero.facing = 1.0 if team == BLUE else -1.0
 	hero.attack_facing = hero.facing
+	# Source defaults auto-cast on; prototype keeps the player's Kaizen
+	# manual (QWER) and leaves the red copy on auto-cast like AIPlayer.
+	hero.auto_cast_enabled = team == RED
 	units.append(hero)
 	_by_id[hero.id] = hero
 	return hero
@@ -563,6 +574,86 @@ func upgrade_hero(hero_id: int) -> bool:
 	if hero == null:
 		return false
 	return hero.upgrade()
+
+
+func _can_cast_hero_e(hero_id: int, structures: Array = []) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.e_cooldown > 0:
+		return false
+	return _has_q_target(hero, structures)
+
+
+func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
+	# Port of KaizenSkills.cast_e: Sweep AOE 100px, skill * 1.0, needs a target.
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.e_cooldown > 0:
+		return false
+	if not _has_q_target(hero, structures):
+		return false
+	_deal_hero_aoe(hero, hero.position, 100.0, hero.skill_damage(), structures)
+	hero.e_cooldown = hero.e_cooldown_max
+	hero.active_skill = "e"
+	hero.active_skill_timer = 60
+	return true
+
+
+func _can_cast_hero_r(hero_id: int, structures: Array = []) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.r_cooldown > 0:
+		return false
+	return _has_q_target(hero, structures)
+
+
+func _cast_hero_r(hero_id: int, structures: Array = []) -> bool:
+	# Port of KaizenSkills.cast_r: Tornado AOE 150px, skill * 2.0.
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.r_cooldown > 0:
+		return false
+	if not _has_q_target(hero, structures):
+		return false
+	_deal_hero_aoe(hero, hero.position, 150.0, hero.skill_damage() * 2, structures)
+	hero.ulti_active = true
+	hero.ulti_timer = 90
+	hero.r_cooldown = hero.r_cooldown_max
+	hero.active_skill = "r"
+	hero.active_skill_timer = 100
+	return true
+
+
+func _can_cast_hero_w(hero_id: int) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	return hero.w_cooldown <= 0
+
+
+func cast_hero_w(hero_id: int) -> bool:
+	# Port of KaizenSkills.cast_w: self Wind Wall, no target gate.
+	var hero := get_unit(hero_id) as HeroState
+	if not _can_cast_hero_w(hero_id):
+		return false
+	hero.wind_wall_timer = 180
+	hero.w_cooldown = hero.w_cooldown_max
+	hero.active_skill = "w"
+	hero.active_skill_timer = 90
+	return true
+
+
+func can_cast_hero_q(hero_id: int, structures: Array = []) -> bool:
+	var hero := get_unit(hero_id) as HeroState
+	if not is_running() or hero == null or not hero.alive:
+		return false
+	if hero.skill_timer > 0:
+		return false
+	return _has_q_target(hero, structures)
 
 
 func cast_hero_q(hero_id: int, structures: Array = []) -> bool:

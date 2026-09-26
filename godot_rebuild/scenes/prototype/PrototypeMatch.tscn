@@ -121,6 +121,46 @@ custom_minimum_size = Vector2(225, 42)
 disabled = true
 text = "Upgrade Nexus"
 
+[node name="SkillQButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(150, 42)
+disabled = true
+visible = false
+text = "Skill Q"
+
+[node name="SkillWButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(150, 42)
+disabled = true
+visible = false
+text = "Skill W"
+
+[node name="SkillEButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(150, 42)
+disabled = true
+visible = false
+text = "Skill E"
+
+[node name="SkillRButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(150, 42)
+disabled = true
+visible = false
+text = "Skill R"
+
+[node name="HeroUpgradeButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(170, 42)
+disabled = true
+visible = false
+text = "Upgrade hero"
+
 [node name="Paths" type="HBoxContainer" parent="HUD/BottomBar/Column"]
 unique_name_in_owner = true
 layout_mode = 2

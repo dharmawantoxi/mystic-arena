@@ -1,11 +1,11 @@
 # Status & handoff — Godot Rebuild
 
-Diperbarui: 25 September 2026 (sesi lanjutan nexus). Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
+Diperbarui: 26 September 2026 (Push C ditutup: Kaizen-1 prototipe). Pengguna memakai **Windows 11, Godot 4.7.2 standard** dan meminta implementasi langsung di repo.
 
 ## Aturan pekerjaan
 
 - Gunakan proyek **`godot_rebuild/`**, bukan migrasi lama. Python/Pygame tetap referensi; jangan mengubahnya agar port lolos.
-- Branch sesi baru **`arena/01a0d939-mystic-arena`**, bercabang dari `main` pada merge commit `64e45e9` (PR #278). Jangan memakai branch sesi lama `arena/01a0d776-mystic-arena`.
+- Branch sesi **`arena/01a0db9f-mystic-arena`**, bercabang dari `main` pada merge `8a940fd` (PR #279). Jangan memakai branch sesi lama.
 - [PR #278](https://github.com/dharmawantoxi/mystic-arena/pull/278) **sudah MERGED** ke `main` (`64e45e9`). Catatan historis yang menyebut PR #278 OPEN adalah status sebelum merge.
 - Push checkpoint berkala ke branch sesi baru sebelum sesi habis; tidak ada indikator batas sesi yang pasti. Jangan menunggu batas sesi untuk push.
 - Jangan mengklaim seluruh migrasi selesai karena laboratorium/prototipe ini berjalan.
@@ -23,14 +23,17 @@ Diperbarui: 25 September 2026 (sesi lanjutan nexus). Pengguna memakai **Windows 
 | `ff5d2af` | Mode **Pertandingan awal**, HUD/build/sell/hasil dan lifecycle | [1.511 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36152202295) |
 | `6e115e4` | Inti upgrade Archer 1–6, resource/refund/source volley | [1.879 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153624268) |
 | `7c96c83` | UI upgrade/refund, expected-level command, impact/overkill | [1.905 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36153883271) |
+| `0078e79` | Kaizen-1 prototipe: QWER, dest/follow, hunt/push, retreat, heal, upgrade, respawn | [4.780 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36218349274) |
+| `21dd08c` | Kaizen merah: spawn `(1120, 130)`, loop retreat/push/hunt/respawn, tanpa perintah pemain | [4.789 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36218605585) |
+| `77801fb` | Auto-cast merah: R / E(2+) / W(<40%) / Q tiap 20 tick dalam skill_range | [4.796 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36218756768) |
 
-Commit dokumentasi setelahnya tercatat di `git log`; periksa CI terbaru pada branch untuk hasil HEAD terbaru. Check-run untuk checkpoint UI: **108133593312**, annotation `Native Godot tests`, PASS 1905.
+Commit dokumentasi setelahnya tercatat di `git log`. Native HEAD Kaizen-1: run **36218349274**, PASS 4780.
 
 ## Yang tersedia saat F5
 
 Import `godot_rebuild/project.godot` → F5; tidak perlu membuat scene/script manual.
 
-- **Pertandingan awal**: subset level 1/normal, 1000 G, 9 slot biru, Archer 100 G, upgrade sampai level 6 / refund dinamis; wave otomatis; lawan sementara membeli tiga Archer berbayar; hasil nexus, pause/restart. Bukan AI asli atau seluruh level Python.
+- **Pertandingan awal**: subset level 1/normal, 1000 G, 9 slot biru, Archer 100 G, upgrade sampai level 6 / refund dinamis; wave otomatis; **Kaizen biru** (QWER, klik-kanan, hunt/push/retreat, upgrade, respawn); lawan sementara membeli tiga Archer berbayar; hasil nexus, pause/restart. Bukan AI asli, item, hero merah, atau seluruh level Python.
 - **Tower & nexus**: enam Archer dan dua nexus, projectile/shield, wave manual satu/dua tim, hasil. Laboratorium ini tidak diganti prototipe.
 - **Laboratorium minion**: tiga lane asli, lima tipe minion, combat/regen/death, wave manual, inspeksi.
 - **Uji input**: sandbox penanda hijau untuk regresi input/lifecycle. Bukan hero hasil porting.
@@ -123,9 +126,9 @@ Temuan yang dikunci: chain melewati identitas-target/mati/luar-range sesuai urut
 
 ## Langkah berikutnya
 
-1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal** (termasuk pilih Cannon); perbaiki error sebelum menambah konten.
-2. Cannon selesai di CI (`81765fd`, 3.713 checks). Lihat `CANNON_CONTRACT.md`. Ice selesai di CI (`3e8ad59`, 4.035 checks). Lihat `ICE_CONTRACT.md`. Mage selesai di CI (`f1b80b9`, 4.452 checks). Lihat `MAGE_CONTRACT.md`.
-3. Audit satu hero/skill dan AI sumber secara bertahap. Ganti lawan sementara hanya setelah perilakunya diuji; jangan mengklaim scripted builder sebagai AI penuh.
+1. Uji Windows F5 → **Pertandingan awal** (Kaizen QWER, klik-kanan, retreat/push, upgrade, respawn).
+2. Kaizen-1 prototipe ditutup di `HERO_CONTRACT.md`. Jangan klaim 6 hero / item / AIPlayer.
+3. Berikutnya: hero starter kedua **atau** ganti lawan Archer terjadwal setelah AI sumber diuji. 54 level, Android, audio tetap di luar.
 4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.
 5. Push bertahap pada branch sesi baru, pantau CI dan perbarui handoff ini.
 
