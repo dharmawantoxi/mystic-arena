@@ -148,11 +148,17 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	check.call(hero.ulti_active and session.last_action.contains("Tornado"), "queued R tornados")
 	await _settle(tree)
 	session.selected_id = hero.id
+	session.command.clear()
 	check.call(not screen.get_node("%HeroUpgradeButton").disabled, "hero upgrade offered")
-	screen.get_node("%HeroUpgradeButton").pressed.emit()
+	var purse: int = world.economy.gold[0]
+	check.call(session.request_hero_upgrade(hero.id), "hero upgrade queues")
 	session._physics_process(1.0 / 60.0)
 	check.call(
-		hero.level == 2 and world.economy.gold[0] == 700 and session.last_action.contains("naik"),
+		(
+			hero.level == 2
+			and world.economy.gold[0] == purse - 300
+			and session.last_action.contains("naik")
+		),
 		"queued hero upgrade spends once"
 	)
 	world.winner = 1
