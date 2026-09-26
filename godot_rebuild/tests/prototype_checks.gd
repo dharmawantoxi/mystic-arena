@@ -4,6 +4,7 @@ const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const UnitState = preload("res://scripts/combat/unit_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 
 
@@ -331,7 +332,7 @@ func _hero_melee(check: Callable) -> void:
 	foe.position = hero.position + Vector2(20, 0)
 	# Unkillable dummy: the auto-cast R (140) would otherwise drop the 45 hp
 	# goblin before the melee swing this assertion exists to verify.
-	foe.hp = 100000.0
+	_beef(foe)
 	var hp: float = foe.hp
 	world.step_tick()
 	check.call(foe.hp < hp and hero.attack_timer > 0, "in-range hero autoswings once")
@@ -386,7 +387,7 @@ func _hero_melee(check: Callable) -> void:
 	hold.set_hero_destination(escort.id, origin + Vector2(80, 0))
 	var blocker = hold.spawn_unit(GOBLIN, 1, 1)
 	blocker.position = escort.position + Vector2(20, 0)
-	blocker.hp = 100000.0
+	_beef(blocker)
 	var blocker_hp: float = blocker.hp
 	hold.step_tick()
 	check.call(
@@ -602,7 +603,7 @@ func _hero_auto(check: Callable) -> void:
 	)
 	var hook = parity.spawn_unit(GOBLIN, 1, 1)
 	hook.position = player.position + Vector2(40, 0)
-	hook.hp = 100000.0
+	_beef(hook)
 	parity.step_tick()
 	check.call(
 		player.ulti_active and player.r_cooldown > 0 and player.skill_timer == 0,
@@ -622,8 +623,8 @@ func _hero_auto(check: Callable) -> void:
 	var right = duo.spawn_unit(GOBLIN, 1, 1)
 	left.position = pair.position + Vector2(30, 0)
 	right.position = pair.position + Vector2(0, 30)
-	left.hp = 100000.0
-	right.hp = 100000.0
+	_beef(left)
+	_beef(right)
 	duo.step_tick()
 	check.call(pair.e_cooldown > 0 and not pair.ulti_active, "blue auto-cast E with two foes")
 	var tired := _world()
@@ -633,7 +634,7 @@ func _hero_auto(check: Callable) -> void:
 	saver.w_cooldown = 240
 	var lone = tired.spawn_unit(GOBLIN, 1, 1)
 	lone.position = saver.position + Vector2(40, 0)
-	lone.hp = 100000.0
+	_beef(lone)
 	tired.step_tick()
 	check.call(saver.skill_timer > 0 and saver.q_stack == 1, "blue auto-cast Q last")
 	var muted := _world()
@@ -641,7 +642,7 @@ func _hero_auto(check: Callable) -> void:
 	quiet2.auto_cast_enabled = false
 	var dummy2 = muted.spawn_unit(GOBLIN, 1, 1)
 	dummy2.position = quiet2.position + Vector2(40, 0)
-	dummy2.hp = 100000.0
+	_beef(dummy2)
 	muted.step_tick()
 	check.call(
 		quiet2.r_cooldown == 0 and quiet2.skill_timer == 0, "muted blue auto-cast does not fire"
@@ -673,6 +674,17 @@ func _world() -> Prototype:
 	world.defender_enabled = false
 	world.setup_arena()
 	return world
+
+
+func _beef(unit: UnitState, hp: int = 100000) -> void:
+	# A bare hp bump snaps back: the minion loop clamps unit hp to
+	# definition.max_hp every tick (45 for the goblin). Duplicate the
+	# definition so the shared GOBLIN fixture stays read-only, raise the
+	# cap, then set the hp.
+	var beef = GOBLIN.duplicate()
+	beef.max_hp = hp
+	unit.definition = beef
+	unit.hp = float(hp)
 
 
 func _snapshot(world: Prototype) -> Array:
