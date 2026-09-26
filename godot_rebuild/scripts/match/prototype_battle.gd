@@ -19,6 +19,8 @@ const MINIONS := {
 }
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const HERO_SPAWN := Vector2(220, 540)
+# Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
+const RED_HERO_SPAWN := Vector2(1120, 130)
 const HERO_HUNT_RANGE := 900.0
 const HERO_RETREAT_HP := 0.2
 const HERO_HEAL_RATIO := 0.8
@@ -48,8 +50,9 @@ func setup_arena() -> bool:
 	_arena_initialized = true
 	spawn_structure(NEXUS, BLUE, LaneLayout.BLUE_BASE)
 	spawn_structure(NEXUS, RED, LaneLayout.RED_BASE)
-	# Kaizen-1 only: one free blue hero. Not a catalog purchase.
+	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
 	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
+	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
 	return true
 
 
@@ -255,9 +258,15 @@ func _set_hero_follow(hero_id: int, target_id: int) -> bool:
 
 func _step_hero_act() -> void:
 	# Port of Hero.update states 1–6 plus Game respawn. No auto-cast/items.
-	var hero := blue_hero()
-	if hero == null:
-		return
+	var roster: Array = []
+	for unit in units:
+		if unit.is_hero:
+			roster.append(unit)
+	for entry in roster:
+		_step_one_hero(entry as HeroState)
+
+
+func _step_one_hero(hero: HeroState) -> void:
 	if not hero.alive:
 		_step_hero_respawn(hero)
 	elif hero.stun_timer > 0 or hero.is_dashing:
@@ -285,7 +294,7 @@ func _step_hero_act() -> void:
 				if hunted != null:
 					_move_toward(hero, hunted.position)
 				else:
-					_move_toward(hero, LaneLayout.RED_BASE)
+					_move_toward(hero, _hero_push_point(hero))
 
 
 func _step_hero_respawn(hero: HeroState) -> void:
@@ -309,7 +318,7 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	hero.alive = true
 	hero.hp = hero.max_hp
 	hero.killed_by = -1
-	hero.position = HERO_SPAWN
+	hero.position = _hero_spawn_point(hero)
 	hero.has_destination = false
 	hero.follow_id = -1
 	hero.skill_timer = 0
@@ -338,15 +347,27 @@ func _hero_passive_heal(hero: HeroState) -> void:
 		hero.hp = minf(hero.max_hp, hero.hp + HERO_PASSIVE_HEAL)
 
 
+func _hero_home(hero: HeroState) -> Vector2:
+	return LaneLayout.BLUE_BASE if hero.team == BLUE else LaneLayout.RED_BASE
+
+
+func _hero_push_point(hero: HeroState) -> Vector2:
+	return LaneLayout.RED_BASE if hero.team == BLUE else LaneLayout.BLUE_BASE
+
+
+func _hero_spawn_point(hero: HeroState) -> Vector2:
+	return HERO_SPAWN if hero.team == BLUE else RED_HERO_SPAWN
+
+
 func _hero_near_own_base(hero: HeroState) -> bool:
-	return hero.position.distance_to(LaneLayout.BLUE_BASE) < HERO_BASE_NEAR
+	return hero.position.distance_to(_hero_home(hero)) < HERO_BASE_NEAR
 
 
 func _step_hero_retreat(hero: HeroState) -> void:
 	if _hero_near_own_base(hero):
 		hero.hp = minf(hero.max_hp, hero.hp + HERO_BASE_HEAL)
 	else:
-		_move_toward(hero, LaneLayout.BLUE_BASE)
+		_move_toward(hero, _hero_home(hero))
 	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)
 	if melee != null and hero.attack_timer == 0:
 		hero_basic_attack(hero.id, melee.id)

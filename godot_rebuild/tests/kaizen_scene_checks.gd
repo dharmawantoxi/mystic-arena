@@ -13,6 +13,17 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	world.defender_enabled = false
 	var hero = world.blue_hero()
 	check.call(hero != null and hero.alive and hero.level == 1, "prototype spawns Kaizen")
+	var rival = null
+	for unit in world.units:
+		if unit.is_hero and unit.team == 1:
+			rival = unit
+			break
+	check.call(
+		rival != null and rival.position == world.RED_HERO_SPAWN, "prototype spawns red Kaizen"
+	)
+	session.selected_id = rival.id
+	await _settle(tree)
+	check.call(not screen.get_node("%SkillQButton").visible, "red inspect hides blue skills")
 	session.selected_id = hero.id
 	session.selected_slot_id = -1
 	await _settle(tree)
@@ -176,6 +187,11 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 		world.blue_hero() != null and world.blue_hero().skill_timer == 0,
 		"restart respawns a fresh Kaizen"
 	)
+	var revived := 0
+	for unit in world.units:
+		if unit.is_hero:
+			revived += 1
+	check.call(revived == 2, "restart respawns both Kaizen")
 	app.show_menu()
 	await _settle(tree)
 	check.call(tree.get_node_count() == baseline, "hero lifecycle clean")

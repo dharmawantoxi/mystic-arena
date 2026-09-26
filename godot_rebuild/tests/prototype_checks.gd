@@ -17,6 +17,7 @@ func run(check: Callable) -> void:
 	_hero_wall(check)
 	_hero_respawn(check)
 	_hero_loop(check)
+	_hero_foe(check)
 	_replay(check)
 
 
@@ -36,9 +37,11 @@ func _fixtures(check: Callable) -> void:
 			world.blue_hero() != null
 			and world.blue_hero().settings().id == "kaizen"
 			and world.blue_hero().position == world.HERO_SPAWN
+			and _foe_hero(world) != null
+			and _foe_hero(world).position == world.RED_HERO_SPAWN
 			and world.living_minion_count() == 0
 		),
-		"match starts with Kaizen and no minions"
+		"match starts with a Kaizen pair and no minions"
 	)
 	check.call(not world.setup_arena(), "match setup is idempotent")
 	check.call(
@@ -481,6 +484,60 @@ func _hero_loop(check: Callable) -> void:
 	check.call(not shop._upgrade_blue_hero(pupil.id, 1), "stale hero level rejected")
 	shop.economy.gold[0] = 0
 	check.call(not shop._upgrade_blue_hero(pupil.id, 2), "poor hero upgrade rejected")
+
+
+func _hero_foe(check: Callable) -> void:
+	var world := _world()
+	var stalker: HeroState = _foe_hero(world)
+	check.call(
+		not world.set_hero_destination(stalker.id, stalker.position), "player cannot order red"
+	)
+	var from: Vector2 = stalker.position
+	world.step_tick()
+	check.call(
+		(
+			stalker.position.distance_to(world.LaneLayout.BLUE_BASE)
+			< from.distance_to(world.LaneLayout.BLUE_BASE)
+		),
+		"red Kaizen pushes toward the blue nexus"
+	)
+	var flee := _world()
+	var runner: HeroState = _foe_hero(flee)
+	var flee_from: Vector2 = runner.position
+	runner.hp = runner.max_hp * 0.1
+	flee.step_tick()
+	check.call(
+		(
+			runner.is_retreating
+			and (
+				runner.position.distance_to(flee.LaneLayout.RED_BASE)
+				< flee_from.distance_to(flee.LaneLayout.RED_BASE)
+			)
+		),
+		"low HP red retreats toward own nexus"
+	)
+	var rest := _world()
+	var fallen: HeroState = _foe_hero(rest)
+	fallen.alive = false
+	fallen.hp = 0.0
+	fallen.position = Vector2(400, 400)
+	var waited := 0
+	while waited < 599:
+		rest.step_tick()
+		waited += 1
+	check.call(not fallen.alive and fallen.respawn_timer == 1, "red still dead on tick 599")
+	rest.step_tick()
+	check.call(
+		fallen.alive and fallen.position == rest.RED_HERO_SPAWN,
+		"red respawns at red spawn after 600 ticks"
+	)
+
+
+func _foe_hero(world: Prototype) -> HeroState:
+	for unit in world.units:
+		if unit.is_hero and unit.team == 1:
+			return unit as HeroState
+	return null
 
 
 func _world() -> Prototype:
