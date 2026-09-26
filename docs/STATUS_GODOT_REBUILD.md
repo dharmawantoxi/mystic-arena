@@ -97,10 +97,22 @@ Jalur Cannon 2–6 **bersama** splash 60% + burn DOT, muzzle sumber, dan pilihan
 
 Temuan yang dikunci: burn dps 8 memberi 3/5/4/4 (float exact); `burn_team` selalu ditimpa penerap terbaru; apply tanpa cek tim; kredit selalu ke lawan korban; splash inklusif + bangunan kebal; recoil muzzle tak terjangkau (0); argumen jalur diabaikan setelah level 1. Deviasi: splash lewat mitigasi physical Godot (sumber None) — pass school-None umum ditunda. Lawan tetap Archer; Ice/Mage, hero/boss/AI penuh, 54 level tetap di luar scope.
 
+## Tahap ice: selesai di CI Linux (sesi lanjutan)
+
+Jalur Ice 2–6 **bersama** slow gerak + attack-slow, AOE slow L6, muzzle kristal sumber, pilihan jalur eksplisit, dan tombol UI kontekstual — **lulus 4.035 native checks** Godot 4.7.2 di Linux.
+
+| Commit (branch `arena/01a0d939-mystic-arena`) | Cakupan | Bukti native |
+|---|---|---|
+| `b68e3e9` | Oracle/fixture Ice (path, 5 tier, muzzle kristal 5×8 arah, volley 5×2 sisi, on-hit 3 level, stacking + tick + speed + attack-cd) | [CI oracle](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36206373550) |
+| `d1a2644` | Domain + tes Ice (slow/atk-slow, muzzle f64, `_ice_impact` + AOE L6, 5 tier `.tres`, `ice_checks.gd`) | [4.008 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36206784333) |
+| `3e8ad59` | Tombol Ice + visibilitas kontekstual + scene checks UI/lifecycle | [4.035 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36207205305) |
+
+Temuan yang dikunci: `apply_slow`/`atk_slow` overwrite saat stronger ATAU longer (weaker+longer menimpa amount — quirk sumber); tick decrement lalu nolkan amount; `_eff_speed` f64 exact; attack-cd 45→53/60/75 dan 22→26/29/37; AOE L6 inklusif 80px tanpa damage ke korban AOE, ally/mati diskip; muzzle kristal x=500 face-independen + offset aim 5px dalam double (Vector2 f32 dilarang sebelum penjumlahan akhir). Skema UI: 6 tombol, Cannon/Ice visible ⟺ tower biru L1 dipilih, Nexus disembunyikan saat itu (maksimal 5 tampil).
+
 ## Langkah berikutnya
 
 1. Minta/terima hasil uji Windows melalui F5 → **Pertandingan awal** (termasuk pilih Cannon); perbaiki error sebelum menambah konten.
-2. Cannon selesai di CI (`81765fd`, 3.713 checks). Lihat `CANNON_CONTRACT.md`.
+2. Cannon selesai di CI (`81765fd`, 3.713 checks). Lihat `CANNON_CONTRACT.md`. Ice selesai di CI (`3e8ad59`, 4.035 checks). Lihat `ICE_CONTRACT.md`.
 3. Audit satu hero/skill dan AI sumber secara bertahap. Ganti lawan sementara hanya setelah perilakunya diuji; jangan mengklaim scripted builder sebagai AI penuh.
 4. Lengkapi satu pertandingan kecil, lalu level/boss/konten/UI/audio. Android pilot dan profiling harus dibuktikan pada perangkat, bukan dengan headless Linux.
 5. Push bertahap pada branch sesi baru, pantau CI dan perbarui handoff ini.
