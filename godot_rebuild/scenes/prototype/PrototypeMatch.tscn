@@ -121,6 +121,13 @@ custom_minimum_size = Vector2(225, 42)
 disabled = true
 text = "Cannon Lv.2"
 
+[node name="IceButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
+unique_name_in_owner = true
+layout_mode = 2
+custom_minimum_size = Vector2(225, 42)
+disabled = true
+text = "Ice Lv.2"
+
 [node name="NexusButton" type="Button" parent="HUD/BottomBar/Column/Commands"]
 unique_name_in_owner = true
 layout_mode = 2

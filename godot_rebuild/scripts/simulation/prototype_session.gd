@@ -44,6 +44,8 @@ func _physics_process(_delta: float) -> void:
 			var upgrade_label := "Archer ditingkatkan"
 			if command.get("path") == "cannon":
 				upgrade_label = "Cannon ditingkatkan"
+			elif command.get("path") == "ice":
+				upgrade_label = "Ice ditingkatkan"
 			var action: String = {
 				"build": "Archer dibangun",
 				"sell": "Tower dijual",

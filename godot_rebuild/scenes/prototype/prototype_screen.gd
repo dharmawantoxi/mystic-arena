@@ -27,6 +27,9 @@ func _ready() -> void:
 	%CannonButton.pressed.connect(
 		func() -> void: match_session.request_upgrade(match_session.selected_id, "cannon")
 	)
+	%IceButton.pressed.connect(
+		func() -> void: match_session.request_upgrade(match_session.selected_id, "ice")
+	)
 	%NexusButton.pressed.connect(
 		func() -> void: match_session.request_nexus_upgrade(match_session.selected_id)
 	)
@@ -75,19 +78,29 @@ func _process(_delta: float) -> void:
 	var price := world.upgrade_price(simulation.selected_id)
 	%UpgradeButton.disabled = locked or price <= 0 or world.economy.gold[0] < price
 	var cannon_price := world.upgrade_price(simulation.selected_id, "cannon")
-	var cannon_choice := (
+	var ice_price := world.upgrade_price(simulation.selected_id, "ice")
+	var path_choice := (
 		tower != null
 		and tower.settings().structure_kind == "tower"
 		and tower.team == 0
 		and tower.settings().level == 1
 	)
 	%CannonButton.disabled = (
-		locked or not cannon_choice or cannon_price <= 0 or world.economy.gold[0] < cannon_price
+		locked or not path_choice or cannon_price <= 0 or world.economy.gold[0] < cannon_price
 	)
+	%IceButton.disabled = (
+		locked or not path_choice or ice_price <= 0 or world.economy.gold[0] < ice_price
+	)
+	# Contextual paths: Cannon/Ice appear only for a blue level-1 tower,
+	# and Nexus steps aside while they do. At most five buttons show.
+	%CannonButton.visible = path_choice
+	%IceButton.visible = path_choice
+	%NexusButton.visible = not path_choice
 	var nexus_price := world.nexus_upgrade_price(simulation.selected_id)
 	%NexusButton.disabled = locked or nexus_price <= 0 or world.economy.gold[0] < nexus_price
 	%UpgradeButton.text = "Upgrade Archer"
 	%CannonButton.text = "Cannon Lv.2"
+	%IceButton.text = "Ice Lv.2"
 	%NexusButton.text = "Upgrade Nexus"
 	%SellButton.text = "Jual tower"
 	if tower != null and tower.settings().structure_kind == "tower":
@@ -101,6 +114,10 @@ func _process(_delta: float) -> void:
 			%CannonButton.text = "Cannon Lv.2 · %d G" % cannon_price
 		elif tower.team != 0:
 			%CannonButton.text = "Tower lawan"
+		if tower.team == 0 and tower.settings().level == 1 and ice_price > 0:
+			%IceButton.text = "Ice Lv.2 · %d G" % ice_price
+		elif tower.team != 0:
+			%IceButton.text = "Tower lawan"
 	if tower != null and tower.settings().structure_kind == "nexus":
 		if tower.team == 0:
 			%NexusButton.text = (
@@ -123,7 +140,11 @@ func _process(_delta: float) -> void:
 			]
 		)
 		if tower != null and tower.settings().structure_kind == "tower":
-			var ammo := "peluru" if tower.settings().tower_path == "cannon" else "panah"
+			var ammo := "panah"
+			if tower.settings().tower_path == "cannon":
+				ammo = "peluru"
+			elif tower.settings().tower_path == "ice":
+				ammo = "kristal"
 			%SelectionLabel.text += (
 				" · Shield %.0f · DMG %d · %d %s"
 				% [tower.shield, tower.definition.damage, tower.settings().volley_count, ammo]
