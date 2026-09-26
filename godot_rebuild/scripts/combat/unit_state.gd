@@ -19,3 +19,7 @@ var burn_timer := 0
 var burn_accum := 0.0
 var burn_tick_cd := 0
 var burn_team := -1
+var slow_amount := 0.0
+var slow_timer := 0
+var atk_slow_amount := 0.0
+var atk_slow_timer := 0

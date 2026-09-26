@@ -3,6 +3,7 @@ extends "res://scripts/combat/siege_battle.gd"
 
 const Upgrades = preload("res://scripts/match/archer_upgrades.gd")
 const CannonUpgrades = preload("res://scripts/match/cannon_upgrades.gd")
+const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
 const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
@@ -254,16 +255,18 @@ func upgrade_tower(entity_id: int, expected_level: int, target_path: String = "a
 
 func _upgrade_target(current: int, current_path: String, target_path: String):
 	# Source: level 1 requires an explicit valid path; later levels ignore
-	# the argument and keep their path. Cannon starts at level 2.
+	# the argument and keep their path. Cannon and Ice start at level 2.
 	if current < 1 or current >= 6:
 		return null
 	var path := current_path
 	if current == 1:
-		if target_path not in ["archer", "cannon"]:
+		if target_path not in ["archer", "cannon", "ice"]:
 			return null
 		path = target_path
 	if path == "cannon":
 		return CannonUpgrades.LEVELS.get(current + 1) as StructureDefinition
+	if path == "ice":
+		return IceUpgrades.LEVELS.get(current + 1) as StructureDefinition
 	return Upgrades.LEVELS[current] as StructureDefinition
 
 

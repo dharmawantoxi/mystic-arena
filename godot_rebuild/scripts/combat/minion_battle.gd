@@ -90,6 +90,7 @@ func step_tick() -> void:
 		if not unit.alive:
 			continue
 		unit.cooldown_ticks = maxi(0, unit.cooldown_ticks - 1)
+		_tick_slow(unit)
 		_tick_burn(unit)
 		if not unit.alive:
 			continue
@@ -119,7 +120,7 @@ func apply_hit(attacker_id: int, target_id: int, school: String = "physical") ->
 		attacker.id, attacker.team, target, attacker.definition.damage, school, attacker.position
 	):
 		return false
-	attacker.cooldown_ticks = attacker.definition.attack_cooldown_ticks
+	attacker.cooldown_ticks = _eff_attack_cd(attacker)
 	attacker.facing = -1.0 if target.position.x < attacker.position.x else 1.0
 	return true
 
@@ -177,6 +178,59 @@ func _tick_burn(unit: UnitState) -> void:
 	if unit.burn_timer <= 0:
 		unit.burn_dps = 0.0
 		unit.burn_accum = 0.0
+
+
+func apply_slow(target_id: int, amount: float, duration: int) -> bool:
+	# Port of Minion.apply_slow: the stronger amount wins, but a longer
+	# duration refreshes both fields even when weaker. Structures have no
+	# slow API in the source (Castle.apply_slow is pass).
+	var target := get_unit(target_id)
+	if not is_running() or target == null or target is StructureState:
+		return false
+	if not target.alive or amount <= 0 or duration <= 0:
+		return false
+	if amount > target.slow_amount or target.slow_timer < duration:
+		target.slow_amount = amount
+		target.slow_timer = duration
+	return true
+
+
+func apply_atk_slow(target_id: int, amount: float, duration: int) -> bool:
+	# Port of TowerDebuffMixin.apply_debuff("atk_slow").
+	var target := get_unit(target_id)
+	if not is_running() or target == null or target is StructureState:
+		return false
+	if not target.alive or amount <= 0 or duration <= 0:
+		return false
+	if amount > target.atk_slow_amount or target.atk_slow_timer < duration:
+		target.atk_slow_amount = amount
+		target.atk_slow_timer = duration
+	return true
+
+
+func _tick_slow(unit: UnitState) -> void:
+	if unit.slow_timer > 0:
+		unit.slow_timer -= 1
+		if unit.slow_timer <= 0:
+			unit.slow_amount = 0.0
+	if unit.atk_slow_timer > 0:
+		unit.atk_slow_timer -= 1
+		if unit.atk_slow_timer <= 0:
+			unit.atk_slow_amount = 0.0
+
+
+func _eff_speed(unit: UnitState) -> float:
+	var speed: float = unit.definition.speed_px_per_tick
+	if unit.slow_timer > 0:
+		speed *= 1.0 - unit.slow_amount
+	return speed
+
+
+func _eff_attack_cd(unit: UnitState) -> int:
+	if unit.atk_slow_timer <= 0:
+		return unit.definition.attack_cooldown_ticks
+	var factor := maxf(0.05, 1.0 - unit.atk_slow_amount)
+	return maxi(1, DamageRules.rounded_like_python(unit.definition.attack_cooldown_ticks / factor))
 
 
 func _deliver_hit(
@@ -362,7 +416,7 @@ func _move_toward(unit: UnitState, target: Vector2) -> void:
 		return
 	if not is_zero_approx(offset.x):
 		unit.facing = -1.0 if offset.x < 0 else 1.0
-	unit.position += offset.normalized() * unit.definition.speed_px_per_tick
+	unit.position += offset.normalized() * _eff_speed(unit)
 
 
 func _retire_dead() -> void:
