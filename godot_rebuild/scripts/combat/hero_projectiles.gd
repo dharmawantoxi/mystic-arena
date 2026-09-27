@@ -38,8 +38,8 @@ static func tick(world, hero: HeroState, shots: Array[Dictionary]) -> Array[Dict
 	for shot in shots:
 		if not shot.active or shot.source_id != hero.id:
 			continue
-		var target := world.get_unit(shot.target_id)
-		var target_dead := target == null or not target.alive
+		var target = world.get_unit(shot.target_id)
+		var target_dead: bool = target == null or not target.alive
 		var aim: Vector2 = shot.last_target
 		if not target_dead:
 			aim = target.position

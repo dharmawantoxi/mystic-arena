@@ -28,7 +28,7 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 		"q":
 			hero.focus_fire_timer = 180
 			hero.attack_cd_base = maxi(20, int(hero.attack_cd_base / 1.7))
-			var target := _current_target(world, hero)
+			var target = _current_target(world, hero)
 			if target != null:
 				var direction: Vector2 = target.position - hero.position
 				if direction.length() > 0:
@@ -43,7 +43,7 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			hero.w_cooldown = hero.w_cooldown_max
 			hero.active_skill_timer = 180
 		"e":
-			var target := _shackle_target(world, hero, structures)
+			var target = _shackle_target(world, hero, structures)
 			if target == null:
 				return false
 			hero.shackle_timer = 150
@@ -159,7 +159,7 @@ static func _line_damage(world, hero: HeroState, direction: Vector2, structures:
 
 
 static func _release_powershot(world, hero: HeroState, structures: Array) -> void:
-	var target := _current_target(world, hero)
+	var target = _current_target(world, hero)
 	var direction := Vector2(hero.facing, 0.0)
 	if target != null and target.position != hero.position:
 		direction = (target.position - hero.position).normalized()
