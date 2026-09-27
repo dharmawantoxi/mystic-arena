@@ -1,0 +1,2577 @@
+{
+  "attempts": [
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 0,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 1,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 3,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false,
+        false,
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 0,
+      "success": false,
+      "after": 100,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 1,
+      "success": true,
+      "after": 0,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 3,
+      "success": true,
+      "after": 0,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 0,
+      "success": false,
+      "after": 149,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 1,
+      "success": true,
+      "after": 49,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 3,
+      "success": true,
+      "after": 49,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 0,
+      "success": false,
+      "after": 150,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 1,
+      "success": true,
+      "after": 50,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 3,
+      "success": true,
+      "after": 50,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 0,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 1,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 3,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false,
+        false,
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 0,
+      "success": false,
+      "after": 500,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 1,
+      "success": true,
+      "after": 400,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 3,
+      "success": true,
+      "after": 400,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 0,
+      "success": false,
+      "after": 549,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 1,
+      "success": true,
+      "after": 449,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 3,
+      "success": true,
+      "after": 449,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 0,
+      "success": false,
+      "after": 550,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 1,
+      "success": true,
+      "after": 450,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "archer",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 3,
+      "success": true,
+      "after": 450,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "archer",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 0,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 1,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 3,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false,
+        false,
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 0,
+      "success": false,
+      "after": 100,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 1,
+      "success": true,
+      "after": 0,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 3,
+      "success": true,
+      "after": 0,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 0,
+      "success": false,
+      "after": 149,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 1,
+      "success": true,
+      "after": 49,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 3,
+      "success": true,
+      "after": 49,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 0,
+      "success": false,
+      "after": 150,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 1,
+      "success": true,
+      "after": 50,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 3,
+      "success": true,
+      "after": 50,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 0,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 1,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 3,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false,
+        false,
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 0,
+      "success": false,
+      "after": 500,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 1,
+      "success": true,
+      "after": 400,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 3,
+      "success": true,
+      "after": 400,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 0,
+      "success": false,
+      "after": 549,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 1,
+      "success": true,
+      "after": 449,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 3,
+      "success": true,
+      "after": 449,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 0,
+      "success": false,
+      "after": 550,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 1,
+      "success": true,
+      "after": 450,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "cannon",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 3,
+      "success": true,
+      "after": 450,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "cannon",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 0,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 1,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 3,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false,
+        false,
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 0,
+      "success": false,
+      "after": 100,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 1,
+      "success": true,
+      "after": 0,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 3,
+      "success": true,
+      "after": 0,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 0,
+      "success": false,
+      "after": 149,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 1,
+      "success": true,
+      "after": 49,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 3,
+      "success": true,
+      "after": 49,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 0,
+      "success": false,
+      "after": 150,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 1,
+      "success": true,
+      "after": 50,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 3,
+      "success": true,
+      "after": 50,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 0,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 1,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 3,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false,
+        false,
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 0,
+      "success": false,
+      "after": 500,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 1,
+      "success": true,
+      "after": 400,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 3,
+      "success": true,
+      "after": 400,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 0,
+      "success": false,
+      "after": 549,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 1,
+      "success": true,
+      "after": 449,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 3,
+      "success": true,
+      "after": 449,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 0,
+      "success": false,
+      "after": 550,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 1,
+      "success": true,
+      "after": 450,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "ice",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 3,
+      "success": true,
+      "after": 450,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "ice",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 0,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 1,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 99,
+      "empty": 3,
+      "success": false,
+      "after": 99,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false,
+        false,
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 0,
+      "success": false,
+      "after": 100,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 1,
+      "success": true,
+      "after": 0,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 100,
+      "empty": 3,
+      "success": true,
+      "after": 0,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 0,
+      "success": false,
+      "after": 149,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 1,
+      "success": true,
+      "after": 49,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 149,
+      "empty": 3,
+      "success": true,
+      "after": 49,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 0,
+      "success": false,
+      "after": 150,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 1,
+      "success": true,
+      "after": 50,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 0,
+      "gold": 150,
+      "empty": 3,
+      "success": true,
+      "after": 50,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 0,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 1,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 499,
+      "empty": 3,
+      "success": false,
+      "after": 499,
+      "count": 0,
+      "picked": [],
+      "taken": [
+        false,
+        false,
+        false
+      ],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 0,
+      "success": false,
+      "after": 500,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 1,
+      "success": true,
+      "after": 400,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 500,
+      "empty": 3,
+      "success": true,
+      "after": 400,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 0,
+      "success": false,
+      "after": 549,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 1,
+      "success": true,
+      "after": 449,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 549,
+      "empty": 3,
+      "success": true,
+      "after": 449,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 0,
+      "success": false,
+      "after": 550,
+      "count": 0,
+      "picked": [],
+      "taken": [],
+      "identity": null,
+      "level": null
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 1,
+      "success": true,
+      "after": 450,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          1
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    },
+    {
+      "path": "mage",
+      "reserve": 400,
+      "gold": 550,
+      "empty": 3,
+      "success": true,
+      "after": 450,
+      "count": 1,
+      "picked": [
+        [
+          "slot",
+          3
+        ],
+        [
+          "type",
+          [
+            "archer",
+            "cannon",
+            "ice",
+            "mage"
+          ],
+          [
+            0.35,
+            0.25,
+            0.2,
+            0.2
+          ]
+        ]
+      ],
+      "taken": [
+        false,
+        false,
+        true
+      ],
+      "identity": "mage",
+      "level": 1
+    }
+  ],
+  "levels": [
+    {
+      "before": {
+        "path": "archer",
+        "level": 1,
+        "max_hp": 2000,
+        "hp": 2000,
+        "shield_max": 800,
+        "shield": 800,
+        "damage": 20,
+        "range": 180,
+        "cd": 35,
+        "armor": 3,
+        "splash": 0,
+        "slow": 0,
+        "chain": 1,
+        "shot": {
+          "kind": "normal",
+          "damage": 20,
+          "special": {},
+          "count": 1
+        }
+      },
+      "price": 175,
+      "upgraded": true,
+      "after": {
+        "path": "cannon",
+        "level": 2,
+        "max_hp": 3000,
+        "hp": 3000,
+        "shield": 1200,
+        "damage": 42
+      }
+    },
+    {
+      "before": {
+        "path": "cannon",
+        "level": 1,
+        "max_hp": 2000,
+        "hp": 2000,
+        "shield_max": 800,
+        "shield": 800,
+        "damage": 20,
+        "range": 180,
+        "cd": 35,
+        "armor": 3,
+        "splash": 0,
+        "slow": 0,
+        "chain": 1,
+        "shot": {
+          "kind": "cannon",
+          "damage": 20,
+          "special": {
+            "splash": 0
+          },
+          "count": 1
+        }
+      },
+      "price": 175,
+      "upgraded": true,
+      "after": {
+        "path": "cannon",
+        "level": 2,
+        "max_hp": 3000,
+        "hp": 3000,
+        "shield": 1200,
+        "damage": 42
+      }
+    },
+    {
+      "before": {
+        "path": "ice",
+        "level": 1,
+        "max_hp": 2000,
+        "hp": 2000,
+        "shield_max": 800,
+        "shield": 800,
+        "damage": 20,
+        "range": 180,
+        "cd": 35,
+        "armor": 3,
+        "splash": 0,
+        "slow": 0,
+        "chain": 1,
+        "shot": {
+          "kind": "ice",
+          "damage": 20,
+          "special": {
+            "slow": 0,
+            "slow_duration": 0
+          },
+          "count": 1
+        }
+      },
+      "price": 175,
+      "upgraded": true,
+      "after": {
+        "path": "cannon",
+        "level": 2,
+        "max_hp": 3000,
+        "hp": 3000,
+        "shield": 1200,
+        "damage": 42
+      }
+    },
+    {
+      "before": {
+        "path": "mage",
+        "level": 1,
+        "max_hp": 2000,
+        "hp": 2000,
+        "shield_max": 800,
+        "shield": 800,
+        "damage": 20,
+        "range": 180,
+        "cd": 35,
+        "armor": 3,
+        "splash": 0,
+        "slow": 0,
+        "chain": 1,
+        "shot": {
+          "kind": "mage",
+          "damage": 20,
+          "special": {},
+          "count": 1
+        }
+      },
+      "price": 175,
+      "upgraded": true,
+      "after": {
+        "path": "cannon",
+        "level": 2,
+        "max_hp": 3000,
+        "hp": 3000,
+        "shield": 1200,
+        "damage": 42
+      }
+    }
+  ],
+  "sampling": [
+    {
+      "draw": 0.0,
+      "chosen": "archer"
+    },
+    {
+      "draw": 0.349999999,
+      "chosen": "archer"
+    },
+    {
+      "draw": 0.35,
+      "chosen": "cannon"
+    },
+    {
+      "draw": 0.599999999,
+      "chosen": "cannon"
+    },
+    {
+      "draw": 0.6,
+      "chosen": "ice"
+    },
+    {
+      "draw": 0.799999999,
+      "chosen": "ice"
+    },
+    {
+      "draw": 0.8,
+      "chosen": "mage"
+    },
+    {
+      "draw": 0.999999999,
+      "chosen": "mage"
+    }
+  ]
+}

@@ -144,25 +144,43 @@ func slot_at(point: Vector2) -> int:
 
 
 func build_tower(team: int, slot_id: int) -> bool:
+	# Existing player command and temporary defender remain plain Archer, no draft reserve.
+	return _build_tower_for(team, slot_id, "archer")
+
+
+func _build_tower_for(team: int, slot_id: int, path: String, reserve: int = 0) -> bool:
 	transaction_error = ""
 	var slot := get_slot(slot_id)
 	if not is_running() or team not in [BLUE, RED]:
 		transaction_error = "finished"
-	elif slot == null or slot.team != team:
+	elif slot == null or slot.id != slot_id or slot.team != team:
+		transaction_error = "owner"
+	elif slot.lane not in [0, 1, 2] or not slot.position.is_finite():
 		transaction_error = "owner"
 	elif slot.structure_id != -1:
 		transaction_error = "occupied"
-	elif economy.gold[team] < Economy.BUILD_COST:
+	elif path not in ["archer", "cannon", "ice", "mage"]:
+		transaction_error = "path"
+	elif economy.gold[team] < Economy.BUILD_COST + maxi(0, reserve):
 		transaction_error = "gold"
-	elif structures.size() >= structure_limit():
+	elif structures.size() >= structure_limit() or _next_id <= 0 or _by_id.has(_next_id):
 		transaction_error = "capacity"
 	if not transaction_error.is_empty():
 		return false
-	var tower := spawn_structure(ARCHER, team, slot.position, slot.lane)
+	# Python constructs an Archer Lv1, then changes tower_type and reapplies
+	# stats. Missing non-Archer Lv1 stats fall back to Archer Lv1, but path
+	# identity (and thus projectile kind/muzzle and later upgrade) stays distinct.
+	var definition: StructureDefinition = ARCHER
+	if path != "archer":
+		definition = ARCHER.duplicate() as StructureDefinition
+		definition.id = path + "_level_1"
+		definition.display_name = path.capitalize() + " Lv.1"
+		definition.tower_path = path
+	var tower := spawn_structure(definition, team, slot.position, slot.lane)
 	if tower == null:
 		transaction_error = "capacity"
 		return false
-	# No callbacks/await occur between validation and debit. Never put a side effect in assert().
+	# No callbacks/await between validation and debit. Never put side effects in assert().
 	economy.spend(team, Economy.BUILD_COST)
 	slot.structure_id = tower.id
 	_record({"kind": "build", "team": team, "slot_id": slot.id, "target_id": tower.id})

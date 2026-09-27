@@ -95,6 +95,19 @@ check("python godot_rebuild/tests/ai_upgrade_source_oracle.py" in workflow, "CI 
 ai_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
 check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters must read live reserve")
 
+# CI already runs validate_project.py: execute the read-only build oracle here so
+# the new fixture is enforced without editing the workflow outside godot_rebuild/.
+from ai_build_source_oracle import source_fixture as ai_build_source_fixture
+check("AIBuildChecks.new().run(_check)" in ai_tests, "AI build domain suite must run")
+check((ROOT / "tests/fixtures/ai_build_source.json").is_file(), "AI build requires source fixture")
+if (ROOT / "tests/fixtures/ai_build_source.json").is_file():
+    check(ai_build_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/ai_build_source.json").read_text(encoding="utf-8")),
+        "AI build source oracle drift")
+ai_build = (ROOT / "scripts/match/ai_build.gd").read_text(encoding="utf-8")
+check("draft.reserve()" in ai_build and "_build_tower_for" in ai_build,
+      "AI build must use live draft reserve and real match transaction")
+
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")
 check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields require source fixture")
