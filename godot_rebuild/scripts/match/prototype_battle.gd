@@ -835,3 +835,34 @@ func _purchase_shield_for(team: int, entity_id: int, castle: bool, reserve: int)
 	economy.spend(team, cost)
 	_record({"kind": "castle_shield" if castle else "regen_shield", "target_id": entity_id})
 	return true
+
+
+func _buy_item_for(team: int, hero_id: int, item_id: String, reserve: int = 0) -> bool:
+	# Port of the AIPlayer._try_buy_item transaction half: eligibility, equip
+	# and ledger debit stay atomic, price comes from the item catalog metadata.
+	transaction_error = ""
+	var hero := get_unit(hero_id) as HeroState
+	var cost := 0
+	if hero != null:
+		cost = int(hero.items.item(item_id).get("cost", 0))
+	if not is_running():
+		transaction_error = "finished"
+	elif team not in [BLUE, RED] or hero == null or hero.team != team:
+		transaction_error = "owner"
+	elif not hero.alive:
+		transaction_error = "owner"
+	elif item_id == "" or cost <= 0:
+		transaction_error = "catalog"
+	elif hero.items.used_slots() >= hero.items.max_slots():
+		transaction_error = "slots"
+	elif economy.gold[team] < cost + maxi(0, reserve):
+		transaction_error = "gold"
+	if not transaction_error.is_empty():
+		return false
+	# The melee_only/magic_only gate is the only way the equip can still fail.
+	if not hero.items.add(item_id):
+		transaction_error = "gate"
+		return false
+	economy.spend(team, cost)
+	_record({"kind": "hero_item", "target_id": hero.id, "item": item_id, "cost": cost})
+	return true

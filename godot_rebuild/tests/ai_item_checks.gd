@@ -5,6 +5,9 @@ extends RefCounted
 const World = preload("res://scripts/match/prototype_battle.gd")
 const HeroItems = preload("res://scripts/match/hero_items.gd")
 const Inventory = preload("res://scripts/match/hero_item_inventory.gd")
+const AIItems = preload("res://scripts/match/ai_items.gd")
+const Draft = preload("res://scripts/match/ai_draft.gd")
+const Economy = preload("res://scripts/match/match_economy.gd")
 const METADATA := "res://data/ai/item_catalog.json"
 const FIXTURE := "res://tests/fixtures/ai_items_source.json"
 # Source counts read from the executed ITEM_CATALOG (oracle asserts them too).
@@ -12,6 +15,24 @@ const ITEM_COUNT := 33
 const MELEE_ONLY_COUNT := 1
 const MAGIC_ONLY_COUNT := 8
 const DROPS_ON_DEATH_COUNT := 1
+# Fixture hero specs are (role, attack range) pairs of the starter kits.
+const ROLE_HEROES := {
+	"Assassin|70": "kaizen",
+	"Bruiser|70": "thorne",
+	"Fighter|70": "grimjaw",
+	"Marksman|130": "sylara",
+	"Mage|130": "vex",
+	"Mage/Trickster|130": "zephyr",
+}
+# Six affordable non-magic items: parks the free red Kaizen out of the pool.
+const PARK_ITEMS := [
+	"cleave_axe",
+	"dead_edge",
+	"basilisk_breath",
+	"gale_pike",
+	"frostbound_eye",
+	"sundering_cudgel",
+]
 
 
 func run(check: Callable) -> void:
@@ -22,6 +43,7 @@ func run(check: Callable) -> void:
 	_test_pools(fixture.pools, check)
 	_test_inventory(fixture.inventory, check)
 	_test_hero_inventory(check)
+	_test_purchases(fixture.purchases, check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -232,3 +254,126 @@ func _test_hero_inventory(check: Callable) -> void:
 	check.call(mage.items.add("holy_rapier"), "Magic hero equips Holy Rapier")
 	check.call(mage.items.clear_on_death(), "Holy Rapier is destroyed on death")
 	check.call(mage.items.used_slots() == 0, "Holy Rapier slot is freed on death")
+
+
+func _world() -> World:
+	var world := World.new()
+	world.defender_enabled = false
+	world.setup_arena()
+	return world
+
+
+func _fund(world: World, gold: int) -> void:
+	world.economy = Economy.new()
+	world.economy.gold[1] = gold
+	world.economy.opening[1] = gold
+
+
+func _draft(reserved: int) -> Draft:
+	var draft := Draft.new()
+	draft.purchase_target = "kaizen" if reserved > 0 else ""
+	draft.purchase_target_cost = reserved
+	return draft
+
+
+func _nullable(value: Variant) -> String:
+	return "" if value == null else String(value)
+
+
+func _buy_heroes(world: World, specs: Array) -> Array[int]:
+	# The free red Kaizen of setup_arena is not part of the source roster: fill
+	# its six slots so the source candidate filter (used < MAX) drops it.
+	for unit in world.units:
+		if unit.is_hero and unit.team == 1:
+			var parked := unit as World.HeroState
+			for item_id in PARK_ITEMS:
+				assert(parked.items.add(String(item_id)))
+	var ids: Array[int] = []
+	for index in range(specs.size()):
+		var spec: Dictionary = specs[index]
+		var key := "%s|%d" % [String(spec.role), int(spec.range)]
+		var hero_type: String = ROLE_HEROES[key]
+		var definition: Variant = World.PLAYABLE_AI_HEROES[hero_type]
+		var hero := world.spawn_hero(definition, 1, Vector2(1000 + index * 40, 200))
+		assert(hero != null)
+		assert(hero.settings().role == String(spec.role), "fixture role must match the kit")
+		assert(int(hero.attack_range) == int(spec.range), "fixture range must match the kit")
+		for previous in range(1, int(spec.level)):
+			world._upgrade_hero_for(1, hero.id, previous)
+		hero.kills = int(spec.kills)
+		if not bool(spec.alive):
+			hero.alive = false
+		for item_id in spec.owned:
+			assert(hero.items.add(String(item_id)), "fixture pre-owned item refused")
+		ids.append(hero.id)
+	return ids
+
+
+func _used(world: World, ids: Array[int]) -> Array:
+	var used: Array = []
+	for entity_id in ids:
+		var hero := world.get_unit(entity_id) as World.HeroState
+		used.append(hero.items.used_slots())
+	return used
+
+
+func _test_purchases(rows: Array, check: Callable) -> void:
+	for row in rows:
+		var world := _world()
+		_fund(world, 1000000)
+		var ids := _buy_heroes(world, row.heroes)
+		_fund(world, int(row.gold))
+		var draft := _draft(int(row.reserve))
+		var buyer := AIItems.new()
+		var used := _used(world, ids)
+		var calls: Array = []
+		var bought := 0
+		while calls.size() <= ids.size() * 7:
+			var success := buyer.try_buy_priority(world, draft)
+			var entry := {"success": success, "gold": world.economy.gold[1], "tag": -1, "item": ""}
+			if success:
+				bought += 1
+				for index in range(ids.size()):
+					var hero := world.get_unit(ids[index]) as World.HeroState
+					if hero.items.used_slots() > int(used[index]):
+						used[index] = hero.items.used_slots()
+						entry["tag"] = index
+						entry["item"] = hero.items.owned()[-1]
+			calls.append(entry)
+			if not success:
+				break
+		var expected: Array = row.calls
+		check.call(
+			calls.size() == expected.size(),
+			"AI item purchase call count must match source for gold %d" % int(row.gold)
+		)
+		for index in range(mini(calls.size(), expected.size())):
+			var want: Dictionary = expected[index]
+			var got: Dictionary = calls[index]
+			check.call(
+				bool(got.success) == bool(want.success), "AI item purchase success at " + str(index)
+			)
+			check.call(
+				int(got.tag) == int(want.tag), "AI item purchase candidate order at " + str(index)
+			)
+			check.call(
+				_nullable(got.item) == _nullable(want.item),
+				"AI item purchase choice at " + str(index)
+			)
+			check.call(int(got.gold) == int(want.gold), "AI item purchase balance at " + str(index))
+		check.call(world.economy.gold[1] == int(row.gold) - int(row.spent), "AI item exact spend")
+		check.call(world.economy.is_balanced(), "AI item ledger invariant")
+		var events := 0
+		for event in world.recent_events:
+			if String(event.kind) == "hero_item":
+				events += 1
+		check.call(events == bought, "AI item purchase records one ledger event")
+		var slots: Array = []
+		for entity_id in ids:
+			var hero := world.get_unit(entity_id) as World.HeroState
+			slots.append(hero.items.slots.duplicate())
+		var want_slots: Array = []
+		for value in row.slots:
+			want_slots.append(_slot_values(value))
+		check.call(slots == want_slots, "AI item final slots must match source")
+		check.call(draft.reserve() == int(row.reserve), "AI item purchase keeps the draft reserve")

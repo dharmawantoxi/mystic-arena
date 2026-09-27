@@ -283,6 +283,115 @@ def inventory(env):
     return rows
 
 
+# (heroes, gold, reserve). Hero roles/ranges are the six playable starter
+# definitions so the native suite can rebuild the exact same candidates:
+# kaizen Assassin/70, thorne Bruiser/70, grimjaw Fighter/70, sylara
+# Marksman/130, vex Mage/130, zephyr Mage/Trickster/130.
+BUY_CASES = [
+    ({"heroes": [("Assassin", 70, 0, 1, True, []), ("Bruiser", 70, 0, 1, True, []),
+                 ("Marksman", 130, 0, 1, True, [])], "gold": 13500, "reserve": 0}),
+    ({"heroes": [("Assassin", 70, 1, 2, True, []), ("Bruiser", 70, 5, 2, True, []),
+                 ("Marksman", 130, 3, 2, True, [])], "gold": 13500, "reserve": 0}),
+    ({"heroes": [("Assassin", 70, 4, 1, True, []), ("Bruiser", 70, 4, 3, True, []),
+                 ("Fighter", 70, 4, 2, True, []), ("Mage", 130, 4, 4, True, [])],
+      "gold": 13500, "reserve": 0}),
+    # Zephyr suggests Astral Codex (6000): unaffordable, so the next candidate
+    # with a 4500 suggestion pays instead.
+    ({"heroes": [("Mage/Trickster", 130, 9, 5, True, []), ("Assassin", 70, 0, 1, True, [])],
+      "gold": 5000, "reserve": 0}),
+    ({"heroes": [("Bruiser", 70, 9, 5, False, []), ("Assassin", 70, 0, 1, True, [])],
+      "gold": 9000, "reserve": 0}),
+    ({"heroes": [("Assassin", 70, 9, 5, True,
+                  ["cleave_axe", "dead_edge", "basilisk_breath", "gale_pike",
+                   "frostbound_eye", "sundering_cudgel"]),
+                 ("Bruiser", 70, 0, 1, True, [])], "gold": 9000, "reserve": 0}),
+    # 4800 pays a 4500 item only when nothing is reserved for the draft.
+    ({"heroes": [("Assassin", 70, 0, 1, True, ["cleave_axe", "dead_edge"]),
+                 ("Bruiser", 70, 0, 1, True, [])], "gold": 4800, "reserve": 400}),
+    ({"heroes": [("Assassin", 70, 0, 1, True, ["cleave_axe", "dead_edge"]),
+                 ("Bruiser", 70, 0, 1, True, [])], "gold": 4800, "reserve": 0}),
+    ({"heroes": [("Mage", 130, 2, 1, True, []), ("Mage/Trickster", 130, 2, 1, True, []),
+                 ("Fighter", 70, 1, 6, True, [])], "gold": 10500, "reserve": 0}),
+]
+
+
+@contextlib.contextmanager
+def _hero_items_module(env):
+    """`_try_buy_item` imports hero_items, which needs pygame: serve the exec'd
+    source objects through a stub module instead."""
+    stub = types.ModuleType("hero_items")
+    stub.ITEM_CATALOG = env["ITEM_CATALOG"]
+    stub.MAX_ITEM_SLOTS = env["MAX_ITEM_SLOTS"]
+    stub.suggest_item_for_hero = env["suggest_item_for_hero"]
+    # Superset of the kaizen oracle stub, which only provides a fake inventory.
+    stub.HeroItemInventory = inventory_type(env)
+    saved = sys.modules.get("hero_items")
+    sys.modules["hero_items"] = stub
+    try:
+        yield stub
+    finally:
+        if saved is None:
+            sys.modules.pop("hero_items", None)
+        else:
+            sys.modules["hero_items"] = saved
+
+
+def purchases(env):
+    """Run the real AIPlayer._try_buy_item until it refuses to buy."""
+    from ai_upgrade_source_oracle import compile_subset
+    from kaizen_source_oracle import build_hero_env
+
+    # build_hero_env installs its own hero_items stub, so run it first and let
+    # the context manager replace that stub with the exec'd source objects.
+    ai_env = build_hero_env()
+    rows = []
+    with _core_module(), _hero_items_module(env):
+        tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
+        ai_type = compile_subset(tree, "AIPlayer",
+                                 ("__init__", "_ai_reserve", "_try_buy_item"), ai_env)
+        inv_type = inventory_type(env)
+        for case in BUY_CASES:
+            heroes = []
+            for tag, spec in enumerate(case["heroes"]):
+                role, attack_range, kills, level, alive, owned = spec
+                hero = SimpleNamespace(role=role, range=attack_range, kills=kills,
+                                       level=level, alive=alive, base_hp=600,
+                                       hp=600, max_hp=600, _tag=tag)
+                hero.apply_heal_amp = lambda amount, duration: None
+                hero.items = inv_type(hero)
+                for item_id in owned:
+                    assert hero.items.add(item_id), f"pre-owned {item_id} refused"
+                heroes.append(hero)
+            player = ai_type()
+            player.gold = case["gold"]
+            player.heroes = heroes
+            player._hero_purchase_target = "kaizen" if case["reserve"] else None
+            player._hero_purchase_target_cost = case["reserve"]
+            start = player.gold
+            calls = []
+            for _ in range(len(heroes) * 7):
+                before = [hero.items.used_slots() for hero in heroes]
+                success = player._try_buy_item()
+                entry = {"success": success, "gold": player.gold, "tag": -1, "item": None}
+                if success:
+                    for hero in heroes:
+                        if hero.items.used_slots() > before[hero._tag]:
+                            entry["tag"] = hero._tag
+                            entry["item"] = [sid for sid in hero.items.slots
+                                             if sid is not None][-1]
+                calls.append(entry)
+                if not success:
+                    break
+            rows.append({
+                "heroes": [{"role": s[0], "range": s[1], "kills": s[2], "level": s[3],
+                            "alive": s[4], "owned": list(s[5])} for s in case["heroes"]],
+                "gold": case["gold"], "reserve": case["reserve"],
+                "calls": calls, "spent": start - player.gold,
+                "slots": [list(hero.items.slots) for hero in heroes],
+            })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -292,6 +401,7 @@ def source_fixture():
         "suggestions": suggestions(env),
         "pools": pools(env),
         "inventory": inventory(env),
+        "purchases": purchases(env),
     }))
 
 

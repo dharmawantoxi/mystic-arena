@@ -273,10 +273,19 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
    duplikat item, slot penuh, `remove` -1/6, range 0 lolos gate melee) supaya
    selisihnya terlihat; `ai_item_checks.gd` menegaskan HP hero tetap dan bahwa
    sumber menaikkan max HP.
-4. **Adapter AI** `ai_items.gd::try_buy`: kandidat = hero red **hidup** dengan
+4. [x] **Adapter AI** `ai_items.gd::try_buy`: kandidat = hero red **hidup** dengan
    slot kosong, urut `(kills, level)` descending (Python `sort` stabil,
    tuple key), `gold >= cost + reserve`, debit lewat ledger match, tanpa
    counter khusus di sumber.
+   `candidates()` memecah tie dengan indeks roster (sort_custom Godot tidak
+   stabil); `try_buy_priority()` melanjutkan kandidat berikutnya saat gold
+   kurang, persis seperti sumber. Debit lewat
+   `prototype_battle._buy_item_for` (eligibilitas → equip → `economy.spend` +
+   event `hero_item`, atomik, harga dari metadata katalog). Oracle menjalankan
+   `AIPlayer._try_buy_item` nyata (stub modul `hero_items` + inventori sumber)
+   untuk 9 kasus: tie kills/level, hero mati, slot penuh, skip owned, item 6000
+   yang tak terbeli lalu kandidat lebih murah, dan reserve 400 yang memblokir
+   belanja 4500. Adapter **tidak** menambah counter apa pun.
 5. Stat effects, pasif/aura/aktif, Forge UI dan `update_auras` adalah fase
    terpisah yang jauh lebih besar; jangan digabung ke commit adapter.
 
@@ -300,9 +309,10 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-  Lapisan 1-3 selesai (metadata katalog 33 item, `suggest_item_for_hero`/
-  `is_magic_hero`, slot `HeroItemInventory` tanpa stat effects); lapisan 4-5
-  belum (lihat "Rencana port item AI").
+  Lapisan 1-4 selesai (metadata katalog 33 item, `suggest_item_for_hero`/
+  `is_magic_hero`, slot `HeroItemInventory` tanpa stat effects, adapter
+  `ai_items.gd::try_buy` + transaksi ledger); lapisan 5 (stat effects, pasif/
+  aura/aktif, Forge UI, `update_auras`) belum dan tetap fase terpisah.
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.

@@ -146,6 +146,17 @@ check(len(source_pools[("Mage", 130)]) == len(gd_pools["MAGIC_POOL"]) + 1,
       "Magic pool must match the source mage purchase order")
 check(len(source_pools[("Ranger", 130)]) == len(gd_pools["FALLBACK_POOL"]) + 1,
       "Fallback pool must match the source fallback purchase order")
+ai_items = (ROOT / "scripts/match/ai_items.gd").read_text(encoding="utf-8")
+check("draft.reserve()" in ai_items and "_buy_item_for" in ai_items,
+      "AI item adapter must use the live draft reserve and the real transaction")
+check("total_items" not in ai_items,
+      "Source _try_buy_item keeps no counter; the adapter must not add one")
+check("hero.alive" in ai_items and "used_slots()" in ai_items,
+      "AI item candidates must be alive heroes with a free slot")
+check("_buy_item_for" in (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8"),
+      "AI item purchase must debit through the match ledger")
+check(len(ai_items_fixture["purchases"]) == 9,
+      "Update the AI item suite when the purchase cases change")
 
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.
