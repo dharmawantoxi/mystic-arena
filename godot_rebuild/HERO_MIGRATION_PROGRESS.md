@@ -44,3 +44,20 @@ Oracle menguji seluruh QWER, target tie/stale, radius, teleport overshoot,
 DOT/clone retarget/dead target, heal, rage reset saat upgrade, execute <30%,
 flag defense yang tidak mengurangi damage, respawn dan harga sumber. Static
 2.216 checks + seluruh oracle lama/new dan parser/lint/format lulus lokal.
+
+### Batch 2 lulus
+
+Commit `3efc68e`, [CI 36296265931](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36296265931):
+**95.314 native checks**, **2.234 static checks**. Keempat boss level 1 selesai;
+**10/222 kit, sisa 212**. Tambahan interaksi nyata source HP setter anti-heal
+(cap dahulu baru potong gain), serta burn sebelum expiry Shadow Realm.
+
+## Batch 3 — 150 boss yang benar-benar berbagi jalur sumber (belum selesai)
+
+Audit registry sumber: 66 boss mempunyai recipe khusus; 150 lainnya memang
+menjalankan `BossHeroSkills._fallback_cast` asli. Port berikutnya akan memakai
+allowlist eksplisit yang dibuktikan dari registry source, bukan fallback untuk
+semua boss native. Setiap ID harus punya oracle QWER/attack/cooldown/lifecycle,
+level dan harga serta tes native sebelum dianggap playable. 62 boss dengan
+recipe khusus yang belum diport tetap ditolak. Hitungan selesai tetap 10 sampai
+batch ini lulus CI.
