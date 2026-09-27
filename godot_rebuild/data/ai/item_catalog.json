@@ -1,0 +1,297 @@
+{
+  "max_slots": 6,
+  "flat_cost": 4500,
+  "categories": {
+    "CATEGORY_AGILITY": "agility",
+    "CATEGORY_ARCANE": "arcane",
+    "CATEGORY_AS": "attack_speed",
+    "CATEGORY_AS_ARMOR": "as_armor",
+    "CATEGORY_BURST": "burst",
+    "CATEGORY_CASTER": "caster",
+    "CATEGORY_CONTROL": "control",
+    "CATEGORY_CRIT": "crit",
+    "CATEGORY_DAMAGE": "damage",
+    "CATEGORY_FROST": "frost",
+    "CATEGORY_GUARD": "guard",
+    "CATEGORY_ICE": "ice",
+    "CATEGORY_INFERNO": "inferno",
+    "CATEGORY_LIFESTEAL": "lifesteal",
+    "CATEGORY_MORTAL": "mortal",
+    "CATEGORY_MYSTIC": "mystic",
+    "CATEGORY_PIERCE": "pierce",
+    "CATEGORY_POISON": "poison",
+    "CATEGORY_REACH": "reach",
+    "CATEGORY_SHRED": "shred",
+    "CATEGORY_SPLASH": "splash",
+    "CATEGORY_STATIC": "static",
+    "CATEGORY_TANK": "tank",
+    "CATEGORY_THORN": "thorn",
+    "CATEGORY_UTILITY": "utility"
+  },
+  "items": {
+    "dead_edge": {
+      "name": "Dead Edge",
+      "category": "crit",
+      "cost": 4500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "holy_rapier": {
+      "name": "Holy Rapier",
+      "category": "damage",
+      "cost": 4500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": true
+    },
+    "demon_maw": {
+      "name": "Demon Maw",
+      "category": "lifesteal",
+      "cost": 4500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "leviathan_heart": {
+      "name": "Leviathan Heart",
+      "category": "tank",
+      "cost": 4500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "cleave_axe": {
+      "name": "Cleave Axe",
+      "category": "splash",
+      "cost": 4500,
+      "melee_only": true,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "steel_aegis": {
+      "name": "Steel Aegis",
+      "category": "as_armor",
+      "cost": 4500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "moon_shard": {
+      "name": "Moon Shard",
+      "category": "attack_speed",
+      "cost": 4500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "octarine_core": {
+      "name": "Octarine Core",
+      "category": "caster",
+      "cost": 4500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "scarlet_bulwark": {
+      "name": "Scarlet Bulwark",
+      "category": "guard",
+      "cost": 5000,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "monarch_wings": {
+      "name": "Monarch Wings",
+      "category": "agility",
+      "cost": 5000,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "corroder": {
+      "name": "Corroder",
+      "category": "shred",
+      "cost": 4500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "tempest_vane": {
+      "name": "Tempest Vane",
+      "category": "utility",
+      "cost": 5500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "fenrir_chain": {
+      "name": "Fenrir Chain",
+      "category": "control",
+      "cost": 5250,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "sanguine_thorn": {
+      "name": "Sanguine Thorn",
+      "category": "burst",
+      "cost": 6000,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "abyss_breaker": {
+      "name": "Abyss Breaker",
+      "category": "control",
+      "cost": 5500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "thunder_coil": {
+      "name": "Thunder Coil",
+      "category": "static",
+      "cost": 5250,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "razor_carapace": {
+      "name": "Razor Carapace",
+      "category": "thorn",
+      "cost": 5000,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "everfrost_guard": {
+      "name": "Everfrost Guard",
+      "category": "frost",
+      "cost": 5500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "sundering_cudgel": {
+      "name": "Sundering Cudgel",
+      "category": "pierce",
+      "cost": 5000,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "frostbound_eye": {
+      "name": "Frostbound Eye",
+      "category": "ice",
+      "cost": 5250,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "gale_pike": {
+      "name": "Gale Pike",
+      "category": "reach",
+      "cost": 5250,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "basilisk_breath": {
+      "name": "Basilisk Breath",
+      "category": "poison",
+      "cost": 5750,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "solar_brand": {
+      "name": "Solar Brand",
+      "category": "inferno",
+      "cost": 5500,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "runic_gavel": {
+      "name": "Runic Gavel",
+      "category": "arcane",
+      "cost": 5250,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "searbrand": {
+      "name": "Searbrand",
+      "category": "mortal",
+      "cost": 5750,
+      "melee_only": false,
+      "magic_only": false,
+      "drops_on_death": false
+    },
+    "astral_codex": {
+      "name": "Astral Codex",
+      "category": "mystic",
+      "cost": 6000,
+      "melee_only": false,
+      "magic_only": true,
+      "drops_on_death": false
+    },
+    "sage_scepter": {
+      "name": "Sage Scepter",
+      "category": "caster",
+      "cost": 5000,
+      "melee_only": false,
+      "magic_only": true,
+      "drops_on_death": false
+    },
+    "fulgur_scepter": {
+      "name": "Fulgur Scepter",
+      "category": "burst",
+      "cost": 6000,
+      "melee_only": false,
+      "magic_only": true,
+      "drops_on_death": false
+    },
+    "hex_idol": {
+      "name": "Hex Idol",
+      "category": "control",
+      "cost": 5750,
+      "melee_only": false,
+      "magic_only": true,
+      "drops_on_death": false
+    },
+    "rift_veil": {
+      "name": "Rift Veil",
+      "category": "burst",
+      "cost": 5500,
+      "melee_only": false,
+      "magic_only": true,
+      "drops_on_death": false
+    },
+    "vital_stone": {
+      "name": "Vital Stone",
+      "category": "lifesteal",
+      "cost": 5250,
+      "melee_only": false,
+      "magic_only": true,
+      "drops_on_death": false
+    },
+    "vine_rod": {
+      "name": "Vine Rod",
+      "category": "control",
+      "cost": 5000,
+      "melee_only": false,
+      "magic_only": true,
+      "drops_on_death": false
+    },
+    "spectral_charm": {
+      "name": "Spectral Charm",
+      "category": "utility",
+      "cost": 5500,
+      "melee_only": false,
+      "magic_only": true,
+      "drops_on_death": false
+    }
+  }
+}

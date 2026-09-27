@@ -103,6 +103,21 @@ if (ROOT / "tests/fixtures/ai_priority_source.json").is_file():
 ai_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
 check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters must read live reserve")
 
+# CI already runs validate_project.py, so the read-only item oracle runs here.
+from ai_item_source_oracle import source_fixture as ai_item_source_fixture
+check("AIItemChecks.new().run(_check)" in ai_tests, "AI item suite must run")
+check((ROOT / "tests/fixtures/ai_items_source.json").is_file(), "AI items require source fixture")
+if (ROOT / "tests/fixtures/ai_items_source.json").is_file():
+    check(ai_item_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/ai_items_source.json").read_text(encoding="utf-8")),
+        "AI item catalog source drift")
+item_catalog = json.loads((ROOT / "data/ai/item_catalog.json").read_text(encoding="utf-8"))
+check(item_catalog == ai_item_source_fixture()["catalog"],
+      "data/ai/item_catalog.json drifted from source ITEM_CATALOG")
+check(len(item_catalog["items"]) == 33, "Update the AI item suite when ITEM_CATALOG changes")
+check(item_catalog["flat_cost"] == 4500 and item_catalog["max_slots"] == 6,
+      "AI item constants must follow ITEM_FLAT_COST/MAX_ITEM_SLOTS")
+
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.
 from ai_build_source_oracle import source_fixture as ai_build_source_fixture
