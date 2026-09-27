@@ -160,6 +160,17 @@ check("_buy_item_for" in (ROOT / "scripts/match/prototype_battle.gd").read_text(
       "AI item purchase must debit through the match ledger")
 check(len(ai_items_fixture["purchases"]) == 9,
       "Update the AI item suite when the purchase cases change")
+check(len(ai_items_fixture["stats"]) == 25,
+      "Update the AI item suite when the stat loadouts change")
+check(all("stats" in entry for entry in item_catalog["items"].values()),
+      "AI item catalog must carry the numeric stats the getters sum")
+inventory_gd = (ROOT / "scripts/match/hero_item_inventory.gd").read_text(encoding="utf-8")
+missing_getters = [name for name in ai_items_fixture["stats"][0]["values"]
+                   if name not in ("empower_strike", "empower_charge")
+                   and ("func %s(" % name) not in inventory_gd]
+check(not missing_getters, f"AI item stat getters missing in the rebuild: {missing_getters}")
+check("func _on_item_changed(" not in inventory_gd,
+      "Item stat application on equip stays unported until the contract says so")
 
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.

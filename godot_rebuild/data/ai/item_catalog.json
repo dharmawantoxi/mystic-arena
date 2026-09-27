@@ -35,7 +35,12 @@
       "cost": 4500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 52,
+        "crit_chance": 0.25,
+        "crit_mult": 2.0
+      }
     },
     "holy_rapier": {
       "name": "Holy Rapier",
@@ -43,7 +48,10 @@
       "cost": 4500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": true
+      "drops_on_death": true,
+      "stats": {
+        "damage": 120
+      }
     },
     "demon_maw": {
       "name": "Demon Maw",
@@ -51,7 +59,19 @@
       "cost": 4500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 20,
+        "armor": 4,
+        "lifesteal": 0.2
+      },
+      "active": {
+        "name": "Blood Frenzy",
+        "hp_threshold": 0.35,
+        "lifesteal_bonus": 1.2,
+        "duration": 300,
+        "cooldown": 1500
+      }
     },
     "leviathan_heart": {
       "name": "Leviathan Heart",
@@ -59,7 +79,16 @@
       "cost": 4500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp_pct": 0.35,
+        "hp_regen": 6.0
+      },
+      "passive": {
+        "name": "Leviathan Vitality",
+        "out_of_combat_regen_pct": 0.015,
+        "combat_timeout": 300
+      }
     },
     "cleave_axe": {
       "name": "Cleave Axe",
@@ -67,7 +96,16 @@
       "cost": 4500,
       "melee_only": true,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 34,
+        "hp_regen": 3.0
+      },
+      "passive": {
+        "name": "Cleave",
+        "cleave_pct": 0.5,
+        "cleave_radius": 110
+      }
     },
     "steel_aegis": {
       "name": "Steel Aegis",
@@ -75,7 +113,11 @@
       "cost": 4500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "armor": 6,
+        "attack_speed": 30
+      }
     },
     "moon_shard": {
       "name": "Moon Shard",
@@ -83,7 +125,10 @@
       "cost": 4500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "attack_speed": 75
+      }
     },
     "octarine_core": {
       "name": "Octarine Core",
@@ -91,7 +136,13 @@
       "cost": 4500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 300,
+        "cooldown_reduction": 0.15,
+        "spell_vamp": 0.1,
+        "hp_regen": 2.0
+      }
     },
     "scarlet_bulwark": {
       "name": "Scarlet Bulwark",
@@ -99,7 +150,26 @@
       "cost": 5000,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 250,
+        "hp_regen": 8,
+        "armor": 6
+      },
+      "block": {
+        "chance": 0.55,
+        "melee_block": 25,
+        "ranged_block": 14
+      },
+      "active": {
+        "name": "Bulwark Guard",
+        "hp_threshold": 0.45,
+        "ally_radius": 320,
+        "base_block": 35,
+        "max_hp_block_pct": 0.02,
+        "duration": 420,
+        "cooldown": 2400
+      }
     },
     "monarch_wings": {
       "name": "Monarch Wings",
@@ -107,7 +177,12 @@
       "cost": 5000,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 38,
+        "attack_speed": 30,
+        "evasion": 0.28
+      }
     },
     "corroder": {
       "name": "Corroder",
@@ -115,7 +190,15 @@
       "cost": 4500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 65
+      },
+      "passive": {
+        "name": "Corrosion",
+        "armor_shred": 6,
+        "duration": 360
+      }
     },
     "tempest_vane": {
       "name": "Tempest Vane",
@@ -123,7 +206,18 @@
       "cost": 5500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 250,
+        "hp_regen": 4,
+        "move_speed_pct": 0.12
+      },
+      "active": {
+        "name": "Tempest Veil",
+        "hp_threshold": 0.4,
+        "duration": 150,
+        "cooldown": 1800
+      }
     },
     "fenrir_chain": {
       "name": "Fenrir Chain",
@@ -131,7 +225,28 @@
       "cost": 5250,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 30,
+        "attack_speed": 30,
+        "hp": 250
+      },
+      "on_attack": {
+        "name": "Arc Chain",
+        "chance": 0.2,
+        "damage": 45,
+        "targets": 3,
+        "radius": 240
+      },
+      "active": {
+        "name": "Binding Chains",
+        "trigger_enemies": 2,
+        "trigger_radius": 220,
+        "root_radius": 220,
+        "root_duration": 72,
+        "damage": 80,
+        "cooldown": 1080
+      }
     },
     "sanguine_thorn": {
       "name": "Sanguine Thorn",
@@ -139,7 +254,19 @@
       "cost": 6000,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 25,
+        "attack_speed": 60,
+        "hp_regen": 5
+      },
+      "active": {
+        "name": "Soul Rend",
+        "duration": 300,
+        "crit_mult": 1.5,
+        "damage_amp": 0.3,
+        "cooldown": 1080
+      }
     },
     "abyss_breaker": {
       "name": "Abyss Breaker",
@@ -147,7 +274,25 @@
       "cost": 5500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 35,
+        "hp": 300,
+        "hp_regen": 3,
+        "heal_amp": 0.16,
+        "slow_resist": 0.3
+      },
+      "bash": {
+        "chance": 0.22,
+        "damage": 55,
+        "stun": 54,
+        "cooldown": 140
+      },
+      "active": {
+        "name": "Overwhelm",
+        "stun": 72,
+        "cooldown": 1500
+      }
     },
     "thunder_coil": {
       "name": "Thunder Coil",
@@ -155,7 +300,28 @@
       "cost": 5250,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 25,
+        "attack_speed": 65
+      },
+      "on_attack": {
+        "name": "Arc Lightning",
+        "chance": 0.22,
+        "damage": 40,
+        "targets": 3,
+        "radius": 240
+      },
+      "active": {
+        "name": "Static Charge",
+        "proc_chance": 0.2,
+        "duration": 480,
+        "tick": 30,
+        "damage": 65,
+        "targets": 4,
+        "radius": 260,
+        "cooldown": 1200
+      }
     },
     "razor_carapace": {
       "name": "Razor Carapace",
@@ -163,7 +329,19 @@
       "cost": 5000,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 18,
+        "armor": 8,
+        "cooldown_reduction": 0.1
+      },
+      "active": {
+        "name": "Thornmail",
+        "hp_threshold": 0.55,
+        "reflect_pct": 0.85,
+        "duration": 270,
+        "cooldown": 1500
+      }
     },
     "everfrost_guard": {
       "name": "Everfrost Guard",
@@ -171,7 +349,21 @@
       "cost": 5500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "armor": 10,
+        "hp_regen": 5,
+        "cooldown_reduction": 0.1
+      },
+      "active": {
+        "name": "Arctic Blast",
+        "trigger_enemies": 2,
+        "radius": 280,
+        "damage": 130,
+        "slow": 0.45,
+        "slow_duration": 210,
+        "cooldown": 1440
+      }
     },
     "sundering_cudgel": {
       "name": "Sundering Cudgel",
@@ -179,7 +371,18 @@
       "cost": 5000,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 48,
+        "attack_speed": 25
+      },
+      "bash": {
+        "name": "Piercing Bash",
+        "chance": 0.28,
+        "damage": 55,
+        "stun": 15,
+        "cooldown": 120
+      }
     },
     "frostbound_eye": {
       "name": "Frostbound Eye",
@@ -187,7 +390,19 @@
       "cost": 5250,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 20,
+        "hp": 250,
+        "hp_regen": 4
+      },
+      "on_attack": {
+        "name": "Frostbite",
+        "slow": 0.28,
+        "atk_slow": 0.28,
+        "anti_heal": 0.45,
+        "duration": 180
+      }
     },
     "gale_pike": {
       "name": "Gale Pike",
@@ -195,7 +410,22 @@
       "cost": 5250,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 18,
+        "attack_speed": 25,
+        "hp": 200,
+        "hp_regen": 3,
+        "range_bonus": 90
+      },
+      "active": {
+        "name": "Gale Leap",
+        "hp_threshold": 0.4,
+        "dash_distance": 130,
+        "as_bonus": 55,
+        "duration": 180,
+        "cooldown": 1500
+      }
     },
     "basilisk_breath": {
       "name": "Basilisk Breath",
@@ -203,7 +433,20 @@
       "cost": 5750,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 26,
+        "attack_speed": 30,
+        "hp": 260,
+        "hp_regen": 3
+      },
+      "on_attack": {
+        "name": "Miasma",
+        "max_hp_pct_per_tick": 0.022,
+        "tick": 30,
+        "duration": 180,
+        "cap_damage": 60
+      }
     },
     "solar_brand": {
       "name": "Solar Brand",
@@ -211,7 +454,12 @@
       "cost": 5500,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 30,
+        "hp": 280,
+        "hp_regen": 5
+      }
     },
     "runic_gavel": {
       "name": "Runic Gavel",
@@ -219,7 +467,18 @@
       "cost": 5250,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 28,
+        "hp": 250,
+        "hp_regen": 4,
+        "cooldown_reduction": 0.15
+      },
+      "passive": {
+        "name": "Empower Strike",
+        "charge_time": 540,
+        "damage": 130
+      }
     },
     "searbrand": {
       "name": "Searbrand",
@@ -227,7 +486,22 @@
       "cost": 5750,
       "melee_only": false,
       "magic_only": false,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 20,
+        "hp": 320,
+        "hp_regen": 6,
+        "cooldown_reduction": 0.15
+      },
+      "active": {
+        "name": "Brand Burst",
+        "trigger_enemies": 2,
+        "radius": 320,
+        "damage": 110,
+        "burn_dps": 22,
+        "burn_duration": 180,
+        "cooldown": 1080
+      }
     },
     "astral_codex": {
       "name": "Astral Codex",
@@ -235,7 +509,22 @@
       "cost": 6000,
       "melee_only": false,
       "magic_only": true,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 280,
+        "hp_regen": 4,
+        "cooldown_reduction": 0.18,
+        "spell_vamp": 0.12,
+        "skill_amp": 0.25
+      },
+      "active": {
+        "name": "Arcane Nova",
+        "trigger_enemies": 2,
+        "radius": 260,
+        "damage": 150,
+        "silence_duration": 90,
+        "cooldown": 1440
+      }
     },
     "sage_scepter": {
       "name": "Sage Scepter",
@@ -243,7 +532,14 @@
       "cost": 5000,
       "melee_only": false,
       "magic_only": true,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 200,
+        "hp_regen": 3,
+        "skill_amp": 0.15,
+        "spell_vamp": 0.08,
+        "cooldown_reduction": 0.08
+      }
     },
     "fulgur_scepter": {
       "name": "Fulgur Scepter",
@@ -251,7 +547,18 @@
       "cost": 6000,
       "melee_only": false,
       "magic_only": true,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 15,
+        "hp": 200,
+        "skill_amp": 0.1,
+        "spell_vamp": 0.08
+      },
+      "active": {
+        "name": "Energy Blast",
+        "damage": 300,
+        "cooldown": 1080
+      }
     },
     "hex_idol": {
       "name": "Hex Idol",
@@ -259,7 +566,19 @@
       "cost": 5750,
       "melee_only": false,
       "magic_only": true,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 250,
+        "hp_regen": 4,
+        "spell_vamp": 0.06,
+        "cooldown_reduction": 0.1
+      },
+      "active": {
+        "name": "Hexcraft",
+        "stun": 150,
+        "silence": 150,
+        "cooldown": 1800
+      }
     },
     "rift_veil": {
       "name": "Rift Veil",
@@ -267,7 +586,20 @@
       "cost": 5500,
       "melee_only": false,
       "magic_only": true,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 260,
+        "hp_regen": 4,
+        "spell_vamp": 0.06
+      },
+      "active": {
+        "name": "Discord Field",
+        "trigger_enemies": 2,
+        "radius": 320,
+        "damage_amp": 0.15,
+        "duration": 360,
+        "cooldown": 1200
+      }
     },
     "vital_stone": {
       "name": "Vital Stone",
@@ -275,7 +607,18 @@
       "cost": 5250,
       "melee_only": false,
       "magic_only": true,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 320,
+        "hp_regen": 6,
+        "spell_vamp": 0.2
+      },
+      "active": {
+        "name": "Vitality Pact",
+        "hp_threshold": 0.35,
+        "heal_pct": 0.25,
+        "cooldown": 2700
+      }
     },
     "vine_rod": {
       "name": "Vine Rod",
@@ -283,7 +626,18 @@
       "cost": 5000,
       "melee_only": false,
       "magic_only": true,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "damage": 15,
+        "hp": 240,
+        "hp_regen": 3,
+        "spell_vamp": 0.05
+      },
+      "on_attack": {
+        "name": "Entangle",
+        "root_duration": 60,
+        "cooldown": 540
+      }
     },
     "spectral_charm": {
       "name": "Spectral Charm",
@@ -291,7 +645,19 @@
       "cost": 5500,
       "melee_only": false,
       "magic_only": true,
-      "drops_on_death": false
+      "drops_on_death": false,
+      "stats": {
+        "hp": 230,
+        "hp_regen": 3,
+        "move_speed_pct": 0.1,
+        "spell_vamp": 0.06
+      },
+      "active": {
+        "name": "Spectral Form",
+        "hp_threshold": 0.3,
+        "duration": 150,
+        "cooldown": 1500
+      }
     }
   }
 }

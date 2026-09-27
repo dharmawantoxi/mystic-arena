@@ -139,6 +139,9 @@ func apply_level_stats() -> void:
 	var kit := settings()
 	if kit != null:
 		items.set_hero_gate(kit.role, attack_range)
+	# Source Hero.is_melee_hero is exactly `range < 110` (_entity.py:3303), and
+	# the item getters read base_hp/level for get_max_hp.
+	items.set_hero_scaling(base_hp, level, 1 if attack_range < 110.0 else 0)
 
 
 func upgrade_cost() -> int:

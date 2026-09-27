@@ -24,6 +24,37 @@ const ROLE_HEROES := {
 	"Mage|130": "vex",
 	"Mage/Trickster|130": "zephyr",
 }
+# Getter names the oracle records, in source order.
+const STAT_GETTERS := [
+	"get_bonus_damage",
+	"get_bonus_hp",
+	"get_hp_pct",
+	"get_armor",
+	"get_hp_regen",
+	"get_max_hp",
+	"get_attack_speed_mult",
+	"get_lifesteal_pct",
+	"get_crit",
+	"get_cleave",
+	"get_cooldown_reduction",
+	"get_spell_vamp",
+	"get_skill_amp",
+	"get_evasion",
+	"get_move_speed_pct",
+	"get_heal_amp",
+	"get_slow_resist",
+	"get_range_bonus",
+	"has_true_strike",
+	"get_reflect_pct",
+	"get_gale_as_bonus",
+	"get_block",
+	"get_armor_shred",
+	"get_on_attack_chain",
+	"get_bash",
+	"is_veiled",
+	"is_guarding",
+	"get_rend_crit",
+]
 # Six affordable non-magic items: parks the free red Kaizen out of the pool.
 const PARK_ITEMS := [
 	"cleave_axe",
@@ -44,6 +75,7 @@ func run(check: Callable) -> void:
 	_test_inventory(fixture.inventory, check)
 	_test_hero_inventory(check)
 	_test_purchases(fixture.purchases, check)
+	_test_stats(fixture.stats, check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -228,6 +260,18 @@ func _test_hero_inventory(check: Callable) -> void:
 		melee.items.hero_role == "Assassin" and melee.items.hero_range == 70.0,
 		"Hero inventory gate follows the definition"
 	)
+	check.call(
+		melee.items.hero_base_hp == melee.base_hp and melee.items.hero_level == melee.level,
+		"Hero inventory scaling follows the hero"
+	)
+	check.call(
+		melee.items.hero_melee_flag == 1 and mage.items.hero_melee_flag == 0,
+		"Hero inventory melee flag follows the source range < 110 rule"
+	)
+	check.call(
+		int(melee.items.get_max_hp()) == int(melee.max_hp),
+		"Empty inventory max HP equals the source level formula"
+	)
 	var max_hp := melee.max_hp
 	var hp := melee.hp
 	check.call(melee.items.add("cleave_axe"), "Melee hero equips the melee only item")
@@ -386,3 +430,68 @@ func _test_purchases(rows: Array, check: Callable) -> void:
 			want_slots.append(_slot_values(value))
 		check.call(slots == want_slots, "AI item final slots must match source")
 		check.call(draft.reserve() == int(row.reserve), "AI item purchase keeps the draft reserve")
+
+
+func _array_equal(actual: Variant, expected: Array) -> bool:
+	if not actual is Array or (actual as Array).size() != expected.size():
+		return false
+	for index in range(expected.size()):
+		if not _stat_equal((actual as Array)[index], expected[index]):
+			return false
+	return true
+
+
+func _stat_equal(actual: Variant, expected: Variant) -> bool:
+	# The fixture stores Python tuples as arrays and None as null.
+	if expected == null or actual == null:
+		return actual == null and expected == null
+	if expected is Array:
+		return _array_equal(actual, expected)
+	if expected is Dictionary:
+		return actual == expected
+	if expected is bool:
+		return bool(actual) == bool(expected)
+	return float(actual) == float(expected)
+
+
+func _test_stats(rows: Array, check: Callable) -> void:
+	for row in rows:
+		var spec: Dictionary = row.hero
+		var inventory := Inventory.new()
+		inventory.set_hero_gate(String(spec.role), float(spec.range))
+		var melee_flag := -1
+		if spec.is_melee_hero != null:
+			melee_flag = 1 if bool(spec.is_melee_hero) else 0
+		inventory.set_hero_scaling(int(spec.base_hp), int(spec.level), melee_flag)
+		for item_id in row.loadout:
+			assert(inventory.add(String(item_id)), "stat loadout refused an item")
+		var values: Dictionary = row.values
+		var label := "%s/%d %s" % [String(spec.role), int(spec.range), str(row.loadout)]
+		check.call(inventory.slots == _slot_values(row.slots), "AI stat loadout slots: " + label)
+		for getter in STAT_GETTERS:
+			var key := String(getter)
+			check.call(
+				_stat_equal(inventory.call(key), values[key]),
+				"AI item stat %s must match source: %s" % [key, label]
+			)
+		check.call(
+			_stat_equal(inventory.consume_empower_strike(), values["empower_strike"]),
+			"AI Runic Gavel empower strike must match source: " + label
+		)
+		check.call(
+			_stat_equal(inventory.empower_charge, values["empower_charge"]),
+			"AI Runic Gavel charge must match source: " + label
+		)
+		# Timers are inert in this layer: every timer-gated branch stays closed.
+		check.call(
+			(
+				inventory.blood_frenzy_timer == 0
+				and inventory.ghost_timer == 0
+				and inventory.thorn_timer == 0
+				and inventory.gale_timer == 0
+				and inventory.veil_timer == 0
+				and inventory.guard_timer == 0
+				and inventory.rend_timer == 0
+			),
+			"AI item timers stay inert until the active/passive layer: " + label
+		)

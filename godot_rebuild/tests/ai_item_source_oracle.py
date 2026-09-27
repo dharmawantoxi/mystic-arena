@@ -31,9 +31,64 @@ _LEVEL_MULT = "_hero_level_mult"
 # reaches, so the fixture can show exactly what the rebuild does NOT port yet.
 _INVENTORY_METHODS = (
     "__init__", "count", "has", "used_slots", "add", "remove", "_on_item_changed",
-    "get_max_hp", "get_bonus_hp", "get_hp_pct", "get_heal_amp", "_sum_stat",
+    "get_max_hp", "get_bonus_hp", "get_bonus_damage", "get_hp_pct", "get_armor",
+    "get_hp_regen", "get_attack_speed_mult", "get_lifesteal_pct", "get_crit",
+    "get_cleave", "get_cooldown_reduction", "get_spell_vamp", "get_skill_amp",
+    "get_evasion", "get_move_speed_pct", "get_heal_amp", "get_slow_resist",
+    "get_range_bonus", "has_true_strike", "get_reflect_pct", "get_gale_as_bonus",
+    "consume_empower_strike", "get_block", "get_armor_shred", "get_on_attack_chain",
+    "get_bash", "is_veiled", "is_guarding", "get_rend_crit", "_sum_stat",
     "clear_on_death",
 )
+
+# Pure stat aggregation getters (no RNG). Timer-driven branches are recorded
+# too, with every timer still at its __init__ value: the active/passive layer
+# has to move them before those branches can fire.
+STAT_GETTERS = (
+    "get_bonus_damage", "get_bonus_hp", "get_hp_pct", "get_armor", "get_hp_regen",
+    "get_max_hp", "get_attack_speed_mult", "get_lifesteal_pct", "get_crit",
+    "get_cleave", "get_cooldown_reduction", "get_spell_vamp", "get_skill_amp",
+    "get_evasion", "get_move_speed_pct", "get_heal_amp", "get_slow_resist",
+    "get_range_bonus", "has_true_strike", "get_reflect_pct", "get_gale_as_bonus",
+    "get_block", "get_armor_shred", "get_on_attack_chain", "get_bash",
+    "is_veiled", "is_guarding", "get_rend_crit",
+)
+
+# (hero spec, loadout). Hero specs cover the melee gate, the ranged gate and
+# the source heuristic fallback when `is_melee_hero` is absent.
+STAT_CASES = [
+    (("Bruiser", 70, True, 620, 5), []),
+    (("Bruiser", 70, True, 620, 5), ["dead_edge"]),
+    (("Bruiser", 70, True, 620, 5), ["cleave_axe"]),
+    (("Bruiser", 70, True, 620, 5), ["demon_maw"]),
+    (("Bruiser", 70, True, 620, 5), ["leviathan_heart", "octarine_core"]),
+    (("Bruiser", 70, True, 620, 5), ["abyss_breaker"]),
+    (("Bruiser", 70, True, 620, 5), ["runic_gavel"]),
+    (("Bruiser", 70, True, 620, 5), ["sundering_cudgel"]),
+    (("Bruiser", 70, True, 620, 5), ["razor_carapace"]),
+    (("Bruiser", 70, True, 620, 5), ["gale_pike"]),
+    (("Bruiser", 70, True, 620, 5), ["fenrir_chain"]),
+    (("Bruiser", 70, True, 620, 5), ["frostbound_eye"]),
+    (("Bruiser", 70, True, 620, 5), ["basilisk_breath"]),
+    (("Bruiser", 70, True, 620, 5), ["corroder"]),
+    (("Mage", 130, False, 480, 9), ["astral_codex"]),
+    (("Mage", 130, False, 480, 9), ["spectral_charm"]),
+    (("Bruiser", 70, True, 620, 5), ["scarlet_bulwark", "everfrost_guard",
+                                     "steel_aegis", "tempest_vane", "monarch_wings"]),
+    (("Bruiser", 70, True, 620, 5), ["thunder_coil", "sanguine_thorn", "moon_shard"]),
+    (("Marksman", 130, False, 540, 7), ["dead_edge", "gale_pike", "monarch_wings"]),
+    (("Marksman", 130, False, 540, 7), ["frostbound_eye", "basilisk_breath",
+                                        "sundering_cudgel"]),
+    (("Marksman", 130, False, 540, 7), ["scarlet_bulwark", "everfrost_guard",
+                                        "steel_aegis", "tempest_vane", "moon_shard"]),
+    (("Mage", 130, False, 480, 9), ["astral_codex", "fulgur_scepter", "sage_scepter",
+                                    "hex_idol", "rift_veil", "vital_stone"]),
+    (("Mage", 130, False, 480, 9), ["vine_rod", "spectral_charm", "runic_gavel",
+                                    "searbrand", "solar_brand", "leviathan_heart"]),
+    # No `is_melee_hero` flag: the source falls back to `range < 110`.
+    (("Warden", 105, None, 600, 3), ["gale_pike", "dead_edge"]),
+    (("Warden", 130, None, 600, 3), ["gale_pike", "dead_edge"]),
+]
 
 # (hero spec, ops). Every op result plus the slot list is recorded; the source
 # hero max_hp/hp/heal-amp calls are recorded too, as documented divergence.
@@ -163,15 +218,23 @@ def catalog(env=None):
     env = source_namespace() if env is None else env
     items = {}
     for item_id, data in env["ITEM_CATALOG"].items():
-        items[item_id] = {
+        entry = {
             "name": data["name"],
             "category": data["category"],
             "cost": data["cost"],
             "melee_only": bool(data.get("melee_only", False)),
             "magic_only": bool(data.get("magic_only", False)),
             "drops_on_death": bool(data.get("drops_on_death", False)),
+            # Numeric stats the aggregation getters sum, plus the descriptor
+            # blocks those getters read verbatim (passive/block/on_attack/
+            # bash/active). Presentation keys (icon/color/glow/desc) stay out.
+            "stats": dict(data.get("stats", {})),
         }
-    return {
+        for key in ("passive", "block", "on_attack", "bash", "active"):
+            if key in data:
+                entry[key] = data[key]
+        items[item_id] = json.loads(json.dumps(entry))
+    return json.loads(json.dumps({
         "max_slots": env["MAX_ITEM_SLOTS"],
         "flat_cost": env["ITEM_FLAT_COST"],
         # category id -> source CATEGORY_* constant name, so the metadata can
@@ -179,7 +242,7 @@ def catalog(env=None):
         "categories": {env[name]: name for name in sorted(env)
                        if name.startswith("CATEGORY_")},
         "items": items,
-    }
+    }))
 
 
 def magic_roles(env):
@@ -394,6 +457,35 @@ def purchases(env):
     return rows
 
 
+def stats(env):
+    """Real aggregation getters over fixed loadouts; timers stay at init."""
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for spec, loadout in STAT_CASES:
+            role, attack_range, is_melee_hero, base_hp, level = spec
+            hero = SimpleNamespace(role=role, range=attack_range, base_hp=base_hp,
+                                   level=level, hp=100, max_hp=100)
+            hero.apply_heal_amp = lambda amount, duration: None
+            if is_melee_hero is not None:
+                hero.is_melee_hero = is_melee_hero
+            inv = inv_type(hero)
+            for item_id in loadout:
+                assert inv.add(item_id), f"loadout refused {item_id}"
+            values = {name: getattr(inv, name)() for name in STAT_GETTERS}
+            values["empower_strike"] = inv.consume_empower_strike()
+            values["empower_charge"] = inv.empower_charge
+            rows.append({
+                "hero": {"role": role, "range": attack_range,
+                         "is_melee_hero": is_melee_hero, "base_hp": base_hp,
+                         "level": level},
+                "loadout": list(loadout),
+                "slots": list(inv.slots),
+                "values": values,
+            })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -404,6 +496,7 @@ def source_fixture():
         "pools": pools(env),
         "inventory": inventory(env),
         "purchases": purchases(env),
+        "stats": stats(env),
     }))
 
 

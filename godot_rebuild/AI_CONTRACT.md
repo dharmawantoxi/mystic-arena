@@ -288,6 +288,31 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
    belanja 4500. Adapter **tidak** menambah counter apa pun.
 5. Stat effects, pasif/aura/aktif, Forge UI dan `update_auras` adalah fase
    terpisah yang jauh lebih besar; jangan digabung ke commit adapter.
+   - [x] **5a. Agregasi stat murni** → getter port di
+     `hero_item_inventory.gd` (`sum_stat`, bonus damage/hp/hp_pct/armor/
+     hp_regen, `get_max_hp`, attack speed, lifesteal, crit, cleave, CDR,
+     spell vamp, skill amp, evasion, move speed, heal amp, slow resist,
+     range bonus, true strike, reflect, gale AS, empower strike, block,
+     armor shred, on-attack chain, bash, veil/guard/rend). Katalog kini
+     membawa `stats` numerik + blok `passive`/`block`/`on_attack`/`bash`/
+     `active` (kunci presentasi tetap di luar). Oracle merekam 25 loadout ×
+     28 getter + empower/charge; `validate_project.py` menuntut setiap nama
+     getter sumber ada di rebuild.
+     **Batasan 5a:** tidak ada yang mengonsumsi getter ini di combat;
+     `_on_item_changed` belum diport sehingga beli item tetap tidak mengubah
+     `max_hp`/`hp`; seluruh timer (`blood_frenzy`/`ghost`/`thorn`/`gale`/
+     `veil`/`guard`/`rend`/`aura_*`) ada tapi inert, jadi cabang yang
+     bergantung timer selalu tertutup; `update()`,
+     `notify_damage_taken()`, `on_basic_attack_hit()`, `_on_hit_common()`,
+     `on_ranged_attack_hit()` dan `update_auras()` belum diport.
+   - [ ] **5b.** Terapkan stat saat equip/level (`_on_item_changed`,
+     `apply_heal_amp`, `Hero._apply_level_stats` cabang item) + konsumsi di
+     jalur serangan/proyektil yang sudah ada.
+   - [ ] **5c.** Timer pasif/aktif per item + `HeroItemInventory.update`.
+   - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
+     Scorched Earth ke menara/boss).
+   - [ ] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
+   - [ ] **5f.** Forge UI + drop item ke tanah.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -309,10 +334,10 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-  Lapisan 1-4 selesai (metadata katalog 33 item, `suggest_item_for_hero`/
-  `is_magic_hero`, slot `HeroItemInventory` tanpa stat effects, adapter
-  `ai_items.gd::try_buy` + transaksi ledger); lapisan 5 (stat effects, pasif/
-  aura/aktif, Forge UI, `update_auras`) belum dan tetap fase terpisah.
+  Lapisan 1-4 + 5a selesai (metadata katalog 33 item termasuk `stats` numerik,
+  `suggest_item_for_hero`/`is_magic_hero`, slot `HeroItemInventory`, adapter
+  `ai_items.gd::try_buy` + transaksi ledger, agregasi stat murni); sisa 5b-5f
+  (penerapan stat, timer pasif/aktif, aura, proc on-hit, Forge UI).
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.
@@ -346,11 +371,12 @@ Selesai: port item AI lapisan 1-4, satu commit per lapisan, basis main f1d34ed.
    hidup ber-slot kosong, `(kills, level)` descending stabil, reserve draft
    hidup, debit ledger nyata, tanpa counter baru.
 
-Oracle: `ai_item_source_oracle.py` (katalog, 29 role magic, 26 saran, 22 urutan
-pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata). Native:
-`ai_item_checks.gd` terdaftar di `run_all.gd`. CI Godot 4.7.2 run 36339762016
-hijau: **1.174.993 native checks**; static lokal 5647 PASS,
-`gdlint`/`gdformat`/`gdparse` bersih, `minion_battle.gd` tetap 1000 baris.
+Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
+22 urutan pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata,
+25 loadout stat). Native: `ai_item_checks.gd` terdaftar di `run_all.gd`.
+CI Godot 4.7.2 run 36340074674 hijau untuk lapisan 1-4: **1.174.993 native
+checks**; static lokal 5654 PASS setelah 5a, `gdlint`/`gdformat`/`gdparse`
+bersih, `minion_battle.gd` tetap 1000 baris.
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
