@@ -3,15 +3,17 @@ extends RefCounted
 ## Exact source BossHeroSkills.* ports, not _fallback_cast.
 ## Source level-9 recipes call take_damage(dmg, team) without source/school,
 ## so every hit stays neutral and unattributed (Common.hit default).
+## Visual timers: the shared BossHeroSkills.cast_* dispatcher overwrites the
+## recipe active_skill_timer with 60/90/60/100 after the recipe runs.
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const IDS := ["kenshiro", "wiro", "khazan", "naraka"]
 const VISUAL := {
-	"kenshiro": {"q": 35, "w": 45, "e": 55, "r": 70},
-	"wiro": {"q": 30, "w": 45, "e": 40, "r": 80},
-	"khazan": {"q": 40, "w": 50, "e": 60, "r": 75},
-	"naraka": {"q": 40, "w": 50, "e": 60, "r": 90},
+	"kenshiro": {"q": 60, "w": 90, "e": 60, "r": 100},
+	"wiro": {"q": 60, "w": 90, "e": 60, "r": 100},
+	"khazan": {"q": 60, "w": 90, "e": 60, "r": 100},
+	"naraka": {"q": 60, "w": 90, "e": 60, "r": 100},
 }
 
 
