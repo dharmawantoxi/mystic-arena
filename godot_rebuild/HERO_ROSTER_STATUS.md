@@ -2,19 +2,21 @@
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending), static 4476 PASS.
+CI terakhir sebelum WIP: Godot 4.7.2 **413735 checks** pada run 36302839552
+(164 playable, 58 pending), static baseline 4476 PASS. Validasi statis WIP lokal
+4508 PASS; CI Godot batch Krobellus belum dijalankan.
 
 - Enam starter selesai (empat sudah ada sebelum sesi); lima boss recipe khusus
   selesai; 150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai
   sumber**, dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 59 pending mempunyai recipe khusus. Blocker masing-masing: empat
-  metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
-  Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
+- Semua 58 pending mempunyai recipe khusus dan tetap ditolak tanpa debit maupun
+  substitusi. Krobellus memiliki draft handler/oracle/test lokal tetapi belum
+  di-dispatch atau di-roster; blocker belum diangkat sebelum native CI hijau.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 161 ID
+## Selesai — 164 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
