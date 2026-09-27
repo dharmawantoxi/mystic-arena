@@ -70,7 +70,7 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
-## Roster 222 — 163 kit native, 59 recipe khusus pending
+## Roster 222 — 164 kit native, 58 recipe khusus pending
 
 Metadata dan baseline konstruktor `data/ai/hero_combat_stats.json` tetap
 mencakup seluruh 222 ID. Baseline angka **bukan** bukti playable. Registry
@@ -79,19 +79,19 @@ source oracle dan tes native. Daftar tepat semua selesai/pending dengan
 harga, recipe dan blocker: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md).
 
 - Enam starter: Kaizen, Thorne, Grimjaw, Sylara, Vex, Zephyr.
-- Tujuh boss dengan recipe tersendiri: Gornak, Morgath, Drakar, Abaddon,
-  Alchemist, Ancient Apparition, Nyzrak. Audit AST sumber membuktikan keempat
+- Delapan boss dengan recipe tersendiri: Gornak, Morgath, Drakar, Abaddon,
+  Alchemist, Ancient Apparition, Nyzrak, Ignis Drachorn. Audit AST sumber membuktikan keempat
   recipe asli keenam puluh satu boss pending saling berbeda satu sama lain. Basic Morgath tetap beam/hit instan; bukan projectile generik.
 - 150 boss berbagi `BossHeroSkills._fallback_cast` **di sumber asli**. Oracle
   per ID mencatat dispatch nyata, QWER, cooldown, attack, level/upgrade,
   respawn serta combat Hero/Tower. Native memakai allowlist tertutup, tidak
   menjadikannya fallback bagi 61 boss lain yang memiliki recipe berbeda.
-- **59 pending** tetap ditolak dengan `kit`, saldo/roster tidak berubah,
+- **58 pending** tetap ditolak dengan `kit`, saldo/roster tidak berubah,
   draft/reserve tetap. Tidak ada substitusi Kaizen atau shared kit.
 
 Adapter `ai_recruitment.gd` tetap meneruskan draft ke transaksi sinkron
 `prototype_battle.gd::_buy_ai_hero`, memakai registry/world/ledger nyata.
-Oracle pembelian kini **489 transaksi** (163 × harga−1/tepat/+1), ID/posisi/
+Oracle pembelian kini **492 transaksi** (164 × harga−1/tepat/+1), ID/posisi/
 capacity/ownership dan double debit diuji. Offset first spawn Y90 tetap,
 sementara Kaizen gratis red scene Y130 tetap dan tidak dihitung pembelian.
 Scene tidak menyalakan AIPlayer atau pembelian otomatis.
@@ -103,8 +103,8 @@ Mitigasi/reflect/shield, tidak memberi stun palsu pada tower, anti-heal serta
 Shadow Realm/burn akhir durasi dikunci dengan objek sumber nyata.
 
 CI Godot 4.7.2 `c029d50`: **358.305 native checks**, semua suite lama tetap.
-Target masih 222; batch berikutnya Ignis Drachorn, lalu Krobellus + Vhalzun dan
-sisa menurut level sumber. Catatan batch dan pesan
+Target masih 222; batch berikutnya Krobellus + Vhalzun (level 5) dan sisa
+menurut level sumber. Catatan batch dan pesan
 kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
 Tidak ada item/forge, AIPlayer penuh, rebalance atau art final.
 
@@ -211,8 +211,8 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  baseline angka 222 tersedia; 163 kit native dengan oracle/tes telah lulus,
-  59 recipe khusus masih pending (lihat manifest). Marker prosedural bukan
+  baseline angka 222 tersedia; 164 kit native dengan oracle/tes telah lulus,
+  58 recipe khusus masih pending (lihat manifest). Marker prosedural bukan
   bukti kit/playability atau tampilan final.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak
   memasukkan boss level saat ini. Draft starter pertama acak, boss pertama dari

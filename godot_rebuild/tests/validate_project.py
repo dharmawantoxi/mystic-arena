@@ -188,6 +188,10 @@ from level_three_source_oracle import source_fixture as level_three_fixture
 check(level_three_fixture() == json.loads((ROOT / "tests/fixtures/level_three_source.json").read_text()), "Level-three boss source behavior drift")
 check("LevelThreeChecks.new().run(_check)" in ai_tests, "Level-three boss native suite must run")
 
+from boss_recipe_source_oracle import source_fixture as boss_recipe_fixture
+check(boss_recipe_fixture() == json.loads((ROOT / "tests/fixtures/boss_recipe_source.json").read_text()), "Own-recipe boss source behavior drift")
+check("BossRecipeChecks.new().run(_check)" in ai_tests, "Own-recipe boss native suite must run")
+
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)
 

@@ -18,6 +18,8 @@ PENDING_OPEN = "<!-- roster:pending -->"
 PENDING_CLOSE = "<!-- /roster:pending -->"
 
 RECIPE_HEADERS = ("## Selesai — {count} ID", "## Belum selesai — {count} ID dan recipe yang menjadi blocker")
+TITLE = "# Daftar tepat migrasi hero — {done} playable, {pending} pending"
+TITLE_PATTERN = re.compile(r"^# Daftar tepat migrasi hero — .*$", re.M)
 
 
 def load():
@@ -56,6 +58,7 @@ def _swap(text, opener, closer, body):
 
 
 def _counts(text, done, pending):
+    text = TITLE_PATTERN.sub(TITLE.format(done=len(done), pending=len(pending)), text, count=1)
     for header, ids in ((RECIPE_HEADERS[0], done), (RECIPE_HEADERS[1], pending)):
         for drift in (-1, 1):
             text = text.replace(header.format(count=len(ids) + drift),
@@ -72,6 +75,8 @@ def render(text, heroes, done, pending):
 def validate(check):
     manifest, heroes, done, pending = load()
     text = DOC.read_text(encoding="utf-8")
+    check(TITLE_PATTERN.search(text).group(0) == TITLE.format(done=len(done), pending=len(pending)),
+          "Roster doc title count")
     check(f"## Selesai — {len(done)} ID" in text, "Roster doc done header count")
     check(f"## Belum selesai — {len(pending)} ID" in text, "Roster doc pending header count")
     for ids, opener, closer, build in (

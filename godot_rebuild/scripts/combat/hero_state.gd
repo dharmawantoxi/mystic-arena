@@ -80,6 +80,12 @@ var r_dir := Vector2.RIGHT
 # (no shield pool, no mitigation). Mirrored for parity, never given an effect.
 var shield_active := false
 var shield_timer := 0
+# Ignis Drachorn dragon buffs. These ARE consumed by update_timers: the form
+# flag restores the raw catalog damage, the blood flag only clears itself.
+var dragon_form_active := false
+var dragon_form_timer := 0
+var dragon_blood_active := false
+var dragon_blood_timer := 0
 var rage_timer := 0
 var defense_timer := 0
 var flux_timer := 0

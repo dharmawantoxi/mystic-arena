@@ -2,7 +2,7 @@ extends "res://tests/starter_finish_checks.gd"
 ## Ancient Apparition and Nyzrak source fixtures against real native combat.
 const NYZRAK = preload("res://data/heroes/nyzrak.tres")
 const APPARITION = preload("res://data/heroes/ancient_apparition.tres")
-const FIXTURE := "res://tests/fixtures/level_three_source.json"
+const LEVEL_THREE_FIXTURE := "res://tests/fixtures/level_three_source.json"
 const HEROES := {"nyzrak": NYZRAK, "ancient_apparition": APPARITION}
 
 
@@ -11,7 +11,7 @@ func _hero(world: Battle, kind: String) -> Battle.HeroState:
 
 
 func run(check: Callable) -> void:
-	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
+	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_THREE_FIXTURE))
 	for kind in HEROES:
 		check.call(
 			HEROES[kind].catalog_damage == fixture.catalog[kind].damage,

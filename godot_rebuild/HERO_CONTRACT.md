@@ -34,12 +34,13 @@ atau respawning tetap eligible sesuai sumber AIPlayer, tanpa mengubah HP/alive
 atau respawn timer. UI blue masih menolak hero mati. Belum ada scheduler AI yang
 memanggilnya otomatis; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
 
-## Roster kit native — 163 playable, 59 pending (bukan AIPlayer penuh)
+## Roster kit native — 164 playable, 58 pending (bukan AIPlayer penuh)
 
 Registry eksplisit `scripts/data/hero_roster.gd` berisi enam starter, Gornak,
-Morgath, Drakar, Abaddon, Alchemist, Ancient Apparition, Nyzrak, serta 150 ID
-yang benar-benar memakai jalur shared-source di Python asli. Daftar tepat, source recipe dan bukti per
-hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Sisa **59 boss** tidak
+Morgath, Drakar, Abaddon, Alchemist, Ancient Apparition, Nyzrak, Ignis
+Drachorn, serta 150 ID yang benar-benar memakai jalur shared-source di Python
+asli. Daftar tepat, source recipe dan bukti per
+hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Sisa **58 boss** tidak
 punya kit native dan ditolak tanpa debit/substitusi. Audit AST sumber
 menampilkan keempat recipe asli keenam puluh satu boss pending **saling
 berbeda**, jadi tidak ada satu pun yang boleh memakai handler bersama. Scene tetap pasangan
@@ -52,7 +53,7 @@ diport. Setiap ID dites QWER, attack melee/homing, cooldown/recast, upgrade
 Morgath mempertahankan basic beam/hit instan sesuai pengecualian sumber.
 
 Vex dan Zephyr masing-masing 420 G, Alchemist 750 G, Ancient Apparition 800 G,
-Nyzrak 850 G. Upgrade boss memakai
+Nyzrak 850 G, Ignis Drachorn 850 G. Upgrade boss memakai
 pengali sumber **1,6×**, jadi Lv1→2 480 G, bukan 300 G. Skill tanpa source/
 school tetap netral; school eksplisit pada basic/shared-source tetap dibawa.
 Anti-heal mengikuti HP setter sumber (cap sebelum memotong gain). Shadow Realm
@@ -75,6 +76,19 @@ tidak ada pool shield, absorb, atau mitigasi. Native hanya merekam kedua flag
 dan menguji 100 damage penuh masuk untuk physical maupun magic — tidak ada
 shield karangan. Durasi visual: Nyzrak override sumber 50/50/70/90, AA default
 60/90/60/100, keduanya ditimpa trigger generic sumber.
+
+**Ignis Drachorn:** Q cone 250/60 yang melebar dari 0,3 ke 1,0 sepanjang
+reach, 1,6× stun 45; W sapuan r130 1,9× stun 60; E `dragon_blood` 480 tick
+damage `int(katalog * 1,3)` + heal 20%; R `dragon_form` 600 tick damage
+`int(katalog * 1,8)` + nova r220 3,0× stun 90 + heal 25%. Dua clock dengan
+reset berbeda; quirk sumber dikunci, termasuk E menimpa damage R, kedaluwarsa R
+mereset ke katalog sehingga buff E ikut hilang, dan kedaluwarsa E tidak
+mengembalikan damage.
+
+**Bentuk geometri bersama** (`boss_recipe_shapes.gd`) hanya transkripsi loop
+sumber; damage, slow dan stun dalam satu pass atas daftar enemy yang sudah
+difilter, sehingga unit yang mati oleh damage tetap kena slow/stun seperti di
+sumber. Angka, urutan, dan efek tetap eksplisit per ID.
 
 Fixture source dan suite native lama tetap dijalankan. CI Godot 4.7.2
 `c029d50`: **358.305 native checks** (checkpoint #284). Progres batch, batas konteks sesi dan

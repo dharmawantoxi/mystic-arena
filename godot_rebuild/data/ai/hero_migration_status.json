@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 163,
-  "pending": 59,
+  "playable": 164,
+  "pending": 58,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -243,7 +243,7 @@
       "blocker": null
     },
     "ignis_drachorn": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 4,
       "summon_cost": 850,
       "source_recipe": {
@@ -252,10 +252,10 @@
         "e": "_cast_e_dragon_blood",
         "r": "_cast_r_elder_dragon_form"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_recipe_skills.gd",
+      "oracle": "boss_recipe_source_oracle.py",
+      "native_test": "boss_recipe_checks.gd",
+      "blocker": null
     },
     "pyrenth": {
       "status": "playable",

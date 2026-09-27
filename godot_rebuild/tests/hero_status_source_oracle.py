@@ -18,7 +18,8 @@ def source_fixture():
     result = dict(heals=[], burn=[])
     for kind, key in (("zephyr", "w"), ("morgath", "e"), ("morgath", "r"),
                       ("drakar", "q"), ("abaddon", "w"), ("alchemist", "e"),
-                      ("nyzrak", "r")):
+                      ("nyzrak", "r"),
+                      ("ignis_drachorn", "e"), ("ignis_drachorn", "r")):
         for missing in (1, 300):
             for reduction in (0, 0.75, 1):
                 h = H(kind, "red", 500, 340)

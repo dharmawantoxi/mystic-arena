@@ -13,6 +13,7 @@ const SYLARA = preload("res://data/heroes/sylara.tres")
 const FIXTURE := "res://tests/fixtures/ai_recruit_source.json"
 const STATS := "res://data/ai/hero_combat_stats.json"
 const RECRUITMENT := "res://data/ai/recruitment.json"
+const Roster = preload("res://scripts/data/hero_roster.gd")
 
 
 func run(check: Callable) -> void:
@@ -118,22 +119,35 @@ func _catalog(check: Callable) -> void:
 	check.call(stats.sylara.cost == SYLARA.cost, "Sylara native/source price")
 
 
+## Any catalog hero that still has metadata but no native kit. Resolved at
+## runtime so finishing a batch can never quietly turn these guards vacuous or
+## point them at a hero that legitimately owns a kit now.
+func unsupported() -> Dictionary:
+	var catalog: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(RECRUITMENT)).catalog
+	for kind in catalog:
+		if not Roster.DEFINITIONS.has(kind):
+			return {"id": kind, "cost": int(catalog[kind].cost)}
+	return {"id": "", "cost": 0}
+
+
 func _guards(check: Callable) -> void:
 	var world := _world()
 	_fund(world, 1000)
 	var recruit := Recruit.new()
-	var draft := _target("ancient_apparition", 800)
+	var missing: Dictionary = unsupported()
+	check.call(not missing.id.is_empty(), "Roster still has heroes without a native kit")
+	var draft := _target(missing.id, missing.cost)
 	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
 	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == "ancient_apparition" and draft.reserve() == 800,
+		draft.purchase_target == missing.id and draft.reserve() == missing.cost,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
 		world.units.is_empty() and world.economy.gold[1] == 1000, "Missing kit has no effects"
 	)
 	check.call(
-		not world._buy_ai_hero("ancient_apparition", 400, Vector2(1120, 90)),
+		not world._buy_ai_hero(missing.id, 1, Vector2(1120, 90)),
 		"Boss metadata is not a playable kit"
 	)
 	check.call(not world._buy_ai_hero("kaizen", 1, Vector2(1120, 90)), "Forged cost rejected")
@@ -156,8 +170,7 @@ func _guards(check: Callable) -> void:
 	)
 	world.winner = 0
 	check.call(
-		not recruit.try_buy(world, _target("ancient_apparition", 800)),
-		"Finished match blocks draft"
+		not recruit.try_buy(world, _target(missing.id, missing.cost)), "Finished match blocks draft"
 	)
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
@@ -194,10 +207,11 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var missing := _target("ancient_apparition", 800)
+	var absent: Dictionary = unsupported()
+	var pending := _target(absent.id, absent.cost)
 	world.economy.credit_kill(1, 1000)
 	check.call(
-		not adapter.try_buy(world, missing) and missing.reserve() == 800,
+		not adapter.try_buy(world, pending) and pending.reserve() == absent.cost,
 		"Unsupported boss kit keeps draft without debit"
 	)
 	var grimjaw := _target("grimjaw", 450)

@@ -1,6 +1,6 @@
-# Checkpoint migrasi setelah PR #284 — 163/222, BELUM selesai
+# Checkpoint migrasi setelah PR #284 — 164/222, BELUM selesai
 
-**159 dari 220 hero yang diminta di sesi-sesi ini selesai; 59 masih pending.**
+**160 dari 221 hero yang diminta di sesi-sesi ini selesai; 58 masih pending.**
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
 `arena/01a0e179-mystic-arena` dengan PR draft sesi ini.
 **Jangan merge tanpa perintah pengguna.**
@@ -14,7 +14,7 @@ sebelumnya — jadi **tidak ada klaim engine lokal**; CI yang menjalankan import
 dan `run_all.gd`.
 
 
-Daftar tepat **semua 163 selesai dan semua 59 belum selesai**, harga summon,
+Daftar tepat **semua 164 selesai dan semua 58 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
 [`data/ai/hero_migration_status.json`](data/ai/hero_migration_status.json).
@@ -30,10 +30,11 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 2 | Gornak, Morgath, Drakar, Abaddon | 10 / 212 | [95.314 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36296265931) |
 | 3 | 150 ID shared-source eksplisit (lihat daftar) | 160 / 62 | [340.054 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36297544475) |
 | 4 | Alchemist | 161 / 61 | [358.305 checks, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
-| 5 (sesi ini) | Ancient Apparition, Nyzrak | **163 / 59** | menunggu CI branch sesi |
+| 5 (sesi ini) | Ancient Apparition, Nyzrak | 163 / 59 | CI branch sesi |
+| 6 (sesi ini) | Ignis Drachorn | **164 / 58** | menunggu CI branch sesi |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
-validation (**4.445 checks**, termasuk guard manifest dan generator tabel roster),
+validation (**4.511 checks**, termasuk guard manifest dan generator tabel roster),
 gdparse, gdlint dan gdformat juga lulus. Engine sandbox tidak dapat
 diunduh (TLS ke release-assets/CDN gagal), sehingga import dan seluruh tes
 engine dijalankan di workflow Godot resmi yang sudah ada. **Bukan klaim engine
@@ -56,7 +57,7 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   ID-ID ini dan benar-benar dispatch ke `BossHeroSkills._fallback_cast`.
   Oracle merekam jalur itu **per ID**, menjalankan QWER, exact cooldown/recast,
   melee/homing, upgrade level 1–15, respawn dan pembelian asli. Allowlist eksplisit
-  dikunci CI; **tidak ada fallback native untuk 59 recipe yang belum diport**.
+  dikunci CI; **tidak ada fallback native untuk 58 recipe yang belum diport**.
 - **Alchemist (750 G):** target-centered W100/slow, E rage 360 + heal 15%,
   R200/heal 100 per kill nyata. Uji zero/multiple kill, radius, anti-heal,
   timer expiry saat upgrade, attack, respawn, summon dan upgrade.
@@ -73,11 +74,24 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   shield, absorb, atau mitigasi; flag hanya direkam dan tes mengunci 100 damage
   penuh untuk physical **dan** magic. Tidak ada shield karangan.
   Durasi visual Nyzrak memakai override sumber 50/50/70/90, AA default 60/90/60/100.
+- **Ignis Drachorn (850 G):** Q cone melebar 250/60 (half width 0,3→1,0 sepanjang
+  reach) 1,6× stun 45; W sapuan 360 r130 1,9× stun 60; E `dragon_blood` 480 tick,
+  damage `int(katalog*1,3)` + heal 20%; R `dragon_form` 600 tick, damage
+  `int(katalog*1,8)` + nova r220 3,0× stun 90 + heal 25%. Dua clock berbeda
+  dengan reset berbeda, dan quirk sumber dikunci: E **menimpa** damage R,
+  R yang kedaluwarsa mereset damage ke katalog sehingga buff E ikut hilang, E
+  yang kedaluwarsa **tidak** mengembalikan damage, dan upgrade di tengah buff
+  menulis ulang damage buff. Damage buff memakai angka katalog mentah, bukan
+  damage level.
+- **Bentuk geometri** (`boss_recipe_shapes.gd`) ditranskripsi 1:1 dari loop
+  sumber: burst, line, beam, cone, single. Damage + slow + stun berbagi satu
+  pass atas daftar enemy yang sudah difilter, persis seperti badan recipe
+  sumber, sehingga target yang mati oleh damage tetap kena slow/stun.
 - **Interaksi:** oracle memakai Hero Thorne dan Tower asli, bukan hanya receipt
   HP. Sekolah/source attribution, mitigasi, reflect, shield, dan tower yang
   tidak mempunyai `attack_timer` diuji. Skill tanpa source/school di Python
   tetap **netral**, tidak otomatis memakai sekolah caster.
-- **Ekonomi:** 489 pembelian sumber (163 × harga−1/tepat/+1). Boss upgrade
+- **Ekonomi:** 492 pembelian sumber (164 × harga−1/tepat/+1). Boss upgrade
   **1,6×** starter: Lv1→2 **480 G**; threshold reserve ±1, hero hidup/mati,
   saldo, registry dan clock diuji. Anti-heal mengikuti HP setter: cap dahulu,
   baru potong kenaikan HP. Resource bersama tidak dimutasi.
@@ -92,20 +106,21 @@ native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
 ## Sisa dan blocker tepat
 
-**59 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
+**58 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
 oracle/native test per perilakunya. Metode Q/W/E/R untuk masing-masing ID
-tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--59-id-dan-recipe-yang-menjadi-blocker).
+tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--58-id-dan-recipe-yang-menjadi-blocker).
 Blocker implementasi: sisa recipe/verifikasi melebihi konteks kerja aman satu
 sesi. **Tidak ada klaim 222 playable.**
 
 Lanjut berdasarkan level sumber:
-1. **Ignis Drachorn** (sisa level 4), lalu level 5: Krobellus, Vhalzun.
-   Lihat `hero_skills/_bundle.py` read-only: registry dispatch, `update_timers`
-   bersama dan metode recipe masing-masing.
-2. Ignis membutuhkan cone, sweep dan dua buff (`dragon_form_active` reset damage
-   ke katalog, `dragon_blood_active`) dengan expiry/reset berbeda.
-3. Level 6 (Gravewake, Kunkka, Syrentha, Thalgryn), 7 (Akashari, Malzareth,
-   Nyxarath, Vorenmarr), lalu 9–20 sesuai manifest. **Audit AST sudah dilakukan:
+1. **Krobellus + Vhalzun** (level 5), lalu level 6 (Gravewake, Kunkka, Syrentha,
+   Thalgryn), 7 (Akashari, Malzareth, Nyxarath, Vorenmarr), lalu 9–20 sesuai
+   manifest. Lihat `hero_skills/_bundle.py` read-only: registry dispatch,
+   `update_timers` bersama dan metode recipe masing-masing.
+2. Batch berikutnya menambah ID ke `IDS` + `match` di `boss_recipe_skills.gd`,
+   ke `IDS`/`STATE_EXTRAS` di `boss_recipe_source_oracle.py` (dicek silang
+   dengan manifest), dan ke `HEROES` di `boss_recipe_checks.gd` (dicek silang
+   dengan `hero_ids(manifest)`). Jalankan `python tests/roster_doc.py --write`. **Audit AST sudah dilakukan:
    61 recipe awal semuanya berbeda satu sama lain**, jadi tidak ada satu pun
    yang boleh memakai handler bersama. Bentuk geometri (beam/radial/cone/
    single) boleh dipakai ulang hanya sebagai helper; angka, ordering, slow,
@@ -145,17 +160,18 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 
 > Lanjutkan migrasi kit hero dari checkpoint PR #284 (`cf936ac`) pada branch
 > sesi `arena/01a0e179-mystic-arena`; jangan mengambil main saja. Status saat
-> checkpoint ini: **163/222 kit native teruji** (6 starter + Gornak, Morgath,
-> Drakar, Abaddon, Alchemist, Ancient Apparition, Nyzrak + 150 ID yang benar-benar
-> memakai shared handler di sumber), tersisa tepat **59** dengan recipe khusus.
+> checkpoint ini: **164/222 kit native teruji** (6 starter + Gornak, Morgath,
+> Drakar, Abaddon, Alchemist, Ancient Apparition, Nyzrak, Ignis Drachorn + 150 ID
+> yang benar-benar memakai shared handler di sumber), tersisa tepat **58**
+> dengan recipe khusus.
 > Baca AI_CONTRACT.md, SHIELD_CONTRACT.md, HERO_CONTRACT.md,
 > HERO_MIGRATION_PROGRESS.md, HERO_ROSTER_STATUS.md dan manifest
 > data/ai/hero_migration_status.json.
-> **Batch berikutnya: Ignis Drachorn (sisa level 4), lalu Krobellus + Vhalzun
-> (level 5),** lalu 6, 7, dan 9–20 menurut level sumber di manifest. Lanjut
+> **Batch berikutnya: Krobellus + Vhalzun (level 5),** lalu 6, 7, dan 9–20
+> menurut level sumber di manifest. Lanjut
 > otomatis setelah tiap batch lulus; jangan berhenti untuk meminta instruksi.
-> Audit AST: 61 recipe awal semuanya berbeda satu sama lain — tidak ada satu pun
-> yang boleh memakai handler bersama; hanya bentuk geometri yang boleh
+> Audit AST: keempat recipe asli boss pending semuanya berbeda satu sama lain — tidak ada satu pun
+> (termasuk yang baru saja di-port); hanya bentuk geometri yang boleh
 > dipakai ulang sebagai helper, angka/ordering/efek eksplisit per ID.
 > Untuk setiap ID, audit konsumen tiap atribut yang ditulis recipe di kelas
 > `Hero` asli sebelum memberi efek: flag yang tidak dibaca (mis. `shield_active`
