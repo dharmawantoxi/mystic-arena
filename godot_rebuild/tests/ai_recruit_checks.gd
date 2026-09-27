@@ -123,21 +123,21 @@ func _guards(check: Callable) -> void:
 	_fund(world, 4000)
 	var recruit := Recruit.new()
 	# Funded above the pending price so AIDraft reaches the native kit gate.
-	# akahime (2450G, level 19) is still pending after batch 20; pending kits
-	# must stay rejected without debit or substitution (cryssalia was replaced
+	# astraelion (2600G, level 20) is still pending after batch 21; pending kits
+	# must stay rejected without debit or substitution (akahime was replaced
 	# here once its real kit landed).
-	var draft := _target("akahime", 2450)
+	var draft := _target("astraelion", 2600)
 	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
 	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == "akahime" and draft.reserve() == 2450,
+		draft.purchase_target == "astraelion" and draft.reserve() == 2600,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
 		world.units.is_empty() and world.economy.gold[1] == 4000, "Missing kit has no effects"
 	)
 	check.call(
-		not world._buy_ai_hero("akahime", 400, Vector2(1120, 90)),
+		not world._buy_ai_hero("astraelion", 400, Vector2(1120, 90)),
 		"Boss metadata is not a playable kit"
 	)
 	check.call(not world._buy_ai_hero("kaizen", 1, Vector2(1120, 90)), "Forged cost rejected")
@@ -159,7 +159,9 @@ func _guards(check: Callable) -> void:
 		"Dead owned hero still blocks duplicate"
 	)
 	world.winner = 0
-	check.call(not recruit.try_buy(world, _target("akahime", 2450)), "Finished match blocks draft")
+	check.call(
+		not recruit.try_buy(world, _target("astraelion", 2600)), "Finished match blocks draft"
+	)
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
@@ -195,10 +197,10 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var missing := _target("akahime", 2450)
+	var missing := _target("astraelion", 2600)
 	world.economy.credit_kill(1, 1000)
 	check.call(
-		not adapter.try_buy(world, missing) and missing.reserve() == 2450,
+		not adapter.try_buy(world, missing) and missing.reserve() == 2600,
 		"Unsupported boss kit keeps draft without debit"
 	)
 	var grimjaw := _target("grimjaw", 450)

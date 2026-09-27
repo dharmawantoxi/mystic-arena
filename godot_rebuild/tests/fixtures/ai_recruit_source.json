@@ -3520,6 +3520,61 @@
     }
   },
   {
+    "hero_type": "akahime",
+    "price": 2450,
+    "initial": 2449,
+    "success": false,
+    "balance": 2449,
+    "count": 0,
+    "reserve": 2450,
+    "target": "akahime",
+    "hero": null
+  },
+  {
+    "hero_type": "akahime",
+    "price": 2450,
+    "initial": 2450,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "akahime",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2354,
+      "hp": 2354,
+      "damage": 184,
+      "skill_damage": 485,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "akahime",
+    "price": 2450,
+    "initial": 2451,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "akahime",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2354,
+      "hp": 2354,
+      "damage": 184,
+      "skill_damage": 485,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

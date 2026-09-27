@@ -17,6 +17,7 @@ const DEFINITIONS := {
 	"ignis_drachorn": preload("res://data/heroes/ignis_drachorn.tres"),
 	"aelyrion": preload("res://data/heroes/aelyrion.tres"),
 	"aeralith": preload("res://data/heroes/aeralith.tres"),
+	"akahime": preload("res://data/heroes/akahime.tres"),
 	"akaroth": preload("res://data/heroes/akaroth.tres"),
 	"akashari": preload("res://data/heroes/akashari.tres"),
 	"akirakumo": preload("res://data/heroes/akirakumo.tres"),
