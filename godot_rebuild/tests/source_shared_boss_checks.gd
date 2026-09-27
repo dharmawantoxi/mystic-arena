@@ -76,10 +76,10 @@ func _lifecycle(kind: String, check: Callable) -> void:
 
 func _no_fallback(check: Callable) -> void:
 	var world := Battle.new()
-	# ignirus is a pending recipe ID: a forged definition must not resolve
-	# to any native kit (auroth moved to a real kit in batch 17).
+	# kaelthorn is a pending recipe ID: a forged definition must not resolve
+	# to any native kit (ignirus moved to a real kit in batch 18).
 	var fake = Roster.DEFINITIONS.kaizen.duplicate()
-	fake.id = "ignirus"
+	fake.id = "kaelthorn"
 	var hero := world.spawn_hero(fake, world.RED, Vector2(500, 340))
 	_enemies(world, [[550, 340]])
 	for key in ["q", "w", "e", "r"]:

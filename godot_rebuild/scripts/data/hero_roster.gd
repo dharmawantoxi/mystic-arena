@@ -51,6 +51,7 @@ const DEFINITIONS := {
 	"hitokage": preload("res://data/heroes/hitokage.tres"),
 	"hollowbane": preload("res://data/heroes/hollowbane.tres"),
 	"ignakhor": preload("res://data/heroes/ignakhor.tres"),
+	"ignirus": preload("res://data/heroes/ignirus.tres"),
 	"infrakzaar": preload("res://data/heroes/infrakzaar.tres"),
 	"kaedrin": preload("res://data/heroes/kaedrin.tres"),
 	"kaeldris": preload("res://data/heroes/kaeldris.tres"),

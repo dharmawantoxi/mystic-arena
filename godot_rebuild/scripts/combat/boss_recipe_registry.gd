@@ -9,6 +9,7 @@ const HANDLERS := [
 	preload("res://scripts/combat/boss_level_thirteen_skills.gd"),
 	preload("res://scripts/combat/boss_level_fourteen_skills.gd"),
 	preload("res://scripts/combat/boss_level_fifteen_skills.gd"),
+	preload("res://scripts/combat/boss_level_sixteen_skills.gd"),
 ]
 
 
