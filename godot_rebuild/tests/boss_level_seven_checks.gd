@@ -40,7 +40,7 @@ func _cast(row: Dictionary, check: Callable) -> void:
 	var enemies := _enemies(world, row.positions)
 	if row.target >= 0:
 		hero.target_id = enemies[int(row.target)].id
-	var skill_key := "q" if row.key == "q_auto" else row.key
+	var skill_key: String = "q" if row.key == "q_auto" else row.key
 	check.call(helpers._skill(world, hero.id, skill_key) == row.ok, row.hero + " cast " + row.key)
 	if row.repeat != null:
 		check.call(
