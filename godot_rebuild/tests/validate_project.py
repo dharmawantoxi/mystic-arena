@@ -218,6 +218,9 @@ check("BossLevelTwelveChecks.new().run(_check)" in ai_tests, "Boss level twelve 
 from boss_level_thirteen_source_oracle import source_fixture as boss_level_thirteen_fixture
 check(boss_level_thirteen_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_thirteen_source.json").read_text()), "Boss level thirteen source behavior drift")
 check("BossLevelThirteenChecks.new().run(_check)" in ai_tests, "Boss level thirteen native suite must run")
+from boss_level_fourteen_source_oracle import source_fixture as boss_level_fourteen_fixture
+check(boss_level_fourteen_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_fourteen_source.json").read_text()), "Boss level fourteen source behavior drift")
+check("BossLevelFourteenChecks.new().run(_check)" in ai_tests, "Boss level fourteen native suite must run")
 
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)

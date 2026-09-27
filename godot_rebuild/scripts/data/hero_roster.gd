@@ -27,6 +27,7 @@ const DEFINITIONS := {
 	"aurethzar": preload("res://data/heroes/aurethzar.tres"),
 	"aurex": preload("res://data/heroes/aurex.tres"),
 	"azkharion": preload("res://data/heroes/azkharion.tres"),
+	"azureth": preload("res://data/heroes/azureth.tres"),
 	"bhorgathul": preload("res://data/heroes/bhorgathul.tres"),
 	"broggmar": preload("res://data/heroes/broggmar.tres"),
 	"brumhar": preload("res://data/heroes/brumhar.tres"),
