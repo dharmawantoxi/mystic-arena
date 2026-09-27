@@ -28,6 +28,11 @@ FIELDS = {
 def source_env():
     env = setup()
     tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
+    minion = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Minion")
+    slow = next(n for n in minion.body if isinstance(n, ast.FunctionDef) and n.name == "apply_slow")
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[slow], type_ignores=[])),
+                 "<source Minion.apply_slow>", "exec"), env)
+    Target.apply_slow = env["apply_slow"]
     cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Hero")
     method = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == "respawn")
     exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])),

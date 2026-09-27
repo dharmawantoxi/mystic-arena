@@ -17216,7 +17216,7 @@
               {
                 "hp": 9923,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17228,7 +17228,7 @@
               {
                 "hp": 9923,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17278,7 +17278,7 @@
               {
                 "hp": 9902,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17290,7 +17290,7 @@
               {
                 "hp": 9902,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17340,7 +17340,7 @@
               {
                 "hp": 9881,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17352,7 +17352,7 @@
               {
                 "hp": 9881,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17402,7 +17402,7 @@
               {
                 "hp": 9797,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17414,7 +17414,7 @@
               {
                 "hp": 9797,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17464,7 +17464,7 @@
               {
                 "hp": 9797,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17476,7 +17476,7 @@
               {
                 "hp": 9797,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17526,7 +17526,7 @@
               {
                 "hp": 9776,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17538,7 +17538,7 @@
               {
                 "hp": 9776,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17588,7 +17588,7 @@
               {
                 "hp": 9755,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17600,7 +17600,7 @@
               {
                 "hp": 9755,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17650,7 +17650,7 @@
               {
                 "hp": 9713,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17662,7 +17662,7 @@
               {
                 "hp": 9713,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17712,7 +17712,7 @@
               {
                 "hp": 9692,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17724,7 +17724,7 @@
               {
                 "hp": 9692,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17774,7 +17774,7 @@
               {
                 "hp": 9692,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -17786,7 +17786,7 @@
               {
                 "hp": 9692,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18299,7 +18299,7 @@
               {
                 "hp": 9919,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18311,7 +18311,7 @@
               {
                 "hp": 9919,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18361,7 +18361,7 @@
               {
                 "hp": 9894,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18373,7 +18373,7 @@
               {
                 "hp": 9894,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18423,7 +18423,7 @@
               {
                 "hp": 9869,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18435,7 +18435,7 @@
               {
                 "hp": 9869,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18485,7 +18485,7 @@
               {
                 "hp": 9769,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18497,7 +18497,7 @@
               {
                 "hp": 9769,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18547,7 +18547,7 @@
               {
                 "hp": 9769,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18559,7 +18559,7 @@
               {
                 "hp": 9769,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18609,7 +18609,7 @@
               {
                 "hp": 9744,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18621,7 +18621,7 @@
               {
                 "hp": 9744,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18671,7 +18671,7 @@
               {
                 "hp": 9719,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18683,7 +18683,7 @@
               {
                 "hp": 9719,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18733,7 +18733,7 @@
               {
                 "hp": 9669,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18745,7 +18745,7 @@
               {
                 "hp": 9669,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18795,7 +18795,7 @@
               {
                 "hp": 9644,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18807,7 +18807,7 @@
               {
                 "hp": 9644,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18857,7 +18857,7 @@
               {
                 "hp": 9644,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -18869,7 +18869,7 @@
               {
                 "hp": 9644,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19382,7 +19382,7 @@
               {
                 "hp": 9923,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19394,7 +19394,7 @@
               {
                 "hp": 9923,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19444,7 +19444,7 @@
               {
                 "hp": 9902,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19456,7 +19456,7 @@
               {
                 "hp": 9902,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19506,7 +19506,7 @@
               {
                 "hp": 9881,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19518,7 +19518,7 @@
               {
                 "hp": 9881,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19568,7 +19568,7 @@
               {
                 "hp": 9797,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19580,7 +19580,7 @@
               {
                 "hp": 9797,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19630,7 +19630,7 @@
               {
                 "hp": 9797,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19642,7 +19642,7 @@
               {
                 "hp": 9797,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19692,7 +19692,7 @@
               {
                 "hp": 9776,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19704,7 +19704,7 @@
               {
                 "hp": 9776,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19754,7 +19754,7 @@
               {
                 "hp": 9755,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19766,7 +19766,7 @@
               {
                 "hp": 9755,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19816,7 +19816,7 @@
               {
                 "hp": 9713,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19828,7 +19828,7 @@
               {
                 "hp": 9713,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19878,7 +19878,7 @@
               {
                 "hp": 9692,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19890,7 +19890,7 @@
               {
                 "hp": 9692,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19940,7 +19940,7 @@
               {
                 "hp": 9692,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {
@@ -19952,7 +19952,7 @@
               {
                 "hp": 9692,
                 "slow_amount": 0.5,
-                "slow_timer": 60,
+                "slow_timer": 180,
                 "cooldown_ticks": 0
               },
               {

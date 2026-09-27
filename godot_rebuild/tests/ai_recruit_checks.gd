@@ -22,6 +22,7 @@ func run(check: Callable) -> void:
 	_catalog(check)
 	_multi_roster(check)
 	_guards(check)
+	_pending_kits(check)
 
 
 func _world() -> World:
@@ -38,6 +39,7 @@ func _fund(world: World, amount: int) -> void:
 
 func _target(kind: String, cost: int) -> Draft:
 	var draft := Draft.new()
+	draft.level_number = 2
 	draft.purchase_target = kind
 	draft.purchase_target_cost = cost
 	return draft
@@ -120,11 +122,11 @@ func _guards(check: Callable) -> void:
 	var world := _world()
 	_fund(world, 1000)
 	var recruit := Recruit.new()
-	var draft := _target("gornak", 420)
+	var draft := _target("gornak", 500)
 	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
 	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == "gornak" and draft.reserve() == 420,
+		draft.purchase_target == "gornak" and draft.reserve() == 500,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
@@ -153,7 +155,7 @@ func _guards(check: Callable) -> void:
 		"Dead owned hero still blocks duplicate"
 	)
 	world.winner = 0
-	check.call(not recruit.try_buy(world, _target("gornak", 420)), "Finished match blocks draft")
+	check.call(not recruit.try_buy(world, _target("gornak", 500)), "Finished match blocks draft")
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
@@ -189,11 +191,11 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var missing := _target("gornak", 420)
+	var missing := _target("gornak", 500)
 	world.economy.credit_kill(1, 1000)
 	check.call(
-		not adapter.try_buy(world, missing) and missing.reserve() == 420,
-		"Unsupported Vex kit keeps draft without debit"
+		not adapter.try_buy(world, missing) and missing.reserve() == 500,
+		"Unsupported boss kit keeps draft without debit"
 	)
 	var grimjaw := _target("grimjaw", 450)
 	check.call(adapter.try_buy(world, grimjaw), "Grimjaw third real paid summon")
@@ -216,3 +218,23 @@ func _multi_roster(check: Callable) -> void:
 		world.economy.gold[1] == 270 and world.economy.is_balanced(),
 		"Fourth kit debits exact 380 G"
 	)
+
+
+func _pending_kits(check: Callable) -> void:
+	var world := _world()
+	_fund(world, 100000)
+	var metadata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(RECRUITMENT))
+	for kind in metadata.catalog:
+		if World.PLAYABLE_AI_HEROES.has(kind):
+			continue
+		check.call(
+			not world._buy_ai_hero(kind, int(metadata.catalog[kind].cost), Vector2(1120, 90)),
+			"Pending kit rejected: " + kind
+		)
+		check.call(
+			world.transaction_error == "kit" and world.units.is_empty(),
+			"No pending kit substitution"
+		)
+		check.call(
+			world.economy.gold[1] == 100000 and world.economy.is_balanced(), "No pending debit"
+		)
