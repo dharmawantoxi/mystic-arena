@@ -5,6 +5,15 @@ Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
 `arena/01a0e134-mystic-arena`, [PR draft #284](https://github.com/dharmawantoxi/mystic-arena/pull/284).
 **Jangan merge tanpa perintah pengguna.**
 
+**Batas sinkronisasi GitHub saat checkpoint:** kode teruji sampai `c029d50`
+sudah ter-push dan CI hijau. Push commit dokumentasi/manifest `639abeb`
+gagal autentikasi (`git`: credentials unavailable; `gh`: HTTP 401). Perubahan
+akhir tersimpan lokal/snapshot Arena, tidak hilang. **Reconnect GitHub di
+Arena** sebelum push lanjutan atau update PR; tidak memerlukan token/password
+di chat. Update judul/body PR terakhir juga gagal, sehingga isi PR remote
+mungkin masih menunjukkan hitungan lama. Jangan membuang commit lokal.
+
+
 Daftar tepat **semua 161 selesai dan semua 61 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
@@ -72,8 +81,9 @@ native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 **61 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
 oracle/native test per perilakunya. Metode Q/W/E/R untuk masing-masing ID
 tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--61-id-dan-recipe-yang-menjadi-blocker).
-Tidak ada blocker credential; blocker utamanya sisa implementasi/verifikasi
-melebihi konteks kerja aman sesi ini. Tidak ada klaim 222 playable.
+Blocker implementasi: sisa recipe/verifikasi melebihi konteks kerja aman sesi
+ini. Blocker sinkronisasi tambahan: koneksi GitHub perlu direconnect (lihat
+catatan awal); kode native teruji sudah remote, manifest akhir masih lokal. Tidak ada klaim 222 playable.
 
 Lanjut berdasarkan level sumber:
 1. **Nyzrak + Ancient Apparition** (sisa level 3), kemudian **Ignis Drachorn**
@@ -112,7 +122,10 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 
 ## Pesan siap-salin untuk sesi berikutnya
 
-> Lanjutkan migrasi 222 hero dari checkpoint PR draft #284. Saat ini 161/222
+> Lanjutkan migrasi 222 hero dari snapshot checkpoint Arena terbaru untuk PR
+> draft #284 (jangan hanya mengambil main). Reconnect GitHub di Arena dahulu:
+> kode teruji c029d50 sudah remote, commit manifest/dokumentasi 639abeb dan
+> catatan handoff berikutnya masih lokal karena autentikasi terputus. Saat ini 161/222
 > kit native teruji (6 starter + Gornak, Morgath, Drakar, Abaddon, Alchemist +
 > 150 ID yang benar-benar memakai shared handler di sumber), tersisa tepat 61.
 > Baca godot_rebuild/AI_CONTRACT.md, SHIELD_CONTRACT.md, HERO_CONTRACT.md,
