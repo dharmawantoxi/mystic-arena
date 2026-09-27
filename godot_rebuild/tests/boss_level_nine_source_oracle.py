@@ -15,7 +15,7 @@ from starter_finish_source_oracle import source_env, state as starter_state
 from boss_level_one_source_oracle import _cast_case, targets
 
 FIXTURE = Path(__file__).parent / "fixtures/boss_level_nine_source.json"
-IDS = ("kenshiro", "wiro", "khazan")
+IDS = ("kenshiro", "wiro", "khazan", "naraka")
 
 
 def state(hero, enemies):
@@ -33,7 +33,7 @@ def source_fixture(ids=IDS):
     env = source_env()
     sys.modules["settings"].get_all_hero_types = env["get_all_hero_types"]
     H = env["SourceHero"]
-    result = dict(casts=[], traces=[], attacks=[], respawn=[], catalog={}, levels={})
+    result = dict(casts=[], traces=[], attacks=[], respawn=[], execute=[], catalog={}, levels={})
     for kind in ids:
         h = H(kind, "red", 500, 340)
         recipe = h.skills._SKILL_REGISTRY[kind]
@@ -100,6 +100,18 @@ def source_fixture(ids=IDS):
         for level in range(1, 16):
             result["levels"][kind].append(dict(level=level, hp=h.hp, damage=h.damage, max_hp=h.max_hp, skill_value=h.skill_damage, price=h.upgrade_cost()))
             assert h.upgrade() == (level < 15)
+    # Naraka R execute: strict hp/max(1,max_hp) < 0.3 pre-hit, int then x1.6.
+    for level in ((1, 2, 15) if "naraka" in ids else ()):
+        for hp in (2999, 3000, 3001):
+            hero = H("naraka", "red", 500, 340)
+            while hero.level < level:
+                assert hero.upgrade()
+            hero.hp = 500
+            enemies = targets([(550, 340), (700, 340)])
+            enemies[0].hp = hp
+            assert hero.skills.cast_r(enemies, [], [])
+            result["execute"].append(dict(level=level, hp=hp, after=[max(0, e.hp) for e in enemies],
+                                          hero_hp=hero.hp))
     return json.loads(json.dumps(result))
 
 

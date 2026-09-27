@@ -1485,6 +1485,61 @@
     }
   },
   {
+    "hero_type": "naraka",
+    "price": 2000,
+    "initial": 1999,
+    "success": false,
+    "balance": 1999,
+    "count": 0,
+    "reserve": 2000,
+    "target": "naraka",
+    "hero": null
+  },
+  {
+    "hero_type": "naraka",
+    "price": 2000,
+    "initial": 2000,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "naraka",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2219,
+      "hp": 2219,
+      "damage": 264,
+      "skill_damage": 667,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "naraka",
+    "price": 2000,
+    "initial": 2001,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "naraka",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2219,
+      "hp": 2219,
+      "damage": 264,
+      "skill_damage": 667,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

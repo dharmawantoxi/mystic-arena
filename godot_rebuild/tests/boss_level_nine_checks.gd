@@ -6,6 +6,7 @@ const BOSSES := {
 	"kenshiro": preload("res://data/heroes/kenshiro.tres"),
 	"wiro": preload("res://data/heroes/wiro.tres"),
 	"khazan": preload("res://data/heroes/khazan.tres"),
+	"naraka": preload("res://data/heroes/naraka.tres"),
 }
 
 
@@ -30,6 +31,9 @@ func run(check: Callable) -> void:
 		_attack(row, check)
 	for row in fixture.respawn:
 		_respawn(row, check)
+	for row in fixture.execute:
+		_execute(row, check)
+	check.call(fixture.execute.size() == 9, "Naraka execute oracle rows present")
 	_roster(check)
 
 
@@ -109,6 +113,20 @@ func _attack(row: Dictionary, check: Callable) -> void:
 				),
 				"Level9 homing trajectory " + row.hero
 			)
+
+
+func _execute(row: Dictionary, check: Callable) -> void:
+	var world := Battle.new()
+	var hero := _hero(world, "naraka")
+	while hero.level < row.level:
+		check.call(hero.upgrade(), "Naraka leveled execute")
+	hero.hp = 500
+	var enemies := _enemies(world, [[550, 340], [700, 340]])
+	enemies[0].hp = row.hp
+	check.call(helpers._skill(world, hero.id, "r"), "Naraka Execution cast")
+	for idx in range(enemies.size()):
+		check.call(enemies[idx].hp == row.after[idx], "Naraka strict <30% execute, int then x1.6")
+	check.call(hero.hp == row.hero_hp, "Naraka Execution heal 10%")
 
 
 func _respawn(row: Dictionary, check: Callable) -> void:
