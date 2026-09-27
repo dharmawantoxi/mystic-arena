@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["cryssalia", "kaelthar", "morkhaera"]
+const IDS := ["cryssalia", "kaelthar", "morkhaera", "aurelion"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -30,7 +30,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_kaelthar(world, hero, target, key, structures)
 		"morkhaera":
 			_morkhaera(world, hero, target, key, structures)
-		#DISPATCH
+		"aurelion":
+			_aurelion(world, hero, target, key, structures)
 		_:
 			return false
 	Common.trigger(hero, key, VISUAL[key])
@@ -93,7 +94,25 @@ static func _morkhaera(world, hero: HeroState, target, key: String, structures: 
 			hero.heal_hp(int(hero.max_hp * 0.12))
 
 
-#HEROES
+static func _aurelion(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Target int(1.3x); strictly below 30% HP pre-hit int(x1.4).
+			if target == null:
+				return
+			_execute_hit(world, hero, target, 1.3, 1.4)
+		"w":
+			# AOE 210 1.2x skill.
+			_radial(world, hero, structures, 210.0, 1.2)
+		"e":
+			# AOE 225 1.0x skill, slow 0.35 for 90.
+			_radial(world, hero, structures, 225.0, 1.0, 0, 0.35, 90)
+		"r":
+			# AOE 300 2.2x skill, attack delay max(timer, 80), heal 12%.
+			_radial(world, hero, structures, 300.0, 2.2, 80)
+			hero.heal_hp(int(hero.max_hp * 0.12))
+
+
 static func _execute_hit(world, hero: HeroState, target, mult: float, bonus: float) -> void:
 	# Source: dmg = int(skill * mult); if hp / max(1, max_hp) < 0.3 (pre-hit):
 	# dmg = int(dmg * bonus). Neutral, unattributed take_damage.
