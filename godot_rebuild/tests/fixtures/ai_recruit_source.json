@@ -3795,6 +3795,61 @@
     }
   },
   {
+    "hero_type": "morvaenthir",
+    "price": 2650,
+    "initial": 2649,
+    "success": false,
+    "balance": 2649,
+    "count": 0,
+    "reserve": 2650,
+    "target": "morvaenthir",
+    "hero": null
+  },
+  {
+    "hero_type": "morvaenthir",
+    "price": 2650,
+    "initial": 2650,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "morvaenthir",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2357,
+      "hp": 2357,
+      "damage": 186,
+      "skill_damage": 524,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "morvaenthir",
+    "price": 2650,
+    "initial": 2651,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "morvaenthir",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2357,
+      "hp": 2357,
+      "damage": 186,
+      "skill_damage": 524,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
