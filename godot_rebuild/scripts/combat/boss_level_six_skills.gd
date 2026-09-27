@@ -65,7 +65,9 @@ static func _kunkka(world, hero: HeroState, target, key: String, structures: Arr
 		"r":
 			# Torrent: AOE 200 on the target (hero when there is none), x3.0,
 			# attack clock 120 and a 20% heal.
-			var center := target.position if target != null else hero.position
+			var center: Vector2 = hero.position
+			if target != null:
+				center = target.position
 			_radial_at(world, hero, structures, center, 200.0, 3.0, 120)
 			_heal(hero, 0.20)
 
@@ -82,7 +84,9 @@ static func _gravewake(world, hero: HeroState, target, key: String, structures: 
 			_line(world, hero, structures, dir, 200.0, 60.0, 1.4, 0, 0.5, 180)
 		"w":
 			# Tide: AOE 120 on the target (hero when there is none), x1.3, clock 60.
-			var center := target.position if target != null else hero.position
+			var center: Vector2 = hero.position
+			if target != null:
+				center = target.position
 			_radial_at(world, hero, structures, center, 120.0, 1.3, 60)
 		"e":
 			# Shell: defense flag + 300 ticks and a 12% heal. Source Hero has no

@@ -209,7 +209,7 @@ func _multi_roster(check: Callable) -> void:
 	var missing := _target(PENDING_ID, PENDING_COST)
 	world.economy.credit_kill(1, 1000)
 	check.call(
-		not adapter.try_buy(world, missing) and missing.reserve() == 900,
+		not adapter.try_buy(world, missing) and missing.reserve() == PENDING_COST,
 		"Unsupported boss kit keeps draft without debit"
 	)
 	var grimjaw := _target("grimjaw", 450)
