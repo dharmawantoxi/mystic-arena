@@ -10,12 +10,17 @@ const GrimjawSkills = preload("res://scripts/combat/grimjaw_skills.gd")
 const VexSkills = preload("res://scripts/combat/vex_skills.gd")
 const ZephyrSkills = preload("res://scripts/combat/zephyr_skills.gd")
 const SylaraSkills = preload("res://scripts/combat/sylara_skills.gd")
+const BossLevelOneSkills = preload("res://scripts/combat/boss_level_one_skills.gd")
 const NATIVE_SKILLS := {
 	"thorne": ThorneSkills,
 	"grimjaw": GrimjawSkills,
 	"sylara": SylaraSkills,
 	"vex": VexSkills,
-	"zephyr": ZephyrSkills
+	"zephyr": ZephyrSkills,
+	"gornak": BossLevelOneSkills,
+	"morgath": BossLevelOneSkills,
+	"drakar": BossLevelOneSkills,
+	"abaddon": BossLevelOneSkills
 }
 const HeroProjectiles = preload("res://scripts/combat/hero_projectiles.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
@@ -616,7 +621,7 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		hero.damage * (2 if hero.settings().id == "grimjaw" and hero.grimjaw_crit_timer > 0 else 1)
 	)
 	var result := true
-	if not hero.is_melee:
+	if not hero.is_melee and hero.settings().id != "morgath":
 		HeroProjectiles.spawn(hero_projectiles, hero, target, raw)
 	else:
 		result = _deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
@@ -890,7 +895,9 @@ func _tick_hero(hero: HeroState) -> void:
 			hero.ulti_active = false
 	if hero.stun_timer > 0:
 		hero.stun_timer -= 1
-	if hero.settings().id == "thorne":
+	if hero.settings().id in BossLevelOneSkills.IDS:
+		BossLevelOneSkills.tick(self, hero, _hero_skill_structures())
+	elif hero.settings().id == "thorne":
 		ThorneSkills.tick(hero)
 	elif hero.settings().id == "grimjaw":
 		GrimjawSkills.tick(self, hero, _hero_skill_structures())

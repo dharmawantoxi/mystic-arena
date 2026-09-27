@@ -68,6 +68,14 @@ var shadow_realm_timer := 0
 var curse_timer := 0
 var curse_target_id := -1
 var bedlam_timer := 0
+# Source BossHeroSkills state (level-one recipes).
+var rage_timer := 0
+var defense_timer := 0
+var flux_timer := 0
+var flux_target_id := -1
+var clones_timer := 0
+var blink_from := Vector2.ZERO
+var mana_void_origin := Vector2.ZERO
 var q_stack := 0
 var q_reset_timer := 0
 var is_dashing := false

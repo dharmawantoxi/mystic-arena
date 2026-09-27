@@ -29,7 +29,11 @@ const PLAYABLE_AI_HEROES := {
 	"grimjaw": GRIMJAW,
 	"sylara": SYLARA,
 	"vex": VEX,
-	"zephyr": ZEPHYR
+	"zephyr": ZEPHYR,
+	"gornak": preload("res://data/heroes/gornak.tres"),
+	"morgath": preload("res://data/heroes/morgath.tres"),
+	"drakar": preload("res://data/heroes/drakar.tres"),
+	"abaddon": preload("res://data/heroes/abaddon.tres")
 }
 const HERO_SPAWN := Vector2(220, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
@@ -416,7 +420,7 @@ func _step_hero_respawn(hero: HeroState) -> void:
 		hero.w_cooldown = 0
 		hero.e_cooldown = 0
 		hero.r_cooldown = 0
-	if hero.settings().id not in ["vex", "zephyr"]:
+	if hero.settings().id in ["kaizen", "thorne", "grimjaw", "sylara"]:
 		hero.attack_timer = 0
 	hero.q_stack = 0
 	hero.q_reset_timer = 0

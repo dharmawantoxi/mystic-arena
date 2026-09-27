@@ -162,6 +162,10 @@ from starter_finish_source_oracle import source_fixture as starter_finish_fixtur
 check(starter_finish_fixture() == json.loads((ROOT / "tests/fixtures/starter_finish_source.json").read_text()), "Vex/Zephyr source behavior drift")
 check("StarterFinishChecks.new().run(_check)" in ai_tests, "Starter finish native suite must run")
 
+from boss_level_one_source_oracle import source_fixture as boss_level_one_fixture
+check(boss_level_one_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_one_source.json").read_text()), "Boss level one source behavior drift")
+check("BossLevelOneChecks.new().run(_check)" in ai_tests, "Boss level one native suite must run")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

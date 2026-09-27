@@ -328,5 +328,225 @@
       "level": 1,
       "auto_cast": true
     }
+  },
+  {
+    "hero_type": "gornak",
+    "price": 500,
+    "initial": 499,
+    "success": false,
+    "balance": 499,
+    "count": 0,
+    "reserve": 500,
+    "target": "gornak",
+    "hero": null
+  },
+  {
+    "hero_type": "gornak",
+    "price": 500,
+    "initial": 500,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "gornak",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1109,
+      "hp": 1109,
+      "damage": 94,
+      "skill_damage": 224,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "gornak",
+    "price": 500,
+    "initial": 501,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "gornak",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1109,
+      "hp": 1109,
+      "damage": 94,
+      "skill_damage": 224,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "morgath",
+    "price": 550,
+    "initial": 549,
+    "success": false,
+    "balance": 549,
+    "count": 0,
+    "reserve": 550,
+    "target": "morgath",
+    "hero": null
+  },
+  {
+    "hero_type": "morgath",
+    "price": 550,
+    "initial": 550,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "morgath",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1137,
+      "hp": 1137,
+      "damage": 91,
+      "skill_damage": 249,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "morgath",
+    "price": 550,
+    "initial": 551,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "morgath",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1137,
+      "hp": 1137,
+      "damage": 91,
+      "skill_damage": 249,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "drakar",
+    "price": 600,
+    "initial": 599,
+    "success": false,
+    "balance": 599,
+    "count": 0,
+    "reserve": 600,
+    "target": "drakar",
+    "hero": null
+  },
+  {
+    "hero_type": "drakar",
+    "price": 600,
+    "initial": 600,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "drakar",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1525,
+      "hp": 1525,
+      "damage": 154,
+      "skill_damage": 423,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "drakar",
+    "price": 600,
+    "initial": 601,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "drakar",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1525,
+      "hp": 1525,
+      "damage": 154,
+      "skill_damage": 423,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "abaddon",
+    "price": 700,
+    "initial": 699,
+    "success": false,
+    "balance": 699,
+    "count": 0,
+    "reserve": 700,
+    "target": "abaddon",
+    "hero": null
+  },
+  {
+    "hero_type": "abaddon",
+    "price": 700,
+    "initial": 700,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "abaddon",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 116,
+      "skill_damage": 343,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "abaddon",
+    "price": 700,
+    "initial": 701,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "abaddon",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 116,
+      "skill_damage": 343,
+      "level": 1,
+      "auto_cast": true
+    }
   }
 ]

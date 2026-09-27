@@ -45,11 +45,11 @@ func _compare(hero, enemies: Array, expected: Dictionary, check: Callable, label
 						enemies[index].get(field) == expected.enemies[index][field],
 						label + " target " + str(index) + " " + field
 					)
-		elif key in ["position", "bramble_origin"]:
+		elif key in ["position", "bramble_origin", "blink_from", "mana_void_origin"]:
 			check.call(
 				hero.get(key) == Vector2(expected[key][0], expected[key][1]), label + " " + key
 			)
-		elif key in ["prison_target_id", "curse_target_id"]:
+		elif key in ["prison_target_id", "curse_target_id", "flux_target_id", "target_id"]:
 			var target := int(expected[key])
 			check.call(
 				hero.get(key) == (-1 if target < 0 else enemies[target].id), label + " " + key
@@ -79,11 +79,13 @@ func _trace(row: Dictionary, check: Callable) -> void:
 	enemies[0].cooldown_ticks = 90
 	check.call(helpers._skill(world, hero.id, row.key), "Starter timer cast")
 	var moment := 0
-	for tick in range(1, 242):
+	for tick in range(1, int(row.get("length", 241)) + 1):
 		if tick == 2 and row.mode == "move_upgrade":
 			hero.position.x += 100
 			enemies[0].position.x += 200
 			check.call(hero.upgrade(), "Upgrade during starter effect")
+		if tick == 2 and row.mode == "retarget":
+			hero.target_id = enemies[1].id
 		if tick == 2 and row.mode == "target_dies":
 			enemies[0].alive = false
 		world._tick_hero(hero)
@@ -114,7 +116,8 @@ func _defense(row: Dictionary, check: Callable) -> void:
 func _attack(row: Dictionary, check: Callable) -> void:
 	var world := Battle.new()
 	var hero := _hero(world, row.hero)
-	var enemy = helpers._dummy(world, Vector2(620, 340))
+	var point: Array = row.get("target_position", [620, 340])
+	var enemy = helpers._dummy(world, Vector2(point[0], point[1]))
 	check.call(world.hero_basic_attack(hero.id, enemy.id), "Starter magic homing attack")
 	for moment in row.rows:
 		if moment.tick > 0:

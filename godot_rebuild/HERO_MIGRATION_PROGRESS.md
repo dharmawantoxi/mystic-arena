@@ -31,3 +31,16 @@ ID authoritative ada di `data/ai/recruitment.json` (catalog dengan
 `is_boss_hero=true`). Sebelum berhenti sesi, manifest selesai/pending per-ID
 akan diperbarui. Tidak ada perubahan AIPlayer scene, item/forge, balance,
 Kaizen gratis, defender, maupun art final.
+
+## Batch 2 — boss level sumber 1 (menunggu CI)
+
+Gornak, Morgath, Drakar, Abaddon: implementasi + oracle + tes native ditulis.
+Belum menambah hitungan selesai sebelum engine lulus. Port memakai recipe
+`BossHeroSkills._SKILL_REGISTRY` asli, bukan `_fallback_cast` untuk empat ID ini.
+Gate boss max(skill_range, 140), tanpa slack starter; visual duration final
+berasal dari trigger cooldown, bukan nilai sementara di recipe. Morgath memakai
+basic beam/hit langsung sesuai pengecualian `_do_attack`, bukan homing arrow.
+Oracle menguji seluruh QWER, target tie/stale, radius, teleport overshoot,
+DOT/clone retarget/dead target, heal, rage reset saat upgrade, execute <30%,
+flag defense yang tidak mengurangi damage, respawn dan harga sumber. Static
+2.216 checks + seluruh oracle lama/new dan parser/lint/format lulus lokal.
