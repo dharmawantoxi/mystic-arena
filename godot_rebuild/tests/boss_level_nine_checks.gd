@@ -1,9 +1,11 @@
 extends "res://tests/starter_finish_checks.gd"
-## Level-9 boss (batch 10: Kenshiro, Wiro) real recipes, gates, timers, attacks, respawn.
+## Level-9 bosses (batch 10-11: Kenshiro, Wiro, Khazan, Naraka) real recipes, gates,
+## timers, attacks, respawn.
 const BOSS_FIXTURE := "res://tests/fixtures/boss_level_nine_source.json"
 const BOSSES := {
 	"kenshiro": preload("res://data/heroes/kenshiro.tres"),
 	"wiro": preload("res://data/heroes/wiro.tres"),
+	"khazan": preload("res://data/heroes/khazan.tres"),
 }
 
 
@@ -125,7 +127,7 @@ func _respawn(row: Dictionary, check: Callable) -> void:
 
 func _roster(check: Callable) -> void:
 	var world := World.new()
-	world.economy.credit_kill(world.RED, 4000)
+	world.economy.credit_kill(world.RED, 8000)
 	var index := 0
 	for kind in BOSSES:
 		var definition = BOSSES[kind]

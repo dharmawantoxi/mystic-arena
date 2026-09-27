@@ -1,15 +1,16 @@
 extends RefCounted
-## Boss level 9 recipes (batch 10): Kenshiro, Wiro.
+## Boss level 9 recipes (batch 10-11): Kenshiro, Wiro, Khazan.
 ## Exact source BossHeroSkills.* ports, not _fallback_cast.
 ## Source level-9 recipes call take_damage(dmg, team) without source/school,
 ## so every hit stays neutral and unattributed (Common.hit default).
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["kenshiro", "wiro"]
+const IDS := ["kenshiro", "wiro", "khazan"]
 const VISUAL := {
 	"kenshiro": {"q": 35, "w": 45, "e": 55, "r": 70},
 	"wiro": {"q": 30, "w": 45, "e": 40, "r": 80},
+	"khazan": {"q": 40, "w": 50, "e": 60, "r": 75},
 }
 
 
@@ -28,6 +29,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_kenshiro(world, hero, target, key, structures)
 		"wiro":
 			_wiro(world, hero, target, key, structures)
+		"khazan":
+			_khazan(world, hero, target, key, structures)
 	Common.trigger(hero, key, VISUAL[hero.settings().id][key])
 	return true
 
@@ -74,6 +77,28 @@ static func _wiro(world, hero: HeroState, target, key: String, structures: Array
 		"r":
 			# Typhoon: AOE 200 around hero, 1.8x skill, slow 0.5 for 90.
 			_radial(world, hero, structures, hero.position, 200.0, 1.8, 0.5, 90)
+
+
+static func _khazan(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Chained: target 1.3x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.3)
+		"w":
+			# Leap: dash min(dist, 110) towards the target (d > 1), then AOE 90
+			# around the NEW position for 1.2x skill, even without a target.
+			if target != null:
+				_dash(hero, target, 110.0)
+			_radial(world, hero, structures, hero.position, 90.0, 1.2)
+		"e":
+			# Spin: AOE 160 around hero, 1.1x skill.
+			_radial(world, hero, structures, hero.position, 160.0, 1.1)
+		"r":
+			# Vanish: AOE 210 around hero, 1.9x skill, heal 8%.
+			_radial(world, hero, structures, hero.position, 210.0, 1.9)
+			hero.heal_hp(int(hero.max_hp * 0.08))
 
 
 static func _dash(hero: HeroState, target, max_step: float) -> void:

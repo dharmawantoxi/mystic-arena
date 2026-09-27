@@ -1,4 +1,4 @@
-"""Execute actual level-9 boss hero recipes (batch 10: Kenshiro, Wiro).
+"""Execute actual level-9 boss hero recipes (batch 10-11: Kenshiro, Wiro, Khazan, Naraka).
 
 Read-only BossHeroSkills._bundle.py execution with the shared oracle harness:
 real SourceHero, real timers (rage + kill-count heal), real projectile loop,
@@ -15,7 +15,7 @@ from starter_finish_source_oracle import source_env, state as starter_state
 from boss_level_one_source_oracle import _cast_case, targets
 
 FIXTURE = Path(__file__).parent / "fixtures/boss_level_nine_source.json"
-IDS = ("kenshiro", "wiro")
+IDS = ("kenshiro", "wiro", "khazan")
 
 
 def state(hero, enemies):

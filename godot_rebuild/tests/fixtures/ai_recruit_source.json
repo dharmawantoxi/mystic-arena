@@ -1430,6 +1430,61 @@
     }
   },
   {
+    "hero_type": "khazan",
+    "price": 1350,
+    "initial": 1349,
+    "success": false,
+    "balance": 1349,
+    "count": 0,
+    "reserve": 1350,
+    "target": "khazan",
+    "hero": null
+  },
+  {
+    "hero_type": "khazan",
+    "price": 1350,
+    "initial": 1350,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "khazan",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 221,
+      "skill_damage": 597,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "khazan",
+    "price": 1350,
+    "initial": 1351,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "khazan",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 221,
+      "skill_damage": 597,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

@@ -44,7 +44,8 @@ const NATIVE_SKILLS := {
 	"nyxarath": BossLevelSevenSkills,
 	"vorenmarr": BossLevelSevenSkills,
 	"kenshiro": BossLevelNineSkills,
-	"wiro": BossLevelNineSkills
+	"wiro": BossLevelNineSkills,
+	"khazan": BossLevelNineSkills
 }
 const HeroProjectiles = preload("res://scripts/combat/hero_projectiles.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")

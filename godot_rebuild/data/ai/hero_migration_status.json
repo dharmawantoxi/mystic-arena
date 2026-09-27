@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 176,
-  "pending": 46,
+  "playable": 177,
+  "pending": 45,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -531,7 +531,7 @@
       "blocker": null
     },
     "khazan": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 9,
       "summon_cost": 1350,
       "source_recipe": {
@@ -540,10 +540,10 @@
         "e": "_cast_e_khazan_spin",
         "r": "_cast_r_khazan_vanish"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_nine_skills.gd",
+      "oracle": "boss_level_nine_source_oracle.py",
+      "native_test": "boss_level_nine_checks.gd",
+      "blocker": null
     },
     "naraka": {
       "status": "pending",
