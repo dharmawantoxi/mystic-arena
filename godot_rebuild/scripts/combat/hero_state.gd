@@ -57,6 +57,17 @@ var windrun_original_speed := 0.0
 var shackle_timer := 0
 var shackle_target_id := -1
 var powershot_timer := 0
+# Vex and Zephyr source kit state; timers intentionally survive source respawn.
+var eclipse_timer := 0
+var prison_timer := 0
+var prison_target_id := -1
+var essence_timer := 0
+var bramble_timer := 0
+var bramble_origin := Vector2.ZERO
+var shadow_realm_timer := 0
+var curse_timer := 0
+var curse_target_id := -1
+var bedlam_timer := 0
 var q_stack := 0
 var q_reset_timer := 0
 var is_dashing := false

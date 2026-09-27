@@ -7,7 +7,16 @@ const UnitState = preload("res://scripts/combat/unit_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ThorneSkills = preload("res://scripts/combat/thorne_skills.gd")
 const GrimjawSkills = preload("res://scripts/combat/grimjaw_skills.gd")
+const VexSkills = preload("res://scripts/combat/vex_skills.gd")
+const ZephyrSkills = preload("res://scripts/combat/zephyr_skills.gd")
 const SylaraSkills = preload("res://scripts/combat/sylara_skills.gd")
+const NATIVE_SKILLS := {
+	"thorne": ThorneSkills,
+	"grimjaw": GrimjawSkills,
+	"sylara": SylaraSkills,
+	"vex": VexSkills,
+	"zephyr": ZephyrSkills
+}
 const HeroProjectiles = preload("res://scripts/combat/hero_projectiles.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
@@ -318,6 +327,8 @@ func _deliver_hit(
 		return false
 	if target is HeroState:
 		var defender := target as HeroState
+		if defender.shadow_realm_timer > 0:
+			return false
 		if damage_type == "projectile" and school != "magic" and defender.wind_wall_timer > 0:
 			return false
 		if defender.windrun_timer > 0 and school == "physical":
@@ -620,14 +631,13 @@ func upgrade_hero(hero_id: int) -> bool:
 
 
 func _cast_extended_hero_skill(hero: HeroState, key: String, structures: Array) -> bool:
-	match hero.settings().id:
-		"sylara":
-			return SylaraSkills.cast(self, hero, key, structures)
-		"grimjaw":
-			return GrimjawSkills.cast(self, hero, key, structures)
-		"thorne":
-			return ThorneSkills.cast(self, hero, key, structures)
-	return false
+	var handler = NATIVE_SKILLS.get(hero.settings().id)
+	return handler.cast(self, hero, key, structures) if handler != null else false
+
+
+func _can_cast_extended_hero_skill(hero: HeroState, key: String, structures: Array) -> bool:
+	var handler = NATIVE_SKILLS.get(hero.settings().id)
+	return handler.can_cast(self, hero, key, structures) if handler != null else false
 
 
 func _can_cast_hero_e(hero_id: int, structures: Array = []) -> bool:
@@ -636,12 +646,8 @@ func _can_cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.e_cooldown > 0:
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.can_cast(self, hero, "e", structures)
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.can_cast(self, hero, "e", structures)
-	if hero.settings().id == "thorne":
-		return ThorneSkills.can_cast(self, hero, "e", structures)
+	if hero.settings().id != "kaizen":
+		return _can_cast_extended_hero_skill(hero, "e", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -669,12 +675,8 @@ func _can_cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.r_cooldown > 0:
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.can_cast(self, hero, "r", structures)
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.can_cast(self, hero, "r", structures)
-	if hero.settings().id == "thorne":
-		return ThorneSkills.can_cast(self, hero, "r", structures)
+	if hero.settings().id != "kaizen":
+		return _can_cast_extended_hero_skill(hero, "r", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -702,12 +704,8 @@ func _can_cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not is_running() or hero == null or not hero.alive:
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.can_cast(self, hero, "w", [])
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.can_cast(self, hero, "w", [])
-	if hero.settings().id == "thorne":
-		return ThorneSkills.can_cast(self, hero, "w", [])
+	if hero.settings().id != "kaizen":
+		return _can_cast_extended_hero_skill(hero, "w", _hero_skill_structures())
 	return hero.w_cooldown <= 0
 
 
@@ -716,12 +714,8 @@ func cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not _can_cast_hero_w(hero_id):
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.cast(self, hero, "w", [])
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.cast(self, hero, "w", [])
-	if hero.settings().id == "thorne":
-		return ThorneSkills.cast(self, hero, "w", [])
+	if hero.settings().id != "kaizen":
+		return _cast_extended_hero_skill(hero, "w", _hero_skill_structures())
 	hero.wind_wall_timer = 180
 	hero.w_cooldown = hero.w_cooldown_max
 	hero.active_skill = "w"
@@ -735,12 +729,8 @@ func can_cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.skill_timer > 0:
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.can_cast(self, hero, "q", structures)
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.can_cast(self, hero, "q", structures)
-	if hero.settings().id == "thorne":
-		return ThorneSkills.can_cast(self, hero, "q", structures)
+	if hero.settings().id != "kaizen":
+		return _can_cast_extended_hero_skill(hero, "q", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -904,6 +894,10 @@ func _tick_hero(hero: HeroState) -> void:
 		ThorneSkills.tick(hero)
 	elif hero.settings().id == "grimjaw":
 		GrimjawSkills.tick(self, hero, _hero_skill_structures())
+	elif hero.settings().id == "vex":
+		VexSkills.tick(self, hero, _hero_skill_structures())
+	elif hero.settings().id == "zephyr":
+		ZephyrSkills.tick(self, hero, _hero_skill_structures())
 	elif hero.settings().id == "sylara":
 		SylaraSkills.tick(self, hero, _hero_skill_structures())
 

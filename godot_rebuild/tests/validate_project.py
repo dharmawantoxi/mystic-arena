@@ -157,6 +157,11 @@ check('tower.sale_value()' in shield_screen, "UI sale quote must include purchas
 
 check((ROOT / "SHIELD_CONTRACT.md").is_file(), "Paid shield semantics must be documented")
 
+
+from starter_finish_source_oracle import source_fixture as starter_finish_fixture
+check(starter_finish_fixture() == json.loads((ROOT / "tests/fixtures/starter_finish_source.json").read_text()), "Vex/Zephyr source behavior drift")
+check("StarterFinishChecks.new().run(_check)" in ai_tests, "Starter finish native suite must run")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

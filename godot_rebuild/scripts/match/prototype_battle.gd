@@ -21,8 +21,15 @@ const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const THORNE = preload("res://data/heroes/thorne.tres")
 const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
 const SYLARA = preload("res://data/heroes/sylara.tres")
+const VEX = preload("res://data/heroes/vex.tres")
+const ZEPHYR = preload("res://data/heroes/zephyr.tres")
 const PLAYABLE_AI_HEROES := {
-	"kaizen": KAIZEN, "thorne": THORNE, "grimjaw": GRIMJAW, "sylara": SYLARA
+	"kaizen": KAIZEN,
+	"thorne": THORNE,
+	"grimjaw": GRIMJAW,
+	"sylara": SYLARA,
+	"vex": VEX,
+	"zephyr": ZEPHYR
 }
 const HERO_SPAWN := Vector2(220, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
@@ -409,7 +416,8 @@ func _step_hero_respawn(hero: HeroState) -> void:
 		hero.w_cooldown = 0
 		hero.e_cooldown = 0
 		hero.r_cooldown = 0
-	hero.attack_timer = 0
+	if hero.settings().id not in ["vex", "zephyr"]:
+		hero.attack_timer = 0
 	hero.q_stack = 0
 	hero.q_reset_timer = 0
 	hero.wind_wall_timer = 0

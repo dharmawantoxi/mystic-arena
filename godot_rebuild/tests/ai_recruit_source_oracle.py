@@ -38,7 +38,7 @@ def source_fixture():
             skill_cooldown=hero.skill_cooldown_max, skill_range=hero.skill_range,
             dmg_school=hero.dmg_school, is_melee=hero.is_melee_hero)
     result = []
-    for hero_type, price in (("kaizen", 400), ("thorne", 500), ("grimjaw", 450), ("sylara", 380)):
+    for hero_type, price in (("kaizen", 400), ("thorne", 500), ("grimjaw", 450), ("sylara", 380), ("vex", 420), ("zephyr", 420)):
         for initial in (price - 1, price, price + 1):
             player = ai_type()
             player.gold = initial

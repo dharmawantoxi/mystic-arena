@@ -218,5 +218,115 @@
       "level": 1,
       "auto_cast": true
     }
+  },
+  {
+    "hero_type": "vex",
+    "price": 420,
+    "initial": 419,
+    "success": false,
+    "balance": 419,
+    "count": 0,
+    "reserve": 420,
+    "target": "vex",
+    "hero": null
+  },
+  {
+    "hero_type": "vex",
+    "price": 420,
+    "initial": 420,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "vex",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 728,
+      "hp": 728,
+      "damage": 43,
+      "skill_damage": 95,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "vex",
+    "price": 420,
+    "initial": 421,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "vex",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 728,
+      "hp": 728,
+      "damage": 43,
+      "skill_damage": 95,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "zephyr",
+    "price": 420,
+    "initial": 419,
+    "success": false,
+    "balance": 419,
+    "count": 0,
+    "reserve": 420,
+    "target": "zephyr",
+    "hero": null
+  },
+  {
+    "hero_type": "zephyr",
+    "price": 420,
+    "initial": 420,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "zephyr",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 728,
+      "hp": 728,
+      "damage": 34,
+      "skill_damage": 70,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "zephyr",
+    "price": 420,
+    "initial": 421,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "zephyr",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 728,
+      "hp": 728,
+      "damage": 34,
+      "skill_damage": 70,
+      "level": 1,
+      "auto_cast": true
+    }
   }
 ]
