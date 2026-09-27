@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 195,
-  "pending": 27,
+  "playable": 196,
+  "pending": 26,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -831,7 +831,7 @@
       "blocker": null
     },
     "luminar": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 14,
       "summon_cost": 1750,
       "source_recipe": {
@@ -840,10 +840,10 @@
         "e": "_cast_e_luminar_wisp",
         "r": "_cast_r_luminar_spiritform"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_fourteen_skills.gd",
+      "oracle": "boss_level_fourteen_source_oracle.py",
+      "native_test": "boss_level_fourteen_checks.gd",
+      "blocker": null
     },
     "pyraethis": {
       "status": "pending",

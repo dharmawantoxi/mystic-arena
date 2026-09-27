@@ -61,7 +61,8 @@ def source_fixture():
                      "pyraklos",
                      "velmyrth",
                      "solvarin",
-                     "azureth"]
+                     "azureth",
+                     "luminar"]
     playable = explicit_kits + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]

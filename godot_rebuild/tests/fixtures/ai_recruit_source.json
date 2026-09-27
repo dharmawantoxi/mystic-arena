@@ -2475,6 +2475,61 @@
     }
   },
   {
+    "hero_type": "luminar",
+    "price": 1750,
+    "initial": 1749,
+    "success": false,
+    "balance": 1749,
+    "count": 0,
+    "reserve": 1750,
+    "target": "luminar",
+    "hero": null
+  },
+  {
+    "hero_type": "luminar",
+    "price": 1750,
+    "initial": 1750,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "luminar",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 167,
+      "skill_damage": 436,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "luminar",
+    "price": 1750,
+    "initial": 1751,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "luminar",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 167,
+      "skill_damage": 436,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

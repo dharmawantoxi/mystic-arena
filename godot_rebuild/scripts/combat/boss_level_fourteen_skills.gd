@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["azureth"]
+const IDS := ["azureth", "luminar"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"azureth":
 			_azureth(world, hero, target, key, structures)
+		"luminar":
+			_luminar(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -49,6 +51,25 @@ static func _azureth(world, hero: HeroState, target, key: String, structures: Ar
 		"r":
 			# Mystic flare: AOE 240 1.9x skill, attack delay max(timer, 65).
 			_radial(world, hero, structures, 240.0, 1.9, 65)
+
+
+static func _luminar(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Illuminate: target 1.2x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.2)
+		"w":
+			# Blinding light: AOE 190 1.15x skill, attack delay max(timer, 45).
+			_radial(world, hero, structures, 190.0, 1.15, 45)
+		"e":
+			# Wisp: AOE 205 1.0x skill.
+			_radial(world, hero, structures, 205.0, 1.0)
+		"r":
+			# Spirit form: AOE 280 1.95x skill, heal 15%.
+			_radial(world, hero, structures, 280.0, 1.95)
+			hero.heal_hp(int(hero.max_hp * 0.15))
 
 
 #HEROES
