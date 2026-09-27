@@ -70,27 +70,28 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
-## Roster 222 — 161 kit native, 61 recipe khusus pending
+## Roster 222 — 222 kit native, 0 pending
 
 Metadata dan baseline konstruktor `data/ai/hero_combat_stats.json` tetap
 mencakup seluruh 222 ID. Baseline angka **bukan** bukti playable. Registry
-`scripts/data/hero_roster.gd` kini mengizinkan **161 kit** yang punya handler,
-source oracle dan tes native. Daftar tepat semua selesai/pending dengan
-harga, recipe dan blocker: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md).
+`scripts/data/hero_roster.gd` kini mengizinkan **222 kit** yang punya handler,
+source oracle dan tes native; **0 pending**. Daftar tepat dengan harga, recipe
+dan bukti per hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md).
 
 - Enam starter: Kaizen, Thorne, Grimjaw, Sylara, Vex, Zephyr.
-- Lima boss dengan recipe tersendiri: Gornak, Morgath, Drakar, Abaddon,
-  Alchemist. Basic Morgath tetap beam/hit instan; bukan projectile generik.
+- Enam puluh enam boss dengan recipe tersendiri (termasuk Gornak, Morgath,
+  Drakar, Abaddon, Alchemist, level 1–20). Basic Morgath tetap beam/hit instan;
+  bukan projectile generik.
 - 150 boss berbagi `BossHeroSkills._fallback_cast` **di sumber asli**. Oracle
   per ID mencatat dispatch nyata, QWER, cooldown, attack, level/upgrade,
   respawn serta combat Hero/Tower. Native memakai allowlist tertutup, tidak
-  menjadikannya fallback bagi 61 boss lain yang memiliki recipe berbeda.
-- **61 pending** tetap ditolak dengan `kit`, saldo/roster tidak berubah,
-  draft/reserve tetap. Tidak ada substitusi Kaizen atau shared kit.
+  menjadikannya fallback bagi boss lain yang memiliki recipe berbeda.
+- **0 pending.** ID di luar registry tetap ditolak dengan `kit`, saldo/roster
+  tidak berubah, draft/reserve tetap. Tidak ada substitusi Kaizen atau shared kit.
 
 Adapter `ai_recruitment.gd` tetap meneruskan draft ke transaksi sinkron
 `prototype_battle.gd::_buy_ai_hero`, memakai registry/world/ledger nyata.
-Oracle pembelian kini **483 transaksi** (161 × harga−1/tepat/+1), ID/posisi/
+Oracle pembelian kini **666 transaksi** (222 × harga−1/tepat/+1), ID/posisi/
 capacity/ownership dan double debit diuji. Offset first spawn Y90 tetap,
 sementara Kaizen gratis red scene Y130 tetap dan tidak dihitung pembelian.
 Scene tidak menyalakan AIPlayer atau pembelian otomatis.
@@ -101,9 +102,10 @@ school tetap netral, berbeda dari skill yang eksplisit membawa school hero.
 Mitigasi/reflect/shield, tidak memberi stun palsu pada tower, anti-heal serta
 Shadow Realm/burn akhir durasi dikunci dengan objek sumber nyata.
 
-CI Godot 4.7.2 `c029d50`: **358.305 native checks**, semua suite lama tetap.
-Target masih 222; batch berikutnya Nyzrak + Ancient Apparition, kemudian
-Ignis Drachorn dan sisa menurut level sumber. Catatan batch dan pesan
+CI Godot 4.7.2 hijau pada main `8119e31`
+([run 36329618088](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36329618088)),
+semua suite lama tetap. Target 222 tercapai (PR #292 sudah merge).
+Catatan batch dan pesan
 kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
 Tidak ada item/forge, AIPlayer penuh, rebalance atau art final.
 
@@ -209,10 +211,9 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
-- [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  baseline angka 222 tersedia; 161 kit native dengan oracle/tes telah lulus,
-  61 recipe khusus masih pending (lihat manifest). Marker prosedural bukan
-  bukti kit/playability atau tampilan final.
+- [x] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
+  222 kit native dengan oracle/tes telah lulus, 0 pending (lihat manifest).
+  Marker prosedural bukan bukti tampilan final.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak
   memasukkan boss level saat ini. Draft starter pertama acak, boss pertama dari
   level terbaru, berikutnya berbobot source-level; tipe owned termasuk hero mati.

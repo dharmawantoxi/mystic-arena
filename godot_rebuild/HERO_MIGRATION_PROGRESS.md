@@ -1,10 +1,11 @@
-# Checkpoint migrasi — 222/222 selesai (menunggu review PR)
+# Checkpoint migrasi — 222/222 selesai (PR #292 sudah merge)
 
 **222 dari 222 hero target selesai; 0 pending.** CI Godot 4.7.2 hijau.
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
 `arena/01a0e17d-mystic-arena` / `arena/01a0e217-mystic-arena` (batch 9, merge PR #291 → main c4381c0) /
-sesi lanjutan `arena/01a0e2f7-mystic-arena` (batch 10–22, PR draft #292), PR draft dari branch sesi.
-**Jangan merge tanpa perintah pengguna.**
+sesi lanjutan `arena/01a0e2f7-mystic-arena` (batch 10–22, **PR #292 sudah merge**
+ke main sebagai `8119e31`; CI main hijau
+[run 36329618088](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36329618088)).
 
 **Sinkronisasi GitHub:** batch 7 (Vhalzun 1200G, Krobellus 1500G — level 5) ditambahkan setelah PR #285; batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G) CI hijau 413735 checks (run 36302839552). Manifest dan docs sudah remote.
 
@@ -198,8 +199,8 @@ didanai 4000G), harga palsu `_buy_ai_hero("astraelion", 400)` tetap ditolak
 `kit`, dan `source_shared_boss_checks._no_fallback` memakai ID tak dikenal
 `unported_probe` (tidak ada substitusi generik).
 
-Yang tersisa di luar cakupan migrasi kit: AIPlayer penuh, item/forge, art final,
-review/merge PR #292 atas perintah pengguna.
+Yang tersisa di luar cakupan migrasi kit: AIPlayer penuh, item/forge, art final.
+PR #292 sudah direview dan di-merge (main `8119e31`).
 
 ## Menjalankan validasi
 
@@ -224,10 +225,9 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 
 ## Pesan siap-salin untuk sesi berikutnya
 
-> Migrasi 222/222 kit hero native selesai di branch arena/01a0e2f7-mystic-arena
-> (PR draft #292, basis main c4381c0), CI hijau Godot 4.7.2 run 36328859162, static
-> lokal 5551 PASS, 0 pending. Baca HERO_MIGRATION_PROGRESS.md,
-> HERO_ROSTER_STATUS.md dan data/ai/hero_migration_status.json. Jangan merge
-> tanpa perintah pengguna. Hanya ubah godot_rebuild/; Python asli read-only.
-> Pekerjaan berikutnya (di luar migrasi kit): review PR, AIPlayer penuh,
+> Migrasi 222/222 kit hero native sudah merge ke main lewat PR #292 (merge
+> 8119e31), CI main hijau Godot 4.7.2 run 36329618088, 0 pending. Baca
+> HERO_MIGRATION_PROGRESS.md, HERO_ROSTER_STATUS.md dan
+> data/ai/hero_migration_status.json. Hanya ubah godot_rebuild/; Python asli
+> read-only. Pekerjaan berikutnya (di luar migrasi kit): AIPlayer penuh,
 > item/forge atau art — hanya atas permintaan pengguna.
