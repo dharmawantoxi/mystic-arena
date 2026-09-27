@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["azureth", "luminar", "solara"]
+const IDS := ["azureth", "luminar", "solara", "pyraethis"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -30,7 +30,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_luminar(world, hero, target, key, structures)
 		"solara":
 			_solara(world, hero, target, key, structures)
-		#DISPATCH
+		"pyraethis":
+			_pyraethis(world, hero, target, key, structures)
 		_:
 			return false
 	Common.trigger(hero, key, VISUAL[key])
@@ -93,7 +94,29 @@ static func _solara(world, hero: HeroState, target, key: String, structures: Arr
 			_radial(world, hero, structures, 240.0, 1.9, 70)
 
 
-#HEROES
+static func _pyraethis(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Icarus dive: dmg = int(skill * 1.3); strictly below 30% HP
+			# (hp / max(1, max_hp), pre-hit) dmg = int(dmg * 1.5).
+			if target == null:
+				return
+			var damage := int(hero.skill_damage() * 1.3)
+			if target.hp / maxf(1.0, _max_hp(target)) < 0.3:
+				damage = int(damage * 1.5)
+			world._deliver_hit(-1, hero.team, target, damage, "neutral", hero.position)
+		"w":
+			# Fire spirits: AOE 200 1.2x skill.
+			_radial(world, hero, structures, 200.0, 1.2)
+		"e":
+			# Sunray: AOE 220 1.05x skill, slow 0.35 for 90.
+			_radial(world, hero, structures, 220.0, 1.05, 0, 0.35, 90)
+		"r":
+			# Supernova: AOE 300 2.1x skill, attack delay max(timer, 80), heal 12%.
+			_radial(world, hero, structures, 300.0, 2.1, 80)
+			hero.heal_hp(int(hero.max_hp * 0.12))
+
+
 static func _max_hp(target) -> float:
 	if target is HeroState:
 		return float(target.max_hp)

@@ -2585,6 +2585,61 @@
     }
   },
   {
+    "hero_type": "pyraethis",
+    "price": 2500,
+    "initial": 2499,
+    "success": false,
+    "balance": 2499,
+    "count": 0,
+    "reserve": 2500,
+    "target": "pyraethis",
+    "hero": null
+  },
+  {
+    "hero_type": "pyraethis",
+    "price": 2500,
+    "initial": 2500,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "pyraethis",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2469,
+      "hp": 2469,
+      "damage": 183,
+      "skill_damage": 518,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "pyraethis",
+    "price": 2500,
+    "initial": 2501,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "pyraethis",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2469,
+      "hp": 2469,
+      "damage": 183,
+      "skill_damage": 518,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
