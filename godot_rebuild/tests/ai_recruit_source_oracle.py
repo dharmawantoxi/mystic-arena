@@ -46,7 +46,8 @@ def source_fixture():
                      "gornak", "morgath", "drakar", "abaddon", "alchemist",
                      "ancient_apparition", "nyzrak", "ignis_drachorn",
                      "krobellus", "vhalzun",
-                     "kunkka", "gravewake", "syrentha", "thalgryn"]
+                     "kunkka", "gravewake", "syrentha", "thalgryn",
+                     "akashari", "malzareth", "nyxarath", "vorenmarr"]
     playable = explicit_kits + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]
