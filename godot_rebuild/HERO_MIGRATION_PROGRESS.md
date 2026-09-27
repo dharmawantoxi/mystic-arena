@@ -86,3 +86,11 @@ Belum menaikkan hitungan selesai sampai seluruh suite engine lulus.
 - Harness duel harus memberi Thorne daftar musuh yang sama: W-nya juga
   melakukan burst 35 pada caster sebelum skill diuji. Koreksi fixture memakai
   roster sumber nyata, bukan menghapus assertion reflect.
+
+### Batch 3 lulus
+
+Commit `c111da2`, [CI 36297544475](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36297544475):
+**340.054 native checks**, **3.359 static checks**, seluruh suite lama tetap
+aktif. **160/222 kit selesai, 62 recipe khusus tersisa**. 150 ID shared-source
+tersimpan eksplisit di `scripts/data/source_shared_boss_ids.gd`; hanya ID itu
+boleh memakai handler tersebut. Langsung lanjut batch 4 Alchemist (sisa level 2).
