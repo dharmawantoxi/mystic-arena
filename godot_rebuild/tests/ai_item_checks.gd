@@ -129,10 +129,13 @@ func _test_catalog(expected: Dictionary, check: Callable) -> void:
 	for item_id in items:
 		var entry: Dictionary = items[item_id]
 		var label := String(item_id)
-		# No `as`/`in` mix: GDScript binds `as` looser than `in`, so the cast
-		# would swallow the membership test.
 		check.call(String(entry.name) != "", "Item name must exist: " + label)
+		# categories maps category id -> source CATEGORY_* constant name.
 		check.call(categories.has(String(entry.category)), "Unknown category: " + label)
+		check.call(
+			String(categories[String(entry.category)]).begins_with("CATEGORY_"),
+			"Category must keep its source constant name: " + label
+		)
 		check.call(int(entry.cost) > 0, "Item cost must be positive: " + label)
 		if bool(entry.melee_only):
 			melee += 1
@@ -255,7 +258,11 @@ func _test_hero_inventory(check: Callable) -> void:
 	check.call(not melee.items.clear_on_death(), "Hero without a rapier drops nothing on death")
 	check.call(mage.items.add("holy_rapier"), "Magic hero equips Holy Rapier")
 	check.call(mage.items.clear_on_death(), "Holy Rapier is destroyed on death")
-	check.call(mage.items.used_slots() == 0, "Holy Rapier slot is freed on death")
+	check.call(not mage.items.has("holy_rapier"), "Holy Rapier is gone after death")
+	check.call(
+		mage.items.used_slots() == 1 and mage.items.has("astral_codex"),
+		"Death only destroys the rapier, the other slot survives"
+	)
 
 
 func _world() -> World:

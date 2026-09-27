@@ -174,7 +174,9 @@ def catalog(env=None):
     return {
         "max_slots": env["MAX_ITEM_SLOTS"],
         "flat_cost": env["ITEM_FLAT_COST"],
-        "categories": {name: env[name] for name in sorted(env)
+        # category id -> source CATEGORY_* constant name, so the metadata can
+        # be validated by category id and still points at the source symbol.
+        "categories": {env[name]: name for name in sorted(env)
                        if name.startswith("CATEGORY_")},
         "items": items,
     }

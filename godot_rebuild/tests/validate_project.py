@@ -119,6 +119,9 @@ check(item_catalog == ai_items_fixture["catalog"],
 check(len(item_catalog["items"]) == 33, "Update the AI item suite when ITEM_CATALOG changes")
 check(item_catalog["flat_cost"] == 4500 and item_catalog["max_slots"] == 6,
       "AI item constants must follow ITEM_FLAT_COST/MAX_ITEM_SLOTS")
+check(set(item_catalog["categories"])
+      == {entry["category"] for entry in item_catalog["items"].values()},
+      "AI item catalog categories must be keyed by the category ids in use")
 hero_items = (ROOT / "scripts/match/hero_items.gd").read_text(encoding="utf-8")
 
 
