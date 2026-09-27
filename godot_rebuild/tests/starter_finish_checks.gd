@@ -167,3 +167,44 @@ func _guards(check: Callable) -> void:
 		hero.alive = false
 		for key in ["q", "w", "e", "r"]:
 			check.call(not helpers._skill(world, hero.id, key), "Dead starter cannot cast")
+
+
+func _levels(kind: String, rows: Array, check: Callable) -> void:
+	var world := Battle.new()
+	var hero := _hero(world, kind)
+	hero.hp = 1
+	if hero.settings().is_boss_hero:
+		_paid_upgrade(kind, int(rows[0].price), check)
+	for row in rows:
+		for key in ["hp", "level", "damage", "max_hp", "skill_value"]:
+			check.call(hero.get(key) == row[key], kind + " source level " + str(row.level) + key)
+		check.call(hero.upgrade_cost() == row.price, kind + " source upgrade price")
+		check.call(hero.upgrade() == (row.level < 15), kind + " source upgrade cap")
+
+
+func _paid_upgrade(kind: String, price: int, check: Callable) -> void:
+	for delta in [-1, 0, 1]:
+		for alive in [false, true]:
+			var world := World.new()
+			var hero := _hero(world, kind)
+			hero.hp = 1 if alive else 0
+			hero.alive = alive
+			hero.skill_timer = 29
+			hero.respawn_timer = 17
+			var gold: int = price + 400 + delta
+			world.economy.opening[1] = gold
+			world.economy.gold[1] = gold
+			var success := world._upgrade_hero_for(world.RED, hero.id, 1, 400)
+			check.call(success == (delta >= 0), kind + " source upgrade price + reserve boundary")
+			check.call(
+				world.economy.gold[1] == gold - (price if success else 0),
+				kind + " exact boss upgrade debit"
+			)
+			check.call(world.economy.is_balanced(), kind + " boss upgrade ledger")
+			check.call(hero.level == (2 if success else 1), kind + " boss upgrade level")
+			check.call(
+				hero.hp == (1 if alive else 0) and hero.alive == alive, "Upgrade never revives"
+			)
+			check.call(
+				hero.skill_timer == 29 and hero.respawn_timer == 17, "Upgrade retains clocks"
+			)

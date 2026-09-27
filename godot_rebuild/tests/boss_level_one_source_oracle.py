@@ -37,7 +37,7 @@ def source_fixture():
     env = source_env()
     sys.modules["settings"].get_all_hero_types = env["get_all_hero_types"]
     H = env["SourceHero"]
-    result = dict(casts=[], traces=[], attacks=[], respawn=[], execute=[], defense=[], catalog={})
+    result = dict(casts=[], traces=[], attacks=[], respawn=[], execute=[], defense=[], catalog={}, levels={})
     for kind in IDS:
         h = H(kind, "red", 500, 340)
         recipe = h.skills._SKILL_REGISTRY[kind]
@@ -96,6 +96,13 @@ def source_fixture():
         hero.hp, hero.alive = 0, False
         env["respawn"](hero)
         result["respawn"].append(dict(hero=kind, state=state(hero, enemies)))
+        h = H(kind, "red", 500, 340)
+        h.hp = 1
+        result["levels"][kind] = []
+        for level in range(1, 16):
+            result["levels"][kind].append(dict(level=level, hp=h.hp, damage=h.damage,
+                max_hp=h.max_hp, skill_value=h.skill_damage, price=h.upgrade_cost()))
+            assert h.upgrade() == (level < 15)
     # Execute is strict <30%, with int before doubling; leveled odd values tested.
     for level in (1, 2, 15):
         for hp in (2999, 3000, 3001):

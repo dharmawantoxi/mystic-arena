@@ -113,7 +113,8 @@ func apply_level_stats() -> void:
 
 
 func upgrade_cost() -> int:
-	return int(HeroDefinition.level_data(level)["upgrade_cost"])
+	var price := int(HeroDefinition.level_data(level)["upgrade_cost"])
+	return int(price * 1.6) if settings().is_boss_hero else price
 
 
 func upgrade() -> bool:

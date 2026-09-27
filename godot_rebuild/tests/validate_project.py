@@ -177,6 +177,9 @@ check("SourceSharedBossChecks.new().run(_check)" in ai_tests, "Shared boss per-I
 shared_ids = re.findall(r'"([a-z0-9_]+)"', (ROOT / "scripts/data/source_shared_boss_ids.gd").read_text())
 check(shared_ids == shared["ids"], "Native shared-kit membership must exactly match source dispatch")
 
+from hero_school_source_oracle import source_fixture as hero_school_fixture
+check(hero_school_fixture() == json.loads((ROOT / "tests/fixtures/hero_school_source.json").read_text()), "Per-ID real hero mitigation and attribution drift")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

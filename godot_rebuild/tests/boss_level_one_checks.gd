@@ -20,6 +20,8 @@ func run(check: Callable) -> void:
 			BOSSES[kind].catalog_damage == fixture.catalog[kind].damage,
 			"Boss raw catalog buff damage oracle"
 		)
+	for kind in BOSSES:
+		_levels(kind, fixture.levels[kind], check)
 	for row in fixture.casts:
 		_cast(row, check)
 	for row in fixture.traces:

@@ -34,6 +34,7 @@ func run(check: Callable) -> void:
 		_levels(kind, data.levels, check)
 		_lifecycle(kind, check)
 	_no_fallback(check)
+	_schools(check)
 
 
 func _clocks(kind: String, row: Dictionary, check: Callable) -> void:
@@ -52,17 +53,6 @@ func _clocks(kind: String, row: Dictionary, check: Callable) -> void:
 	check.call(moment == row.rows.size(), kind + " all source cooldown boundaries")
 	check.call(helpers._skill(world, hero.id, row.key), kind + " exact cooldown recast")
 	_compare(hero, enemies, row.recast, check, kind + " recast")
-
-
-func _levels(kind: String, rows: Array, check: Callable) -> void:
-	var world := Battle.new()
-	var hero := _hero(world, kind)
-	hero.hp = 1
-	for row in rows:
-		for key in ["hp", "level", "damage", "max_hp", "skill_value"]:
-			check.call(hero.get(key) == row[key], kind + " source level " + str(row.level) + key)
-		check.call(hero.upgrade_cost() == row.price, kind + " source upgrade price")
-		check.call(hero.upgrade() == (row.level < 15), kind + " source upgrade cap")
 
 
 func _lifecycle(kind: String, check: Callable) -> void:
@@ -95,3 +85,20 @@ func _no_fallback(check: Callable) -> void:
 			not Shared.cast(world, hero, key, []), "No generic substitution for source recipe"
 		)
 		check.call(not helpers._skill(world, hero.id, key), "Dispatcher refuses unported recipe")
+
+
+func _schools(check: Callable) -> void:
+	var rows: Array = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/hero_school_source.json")
+	)
+	for row in rows:
+		var world := Battle.new()
+		var hero := _hero(world, row.hero)
+		var defender := world.spawn_hero(Roster.DEFINITIONS.thorne, world.BLUE, Vector2(550, 340))
+		check.call(world.cast_hero_w(defender.id), "Source Thorne mitigation activation")
+		check.call(helpers._skill(world, hero.id, row.key), row.hero + " real hero-v-hero cast")
+		check.call(
+			defender.hp == row.target_hp and defender.alive == row.target_alive,
+			row.hero + " source damage school mitigation"
+		)
+		check.call(hero.hp == row.hp, row.hero + " source attribution/post-mitigation reflect")

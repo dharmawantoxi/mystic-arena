@@ -131,7 +131,8 @@ def write_native_definitions(env, ids):
             speed_px_per_tick=data['speed'], attack_range_px=data['range'],
             attack_cooldown_ticks=data['attack_cooldown'], base_skill=data['skill_base'],
             skill_cooldown_max=data['skill_cooldown'], skill_range_px=data['skill_range'],
-            dmg_school=data['dmg_school'], is_melee=data['is_melee'], catalog_damage=source['damage'])
+            dmg_school=data['dmg_school'], is_melee=data['is_melee'], catalog_damage=source['damage'],
+            is_boss_hero=True)
         text = (NATIVE / "data/heroes/vex.tres").read_text()
         for key, value in fields.items():
             line = key + " = " + json.dumps(value, ensure_ascii=False)

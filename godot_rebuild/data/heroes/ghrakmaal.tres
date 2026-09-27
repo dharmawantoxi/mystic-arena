@@ -29,3 +29,4 @@ w_cooldown_max = 240
 e_cooldown_max = 420
 r_cooldown_max = 900
 catalog_damage = 392
+is_boss_hero = true
