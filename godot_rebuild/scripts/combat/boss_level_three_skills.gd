@@ -6,7 +6,7 @@ const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const IDS := ["ancient_apparition", "nyzrak"]
 const VISUAL := {
-	"ancient_apparition": {"q": 60, "w": 45, "e": 50, "r": 90},
+	"ancient_apparition": {"q": 60, "w": 90, "e": 60, "r": 100},
 	"nyzrak": {"q": 50, "w": 50, "e": 70, "r": 90}
 }
 

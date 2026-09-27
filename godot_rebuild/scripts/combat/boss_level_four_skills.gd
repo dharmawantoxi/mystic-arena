@@ -5,7 +5,7 @@ const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const IDS := ["ignis_drachorn"]
-const VISUAL := {"ignis_drachorn": {"q": 45, "w": 40, "e": 60, "r": 90}}
+const VISUAL := {"ignis_drachorn": {"q": 60, "w": 90, "e": 60, "r": 100}}
 
 
 static func can_cast(world, hero: HeroState, key: String, structures: Array) -> bool:
