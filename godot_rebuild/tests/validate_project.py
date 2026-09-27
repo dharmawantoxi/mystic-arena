@@ -192,6 +192,10 @@ from boss_level_four_source_oracle import source_fixture as boss_level_four_fixt
 check(boss_level_four_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_four_source.json").read_text()), "Boss level four source behavior drift")
 check("BossLevelFourChecks.new().run(_check)" in ai_tests, "Boss level four native suite must run")
 
+from krobellus_source_oracle import source_fixture as krobellus_fixture
+check(krobellus_fixture() == json.loads((ROOT / "tests/fixtures/krobellus_source.json").read_text()), "Krobellus source behavior drift")
+check("KrobellusChecks.new().run(_check)" in ai_tests, "Krobellus native suite must run")
+
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)
 

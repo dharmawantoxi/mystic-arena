@@ -63,6 +63,7 @@ const DEFINITIONS := {
 	"khalros": preload("res://data/heroes/khalros.tres"),
 	"khalzaredh": preload("res://data/heroes/khalzaredh.tres"),
 	"korokai": preload("res://data/heroes/korokai.tres"),
+	"krobellus": preload("res://data/heroes/krobellus.tres"),
 	"kryvoxar": preload("res://data/heroes/kryvoxar.tres"),
 	"kurogari": preload("res://data/heroes/kurogari.tres"),
 	"kyrenzai": preload("res://data/heroes/kyrenzai.tres"),

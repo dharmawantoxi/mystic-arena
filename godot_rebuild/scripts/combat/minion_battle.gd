@@ -14,6 +14,7 @@ const SourceSharedBossSkills = preload("res://scripts/combat/source_shared_boss_
 const BossLevelOneSkills = preload("res://scripts/combat/boss_level_one_skills.gd")
 const BossLevelThreeSkills = preload("res://scripts/combat/boss_level_three_skills.gd")
 const BossLevelFourSkills = preload("res://scripts/combat/boss_level_four_skills.gd")
+const BossLevelFiveSkills = preload("res://scripts/combat/boss_level_five_skills.gd")
 const AlchemistSkills = preload("res://scripts/combat/alchemist_skills.gd")
 const NATIVE_SKILLS := {
 	"alchemist": AlchemistSkills,
@@ -28,7 +29,8 @@ const NATIVE_SKILLS := {
 	"abaddon": BossLevelOneSkills,
 	"ancient_apparition": BossLevelThreeSkills,
 	"nyzrak": BossLevelThreeSkills,
-	"ignis_drachorn": BossLevelFourSkills
+	"ignis_drachorn": BossLevelFourSkills,
+	"krobellus": BossLevelFiveSkills
 }
 const HeroProjectiles = preload("res://scripts/combat/hero_projectiles.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
