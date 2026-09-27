@@ -134,6 +134,7 @@ const DEFINITIONS := {
 	"seraphienne": preload("res://data/heroes/seraphienne.tres"),
 	"sethrakhar": preload("res://data/heroes/sethrakhar.tres"),
 	"shimorakh": preload("res://data/heroes/shimorakh.tres"),
+	"shirotaka": preload("res://data/heroes/shirotaka.tres"),
 	"sirakzan": preload("res://data/heroes/sirakzan.tres"),
 	"solara": preload("res://data/heroes/solara.tres"),
 	"solareth": preload("res://data/heroes/solareth.tres"),

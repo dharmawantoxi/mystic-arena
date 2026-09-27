@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["ignirus", "leoric"]
+const IDS := ["ignirus", "leoric", "shirotaka"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_ignirus(world, hero, target, key, structures)
 		"leoric":
 			_leoric(world, hero, target, key, structures)
+		"shirotaka":
+			_shirotaka(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -71,6 +73,26 @@ static func _leoric(world, hero: HeroState, target, key: String, structures: Arr
 			# AOE 250 1.9x skill, heal 20%.
 			_radial(world, hero, structures, 250.0, 1.9)
 			hero.heal_hp(int(hero.max_hp * 0.20))
+
+
+static func _shirotaka(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Teleport to (target.x, target.y - 20), then int(1.3x); below 30% HP
+			# (pre-hit) int(x1.5).
+			if target == null:
+				return
+			hero.position = target.position - Vector2(0, 20)
+			_execute_hit(world, hero, target, 1.3, 1.5)
+		"w":
+			# AOE 190 1.15x skill, slow 0.5 for 90.
+			_radial(world, hero, structures, 190.0, 1.15, 0, 0.5, 90)
+		"e":
+			# AOE 205 1.0x skill.
+			_radial(world, hero, structures, 205.0, 1.0)
+		"r":
+			# AOE 250 1.95x skill, attack delay max(timer, 70).
+			_radial(world, hero, structures, 250.0, 1.95, 70)
 
 
 #HEROES

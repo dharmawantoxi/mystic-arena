@@ -2970,6 +2970,61 @@
     }
   },
   {
+    "hero_type": "shirotaka",
+    "price": 2100,
+    "initial": 2099,
+    "success": false,
+    "balance": 2099,
+    "count": 0,
+    "reserve": 2100,
+    "target": "shirotaka",
+    "hero": null
+  },
+  {
+    "hero_type": "shirotaka",
+    "price": 2100,
+    "initial": 2100,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "shirotaka",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2234,
+      "hp": 2234,
+      "damage": 266,
+      "skill_damage": 685,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "shirotaka",
+    "price": 2100,
+    "initial": 2101,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "shirotaka",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2234,
+      "hp": 2234,
+      "damage": 266,
+      "skill_damage": 685,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

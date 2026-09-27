@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 204,
-  "pending": 18,
+  "playable": 205,
+  "pending": 17,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -981,7 +981,7 @@
       "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
     },
     "shirotaka": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 16,
       "summon_cost": 2100,
       "source_recipe": {
@@ -990,10 +990,10 @@
         "e": "_cast_e_shirotaka_shadowclones",
         "r": "_cast_r_shirotaka_paperbomb"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_sixteen_skills.gd",
+      "oracle": "boss_level_sixteen_source_oracle.py",
+      "native_test": "boss_level_sixteen_checks.gd",
+      "blocker": null
     },
     "kaelthorn": {
       "status": "pending",
