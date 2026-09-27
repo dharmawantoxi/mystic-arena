@@ -17,7 +17,7 @@ def source_fixture():
         for key in "qwer":
             h = H(kind, "red", 500, 340)
             target = H("thorne", "blue", 550, 340)
-            assert target.skills.cast_w([], [], [])
+            assert target.skills.cast_w([h], [], [])
             assert getattr(h.skills, "cast_"+key)([target], [], [])
             rows.append(dict(hero=kind, key=key, victim="hero", hp=h.hp, target_hp=target.hp,
                 target_alive=target.alive))

@@ -72,3 +72,17 @@ cooldown/recast tepat, homing/melee, level 1–15 dan respawn. Resource angka ha
 input; bukan bukti playable. Oracle pembelian nyata sekarang 480 transaksi
 (160 calon kit × harga−1/tepat/+1). Static 3.352 checks + parser/lint/format lulus.
 Belum menaikkan hitungan selesai sampai seluruh suite engine lulus.
+
+### Koreksi yang ditemukan suite batch 3
+
+- Harga upgrade boss sumber 1,6× starter: Lv1→2 **480 G**, bukan 300 G.
+  Per-ID level 1–15, threshold reserve ±1, hero hidup/mati, clock dan ledger
+  diuji; berlaku juga untuk empat boss batch 2.
+- Damage skill tanpa argumen `source`/`school` di sumber adalah **netral**,
+  bukan otomatis magic caster. Native kini membedakannya; school eksplisit
+  pada kelompok shared-source tetap digunakan. Oracle memakai Hero Thorne
+  dan Tower asli, menguji mitigasi, reflect, shield, dan no-stun tower
+  (Tower sumber tidak memiliki `attack_timer`).
+- Harness duel harus memberi Thorne daftar musuh yang sama: W-nya juga
+  melakukan burst 35 pada caster sebelum skill diuji. Koreksi fixture memakai
+  roster sumber nyata, bukan menghapus assertion reflect.
