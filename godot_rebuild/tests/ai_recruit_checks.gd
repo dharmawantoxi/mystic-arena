@@ -131,23 +131,28 @@ func unsupported() -> Dictionary:
 
 
 func _guards(check: Callable) -> void:
-	var world := _world()
-	_fund(world, 1000)
+	var absent: Dictionary = unsupported()
+	check.call(not absent.id.is_empty(), "Roster still has heroes without a native kit")
+	# Own world funded at exactly that summon price, so the refusal can only be
+	# the missing-kit check and never a gold shortage.
+	var missing_world := _world()
+	_fund(missing_world, absent.cost)
 	var recruit := Recruit.new()
-	var missing: Dictionary = unsupported()
-	check.call(not missing.id.is_empty(), "Roster still has heroes without a native kit")
-	var draft := _target(missing.id, missing.cost)
-	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
-	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
+	var draft := _target(absent.id, absent.cost)
+	check.call(not recruit.try_buy(missing_world, draft), "Missing boss kit cannot spawn Kaizen")
+	check.call(missing_world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == missing.id and draft.reserve() == missing.cost,
+		draft.purchase_target == absent.id and draft.reserve() == absent.cost,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
-		world.units.is_empty() and world.economy.gold[1] == 1000, "Missing kit has no effects"
+		missing_world.units.is_empty() and missing_world.economy.gold[1] == absent.cost,
+		"Missing kit has no effects"
 	)
+	var world := _world()
+	_fund(world, 1000)
 	check.call(
-		not world._buy_ai_hero(missing.id, 1, Vector2(1120, 90)),
+		not world._buy_ai_hero(absent.id, 1, Vector2(1120, 90)),
 		"Boss metadata is not a playable kit"
 	)
 	check.call(not world._buy_ai_hero("kaizen", 1, Vector2(1120, 90)), "Forged cost rejected")
@@ -207,13 +212,8 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var absent: Dictionary = unsupported()
-	var pending := _target(absent.id, absent.cost)
+	_unsupported_draft(check)
 	world.economy.credit_kill(1, 1000)
-	check.call(
-		not adapter.try_buy(world, pending) and pending.reserve() == absent.cost,
-		"Unsupported boss kit keeps draft without debit"
-	)
 	var grimjaw := _target("grimjaw", 450)
 	check.call(adapter.try_buy(world, grimjaw), "Grimjaw third real paid summon")
 	check.call(
@@ -234,6 +234,26 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		world.economy.gold[1] == 270 and world.economy.is_balanced(),
 		"Fourth kit debits exact 380 G"
+	)
+
+
+## Own world, funded at exactly the unsupported hero's price, so the adapter
+## can only fail on the missing kit and the gold arithmetic of the caller stays
+## independent of which hero is still pending.
+func _unsupported_draft(check: Callable) -> void:
+	var absent: Dictionary = unsupported()
+	var world := _world()
+	_fund(world, absent.cost)
+	var adapter := Recruit.new()
+	var pending := _target(absent.id, absent.cost)
+	check.call(
+		not adapter.try_buy(world, pending) and pending.reserve() == absent.cost,
+		"Unsupported boss kit keeps draft without debit"
+	)
+	check.call(world.transaction_error == "kit", "Unsupported draft refusal is explicit")
+	check.call(
+		world.units.is_empty() and world.economy.gold[1] == absent.cost,
+		"Unsupported draft spends nothing"
 	)
 
 

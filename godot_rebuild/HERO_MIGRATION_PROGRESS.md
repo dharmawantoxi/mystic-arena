@@ -34,7 +34,8 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 6 (sesi ini) | Ignis Drachorn | **164 / 58** | menunggu CI branch sesi |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
-validation (**4.511 checks**, termasuk guard manifest dan generator tabel roster),
+validation (**9.906 checks**, termasuk guard manifest, generator tabel roster,
+dan larangan hardcode ID pending),
 gdparse, gdlint dan gdformat juga lulus. Engine sandbox tidak dapat
 diunduh (TLS ke release-assets/CDN gagal), sehingga import dan seluruh tes
 engine dijalankan di workflow Godot resmi yang sudah ada. **Bukan klaim engine
