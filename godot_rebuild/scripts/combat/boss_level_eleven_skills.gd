@@ -127,7 +127,14 @@ static func _dash(hero: HeroState, target, max_step: float) -> void:
 
 
 static func _radial(
-	world, hero: HeroState, structures: Array, radius: float, mult: float, delay := 0
+	world,
+	hero: HeroState,
+	structures: Array,
+	radius: float,
+	mult: float,
+	delay := 0,
+	slow_amount := 0.0,
+	slow_ticks := 0
 ) -> void:
 	# Source radial around hero: inclusive distance <= radius.
 	for enemy in Common.enemies(world, hero, structures):
