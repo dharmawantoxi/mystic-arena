@@ -1,21 +1,26 @@
-# Daftar tepat migrasi hero — 161 playable, 61 pending
+# Daftar tepat migrasi hero — 163 playable, 59 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
 CI Godot 4.7.2: [358.305 checks pada c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563).
 
-- Enam starter selesai (empat sudah ada sebelum sesi); lima boss recipe khusus
-  selesai; 150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai
-  sumber**, dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 61 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Enam starter selesai (empat sudah ada sebelum sesi); **tujuh boss recipe
+  khusus** selesai (Gornak, Morgath, Drakar, Abaddon, Alchemist, Ancient
+  Apparition, Nyzrak); 150 boss mengikuti jalur `_fallback_cast` yang
+  **benar-benar dipakai sumber**, dibuktikan per ID. Ini bukan fallback native
+  untuk boss pending.
+- Semua 59 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
+- Kedua tabel di bawah **dibangkitkan** dari manifest oleh `tests/roster_doc.py`
+  (`--write`), dan `validate_project.py` menolak tabel yang tidak cocok.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 161 ID
+## Selesai — 163 ID
 
+<!-- roster:done -->
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
 | `grimjaw` | 0 | 450 | `grimjaw_skills.gd` | `grimjaw_source_oracle.py` / `grimjaw_checks.gd` |
@@ -32,6 +37,8 @@ CI Godot 4.7.2: [358.305 checks pada c029d50](https://github.com/dharmawantoxi/m
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
+| `ancient_apparition` | 3 | 800 | `boss_level_three_skills.gd` | `level_three_source_oracle.py` / `level_three_checks.gd` |
+| `nyzrak` | 3 | 850 | `boss_level_three_skills.gd` | `level_three_source_oracle.py` / `level_three_checks.gd` |
 | `varkul` | 3 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `xerathis` | 3 | 800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `pyrenth` | 4 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -179,13 +186,13 @@ CI Godot 4.7.2: [358.305 checks pada c029d50](https://github.com/dharmawantoxi/m
 | `obanai` | 54 | 8750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
+<!-- /roster:done -->
 
-## Belum selesai — 61 ID dan recipe yang menjadi blocker
+## Belum selesai — 59 ID dan recipe yang menjadi blocker
 
+<!-- roster:pending -->
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
-| `ancient_apparition` | 3 | 800 | `_cast_q_ice_vortex` / `_cast_w_chilling_touch` / `_cast_e_ice_blast` / `_cast_r_cold_feet` |
-| `nyzrak` | 3 | 850 | `_cast_q_arctic_burn` / `_cast_w_splinter_blast` / `_cast_e_winters_curse` / `_cast_r_cold_embrace` |
 | `ignis_drachorn` | 4 | 850 | `_cast_q_dragon_breath` / `_cast_w_dragon_tail` / `_cast_e_dragon_blood` / `_cast_r_elder_dragon_form` |
 | `krobellus` | 5 | 1500 | `_cast_q_krobellus_exorcism` / `_cast_w_krobellus_silence` / `_cast_e_krobellus_siphon` / `_cast_r_krobellus_crypt` |
 | `vhalzun` | 5 | 1200 | `_cast_q_vhalzun_death_pulse` / `_cast_w_vhalzun_heartstopper` / `_cast_e_vhalzun_reapers_scythe` / `_cast_r_vhalzun_ghost_shroud` |
@@ -245,3 +252,4 @@ CI Godot 4.7.2: [358.305 checks pada c029d50](https://github.com/dharmawantoxi/m
 | `morthraxis` | 20 | 3100 | `_cast_q_morthraxis_batimpale` / `_cast_w_morthraxis_sanguine` / `_cast_e_morthraxis_phantommob` / `_cast_r_morthraxis_baleful` |
 | `morvaenthir` | 20 | 2650 | `_cast_q_morvaenthir_soulfragment` / `_cast_w_morvaenthir_spiritbind` / `_cast_e_morvaenthir_essence` / `_cast_r_morvaenthir_shadowrealm` |
 | `thornvaegrim` | 20 | 2700 | `_cast_q_thornvaegrim_bramble` / `_cast_w_thornvaegrim_twistedadvance` / `_cast_e_thornvaegrim_saplingthrow` / `_cast_r_thornvaegrim_grasp` |
+<!-- /roster:pending -->

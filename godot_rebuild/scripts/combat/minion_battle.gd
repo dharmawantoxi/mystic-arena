@@ -13,6 +13,7 @@ const SylaraSkills = preload("res://scripts/combat/sylara_skills.gd")
 const SourceSharedBossSkills = preload("res://scripts/combat/source_shared_boss_skills.gd")
 const BossLevelOneSkills = preload("res://scripts/combat/boss_level_one_skills.gd")
 const AlchemistSkills = preload("res://scripts/combat/alchemist_skills.gd")
+const BossLevelThreeSkills = preload("res://scripts/combat/boss_level_three_skills.gd")
 const NATIVE_SKILLS := {
 	"alchemist": AlchemistSkills,
 	"thorne": ThorneSkills,
@@ -23,7 +24,9 @@ const NATIVE_SKILLS := {
 	"gornak": BossLevelOneSkills,
 	"morgath": BossLevelOneSkills,
 	"drakar": BossLevelOneSkills,
-	"abaddon": BossLevelOneSkills
+	"abaddon": BossLevelOneSkills,
+	"ancient_apparition": BossLevelThreeSkills,
+	"nyzrak": BossLevelThreeSkills
 }
 const HeroProjectiles = preload("res://scripts/combat/hero_projectiles.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
@@ -923,6 +926,8 @@ func _tick_hero(hero: HeroState) -> void:
 		AlchemistSkills.tick(self, hero, _hero_skill_structures())
 	elif hero.settings().id in BossLevelOneSkills.IDS:
 		BossLevelOneSkills.tick(self, hero, _hero_skill_structures())
+	elif hero.settings().id in BossLevelThreeSkills.IDS:
+		BossLevelThreeSkills.tick(self, hero, _hero_skill_structures())
 	elif hero.settings().id == "thorne":
 		ThorneSkills.tick(hero)
 	elif hero.settings().id == "grimjaw":

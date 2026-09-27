@@ -34,13 +34,15 @@ atau respawning tetap eligible sesuai sumber AIPlayer, tanpa mengubah HP/alive
 atau respawn timer. UI blue masih menolak hero mati. Belum ada scheduler AI yang
 memanggilnya otomatis; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
 
-## Roster kit native — 161 playable, 61 pending (bukan AIPlayer penuh)
+## Roster kit native — 163 playable, 59 pending (bukan AIPlayer penuh)
 
 Registry eksplisit `scripts/data/hero_roster.gd` berisi enam starter, Gornak,
-Morgath, Drakar, Abaddon, Alchemist, serta 150 ID yang benar-benar memakai
-jalur shared-source di Python asli. Daftar tepat, source recipe dan bukti per
-hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Sisa **61 boss** tidak
-punya kit native dan ditolak tanpa debit/substitusi. Scene tetap pasangan
+Morgath, Drakar, Abaddon, Alchemist, Ancient Apparition, Nyzrak, serta 150 ID
+yang benar-benar memakai jalur shared-source di Python asli. Daftar tepat, source recipe dan bukti per
+hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Sisa **59 boss** tidak
+punya kit native dan ditolak tanpa debit/substitusi. Audit AST sumber
+menampilkan keempat recipe asli keenam puluh satu boss pending **saling
+berbeda**, jadi tidak ada satu pun yang boleh memakai handler bersama. Scene tetap pasangan
 Kaizen gratis dan defender lama, tidak otomatis memakai seluruh registry.
 
 Sumber `BossHeroSkills._fallback_cast` hanya dipakai untuk allowlist 150 ID
@@ -49,15 +51,33 @@ diport. Setiap ID dites QWER, attack melee/homing, cooldown/recast, upgrade
 1–15, respawn, summon threshold serta combat terhadap Hero/Tower asli.
 Morgath mempertahankan basic beam/hit instan sesuai pengecualian sumber.
 
-Vex dan Zephyr masing-masing 420 G, Alchemist 750 G. Upgrade boss memakai
+Vex dan Zephyr masing-masing 420 G, Alchemist 750 G, Ancient Apparition 800 G,
+Nyzrak 850 G. Upgrade boss memakai
 pengali sumber **1,6×**, jadi Lv1→2 480 G, bukan 300 G. Skill tanpa source/
 school tetap netral; school eksplisit pada basic/shared-source tetap dibawa.
 Anti-heal mengikuti HP setter sumber (cap sebelum memotong gain). Shadow Realm
 memblokir burn termasuk tick aktif terakhir; tower tidak diberi stun yang
 memerlukan atribut `attack_timer` yang tidak ada di sumber.
 
+**Ancient Apparition:** Q menaruh vortex di posisi target (atau `h.x+100`),
+clock 180 dan burst 0,6× r80; DOT `update_timers` asli 0,3× + slow 0,5/60
+setiap 20 tick sampai clock habis lalu berhenti, dan di-rearm saat Q di-cast
+ulang. W beam 400/30 1,5× slow 0,6/180; E single 2,5× plus `attack_timer` max
+90; R beam 500/60 3,0× slow 0,7/240. `w_dir`/`r_dir` hanya berubah bila beam
+memang dieksekusi.
+
+**Nyzrak:** Q beam 240/26 1,2× slow 0,4/120 dengan aim nol yang tidak mengenai
+apa pun (`math.hypot(...) or 1.0`); W burst r80 di target 1,0× slow 0,3/60;
+E single 1,1× + `attack_timer` max 90 + slow 0,7/180; R nova r200 2,0× slow
+0,5/180 dan heal `int(max_hp * 0.15)` lewat HP setter. `shield_active` dan
+`shield_timer` **tidak punya konsumen di kelas `Hero` asli** (`_entity.py`):
+tidak ada pool shield, absorb, atau mitigasi. Native hanya merekam kedua flag
+dan menguji 100 damage penuh masuk untuk physical maupun magic — tidak ada
+shield karangan. Durasi visual: Nyzrak override sumber 50/50/70/90, AA default
+60/90/60/100, keduanya ditimpa trigger generic sumber.
+
 Fixture source dan suite native lama tetap dijalankan. CI Godot 4.7.2
-`c029d50`: **358.305 native checks**. Progres batch, batas konteks sesi dan
+`c029d50`: **358.305 native checks** (checkpoint #284). Progres batch, batas konteks sesi dan
 pesan lanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
 Placeholder polygon/warna hero dan titik proyektil tetap sederhana; bukan
 art final, bukan klaim AIPlayer, item/forge atau seluruh pertandingan selesai.

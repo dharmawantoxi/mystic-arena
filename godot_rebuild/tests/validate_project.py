@@ -184,8 +184,15 @@ from alchemist_source_oracle import source_fixture as alchemist_fixture
 check(alchemist_fixture() == json.loads((ROOT / "tests/fixtures/alchemist_source.json").read_text()), "Alchemist source behavior drift")
 check("AlchemistChecks.new().run(_check)" in ai_tests, "Alchemist native suite must run")
 
+from level_three_source_oracle import source_fixture as level_three_fixture
+check(level_three_fixture() == json.loads((ROOT / "tests/fixtures/level_three_source.json").read_text()), "Level-three boss source behavior drift")
+check("LevelThreeChecks.new().run(_check)" in ai_tests, "Level-three boss native suite must run")
+
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)
+
+from roster_doc import validate as validate_roster_doc
+validate_roster_doc(check)
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

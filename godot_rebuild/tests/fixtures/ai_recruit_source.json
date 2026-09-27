@@ -605,6 +605,116 @@
     }
   },
   {
+    "hero_type": "ancient_apparition",
+    "price": 800,
+    "initial": 799,
+    "success": false,
+    "balance": 799,
+    "count": 0,
+    "reserve": 800,
+    "target": "ancient_apparition",
+    "hero": null
+  },
+  {
+    "hero_type": "ancient_apparition",
+    "price": 800,
+    "initial": 800,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "ancient_apparition",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 110,
+      "skill_damage": 331,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "ancient_apparition",
+    "price": 800,
+    "initial": 801,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "ancient_apparition",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 110,
+      "skill_damage": 331,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "nyzrak",
+    "price": 850,
+    "initial": 849,
+    "success": false,
+    "balance": 849,
+    "count": 0,
+    "reserve": 850,
+    "target": "nyzrak",
+    "hero": null
+  },
+  {
+    "hero_type": "nyzrak",
+    "price": 850,
+    "initial": 850,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "nyzrak",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1595,
+      "hp": 1595,
+      "damage": 115,
+      "skill_damage": 399,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "nyzrak",
+    "price": 850,
+    "initial": 851,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "nyzrak",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1595,
+      "hp": 1595,
+      "damage": 115,
+      "skill_damage": 399,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

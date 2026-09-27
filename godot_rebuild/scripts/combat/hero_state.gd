@@ -70,6 +70,16 @@ var curse_target_id := -1
 var bedlam_timer := 0
 # Source BossHeroSkills state (level-one recipes).
 var alchemy_target := Vector2.ZERO
+# BossHeroSkills.init_state defaults; vortex_x/vortex_y feed the REAL
+# update_timers vortex DOT, w_dir/r_dir are recorded for source parity.
+var vortex := Vector2.ZERO
+var vortex_active_timer := 0
+var w_dir := Vector2.RIGHT
+var r_dir := Vector2.RIGHT
+# Nyzrak writes these two in the source and NOTHING on Hero reads them back
+# (no shield pool, no mitigation). Mirrored for parity, never given an effect.
+var shield_active := false
+var shield_timer := 0
 var rage_timer := 0
 var defense_timer := 0
 var flux_timer := 0

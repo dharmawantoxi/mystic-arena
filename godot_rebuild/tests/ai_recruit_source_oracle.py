@@ -40,7 +40,8 @@ def source_fixture():
     result = []
     from source_shared_boss_oracle import eligible_ids
     playable = ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr",
-                "gornak", "morgath", "drakar", "abaddon", "alchemist"] + eligible_ids(env)
+                "gornak", "morgath", "drakar", "abaddon", "alchemist",
+                "ancient_apparition", "nyzrak"] + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]
         for initial in (price - 1, price, price + 1):

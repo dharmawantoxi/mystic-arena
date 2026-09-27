@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 161,
-  "pending": 61,
+  "playable": 163,
+  "pending": 59,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -189,7 +189,7 @@
       "blocker": null
     },
     "ancient_apparition": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 3,
       "summon_cost": 800,
       "source_recipe": {
@@ -198,13 +198,13 @@
         "e": "_cast_e_ice_blast",
         "r": "_cast_r_cold_feet"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_three_skills.gd",
+      "oracle": "level_three_source_oracle.py",
+      "native_test": "level_three_checks.gd",
+      "blocker": null
     },
     "nyzrak": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 3,
       "summon_cost": 850,
       "source_recipe": {
@@ -213,10 +213,10 @@
         "e": "_cast_e_winters_curse",
         "r": "_cast_r_cold_embrace"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_three_skills.gd",
+      "oracle": "level_three_source_oracle.py",
+      "native_test": "level_three_checks.gd",
+      "blocker": null
     },
     "varkul": {
       "status": "playable",
