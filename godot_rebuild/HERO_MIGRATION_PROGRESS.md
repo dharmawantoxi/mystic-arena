@@ -1,13 +1,14 @@
-# Checkpoint migrasi setelah PR #283 — 164/222, BELUM selesai
+# Checkpoint migrasi setelah PR #283 — 166/222, BELUM selesai
 
-**164 dari 222 hero target selesai; 58 masih pending.**
-Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
-`arena/01a0e17d-mystic-arena`, PR draft #285 dari branch ini.
+**166 dari 222 hero target selesai; 56 masih pending.**
+Target tetap semua 222 kit, tidak dikurangi. Progres sesi ini disimpan di branch
+`arena/01a0e1d1-mystic-arena` (checkpoint sebelumnya: PR draft #285 dari
+`arena/01a0e17d-mystic-arena`).
 **Jangan merge tanpa perintah pengguna.**
 
 **Sinkronisasi GitHub:** batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G) sudah ter-push ke `arena/01a0e17d-mystic-arena` dan CI hijau 413735 checks (run 36302839552). Manifest dan docs sudah remote.
 
-Daftar tepat **semua 164 selesai dan semua 58 belum selesai**, harga summon,
+Daftar tepat **semua 166 selesai dan semua 56 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
 [`data/ai/hero_migration_status.json`](data/ai/hero_migration_status.json).
@@ -25,6 +26,7 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 4 | Alchemist | 161 / 61 | [358.305 checks, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
 | 5 | Ancient Apparition (800G), Nyzrak (850G) | 163 / 59 | [lint fixed, then 413735](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
 | 6 | Ignis Drachorn (850G) | **164 / 58** | [413735 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
+| 7 | Vhalzun (1200G), Krobellus (1500G) — level 5 | **166 / 56** | lihat run batch 7 di bawah |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
 validation (**4.476 checks**, termasuk guard manifest), gdparse, gdlint dan
@@ -54,6 +56,14 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
 - **Alchemist (750 G):** target-centered W100/slow, E rage 360 + heal 15%,
   R200/heal 100 per kill nyata. Uji zero/multiple kill, radius, anti-heal,
   timer expiry saat upgrade, attack, respawn, summon dan upgrade.
+- **Vhalzun (1200 G):** Death Pulse AOE 130/1,5, Heartstopper AOE 150/1,0 +
+  attack clock 60, Reaper's Scythe target tunggal 1,8 (tanpa AOE dan tanpa
+  heal), Ghost Shroud AOE 150/1,4 + heal 18%. Visual 60/80/60/100 mengikuti
+  override per-hero di sumber. **Krobellus (1500 G):** Exorcism AOE 150/1,5,
+  Silence AOE 120/1,0 + attack clock 75, Siphon target 1,3 dengan heal
+  `int(skill × 0,5)` (bukan persen max-HP), Crypt AOE 200/2,5 + heal 15%.
+  Keduanya tidak menyetel rage/defense/vortex/flux/clones/dragon, sehingga
+  `update_timers` sumber benar-benar tidak melakukan apa pun untuk level 5.
 - **Interaksi:** oracle memakai Hero Thorne dan Tower asli, bukan hanya receipt
   HP. Sekolah/source attribution, mitigasi, reflect, shield, dan tower yang
   tidak mempunyai `attack_timer` diuji. Skill tanpa source/school di Python
@@ -73,21 +83,28 @@ native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
 ## Sisa dan blocker tepat
 
-**58 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
+**56 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
 oracle/native test per perilakunya. Metode Q/W/E/R untuk masing-masing ID
-tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--58-id-dan-recipe-yang-menjadi-blocker).
-Blocker implementasi: sisa 58 recipe (level 5 dst) belum diport; batch 5+6 sudah lulus CI. Tidak ada klaim 222 playable.
+tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--56-id-dan-recipe-yang-menjadi-blocker).
+Blocker implementasi: sisa 56 recipe (level 6 dst) belum diport; batch 5+6 sudah
+lulus CI, batch 7 (level 5) sudah lulus validasi lokal + oraclesumber. Tidak ada
+klaim 222 playable.
 
 Lanjut berdasarkan level sumber:
-1. **Nyzrak + Ancient Apparition** (sisa level 3), kemudian **Ignis Drachorn**
-   (sisa level 4). Lihat `hero_skills/_bundle.py` read-only: registry dispatch,
-   `update_timers` bersama dan metode recipe masing-masing.
-2. AA membutuhkan vortex DOT fixed position, beam geometry serta stun clock.
-   Nyzrak membutuhkan beam/radial/curse/heal; audit konsumen `shield_active` /
-   `shield_timer` di Hero asli—jangan mengarang shield yang tidak dikonsumsi.
-   Ignis membutuhkan cone, sweep dan dua buff dengan expiry/reset berbeda.
-3. Berikutnya level 5 dst sesuai manifest. Jangan memasukkan mereka ke handler
-   150 shared-source: source mereka memang berbeda.
+1. Level 5 (Vhalzun + Krobellus) selesai di batch 7. Berikutnya **level 6**:
+   Kunkka (900G), Gravewake (1000G), Syrentha (1100G), Thalgryn (1200G), lalu
+   **level 7**: Nyxarath (1000G), Malzareth (1100G), Akashari (1200G),
+   Vorenmarr (1300G), dst sesuai manifest.
+2. Mesin tangkap oracle bersama ada di `tests/boss_level_source_oracle.py`
+   (hanya menjalankan recipe sumber per ID yang disebut), harness banding
+   native ada di `tests/boss_tier_checks.gd`. Keduanya BUKAN kit bersama.
+3. Level 6/7 butuh state tambahan: garis/line (arah ke target), AOE berpusat di
+   target, slow, serta buff `rage_active`/`rage_timer` yang mereset damage ke
+   `catalog_damage` saat habis (Syrentha E, Thalgryn E, Nyxarath W) dan
+   `defense_boost` tanpa mitigasi (Gravewake E). Nyxarath Q memakai auto-target
+   terdekat ≤300, bukan `h.target`.
+4. Jangan memasukkan mereka ke handler 150 shared-source: source mereka memang
+   berbeda.
 4. Per batch: oracle → handler/state/resource → native combat/transactions →
    semua oracle lama + static/parser/lint/format → CI import + run_all → update
    jumlah/manifest/dokumentasi. Jangan melanjutkan batch kalau masih gagal.
@@ -99,6 +116,8 @@ python godot_rebuild/tests/validate_project.py
 python godot_rebuild/tests/check_source_contract.py
 # Seluruh oracle lama/new yang berakhiran source_oracle.py:
 for t in godot_rebuild/tests/*source_oracle.py; do python "$t" || exit; done
+# Satu level boss (mesin bersama + daftar ID per level):
+python godot_rebuild/tests/boss_level_five_source_oracle.py
 # Oracle kelompok 150 juga dijalankan otomatis oleh validate_project.py:
 python godot_rebuild/tests/source_shared_boss_oracle.py
 gdparse $(find godot_rebuild -name '*.gd')
