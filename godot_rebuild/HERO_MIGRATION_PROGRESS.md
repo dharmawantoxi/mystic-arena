@@ -1,3 +1,27 @@
+# Batch 8 — Vhalzun, level 5 selesai
+
+**166 implementasi / 56 pending**; target tetap 222. Batch 7 Krobellus teruji:
+commit `64633eb`, CI [36304115611](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304115611),
+**427984 native checks**, Godot 4.7.2; static 4516. Sudah push, PR draft
+[#287](https://github.com/dharmawantoxi/mystic-arena/pull/287), jangan merge.
+
+Batch 8 implementasi selesai; validasi lokal PASS: static 4555, source-contract,
+semua *_oracle.py, gdparse/gdlint/gdformat 4.5.0. CI baru menunggu.
+Vhalzun 1200G: Q130/1,5×; W150/1×/stun max60; E selected 1,8× tanpa heal
+atau execute threshold; R150/1,4× + heal18%, tanpa shield/immunity/DOT.
+Visual final **60/80/60/100** (override Vhalzun, bukan default W90).
+Oracle eksekusi sumber, radius batas, stun max, selection, trace clocks,
+upgrade/retarget/death, heal+anti-heal, no defense, basic homing, respawn,
+lifecycle, summon±1, boss upgrade480G, Hero-v-Hero/Tower attribution.
+Handler tersendiri; tidak memperluas allowlist 150 shared-source.
+
+Sisa tepat di manifest dan HERO_ROSTER_STATUS.md. Level berikutnya **6**:
+Gravewake 1000G, Kunkka900G, Syrentha1100G, Thalgryn1200G. Kunkka tetap ID
+penolakan pending; bila kelak selesai, pindahkan sentinel ke pending murah
+nyata dengan assert status manifest, jangan menguji penolakan kit playable.
+
+---
+
 # Checkpoint sesi PR lanjutan — batch 7 Krobellus
 
 **165 implementasi playable / 57 pending; target tetap 222.**

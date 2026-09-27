@@ -13,7 +13,7 @@ def source_fixture():
     sys.modules["settings"].get_all_hero_types = env["get_all_hero_types"]
     H = env["SourceHero"]
     rows = []
-    for kind in eligible_ids(env) + ["vex", "zephyr", "gornak", "morgath", "drakar", "abaddon", "alchemist", "ancient_apparition", "nyzrak", "ignis_drachorn", "krobellus"]:
+    for kind in eligible_ids(env) + ["vex", "zephyr", "gornak", "morgath", "drakar", "abaddon", "alchemist", "ancient_apparition", "nyzrak", "ignis_drachorn", "krobellus", "vhalzun"]:
         for key in "qwer":
             h = H(kind, "red", 500, 340)
             target = H("thorne", "blue", 550, 340)

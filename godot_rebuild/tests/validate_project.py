@@ -196,6 +196,10 @@ from krobellus_source_oracle import source_fixture as krobellus_fixture
 check(krobellus_fixture() == json.loads((ROOT / "tests/fixtures/krobellus_source.json").read_text()), "Krobellus source behavior drift")
 check("KrobellusChecks.new().run(_check)" in ai_tests, "Krobellus native suite must run")
 
+from vhalzun_source_oracle import source_fixture as vhalzun_fixture
+check(vhalzun_fixture() == json.loads((ROOT / "tests/fixtures/vhalzun_source.json").read_text()), "Vhalzun source behavior drift")
+check("VhalzunChecks.new().run(_check)" in ai_tests, "Vhalzun native suite must run")
+
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)
 

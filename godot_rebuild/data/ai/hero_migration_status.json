@@ -1,9 +1,9 @@
 {
   "target": 222,
-  "playable": 165,
-  "pending": 57,
-  "verified_code_commit": "50b7c07d4fb05d40d1a5b9a971b6d2f761709026",
-  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552",
+  "playable": 166,
+  "pending": 56,
+  "verified_code_commit": "64633eb5d06840b4c2b0c49e33c867048c56428f",
+  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304115611",
   "heroes": {
     "grimjaw": {
       "status": "playable",
@@ -333,7 +333,7 @@
       "blocker": null
     },
     "vhalzun": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 5,
       "summon_cost": 1200,
       "source_recipe": {
@@ -342,10 +342,10 @@
         "e": "_cast_e_vhalzun_reapers_scythe",
         "r": "_cast_r_vhalzun_ghost_shroud"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "vhalzun_skills.gd",
+      "oracle": "vhalzun_source_oracle.py",
+      "native_test": "vhalzun_checks.gd",
+      "blocker": null
     },
     "gravewake": {
       "status": "pending",
@@ -2868,5 +2868,5 @@
       "blocker": null
     }
   },
-  "verification_note": "164 baseline verified by linked CI; Krobellus implementation complete, current-branch CI pending."
+  "verification_note": "165 verified by linked CI (427984 native checks); Vhalzun complete implementation, new CI pending."
 }
