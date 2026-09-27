@@ -230,6 +230,8 @@ urutan shield/hero direkonstruksi dari panggilan berulang karena listnya lokal.
 `ai_priority_checks.gd` mengulang skenario itu pada world/ledger nyata dan
 menguji atribusi kill hero (killer musuh, korban, self-kill, killer bukan hero)
 serta `Tower.kills` yang tetap nol.
+CI Godot 4.7.2 branch `arena/01a0e398-mystic-arena` (PR draft #293) hijau:
+**1.174.376 native checks**, static lokal 5580 PASS.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
