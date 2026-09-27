@@ -122,7 +122,7 @@ func _respawn(row: Dictionary, check: Callable) -> void:
 
 
 func _roster(check: Callable) -> void:
-	var world := Battle.new()
+	var world := World.new()
 	world.economy.credit_kill(world.RED, 4000)
 	var before: int = world.economy.gold[world.RED]
 	check.call(

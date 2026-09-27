@@ -4,7 +4,7 @@ Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
 CI terakhir sebelum WIP: Godot 4.7.2 **413735 checks** pada run 36302839552
 (164 playable, 58 pending), static baseline 4476 PASS. Validasi statis WIP lokal
-4508 PASS. CI #36304792506 import lulus tetapi native runner gagal compile akibat inferensi tipe `before` pada draft test; deklarasi `int` eksplisit sudah memperbaikinya, menunggu rerun CI.
+4508 PASS. CI #36304792506 compile gagal (`before` type inference); #36305416457 compile/import lulus tetapi runner gagal 212/431433 checks pada Krobellus visual timer/transaction-test world. Kedua masalah diperbaiki (source default visual 60/90/60/100; prototype transaction test), menunggu CI rerun.
 
 - Enam starter selesai (empat sudah ada sebelum sesi); lima boss recipe khusus
   selesai; 150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai

@@ -8,7 +8,7 @@ Tidak ada pengurangan target dan tidak ada klaim selesai 222. Baseline branch se
 - Branch kerja yang diwajibkan Arena: `arena/01a0e1d3-mystic-arena`.
 - CI baseline sebelum perubahan sesi: [Godot 4.7.2, 413735 native checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552), static 4.476 PASS.
 - **Batch WIP Krobellus (1500G): belum playable dan tetap ditolak.** Oracle eksekusi sumber, fixture, handler khusus serta tes native langsung sudah ditambahkan. Handler belum dimasukkan ke `hero_roster.gd`/dispatch/manifest playable karena native Godot runtime belum dijalankan pada batch ini. Perlu jalankan CI Godot 4.7.2, perbaiki semua temuan, baru daftarkan kit dan ubah hitungan. Belum ada push/CI baru untuk WIP ini.
-- Validasi lokal sesudah perbaikan: `validate_project.py` (**4508 static checks**), `check_source_contract.py`, seluruh `*source_oracle.py` termasuk source-shared (150 ID), serta `gdparse`, `gdlint`, `gdformat --check` dengan `gdtoolkit==4.5.0` semuanya PASS. CI Godot 4.7.2 pertama [36304792506](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304792506) gagal saat compile test runner: inferred type tidak dapat ditentukan pada local `before` di `krobellus_checks.gd:127`; diubah ke deklarasi `int` eksplisit. Import lulus, runner penuh gagal pada compile itu. Commit perbaikan sudah disiapkan; CI wajib dijalankan ulang. **Krobellus tetap pending/tidak di-roster.** Engine lokal tidak tersedia.
+- Validasi lokal sesudah perbaikan: `validate_project.py` (**4508 static checks**), `check_source_contract.py`, seluruh `*source_oracle.py` termasuk source-shared (150 ID), serta `gdparse`, `gdlint`, `gdformat --check` dengan `gdtoolkit==4.5.0` semuanya PASS. Dua temuan CI sudah diperbaiki sebelum batch dapat didaftarkan: [36304792506](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304792506) gagal compile karena tipe `before` belum eksplisit (ditetapkan `int`); [36305416457](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305416457) compile/import lulus tetapi native runner gagal 212 dari 431433 assertions. Kegagalan Krobellus menunjukkan durasi visual recipe kembali memakai default dispatcher 60/90/60/100 (bukan timer lokal recipe), serta transaksi harus dites melalui `prototype_battle` bukan `minion_battle`. Keduanya sudah disesuaikan; seluruh validasi lokal diulang pass dan CI perlu dijalankan ulang. **Krobellus tetap pending/tidak di-roster.** Engine lokal tidak tersedia.
 
 Daftar mesin dan status resmi tetap `data/ai/hero_migration_status.json`; daftar manusia dan recipe tepat ada di [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Karena Krobellus belum terdaftar, status tepat masih **164/222 dan 58 pending**.
 
@@ -97,10 +97,11 @@ sumber Python asli dan menulis fixture di `godot_rebuild/tests/fixtures/`.
 > (oracle+fixture, handler khusus, tes direct); BELUM playable, BELUM di roster
 > atau dispatch, dan harus tetap ditolak tanpa debit/spawn parsial. Validasi
 > lokal sudah pass: validate_project 4508, check_source_contract, seluruh source
-> oracle termasuk 150 shared, gdparse/gdlint/gdformat 4.5.0. CI run 36304792506
-> gagal compile native test karena tipe `before` tidak dinyatakan; sudah diperbaiki
-> dengan `int` eksplisit dan semua validasi lokal diulang pass. Import CI lulus,
-> `run_all` harus rerun; wajib push commit fix dan tunggu CI Godot 4.7.2. Hanya setelah CI WIP hijau,
+> oracle termasuk 150 shared, gdparse/gdlint/gdformat 4.5.0. CI run 36304792506 gagal compile karena tipe `before` belum eksplisit; run
+> 36305416457 compile/import lulus tetapi runner gagal 212/431433 assertions.
+> Disesuaikan timer visual ke default source dispatcher 60/90/60/100 dan tes
+> transaksi ke prototype_battle; seluruh validasi lokal diulang pass. Wajib push
+> commit fix dan tunggu CI Godot 4.7.2. Hanya setelah CI WIP hijau,
 > daftarkan Krobellus dan ubah menjadi 165/57, lalu CI final harus hijau sebelum
 > klaim batch selesai. Sesudah itu lanjut source recipes berikutnya (Vhalzun,
 > Gravewake, Kunkka, Syrentha, Thalgryn, dst sesuai manifest), otomatis tiap
