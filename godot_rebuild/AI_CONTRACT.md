@@ -233,6 +233,33 @@ serta `Tower.kills` yang tetap nol.
 CI Godot 4.7.2 branch `arena/01a0e398-mystic-arena` (PR draft #293) hijau:
 **1.174.376 native checks**, static lokal 5580 PASS.
 
+## Rencana port item AI (belum dikerjakan, hasil survei sumber)
+
+Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
+(`_entity.py` ~6474). Urutan kerja yang disarankan, satu commit per lapisan:
+
+1. **Metadata katalog** → `data/ai/item_catalog.json` dari `ITEM_CATALOG`
+   (33 item, `ITEM_FLAT_COST = 4500`, `MAX_ITEM_SLOTS = 6`, flag `melee_only`/
+   `magic_only`, kategori). Oracle wajib mengeksekusi konstanta sumber (katalog
+   memakai nama `CATEGORY_*`, `ast.literal_eval` gagal).
+2. **Suggestion** `suggest_item_for_hero` + `is_magic_hero`: pool per role
+   (tank/bruiser/fighter, marksman/assassin, mage/trickster atau magic,
+   fallback), melee `range <= 80` menyisipkan `cleave_axe` di depan dan
+   `holy_rapier` di belakang, ranged hanya `holy_rapier` di belakang; item
+   owned dilewati; filter `melee_only`/`magic_only`. Catatan: `is_magic_hero`
+   mengecualikan "anti-mage" dan memakai 18 kata kunci role.
+3. **Inventory slot** `HeroItemInventory.add/remove/count/has/used_slots`
+   (6 slot, gate melee/magic). Perhatian: `add` memanggil `_on_item_changed`
+   yang menghitung ulang `max_hp` (`get_max_hp`) dan `apply_heal_amp`; kalau
+   stat belum diport, ini **wajib** ditulis sebagai batasan eksplisit, bukan
+   diklaim parity. `clear_on_death` menghapus `holy_rapier` permanen.
+4. **Adapter AI** `ai_items.gd::try_buy`: kandidat = hero red **hidup** dengan
+   slot kosong, urut `(kills, level)` descending (Python `sort` stabil,
+   tuple key), `gold >= cost + reserve`, debit lewat ledger match, tanpa
+   counter khusus di sumber.
+5. Stat effects, pasif/aura/aktif, Forge UI dan `update_auras` adalah fase
+   terpisah yang jauh lebih besar; jangan digabung ke commit adapter.
+
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [x] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
@@ -253,6 +280,7 @@ CI Godot 4.7.2 branch `arena/01a0e398-mystic-arena` (PR draft #293) hijau:
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
+  **Belum dimulai** (baru survei sumber, lihat "Rencana port item AI").
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.
@@ -268,3 +296,19 @@ CI Godot 4.7.2 branch `arena/01a0e398-mystic-arena` (PR draft #293) hijau:
 
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
 perangkat fisik dari tes policy ini.
+
+## Status sesi `arena/01a0e398-mystic-arena` (PR draft #293)
+
+Selesai: sinkronisasi dokumen 222/222 + merge PR #292, atribusi kills sumber,
+urutan kandidat kills descending stabil untuk upgrade tower, upgrade hero dan
+regen shield, oracle `ai_priority_source_oracle.py` + `ai_priority_checks.gd`.
+CI hijau 1.174.376 checks, static lokal 5580 PASS. Berikutnya: port item AI
+sesuai lima langkah di atas, lalu kontrol hero per tick, baru integrasi scene.
+
+> Pesan siap-salin: Lanjutkan di branch arena/01a0e398-mystic-arena (PR draft
+> #293, basis main 8119e31). Baca AI_CONTRACT.md bagian "Rencana port item AI"
+> dan kerjakan langkah 1–4 (metadata katalog, suggest_item_for_hero,
+> HeroItemInventory slot, adapter ai_items.gd) dengan oracle + tes native,
+> satu commit per lapisan. Sumber read-only: hero_items.py dan
+> _entity.py::AIPlayer._try_buy_item (~6474). Hanya ubah godot_rebuild/;
+> minion_battle.gd tetap 1000 baris; jangan merge tanpa perintah pengguna.
