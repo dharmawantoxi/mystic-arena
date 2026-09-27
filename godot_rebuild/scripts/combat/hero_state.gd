@@ -77,6 +77,18 @@ var flux_target_id := -1
 var clones_timer := 0
 var blink_from := Vector2.ZERO
 var mana_void_origin := Vector2.ZERO
+# Level 3 recipes (Ancient Apparition + Nyzrak) + future shield/vortex.
+var vortex_origin := Vector2.ZERO
+var vortex_timer := 0
+var shield_active := false
+var shield_timer := 0
+var w_dir := Vector2(1, 0)
+var r_dir := Vector2(1, 0)
+# Level 4 (Ignis Drachorn) dragon form.
+var dragon_form_active := false
+var dragon_form_timer := 0
+var dragon_blood_active := false
+var dragon_blood_timer := 0
 var q_stack := 0
 var q_reset_timer := 0
 var is_dashing := false

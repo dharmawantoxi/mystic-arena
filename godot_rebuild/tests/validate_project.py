@@ -184,6 +184,14 @@ from alchemist_source_oracle import source_fixture as alchemist_fixture
 check(alchemist_fixture() == json.loads((ROOT / "tests/fixtures/alchemist_source.json").read_text()), "Alchemist source behavior drift")
 check("AlchemistChecks.new().run(_check)" in ai_tests, "Alchemist native suite must run")
 
+from boss_level_three_source_oracle import source_fixture as boss_level_three_fixture
+check(boss_level_three_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_three_source.json").read_text()), "Boss level three source behavior drift")
+check("BossLevelThreeChecks.new().run(_check)" in ai_tests, "Boss level three native suite must run")
+
+from boss_level_four_source_oracle import source_fixture as boss_level_four_fixture
+check(boss_level_four_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_four_source.json").read_text()), "Boss level four source behavior drift")
+check("BossLevelFourChecks.new().run(_check)" in ai_tests, "Boss level four native suite must run")
+
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)
 
