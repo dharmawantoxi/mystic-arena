@@ -384,16 +384,19 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: lapisan 5 (stat effects item, pasif/aura/aktif, `update_auras`,
-Forge UI) sebagai fase terpisah, lalu kontrol hero per tick dan integrasi
-scene/session. Catatan di luar tugas: `HeroItemInventory` sumber juga
-menyimpan ~30 timer pasif/aktif yang belum diport; `_try_buy_item` sumber
-dipanggil dari loop AI yang belum diport ke scene.
+Berikutnya: **5b** - terapkan stat saat equip/level (`_on_item_changed`:
+`get_max_hp` + heal amp `apply_heal_amp`), masukkan bonus HP item ke
+`HeroState.apply_level_stats`, lalu konsumsi getter di jalur serangan/proyektil
+yang sudah ada. Setelah itu 5c timer pasif/aktif, 5d aura + `update_auras`,
+5e proc on-hit, 5f Forge UI. Kontrol hero per tick dan integrasi scene tetap
+menunggu setelah fase item.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft
 > #294, basis main f1d34ed). Baca AI_CONTRACT.md bagian "Rencana port item AI"
-> langkah 5: stat effects item (`get_bonus_damage`/`get_armor`/crit/cleave/
-> lifesteal dst.), pasif/aura/aktif dan `update_auras` - fase terpisah, jangan
-> gabung ke adapter. Sumber read-only: hero_items.py. Hanya ubah
-> godot_rebuild/; minion_battle.gd tetap 1000 baris; `HeroState.apply_level_stats`
-> harus mulai memasukkan bonus HP item; jangan merge tanpa perintah pengguna.
+> langkah 5b: port `_on_item_changed` (max HP = `get_max_hp`, heal amp) dan
+> cabang item di `Hero._apply_level_stats`, lalu konsumsi getter stat 5a di
+> jalur serangan/proyektil yang sudah ada - satu commit per potong, oracle +
+> tes native tiap lapisan. Sumber read-only: hero_items.py dan _entity.py.
+> Hanya ubah godot_rebuild/; minion_battle.gd tetap 1000 baris; timer
+> pasif/aktif, aura, proc on-hit dan Forge UI adalah lapisan 5c-5f, jangan
+> digabung; jangan merge tanpa perintah pengguna.
