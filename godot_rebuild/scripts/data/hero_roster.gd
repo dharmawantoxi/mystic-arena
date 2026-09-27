@@ -55,6 +55,7 @@ const DEFINITIONS := {
 	"infrakzaar": preload("res://data/heroes/infrakzaar.tres"),
 	"kaedrin": preload("res://data/heroes/kaedrin.tres"),
 	"kaeldris": preload("res://data/heroes/kaeldris.tres"),
+	"kaelthorn": preload("res://data/heroes/kaelthorn.tres"),
 	"kaelthys": preload("res://data/heroes/kaelthys.tres"),
 	"kaelvyrn": preload("res://data/heroes/kaelvyrn.tres"),
 	"kaerinya": preload("res://data/heroes/kaerinya.tres"),

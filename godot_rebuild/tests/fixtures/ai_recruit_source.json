@@ -3080,6 +3080,61 @@
     }
   },
   {
+    "hero_type": "kaelthorn",
+    "price": 2150,
+    "initial": 2149,
+    "success": false,
+    "balance": 2149,
+    "count": 0,
+    "reserve": 2150,
+    "target": "kaelthorn",
+    "hero": null
+  },
+  {
+    "hero_type": "kaelthorn",
+    "price": 2150,
+    "initial": 2150,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "kaelthorn",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2272,
+      "hp": 2272,
+      "damage": 276,
+      "skill_damage": 707,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "kaelthorn",
+    "price": 2150,
+    "initial": 2151,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "kaelthorn",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2272,
+      "hp": 2272,
+      "damage": 276,
+      "skill_damage": 707,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
