@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["krognarr"]
+const IDS := ["krognarr", "raz"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"krognarr":
 			_krognarr(world, hero, target, key, structures)
+		"raz":
+			_raz(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -50,6 +52,27 @@ static func _krognarr(world, hero: HeroState, target, key: String, structures: A
 		"r":
 			# Eruption: AOE 210 1.8x skill, attack delay max(timer, 60).
 			_radial(world, hero, structures, 210.0, 1.8, 60)
+
+
+static func _raz(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Overdrive: target 1.2x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.2)
+		"w":
+			# Searing: dash min(dist, 100) (d > 1), then target 1.4x skill.
+			if target == null:
+				return
+			_dash(hero, target, 100.0)
+			Common.hit(world, hero, target, 1.4)
+		"e":
+			# Surge: AOE 160 1.1x skill.
+			_radial(world, hero, structures, 160.0, 1.1)
+		"r":
+			# Gloom: AOE 200 1.8x skill, attack delay max(timer, 50).
+			_radial(world, hero, structures, 200.0, 1.8, 50)
 
 
 #HEROES

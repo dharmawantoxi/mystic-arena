@@ -108,6 +108,7 @@ const DEFINITIONS := {
 	"pyrhaan": preload("res://data/heroes/pyrhaan.tres"),
 	"rakzhan": preload("res://data/heroes/rakzhan.tres"),
 	"ravokkar": preload("res://data/heroes/ravokkar.tres"),
+	"raz": preload("res://data/heroes/raz.tres"),
 	"razak": preload("res://data/heroes/razak.tres"),
 	"rynvara": preload("res://data/heroes/rynvara.tres"),
 	"sanguire": preload("res://data/heroes/sanguire.tres"),
