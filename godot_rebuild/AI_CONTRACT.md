@@ -348,8 +348,15 @@ Selesai: port item AI lapisan 1-4, satu commit per lapisan, basis main f1d34ed.
 
 Oracle: `ai_item_source_oracle.py` (katalog, 29 role magic, 26 saran, 22 urutan
 pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata). Native:
-`ai_item_checks.gd` terdaftar di `run_all.gd`. Static lokal 5646 PASS,
+`ai_item_checks.gd` terdaftar di `run_all.gd`. CI Godot 4.7.2 run 36339762016
+hijau: **1.174.993 native checks**; static lokal 5647 PASS,
 `gdlint`/`gdformat`/`gdparse` bersih, `minion_battle.gd` tetap 1000 baris.
+
+Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
+`CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
+di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
+nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
+himpunan kategori yang benar-benar dipakai.
 
 Berikutnya: lapisan 5 (stat effects item, pasif/aura/aktif, `update_auras`,
 Forge UI) sebagai fase terpisah, lalu kontrol hero per tick dan integrasi
