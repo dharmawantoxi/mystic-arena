@@ -153,7 +153,7 @@ func _level(row: Dictionary, check: Callable) -> void:
 	target.position = tower.position + Vector2(40, 0)
 	check.call(world.fire_projectile(tower.id, target.id), "AI Lv1 fires from actual registry")
 	var shot = world.projectiles.back()
-	var kind := "normal" if expected.path == "archer" else expected.path
+	var kind: String = "normal" if expected.path == "archer" else expected.path
 	check.call(
 		shot.kind == kind and shot.damage == expected.shot.damage, "AI Lv1 shot kind and damage"
 	)
