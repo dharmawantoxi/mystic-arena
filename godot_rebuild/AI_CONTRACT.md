@@ -329,18 +329,38 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
 perangkat fisik dari tes policy ini.
 
-## Status sesi `arena/01a0e398-mystic-arena` (PR draft #293)
+## Status sesi `arena/01a0e3e4-mystic-arena` (PR draft #294)
 
-Selesai: sinkronisasi dokumen 222/222 + merge PR #292, atribusi kills sumber,
-urutan kandidat kills descending stabil untuk upgrade tower, upgrade hero dan
-regen shield, oracle `ai_priority_source_oracle.py` + `ai_priority_checks.gd`.
-CI hijau 1.174.376 checks, static lokal 5580 PASS. Berikutnya: port item AI
-sesuai lima langkah di atas, lalu kontrol hero per tick, baru integrasi scene.
+Selesai: port item AI lapisan 1-4, satu commit per lapisan, basis main f1d34ed.
 
-> Pesan siap-salin: Lanjutkan di branch arena/01a0e398-mystic-arena (PR draft
-> #293, basis main 8119e31). Baca AI_CONTRACT.md bagian "Rencana port item AI"
-> dan kerjakan langkah 1–4 (metadata katalog, suggest_item_for_hero,
-> HeroItemInventory slot, adapter ai_items.gd) dengan oracle + tes native,
-> satu commit per lapisan. Sumber read-only: hero_items.py dan
-> _entity.py::AIPlayer._try_buy_item (~6474). Hanya ubah godot_rebuild/;
-> minion_battle.gd tetap 1000 baris; jangan merge tanpa perintah pengguna.
+1. `data/ai/item_catalog.json` (33 item, flat 4500, 6 slot, kategori, flag
+   `melee_only`/`magic_only`/`drops_on_death`) + `ai_item_source_oracle.py`
+   yang meng-exec konstanta sumber (bukan `ast.literal_eval`).
+2. `scripts/match/hero_items.gd`: `is_magic_hero` (18 kata kunci, anti-mage
+   dikecualikan) + `suggest_item_for_hero` (4 pool role, sisipan cleave/rapier,
+   skip owned, gate melee/magic).
+3. `scripts/match/hero_item_inventory.gd` + `HeroState.items`: slot,
+   `add/remove/count/has/used_slots/owned`, `clear_on_death` menghapus rapier.
+   **Batasan: tanpa stat effects** (lihat langkah 3 di atas).
+4. `scripts/match/ai_items.gd` + `prototype_battle._buy_item_for`: kandidat
+   hidup ber-slot kosong, `(kills, level)` descending stabil, reserve draft
+   hidup, debit ledger nyata, tanpa counter baru.
+
+Oracle: `ai_item_source_oracle.py` (katalog, 29 role magic, 26 saran, 22 urutan
+pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata). Native:
+`ai_item_checks.gd` terdaftar di `run_all.gd`. Static lokal 5646 PASS,
+`gdlint`/`gdformat`/`gdparse` bersih, `minion_battle.gd` tetap 1000 baris.
+
+Berikutnya: lapisan 5 (stat effects item, pasif/aura/aktif, `update_auras`,
+Forge UI) sebagai fase terpisah, lalu kontrol hero per tick dan integrasi
+scene/session. Catatan di luar tugas: `HeroItemInventory` sumber juga
+menyimpan ~30 timer pasif/aktif yang belum diport; `_try_buy_item` sumber
+dipanggil dari loop AI yang belum diport ke scene.
+
+> Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft
+> #294, basis main f1d34ed). Baca AI_CONTRACT.md bagian "Rencana port item AI"
+> langkah 5: stat effects item (`get_bonus_damage`/`get_armor`/crit/cleave/
+> lifesteal dst.), pasif/aura/aktif dan `update_auras` - fase terpisah, jangan
+> gabung ke adapter. Sumber read-only: hero_items.py. Hanya ubah
+> godot_rebuild/; minion_battle.gd tetap 1000 baris; `HeroState.apply_level_stats`
+> harus mulai memasukkan bonus HP item; jangan merge tanpa perintah pengguna.

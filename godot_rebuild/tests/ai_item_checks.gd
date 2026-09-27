@@ -192,7 +192,9 @@ func _test_inventory(rows: Array, check: Callable) -> void:
 		check.call(inventory.max_slots() == 6, "AI inventory keeps six slots for " + label)
 		for entry in row.log:
 			var op: Array = entry.op
-			var result := _apply(inventory, op)
+			# Typed Variant: _apply returns bool/int/String and `:=` from a
+			# Variant is a parse error in this project.
+			var result: Variant = _apply(inventory, op)
 			check.call(
 				result == _expected_result(op, entry.result),
 				"AI inventory op %s must match source on %s" % [str(op), label]
