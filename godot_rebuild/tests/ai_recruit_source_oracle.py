@@ -83,7 +83,8 @@ def source_fixture():
                      "aurelion",
                      "akahime",
                      "nyxthrael",
-                     "sylvantheros"]
+                     "sylvantheros",
+                     "vaelindra"]
     playable = explicit_kits + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]

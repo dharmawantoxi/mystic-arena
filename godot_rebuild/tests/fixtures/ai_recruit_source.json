@@ -3685,6 +3685,61 @@
     }
   },
   {
+    "hero_type": "vaelindra",
+    "price": 3000,
+    "initial": 2999,
+    "success": false,
+    "balance": 2999,
+    "count": 0,
+    "reserve": 3000,
+    "target": "vaelindra",
+    "hero": null
+  },
+  {
+    "hero_type": "vaelindra",
+    "price": 3000,
+    "initial": 3000,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "vaelindra",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2487,
+      "hp": 2487,
+      "damage": 201,
+      "skill_damage": 591,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "vaelindra",
+    "price": 3000,
+    "initial": 3001,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "vaelindra",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2487,
+      "hp": 2487,
+      "damage": 201,
+      "skill_damage": 591,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

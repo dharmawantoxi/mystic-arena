@@ -164,6 +164,7 @@ const DEFINITIONS := {
 	"tsukiyora": preload("res://data/heroes/tsukiyora.tres"),
 	"urgharun": preload("res://data/heroes/urgharun.tres"),
 	"ursath": preload("res://data/heroes/ursath.tres"),
+	"vaelindra": preload("res://data/heroes/vaelindra.tres"),
 	"vaelkorr": preload("res://data/heroes/vaelkorr.tres"),
 	"vaelmyrra": preload("res://data/heroes/vaelmyrra.tres"),
 	"vaerith": preload("res://data/heroes/vaerith.tres"),

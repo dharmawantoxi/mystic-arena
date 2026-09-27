@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["akahime", "nyxthrael", "sylvantheros"]
+const IDS := ["akahime", "nyxthrael", "sylvantheros", "vaelindra"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -30,7 +30,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_nyxthrael(world, hero, target, key, structures)
 		"sylvantheros":
 			_sylvantheros(world, hero, target, key, structures)
-		#DISPATCH
+		"vaelindra":
+			_vaelindra(world, hero, target, key, structures)
 		_:
 			return false
 	Common.trigger(hero, key, VISUAL[key])
@@ -92,7 +93,25 @@ static func _sylvantheros(world, hero: HeroState, target, key: String, structure
 			_radial(world, hero, structures, 280.0, 1.95, 70)
 
 
-#HEROES
+static func _vaelindra(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Target int(1.3x); strictly below 30% HP pre-hit int(x1.4).
+			if target == null:
+				return
+			_execute_hit(world, hero, target, 1.3, 1.4)
+		"w":
+			# AOE 215 1.2x skill.
+			_radial(world, hero, structures, 215.0, 1.2)
+		"e":
+			# AOE 230 1.05x skill, slow 0.35 for 90.
+			_radial(world, hero, structures, 230.0, 1.05, 0, 0.35, 90)
+		"r":
+			# AOE 310 2.25x skill, attack delay max(timer, 80), heal 12%.
+			_radial(world, hero, structures, 310.0, 2.25, 80)
+			hero.heal_hp(int(hero.max_hp * 0.12))
+
+
 static func _execute_hit(world, hero: HeroState, target, mult: float, bonus: float) -> void:
 	# Source: dmg = int(skill * mult); if hp / max(1, max_hp) < 0.3 (pre-hit):
 	# dmg = int(dmg * bonus). Neutral, unattributed take_damage.
