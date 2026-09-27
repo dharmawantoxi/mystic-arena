@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "zulkhaven"
+display_name = "Zul'khaven"
+max_hp = 2963
+damage = 453
+speed_px_per_tick = 1.45
+attack_range_px = 120
+attack_cooldown_ticks = 46
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Devourer"
+role = "Boss/Devourer"
+cost = 6400
+unlock_cost = 0
+base_skill = 1479
+skill_cooldown_max = 435
+skill_range_px = 275
+dmg_school = "physical"
+is_melee = false
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 453
+is_boss_hero = true

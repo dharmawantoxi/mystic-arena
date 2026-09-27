@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "ursath"
+display_name = "Ursath"
+max_hp = 3117
+damage = 211
+speed_px_per_tick = 1.6
+attack_range_px = 220
+attack_cooldown_ticks = 42
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Wildcaller"
+role = "Boss/Wildcaller"
+cost = 7950
+unlock_cost = 0
+base_skill = 749
+skill_cooldown_max = 510
+skill_range_px = 325
+dmg_school = "magic"
+is_melee = false
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 211
+is_boss_hero = true

@@ -34,31 +34,30 @@ atau respawning tetap eligible sesuai sumber AIPlayer, tanpa mengubah HP/alive
 atau respawn timer. UI blue masih menolak hero mati. Belum ada scheduler AI yang
 memanggilnya otomatis; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
 
-## Rekrut AI — fase awal, bukan roster playable lengkap
+## Roster kit native — 161 playable, 61 pending (bukan AIPlayer penuh)
 
-Domain red kini memiliki transaksi Kaizen/Thorne/Grimjaw/Sylara berbayar eksplisit melalui
-draft (lihat [AI_CONTRACT.md](AI_CONTRACT.md)). Kaizen merah gratis di scene
-tetap, tidak dihitung sebagai pembelian dan tidak diganti. Baseline numerik
-222 Hero sumber tersedia; 218 lainnya belum punya handler native, sehingga
-pembeliannya ditolak tanpa debit atau mengganti skill.
+Registry eksplisit `scripts/data/hero_roster.gd` berisi enam starter, Gornak,
+Morgath, Drakar, Abaddon, Alchemist, serta 150 ID yang benar-benar memakai
+jalur shared-source di Python asli. Daftar tepat, source recipe dan bukti per
+hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Sisa **61 boss** tidak
+punya kit native dan ditolak tanpa debit/substitusi. Scene tetap pasangan
+Kaizen gratis dan defender lama, tidak otomatis memakai seluruh registry.
 
-Thorne (500 G) adalah hero melee nyata dengan Q Viscous Nose (cone/slow),
-W Bristleback (mitigasi fisik/magic dan reflect), E Quill Spray AOE, R Warpath
-(buff attack/cooldown sementara). Fixture `thorne_source.json` diambil dari
-Hero + ThorneSkills Python, termasuk upgrade saat buff dan respawn.
-Resource `.tres` statis tidak dimutasi oleh buff. Kaizen lama tetap memakai
-kit sendiri. Belum ada animasi/UI Thorne atau AI controller di scene.
+Sumber `BossHeroSkills._fallback_cast` hanya dipakai untuk allowlist 150 ID
+yang tidak mempunyai recipe sumber; bukan pengganti recipe khusus yang belum
+diport. Setiap ID dites QWER, attack melee/homing, cooldown/recast, upgrade
+1–15, respawn, summon threshold serta combat terhadap Hero/Tower asli.
+Morgath mempertahankan basic beam/hit instan sesuai pengecualian sumber.
 
-Grimjaw (450 G) memakai Q spin 180 tick, W Healing Ward, E critical buff
-berulang 300 tick + radial AOE, R target-lock 90 tick. Oracle sumber
-`grimjaw_source.json` dibandingkan dengan combat native dan pembayaran red
-nyata. Seluruh ID hero kini memiliki marker polygon/warna prosedural sederhana
-berdasarkan ID dengan lingkar tim, mata arah hadap, HP dan seleksi. Ini
-**placeholder** bebas aset; bukan animasi/visual hero final atau bukti 218
-kit lainnya dapat dimainkan.
+Vex dan Zephyr masing-masing 420 G, Alchemist 750 G. Upgrade boss memakai
+pengali sumber **1,6×**, jadi Lv1→2 480 G, bukan 300 G. Skill tanpa source/
+school tetap netral; school eksplisit pada basic/shared-source tetap dibawa.
+Anti-heal mengikuti HP setter sumber (cap sebelum memotong gain). Shadow Realm
+memblokir burn termasuk tick aktif terakhir; tower tidak diberi stun yang
+memerlukan atribut `attack_timer` yang tidak ada di sumber.
 
-Sylara (380 G) adalah marksman ranged native pertama: serangan dasar homing
-9,5px/tick, Q line-pierce dan Focus Fire, W Windrun + evasion fisik 75%,
-E Shackle, R Powershot setelah charge. Oracle `sylara_source.json` menjalankan
-skill dan loop projectile sumber Python nyata. Peluru sementara hanya titik
-prosedural; bukan panah/efek final. Masih 218 kit yang belum playable.
+Fixture source dan suite native lama tetap dijalankan. CI Godot 4.7.2
+`c029d50`: **358.305 native checks**. Progres batch, batas konteks sesi dan
+pesan lanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
+Placeholder polygon/warna hero dan titik proyektil tetap sederhana; bukan
+art final, bukan klaim AIPlayer, item/forge atau seluruh pertandingan selesai.

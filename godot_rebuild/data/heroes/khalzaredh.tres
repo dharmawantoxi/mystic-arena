@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "khalzaredh"
+display_name = "Khal'zaredh"
+max_hp = 2436
+damage = 317
+speed_px_per_tick = 1.89
+attack_range_px = 70
+attack_cooldown_ticks = 35
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Sandborn Prince"
+role = "Boss/Sandborn Prince"
+cost = 3250
+unlock_cost = 0
+base_skill = 898
+skill_cooldown_max = 265
+skill_range_px = 160
+dmg_school = "physical"
+is_melee = true
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 317
+is_boss_hero = true

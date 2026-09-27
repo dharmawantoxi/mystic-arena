@@ -105,7 +105,7 @@ func absorb(raw_damage: int, school: String) -> float:
 		if school == "physical":
 			var armor := maxf(0, data.armor)
 			remaining = Damage.resolve(raw_damage, armor, 0, school)
-		elif data.magic_resist > 0:
+		elif school == "magic" and data.magic_resist > 0:
 			remaining = Damage.resolve(raw_damage, 0, data.magic_resist, school)
 	if shield_active:
 		var absorbed := minf(shield, remaining)

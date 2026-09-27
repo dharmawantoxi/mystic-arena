@@ -21,9 +21,9 @@ const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const THORNE = preload("res://data/heroes/thorne.tres")
 const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
 const SYLARA = preload("res://data/heroes/sylara.tres")
-const PLAYABLE_AI_HEROES := {
-	"kaizen": KAIZEN, "thorne": THORNE, "grimjaw": GRIMJAW, "sylara": SYLARA
-}
+const VEX = preload("res://data/heroes/vex.tres")
+const ZEPHYR = preload("res://data/heroes/zephyr.tres")
+const PLAYABLE_AI_HEROES = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 const HERO_SPAWN := Vector2(220, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
 const RED_HERO_SPAWN := Vector2(1120, 130)
@@ -409,7 +409,8 @@ func _step_hero_respawn(hero: HeroState) -> void:
 		hero.w_cooldown = 0
 		hero.e_cooldown = 0
 		hero.r_cooldown = 0
-	hero.attack_timer = 0
+	if hero.settings().id in ["kaizen", "thorne", "grimjaw", "sylara"]:
+		hero.attack_timer = 0
 	hero.q_stack = 0
 	hero.q_reset_timer = 0
 	hero.wind_wall_timer = 0
@@ -464,7 +465,7 @@ func _hero_skill_nearby(hero: HeroState) -> int:
 
 func _hero_passive_heal(hero: HeroState) -> void:
 	if hero.hp < hero.max_hp:
-		hero.hp = minf(hero.max_hp, hero.hp + HERO_PASSIVE_HEAL)
+		hero.heal_hp(HERO_PASSIVE_HEAL)
 
 
 func _hero_home(hero: HeroState) -> Vector2:
@@ -485,7 +486,7 @@ func _hero_near_own_base(hero: HeroState) -> bool:
 
 func _step_hero_retreat(hero: HeroState) -> void:
 	if _hero_near_own_base(hero):
-		hero.hp = minf(hero.max_hp, hero.hp + HERO_BASE_HEAL)
+		hero.heal_hp(HERO_BASE_HEAL)
 	else:
 		_move_toward(hero, _hero_home(hero))
 	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)

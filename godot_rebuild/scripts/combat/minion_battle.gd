@@ -7,7 +7,24 @@ const UnitState = preload("res://scripts/combat/unit_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ThorneSkills = preload("res://scripts/combat/thorne_skills.gd")
 const GrimjawSkills = preload("res://scripts/combat/grimjaw_skills.gd")
+const VexSkills = preload("res://scripts/combat/vex_skills.gd")
+const ZephyrSkills = preload("res://scripts/combat/zephyr_skills.gd")
 const SylaraSkills = preload("res://scripts/combat/sylara_skills.gd")
+const SourceSharedBossSkills = preload("res://scripts/combat/source_shared_boss_skills.gd")
+const BossLevelOneSkills = preload("res://scripts/combat/boss_level_one_skills.gd")
+const AlchemistSkills = preload("res://scripts/combat/alchemist_skills.gd")
+const NATIVE_SKILLS := {
+	"alchemist": AlchemistSkills,
+	"thorne": ThorneSkills,
+	"grimjaw": GrimjawSkills,
+	"sylara": SylaraSkills,
+	"vex": VexSkills,
+	"zephyr": ZephyrSkills,
+	"gornak": BossLevelOneSkills,
+	"morgath": BossLevelOneSkills,
+	"drakar": BossLevelOneSkills,
+	"abaddon": BossLevelOneSkills
+}
 const HeroProjectiles = preload("res://scripts/combat/hero_projectiles.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
@@ -107,6 +124,12 @@ func step_tick() -> void:
 			break
 		if not unit.alive:
 			continue
+		if unit.is_hero and unit.definition.id == "zephyr":
+			# Source Hero.update burns before Shadow Realm's timer expires.
+			_tick_debuffs(unit)
+			_tick_burn(unit)
+			_tick_hero(unit as HeroState)
+			continue
 		if unit.is_hero:
 			# Heroes tick their own timers + shared debuffs. No lane
 			# march, no AI orders, no passive heal in Kaizen-1.
@@ -188,24 +211,27 @@ func _tick_burn(unit: UnitState) -> void:
 		var damage := int(unit.burn_accum)
 		if damage > 0 and unit.alive:
 			unit.burn_accum -= damage
-			unit.hp = maxf(0, unit.hp - damage)
-			_record(
-				{
-					"kind": "hit",
-					"burn": true,
-					"source_id": -1,
-					"target_id": unit.id,
-					"from": unit.position,
-					"to": unit.position,
-					"damage": damage
-				}
-			)
-			if unit.hp <= 0:
-				unit.alive = false
-				_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
-				_on_death(1 - unit.team, unit)
-				if unit.is_hero:
-					_on_hero_death(unit as HeroState, -1)
+			if unit is HeroState and unit.shadow_realm_timer > 0:
+				damage = 0
+			if damage > 0:
+				unit.hp = maxf(0, unit.hp - damage)
+				_record(
+					{
+						"kind": "hit",
+						"burn": true,
+						"source_id": -1,
+						"target_id": unit.id,
+						"from": unit.position,
+						"to": unit.position,
+						"damage": damage
+					}
+				)
+				if unit.hp <= 0:
+					unit.alive = false
+					_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
+					_on_death(1 - unit.team, unit)
+					if unit.is_hero:
+						_on_hero_death(unit as HeroState, -1)
 	if unit.burn_timer <= 0:
 		unit.burn_dps = 0.0
 		unit.burn_accum = 0.0
@@ -314,13 +340,15 @@ func _deliver_hit(
 	# Shared one-shot damage path for melee and projectile impacts. Visuals never call this.
 	if not is_running() or target == null or not target.alive or source_team == target.team:
 		return false
-	if raw_damage <= 0 or school not in ["physical", "magic"]:
+	if raw_damage <= 0 or school not in ["physical", "magic", "neutral"]:
 		return false
 	if target is HeroState:
 		var defender := target as HeroState
+		if defender.shadow_realm_timer > 0:
+			return false
 		if damage_type == "projectile" and school != "magic" and defender.wind_wall_timer > 0:
 			return false
-		if defender.windrun_timer > 0 and school == "physical":
+		if defender.windrun_timer > 0 and school != "magic":
 			var roll := (
 				float(windrun_roll_override.call())
 				if windrun_roll_override.is_valid()
@@ -362,8 +390,12 @@ func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float
 		# Structures absorb through armor + shield. Previously only the
 		# siege override did this; hero AOE needs it at this level too.
 		return (target as StructureState).absorb(raw_damage, school)
-	var damage := DamageRules.resolve(
-		raw_damage, target.definition.armor, target.definition.magic_resist, school
+	var damage := (
+		raw_damage
+		if school == "neutral"
+		else DamageRules.resolve(
+			raw_damage, target.definition.armor, target.definition.magic_resist, school
+		)
 	)
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var keep := 0.85 if school == "magic" else 0.70
@@ -605,7 +637,7 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		hero.damage * (2 if hero.settings().id == "grimjaw" and hero.grimjaw_crit_timer > 0 else 1)
 	)
 	var result := true
-	if not hero.is_melee:
+	if not hero.is_melee and hero.settings().id != "morgath":
 		HeroProjectiles.spawn(hero_projectiles, hero, target, raw)
 	else:
 		result = _deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
@@ -620,14 +652,21 @@ func upgrade_hero(hero_id: int) -> bool:
 
 
 func _cast_extended_hero_skill(hero: HeroState, key: String, structures: Array) -> bool:
-	match hero.settings().id:
-		"sylara":
-			return SylaraSkills.cast(self, hero, key, structures)
-		"grimjaw":
-			return GrimjawSkills.cast(self, hero, key, structures)
-		"thorne":
-			return ThorneSkills.cast(self, hero, key, structures)
-	return false
+	var handler = (
+		SourceSharedBossSkills
+		if hero.settings().id in SourceSharedBossSkills.IDS
+		else NATIVE_SKILLS.get(hero.settings().id)
+	)
+	return handler.cast(self, hero, key, structures) if handler != null else false
+
+
+func _can_cast_extended_hero_skill(hero: HeroState, key: String, structures: Array) -> bool:
+	var handler = (
+		SourceSharedBossSkills
+		if hero.settings().id in SourceSharedBossSkills.IDS
+		else NATIVE_SKILLS.get(hero.settings().id)
+	)
+	return handler.can_cast(self, hero, key, structures) if handler != null else false
 
 
 func _can_cast_hero_e(hero_id: int, structures: Array = []) -> bool:
@@ -636,12 +675,8 @@ func _can_cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.e_cooldown > 0:
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.can_cast(self, hero, "e", structures)
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.can_cast(self, hero, "e", structures)
-	if hero.settings().id == "thorne":
-		return ThorneSkills.can_cast(self, hero, "e", structures)
+	if hero.settings().id != "kaizen":
+		return _can_cast_extended_hero_skill(hero, "e", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -669,12 +704,8 @@ func _can_cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.r_cooldown > 0:
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.can_cast(self, hero, "r", structures)
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.can_cast(self, hero, "r", structures)
-	if hero.settings().id == "thorne":
-		return ThorneSkills.can_cast(self, hero, "r", structures)
+	if hero.settings().id != "kaizen":
+		return _can_cast_extended_hero_skill(hero, "r", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -702,12 +733,8 @@ func _can_cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not is_running() or hero == null or not hero.alive:
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.can_cast(self, hero, "w", [])
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.can_cast(self, hero, "w", [])
-	if hero.settings().id == "thorne":
-		return ThorneSkills.can_cast(self, hero, "w", [])
+	if hero.settings().id != "kaizen":
+		return _can_cast_extended_hero_skill(hero, "w", _hero_skill_structures())
 	return hero.w_cooldown <= 0
 
 
@@ -716,12 +743,8 @@ func cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not _can_cast_hero_w(hero_id):
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.cast(self, hero, "w", [])
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.cast(self, hero, "w", [])
-	if hero.settings().id == "thorne":
-		return ThorneSkills.cast(self, hero, "w", [])
+	if hero.settings().id != "kaizen":
+		return _cast_extended_hero_skill(hero, "w", _hero_skill_structures())
 	hero.wind_wall_timer = 180
 	hero.w_cooldown = hero.w_cooldown_max
 	hero.active_skill = "w"
@@ -735,12 +758,8 @@ func can_cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.skill_timer > 0:
 		return false
-	if hero.settings().id == "sylara":
-		return SylaraSkills.can_cast(self, hero, "q", structures)
-	if hero.settings().id == "grimjaw":
-		return GrimjawSkills.can_cast(self, hero, "q", structures)
-	if hero.settings().id == "thorne":
-		return ThorneSkills.can_cast(self, hero, "q", structures)
+	if hero.settings().id != "kaizen":
+		return _can_cast_extended_hero_skill(hero, "q", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -900,10 +919,18 @@ func _tick_hero(hero: HeroState) -> void:
 			hero.ulti_active = false
 	if hero.stun_timer > 0:
 		hero.stun_timer -= 1
-	if hero.settings().id == "thorne":
+	if hero.settings().id == "alchemist":
+		AlchemistSkills.tick(self, hero, _hero_skill_structures())
+	elif hero.settings().id in BossLevelOneSkills.IDS:
+		BossLevelOneSkills.tick(self, hero, _hero_skill_structures())
+	elif hero.settings().id == "thorne":
 		ThorneSkills.tick(hero)
 	elif hero.settings().id == "grimjaw":
 		GrimjawSkills.tick(self, hero, _hero_skill_structures())
+	elif hero.settings().id == "vex":
+		VexSkills.tick(self, hero, _hero_skill_structures())
+	elif hero.settings().id == "zephyr":
+		ZephyrSkills.tick(self, hero, _hero_skill_structures())
 	elif hero.settings().id == "sylara":
 		SylaraSkills.tick(self, hero, _hero_skill_structures())
 

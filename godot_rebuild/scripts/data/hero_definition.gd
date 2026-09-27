@@ -29,6 +29,9 @@ const HERO_LEVELS := [
 @export var role: String = "Assassin"
 @export var cost: int = 400
 @export var unlock_cost: int = 0
+# Source raw catalog damage used by certain boss buffs, not normalized/leveled.
+@export var is_boss_hero: bool = false
+@export var catalog_damage: int = 0
 @export var base_skill: int = 70
 @export var skill_cooldown_max: int = 300
 @export var skill_range_px: float = 100.0

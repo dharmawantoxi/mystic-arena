@@ -1,0 +1,2871 @@
+{
+  "target": 222,
+  "playable": 161,
+  "pending": 61,
+  "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
+  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
+  "heroes": {
+    "grimjaw": {
+      "status": "playable",
+      "source_level": 0,
+      "summon_cost": 450,
+      "source_recipe": {
+        "qwer": "GrimjawSkills.cast_q/w/e/r"
+      },
+      "native_handler": "grimjaw_skills.gd",
+      "oracle": "grimjaw_source_oracle.py",
+      "native_test": "grimjaw_checks.gd",
+      "blocker": null
+    },
+    "kaizen": {
+      "status": "playable",
+      "source_level": 0,
+      "summon_cost": 400,
+      "source_recipe": {
+        "qwer": "KaizenSkills.cast_q/w/e/r"
+      },
+      "native_handler": "minion_battle.gd",
+      "oracle": "kaizen_source_oracle.py",
+      "native_test": "kaizen_checks.gd",
+      "blocker": null
+    },
+    "sylara": {
+      "status": "playable",
+      "source_level": 0,
+      "summon_cost": 380,
+      "source_recipe": {
+        "qwer": "SylaraSkills.cast_q/w/e/r"
+      },
+      "native_handler": "sylara_skills.gd",
+      "oracle": "sylara_source_oracle.py",
+      "native_test": "sylara_checks.gd",
+      "blocker": null
+    },
+    "thorne": {
+      "status": "playable",
+      "source_level": 0,
+      "summon_cost": 500,
+      "source_recipe": {
+        "qwer": "ThorneSkills.cast_q/w/e/r"
+      },
+      "native_handler": "thorne_skills.gd",
+      "oracle": "thorne_source_oracle.py",
+      "native_test": "thorne_checks.gd",
+      "blocker": null
+    },
+    "vex": {
+      "status": "playable",
+      "source_level": 0,
+      "summon_cost": 420,
+      "source_recipe": {
+        "qwer": "VexSkills.cast_q/w/e/r"
+      },
+      "native_handler": "vex_skills.gd",
+      "oracle": "starter_finish_source_oracle.py",
+      "native_test": "starter_finish_checks.gd",
+      "blocker": null
+    },
+    "zephyr": {
+      "status": "playable",
+      "source_level": 0,
+      "summon_cost": 420,
+      "source_recipe": {
+        "qwer": "ZephyrSkills.cast_q/w/e/r"
+      },
+      "native_handler": "zephyr_skills.gd",
+      "oracle": "starter_finish_source_oracle.py",
+      "native_test": "starter_finish_checks.gd",
+      "blocker": null
+    },
+    "abaddon": {
+      "status": "playable",
+      "source_level": 1,
+      "summon_cost": 700,
+      "source_recipe": {
+        "q": "_cast_q_mist_coil",
+        "w": "_cast_w_aphotic_shield",
+        "e": "_cast_e_darkness_gale",
+        "r": "_cast_r_death_sever"
+      },
+      "native_handler": "boss_level_one_skills.gd",
+      "oracle": "boss_level_one_source_oracle.py",
+      "native_test": "boss_level_one_checks.gd",
+      "blocker": null
+    },
+    "drakar": {
+      "status": "playable",
+      "source_level": 1,
+      "summon_cost": 600,
+      "source_recipe": {
+        "q": "_cast_q_battle_hunger",
+        "w": "_cast_w_counter_helix",
+        "e": "_cast_e_berserkers_call",
+        "r": "_cast_r_culling_blade"
+      },
+      "native_handler": "boss_level_one_skills.gd",
+      "oracle": "boss_level_one_source_oracle.py",
+      "native_test": "boss_level_one_checks.gd",
+      "blocker": null
+    },
+    "gornak": {
+      "status": "playable",
+      "source_level": 1,
+      "summon_cost": 500,
+      "source_recipe": {
+        "q": "_cast_q_mana_break",
+        "w": "_cast_w_blink",
+        "e": "_cast_e_counterspell",
+        "r": "_cast_r_mana_void"
+      },
+      "native_handler": "boss_level_one_skills.gd",
+      "oracle": "boss_level_one_source_oracle.py",
+      "native_test": "boss_level_one_checks.gd",
+      "blocker": null
+    },
+    "morgath": {
+      "status": "playable",
+      "source_level": 1,
+      "summon_cost": 550,
+      "source_recipe": {
+        "q": "_cast_q_spark_wraith",
+        "w": "_cast_w_flux",
+        "e": "_cast_e_magnetic_field",
+        "r": "_cast_r_tempest_double"
+      },
+      "native_handler": "boss_level_one_skills.gd",
+      "oracle": "boss_level_one_source_oracle.py",
+      "native_test": "boss_level_one_checks.gd",
+      "blocker": null
+    },
+    "alchemist": {
+      "status": "playable",
+      "source_level": 2,
+      "summon_cost": 750,
+      "source_recipe": {
+        "q": "_cast_q_acid_spray",
+        "w": "_cast_w_unstable_concoction",
+        "e": "_cast_e_chemical_rage",
+        "r": "_cast_r_greevils_greed"
+      },
+      "native_handler": "alchemist_skills.gd",
+      "oracle": "alchemist_source_oracle.py",
+      "native_test": "alchemist_checks.gd",
+      "blocker": null
+    },
+    "gorath": {
+      "status": "playable",
+      "source_level": 2,
+      "summon_cost": 750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "khalros": {
+      "status": "playable",
+      "source_level": 2,
+      "summon_cost": 700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "razak": {
+      "status": "playable",
+      "source_level": 2,
+      "summon_cost": 650,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "ancient_apparition": {
+      "status": "pending",
+      "source_level": 3,
+      "summon_cost": 800,
+      "source_recipe": {
+        "q": "_cast_q_ice_vortex",
+        "w": "_cast_w_chilling_touch",
+        "e": "_cast_e_ice_blast",
+        "r": "_cast_r_cold_feet"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "nyzrak": {
+      "status": "pending",
+      "source_level": 3,
+      "summon_cost": 850,
+      "source_recipe": {
+        "q": "_cast_q_arctic_burn",
+        "w": "_cast_w_splinter_blast",
+        "e": "_cast_e_winters_curse",
+        "r": "_cast_r_cold_embrace"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "varkul": {
+      "status": "playable",
+      "source_level": 3,
+      "summon_cost": 750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xerathis": {
+      "status": "playable",
+      "source_level": 3,
+      "summon_cost": 800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "ignis_drachorn": {
+      "status": "pending",
+      "source_level": 4,
+      "summon_cost": 850,
+      "source_recipe": {
+        "q": "_cast_q_dragon_breath",
+        "w": "_cast_w_dragon_tail",
+        "e": "_cast_e_dragon_blood",
+        "r": "_cast_r_elder_dragon_form"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "pyrenth": {
+      "status": "playable",
+      "source_level": 4,
+      "summon_cost": 750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vokrahn": {
+      "status": "playable",
+      "source_level": 4,
+      "summon_cost": 850,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zharok": {
+      "status": "playable",
+      "source_level": 4,
+      "summon_cost": 650,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "gravefang": {
+      "status": "playable",
+      "source_level": 5,
+      "summon_cost": 1100,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "krobellus": {
+      "status": "pending",
+      "source_level": 5,
+      "summon_cost": 1500,
+      "source_recipe": {
+        "q": "_cast_q_krobellus_exorcism",
+        "w": "_cast_w_krobellus_silence",
+        "e": "_cast_e_krobellus_siphon",
+        "r": "_cast_r_krobellus_crypt"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "nyxara": {
+      "status": "playable",
+      "source_level": 5,
+      "summon_cost": 950,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vhalzun": {
+      "status": "pending",
+      "source_level": 5,
+      "summon_cost": 1200,
+      "source_recipe": {
+        "q": "_cast_q_vhalzun_death_pulse",
+        "w": "_cast_w_vhalzun_heartstopper",
+        "e": "_cast_e_vhalzun_reapers_scythe",
+        "r": "_cast_r_vhalzun_ghost_shroud"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "gravewake": {
+      "status": "pending",
+      "source_level": 6,
+      "summon_cost": 1000,
+      "source_recipe": {
+        "q": "_cast_q_gravewake_anchor",
+        "w": "_cast_w_gravewake_tide",
+        "e": "_cast_e_gravewake_shell",
+        "r": "_cast_r_gravewake_ravage"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "kunkka": {
+      "status": "pending",
+      "source_level": 6,
+      "summon_cost": 900,
+      "source_recipe": {
+        "q": "_cast_q_kunkka_tide",
+        "w": "_cast_w_kunkka_xmark",
+        "e": "_cast_e_kunkka_ghost",
+        "r": "_cast_r_kunkka_torrent"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "syrentha": {
+      "status": "pending",
+      "source_level": 6,
+      "summon_cost": 1100,
+      "source_recipe": {
+        "q": "_cast_q_syrentha_riptide",
+        "w": "_cast_w_syrentha_song",
+        "e": "_cast_e_syrentha_mirror",
+        "r": "_cast_r_syrentha_siren"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "thalgryn": {
+      "status": "pending",
+      "source_level": 6,
+      "summon_cost": 1200,
+      "source_recipe": {
+        "q": "_cast_q_thalgryn_waveform",
+        "w": "_cast_w_thalgryn_adaptive",
+        "e": "_cast_e_thalgryn_morph",
+        "r": "_cast_r_thalgryn_replicate"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "akashari": {
+      "status": "pending",
+      "source_level": 7,
+      "summon_cost": 1200,
+      "source_recipe": {
+        "q": "_cast_q_akashari_strike",
+        "w": "_cast_w_akashari_blink",
+        "e": "_cast_e_akashari_scream",
+        "r": "_cast_r_akashari_sonic"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "malzareth": {
+      "status": "pending",
+      "source_level": 7,
+      "summon_cost": 1100,
+      "source_recipe": {
+        "q": "_cast_q_malzareth_disruption",
+        "w": "_cast_w_malzareth_soul",
+        "e": "_cast_e_malzareth_poison",
+        "r": "_cast_r_malzareth_disillusion"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "nyxarath": {
+      "status": "pending",
+      "source_level": 7,
+      "summon_cost": 1000,
+      "source_recipe": {
+        "q": "_cast_q_nyxarath_shadowraze",
+        "w": "_cast_w_nyxarath_necro",
+        "e": "_cast_e_nyxarath_presence",
+        "r": "_cast_r_nyxarath_requiem"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "vorenmarr": {
+      "status": "pending",
+      "source_level": 7,
+      "summon_cost": 1300,
+      "source_recipe": {
+        "q": "_cast_q_vorenmarr_bonds",
+        "w": "_cast_w_vorenmarr_power",
+        "e": "_cast_e_vorenmarr_upheaval",
+        "r": "_cast_r_vorenmarr_golem"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "vaerith": {
+      "status": "playable",
+      "source_level": 8,
+      "summon_cost": 1200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vhorethzir": {
+      "status": "playable",
+      "source_level": 8,
+      "summon_cost": 1000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vhyssarion": {
+      "status": "playable",
+      "source_level": 8,
+      "summon_cost": 1200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xirthalis": {
+      "status": "playable",
+      "source_level": 8,
+      "summon_cost": 1200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kenshiro": {
+      "status": "pending",
+      "source_level": 9,
+      "summon_cost": 1300,
+      "source_recipe": {
+        "q": "_cast_q_kenshiro_swiftslash",
+        "w": "_cast_w_kenshiro_assault",
+        "e": "_cast_e_kenshiro_gale",
+        "r": "_cast_r_kenshiro_supremacy"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "khazan": {
+      "status": "pending",
+      "source_level": 9,
+      "summon_cost": 1350,
+      "source_recipe": {
+        "q": "_cast_q_khazan_chained",
+        "w": "_cast_w_khazan_leap",
+        "e": "_cast_e_khazan_spin",
+        "r": "_cast_r_khazan_vanish"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "naraka": {
+      "status": "pending",
+      "source_level": 9,
+      "summon_cost": 2000,
+      "source_recipe": {
+        "q": "_cast_q_naraka_chaos",
+        "w": "_cast_w_naraka_shadowstep",
+        "e": "_cast_e_naraka_hammer",
+        "r": "_cast_r_naraka_execution"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "wiro": {
+      "status": "pending",
+      "source_level": 9,
+      "summon_cost": 1300,
+      "source_recipe": {
+        "q": "_cast_q_wiro_windcut",
+        "w": "_cast_w_wiro_whirl",
+        "e": "_cast_e_wiro_dash",
+        "r": "_cast_r_wiro_typhoon"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "aurethzar": {
+      "status": "pending",
+      "source_level": 10,
+      "summon_cost": 2100,
+      "source_recipe": {
+        "q": "_cast_q_aurethzar_marksman",
+        "w": "_cast_w_aurethzar_piercing",
+        "e": "_cast_e_aurethzar_frost",
+        "r": "_cast_r_aurethzar_thunder"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "krognarr": {
+      "status": "pending",
+      "source_level": 10,
+      "summon_cost": 1400,
+      "source_recipe": {
+        "q": "_cast_q_krognarr_strike",
+        "w": "_cast_w_krognarr_seismic",
+        "e": "_cast_e_krognarr_rampart",
+        "r": "_cast_r_krognarr_eruption"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "raz": {
+      "status": "pending",
+      "source_level": 10,
+      "summon_cost": 1400,
+      "source_recipe": {
+        "q": "_cast_q_raz_overdrive",
+        "w": "_cast_w_raz_searing",
+        "e": "_cast_e_raz_surge",
+        "r": "_cast_r_raz_gloom"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "vraskhan": {
+      "status": "pending",
+      "source_level": 10,
+      "summon_cost": 1400,
+      "source_recipe": {
+        "q": "_cast_q_vraskhan_thorned",
+        "w": "_cast_w_vraskhan_leap",
+        "e": "_cast_e_vraskhan_deathslash",
+        "r": "_cast_r_vraskhan_omni"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "aeralith": {
+      "status": "pending",
+      "source_level": 11,
+      "summon_cost": 1450,
+      "source_recipe": {
+        "q": "_cast_q_aeralith_tailwind",
+        "w": "_cast_w_aeralith_windblade",
+        "e": "_cast_e_aeralith_vacuum",
+        "r": "_cast_r_aeralith_skyrider"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "aurex": {
+      "status": "pending",
+      "source_level": 11,
+      "summon_cost": 1500,
+      "source_recipe": {
+        "q": "_cast_q_aurex_shieldcrash",
+        "w": "_cast_w_aurex_voltblast",
+        "e": "_cast_e_aurex_aegis",
+        "r": "_cast_r_aurex_spin"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "nyxareva": {
+      "status": "pending",
+      "source_level": 11,
+      "summon_cost": 1500,
+      "source_recipe": {
+        "q": "_cast_q_nyxareva_darkslash",
+        "w": "_cast_w_nyxareva_mortalwound",
+        "e": "_cast_e_nyxareva_sacrifice",
+        "r": "_cast_r_nyxareva_avatar"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "thalakryon": {
+      "status": "pending",
+      "source_level": 11,
+      "summon_cost": 2200,
+      "source_recipe": {
+        "q": "_cast_q_thalakryon_bolt",
+        "w": "_cast_w_thalakryon_aquashield",
+        "e": "_cast_e_thalakryon_tidalrage",
+        "r": "_cast_r_thalakryon_metamorph"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "aurelix": {
+      "status": "pending",
+      "source_level": 12,
+      "summon_cost": 1550,
+      "source_recipe": {
+        "q": "_cast_q_aurelix_timebomb",
+        "w": "_cast_w_aurelix_will",
+        "e": "_cast_e_aurelix_shockwave",
+        "r": "_cast_r_aurelix_transcend"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "aurelyssa": {
+      "status": "pending",
+      "source_level": 12,
+      "summon_cost": 1550,
+      "source_recipe": {
+        "q": "_cast_q_aurelyssa_whirlwind",
+        "w": "_cast_w_aurelyssa_sweep",
+        "e": "_cast_e_aurelyssa_wings",
+        "r": "_cast_r_aurelyssa_phantom"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "nazulmor": {
+      "status": "pending",
+      "source_level": 12,
+      "summon_cost": 2300,
+      "source_recipe": {
+        "q": "_cast_q_nazulmor_typhoon",
+        "w": "_cast_w_nazulmor_aquashield",
+        "e": "_cast_e_nazulmor_tidalrage",
+        "r": "_cast_r_nazulmor_chaotic"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "vargrath": {
+      "status": "pending",
+      "source_level": 12,
+      "summon_cost": 1600,
+      "source_recipe": {
+        "q": "_cast_q_vargrath_bloodthirst",
+        "w": "_cast_w_vargrath_charge",
+        "e": "_cast_e_vargrath_devilstrike",
+        "r": "_cast_r_vargrath_souldom"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "kaeldris": {
+      "status": "pending",
+      "source_level": 13,
+      "summon_cost": 1650,
+      "source_recipe": {
+        "q": "_cast_q_kaeldris_overwhelming",
+        "w": "_cast_w_kaeldris_press",
+        "e": "_cast_e_kaeldris_moment",
+        "r": "_cast_r_kaeldris_duel"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "pyraklos": {
+      "status": "pending",
+      "source_level": 13,
+      "summon_cost": 1700,
+      "source_recipe": {
+        "q": "_cast_q_pyraklos_spearmars",
+        "w": "_cast_w_pyraklos_rebuke",
+        "e": "_cast_e_pyraklos_bulwark",
+        "r": "_cast_r_pyraklos_arena"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "solvarin": {
+      "status": "pending",
+      "source_level": 13,
+      "summon_cost": 2400,
+      "source_recipe": {
+        "q": "_cast_q_solvarin_purification",
+        "w": "_cast_w_solvarin_repel",
+        "e": "_cast_e_solvarin_degen",
+        "r": "_cast_r_solvarin_guardian"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "velmyrth": {
+      "status": "pending",
+      "source_level": 13,
+      "summon_cost": 1700,
+      "source_recipe": {
+        "q": "_cast_q_velmyrth_dagger",
+        "w": "_cast_w_velmyrth_strike",
+        "e": "_cast_e_velmyrth_blur",
+        "r": "_cast_r_velmyrth_coup"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "azureth": {
+      "status": "pending",
+      "source_level": 14,
+      "summon_cost": 1700,
+      "source_recipe": {
+        "q": "_cast_q_azureth_arcanebolt",
+        "w": "_cast_w_azureth_concussive",
+        "e": "_cast_e_azureth_ancientseal",
+        "r": "_cast_r_azureth_mysticflare"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "luminar": {
+      "status": "pending",
+      "source_level": 14,
+      "summon_cost": 1750,
+      "source_recipe": {
+        "q": "_cast_q_luminar_illuminate",
+        "w": "_cast_w_luminar_blindinglight",
+        "e": "_cast_e_luminar_wisp",
+        "r": "_cast_r_luminar_spiritform"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "pyraethis": {
+      "status": "pending",
+      "source_level": 14,
+      "summon_cost": 2500,
+      "source_recipe": {
+        "q": "_cast_q_pyraethis_icarusdive",
+        "w": "_cast_w_pyraethis_firespirits",
+        "e": "_cast_e_pyraethis_sunray",
+        "r": "_cast_r_pyraethis_supernova"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "solara": {
+      "status": "pending",
+      "source_level": 14,
+      "summon_cost": 1800,
+      "source_recipe": {
+        "q": "_cast_q_solara_starbreaker",
+        "w": "_cast_w_solara_celestialhammer",
+        "e": "_cast_e_solara_luminosity",
+        "r": "_cast_r_solara_solarguardian"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "auroth": {
+      "status": "pending",
+      "source_level": 15,
+      "summon_cost": 1850,
+      "source_recipe": {
+        "q": "_cast_q_auroth_ionicedge",
+        "w": "_cast_w_auroth_ward",
+        "e": "_cast_e_auroth_consecration",
+        "r": "_cast_r_auroth_guardian"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "morvein": {
+      "status": "pending",
+      "source_level": 15,
+      "summon_cost": 1900,
+      "source_recipe": {
+        "q": "_cast_q_morvein_puncture",
+        "w": "_cast_w_morvein_violentstrike",
+        "e": "_cast_e_morvein_spectralcharge",
+        "r": "_cast_r_morvein_phantomform"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "thorvak": {
+      "status": "pending",
+      "source_level": 15,
+      "summon_cost": 1950,
+      "source_recipe": {
+        "q": "_cast_q_thorvak_seed",
+        "w": "_cast_w_thorvak_natureswrath",
+        "e": "_cast_e_thorvak_vengeance",
+        "r": "_cast_r_thorvak_dryad"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "yamako": {
+      "status": "pending",
+      "source_level": 15,
+      "summon_cost": 2600,
+      "source_recipe": {
+        "q": "_cast_q_yamako_deepforest",
+        "w": "_cast_w_yamako_woodcreation",
+        "e": "_cast_e_yamako_woodgolem",
+        "r": "_cast_r_yamako_kannon"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "ignirus": {
+      "status": "pending",
+      "source_level": 16,
+      "summon_cost": 2000,
+      "source_recipe": {
+        "q": "_cast_q_ignirus_searingtorrent",
+        "w": "_cast_w_ignirus_flameshot",
+        "e": "_cast_e_ignirus_burstfireball",
+        "r": "_cast_r_ignirus_vengeance"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "leoric": {
+      "status": "pending",
+      "source_level": 16,
+      "summon_cost": 2050,
+      "source_recipe": {
+        "q": "_cast_q_leoric_fearlesscharge",
+        "w": "_cast_w_leoric_sacredhammer",
+        "e": "_cast_e_leoric_concealblast",
+        "r": "_cast_r_leoric_immortality"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "seiryukong": {
+      "status": "pending",
+      "source_level": 16,
+      "summon_cost": 2700,
+      "source_recipe": {
+        "q": "_cast_q_seiryukong_boundless",
+        "w": "_cast_w_seiryukong_treedance",
+        "e": "_cast_e_seiryukong_jingusoldiers",
+        "r": "_cast_r_seiryukong_wukong"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "shirotaka": {
+      "status": "pending",
+      "source_level": 16,
+      "summon_cost": 2100,
+      "source_recipe": {
+        "q": "_cast_q_shirotaka_hiraishin",
+        "w": "_cast_w_shirotaka_waterboundary",
+        "e": "_cast_e_shirotaka_shadowclones",
+        "r": "_cast_r_shirotaka_paperbomb"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "kaelthorn": {
+      "status": "pending",
+      "source_level": 17,
+      "summon_cost": 2150,
+      "source_recipe": {
+        "q": "_cast_q_kaelthorn_bravestfighter",
+        "w": "_cast_w_kaelthorn_justiceblade",
+        "e": "_cast_e_kaelthorn_defendersassault",
+        "r": "_cast_r_kaelthorn_chivalryfists"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "nyxareth": {
+      "status": "pending",
+      "source_level": 17,
+      "summon_cost": 2800,
+      "source_recipe": {
+        "q": "_cast_q_nyxareth_starsplit",
+        "w": "_cast_w_nyxareth_realworld",
+        "e": "_cast_e_nyxareth_spacetime",
+        "r": "_cast_r_nyxareth_astrorealm"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "solvanth": {
+      "status": "pending",
+      "source_level": 17,
+      "summon_cost": 2200,
+      "source_recipe": {
+        "q": "_cast_q_solvanth_ringpunishment",
+        "w": "_cast_w_solvanth_gloriouspathway",
+        "e": "_cast_e_solvanth_laworder",
+        "r": "_cast_r_solvanth_wrath"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "xyrael": {
+      "status": "pending",
+      "source_level": 17,
+      "summon_cost": 2250,
+      "source_recipe": {
+        "q": "_cast_q_xyrael_finch",
+        "w": "_cast_w_xyrael_defiant",
+        "e": "_cast_e_xyrael_tempest",
+        "r": "_cast_r_xyrael_lightness"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "aurelion": {
+      "status": "pending",
+      "source_level": 18,
+      "summon_cost": 2900,
+      "source_recipe": {
+        "q": "_cast_q_aurelion_callcourage",
+        "w": "_cast_w_aurelion_guardianassault",
+        "e": "_cast_e_aurelion_kingscommand",
+        "r": "_cast_r_aurelion_kingssummon"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "cryssalia": {
+      "status": "pending",
+      "source_level": 18,
+      "summon_cost": 2300,
+      "source_recipe": {
+        "q": "_cast_q_cryssalia_frostshock",
+        "w": "_cast_w_cryssalia_bitterfrost",
+        "e": "_cast_e_cryssalia_frostbites",
+        "r": "_cast_r_cryssalia_coldest"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "kaelthar": {
+      "status": "pending",
+      "source_level": 18,
+      "summon_cost": 2350,
+      "source_recipe": {
+        "q": "_cast_q_kaelthar_chargingfist",
+        "w": "_cast_w_kaelthar_quake",
+        "e": "_cast_e_kaelthar_fistcrack",
+        "r": "_cast_r_kaelthar_fistbreak"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "morkhaera": {
+      "status": "pending",
+      "source_level": 18,
+      "summon_cost": 2400,
+      "source_recipe": {
+        "q": "_cast_q_morkhaera_spiritburst",
+        "w": "_cast_w_morkhaera_airstrike",
+        "e": "_cast_e_morkhaera_energyimpact",
+        "r": "_cast_r_morkhaera_ethereal"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "akahime": {
+      "status": "pending",
+      "source_level": 19,
+      "summon_cost": 2450,
+      "source_recipe": {
+        "q": "_cast_q_akahime_petalbarrage",
+        "w": "_cast_w_akahime_soulscroll",
+        "e": "_cast_e_akahime_shadow",
+        "r": "_cast_r_akahime_higanbana"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "nyxthrael": {
+      "status": "pending",
+      "source_level": 19,
+      "summon_cost": 2500,
+      "source_recipe": {
+        "q": "_cast_q_nyxthrael_ambush",
+        "w": "_cast_w_nyxthrael_nightfall",
+        "e": "_cast_e_nyxthrael_darknightfall",
+        "r": "_cast_r_nyxthrael_shadowbringer"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "sylvantheros": {
+      "status": "pending",
+      "source_level": 19,
+      "summon_cost": 2550,
+      "source_recipe": {
+        "q": "_cast_q_sylvantheros_sprout",
+        "w": "_cast_w_sylvantheros_teleport",
+        "e": "_cast_e_sylvantheros_treants",
+        "r": "_cast_r_sylvantheros_wrath"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "vaelindra": {
+      "status": "pending",
+      "source_level": 19,
+      "summon_cost": 3000,
+      "source_recipe": {
+        "q": "_cast_q_vaelindra_energywave",
+        "w": "_cast_w_vaelindra_spacering",
+        "e": "_cast_e_vaelindra_violetrequiem",
+        "r": "_cast_r_vaelindra_realm"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "astraelion": {
+      "status": "pending",
+      "source_level": 20,
+      "summon_cost": 2600,
+      "source_recipe": {
+        "q": "_cast_q_astraelion_swordfall",
+        "w": "_cast_w_astraelion_spiritblade",
+        "e": "_cast_e_astraelion_forceescape",
+        "r": "_cast_r_astraelion_zeroreturn"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "morthraxis": {
+      "status": "pending",
+      "source_level": 20,
+      "summon_cost": 3100,
+      "source_recipe": {
+        "q": "_cast_q_morthraxis_batimpale",
+        "w": "_cast_w_morthraxis_sanguine",
+        "e": "_cast_e_morthraxis_phantommob",
+        "r": "_cast_r_morthraxis_baleful"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "morvaenthir": {
+      "status": "pending",
+      "source_level": 20,
+      "summon_cost": 2650,
+      "source_recipe": {
+        "q": "_cast_q_morvaenthir_soulfragment",
+        "w": "_cast_w_morvaenthir_spiritbind",
+        "e": "_cast_e_morvaenthir_essence",
+        "r": "_cast_r_morvaenthir_shadowrealm"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "thornvaegrim": {
+      "status": "pending",
+      "source_level": 20,
+      "summon_cost": 2700,
+      "source_recipe": {
+        "q": "_cast_q_thornvaegrim_bramble",
+        "w": "_cast_w_thornvaegrim_twistedadvance",
+        "e": "_cast_e_thornvaegrim_saplingthrow",
+        "r": "_cast_r_thornvaegrim_grasp"
+      },
+      "native_handler": null,
+      "oracle": null,
+      "native_test": null,
+      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+    },
+    "kurogari": {
+      "status": "playable",
+      "source_level": 21,
+      "summon_cost": 2800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "morvekhar": {
+      "status": "playable",
+      "source_level": 21,
+      "summon_cost": 3000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nexthyrius": {
+      "status": "playable",
+      "source_level": 21,
+      "summon_cost": 3200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vorgath": {
+      "status": "playable",
+      "source_level": 21,
+      "summon_cost": 2900,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "grimstalker": {
+      "status": "playable",
+      "source_level": 22,
+      "summon_cost": 2950,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kryvoxar": {
+      "status": "playable",
+      "source_level": 22,
+      "summon_cost": 3000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "molgravar": {
+      "status": "playable",
+      "source_level": 22,
+      "summon_cost": 3300,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vargroth": {
+      "status": "playable",
+      "source_level": 22,
+      "summon_cost": 3100,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "drav": {
+      "status": "playable",
+      "source_level": 23,
+      "summon_cost": 3100,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "lyrienne": {
+      "status": "playable",
+      "source_level": 23,
+      "summon_cost": 3200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "seraphienne": {
+      "status": "playable",
+      "source_level": 23,
+      "summon_cost": 3400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "valthar": {
+      "status": "playable",
+      "source_level": 23,
+      "summon_cost": 3300,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "khalzaredh": {
+      "status": "playable",
+      "source_level": 24,
+      "summon_cost": 3250,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nyxaroth": {
+      "status": "playable",
+      "source_level": 24,
+      "summon_cost": 3350,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "solareth": {
+      "status": "playable",
+      "source_level": 24,
+      "summon_cost": 3500,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "veshtrax": {
+      "status": "playable",
+      "source_level": 24,
+      "summon_cost": 3400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "grimjack": {
+      "status": "playable",
+      "source_level": 25,
+      "summon_cost": 3450,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "morvaeth": {
+      "status": "playable",
+      "source_level": 25,
+      "summon_cost": 3500,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "okeanora": {
+      "status": "playable",
+      "source_level": 25,
+      "summon_cost": 3600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vulkareth": {
+      "status": "playable",
+      "source_level": 25,
+      "summon_cost": 3550,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "aelyrion": {
+      "status": "playable",
+      "source_level": 26,
+      "summon_cost": 3600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaervosth": {
+      "status": "playable",
+      "source_level": 26,
+      "summon_cost": 3650,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "morvyssk": {
+      "status": "playable",
+      "source_level": 26,
+      "summon_cost": 3700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vaelmyrra": {
+      "status": "playable",
+      "source_level": 26,
+      "summon_cost": 3700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kyumirra": {
+      "status": "playable",
+      "source_level": 27,
+      "summon_cost": 3750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "morvakhul": {
+      "status": "playable",
+      "source_level": 27,
+      "summon_cost": 3800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nyxariel": {
+      "status": "playable",
+      "source_level": 27,
+      "summon_cost": 3850,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zarethyr": {
+      "status": "playable",
+      "source_level": 27,
+      "summon_cost": 3800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "morthyrax": {
+      "status": "playable",
+      "source_level": 28,
+      "summon_cost": 3950,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nyrethzalv": {
+      "status": "playable",
+      "source_level": 28,
+      "summon_cost": 3900,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "sanguiveth": {
+      "status": "playable",
+      "source_level": 28,
+      "summon_cost": 4000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xerakhotep": {
+      "status": "playable",
+      "source_level": 28,
+      "summon_cost": 4050,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "ignakhor": {
+      "status": "playable",
+      "source_level": 29,
+      "summon_cost": 4100,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kazureth": {
+      "status": "playable",
+      "source_level": 29,
+      "summon_cost": 4200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nyrellieth": {
+      "status": "playable",
+      "source_level": 29,
+      "summon_cost": 4000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "sethrakhar": {
+      "status": "playable",
+      "source_level": 29,
+      "summon_cost": 4250,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaelvyrn": {
+      "status": "playable",
+      "source_level": 30,
+      "summon_cost": 4300,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nyxharr": {
+      "status": "playable",
+      "source_level": 30,
+      "summon_cost": 4200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "thorvin": {
+      "status": "playable",
+      "source_level": 30,
+      "summon_cost": 4350,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xaerissa": {
+      "status": "playable",
+      "source_level": 30,
+      "summon_cost": 4400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "celwynn": {
+      "status": "playable",
+      "source_level": 31,
+      "summon_cost": 4500,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "ravokkar": {
+      "status": "playable",
+      "source_level": 31,
+      "summon_cost": 4400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "rynvara": {
+      "status": "playable",
+      "source_level": 31,
+      "summon_cost": 4550,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "syrindra": {
+      "status": "playable",
+      "source_level": 31,
+      "summon_cost": 4600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "ghrakmaal": {
+      "status": "playable",
+      "source_level": 32,
+      "summon_cost": 4700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "malzeroth": {
+      "status": "playable",
+      "source_level": 32,
+      "summon_cost": 4600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "selunara": {
+      "status": "playable",
+      "source_level": 32,
+      "summon_cost": 4750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vessyra": {
+      "status": "playable",
+      "source_level": 32,
+      "summon_cost": 4800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "rakzhan": {
+      "status": "playable",
+      "source_level": 33,
+      "summon_cost": 4900,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "sirakzan": {
+      "status": "playable",
+      "source_level": 33,
+      "summon_cost": 4950,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "valekris": {
+      "status": "playable",
+      "source_level": 33,
+      "summon_cost": 5000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zharakzuul": {
+      "status": "playable",
+      "source_level": 33,
+      "summon_cost": 4800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "grondmauris": {
+      "status": "playable",
+      "source_level": 34,
+      "summon_cost": 5000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "infrakzaar": {
+      "status": "playable",
+      "source_level": 34,
+      "summon_cost": 5100,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xarnathul": {
+      "status": "playable",
+      "source_level": 34,
+      "summon_cost": 5150,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zhyrakaan": {
+      "status": "playable",
+      "source_level": 34,
+      "summon_cost": 5200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaerissa": {
+      "status": "playable",
+      "source_level": 35,
+      "summon_cost": 5300,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "lyssarethys": {
+      "status": "playable",
+      "source_level": 35,
+      "summon_cost": 5200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "thorgaruk": {
+      "status": "playable",
+      "source_level": 35,
+      "summon_cost": 5350,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zorathiel": {
+      "status": "playable",
+      "source_level": 35,
+      "summon_cost": 5400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaerinya": {
+      "status": "playable",
+      "source_level": 36,
+      "summon_cost": 5400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nyxallaria": {
+      "status": "playable",
+      "source_level": 36,
+      "summon_cost": 5500,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vhaerinth": {
+      "status": "playable",
+      "source_level": 36,
+      "summon_cost": 5550,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xharokh": {
+      "status": "playable",
+      "source_level": 36,
+      "summon_cost": 5600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kazreth": {
+      "status": "playable",
+      "source_level": 37,
+      "summon_cost": 5700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "varkuthar": {
+      "status": "playable",
+      "source_level": 37,
+      "summon_cost": 5750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xelnarath": {
+      "status": "playable",
+      "source_level": 37,
+      "summon_cost": 5600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zhyvrek": {
+      "status": "playable",
+      "source_level": 37,
+      "summon_cost": 5800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "azkharion": {
+      "status": "playable",
+      "source_level": 38,
+      "summon_cost": 5900,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kyrenzai": {
+      "status": "playable",
+      "source_level": 38,
+      "summon_cost": 5800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "thargoroth": {
+      "status": "playable",
+      "source_level": 38,
+      "summon_cost": 5950,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zahkareth": {
+      "status": "playable",
+      "source_level": 38,
+      "summon_cost": 6000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "bhorgathul": {
+      "status": "playable",
+      "source_level": 39,
+      "summon_cost": 6100,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "morkhelvis": {
+      "status": "playable",
+      "source_level": 39,
+      "summon_cost": 6150,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vorthakul": {
+      "status": "playable",
+      "source_level": 39,
+      "summon_cost": 6200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xaelmoran": {
+      "status": "playable",
+      "source_level": 39,
+      "summon_cost": 6000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "thalryndel": {
+      "status": "playable",
+      "source_level": 40,
+      "summon_cost": 6200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "urgharun": {
+      "status": "playable",
+      "source_level": 40,
+      "summon_cost": 6300,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "yhoranth": {
+      "status": "playable",
+      "source_level": 40,
+      "summon_cost": 6350,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zulkhaven": {
+      "status": "playable",
+      "source_level": 40,
+      "summon_cost": 6400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "emberwick": {
+      "status": "playable",
+      "source_level": 41,
+      "summon_cost": 6500,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "grimkor": {
+      "status": "playable",
+      "source_level": 41,
+      "summon_cost": 6400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "grondarthul": {
+      "status": "playable",
+      "source_level": 41,
+      "summon_cost": 6550,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xareth": {
+      "status": "playable",
+      "source_level": 41,
+      "summon_cost": 6600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaedrin": {
+      "status": "playable",
+      "source_level": 42,
+      "summon_cost": 6700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaineroth": {
+      "status": "playable",
+      "source_level": 42,
+      "summon_cost": 6600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "morvaeth2": {
+      "status": "playable",
+      "source_level": 42,
+      "summon_cost": 6750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vardrok": {
+      "status": "playable",
+      "source_level": 42,
+      "summon_cost": 6800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nixweaver": {
+      "status": "playable",
+      "source_level": 43,
+      "summon_cost": 6900,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nyxraal": {
+      "status": "playable",
+      "source_level": 43,
+      "summon_cost": 6950,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xarnthuul": {
+      "status": "playable",
+      "source_level": 43,
+      "summon_cost": 7000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zyvareth": {
+      "status": "playable",
+      "source_level": 43,
+      "summon_cost": 6800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kagetsuka": {
+      "status": "playable",
+      "source_level": 44,
+      "summon_cost": 7000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "lyrenya": {
+      "status": "playable",
+      "source_level": 44,
+      "summon_cost": 7100,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vyraeth": {
+      "status": "playable",
+      "source_level": 44,
+      "summon_cost": 7150,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zorothrax": {
+      "status": "playable",
+      "source_level": 44,
+      "summon_cost": 7200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "akiraze": {
+      "status": "playable",
+      "source_level": 45,
+      "summon_cost": 7300,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "brumhar": {
+      "status": "playable",
+      "source_level": 45,
+      "summon_cost": 7350,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "deidara": {
+      "status": "playable",
+      "source_level": 45,
+      "summon_cost": 7200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zorashi": {
+      "status": "playable",
+      "source_level": 45,
+      "summon_cost": 7400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "akaroth": {
+      "status": "playable",
+      "source_level": 46,
+      "summon_cost": 7500,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kassadin": {
+      "status": "playable",
+      "source_level": 46,
+      "summon_cost": 7550,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "shimorakh": {
+      "status": "playable",
+      "source_level": 46,
+      "summon_cost": 7600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "sunakage": {
+      "status": "playable",
+      "source_level": 46,
+      "summon_cost": 7400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaizoku_raijin": {
+      "status": "playable",
+      "source_level": 47,
+      "summon_cost": 7700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "korokai": {
+      "status": "playable",
+      "source_level": 47,
+      "summon_cost": 7750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "pyraena": {
+      "status": "playable",
+      "source_level": 47,
+      "summon_cost": 7600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "verdanix": {
+      "status": "playable",
+      "source_level": 47,
+      "summon_cost": 7800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "broggmar": {
+      "status": "playable",
+      "source_level": 48,
+      "summon_cost": 7900,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "cogsworth": {
+      "status": "playable",
+      "source_level": 48,
+      "summon_cost": 7800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "ursath": {
+      "status": "playable",
+      "source_level": 48,
+      "summon_cost": 7950,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "zhaeris": {
+      "status": "playable",
+      "source_level": 48,
+      "summon_cost": 8000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kairenji": {
+      "status": "playable",
+      "source_level": 49,
+      "summon_cost": 8150,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "karzhul": {
+      "status": "playable",
+      "source_level": 49,
+      "summon_cost": 8200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "xerakkuth": {
+      "status": "playable",
+      "source_level": 49,
+      "summon_cost": 8100,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "yomigetsu": {
+      "status": "playable",
+      "source_level": 49,
+      "summon_cost": 8000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "akirakumo": {
+      "status": "playable",
+      "source_level": 50,
+      "summon_cost": 8200,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaelthys": {
+      "status": "playable",
+      "source_level": 50,
+      "summon_cost": 8300,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaoruken": {
+      "status": "playable",
+      "source_level": 50,
+      "summon_cost": 8350,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vaelkorr": {
+      "status": "playable",
+      "source_level": 50,
+      "summon_cost": 8250,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "aurelian": {
+      "status": "playable",
+      "source_level": 51,
+      "summon_cost": 8450,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kaithros": {
+      "status": "playable",
+      "source_level": 51,
+      "summon_cost": 8400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "morvath": {
+      "status": "playable",
+      "source_level": 51,
+      "summon_cost": 8500,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "pyrhaan": {
+      "status": "playable",
+      "source_level": 51,
+      "summon_cost": 8400,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "garumenshi": {
+      "status": "playable",
+      "source_level": 52,
+      "summon_cost": 8550,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "nyxaris": {
+      "status": "playable",
+      "source_level": 52,
+      "summon_cost": 8600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "thoraz": {
+      "status": "playable",
+      "source_level": 52,
+      "summon_cost": 8600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "vhaerith": {
+      "status": "playable",
+      "source_level": 52,
+      "summon_cost": 8500,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "dorakai": {
+      "status": "playable",
+      "source_level": 53,
+      "summon_cost": 8650,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "hitokage": {
+      "status": "playable",
+      "source_level": 53,
+      "summon_cost": 8700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "kazuren": {
+      "status": "playable",
+      "source_level": 53,
+      "summon_cost": 8600,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "tsukiyora": {
+      "status": "playable",
+      "source_level": 53,
+      "summon_cost": 8800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "hollowbane": {
+      "status": "playable",
+      "source_level": 54,
+      "summon_cost": 9000,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "obanai": {
+      "status": "playable",
+      "source_level": 54,
+      "summon_cost": 8750,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "sanguire": {
+      "status": "playable",
+      "source_level": 54,
+      "summon_cost": 8700,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    },
+    "sasori": {
+      "status": "playable",
+      "source_level": 54,
+      "summon_cost": 8800,
+      "source_recipe": {
+        "qwer": "BossHeroSkills._fallback_cast (actual source dispatch; explicit ID allowlist)"
+      },
+      "native_handler": "source_shared_boss_skills.gd",
+      "oracle": "source_shared_boss_oracle.py",
+      "native_test": "source_shared_boss_checks.gd",
+      "blocker": null
+    }
+  }
+}

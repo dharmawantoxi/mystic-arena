@@ -1,5 +1,5 @@
 extends "res://scripts/combat/unit_state.gd"
-## Kaizen-1 hero state: identity, level math, skill/cooldown helpers.
+## Per-instance native hero identity, level math and source kit/cooldown state.
 ## Inherits hp/alive/facing/position plus the flat tower-debuff fields
 ## from UnitState. Battle wiring (spawn/strike/cast/tick) lives in
 ## minion_battle.gd; this file holds pure per-hero math only.
@@ -57,6 +57,26 @@ var windrun_original_speed := 0.0
 var shackle_timer := 0
 var shackle_target_id := -1
 var powershot_timer := 0
+# Vex and Zephyr source kit state; timers intentionally survive source respawn.
+var eclipse_timer := 0
+var prison_timer := 0
+var prison_target_id := -1
+var essence_timer := 0
+var bramble_timer := 0
+var bramble_origin := Vector2.ZERO
+var shadow_realm_timer := 0
+var curse_timer := 0
+var curse_target_id := -1
+var bedlam_timer := 0
+# Source BossHeroSkills state (level-one recipes).
+var alchemy_target := Vector2.ZERO
+var rage_timer := 0
+var defense_timer := 0
+var flux_timer := 0
+var flux_target_id := -1
+var clones_timer := 0
+var blink_from := Vector2.ZERO
+var mana_void_origin := Vector2.ZERO
 var q_stack := 0
 var q_reset_timer := 0
 var is_dashing := false
@@ -94,7 +114,8 @@ func apply_level_stats() -> void:
 
 
 func upgrade_cost() -> int:
-	return int(HeroDefinition.level_data(level)["upgrade_cost"])
+	var price := int(HeroDefinition.level_data(level)["upgrade_cost"])
+	return int(price * 1.6) if settings().is_boss_hero else price
 
 
 func upgrade() -> bool:
@@ -126,3 +147,11 @@ func eff_attack_cd(base_cd: int) -> int:
 
 func eff_attack_range() -> float:
 	return attack_range
+
+
+func heal_hp(amount: float) -> void:
+	# Source TowerDebuffMixin.hp setter: cap first, then reduce the gain.
+	var desired := minf(max_hp, hp + amount)
+	if desired > hp and anti_heal_timer > 0:
+		desired = hp + (desired - hp) * (1.0 - anti_heal_amount)
+	hp = desired

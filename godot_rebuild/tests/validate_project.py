@@ -132,7 +132,7 @@ if (ROOT / "tests/fixtures/sylara_source.json").is_file():
         (ROOT / "tests/fixtures/sylara_source.json").read_text(encoding="utf-8")),
         "Sylara source skill/evasion/projectile drift")
 
-# Recruitment is still staged: only Kaizen, Thorne, Grimjaw and Sylara have native kits.
+# Recruitment is staged: only the explicit native registry has playable kits.
 # Execute the real Hero source oracle in this CI step (no workflow change).
 from ai_recruit_source_oracle import source_fixture as ai_recruit_source_fixture
 check("AIRecruitChecks.new().run(_check)" in ai_tests, "Real recruit suite must run")
@@ -156,6 +156,36 @@ shield_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encodi
 check('tower.sale_value()' in shield_screen, "UI sale quote must include purchased shield")
 
 check((ROOT / "SHIELD_CONTRACT.md").is_file(), "Paid shield semantics must be documented")
+
+
+from starter_finish_source_oracle import source_fixture as starter_finish_fixture
+check(starter_finish_fixture() == json.loads((ROOT / "tests/fixtures/starter_finish_source.json").read_text()), "Vex/Zephyr source behavior drift")
+check("StarterFinishChecks.new().run(_check)" in ai_tests, "Starter finish native suite must run")
+
+from boss_level_one_source_oracle import source_fixture as boss_level_one_fixture
+check(boss_level_one_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_one_source.json").read_text()), "Boss level one source behavior drift")
+check("BossLevelOneChecks.new().run(_check)" in ai_tests, "Boss level one native suite must run")
+
+from hero_status_source_oracle import source_fixture as hero_status_fixture
+check(hero_status_fixture() == json.loads((ROOT / "tests/fixtures/hero_status_source.json").read_text()), "Hero status source behavior drift")
+check("HeroStatusChecks.new().run(_check)" in ai_tests, "Hero status native suite must run")
+
+from source_shared_boss_oracle import source_fixture as source_shared_fixture
+shared = source_shared_fixture()
+check(shared == json.loads((ROOT / "tests/fixtures/source_shared_boss.json").read_text()), "Shared source boss behavior drift")
+check("SourceSharedBossChecks.new().run(_check)" in ai_tests, "Shared boss per-ID native suite must run")
+shared_ids = re.findall(r'"([a-z0-9_]+)"', (ROOT / "scripts/data/source_shared_boss_ids.gd").read_text())
+check(shared_ids == shared["ids"], "Native shared-kit membership must exactly match source dispatch")
+
+from hero_school_source_oracle import source_fixture as hero_school_fixture
+check(hero_school_fixture() == json.loads((ROOT / "tests/fixtures/hero_school_source.json").read_text()), "Per-ID real hero mitigation and attribution drift")
+
+from alchemist_source_oracle import source_fixture as alchemist_fixture
+check(alchemist_fixture() == json.loads((ROOT / "tests/fixtures/alchemist_source.json").read_text()), "Alchemist source behavior drift")
+check("AlchemistChecks.new().run(_check)" in ai_tests, "Alchemist native suite must run")
+
+from hero_manifest_checks import validate_manifest
+validate_manifest(ROOT, check)
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
