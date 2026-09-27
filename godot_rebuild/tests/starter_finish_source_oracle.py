@@ -27,6 +27,14 @@ FIELDS = {
 
 def source_env():
     env = setup()
+    core = ast.parse((ROOT / "_core.py").read_text())
+    mixin = next(n for n in core.body if isinstance(n, ast.ClassDef) and n.name == "TowerDebuffMixin")
+    hp = [n for n in mixin.body if isinstance(n, ast.FunctionDef) and n.name == "hp"]
+    assert len(hp) == 2
+    cls_hp = ast.ClassDef(name="SourceHP", bases=[], keywords=[], body=hp, decorator_list=[])
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls_hp], type_ignores=[])),
+                 "<source hp property>", "exec"), env)
+    env["SourceDebuffs"].hp = env["SourceHP"].hp
     tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
     minion = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Minion")
     slow = next(n for n in minion.body if isinstance(n, ast.FunctionDef) and n.name == "apply_slow")

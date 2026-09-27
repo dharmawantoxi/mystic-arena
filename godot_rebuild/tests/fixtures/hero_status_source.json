@@ -1,0 +1,295 @@
+{
+  "heals": [
+    {
+      "hero": "zephyr",
+      "key": "w",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 728.0,
+      "tick_hp": 728.0
+    },
+    {
+      "hero": "zephyr",
+      "key": "w",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 727.25,
+      "tick_hp": 727.4375
+    },
+    {
+      "hero": "zephyr",
+      "key": "w",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 727.0,
+      "tick_hp": 727.0
+    },
+    {
+      "hero": "zephyr",
+      "key": "w",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 468.0,
+      "tick_hp": 470.0
+    },
+    {
+      "hero": "zephyr",
+      "key": "w",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 438.0,
+      "tick_hp": 438.5
+    },
+    {
+      "hero": "zephyr",
+      "key": "w",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 428.0,
+      "tick_hp": 428.0
+    },
+    {
+      "hero": "morgath",
+      "key": "e",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 1137.0,
+      "tick_hp": 1137.0
+    },
+    {
+      "hero": "morgath",
+      "key": "e",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 1136.25,
+      "tick_hp": 1136.25
+    },
+    {
+      "hero": "morgath",
+      "key": "e",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 1136.0,
+      "tick_hp": 1136.0
+    },
+    {
+      "hero": "morgath",
+      "key": "e",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 927.0,
+      "tick_hp": 927.0
+    },
+    {
+      "hero": "morgath",
+      "key": "e",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 859.5,
+      "tick_hp": 859.5
+    },
+    {
+      "hero": "morgath",
+      "key": "e",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 837.0,
+      "tick_hp": 837.0
+    },
+    {
+      "hero": "morgath",
+      "key": "r",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 1137.0,
+      "tick_hp": 1137.0
+    },
+    {
+      "hero": "morgath",
+      "key": "r",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 1136.25,
+      "tick_hp": 1136.25
+    },
+    {
+      "hero": "morgath",
+      "key": "r",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 1136.0,
+      "tick_hp": 1136.0
+    },
+    {
+      "hero": "morgath",
+      "key": "r",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 1007.0,
+      "tick_hp": 1007.0
+    },
+    {
+      "hero": "morgath",
+      "key": "r",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 879.5,
+      "tick_hp": 879.5
+    },
+    {
+      "hero": "morgath",
+      "key": "r",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 837.0,
+      "tick_hp": 837.0
+    },
+    {
+      "hero": "drakar",
+      "key": "q",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 1525.0,
+      "tick_hp": 1525.0
+    },
+    {
+      "hero": "drakar",
+      "key": "q",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 1524.25,
+      "tick_hp": 1524.25
+    },
+    {
+      "hero": "drakar",
+      "key": "q",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 1524.0,
+      "tick_hp": 1524.0
+    },
+    {
+      "hero": "drakar",
+      "key": "q",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 1377.0,
+      "tick_hp": 1377.0
+    },
+    {
+      "hero": "drakar",
+      "key": "q",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 1263.0,
+      "tick_hp": 1263.0
+    },
+    {
+      "hero": "drakar",
+      "key": "q",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 1225.0,
+      "tick_hp": 1225.0
+    },
+    {
+      "hero": "abaddon",
+      "key": "w",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 1803.0,
+      "tick_hp": 1803.0
+    },
+    {
+      "hero": "abaddon",
+      "key": "w",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 1802.25,
+      "tick_hp": 1802.25
+    },
+    {
+      "hero": "abaddon",
+      "key": "w",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 1802.0,
+      "tick_hp": 1802.0
+    },
+    {
+      "hero": "abaddon",
+      "key": "w",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 1803.0,
+      "tick_hp": 1803.0
+    },
+    {
+      "hero": "abaddon",
+      "key": "w",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 1578.0,
+      "tick_hp": 1578.0
+    },
+    {
+      "hero": "abaddon",
+      "key": "w",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 1503.0,
+      "tick_hp": 1503.0
+    }
+  ],
+  "burn": [
+    {
+      "tick": 29,
+      "hp": 398,
+      "burn_timer": 181,
+      "burn_accum": 29.0,
+      "realm": 151
+    },
+    {
+      "tick": 30,
+      "hp": 400,
+      "burn_timer": 180,
+      "burn_accum": 0.0,
+      "realm": 150
+    },
+    {
+      "tick": 179,
+      "hp": 698,
+      "burn_timer": 31,
+      "burn_accum": 29.0,
+      "realm": 1
+    },
+    {
+      "tick": 180,
+      "hp": 700,
+      "burn_timer": 30,
+      "burn_accum": 0.0,
+      "realm": 0
+    },
+    {
+      "tick": 181,
+      "hp": 700,
+      "burn_timer": 29,
+      "burn_accum": 1.0,
+      "realm": 0
+    },
+    {
+      "tick": 209,
+      "hp": 700,
+      "burn_timer": 1,
+      "burn_accum": 29.0,
+      "realm": 0
+    },
+    {
+      "tick": 210,
+      "hp": 670,
+      "burn_timer": 0,
+      "burn_accum": 0.0,
+      "realm": 0
+    }
+  ]
+}

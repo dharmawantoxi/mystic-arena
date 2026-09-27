@@ -145,3 +145,11 @@ func eff_attack_cd(base_cd: int) -> int:
 
 func eff_attack_range() -> float:
 	return attack_range
+
+
+func heal_hp(amount: float) -> void:
+	# Source TowerDebuffMixin.hp setter: cap first, then reduce the gain.
+	var desired := minf(max_hp, hp + amount)
+	if desired > hp and anti_heal_timer > 0:
+		desired = hp + (desired - hp) * (1.0 - anti_heal_amount)
+	hp = desired

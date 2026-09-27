@@ -121,6 +121,12 @@ func step_tick() -> void:
 			break
 		if not unit.alive:
 			continue
+		if unit.is_hero and unit.definition.id == "zephyr":
+			# Source Hero.update burns before Shadow Realm's timer expires.
+			_tick_debuffs(unit)
+			_tick_burn(unit)
+			_tick_hero(unit as HeroState)
+			continue
 		if unit.is_hero:
 			# Heroes tick their own timers + shared debuffs. No lane
 			# march, no AI orders, no passive heal in Kaizen-1.
@@ -202,24 +208,27 @@ func _tick_burn(unit: UnitState) -> void:
 		var damage := int(unit.burn_accum)
 		if damage > 0 and unit.alive:
 			unit.burn_accum -= damage
-			unit.hp = maxf(0, unit.hp - damage)
-			_record(
-				{
-					"kind": "hit",
-					"burn": true,
-					"source_id": -1,
-					"target_id": unit.id,
-					"from": unit.position,
-					"to": unit.position,
-					"damage": damage
-				}
-			)
-			if unit.hp <= 0:
-				unit.alive = false
-				_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
-				_on_death(1 - unit.team, unit)
-				if unit.is_hero:
-					_on_hero_death(unit as HeroState, -1)
+			if unit is HeroState and unit.shadow_realm_timer > 0:
+				damage = 0
+			if damage > 0:
+				unit.hp = maxf(0, unit.hp - damage)
+				_record(
+					{
+						"kind": "hit",
+						"burn": true,
+						"source_id": -1,
+						"target_id": unit.id,
+						"from": unit.position,
+						"to": unit.position,
+						"damage": damage
+					}
+				)
+				if unit.hp <= 0:
+					unit.alive = false
+					_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
+					_on_death(1 - unit.team, unit)
+					if unit.is_hero:
+						_on_hero_death(unit as HeroState, -1)
 	if unit.burn_timer <= 0:
 		unit.burn_dps = 0.0
 		unit.burn_accum = 0.0

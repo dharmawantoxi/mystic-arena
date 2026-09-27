@@ -116,8 +116,8 @@ func _defense(row: Dictionary, check: Callable) -> void:
 func _attack(row: Dictionary, check: Callable) -> void:
 	var world := Battle.new()
 	var hero := _hero(world, row.hero)
-	var point: Array = row.get("target_position", [620, 340])
-	var enemy = helpers._dummy(world, Vector2(point[0], point[1]))
+	var target_point: Array = row.get("target_position", [620, 340])
+	var enemy = helpers._dummy(world, Vector2(target_point[0], target_point[1]))
 	check.call(world.hero_basic_attack(hero.id, enemy.id), "Starter magic homing attack")
 	for moment in row.rows:
 		if moment.tick > 0:

@@ -27,7 +27,7 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 					world.apply_slow(enemy.id, 0.5, 180)
 		"w":
 			hero.shadow_realm_timer = 180
-			hero.hp = minf(hero.max_hp, hero.hp + 40)
+			hero.heal_hp(40)
 		"e":
 			var target = Common.bound_target(world, hero, structures)
 			hero.curse_timer = 180
@@ -55,7 +55,7 @@ static func tick(world, hero: HeroState, structures: Array) -> void:
 			hero.bramble_origin = Vector2.ZERO
 	if hero.shadow_realm_timer > 0:
 		hero.shadow_realm_timer -= 1
-		hero.hp = minf(hero.max_hp, hero.hp + 2)
+		hero.heal_hp(2)
 	if hero.curse_timer > 0:
 		hero.curse_timer -= 1
 		var target = world.get_unit(hero.curse_target_id)

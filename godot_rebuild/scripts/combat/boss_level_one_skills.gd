@@ -154,4 +154,4 @@ static func _radial(
 
 
 static func _heal(hero: HeroState, fraction: float) -> void:
-	hero.hp = minf(hero.max_hp, hero.hp + int(hero.max_hp * fraction))
+	hero.heal_hp(int(hero.max_hp * fraction))

@@ -476,7 +476,7 @@ func _hero_skill_nearby(hero: HeroState) -> int:
 
 func _hero_passive_heal(hero: HeroState) -> void:
 	if hero.hp < hero.max_hp:
-		hero.hp = minf(hero.max_hp, hero.hp + HERO_PASSIVE_HEAL)
+		hero.heal_hp(HERO_PASSIVE_HEAL)
 
 
 func _hero_home(hero: HeroState) -> Vector2:
@@ -497,7 +497,7 @@ func _hero_near_own_base(hero: HeroState) -> bool:
 
 func _step_hero_retreat(hero: HeroState) -> void:
 	if _hero_near_own_base(hero):
-		hero.hp = minf(hero.max_hp, hero.hp + HERO_BASE_HEAL)
+		hero.heal_hp(HERO_BASE_HEAL)
 	else:
 		_move_toward(hero, _hero_home(hero))
 	var melee := _hero_pick_target(hero, hero.eff_attack_range(), true)

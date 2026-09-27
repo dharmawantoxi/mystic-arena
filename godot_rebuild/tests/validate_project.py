@@ -166,6 +166,10 @@ from boss_level_one_source_oracle import source_fixture as boss_level_one_fixtur
 check(boss_level_one_fixture() == json.loads((ROOT / "tests/fixtures/boss_level_one_source.json").read_text()), "Boss level one source behavior drift")
 check("BossLevelOneChecks.new().run(_check)" in ai_tests, "Boss level one native suite must run")
 
+from hero_status_source_oracle import source_fixture as hero_status_fixture
+check(hero_status_fixture() == json.loads((ROOT / "tests/fixtures/hero_status_source.json").read_text()), "Hero status source behavior drift")
+check("HeroStatusChecks.new().run(_check)" in ai_tests, "Hero status native suite must run")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
