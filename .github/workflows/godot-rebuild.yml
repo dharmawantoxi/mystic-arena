@@ -61,6 +61,7 @@ jobs:
           python godot_rebuild/tests/kaizen_source_oracle.py
           python godot_rebuild/tests/ai_source_oracle.py
           python godot_rebuild/tests/ai_draft_source_oracle.py
+          python godot_rebuild/tests/ai_upgrade_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

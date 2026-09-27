@@ -89,6 +89,12 @@ check((ROOT / "tests/fixtures/ai_draft_source.json").is_file(), "AI draft needs 
 workflow = (ROOT.parent / ".github/workflows/godot-rebuild.yml").read_text(encoding="utf-8")
 check("python godot_rebuild/tests/ai_draft_source_oracle.py" in workflow, "CI must detect recruitment data drift")
 
+check("AIUpgradeChecks.new().run(_check)" in ai_tests, "AI upgrade suite must remain alongside baseline suites")
+check((ROOT / "tests/fixtures/ai_upgrade_source.json").is_file(), "AI upgrades require source fixture")
+check("python godot_rebuild/tests/ai_upgrade_source_oracle.py" in workflow, "CI must check AI upgrades oracle")
+ai_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
+check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters must read live reserve")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

@@ -75,3 +75,10 @@ Komposisi dibaca **saat wave start** per tim (bisa beda bila tier beda). Antrean
 - Fixture `nexus_source.json`: 5 tier, 120 kasus HP/shield, 36 kasus `set_wave`, 25 scaling (5 kind × 5 tier), komposisi 5 tier × 10 wave, 20 kasus AI.
 - Tes native `nexus_checks.gd` + `nexus_scene_checks.gd` terintegrasi di `run_all.gd`, seluruh suite lama tetap berjalan.
 - Belum diuji: Windows fisik/GPU, Android, balance pertandingan panjang, paid shield sebagai transaksi, auto-scaling AI, hero/boss.
+
+## Adapter upgrade red (WIP AIPlayer)
+
+Upgrade nexus internal kini dapat dipanggil untuk red dengan live reserve dan
+expected-level, melalui rumus HP/shield serta ledger yang sama. Wrapper UI tetap
+blue-only. Pembelian castle shield dan loop AI otomatis belum aktif; lihat
+[AI_CONTRACT.md](AI_CONTRACT.md).

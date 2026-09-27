@@ -258,6 +258,7 @@ python godot_rebuild/tests/mage_source_oracle.py
 python godot_rebuild/tests/kaizen_source_oracle.py
 python godot_rebuild/tests/ai_source_oracle.py
 python godot_rebuild/tests/ai_draft_source_oracle.py
+python godot_rebuild/tests/ai_upgrade_source_oracle.py
 ```
 
 Untuk parser/linter, pasang `gdtoolkit==4.5.0` dalam virtualenv terpisah. Tidak perlu memasangnya di komputer pemain.
@@ -280,8 +281,9 @@ Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot
 
 ## AIPlayer (WIP, belum terhubung ke scene)
 
-Policy berpikir/prioritas dan policy pool/draft/reserve tersedia untuk pengujian
-native. Metadata summon mencakup enam starter dan 216 boss; **ini bukan roster
+Policy berpikir/prioritas, pool/draft/reserve, dan adapter upgrade red per
+kandidat tersedia untuk pengujian native. Adapter upgrade memakai world/ledger
+nyata tetapi belum dipanggil otomatis di scene. Metadata summon mencakup enam starter dan 216 boss; **ini bukan roster
 playable**. Pertandingan masih memakai lawan sementara. Batas implementasi dan
 checklist integrasi penuh: [AI_CONTRACT.md](AI_CONTRACT.md).
 

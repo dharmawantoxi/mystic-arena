@@ -61,3 +61,10 @@ Detail angka, quirk `tower_kind`, urutan ID vs spatial-hash, dan batas auto-scal
 - Fixture enam tier dan 36 skenario muzzle/volley, exact prices/refunds/target order, state restoration/preservation, insufficient funds, dead/stale/max guards, shared-resource isolation, cap atomicity, impact/overkill, UI quote/refund, duplicate/stale command, pause/focus/result/restart dan bounds HUD.
 
 Belum ada tes Windows/GPU/screenshots, Android nyata, performa perangkat atau balance pertandingan panjang. Penanda tier berupa titik dan inspeksi angka bukan port artwork/animasi Archer produksi.
+
+## Adapter AI (WIP)
+
+Wrapper upgrade tower UI tetap hanya milik blue. Domain internal kini dapat
+meng-upgrade red dengan validasi tim/slot/expected-level/reserve dan ledger sama.
+Pemilihan path Lv1 AI mengikuti cannon/ice/archer/mage; urutan kandidat dan loop AI
+scene belum aktif. Detail dan batas tes: [AI_CONTRACT.md](AI_CONTRACT.md).

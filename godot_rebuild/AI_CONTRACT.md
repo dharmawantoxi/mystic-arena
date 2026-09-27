@@ -5,8 +5,8 @@
 **Belum port AIPlayer lengkap. Jangan merge sebagai pengganti lawan sementara.**
 Target yang disepakati: AIPlayer lengkap beserta roster dan item dependensinya,
 bukan pembatasan diam-diam ke Kaizen. Scene pertandingan masih memakai defender
-lama dan pasangan Kaizen gratis. Tidak ada transaksi ekonomi yang berubah pada
-tahap policy/draft ini; seluruh suite lama tetap dijalankan.
+lama dan pasangan Kaizen gratis. Tidak ada transaksi ekonomi otomatis baru di scene;
+adapter upgrade red sudah tersedia untuk panggilan domain eksplisit; seluruh suite lama tetap dijalankan.
 
 Sumber read-only: `_entity.py::AIPlayer`, konstanta `_core.py`,
 `Game.update` (pemanggilan AI setelah loop entity), `levels/level_data.py`,
@@ -53,7 +53,8 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
   available kosong dan pembelian sukses membersihkan target+harga reserve.
 - Reserve = `max(0, target_cost)` bila target ada, selain itu nol. Nonhero boleh
   belanja tepat pada `gold == cost + reserve`, tidak pada satu gold di bawahnya.
-  Penerapan reserve ke transaksi tower/item/shield nyata masih pending.
+  Reserve sudah diterapkan pada upgrade tower/nexus/hero nyata per kandidat;
+  build/item/shield dan pemilihan prioritas kandidat masih pending.
 - `try_buy` menerima roster tipe authoritative, snapshot gold, dan callback
   **sinkron/atomik** `(hero_type, cost, position) -> bool`. Callback wajib
   memvalidasi ulang wallet/capacity, spawn kit benar, debit, lalu tambah roster;
@@ -69,6 +70,32 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
+## Upgrade lawan: transaksi domain nyata, per kandidat
+
+`ai_upgrades.gd` menjalankan upgrade tower, nexus dan hero red melalui domain
+`prototype_battle.gd`, memakai ledger match yang sama, bukan saldo salinan.
+Fungsi internal `_upgrade_*_for` menerima tim dan reserve; wrapper UI lama tetap
+**blue-only**, tanpa parameter tim dari command/UI. Quote harga publik tetap blue.
+
+- Validasi match berjalan, ID/tipe, tim 0/1, pemilik, level yang diharapkan, harga
+  dan `gold >= cost + max(0, reserve)` sebelum mutation/debit. Tower harus tercatat
+  pada slot milik timnya; nexus harus sama dengan nexus authoritative tim.
+- `try_tower` Lv1 mencoba **cannon → ice → archer → mage**, bukan acak, dan berhenti
+  setelah sukses. Lv2+ mempertahankan path. HP/shield pulih penuh sesuai sumber;
+  cooldown, regen timer, projectile dan target tidak direset oleh upgrade.
+- Upgrade nexus mempertahankan rumus HP sumber dan rasio paid shield; kapasitas
+  free shield tidak diskala lewat jalur paid. Counter bertambah tepat sekali.
+- Upgrade hero red **termasuk mati/respawning**, sesuai `_try_upgrade_hero` Python.
+  HP, alive, cooldown dan respawn timer tidak berubah; hanya level/stat. Wrapper
+  blue tetap menolak hero mati sebagaimana kontrak UI sebelumnya.
+- Adapter membaca `draft.reserve()` setiap permintaan: tidak memakai harga draft
+  yang dicache saat adapter dibuat. Counter baru nol pada instance match berikutnya.
+- Ini **per kandidat**, bukan loop pemilihan kandidat. Urutan kills descending
+  stabil, atribusi kills sumber, policy scheduler dan wiring scene belum aktif.
+  Tidak menambahkan sorting berdasarkan angka kills palsu atau team kill total.
+- Method internal bukan command UI. Pause dicegah oleh session yang tidak
+  mengeksekusi command/tick; tidak ada loop background atau timer baru.
+
 ## Oracle dan tes
 
 `tests/ai_source_oracle.py` mengeksekusi AST metode Python asli: init, brain,
@@ -77,7 +104,7 @@ kontrol hero atau roster lengkap. Fixture mencakup 52 trace jadwal 200 tick,
 batas round tepat pada elite 0.25/0.75 (count 24), level clamp, step gagal,
 dan 486 skenario prioritas/RNG. Tes native membandingkan scalar JSON numerik
 sebagai integer/float, tidak membandingkan array Variant numerik secara langsung.
-Delapan oracle lama tetap berjalan; oracle policy dan draft ditambahkan.
+Delapan oracle lama tetap berjalan; oracle policy, draft dan upgrade AI ditambahkan.
 
 `ai_draft_source_oracle.py` mengeksekusi init, pool, choose, buy dan reserve asli.
 Hero constructor diganti receipt (bukan kit); picker mencatat candidate order dan
@@ -92,6 +119,15 @@ CI dipicu pula oleh perubahan boss_data, hero_balance dan hero_archetypes agar
 metadata summon tidak tertinggal. `--write` oracle hanya menulis metadata/fixture
 native; Python sumber tidak diubah. Oracle tanpa flag hanya membandingkan.
 
+`ai_upgrade_source_oracle.py` mengeksekusi `_try_upgrade_tower_new`,
+`_try_upgrade_nexus`, `_try_upgrade_hero`, `_ai_reserve` dan metode entity asli.
+122 kasus tower, 58 nexus (free/paid shield), 58 Kaizen (hidup/mati), mencakup
+threshold reserve ±1, level maksimal dan path. Kaizen memakai stub inventory
+kosong oracle sebelumnya. Tes native memakai world, resource dan ledger nyata,
+bukan receipt. Tes tambahan menolak owner/team/ID/type/stale/path/dead/finished,
+menguji reserve berubah, non-double-debit, counter dan gate UI blue tetap sama.
+Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
+
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
@@ -105,7 +141,9 @@ native; Python sumber tidak diubah. Oracle tanpa flag hanya membandingkan.
   tanpa bonus gold. Hero spawn `RED_BASE_X-60, RED_BASE_Y+30+(count*40-40)`.
 - [ ] Build slot acak; jenis archer/cannon/ice/mage berbobot .35/.25/.20/.20.
 - [ ] Upgrade tower kills descending stabil; Lv1 path cannon/ice/archer/mage.
-- [ ] Upgrade hero termasuk yang mati, kills descending, batas level sumber.
+- [x] Transaksi upgrade tower/nexus/hero red per kandidat dengan live reserve;
+  hero mati tetap eligible, batas level sumber, ledger dan counter nyata.
+- [ ] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
 - [ ] Regen shield Lv4+ termasuk tower Lv6, prioritas kills; castle shield,
