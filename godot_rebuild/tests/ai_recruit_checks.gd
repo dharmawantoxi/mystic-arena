@@ -122,18 +122,21 @@ func _guards(check: Callable) -> void:
 	var world := _world()
 	_fund(world, 1000)
 	var recruit := Recruit.new()
-	var draft := _target("kunkka", 900)
+	# kenshiro (1300G) is still pending after the level-7 batch; pending kits
+	# must stay rejected without debit or substitution (nyxarath was replaced
+	# here once its real kit landed).
+	var draft := _target("kenshiro", 1300)
 	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
 	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == "kunkka" and draft.reserve() == 900,
+		draft.purchase_target == "kenshiro" and draft.reserve() == 1300,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
 		world.units.is_empty() and world.economy.gold[1] == 1000, "Missing kit has no effects"
 	)
 	check.call(
-		not world._buy_ai_hero("kunkka", 400, Vector2(1120, 90)),
+		not world._buy_ai_hero("kenshiro", 400, Vector2(1120, 90)),
 		"Boss metadata is not a playable kit"
 	)
 	check.call(not world._buy_ai_hero("kaizen", 1, Vector2(1120, 90)), "Forged cost rejected")
@@ -155,7 +158,7 @@ func _guards(check: Callable) -> void:
 		"Dead owned hero still blocks duplicate"
 	)
 	world.winner = 0
-	check.call(not recruit.try_buy(world, _target("kunkka", 900)), "Finished match blocks draft")
+	check.call(not recruit.try_buy(world, _target("kenshiro", 1300)), "Finished match blocks draft")
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
@@ -191,10 +194,10 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var missing := _target("kunkka", 900)
+	var missing := _target("kenshiro", 1300)
 	world.economy.credit_kill(1, 1000)
 	check.call(
-		not adapter.try_buy(world, missing) and missing.reserve() == 900,
+		not adapter.try_buy(world, missing) and missing.reserve() == 1300,
 		"Unsupported boss kit keeps draft without debit"
 	)
 	var grimjaw := _target("grimjaw", 450)

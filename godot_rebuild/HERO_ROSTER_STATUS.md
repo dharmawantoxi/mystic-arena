@@ -1,20 +1,22 @@
-# Daftar tepat migrasi hero — 164 playable, 58 pending
+# Daftar tepat migrasi hero — 174 playable, 48 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending), static 4476 PASS.
+CI Godot 4.7.2: run terakhir hijau 36309346449 (170 playable, 52 pending);
+batch 9 (174/48) menunggu CI, static lokal 4671 PASS.
 
-- Enam starter selesai (empat sudah ada sebelum sesi); lima boss recipe khusus
-  selesai; 150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai
-  sumber**, dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 59 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Enam starter selesai (empat sudah ada sebelum sesi); dua puluh dua boss
+  recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4);
+  150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
+  dibuktikan per ID. Ini bukan fallback native untuk boss pending.
+- Semua 48 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 161 ID
+## Selesai — 174 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -32,6 +34,16 @@ CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending
 | `ancient_apparition` | 3 | 800 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
 | `nyzrak` | 3 | 850 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
 | `ignis_drachorn` | 4 | 850 | `boss_level_four_skills.gd` | `boss_level_four_source_oracle.py` / `boss_level_four_checks.gd` |
+| `vhalzun` | 5 | 1200 | `boss_level_five_skills.gd` | `boss_level_five_source_oracle.py` / `boss_level_five_checks.gd` |
+| `krobellus` | 5 | 1500 | `boss_level_five_skills.gd` | `boss_level_five_source_oracle.py` / `boss_level_five_checks.gd` |
+| `kunkka` | 6 | 900 | `boss_level_six_skills.gd` | `boss_level_six_source_oracle.py` / `boss_level_six_checks.gd` |
+| `gravewake` | 6 | 1000 | `boss_level_six_skills.gd` | `boss_level_six_source_oracle.py` / `boss_level_six_checks.gd` |
+| `syrentha` | 6 | 1100 | `boss_level_six_skills.gd` | `boss_level_six_source_oracle.py` / `boss_level_six_checks.gd` |
+| `thalgryn` | 6 | 1200 | `boss_level_six_skills.gd` | `boss_level_six_source_oracle.py` / `boss_level_six_checks.gd` |
+| `akashari` | 7 | 1200 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
+| `malzareth` | 7 | 1100 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
+| `nyxarath` | 7 | 1000 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
+| `vorenmarr` | 7 | 1300 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -183,20 +195,10 @@ CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 58 ID dan recipe yang menjadi blocker
+## Belum selesai — 48 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
-| `krobellus` | 5 | 1500 | `_cast_q_krobellus_exorcism` / `_cast_w_krobellus_silence` / `_cast_e_krobellus_siphon` / `_cast_r_krobellus_crypt` |
-| `vhalzun` | 5 | 1200 | `_cast_q_vhalzun_death_pulse` / `_cast_w_vhalzun_heartstopper` / `_cast_e_vhalzun_reapers_scythe` / `_cast_r_vhalzun_ghost_shroud` |
-| `gravewake` | 6 | 1000 | `_cast_q_gravewake_anchor` / `_cast_w_gravewake_tide` / `_cast_e_gravewake_shell` / `_cast_r_gravewake_ravage` |
-| `kunkka` | 6 | 900 | `_cast_q_kunkka_tide` / `_cast_w_kunkka_xmark` / `_cast_e_kunkka_ghost` / `_cast_r_kunkka_torrent` |
-| `syrentha` | 6 | 1100 | `_cast_q_syrentha_riptide` / `_cast_w_syrentha_song` / `_cast_e_syrentha_mirror` / `_cast_r_syrentha_siren` |
-| `thalgryn` | 6 | 1200 | `_cast_q_thalgryn_waveform` / `_cast_w_thalgryn_adaptive` / `_cast_e_thalgryn_morph` / `_cast_r_thalgryn_replicate` |
-| `akashari` | 7 | 1200 | `_cast_q_akashari_strike` / `_cast_w_akashari_blink` / `_cast_e_akashari_scream` / `_cast_r_akashari_sonic` |
-| `malzareth` | 7 | 1100 | `_cast_q_malzareth_disruption` / `_cast_w_malzareth_soul` / `_cast_e_malzareth_poison` / `_cast_r_malzareth_disillusion` |
-| `nyxarath` | 7 | 1000 | `_cast_q_nyxarath_shadowraze` / `_cast_w_nyxarath_necro` / `_cast_e_nyxarath_presence` / `_cast_r_nyxarath_requiem` |
-| `vorenmarr` | 7 | 1300 | `_cast_q_vorenmarr_bonds` / `_cast_w_vorenmarr_power` / `_cast_e_vorenmarr_upheaval` / `_cast_r_vorenmarr_golem` |
 | `kenshiro` | 9 | 1300 | `_cast_q_kenshiro_swiftslash` / `_cast_w_kenshiro_assault` / `_cast_e_kenshiro_gale` / `_cast_r_kenshiro_supremacy` |
 | `khazan` | 9 | 1350 | `_cast_q_khazan_chained` / `_cast_w_khazan_leap` / `_cast_e_khazan_spin` / `_cast_r_khazan_vanish` |
 | `naraka` | 9 | 2000 | `_cast_q_naraka_chaos` / `_cast_w_naraka_shadowstep` / `_cast_e_naraka_hammer` / `_cast_r_naraka_execution` |

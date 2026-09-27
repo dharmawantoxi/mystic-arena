@@ -76,8 +76,10 @@ func _lifecycle(kind: String, check: Callable) -> void:
 
 func _no_fallback(check: Callable) -> void:
 	var world := Battle.new()
+	# kenshiro is a pending recipe ID: a forged definition must not resolve
+	# to any native kit (nyxarath moved to a real kit in the level-7 batch).
 	var fake = Roster.DEFINITIONS.kaizen.duplicate()
-	fake.id = "kunkka"
+	fake.id = "kenshiro"
 	var hero := world.spawn_hero(fake, world.RED, Vector2(500, 340))
 	_enemies(world, [[550, 340]])
 	for key in ["q", "w", "e", "r"]:

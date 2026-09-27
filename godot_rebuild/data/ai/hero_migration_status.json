@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 164,
-  "pending": 58,
+  "playable": 174,
+  "pending": 48,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -306,7 +306,7 @@
       "blocker": null
     },
     "krobellus": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 5,
       "summon_cost": 1500,
       "source_recipe": {
@@ -315,10 +315,10 @@
         "e": "_cast_e_krobellus_siphon",
         "r": "_cast_r_krobellus_crypt"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_five_skills.gd",
+      "oracle": "boss_level_five_source_oracle.py",
+      "native_test": "boss_level_five_checks.gd",
+      "blocker": null
     },
     "nyxara": {
       "status": "playable",
@@ -333,7 +333,7 @@
       "blocker": null
     },
     "vhalzun": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 5,
       "summon_cost": 1200,
       "source_recipe": {
@@ -342,13 +342,13 @@
         "e": "_cast_e_vhalzun_reapers_scythe",
         "r": "_cast_r_vhalzun_ghost_shroud"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_five_skills.gd",
+      "oracle": "boss_level_five_source_oracle.py",
+      "native_test": "boss_level_five_checks.gd",
+      "blocker": null
     },
     "gravewake": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 6,
       "summon_cost": 1000,
       "source_recipe": {
@@ -357,13 +357,13 @@
         "e": "_cast_e_gravewake_shell",
         "r": "_cast_r_gravewake_ravage"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_six_skills.gd",
+      "oracle": "boss_level_six_source_oracle.py",
+      "native_test": "boss_level_six_checks.gd",
+      "blocker": null
     },
     "kunkka": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 6,
       "summon_cost": 900,
       "source_recipe": {
@@ -372,13 +372,13 @@
         "e": "_cast_e_kunkka_ghost",
         "r": "_cast_r_kunkka_torrent"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_six_skills.gd",
+      "oracle": "boss_level_six_source_oracle.py",
+      "native_test": "boss_level_six_checks.gd",
+      "blocker": null
     },
     "syrentha": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 6,
       "summon_cost": 1100,
       "source_recipe": {
@@ -387,13 +387,13 @@
         "e": "_cast_e_syrentha_mirror",
         "r": "_cast_r_syrentha_siren"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_six_skills.gd",
+      "oracle": "boss_level_six_source_oracle.py",
+      "native_test": "boss_level_six_checks.gd",
+      "blocker": null
     },
     "thalgryn": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 6,
       "summon_cost": 1200,
       "source_recipe": {
@@ -402,13 +402,13 @@
         "e": "_cast_e_thalgryn_morph",
         "r": "_cast_r_thalgryn_replicate"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_six_skills.gd",
+      "oracle": "boss_level_six_source_oracle.py",
+      "native_test": "boss_level_six_checks.gd",
+      "blocker": null
     },
     "akashari": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 7,
       "summon_cost": 1200,
       "source_recipe": {
@@ -417,13 +417,13 @@
         "e": "_cast_e_akashari_scream",
         "r": "_cast_r_akashari_sonic"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_seven_skills.gd",
+      "oracle": "boss_level_seven_source_oracle.py",
+      "native_test": "boss_level_seven_checks.gd",
+      "blocker": null
     },
     "malzareth": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 7,
       "summon_cost": 1100,
       "source_recipe": {
@@ -432,13 +432,13 @@
         "e": "_cast_e_malzareth_poison",
         "r": "_cast_r_malzareth_disillusion"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_seven_skills.gd",
+      "oracle": "boss_level_seven_source_oracle.py",
+      "native_test": "boss_level_seven_checks.gd",
+      "blocker": null
     },
     "nyxarath": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 7,
       "summon_cost": 1000,
       "source_recipe": {
@@ -447,13 +447,13 @@
         "e": "_cast_e_nyxarath_presence",
         "r": "_cast_r_nyxarath_requiem"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_seven_skills.gd",
+      "oracle": "boss_level_seven_source_oracle.py",
+      "native_test": "boss_level_seven_checks.gd",
+      "blocker": null
     },
     "vorenmarr": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 7,
       "summon_cost": 1300,
       "source_recipe": {
@@ -462,10 +462,10 @@
         "e": "_cast_e_vorenmarr_upheaval",
         "r": "_cast_r_vorenmarr_golem"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_seven_skills.gd",
+      "oracle": "boss_level_seven_source_oracle.py",
+      "native_test": "boss_level_seven_checks.gd",
+      "blocker": null
     },
     "vaerith": {
       "status": "playable",
