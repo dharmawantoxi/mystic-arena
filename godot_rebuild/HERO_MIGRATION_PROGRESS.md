@@ -6,8 +6,8 @@ Branch sesi: `arena/01a0e134-mystic-arena`. Python sumber read-only.
 ## Batch 1 — dua starter tersisa
 
 - Baseline teruji sebelum sesi: Kaizen, Thorne, Grimjaw, Sylara (4/222).
-- Vex dan Zephyr: implementasi native + oracle sumber + tes native ditulis;
-  **menunggu engine/CI, belum dihitung selesai**. Sisa terkonfirmasi: **218**.
+- Vex dan Zephyr: selesai dan lulus CI Godot 4.7.2 pada commit `63778c4`.
+  **6/222 selesai, 216 boss tersisa**. CI [36295879312](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36295879312): **50.666 native checks** (seluruh suite lama ikut).
 - Harga summon keduanya **420 G** (bukan unlock menu).
 - Vex: Q orb/line, W burst/slow dan ring bergerak 30 < r <= 55 tiap 20 tick,
   E prison 150 tick/stun max/pulsa 10 tick, R AOE 180/2.5×.
@@ -25,8 +25,8 @@ Branch sesi: `arena/01a0e134-mystic-arena`. Python sumber read-only.
 
 ## Batch berikutnya
 
-Setelah batch starter lulus engine/CI, langsung lanjut boss berdasarkan urutan
-level sumber. **216 boss belum diport**, bukan pengganti generic kit. Daftar
+Batch starter lulus; langsung lanjut Gornak, Morgath, Drakar, Abaddon
+(boss level sumber 1). **216 boss belum diport**, bukan pengganti generic kit. Daftar
 ID authoritative ada di `data/ai/recruitment.json` (catalog dengan
 `is_boss_hero=true`). Sebelum berhenti sesi, manifest selesai/pending per-ID
 akan diperbarui. Tidak ada perubahan AIPlayer scene, item/forge, balance,

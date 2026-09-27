@@ -36,10 +36,10 @@ memanggilnya otomatis; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
 
 ## Rekrut AI — fase awal, bukan roster playable lengkap
 
-Domain red kini memiliki transaksi Kaizen/Thorne/Grimjaw/Sylara berbayar eksplisit melalui
+Domain red kini memiliki transaksi Kaizen/Thorne/Grimjaw/Sylara/Vex/Zephyr berbayar eksplisit melalui
 draft (lihat [AI_CONTRACT.md](AI_CONTRACT.md)). Kaizen merah gratis di scene
 tetap, tidak dihitung sebagai pembelian dan tidak diganti. Baseline numerik
-222 Hero sumber tersedia; 218 lainnya belum punya handler native, sehingga
+222 Hero sumber tersedia; 216 lainnya belum punya handler native, sehingga
 pembeliannya ditolak tanpa debit atau mengganti skill.
 
 Thorne (500 G) adalah hero melee nyata dengan Q Viscous Nose (cone/slow),
@@ -54,11 +54,23 @@ berulang 300 tick + radial AOE, R target-lock 90 tick. Oracle sumber
 `grimjaw_source.json` dibandingkan dengan combat native dan pembayaran red
 nyata. Seluruh ID hero kini memiliki marker polygon/warna prosedural sederhana
 berdasarkan ID dengan lingkar tim, mata arah hadap, HP dan seleksi. Ini
-**placeholder** bebas aset; bukan animasi/visual hero final atau bukti 218
+**placeholder** bebas aset; bukan animasi/visual hero final atau bukti 216
 kit lainnya dapat dimainkan.
 
 Sylara (380 G) adalah marksman ranged native pertama: serangan dasar homing
 9,5px/tick, Q line-pierce dan Focus Fire, W Windrun + evasion fisik 75%,
 E Shackle, R Powershot setelah charge. Oracle `sylara_source.json` menjalankan
 skill dan loop projectile sumber Python nyata. Peluru sementara hanya titik
-prosedural; bukan panah/efek final. Masih 218 kit yang belum playable.
+prosedural; bukan panah/efek final. Masih 216 kit yang belum playable.
+
+## Batch starter lanjutan setelah #283
+
+Vex dan Zephyr selesai: masing-masing 420 G, magic homing basic attack,
+handler Q/W/E/R tersendiri dan lifecycle sumber. Vex: orb/line, eclipse
+burst + ring DOT, prison/stun, flux AOE. Zephyr: bramble fixed-origin,
+Shadow Realm heal/immunity, curse DOT dan Bedlam. `starter_finish_source_oracle.py`
+mengeksekusi kode sumber asli untuk batas, cooldown, moving/dead target,
+upgrade saat efek, respawn serta projectile. Helper bersama hanya BaseSkill
+atau blok sumber yang identik. CI 4.7.2 commit `63778c4`: 50.666 checks;
+**6 playable, 216 boss pending**, semuanya ditolak tanpa debit/substitusi.
+Daftar/progres batch: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).

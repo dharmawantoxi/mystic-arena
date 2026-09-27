@@ -70,7 +70,7 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
-## Roster 222 hero: baseline angka + Kaizen/Thorne/Grimjaw/Sylara playable, BELUM kit penuh
+## Roster 222 hero: baseline angka + Kaizen/Thorne/Grimjaw/Sylara/Vex/Zephyr playable, BELUM kit penuh
 
 Permintaan lanjutan adalah enam starter + 216 boss playable, dikerjakan per
 fase, **belum selesai**. `data/ai/hero_combat_stats.json` sekarang mengunci
@@ -85,7 +85,7 @@ harus tetap di dalam `godot_rebuild/`.
 
 `ai_recruitment.gd` meneruskan draft ke callback sinkron transaksi
 `prototype_battle.gd::_buy_ai_hero` di world/ledger nyata. Saat ini **Kaizen,
-Thorne, Grimjaw dan Sylara** punya kit native. 218 hero lain (dua starter dan 216 boss),
+Thorne, Grimjaw, Sylara, Vex dan Zephyr** punya kit native. 216 hero lain (seluruhnya boss),
 walaupun punya metadata dan baseline numerik, ditolak eksplisit dengan `kit`
 dan target serta reserve tetap tersimpan; tidak di-spawn sebagai Kaizen.
 Hero yang dimiliki red (termasuk mati) tidak dapat dibeli ulang. Kaizen 400 G,
@@ -119,9 +119,9 @@ satu hit per target). Basic attack ranged memakai homing arrow milik hero
 (sumber 9,5px/tick dan cap enam per hero), bukan damage instan; bentuk
 pelurunya tetap prosedural sederhana. Fixture mengeksekusi Hero.update
 projectile loop asli selain SylaraSkills, dan membandingkan evasion
-boundary, impact, Q/E/R dan timer native. Vex/Zephyr tetap ditolak.
+boundary, impact, Q/E/R dan timer native. Vex/Zephyr selesai pada batch lanjutan di bawah.
 
-Lanjutan wajib: port dua starter lainnya dan 216 boss dengan handler skill,
+Lanjutan wajib: port 216 boss dengan handler skill,
 serangan ranged, lifecycle, upgrade dan source oracle masing-masing sebelum
 memperluas registry kit native; lalu tes roster multi-hero/capacity dan
 integrasi scene tersendiri. Jangan mengklaim 222 kit dari file angka.
@@ -229,8 +229,7 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  baseline angka 222 sudah ada, kit playable Kaizen, Thorne, Grimjaw dan Sylara. Dua
-  starter lain + 216 boss dan oracle kit mereka masih pending; marker prosedural
+  baseline angka 222 sudah ada, kit playable Kaizen, Thorne, Grimjaw, Sylara, Vex dan Zephyr. 216 boss dan oracle kit mereka masih pending; marker prosedural
   bukan bukti kit playable atau tampilan hero final.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak
   memasukkan boss level saat ini. Draft starter pertama acak, boss pertama dari
@@ -262,3 +261,15 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
 perangkat fisik dari tes policy ini.
+
+## Batch starter lanjutan setelah #283
+
+Vex dan Zephyr selesai: masing-masing 420 G, magic homing basic attack,
+handler Q/W/E/R tersendiri dan lifecycle sumber. Vex: orb/line, eclipse
+burst + ring DOT, prison/stun, flux AOE. Zephyr: bramble fixed-origin,
+Shadow Realm heal/immunity, curse DOT dan Bedlam. `starter_finish_source_oracle.py`
+mengeksekusi kode sumber asli untuk batas, cooldown, moving/dead target,
+upgrade saat efek, respawn serta projectile. Helper bersama hanya BaseSkill
+atau blok sumber yang identik. CI 4.7.2 commit `63778c4`: 50.666 checks;
+**6 playable, 216 boss pending**, semuanya ditolak tanpa debit/substitusi.
+Daftar/progres batch: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
