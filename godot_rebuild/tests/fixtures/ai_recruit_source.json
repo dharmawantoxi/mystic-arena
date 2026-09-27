@@ -3630,6 +3630,61 @@
     }
   },
   {
+    "hero_type": "sylvantheros",
+    "price": 2550,
+    "initial": 2549,
+    "success": false,
+    "balance": 2549,
+    "count": 0,
+    "reserve": 2550,
+    "target": "sylvantheros",
+    "hero": null
+  },
+  {
+    "hero_type": "sylvantheros",
+    "price": 2550,
+    "initial": 2550,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "sylvantheros",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2376,
+      "hp": 2376,
+      "damage": 184,
+      "skill_damage": 504,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "sylvantheros",
+    "price": 2550,
+    "initial": 2551,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "sylvantheros",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2376,
+      "hp": 2376,
+      "damage": 184,
+      "skill_damage": 504,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

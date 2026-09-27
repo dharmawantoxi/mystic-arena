@@ -150,6 +150,7 @@ const DEFINITIONS := {
 	"solvanth": preload("res://data/heroes/solvanth.tres"),
 	"solvarin": preload("res://data/heroes/solvarin.tres"),
 	"sunakage": preload("res://data/heroes/sunakage.tres"),
+	"sylvantheros": preload("res://data/heroes/sylvantheros.tres"),
 	"syrentha": preload("res://data/heroes/syrentha.tres"),
 	"syrindra": preload("res://data/heroes/syrindra.tres"),
 	"thalakryon": preload("res://data/heroes/thalakryon.tres"),
