@@ -124,7 +124,7 @@ func _respawn(row: Dictionary, check: Callable) -> void:
 func _roster(check: Callable) -> void:
 	var world := Battle.new()
 	world.economy.credit_kill(world.RED, 4000)
-	var before := world.economy.gold[world.RED]
+	var before: int = world.economy.gold[world.RED]
 	check.call(
 		not world._buy_ai_hero("krobellus", 1500, Vector2(1120, 90)),
 		"Krobellus remains blocked before runtime verification"
