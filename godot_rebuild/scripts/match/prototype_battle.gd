@@ -187,6 +187,46 @@ func _build_tower_for(team: int, slot_id: int, path: String, reserve: int = 0) -
 	return true
 
 
+func _buy_ai_hero(hero_type: String, cost: int, pos: Vector2) -> bool:
+	# Draft callback: synchronous atomic red purchase, not a UI command.
+	# Other catalog entries have metadata only, not native playable kits yet.
+	transaction_error = ""
+	if not is_running():
+		transaction_error = "finished"
+	elif hero_type != KAIZEN.id or cost != KAIZEN.cost or cost <= 0:
+		transaction_error = "kit"
+	elif not pos.is_finite():
+		transaction_error = "position"
+	elif economy.gold[RED] < cost:
+		transaction_error = "gold"
+	elif units.size() >= MAX_UNITS or _next_id <= 0 or _by_id.has(_next_id):
+		transaction_error = "capacity"
+	else:
+		var count := 0
+		for unit in units:
+			if unit.is_hero and unit.team == RED:
+				if get_unit(unit.id) != unit or unit.definition == null:
+					transaction_error = "registry"
+					break
+				count += 1
+				if unit.definition.id == hero_type:
+					transaction_error = "owned"
+					break
+		if transaction_error.is_empty() and count >= 5:
+			transaction_error = "capacity"
+		elif transaction_error.is_empty() and pos != RED_HERO_SPAWN + Vector2(0, count * 40 - 40):
+			transaction_error = "position"
+	if not transaction_error.is_empty():
+		return false
+	var hero := spawn_hero(KAIZEN, RED, pos)
+	if hero == null:
+		transaction_error = "capacity"
+		return false
+	economy.spend(RED, cost)
+	_record({"kind": "hero_buy", "team": RED, "target_id": hero.id, "hero_type": hero_type})
+	return true
+
+
 func sell_tower(team: int, entity_id: int) -> bool:
 	transaction_error = ""
 	var tower := get_unit(entity_id) as StructureState

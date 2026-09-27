@@ -1,0 +1,51 @@
+[
+  {
+    "initial": 399,
+    "success": false,
+    "balance": 399,
+    "count": 0,
+    "reserve": 400,
+    "target": "kaizen",
+    "hero": null
+  },
+  {
+    "initial": 400,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "kaizen",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 770,
+      "hp": 770,
+      "damage": 45,
+      "skill_damage": 70,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "initial": 401,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "kaizen",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 770,
+      "hp": 770,
+      "damage": 45,
+      "skill_damage": 70,
+      "level": 1,
+      "auto_cast": true
+    }
+  }
+]

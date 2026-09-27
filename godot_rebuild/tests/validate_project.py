@@ -108,6 +108,20 @@ ai_build = (ROOT / "scripts/match/ai_build.gd").read_text(encoding="utf-8")
 check("draft.reserve()" in ai_build and "_build_tower_for" in ai_build,
       "AI build must use live draft reserve and real match transaction")
 
+# Recruitment is still a staged effort: only Kaizen has a native playable kit.
+# Execute the real Hero source oracle in this CI step (no workflow change).
+from ai_recruit_source_oracle import source_fixture as ai_recruit_source_fixture
+check("AIRecruitChecks.new().run(_check)" in ai_tests, "Real recruit suite must run")
+check((ROOT / "tests/fixtures/ai_recruit_source.json").is_file(), "Recruit source fixture missing")
+check((ROOT / "data/ai/hero_combat_stats.json").is_file(), "Hero numeric baseline missing")
+if (ROOT / "tests/fixtures/ai_recruit_source.json").is_file() and (ROOT / "data/ai/hero_combat_stats.json").is_file():
+    purchases, stats = ai_recruit_source_fixture()
+    check(purchases == json.loads((ROOT / "tests/fixtures/ai_recruit_source.json").read_text(encoding="utf-8")),
+          "Real source recruit drift")
+    check(stats == json.loads((ROOT / "data/ai/hero_combat_stats.json").read_text(encoding="utf-8")),
+          "222 source Hero stat baselines drift")
+    check(set(stats) == set(recruitment["catalog"]), "Every recruitment ID must have source Hero numbers")
+
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")
 check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields require source fixture")

@@ -33,3 +33,11 @@ Domain menyediakan upgrade red per kandidat dengan reserve gold; hero red mati
 atau respawning tetap eligible sesuai sumber AIPlayer, tanpa mengubah HP/alive
 atau respawn timer. UI blue masih menolak hero mati. Belum ada scheduler AI yang
 memanggilnya otomatis, roster baru, atau kit selain Kaizen; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
+
+## Rekrut AI — fase awal, bukan roster playable lengkap
+
+Domain red kini memiliki transaksi Kaizen berbayar eksplisit melalui draft
+(lihat [AI_CONTRACT.md](AI_CONTRACT.md)). Kaizen merah gratis yang ada pada scene
+tetap, tidak dihitung sebagai pembelian dan tidak diganti. Baseline numerik
+222 Hero sumber tersedia untuk port kit berikutnya; selain Kaizen belum ada
+handler native, sehingga pembeliannya ditolak tanpa debit atau mengganti skill.

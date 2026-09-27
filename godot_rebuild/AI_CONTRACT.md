@@ -70,6 +70,36 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
+## Roster 222 hero: fase 1 transaksi dan baseline numerik, BELUM kit penuh
+
+Permintaan lanjutan adalah enam starter + 216 boss playable, dikerjakan per
+fase, **belum selesai**. `data/ai/hero_combat_stats.json` sekarang mengunci
+angka final hasil konstruksi `Hero` Python asli untuk **222 ID**, mencakup
+normalisasi melee/ranged, catch-up starter awal dan balance catalog, skill
+base, sekolah damage dan harga summon. Ini adalah **baseline angka**, bukan
+skill handler playable atau `.tres` kit. `ai_recruit_source_oracle.py`
+mengeksekusi `Hero.__init__` asli untuk semua 222 lewat AST (inventory kosong,
+audio stub) dan transaksi `_try_buy_hero` dengan Hero Kaizen asli di gold
+399/400/401. CI menjalankannya via `validate_project.py` karena perubahan
+harus tetap di dalam `godot_rebuild/`.
+
+`ai_recruitment.gd` meneruskan draft ke callback sinkron transaksi
+`prototype_battle.gd::_buy_ai_hero` di world/ledger nyata. Saat ini **hanya
+Kaizen punya kit native**. Hero lain (termasuk Thorne/boss), walaupun punya
+metadata dan baseline numerik, ditolak eksplisit dengan `kit` dan target serta
+reserve tetap tersimpan; tidak di-spawn sebagai Kaizen/skill Kaizen. Kaizen
+sendiri hanya bisa dibeli bila belum dimiliki red (termasuk mati), dengan
+harga 400 G, offset first spawn Y90, ID registry/capacity/posisi/saldo valid,
+debit sekali setelah spawn. Wrapper scene tetap memakai Kaizen gratis red;
+karena roster itu sudah punya Kaizen, adapter ini **tidak** mengubah scene,
+atau membuat AIPlayer playable. Kontrak lima hero ditahan defensif di
+transaksi; `_ai_step` tetap memegang gate policy aslinya. Tidak ada item/forge.
+
+Lanjutan wajib: port lima starter lainnya dan 216 boss dengan handler skill,
+serangan ranged, lifecycle, upgrade dan source oracle masing-masing sebelum
+memperluas registry kit native; lalu tes roster multi-hero/capacity dan
+integrasi scene tersendiri. Jangan mengklaim 222 kit dari file angka.
+
 ## Build tower lawan: transaksi domain nyata, belum dijadwalkan scene
 
 `ai_build.gd::try_build` mem-port `_try_build_tower` secara eksplisit, dengan
@@ -173,7 +203,8 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  data, kit, scene/presentasi, upgrade, death/respawn, oracle.
+  baseline angka 222 sudah ada, tetapi kit playable baru Kaizen. Kit lain,
+  scene/presentasi, upgrade khusus, death/respawn dan oracle kit masih pending.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak
   memasukkan boss level saat ini. Draft starter pertama acak, boss pertama dari
   level terbaru, berikutnya berbobot source-level; tipe owned termasuk hero mati.
