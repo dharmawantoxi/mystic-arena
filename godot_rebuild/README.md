@@ -280,20 +280,21 @@ Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot
 10. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Upgrade Archer dan periksa perubahan harga/refund/HP/shield serta jumlah panah. Pilih nexus biru, upgrade ke level 2+ dan amati HP/shield/komposisi/minion menguat. Pause harus membekukan keduanya; restart mengembalikan 1000 G dan nexus level 1.
 11. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
 
-## Status migrasi hero setelah #283
+## Status migrasi hero setelah #292
 
-**161/222 kit native teruji, 61 boss recipe khusus pending.** Daftar tepat dan
-blocker per hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Progres batch,
+**222/222 kit native teruji, 0 pending.** Daftar tepat dan bukti per hero:
+[HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Progres batch,
 validasi dan pesan kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
 150 dari kit tersebut memakai shared handler karena sumber aslinya memang sama,
-bukan fallback untuk yang belum selesai. Pending ditolak tanpa debit/substitusi.
-CI Godot 4.7.2: 358.305 checks pada `c029d50`, seluruh suite lama tetap.
+bukan fallback. ID di luar registry ditolak tanpa debit/substitusi.
+CI Godot 4.7.2 hijau pada main `8119e31` (run 36329618088), seluruh suite lama tetap.
 Kaizen gratis/defender lama tidak diganti; item/forge/AIPlayer penuh/art final di luar fase ini.
 
 ## AIPlayer (WIP, belum terhubung ke scene)
 
-Policy berpikir/prioritas, pool/draft/reserve, dan adapter upgrade/shield red per
-kandidat tersedia untuk pengujian native. Adapter upgrade/shield memakai world/ledger
+Policy berpikir/prioritas, pool/draft/reserve, adapter upgrade/shield red per
+kandidat, serta pemilihan kandidat kills descending stabil (dengan atribusi
+kills sumber) tersedia untuk pengujian native. Adapter upgrade/shield memakai world/ledger
 nyata tetapi belum dipanggil otomatis di scene. Metadata summon mencakup enam starter dan 216 boss; **ini bukan roster
 playable**. Pertandingan masih memakai lawan sementara. Batas implementasi dan
 checklist integrasi penuh: [AI_CONTRACT.md](AI_CONTRACT.md).
