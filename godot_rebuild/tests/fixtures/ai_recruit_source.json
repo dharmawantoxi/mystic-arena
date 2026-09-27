@@ -2750,6 +2750,61 @@
     }
   },
   {
+    "hero_type": "thorvak",
+    "price": 1950,
+    "initial": 1949,
+    "success": false,
+    "balance": 1949,
+    "count": 0,
+    "reserve": 1950,
+    "target": "thorvak",
+    "hero": null
+  },
+  {
+    "hero_type": "thorvak",
+    "price": 1950,
+    "initial": 1950,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "thorvak",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2081,
+      "hp": 2081,
+      "damage": 267,
+      "skill_damage": 688,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "thorvak",
+    "price": 1950,
+    "initial": 1951,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "thorvak",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2081,
+      "hp": 2081,
+      "damage": 267,
+      "skill_damage": 688,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

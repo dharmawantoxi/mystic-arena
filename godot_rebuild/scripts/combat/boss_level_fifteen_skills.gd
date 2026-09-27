@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["auroth", "morvein"]
+const IDS := ["auroth", "morvein", "thorvak"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_auroth(world, hero, target, key, structures)
 		"morvein":
 			_morvein(world, hero, target, key, structures)
+		"thorvak":
+			_thorvak(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -71,6 +73,26 @@ static func _morvein(world, hero: HeroState, target, key: String, structures: Ar
 			# Phantom form: AOE 250 1.95x skill, heal 12%.
 			_radial(world, hero, structures, 250.0, 1.95)
 			hero.heal_hp(int(hero.max_hp * 0.12))
+
+
+static func _thorvak(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Seed: target 1.2x skill, slow 0.4 for 90.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.2)
+			world.apply_slow(target.id, 0.4, 90)
+		"w":
+			# Nature's wrath: AOE 195 1.15x skill.
+			_radial(world, hero, structures, 195.0, 1.15)
+		"e":
+			# Vengeance: AOE 200 1.0x skill.
+			_radial(world, hero, structures, 200.0, 1.0)
+		"r":
+			# Dryad: AOE 250 1.9x skill, attack delay max(timer, 70), heal 10%.
+			_radial(world, hero, structures, 250.0, 1.9, 70)
+			hero.heal_hp(int(hero.max_hp * 0.10))
 
 
 #HEROES

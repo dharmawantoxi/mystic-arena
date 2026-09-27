@@ -145,6 +145,7 @@ const DEFINITIONS := {
 	"thargoroth": preload("res://data/heroes/thargoroth.tres"),
 	"thoraz": preload("res://data/heroes/thoraz.tres"),
 	"thorgaruk": preload("res://data/heroes/thorgaruk.tres"),
+	"thorvak": preload("res://data/heroes/thorvak.tres"),
 	"thorvin": preload("res://data/heroes/thorvin.tres"),
 	"tsukiyora": preload("res://data/heroes/tsukiyora.tres"),
 	"urgharun": preload("res://data/heroes/urgharun.tres"),
