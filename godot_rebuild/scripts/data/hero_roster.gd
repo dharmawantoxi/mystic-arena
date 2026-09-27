@@ -59,6 +59,7 @@ const DEFINITIONS := {
 	"kaoruken": preload("res://data/heroes/kaoruken.tres"),
 	"karzhul": preload("res://data/heroes/karzhul.tres"),
 	"kassadin": preload("res://data/heroes/kassadin.tres"),
+	"kenshiro": preload("res://data/heroes/kenshiro.tres"),
 	"kazreth": preload("res://data/heroes/kazreth.tres"),
 	"kazuren": preload("res://data/heroes/kazuren.tres"),
 	"kazureth": preload("res://data/heroes/kazureth.tres"),

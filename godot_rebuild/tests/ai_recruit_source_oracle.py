@@ -47,7 +47,8 @@ def source_fixture():
                      "ancient_apparition", "nyzrak", "ignis_drachorn",
                      "krobellus", "vhalzun",
                      "kunkka", "gravewake", "syrentha", "thalgryn",
-                     "akashari", "malzareth", "nyxarath", "vorenmarr"]
+                     "akashari", "malzareth", "nyxarath", "vorenmarr",
+                     "kenshiro"]
     playable = explicit_kits + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]

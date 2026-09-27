@@ -17,6 +17,7 @@ const BossLevelFourSkills = preload("res://scripts/combat/boss_level_four_skills
 const BossLevelFiveSkills = preload("res://scripts/combat/boss_level_five_skills.gd")
 const BossLevelSixSkills = preload("res://scripts/combat/boss_level_six_skills.gd")
 const BossLevelSevenSkills = preload("res://scripts/combat/boss_level_seven_skills.gd")
+const BossLevelNineSkills = preload("res://scripts/combat/boss_level_nine_skills.gd")
 const AlchemistSkills = preload("res://scripts/combat/alchemist_skills.gd")
 const NATIVE_SKILLS := {
 	"alchemist": AlchemistSkills,
@@ -41,7 +42,8 @@ const NATIVE_SKILLS := {
 	"akashari": BossLevelSevenSkills,
 	"malzareth": BossLevelSevenSkills,
 	"nyxarath": BossLevelSevenSkills,
-	"vorenmarr": BossLevelSevenSkills
+	"vorenmarr": BossLevelSevenSkills,
+	"kenshiro": BossLevelNineSkills
 }
 const HeroProjectiles = preload("res://scripts/combat/hero_projectiles.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
