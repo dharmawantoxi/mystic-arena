@@ -121,7 +121,13 @@ func _heroes(world: World, kills: Array) -> Array[int]:
 	for index in range(kills.size()):
 		var hero_type: String = HERO_TYPES[index]
 		var kit: Variant = World.PLAYABLE_AI_HEROES[hero_type]
-		assert(world._buy_ai_hero(hero_type, int(kit.cost), Vector2(1120, 90)))
+		# Source spawn offset: RED_HERO_SPAWN + (0, owned_red_heroes * 40 - 40).
+		var owned := 0
+		for unit in world.units:
+			if unit.is_hero and unit.team == 1:
+				owned += 1
+		var pos: Vector2 = World.RED_HERO_SPAWN + Vector2(0, owned * 40 - 40)
+		assert(world._buy_ai_hero(hero_type, int(kit.cost), pos))
 		var hero: World.HeroState = null
 		for unit in world.units:
 			if unit.is_hero and unit.team == 1 and not ids.has(unit.id):
