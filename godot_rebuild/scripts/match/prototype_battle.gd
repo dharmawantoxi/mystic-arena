@@ -194,7 +194,7 @@ func sell_tower(team: int, entity_id: int) -> bool:
 		else:
 			flying.append(shot)
 	projectiles = flying
-	economy.credit_sale(team, tower.settings().sale_refund)
+	economy.credit_sale(team, tower.sale_value())
 	_record({"kind": "sale", "team": team, "target_id": entity_id})
 	return true
 
@@ -719,4 +719,40 @@ func _upgrade_hero_for(team: int, hero_id: int, expected_level: int, reserve: in
 	economy.spend(team, cost)
 	upgrade_hero(hero.id)
 	_record({"kind": "hero_upgrade", "target_id": hero.id, "level": hero.level})
+	return true
+
+
+func _activate_regen_shield_for(team: int, entity_id: int, reserve: int = 0) -> bool:
+	return _purchase_shield_for(team, entity_id, false, reserve)
+
+
+func _activate_castle_shield_for(team: int, entity_id: int, reserve: int = 0) -> bool:
+	return _purchase_shield_for(team, entity_id, true, reserve)
+
+
+func _purchase_shield_for(team: int, entity_id: int, castle: bool, reserve: int) -> bool:
+	transaction_error = ""
+	var target := _owned_nexus(entity_id, team) if castle else _owned_tower(entity_id, team)
+	var cost := StructureState.CASTLE_SHIELD_COST if castle else StructureState.REGEN_SHIELD_COST
+	if not is_running():
+		transaction_error = "finished"
+	elif target == null:
+		transaction_error = "owner"
+	elif (
+		not target.can_activate_castle_shield()
+		if castle
+		else not target.can_activate_regen_shield()
+	):
+		transaction_error = "shield"
+	elif economy.gold[team] < cost + maxi(0, reserve):
+		transaction_error = "gold"
+	if not transaction_error.is_empty():
+		return false
+	# No await/callback between eligibility, activation and the ledger debit.
+	if castle:
+		target.activate_castle_shield()
+	else:
+		target.activate_regen_shield()
+	economy.spend(team, cost)
+	_record({"kind": "castle_shield" if castle else "regen_shield", "target_id": entity_id})
 	return true

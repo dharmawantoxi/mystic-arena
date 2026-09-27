@@ -6,7 +6,7 @@
 Target yang disepakati: AIPlayer lengkap beserta roster dan item dependensinya,
 bukan pembatasan diam-diam ke Kaizen. Scene pertandingan masih memakai defender
 lama dan pasangan Kaizen gratis. Tidak ada transaksi ekonomi otomatis baru di scene;
-adapter upgrade red sudah tersedia untuk panggilan domain eksplisit; seluruh suite lama tetap dijalankan.
+adapter upgrade/shield red sudah tersedia untuk panggilan domain eksplisit; seluruh suite lama tetap dijalankan.
 
 Sumber read-only: `_entity.py::AIPlayer`, konstanta `_core.py`,
 `Game.update` (pemanggilan AI setelah loop entity), `levels/level_data.py`,
@@ -53,8 +53,8 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
   available kosong dan pembelian sukses membersihkan target+harga reserve.
 - Reserve = `max(0, target_cost)` bila target ada, selain itu nol. Nonhero boleh
   belanja tepat pada `gold == cost + reserve`, tidak pada satu gold di bawahnya.
-  Reserve sudah diterapkan pada upgrade tower/nexus/hero nyata per kandidat;
-  build/item/shield dan pemilihan prioritas kandidat masih pending.
+  Reserve sudah diterapkan pada upgrade tower/nexus/hero dan kedua pembelian
+  shield nyata per kandidat; build/item dan pemilihan prioritas kandidat masih pending.
 - `try_buy` menerima roster tipe authoritative, snapshot gold, dan callback
   **sinkron/atomik** `(hero_type, cost, position) -> bool`. Callback wajib
   memvalidasi ulang wallet/capacity, spawn kit benar, debit, lalu tambah roster;
@@ -96,6 +96,15 @@ Fungsi internal `_upgrade_*_for` menerima tim dan reserve; wrapper UI lama tetap
 - Method internal bukan command UI. Pause dicegah oleh session yang tidak
   mengeksekusi command/tick; tidak ada loop background atau timer baru.
 
+## Shield berbayar per kandidat
+
+`ai_shields.gd` memakai transaksi world untuk Regen Shield (tower Lv4–6) dan
+Castle Shield (sesudah wave 10, tanpa gate Lv4). Keduanya 850 G + reserve
+untuk eligibility saldo, debit hanya 850. Tidak ada roll RNG atau increment
+counter upgrade. Flag per instance, regen/damage, upgrade dan refund mengikuti
+metode sumber; lihat [SHIELD_CONTRACT.md](SHIELD_CONTRACT.md). Scene belum
+memanggil AI shield otomatis dan belum memiliki tombol purchase shield.
+
 ## Oracle dan tes
 
 `tests/ai_source_oracle.py` mengeksekusi AST metode Python asli: init, brain,
@@ -104,7 +113,7 @@ kontrol hero atau roster lengkap. Fixture mencakup 52 trace jadwal 200 tick,
 batas round tepat pada elite 0.25/0.75 (count 24), level clamp, step gagal,
 dan 486 skenario prioritas/RNG. Tes native membandingkan scalar JSON numerik
 sebagai integer/float, tidak membandingkan array Variant numerik secara langsung.
-Delapan oracle lama tetap berjalan; oracle policy, draft dan upgrade AI ditambahkan.
+Delapan oracle lama tetap berjalan; oracle policy, draft, upgrade dan shield AI ditambahkan.
 
 `ai_draft_source_oracle.py` mengeksekusi init, pool, choose, buy dan reserve asli.
 Hero constructor diganti receipt (bukan kit); picker mencatat candidate order dan
@@ -146,8 +155,9 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 - [ ] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-- [ ] Regen shield Lv4+ termasuk tower Lv6, prioritas kills; castle shield,
-  upgrade nexus, eligibility/cost/debit identik sumber.
+- [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
+  eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
+- [ ] Prioritas kandidat Regen Shield kills descending stabil.
 - [ ] Kontrol hero setiap tick: jalur auto-cast bersama pemain, skill counter
   berdasarkan perubahan active timer; lane ancaman maksimum (tie top/mid/bot),
   minion terdekat secara Euclidean, destination auto; fallback tower terdekat

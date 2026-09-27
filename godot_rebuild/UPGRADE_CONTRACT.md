@@ -1,6 +1,6 @@
 # Kontrak upgrade Archer — level 1–6
 
-Tersedia hanya lewat mode **Pertandingan awal**. Laboratorium siege tetap memulai Archer tier 1 tanpa tombol upgrade. Jalur Cannon level 2–6 kini tersedia terpisah, lihat [kontrak cannon](CANNON_CONTRACT.md). Jalur Ice level 2–6 kini tersedia terpisah, lihat [kontrak ice](ICE_CONTRACT.md). Jalur Mage level 2–6 kini tersedia terpisah, lihat [kontrak mage](MAGE_CONTRACT.md). Belum ada paid regen shield. Upgrade nexus kini tersedia terpisah, lihat [kontrak nexus](NEXUS_CONTRACT.md).
+Tersedia hanya lewat mode **Pertandingan awal**. Laboratorium siege tetap memulai Archer tier 1 tanpa tombol upgrade. Jalur Cannon level 2–6 kini tersedia terpisah, lihat [kontrak cannon](CANNON_CONTRACT.md). Jalur Ice level 2–6 kini tersedia terpisah, lihat [kontrak ice](ICE_CONTRACT.md). Jalur Mage level 2–6 kini tersedia terpisah, lihat [kontrak mage](MAGE_CONTRACT.md). Paid regen shield tersedia di domain, belum melalui tombol UI/AI otomatis; lihat [kontrak shield](SHIELD_CONTRACT.md). Upgrade nexus kini tersedia terpisah, lihat [kontrak nexus](NEXUS_CONTRACT.md).
 
 ## Sumber dan angka yang diuji
 
@@ -15,7 +15,7 @@ Sumber: `_core.ARCHER_LEVELS`, `TOWER_HP_MULTIPLIER`, `TOWER_MAX_LEVEL`, `Tower.
 | 5 | 850 | 5500 | 2200 | 98 | 220 | 24 | 7 | 2 | 950 |
 | 6 | 1300 | 7000 | 2800 | 130 | 230 | 22 | 8 | 3 | 1600 |
 
-Harga upgrade adalah harga **level tujuan**. Refund level 2+ adalah `int(0.5 × total biaya upgrade)`, **tidak** memasukkan biaya build 100 G. Refund 50 G level 1 adalah fallback UI Python ketika `sell_value()` menghasilkan nol. Paid regen shield dapat memengaruhi refund di sumber, tetapi belum ada dalam mode ini.
+Harga upgrade adalah harga **level tujuan**. Refund level 2+ adalah `int(0.5 × total biaya upgrade)`, **tidak** memasukkan biaya build 100 G. Refund 50 G level 1 adalah fallback UI Python ketika `sell_value()` menghasilkan nol. Paid regen shield kini menambahkan refund 425 G; tabel di atas adalah refund tanpa shield. Quote UI memakai nilai runtime yang sama dengan transaksi jual.
 
 ## Transaksi dan state
 

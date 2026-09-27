@@ -95,6 +95,17 @@ check("python godot_rebuild/tests/ai_upgrade_source_oracle.py" in workflow, "CI 
 ai_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
 check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters must read live reserve")
 
+check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
+check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")
+check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields require source fixture")
+check("python godot_rebuild/tests/ai_shield_source_oracle.py" in workflow, "CI must check paid shield oracle")
+ai_shields = (ROOT / "scripts/match/ai_shields.gd").read_text(encoding="utf-8")
+check(ai_shields.count("draft.reserve()") == 2, "Both paid shield adapters must use live reserve")
+shield_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+check('tower.sale_value()' in shield_screen, "UI sale quote must include purchased shield")
+
+check((ROOT / "SHIELD_CONTRACT.md").is_file(), "Paid shield semantics must be documented")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

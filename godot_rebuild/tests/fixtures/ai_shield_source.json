@@ -1,0 +1,6797 @@
+{
+  "constants": {
+    "TOWER_REGEN_SHIELD_COST": 850,
+    "TOWER_REGEN_SHIELD_MIN_LEVEL": 4,
+    "CASTLE_SHIELD_COST": 850
+  },
+  "towers": [
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 800,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 800,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 800,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 800,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 800,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 800,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1050,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1050,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1050,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1050,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1050,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1050,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1350,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1350,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1350,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1350,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1350,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1350,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1750,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 1750,
+        "shield_max": 1750,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 1750,
+        "shield_max": 1750,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1750,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 1750,
+        "shield_max": 1750,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 1750,
+        "shield_max": 1750,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2200,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 2200,
+        "shield_max": 2200,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 2200,
+        "shield_max": 2200,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2200,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 2200,
+        "shield_max": 2200,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 2200,
+        "shield_max": 2200,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2800,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 2800,
+        "shield_max": 2800,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 2800,
+        "shield_max": 2800,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2800,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 2800,
+        "shield_max": 2800,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 2800,
+        "shield_max": 2800,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1200,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1200,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1200,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1200,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1200,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1200,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1500,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1500,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1500,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1500,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1500,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1500,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1900,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 1900,
+        "shield_max": 1900,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 1900,
+        "shield_max": 1900,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1900,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 1900,
+        "shield_max": 1900,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 1900,
+        "shield_max": 1900,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2400,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 2400,
+        "shield_max": 2400,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 2400,
+        "shield_max": 2400,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2400,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 2400,
+        "shield_max": 2400,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 2400,
+        "shield_max": 2400,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 3000,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 3000,
+        "shield_max": 3000,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 3000,
+        "shield_max": 3000,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 3000,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 3000,
+        "shield_max": 3000,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 3000,
+        "shield_max": 3000,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 950,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 950,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 950,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 950,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 950,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 950,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1250,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1250,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1250,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1250,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1250,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1250,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1600,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 1600,
+        "shield_max": 1600,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 1600,
+        "shield_max": 1600,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1600,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 1600,
+        "shield_max": 1600,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 1600,
+        "shield_max": 1600,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2050,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 2050,
+        "shield_max": 2050,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 2050,
+        "shield_max": 2050,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2050,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 2050,
+        "shield_max": 2050,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 2050,
+        "shield_max": 2050,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2600,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 2600,
+        "shield_max": 2600,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 2600,
+        "shield_max": 2600,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2600,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 2600,
+        "shield_max": 2600,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 2600,
+        "shield_max": 2600,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 850,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 850,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 850,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 850,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 850,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 850,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1100,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1100,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1100,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1100,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1100,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1100,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1450,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 1450,
+        "shield_max": 1450,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 1450,
+        "shield_max": 1450,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1450,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 1450,
+        "shield_max": 1450,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 1450,
+        "shield_max": 1450,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1850,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 1850,
+        "shield_max": 1850,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 1850,
+        "shield_max": 1850,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 1850,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 1850,
+        "shield_max": 1850,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 1850,
+        "shield_max": 1850,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2350,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 2350,
+        "shield_max": 2350,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 2350,
+        "shield_max": 2350,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 13,
+        "shield_max": 2350,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": false
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 2350,
+        "shield_max": 2350,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 2350,
+        "shield_max": 2350,
+        "no_damage_ticks": 27,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    }
+  ],
+  "castles": [
+    {
+      "level": 1,
+      "wave": 10,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 10,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 10,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 10,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 10,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 10,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 11,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 11,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 0,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 1,
+      "wave": 11,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 0,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 1,
+      "wave": 11,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 11,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 0,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 1,
+      "wave": 11,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 0,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 1,
+      "wave": 20,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 20,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 0,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 1,
+      "wave": 20,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 0,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 1,
+      "wave": 20,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 1,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 1,
+      "wave": 20,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 0,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 1,
+      "wave": 20,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 0,
+        "level": 1,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "wave": 10,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 10,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 10,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 10,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 10,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 10,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 11,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 11,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 6000,
+        "shield_max": 6000,
+        "no_damage_ticks": 0,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "wave": 11,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 6000,
+        "shield_max": 6000,
+        "no_damage_ticks": 0,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "wave": 11,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 11,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 6000,
+        "shield_max": 6000,
+        "no_damage_ticks": 0,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "wave": 11,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 6000,
+        "shield_max": 6000,
+        "no_damage_ticks": 0,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "wave": 20,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 20,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 6000,
+        "shield_max": 6000,
+        "no_damage_ticks": 0,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "wave": 20,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 6000,
+        "shield_max": 6000,
+        "no_damage_ticks": 0,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "wave": 20,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 2,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 2,
+      "wave": 20,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 6000,
+        "shield_max": 6000,
+        "no_damage_ticks": 0,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "wave": 20,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 6000,
+        "shield_max": 6000,
+        "no_damage_ticks": 0,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "wave": 10,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 10,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 10,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 10,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 10,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 10,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 11,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 11,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 8500,
+        "shield_max": 8500,
+        "no_damage_ticks": 0,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "wave": 11,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 8500,
+        "shield_max": 8500,
+        "no_damage_ticks": 0,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "wave": 11,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 11,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 8500,
+        "shield_max": 8500,
+        "no_damage_ticks": 0,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "wave": 11,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 8500,
+        "shield_max": 8500,
+        "no_damage_ticks": 0,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "wave": 20,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 20,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 8500,
+        "shield_max": 8500,
+        "no_damage_ticks": 0,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "wave": 20,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 8500,
+        "shield_max": 8500,
+        "no_damage_ticks": 0,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "wave": 20,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 3,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 3,
+      "wave": 20,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 8500,
+        "shield_max": 8500,
+        "no_damage_ticks": 0,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "wave": 20,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 8500,
+        "shield_max": 8500,
+        "no_damage_ticks": 0,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "wave": 10,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 10,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 10,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 10,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 10,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 10,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 11,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 11,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 11500,
+        "shield_max": 11500,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "wave": 11,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 11500,
+        "shield_max": 11500,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "wave": 11,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 11,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 11500,
+        "shield_max": 11500,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "wave": 11,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 11500,
+        "shield_max": 11500,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "wave": 20,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 20,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 11500,
+        "shield_max": 11500,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "wave": 20,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 11500,
+        "shield_max": 11500,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "wave": 20,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 4,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 4,
+      "wave": 20,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 11500,
+        "shield_max": 11500,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "wave": 20,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 11500,
+        "shield_max": 11500,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 5,
+      "wave": 10,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 10,
+      "gold": 850,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 850,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 10,
+      "gold": 851,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 851,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 10,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 10,
+      "gold": 1250,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1250,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 10,
+      "gold": 1251,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1251,
+      "state": {
+        "hp": 1,
+        "shield": 4000,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": true,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 11,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 11,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 15000,
+        "shield_max": 15000,
+        "no_damage_ticks": 0,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 5,
+      "wave": 11,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 15000,
+        "shield_max": 15000,
+        "no_damage_ticks": 0,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 5,
+      "wave": 11,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 11,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 15000,
+        "shield_max": 15000,
+        "no_damage_ticks": 0,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 5,
+      "wave": 11,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 15000,
+        "shield_max": 15000,
+        "no_damage_ticks": 0,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 5,
+      "wave": 20,
+      "gold": 849,
+      "reserve": 0,
+      "success": false,
+      "repeat": false,
+      "balance": 849,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 20,
+      "gold": 850,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 0,
+      "state": {
+        "hp": 1,
+        "shield": 15000,
+        "shield_max": 15000,
+        "no_damage_ticks": 0,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 5,
+      "wave": 20,
+      "gold": 851,
+      "reserve": 0,
+      "success": true,
+      "repeat": false,
+      "balance": 1,
+      "state": {
+        "hp": 1,
+        "shield": 15000,
+        "shield_max": 15000,
+        "no_damage_ticks": 0,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 5,
+      "wave": 20,
+      "gold": 1249,
+      "reserve": 400,
+      "success": false,
+      "repeat": false,
+      "balance": 1249,
+      "state": {
+        "hp": 1,
+        "shield": 0,
+        "shield_max": 4000,
+        "no_damage_ticks": 27,
+        "level": 5,
+        "shield_active": false,
+        "free_shield_active": false,
+        "castle_shield_purchased": false
+      }
+    },
+    {
+      "level": 5,
+      "wave": 20,
+      "gold": 1250,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 400,
+      "state": {
+        "hp": 1,
+        "shield": 15000,
+        "shield_max": 15000,
+        "no_damage_ticks": 0,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 5,
+      "wave": 20,
+      "gold": 1251,
+      "reserve": 400,
+      "success": true,
+      "repeat": false,
+      "balance": 401,
+      "state": {
+        "hp": 1,
+        "shield": 15000,
+        "shield_max": 15000,
+        "no_damage_ticks": 0,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    }
+  ],
+  "traces": [
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "archer",
+        "level": 4,
+        "paid": false
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1745,
+            "shield_max": 1750,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1745,
+            "shield_max": 1750,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1745,
+            "shield_max": 1750,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1745,
+            "shield_max": 1750,
+            "no_damage_ticks": 182,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 4373,
+            "shield": 1725,
+            "shield_max": 1750,
+            "no_damage_ticks": 0,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 4373,
+            "shield": 1725,
+            "shield_max": 1750,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1725,
+            "shield_max": 1750,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1725,
+            "shield_max": 1750,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 4375.0,
+            "shield": 1725,
+            "shield_max": 1750,
+            "no_damage_ticks": 481,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "archer",
+        "level": 4,
+        "paid": true
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1745,
+            "shield_max": 1750,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1746.8,
+            "shield_max": 1750,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1748.6,
+            "shield_max": 1750,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1750,
+            "shield_max": 1750,
+            "no_damage_ticks": 182,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 4373,
+            "shield": 1730,
+            "shield_max": 1750,
+            "no_damage_ticks": 0,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 4373,
+            "shield": 1730,
+            "shield_max": 1750,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1731.8,
+            "shield_max": 1750,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4373,
+            "shield": 1733.6,
+            "shield_max": 1750,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 4375.0,
+            "shield": 1750,
+            "shield_max": 1750,
+            "no_damage_ticks": 481,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "archer",
+        "level": 6,
+        "paid": false
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2795,
+            "shield_max": 2800,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2795,
+            "shield_max": 2800,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2795,
+            "shield_max": 2800,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2795,
+            "shield_max": 2800,
+            "no_damage_ticks": 182,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 6998,
+            "shield": 2775,
+            "shield_max": 2800,
+            "no_damage_ticks": 0,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 6998,
+            "shield": 2775,
+            "shield_max": 2800,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2775,
+            "shield_max": 2800,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2775,
+            "shield_max": 2800,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 7000.0,
+            "shield": 2775,
+            "shield_max": 2800,
+            "no_damage_ticks": 481,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "archer",
+        "level": 6,
+        "paid": true
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2795,
+            "shield_max": 2800,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2796.8,
+            "shield_max": 2800,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2798.6000000000004,
+            "shield_max": 2800,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2800,
+            "shield_max": 2800,
+            "no_damage_ticks": 182,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 6998,
+            "shield": 2780,
+            "shield_max": 2800,
+            "no_damage_ticks": 0,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 6998,
+            "shield": 2780,
+            "shield_max": 2800,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2781.8,
+            "shield_max": 2800,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6998,
+            "shield": 2783.6000000000004,
+            "shield_max": 2800,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 7000.0,
+            "shield": 2800,
+            "shield_max": 2800,
+            "no_damage_ticks": 481,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "cannon",
+        "level": 4,
+        "paid": false
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1895,
+            "shield_max": 1900,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1895,
+            "shield_max": 1900,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1895,
+            "shield_max": 1900,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1895,
+            "shield_max": 1900,
+            "no_damage_ticks": 182,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 4748,
+            "shield": 1875,
+            "shield_max": 1900,
+            "no_damage_ticks": 0,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 4748,
+            "shield": 1875,
+            "shield_max": 1900,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1875,
+            "shield_max": 1900,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1875,
+            "shield_max": 1900,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 4750.0,
+            "shield": 1875,
+            "shield_max": 1900,
+            "no_damage_ticks": 481,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "cannon",
+        "level": 4,
+        "paid": true
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1895,
+            "shield_max": 1900,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1896.8,
+            "shield_max": 1900,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1898.6,
+            "shield_max": 1900,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1900,
+            "shield_max": 1900,
+            "no_damage_ticks": 182,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 4748,
+            "shield": 1880,
+            "shield_max": 1900,
+            "no_damage_ticks": 0,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 4748,
+            "shield": 1880,
+            "shield_max": 1900,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1881.8,
+            "shield_max": 1900,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 4748,
+            "shield": 1883.6,
+            "shield_max": 1900,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 4750.0,
+            "shield": 1900,
+            "shield_max": 1900,
+            "no_damage_ticks": 481,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "cannon",
+        "level": 6,
+        "paid": false
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2995,
+            "shield_max": 3000,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2995,
+            "shield_max": 3000,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2995,
+            "shield_max": 3000,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2995,
+            "shield_max": 3000,
+            "no_damage_ticks": 182,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 7498,
+            "shield": 2975,
+            "shield_max": 3000,
+            "no_damage_ticks": 0,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 7498,
+            "shield": 2975,
+            "shield_max": 3000,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2975,
+            "shield_max": 3000,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2975,
+            "shield_max": 3000,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 7500.0,
+            "shield": 2975,
+            "shield_max": 3000,
+            "no_damage_ticks": 481,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "cannon",
+        "level": 6,
+        "paid": true
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2995,
+            "shield_max": 3000,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2996.8,
+            "shield_max": 3000,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2998.6000000000004,
+            "shield_max": 3000,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 3000,
+            "shield_max": 3000,
+            "no_damage_ticks": 182,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 7498,
+            "shield": 2980,
+            "shield_max": 3000,
+            "no_damage_ticks": 0,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 7498,
+            "shield": 2980,
+            "shield_max": 3000,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2981.8,
+            "shield_max": 3000,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 7498,
+            "shield": 2983.6000000000004,
+            "shield_max": 3000,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 7500.0,
+            "shield": 3000,
+            "shield_max": 3000,
+            "no_damage_ticks": 481,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "ice",
+        "level": 4,
+        "paid": false
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1595,
+            "shield_max": 1600,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1595,
+            "shield_max": 1600,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1595,
+            "shield_max": 1600,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1595,
+            "shield_max": 1600,
+            "no_damage_ticks": 182,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 3998,
+            "shield": 1575,
+            "shield_max": 1600,
+            "no_damage_ticks": 0,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 3998,
+            "shield": 1575,
+            "shield_max": 1600,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1575,
+            "shield_max": 1600,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1575,
+            "shield_max": 1600,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 4000.0,
+            "shield": 1575,
+            "shield_max": 1600,
+            "no_damage_ticks": 481,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "ice",
+        "level": 4,
+        "paid": true
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1595,
+            "shield_max": 1600,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1596.8,
+            "shield_max": 1600,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1598.6,
+            "shield_max": 1600,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1600,
+            "shield_max": 1600,
+            "no_damage_ticks": 182,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 3998,
+            "shield": 1580,
+            "shield_max": 1600,
+            "no_damage_ticks": 0,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 3998,
+            "shield": 1580,
+            "shield_max": 1600,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1581.8,
+            "shield_max": 1600,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 1583.6,
+            "shield_max": 1600,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 4000.0,
+            "shield": 1600,
+            "shield_max": 1600,
+            "no_damage_ticks": 481,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "ice",
+        "level": 6,
+        "paid": false
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2595,
+            "shield_max": 2600,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2595,
+            "shield_max": 2600,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2595,
+            "shield_max": 2600,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2595,
+            "shield_max": 2600,
+            "no_damage_ticks": 182,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 6498,
+            "shield": 2575,
+            "shield_max": 2600,
+            "no_damage_ticks": 0,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 6498,
+            "shield": 2575,
+            "shield_max": 2600,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2575,
+            "shield_max": 2600,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2575,
+            "shield_max": 2600,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 6500.0,
+            "shield": 2575,
+            "shield_max": 2600,
+            "no_damage_ticks": 481,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "ice",
+        "level": 6,
+        "paid": true
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2595,
+            "shield_max": 2600,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2596.8,
+            "shield_max": 2600,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2598.6000000000004,
+            "shield_max": 2600,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2600,
+            "shield_max": 2600,
+            "no_damage_ticks": 182,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 6498,
+            "shield": 2580,
+            "shield_max": 2600,
+            "no_damage_ticks": 0,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 6498,
+            "shield": 2580,
+            "shield_max": 2600,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2581.8,
+            "shield_max": 2600,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 6498,
+            "shield": 2583.6000000000004,
+            "shield_max": 2600,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 6500.0,
+            "shield": 2600,
+            "shield_max": 2600,
+            "no_damage_ticks": 481,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "mage",
+        "level": 4,
+        "paid": false
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1445,
+            "shield_max": 1450,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1445,
+            "shield_max": 1450,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1445,
+            "shield_max": 1450,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1445,
+            "shield_max": 1450,
+            "no_damage_ticks": 182,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 3623,
+            "shield": 1425,
+            "shield_max": 1450,
+            "no_damage_ticks": 0,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 3623,
+            "shield": 1425,
+            "shield_max": 1450,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1425,
+            "shield_max": 1450,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1425,
+            "shield_max": 1450,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 3625.0,
+            "shield": 1425,
+            "shield_max": 1450,
+            "no_damage_ticks": 481,
+            "level": 4,
+            "regen_shield_active": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "mage",
+        "level": 4,
+        "paid": true
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1445,
+            "shield_max": 1450,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1446.8,
+            "shield_max": 1450,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1448.6,
+            "shield_max": 1450,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1450,
+            "shield_max": 1450,
+            "no_damage_ticks": 182,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 3623,
+            "shield": 1430,
+            "shield_max": 1450,
+            "no_damage_ticks": 0,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 3623,
+            "shield": 1430,
+            "shield_max": 1450,
+            "no_damage_ticks": 179,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1431.8,
+            "shield_max": 1450,
+            "no_damage_ticks": 180,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3623,
+            "shield": 1433.6,
+            "shield_max": 1450,
+            "no_damage_ticks": 181,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 3625.0,
+            "shield": 1450,
+            "shield_max": 1450,
+            "no_damage_ticks": 481,
+            "level": 4,
+            "regen_shield_active": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "mage",
+        "level": 6,
+        "paid": false
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2345,
+            "shield_max": 2350,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2345,
+            "shield_max": 2350,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2345,
+            "shield_max": 2350,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2345,
+            "shield_max": 2350,
+            "no_damage_ticks": 182,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 5873,
+            "shield": 2325,
+            "shield_max": 2350,
+            "no_damage_ticks": 0,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 5873,
+            "shield": 2325,
+            "shield_max": 2350,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2325,
+            "shield_max": 2350,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2325,
+            "shield_max": 2350,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 5875.0,
+            "shield": 2325,
+            "shield_max": 2350,
+            "no_damage_ticks": 481,
+            "level": 6,
+            "regen_shield_active": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "tower",
+      "setup": {
+        "path": "mage",
+        "level": 6,
+        "paid": true
+      },
+      "delay": 180,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2345,
+            "shield_max": 2350,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2346.8,
+            "shield_max": 2350,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2348.6000000000004,
+            "shield_max": 2350,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2350,
+            "shield_max": 2350,
+            "no_damage_ticks": 182,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 5873,
+            "shield": 2330,
+            "shield_max": 2350,
+            "no_damage_ticks": 0,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 179,
+          "state": {
+            "hp": 5873,
+            "shield": 2330,
+            "shield_max": 2350,
+            "no_damage_ticks": 179,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2331.8,
+            "shield_max": 2350,
+            "no_damage_ticks": 180,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 5873,
+            "shield": 2333.6000000000004,
+            "shield_max": 2350,
+            "no_damage_ticks": 181,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 5875.0,
+            "shield": 2350,
+            "shield_max": 2350,
+            "no_damage_ticks": 481,
+            "level": 6,
+            "regen_shield_active": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "castle",
+      "setup": {
+        "level": 1,
+        "mode": "free"
+      },
+      "delay": 120,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 3995,
+            "shield_max": 4000,
+            "no_damage_ticks": 119,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 3998.5,
+            "shield_max": 4000,
+            "no_damage_ticks": 120,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 121,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 122,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 3998,
+            "shield": 3980,
+            "shield_max": 4000,
+            "no_damage_ticks": 0,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 119,
+          "state": {
+            "hp": 3998,
+            "shield": 3980,
+            "shield_max": 4000,
+            "no_damage_ticks": 119,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 3983.5,
+            "shield_max": 4000,
+            "no_damage_ticks": 120,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 3987.0,
+            "shield_max": 4000,
+            "no_damage_ticks": 121,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 3998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 421,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "castle",
+      "setup": {
+        "level": 1,
+        "mode": "off"
+      },
+      "delay": 120,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 3978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 119,
+          "state": {
+            "hp": 3978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 3978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 1,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "castle",
+      "setup": {
+        "level": 1,
+        "mode": "paid"
+      },
+      "delay": 120,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 3995,
+            "shield_max": 4000,
+            "no_damage_ticks": 119,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 3998.5,
+            "shield_max": 4000,
+            "no_damage_ticks": 120,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 121,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 122,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 3998,
+            "shield": 3980,
+            "shield_max": 4000,
+            "no_damage_ticks": 0,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 119,
+          "state": {
+            "hp": 3998,
+            "shield": 3980,
+            "shield_max": 4000,
+            "no_damage_ticks": 119,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 3983.5,
+            "shield_max": 4000,
+            "no_damage_ticks": 120,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 3998,
+            "shield": 3987.0,
+            "shield_max": 4000,
+            "no_damage_ticks": 121,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 3998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 421,
+            "level": 1,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        }
+      ]
+    },
+    {
+      "kind": "castle",
+      "setup": {
+        "level": 5,
+        "mode": "free"
+      },
+      "delay": 120,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 3995,
+            "shield_max": 4000,
+            "no_damage_ticks": 119,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 3998.5,
+            "shield_max": 4000,
+            "no_damage_ticks": 120,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 121,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 122,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 14998,
+            "shield": 3980,
+            "shield_max": 4000,
+            "no_damage_ticks": 0,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 119,
+          "state": {
+            "hp": 14998,
+            "shield": 3980,
+            "shield_max": 4000,
+            "no_damage_ticks": 119,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 3983.5,
+            "shield_max": 4000,
+            "no_damage_ticks": 120,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 3987.0,
+            "shield_max": 4000,
+            "no_damage_ticks": 121,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 14998,
+            "shield": 4000,
+            "shield_max": 4000,
+            "no_damage_ticks": 421,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": true,
+            "castle_shield_purchased": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "castle",
+      "setup": {
+        "level": 5,
+        "mode": "off"
+      },
+      "delay": 120,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 14978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 119,
+          "state": {
+            "hp": 14978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 14978,
+            "shield": 0,
+            "shield_max": 4000,
+            "no_damage_ticks": 118,
+            "level": 5,
+            "shield_active": false,
+            "free_shield_active": false,
+            "castle_shield_purchased": false
+          }
+        }
+      ]
+    },
+    {
+      "kind": "castle",
+      "setup": {
+        "level": 5,
+        "mode": "paid"
+      },
+      "delay": 120,
+      "rows": [
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 14995,
+            "shield_max": 15000,
+            "no_damage_ticks": 119,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 14998.5,
+            "shield_max": 15000,
+            "no_damage_ticks": 120,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 15000,
+            "shield_max": 15000,
+            "no_damage_ticks": 121,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 15000,
+            "shield_max": 15000,
+            "no_damage_ticks": 122,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "hit",
+          "damage": 20,
+          "state": {
+            "hp": 14998,
+            "shield": 14980,
+            "shield_max": 15000,
+            "no_damage_ticks": 0,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 119,
+          "state": {
+            "hp": 14998,
+            "shield": 14980,
+            "shield_max": 15000,
+            "no_damage_ticks": 119,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 14983.5,
+            "shield_max": 15000,
+            "no_damage_ticks": 120,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 1,
+          "state": {
+            "hp": 14998,
+            "shield": 14987.0,
+            "shield_max": 15000,
+            "no_damage_ticks": 121,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        },
+        {
+          "operation": "tick",
+          "ticks": 300,
+          "state": {
+            "hp": 14998,
+            "shield": 15000,
+            "shield_max": 15000,
+            "no_damage_ticks": 421,
+            "level": 5,
+            "shield_active": true,
+            "free_shield_active": false,
+            "castle_shield_purchased": true
+          }
+        }
+      ]
+    }
+  ],
+  "refunds": [
+    {
+      "path": "archer",
+      "level": 4,
+      "refund": 950,
+      "state": {
+        "hp": 4375,
+        "shield": 1750,
+        "shield_max": 1750,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "refund": 1375,
+      "state": {
+        "hp": 5500,
+        "shield": 2200,
+        "shield_max": 2200,
+        "no_damage_ticks": 17,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "refund": 2025,
+      "state": {
+        "hp": 7000,
+        "shield": 2800,
+        "shield_max": 2800,
+        "no_damage_ticks": 17,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "refund": 950,
+      "state": {
+        "hp": 4750,
+        "shield": 1900,
+        "shield_max": 1900,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "refund": 1375,
+      "state": {
+        "hp": 6000,
+        "shield": 2400,
+        "shield_max": 2400,
+        "no_damage_ticks": 17,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "refund": 2025,
+      "state": {
+        "hp": 7500,
+        "shield": 3000,
+        "shield_max": 3000,
+        "no_damage_ticks": 17,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "refund": 950,
+      "state": {
+        "hp": 4000,
+        "shield": 1600,
+        "shield_max": 1600,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "refund": 1375,
+      "state": {
+        "hp": 5125,
+        "shield": 2050,
+        "shield_max": 2050,
+        "no_damage_ticks": 17,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "refund": 2025,
+      "state": {
+        "hp": 6500,
+        "shield": 2600,
+        "shield_max": 2600,
+        "no_damage_ticks": 17,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "refund": 950,
+      "state": {
+        "hp": 3625,
+        "shield": 1450,
+        "shield_max": 1450,
+        "no_damage_ticks": 0,
+        "level": 4,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "refund": 1375,
+      "state": {
+        "hp": 4625,
+        "shield": 1850,
+        "shield_max": 1850,
+        "no_damage_ticks": 17,
+        "level": 5,
+        "regen_shield_active": true
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "refund": 2025,
+      "state": {
+        "hp": 5875,
+        "shield": 2350,
+        "shield_max": 2350,
+        "no_damage_ticks": 17,
+        "level": 6,
+        "regen_shield_active": true
+      }
+    }
+  ],
+  "castle_upgrades": [
+    {
+      "level": 1,
+      "state": {
+        "hp": 2501,
+        "shield": 1800,
+        "shield_max": 6000,
+        "no_damage_ticks": 17,
+        "level": 2,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 2,
+      "state": {
+        "hp": 3001,
+        "shield": 2550,
+        "shield_max": 8500,
+        "no_damage_ticks": 17,
+        "level": 3,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 3,
+      "state": {
+        "hp": 3501,
+        "shield": 3450,
+        "shield_max": 11500,
+        "no_damage_ticks": 17,
+        "level": 4,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    },
+    {
+      "level": 4,
+      "state": {
+        "hp": 4001,
+        "shield": 4500,
+        "shield_max": 15000,
+        "no_damage_ticks": 17,
+        "level": 5,
+        "shield_active": true,
+        "free_shield_active": false,
+        "castle_shield_purchased": true
+      }
+    }
+  ]
+}

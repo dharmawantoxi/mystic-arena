@@ -26,7 +26,7 @@ Harga upgrade adalah harga **level tujuan** (`NEXUS_LEVELS[level_lama]["upgrade_
 4. `set_wave`: gratis aktif bila `wave ≤ 10`. Bila gratis: `shield_active = true`, isi ulang ke `shield_max` bila kosong. Bila lewat wave 10 dan belum dibeli: `shield_active = false`, `shield = 0`. Bila sudah dibeli: tetap aktif tanpa isi ulang otomatis.
 5. Shield nexus menyerap raw damage dulu, sisa direduksi 88% lalu `int()`. Reduksi tetap berlaku meski shield 0 selama flag aktif; damage kecil bisa menjadi 0. Regen 3.5/tick setelah 120 tick tanpa damage, cap `shield_max` instance (bukan kapasitas definisi baru bila belum dibeli).
 
-Pembelian paid shield (`CASTLE_SHIELD_COST` 850) **belum** diaktifkan sebagai transaksi UI. Flag purchased hanya dipakai internal untuk aturan resize di atas dan diuji via fixture.
+Pembelian paid shield (`CASTLE_SHIELD_COST` 850) **belum** diaktifkan sebagai transaksi UI. Transaksi domain dan adapter AI per kandidat kini tersedia; purchased diisi melalui pembelian nyata, bukan hanya fixture. Lihat [SHIELD_CONTRACT.md](SHIELD_CONTRACT.md).
 
 ## Scaling stat minion (snapshot saat spawn)
 
@@ -74,11 +74,11 @@ Komposisi dibaca **saat wave start** per tim (bisa beda bila tier beda). Antrean
 
 - Fixture `nexus_source.json`: 5 tier, 120 kasus HP/shield, 36 kasus `set_wave`, 25 scaling (5 kind × 5 tier), komposisi 5 tier × 10 wave, 20 kasus AI.
 - Tes native `nexus_checks.gd` + `nexus_scene_checks.gd` terintegrasi di `run_all.gd`, seluruh suite lama tetap berjalan.
-- Belum diuji: Windows fisik/GPU, Android, balance pertandingan panjang, paid shield sebagai transaksi, auto-scaling AI, hero/boss.
+- Belum diuji: Windows fisik/GPU, Android, balance pertandingan panjang, paid shield melalui tombol UI/AI otomatis, auto-scaling AI, hero/boss.
 
 ## Adapter upgrade red (WIP AIPlayer)
 
 Upgrade nexus internal kini dapat dipanggil untuk red dengan live reserve dan
 expected-level, melalui rumus HP/shield serta ledger yang sama. Wrapper UI tetap
-blue-only. Pembelian castle shield dan loop AI otomatis belum aktif; lihat
+blue-only. Pembelian castle shield tersedia di domain; loop AI otomatis belum aktif; lihat
 [AI_CONTRACT.md](AI_CONTRACT.md).
