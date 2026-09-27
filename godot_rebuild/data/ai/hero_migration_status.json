@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 196,
-  "pending": 26,
+  "playable": 197,
+  "pending": 25,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -861,7 +861,7 @@
       "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
     },
     "solara": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 14,
       "summon_cost": 1800,
       "source_recipe": {
@@ -870,10 +870,10 @@
         "e": "_cast_e_solara_luminosity",
         "r": "_cast_r_solara_solarguardian"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_fourteen_skills.gd",
+      "oracle": "boss_level_fourteen_source_oracle.py",
+      "native_test": "boss_level_fourteen_checks.gd",
+      "blocker": null
     },
     "auroth": {
       "status": "pending",

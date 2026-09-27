@@ -1,4 +1,4 @@
-# Daftar tepat migrasi hero — 196 playable, 26 pending
+# Daftar tepat migrasi hero — 197 playable, 25 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
@@ -9,14 +9,14 @@ batch 10–15 level 9–13 + perbaikan tes batch 9).
   recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9–L13 ×4);
   150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
   dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 26 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Semua 25 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 196 ID
+## Selesai — 197 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -66,6 +66,7 @@ batch 10–15 level 9–13 + perbaikan tes batch 9).
 | `solvarin` | 13 | 2400 | `boss_level_thirteen_skills.gd` | `boss_level_thirteen_source_oracle.py` / `boss_level_thirteen_checks.gd` |
 | `azureth` | 14 | 1700 | `boss_level_fourteen_skills.gd` | `boss_level_fourteen_source_oracle.py` / `boss_level_fourteen_checks.gd` |
 | `luminar` | 14 | 1750 | `boss_level_fourteen_skills.gd` | `boss_level_fourteen_source_oracle.py` / `boss_level_fourteen_checks.gd` |
+| `solara` | 14 | 1800 | `boss_level_fourteen_skills.gd` | `boss_level_fourteen_source_oracle.py` / `boss_level_fourteen_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -217,12 +218,11 @@ batch 10–15 level 9–13 + perbaikan tes batch 9).
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 26 ID dan recipe yang menjadi blocker
+## Belum selesai — 25 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
 | `pyraethis` | 14 | 2500 | `_cast_q_pyraethis_icarusdive` / `_cast_w_pyraethis_firespirits` / `_cast_e_pyraethis_sunray` / `_cast_r_pyraethis_supernova` |
-| `solara` | 14 | 1800 | `_cast_q_solara_starbreaker` / `_cast_w_solara_celestialhammer` / `_cast_e_solara_luminosity` / `_cast_r_solara_solarguardian` |
 | `auroth` | 15 | 1850 | `_cast_q_auroth_ionicedge` / `_cast_w_auroth_ward` / `_cast_e_auroth_consecration` / `_cast_r_auroth_guardian` |
 | `morvein` | 15 | 1900 | `_cast_q_morvein_puncture` / `_cast_w_morvein_violentstrike` / `_cast_e_morvein_spectralcharge` / `_cast_r_morvein_phantomform` |
 | `thorvak` | 15 | 1950 | `_cast_q_thorvak_seed` / `_cast_w_thorvak_natureswrath` / `_cast_e_thorvak_vengeance` / `_cast_r_thorvak_dryad` |

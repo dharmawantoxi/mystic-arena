@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["azureth", "luminar"]
+const IDS := ["azureth", "luminar", "solara"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_azureth(world, hero, target, key, structures)
 		"luminar":
 			_luminar(world, hero, target, key, structures)
+		"solara":
+			_solara(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -70,6 +72,25 @@ static func _luminar(world, hero: HeroState, target, key: String, structures: Ar
 			# Spirit form: AOE 280 1.95x skill, heal 15%.
 			_radial(world, hero, structures, 280.0, 1.95)
 			hero.heal_hp(int(hero.max_hp * 0.15))
+
+
+static func _solara(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Starbreaker: target 1.25x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.25)
+		"w":
+			# Celestial hammer: AOE 185 1.15x skill.
+			_radial(world, hero, structures, 185.0, 1.15)
+		"e":
+			# Luminosity: AOE 195 0.95x skill, heal 10%.
+			_radial(world, hero, structures, 195.0, 0.95)
+			hero.heal_hp(int(hero.max_hp * 0.10))
+		"r":
+			# Solar guardian: AOE 240 1.9x skill, attack delay max(timer, 70).
+			_radial(world, hero, structures, 240.0, 1.9, 70)
 
 
 #HEROES

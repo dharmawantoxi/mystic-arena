@@ -2530,6 +2530,61 @@
     }
   },
   {
+    "hero_type": "solara",
+    "price": 1800,
+    "initial": 1799,
+    "success": false,
+    "balance": 1799,
+    "count": 0,
+    "reserve": 1800,
+    "target": "solara",
+    "hero": null
+  },
+  {
+    "hero_type": "solara",
+    "price": 1800,
+    "initial": 1800,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "solara",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1873,
+      "hp": 1873,
+      "damage": 166,
+      "skill_damage": 413,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "solara",
+    "price": 1800,
+    "initial": 1801,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "solara",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1873,
+      "hp": 1873,
+      "damage": 166,
+      "skill_damage": 413,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
