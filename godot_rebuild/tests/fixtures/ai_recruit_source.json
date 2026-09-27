@@ -1,5 +1,7 @@
 [
   {
+    "hero_type": "kaizen",
+    "price": 400,
     "initial": 399,
     "success": false,
     "balance": 399,
@@ -9,6 +11,8 @@
     "hero": null
   },
   {
+    "hero_type": "kaizen",
+    "price": 400,
     "initial": 400,
     "success": true,
     "balance": 0,
@@ -29,6 +33,8 @@
     }
   },
   {
+    "hero_type": "kaizen",
+    "price": 400,
     "initial": 401,
     "success": true,
     "balance": 1,
@@ -43,6 +49,61 @@
       "max_hp": 770,
       "hp": 770,
       "damage": 45,
+      "skill_damage": 70,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "thorne",
+    "price": 500,
+    "initial": 499,
+    "success": false,
+    "balance": 499,
+    "count": 0,
+    "reserve": 500,
+    "target": "thorne",
+    "hero": null
+  },
+  {
+    "hero_type": "thorne",
+    "price": 500,
+    "initial": 500,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "thorne",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1960,
+      "hp": 1960,
+      "damage": 41,
+      "skill_damage": 70,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "thorne",
+    "price": 500,
+    "initial": 501,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "thorne",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1960,
+      "hp": 1960,
+      "damage": 41,
       "skill_damage": 70,
       "level": 1,
       "auto_cast": true

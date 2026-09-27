@@ -5,6 +5,7 @@ extends RefCounted
 const Definition = preload("res://scripts/data/minion_definition.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const ThorneSkills = preload("res://scripts/combat/thorne_skills.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
 const DamageRules = preload("res://scripts/combat/damage_rules.gd")
@@ -307,6 +308,14 @@ func _deliver_hit(
 		return false
 	var damage := _damage_amount(target, raw_damage, school)
 	target.hp = maxf(0, target.hp - damage)
+	# Hero.take_damage: Bristleback reflects 25% of the POST-mitigation
+	# damage after it lands. No source on the reflected hit: no reflect loop.
+	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
+		var attacker := get_unit(source_id)
+		if attacker != null and attacker.alive and attacker.team != target.team:
+			_deliver_hit(
+				-1, target.team, attacker, maxi(1, int(damage * 0.25)), "physical", target.position
+			)
 	_record(
 		{
 			"kind": "hit",
@@ -331,9 +340,13 @@ func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float
 		# Structures absorb through armor + shield. Previously only the
 		# siege override did this; hero AOE needs it at this level too.
 		return (target as StructureState).absorb(raw_damage, school)
-	return DamageRules.resolve(
+	var damage := DamageRules.resolve(
 		raw_damage, target.definition.armor, target.definition.magic_resist, school
 	)
+	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
+		var keep := 0.85 if school == "magic" else 0.70
+		return maxi(1, DamageRules.rounded_like_python(damage * keep))
+	return damage
 
 
 func _on_death(source_team: int, target: UnitState) -> void:
@@ -582,6 +595,8 @@ func _can_cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.e_cooldown > 0:
 		return false
+	if hero.settings().id == "thorne":
+		return ThorneSkills.can_cast(self, hero, "e", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -592,6 +607,8 @@ func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.e_cooldown > 0:
 		return false
+	if hero.settings().id == "thorne":
+		return ThorneSkills.cast(self, hero, "e", structures)
 	if not _has_q_target(hero, structures):
 		return false
 	_deal_hero_aoe(hero, hero.position, 100.0, hero.skill_damage(), structures)
@@ -607,6 +624,8 @@ func _can_cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.r_cooldown > 0:
 		return false
+	if hero.settings().id == "thorne":
+		return ThorneSkills.can_cast(self, hero, "r", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -617,6 +636,8 @@ func _cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.r_cooldown > 0:
 		return false
+	if hero.settings().id == "thorne":
+		return ThorneSkills.cast(self, hero, "r", structures)
 	if not _has_q_target(hero, structures):
 		return false
 	_deal_hero_aoe(hero, hero.position, 150.0, hero.skill_damage() * 2, structures)
@@ -632,6 +653,8 @@ func _can_cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not is_running() or hero == null or not hero.alive:
 		return false
+	if hero.settings().id == "thorne":
+		return ThorneSkills.can_cast(self, hero, "w", [])
 	return hero.w_cooldown <= 0
 
 
@@ -640,6 +663,8 @@ func cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not _can_cast_hero_w(hero_id):
 		return false
+	if hero.settings().id == "thorne":
+		return ThorneSkills.cast(self, hero, "w", [])
 	hero.wind_wall_timer = 180
 	hero.w_cooldown = hero.w_cooldown_max
 	hero.active_skill = "w"
@@ -653,6 +678,8 @@ func can_cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.skill_timer > 0:
 		return false
+	if hero.settings().id == "thorne":
+		return ThorneSkills.can_cast(self, hero, "q", structures)
 	return _has_q_target(hero, structures)
 
 
@@ -665,6 +692,8 @@ func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.skill_timer > 0:
 		return false
+	if hero.settings().id == "thorne":
+		return ThorneSkills.cast(self, hero, "q", structures)
 	if not _has_q_target(hero, structures):
 		return false
 	if hero.q_stack == 0:
@@ -809,6 +838,8 @@ func _tick_hero(hero: HeroState) -> void:
 			hero.ulti_active = false
 	if hero.stun_timer > 0:
 		hero.stun_timer -= 1
+	if hero.settings().id == "thorne":
+		ThorneSkills.tick(hero)
 
 
 func _on_hero_death(hero: HeroState, source_id: int) -> void:

@@ -32,12 +32,19 @@ Item/forge, unlock 400 G, dash/jump/tornado VFX, lima hero starter lain, AIPlaye
 Domain menyediakan upgrade red per kandidat dengan reserve gold; hero red mati
 atau respawning tetap eligible sesuai sumber AIPlayer, tanpa mengubah HP/alive
 atau respawn timer. UI blue masih menolak hero mati. Belum ada scheduler AI yang
-memanggilnya otomatis, roster baru, atau kit selain Kaizen; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
+memanggilnya otomatis; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
 
 ## Rekrut AI — fase awal, bukan roster playable lengkap
 
-Domain red kini memiliki transaksi Kaizen berbayar eksplisit melalui draft
-(lihat [AI_CONTRACT.md](AI_CONTRACT.md)). Kaizen merah gratis yang ada pada scene
+Domain red kini memiliki transaksi Kaizen/Thorne berbayar eksplisit melalui
+draft (lihat [AI_CONTRACT.md](AI_CONTRACT.md)). Kaizen merah gratis di scene
 tetap, tidak dihitung sebagai pembelian dan tidak diganti. Baseline numerik
-222 Hero sumber tersedia untuk port kit berikutnya; selain Kaizen belum ada
-handler native, sehingga pembeliannya ditolak tanpa debit atau mengganti skill.
+222 Hero sumber tersedia; 220 lainnya belum punya handler native, sehingga
+pembeliannya ditolak tanpa debit atau mengganti skill.
+
+Thorne (500 G) adalah hero melee nyata dengan Q Viscous Nose (cone/slow),
+W Bristleback (mitigasi fisik/magic dan reflect), E Quill Spray AOE, R Warpath
+(buff attack/cooldown sementara). Fixture `thorne_source.json` diambil dari
+Hero + ThorneSkills Python, termasuk upgrade saat buff dan respawn.
+Resource `.tres` statis tidak dimutasi oleh buff. Kaizen lama tetap memakai
+kit sendiri. Belum ada animasi/UI Thorne atau AI controller di scene.

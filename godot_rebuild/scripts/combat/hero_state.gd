@@ -37,6 +37,12 @@ var r_cooldown := 0
 var r_cooldown_max := 0
 var active_skill := ""
 var active_skill_timer := 0
+# Thorne kit state is per hero instance, never stored in the shared .tres.
+var viscous_timer := 0
+var bristleback_timer := 0
+var quill_timer := 0
+var warpath_timer := 0
+var warpath_original_attack_cd := 0
 var q_stack := 0
 var q_reset_timer := 0
 var is_dashing := false

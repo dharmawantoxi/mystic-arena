@@ -1,8 +1,7 @@
-"""Read-only source oracle for an actual Hero purchase, not a receipt.
+"""Read-only source oracle for actual Hero purchases, not receipts.
 
-This first phase exercises the *real* AIPlayer._try_buy_hero and Hero.__init__
-for Kaizen with the existing empty-inventory/audio stubs. It does NOT prove
-other 221 kits; those cannot be constructed using native Kaizen skills.
+Executes the real AIPlayer._try_buy_hero and Hero.__init__ for Kaizen/Thorne
+with empty-inventory/audio stubs. It does NOT prove the other 220 kits.
 """
 import ast
 import json
@@ -39,21 +38,23 @@ def source_fixture():
             skill_cooldown=hero.skill_cooldown_max, skill_range=hero.skill_range,
             dmg_school=hero.dmg_school, is_melee=hero.is_melee_hero)
     result = []
-    for initial in (399, 400, 401):
-        player = ai_type()
-        player.gold = initial
-        player._get_hero_pool = lambda: ["kaizen"]
-        player._hero_purchase_target = "kaizen"
-        player._hero_purchase_target_cost = 400
-        first = player._try_buy_hero()
-        hero = player.heroes[0] if first else None
-        result.append(dict(initial=initial, success=first, balance=player.gold,
-            count=player.total_heroes_bought, reserve=player._ai_reserve(),
-            target=player._hero_purchase_target or "",
-            hero=(dict(hero_type=hero.hero_type, team=hero.team, x=hero.x, y=hero.y,
-                       max_hp=hero.max_hp, hp=hero.hp, damage=hero.damage,
-                       skill_damage=hero.skill_damage, level=hero.level,
-                       auto_cast=hero.auto_cast_enabled) if hero else None)))
+    for hero_type, price in (("kaizen", 400), ("thorne", 500)):
+        for initial in (price - 1, price, price + 1):
+            player = ai_type()
+            player.gold = initial
+            player._get_hero_pool = lambda kind=hero_type: [kind]
+            player._hero_purchase_target = hero_type
+            player._hero_purchase_target_cost = price
+            first = player._try_buy_hero()
+            hero = player.heroes[0] if first else None
+            result.append(dict(hero_type=hero_type, price=price,
+                initial=initial, success=first, balance=player.gold,
+                count=player.total_heroes_bought, reserve=player._ai_reserve(),
+                target=player._hero_purchase_target or "",
+                hero=(dict(hero_type=hero.hero_type, team=hero.team, x=hero.x, y=hero.y,
+                           max_hp=hero.max_hp, hp=hero.hp, damage=hero.damage,
+                           skill_damage=hero.skill_damage, level=hero.level,
+                           auto_cast=hero.auto_cast_enabled) if hero else None)))
     return result, stats
 
 
@@ -65,5 +66,5 @@ if __name__ == "__main__":
     else:
         assert purchases == json.loads(FIXTURE.read_text(encoding="utf-8")), "AI real recruit drift"
         assert stats == json.loads(STATS.read_text(encoding="utf-8")), "Hero combat stat drift"
-    print(f"PASS: {len(stats)} source Hero numeric baselines, {len(purchases)} Kaizen purchases "
-          "(other kits still pending)")
+    print(f"PASS: {len(stats)} source Hero numeric baselines, {len(purchases)} "
+          "Kaizen/Thorne purchases (other kits still pending)")

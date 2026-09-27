@@ -18,6 +18,8 @@ const MINIONS := {
 	"dark_rider": preload("res://data/minions/dark_rider.tres")
 }
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
+const THORNE = preload("res://data/heroes/thorne.tres")
+const PLAYABLE_AI_HEROES := {"kaizen": KAIZEN, "thorne": THORNE}
 const HERO_SPAWN := Vector2(220, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
 const RED_HERO_SPAWN := Vector2(1120, 130)
@@ -189,11 +191,12 @@ func _build_tower_for(team: int, slot_id: int, path: String, reserve: int = 0) -
 
 func _buy_ai_hero(hero_type: String, cost: int, pos: Vector2) -> bool:
 	# Draft callback: synchronous atomic red purchase, not a UI command.
-	# Other catalog entries have metadata only, not native playable kits yet.
+	# Unregistered catalog entries have metadata only, not native kits yet.
 	transaction_error = ""
+	var kit: HeroDefinition = PLAYABLE_AI_HEROES.get(hero_type) as HeroDefinition
 	if not is_running():
 		transaction_error = "finished"
-	elif hero_type != KAIZEN.id or cost != KAIZEN.cost or cost <= 0:
+	elif kit == null or kit.id != hero_type or cost != kit.cost or cost <= 0:
 		transaction_error = "kit"
 	elif not pos.is_finite():
 		transaction_error = "position"
@@ -218,7 +221,7 @@ func _buy_ai_hero(hero_type: String, cost: int, pos: Vector2) -> bool:
 			transaction_error = "position"
 	if not transaction_error.is_empty():
 		return false
-	var hero := spawn_hero(KAIZEN, RED, pos)
+	var hero := spawn_hero(kit, RED, pos)
 	if hero == null:
 		transaction_error = "capacity"
 		return false
@@ -396,9 +399,12 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	hero.has_destination = false
 	hero.follow_id = -1
 	hero.skill_timer = 0
-	hero.w_cooldown = 0
-	hero.e_cooldown = 0
-	hero.r_cooldown = 0
+	# Source Hero.respawn clears Q timer, not universal W/E/R cooldowns.
+	# Preserve the original Kaizen rebuild contract; new Thorne follows source.
+	if hero.settings().id != "thorne":
+		hero.w_cooldown = 0
+		hero.e_cooldown = 0
+		hero.r_cooldown = 0
 	hero.attack_timer = 0
 	hero.q_stack = 0
 	hero.q_reset_timer = 0

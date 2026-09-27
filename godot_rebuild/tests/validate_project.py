@@ -108,6 +108,14 @@ ai_build = (ROOT / "scripts/match/ai_build.gd").read_text(encoding="utf-8")
 check("draft.reserve()" in ai_build and "_build_tower_for" in ai_build,
       "AI build must use live draft reserve and real match transaction")
 
+check("ThorneChecks.new().run(_check)" in ai_tests, "Thorne source kit suite must run")
+check((ROOT / "tests/fixtures/thorne_source.json").is_file(), "Thorne kit source fixture missing")
+if (ROOT / "tests/fixtures/thorne_source.json").is_file():
+    from thorne_source_oracle import source_fixture as thorne_source_fixture
+    check(thorne_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/thorne_source.json").read_text(encoding="utf-8")),
+        "Thorne source skill/reflect/timer drift")
+
 # Recruitment is still a staged effort: only Kaizen has a native playable kit.
 # Execute the real Hero source oracle in this CI step (no workflow change).
 from ai_recruit_source_oracle import source_fixture as ai_recruit_source_fixture

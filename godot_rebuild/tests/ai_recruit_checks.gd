@@ -1,5 +1,5 @@
 extends RefCounted
-## First stage of full roster: numeric baselines for 222, real Kaizen transaction only.
+## Numeric baselines for 222, real Kaizen/Thorne purchases; other kits pending.
 ## No unsupported hero may silently inherit Kaizen's kit.
 
 const World = preload("res://scripts/match/prototype_battle.gd")
@@ -7,6 +7,7 @@ const Draft = preload("res://scripts/match/ai_draft.gd")
 const Recruit = preload("res://scripts/match/ai_recruitment.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
+const THORNE = preload("res://data/heroes/thorne.tres")
 const FIXTURE := "res://tests/fixtures/ai_recruit_source.json"
 const STATS := "res://data/ai/hero_combat_stats.json"
 const RECRUITMENT := "res://data/ai/recruitment.json"
@@ -17,6 +18,7 @@ func run(check: Callable) -> void:
 	for row in fixture:
 		_attempt(row, check)
 	_catalog(check)
+	_multi_roster(check)
 	_guards(check)
 
 
@@ -42,9 +44,9 @@ func _target(kind: String, cost: int) -> Draft:
 func _attempt(row: Dictionary, check: Callable) -> void:
 	var world := _world()
 	_fund(world, int(row.initial))
-	var draft := _target("kaizen", 400)
+	var draft := _target(row.hero_type, int(row.price))
 	var recruit := Recruit.new()
-	check.call(recruit.try_buy(world, draft) == row.success, "Real Kaizen buy source threshold")
+	check.call(recruit.try_buy(world, draft) == row.success, "Real starter buy source threshold")
 	check.call(world.economy.gold[1] == row.balance, "Real recruit exact red debit")
 	check.call(world.economy.gold[0] == 1000 and world.economy.is_balanced(), "Real recruit ledger")
 	check.call(draft.total_heroes_bought == row.count, "Real recruit count after spawn")
@@ -72,7 +74,7 @@ func _attempt(row: Dictionary, check: Callable) -> void:
 			"Real recruit flags"
 		)
 		check.call(
-			not world._buy_ai_hero("kaizen", 400, hero.position),
+			not world._buy_ai_hero(row.hero_type, int(row.price), hero.position),
 			"Real recruit cannot duplicate owned type"
 		)
 		check.call(
@@ -101,17 +103,20 @@ func _catalog(check: Callable) -> void:
 	check.call(stats.kaizen.base_hp == KAIZEN.max_hp, "Kaizen native/source HP")
 	check.call(stats.kaizen.base_damage == KAIZEN.damage, "Kaizen native/source damage")
 	check.call(stats.kaizen.cost == KAIZEN.cost, "Kaizen native/source price")
+	check.call(stats.thorne.base_hp == THORNE.max_hp, "Thorne native/source HP")
+	check.call(stats.thorne.base_damage == THORNE.damage, "Thorne native/source damage")
+	check.call(stats.thorne.cost == THORNE.cost, "Thorne native/source price")
 
 
 func _guards(check: Callable) -> void:
 	var world := _world()
 	_fund(world, 1000)
 	var recruit := Recruit.new()
-	var draft := _target("thorne", 500)
-	check.call(not recruit.try_buy(world, draft), "Missing Thorne kit cannot spawn Kaizen")
+	var draft := _target("grimjaw", 450)
+	check.call(not recruit.try_buy(world, draft), "Missing Grimjaw kit cannot spawn Kaizen")
 	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == "thorne" and draft.reserve() == 500,
+		draft.purchase_target == "grimjaw" and draft.reserve() == 450,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
@@ -140,11 +145,45 @@ func _guards(check: Callable) -> void:
 		"Dead owned hero still blocks duplicate"
 	)
 	world.winner = 0
-	check.call(not recruit.try_buy(world, _target("thorne", 500)), "Finished match blocks draft")
+	check.call(not recruit.try_buy(world, _target("grimjaw", 450)), "Finished match blocks draft")
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
 	check.call(
 		world.economy.gold[1] == 600 and world.economy.is_balanced(),
 		"Failed purchases do not debit"
+	)
+
+
+func _multi_roster(check: Callable) -> void:
+	var world := _world()
+	_fund(world, 1000)
+	var adapter := Recruit.new()
+	var thorne := _target("thorne", 500)
+	check.call(adapter.try_buy(world, thorne), "Thorne first paid summon")
+	check.call(world.units[0].position == Vector2(1120, 90), "First red summon at Y90")
+	var kaizen := _target("kaizen", 400)
+	check.call(adapter.try_buy(world, kaizen), "Kaizen second paid summon")
+	check.call(world.units[1].position == Vector2(1120, 130), "Second red summon at Y130")
+	check.call(
+		world.units[0].definition.id == "thorne" and world.units[1].definition.id == "kaizen",
+		"Different real kits in red roster"
+	)
+	check.call(
+		(
+			world.economy.gold[1] == 100
+			and world.economy.spent[1] == 900
+			and world.economy.is_balanced()
+		),
+		"Two paid summons debit once each"
+	)
+	world.units[0].alive = false
+	check.call(
+		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
+	)
+	var missing := _target("grimjaw", 450)
+	world.economy.credit_kill(1, 1000)
+	check.call(
+		not adapter.try_buy(world, missing) and missing.reserve() == 450,
+		"Unsupported third kit keeps draft"
 	)
