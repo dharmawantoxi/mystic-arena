@@ -99,6 +99,7 @@ const DEFINITIONS := {
 	"molgravar": preload("res://data/heroes/molgravar.tres"),
 	"morkhaera": preload("res://data/heroes/morkhaera.tres"),
 	"morkhelvis": preload("res://data/heroes/morkhelvis.tres"),
+	"morthraxis": preload("res://data/heroes/morthraxis.tres"),
 	"morthyrax": preload("res://data/heroes/morthyrax.tres"),
 	"morvaenthir": preload("res://data/heroes/morvaenthir.tres"),
 	"morvaeth": preload("res://data/heroes/morvaeth.tres"),

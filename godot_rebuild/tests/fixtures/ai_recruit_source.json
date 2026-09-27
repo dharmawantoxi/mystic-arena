@@ -3905,6 +3905,61 @@
     }
   },
   {
+    "hero_type": "morthraxis",
+    "price": 3100,
+    "initial": 3099,
+    "success": false,
+    "balance": 3099,
+    "count": 0,
+    "reserve": 3100,
+    "target": "morthraxis",
+    "hero": null
+  },
+  {
+    "hero_type": "morthraxis",
+    "price": 3100,
+    "initial": 3100,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "morthraxis",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2522,
+      "hp": 2522,
+      "damage": 208,
+      "skill_damage": 607,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "morthraxis",
+    "price": 3100,
+    "initial": 3101,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "morthraxis",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2522,
+      "hp": 2522,
+      "damage": 208,
+      "skill_damage": 607,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

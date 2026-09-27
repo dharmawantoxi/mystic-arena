@@ -3,6 +3,7 @@ extends "res://tests/starter_finish_checks.gd"
 ## timers, attacks, respawn.
 const BOSS_FIXTURE := "res://tests/fixtures/boss_level_twenty_source.json"
 const BOSSES := {
+	"morthraxis": preload("res://data/heroes/morthraxis.tres"),
 	"thornvaegrim": preload("res://data/heroes/thornvaegrim.tres"),
 	"morvaenthir": preload("res://data/heroes/morvaenthir.tres"),
 	"astraelion": preload("res://data/heroes/astraelion.tres"),
