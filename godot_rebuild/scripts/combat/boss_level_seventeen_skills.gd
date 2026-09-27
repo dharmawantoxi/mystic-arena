@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["kaelthorn"]
+const IDS := ["kaelthorn", "solvanth"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"kaelthorn":
 			_kaelthorn(world, hero, target, key, structures)
+		"solvanth":
+			_solvanth(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -50,6 +52,24 @@ static func _kaelthorn(world, hero: HeroState, target, key: String, structures: 
 		"r":
 			# AOE 250 1.9x skill, attack delay max(timer, 70).
 			_radial(world, hero, structures, 250.0, 1.9, 70)
+
+
+static func _solvanth(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Target 1.25x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.25)
+		"w":
+			# AOE 195 1.15x skill, slow 0.4 for 90.
+			_radial(world, hero, structures, 195.0, 1.15, 0, 0.4, 90)
+		"e":
+			# AOE 210 1.0x skill.
+			_radial(world, hero, structures, 210.0, 1.0)
+		"r":
+			# AOE 260 1.95x skill, attack delay max(timer, 70).
+			_radial(world, hero, structures, 260.0, 1.95, 70)
 
 
 #HEROES

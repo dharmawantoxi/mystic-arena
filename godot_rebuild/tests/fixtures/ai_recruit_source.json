@@ -3135,6 +3135,61 @@
     }
   },
   {
+    "hero_type": "solvanth",
+    "price": 2200,
+    "initial": 2199,
+    "success": false,
+    "balance": 2199,
+    "count": 0,
+    "reserve": 2200,
+    "target": "solvanth",
+    "hero": null
+  },
+  {
+    "hero_type": "solvanth",
+    "price": 2200,
+    "initial": 2200,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "solvanth",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2426,
+      "hp": 2426,
+      "damage": 174,
+      "skill_damage": 471,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "solvanth",
+    "price": 2200,
+    "initial": 2201,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "solvanth",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2426,
+      "hp": 2426,
+      "damage": 174,
+      "skill_damage": 471,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
