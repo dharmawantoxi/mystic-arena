@@ -1,13 +1,13 @@
-# Checkpoint migrasi — 166/222, BELUM selesai
+# Checkpoint migrasi — 170/222, BELUM selesai
 
-**166 dari 222 hero target selesai; 56 masih pending.**
+**170 dari 222 hero target selesai; 52 masih pending.**
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
 `arena/01a0e17d-mystic-arena` / sesi lanjutan `arena/01a0e217-mystic-arena`, PR draft dari branch sesi.
 **Jangan merge tanpa perintah pengguna.**
 
 **Sinkronisasi GitHub:** batch 7 (Vhalzun 1200G, Krobellus 1500G — level 5) ditambahkan setelah PR #285; batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G) CI hijau 413735 checks (run 36302839552). Manifest dan docs sudah remote.
 
-Daftar tepat **semua 164 selesai dan semua 58 belum selesai**, harga summon,
+Daftar tepat **semua 170 selesai dan semua 52 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
 [`data/ai/hero_migration_status.json`](data/ai/hero_migration_status.json).
@@ -26,6 +26,7 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 5 | Ancient Apparition (800G), Nyzrak (850G) | 163 / 59 | [lint fixed, then 413735](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
 | 6 | Ignis Drachorn (850G) | **164 / 58** | [413735 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
 | 7 | Vhalzun (1200G), Krobellus (1500G) | **166 / 56** | [CI hijau](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36308407983) |
+| 8 | Kunkka (900G), Gravewake (1000G), Syrentha (1100G), Thalgryn (1200G) | **170 / 52** | menunggu CI |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
 validation (**4.476 checks**, termasuk guard manifest), gdparse, gdlint dan
@@ -51,15 +52,32 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   ID-ID ini dan benar-benar dispatch ke `BossHeroSkills._fallback_cast`.
   Oracle merekam jalur itu **per ID**, menjalankan QWER, exact cooldown/recast,
   melee/homing, upgrade level 1–15, respawn dan pembelian asli. Allowlist eksplisit
-  dikunci CI; **tidak ada fallback native untuk 61 recipe yang belum diport**.
+  dikunci CI; **tidak ada fallback native untuk 52 recipe yang belum diport**.
 - **Alchemist (750 G):** target-centered W100/slow, E rage 360 + heal 15%,
   R200/heal 100 per kill nyata. Uji zero/multiple kill, radius, anti-heal,
   timer expiry saat upgrade, attack, respawn, summon dan upgrade.
+- **L3–L4:** Ancient Apparition (vortex DOT 20-tick fixed origin, beam slow,
+  stun, shield tanpa mitigasi—quirk sumber), Nyzrak (beam/radial/curse/shield
+  quirk sama), Ignis Drachorn (cone 250×60 melebar, tail 360, dragon blood
+  buff 480 **tidak** reset damage—quirk sumber, elder form 600 reset damage).
+- **L5:** Vhalzun (AOE 130/150/target 1.8×/AOE 150 heal 18%, visual 60/80/60/100)
+  dan Krobellus (AOE 150×1.5, AOE 120×1.0 stun 75, siphon target×1.3 heal
+  0.5× skill, crypt AOE 200×2.5 heal 15%).
+- **L6:** Kunkka (cone 250×70 1.8×, X-mark AOE 120 target 1.5× stun 60, ghost
+  cone 300×80 2.2× stun 90 heal 15%, torrent AOE 200 3.0× stun 120 heal 20%),
+  Gravewake (cone 200×60 slow, AOE target, shell defense 300 **tanpa**
+  mitigasi—quirk, ravage AOE slow heal), Syrentha (cone slow, song AOE
+  stun 120 slow 0.7/240, mirror rage 360 dari **catalog raw** ×1.4, siren
+  AOE 220 stun 150) dan Thalgryn (cone 250×50 + surge min(dist,200) dari posisi
+  pre-surge, adaptive target 2.0× + tetangga 60 0.7×, morph rage 300 ×1.35,
+  replicate AOE slow 0.4/180). Rage expiry selalu reset damage ke katalog raw;
+  update oracle pembelian sumber kini mencakup seluruh 170 roster (510 baris).
 - **Interaksi:** oracle memakai Hero Thorne dan Tower asli, bukan hanya receipt
   HP. Sekolah/source attribution, mitigasi, reflect, shield, dan tower yang
   tidak mempunyai `attack_timer` diuji. Skill tanpa source/school di Python
   tetap **netral**, tidak otomatis memakai sekolah caster.
-- **Ekonomi:** 483 pembelian sumber (161 × harga−1/tepat/+1). Boss upgrade
+- **Ekonomi:** 510 pembelian sumber (170 × harga−1/tepat/+1, seluruh roster
+  playable termasuk 20 kit recipe khusus + 150 shared). Boss upgrade
   **1,6×** starter: Lv1→2 **480 G**; threshold reserve ±1, hero hidup/mati,
   saldo, registry dan clock diuji. Anti-heal mengikuti HP setter: cap dahulu,
   baru potong kenaikan HP. Resource bersama tidak dimutasi.
@@ -74,26 +92,26 @@ native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
 ## Sisa dan blocker tepat
 
-**56 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
+**52 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
 oracle/native test per perilakunya. Metode Q/W/E/R untuk masing-masing ID
-tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--56-id-dan-recipe-yang-menjadi-blocker).
-Blocker implementasi: sisa 56 recipe (level 6 dst) belum diport; batch 5+6+7 sudah lulus CI lokal
-(oracle, 4525 static checks, source contract, gdparse/gdlint/gdformat); native Godot 4.7.2 di workflow CI.
-Tidak ada klaim 222 playable.
+tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--52-id-dan-recipe-yang-menjadi-blocker).
+Blocker implementasi: sisa 52 recipe (level 7 dst) belum diport; batch 7 lulus CI
+(Godot 4.7.2, run 36308407983), batch 8 lulus validasi lokal (oracle, static
+checks, source contract, gdparse/gdlint/gdformat) dan menunggu CI. Tidak ada
+klaim 222 playable.
 
-Lanjut berdasarkan level sumber:
-1. **Nyzrak + Ancient Apparition** (sisa level 3), kemudian **Ignis Drachorn**
-   (sisa level 4). Lihat `hero_skills/_bundle.py` read-only: registry dispatch,
-   `update_timers` bersama dan metode recipe masing-masing.
-2. AA membutuhkan vortex DOT fixed position, beam geometry serta stun clock.
-   Nyzrak membutuhkan beam/radial/curse/heal; audit konsumen `shield_active` /
-   `shield_timer` di Hero asli—jangan mengarang shield yang tidak dikonsumsi.
-   Ignis membutuhkan cone, sweep dan dua buff dengan expiry/reset berbeda.
-3. Berikutnya level 5 dst sesuai manifest. Jangan memasukkan mereka ke handler
-   150 shared-source: source mereka memang berbeda.
-4. Per batch: oracle → handler/state/resource → native combat/transactions →
+Lanjut berdasarkan level sumber (lihat `hero_skills/_bundle.py` read-only:
+registry dispatch, `update_timers` bersama dan metode recipe masing-masing):
+1. Level 7: akashari, malzareth, nyxarath, vorenmarr (recipe `_cast_*_akashari_*`
+   dst; nyxarath memakai rage + `get_all_hero_types` base damage).
+2. Lanjut level 8 dst sesuai manifest sampai 222. Jangan memasukkan mereka ke
+   handler 150 shared-source: source mereka memang berbeda.
+3. Per batch: oracle → handler/state/resource → native combat/transactions →
    semua oracle lama + static/parser/lint/format → CI import + run_all → update
    jumlah/manifest/dokumentasi. Jangan melanjutkan batch kalau masih gagal.
+4. Test penolakan pending (`ai_recruit` + `shared_no_fallback`) memakai ID yang
+   **masih pending** (saat ini nyxarath 1000G); ganti mengikuti manifest tiap
+   kali satu batch membuat ID tersebut playable.
 
 ## Menjalankan validasi
 

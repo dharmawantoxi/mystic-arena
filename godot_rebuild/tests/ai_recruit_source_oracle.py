@@ -39,8 +39,15 @@ def source_fixture():
             dmg_school=hero.dmg_school, is_melee=hero.is_melee_hero)
     result = []
     from source_shared_boss_oracle import eligible_ids
-    playable = ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr",
-                "gornak", "morgath", "drakar", "abaddon", "alchemist"] + eligible_ids(env)
+    # Explicit per-recipe kits: every ID in the native roster that does not
+    # dispatch to the shared _fallback_cast path. Extend when a batch migrates
+    # another special recipe.
+    explicit_kits = ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr",
+                     "gornak", "morgath", "drakar", "abaddon", "alchemist",
+                     "ancient_apparition", "nyzrak", "ignis_drachorn",
+                     "krobellus", "vhalzun",
+                     "kunkka", "gravewake", "syrentha", "thalgryn"]
+    playable = explicit_kits + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]
         for initial in (price - 1, price, price + 1):
