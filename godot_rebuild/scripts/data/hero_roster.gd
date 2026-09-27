@@ -130,6 +130,7 @@ const DEFINITIONS := {
 	"sanguire": preload("res://data/heroes/sanguire.tres"),
 	"sanguiveth": preload("res://data/heroes/sanguiveth.tres"),
 	"sasori": preload("res://data/heroes/sasori.tres"),
+	"seiryukong": preload("res://data/heroes/seiryukong.tres"),
 	"selunara": preload("res://data/heroes/selunara.tres"),
 	"seraphienne": preload("res://data/heroes/seraphienne.tres"),
 	"sethrakhar": preload("res://data/heroes/sethrakhar.tres"),

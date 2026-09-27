@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["ignirus", "leoric", "shirotaka"]
+const IDS := ["ignirus", "leoric", "shirotaka", "seiryukong"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -30,7 +30,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_leoric(world, hero, target, key, structures)
 		"shirotaka":
 			_shirotaka(world, hero, target, key, structures)
-		#DISPATCH
+		"seiryukong":
+			_seiryukong(world, hero, target, key, structures)
 		_:
 			return false
 	Common.trigger(hero, key, VISUAL[key])
@@ -95,7 +96,25 @@ static func _shirotaka(world, hero: HeroState, target, key: String, structures: 
 			_radial(world, hero, structures, 250.0, 1.95, 70)
 
 
-#HEROES
+static func _seiryukong(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Target int(1.3x); strictly below 30% HP pre-hit int(x1.4).
+			if target == null:
+				return
+			_execute_hit(world, hero, target, 1.3, 1.4)
+		"w":
+			# AOE 205 1.2x skill.
+			_radial(world, hero, structures, 205.0, 1.2)
+		"e":
+			# AOE 220 1.0x skill, attack delay max(timer, 55).
+			_radial(world, hero, structures, 220.0, 1.0, 55)
+		"r":
+			# AOE 300 2.15x skill, attack delay max(timer, 80), heal 12%.
+			_radial(world, hero, structures, 300.0, 2.15, 80)
+			hero.heal_hp(int(hero.max_hp * 0.12))
+
+
 static func _execute_hit(world, hero: HeroState, target, mult: float, bonus: float) -> void:
 	# Source: dmg = int(skill * mult); if hp / max(1, max_hp) < 0.3 (pre-hit):
 	# dmg = int(dmg * bonus). Neutral, unattributed take_damage.

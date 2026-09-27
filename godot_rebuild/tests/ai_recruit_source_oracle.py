@@ -71,7 +71,8 @@ def source_fixture():
                      "yamako",
                      "ignirus",
                      "leoric",
-                     "shirotaka"]
+                     "shirotaka",
+                     "seiryukong"]
     playable = explicit_kits + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]
