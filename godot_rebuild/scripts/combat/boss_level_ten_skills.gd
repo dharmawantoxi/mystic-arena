@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["krognarr", "raz"]
+const IDS := ["krognarr", "raz", "vraskhan"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_krognarr(world, hero, target, key, structures)
 		"raz":
 			_raz(world, hero, target, key, structures)
+		"vraskhan":
+			_vraskhan(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -73,6 +75,28 @@ static func _raz(world, hero: HeroState, target, key: String, structures: Array)
 		"r":
 			# Gloom: AOE 200 1.8x skill, attack delay max(timer, 50).
 			_radial(world, hero, structures, 200.0, 1.8, 50)
+
+
+static func _vraskhan(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Thorned: dash min(dist, 90) (d > 1), then target 1.2x skill.
+			if target == null:
+				return
+			_dash(hero, target, 90.0)
+			Common.hit(world, hero, target, 1.2)
+		"w":
+			# Leap: teleport to (target.x, target.y - 20), then target 1.3x skill.
+			if target == null:
+				return
+			hero.position = target.position - Vector2(0, 20)
+			Common.hit(world, hero, target, 1.3)
+		"e":
+			# Deathslash: AOE 170 1.1x skill.
+			_radial(world, hero, structures, 170.0, 1.1)
+		"r":
+			# Omni: AOE 220 1.8x skill, attack delay max(timer, 60).
+			_radial(world, hero, structures, 220.0, 1.8, 60)
 
 
 #HEROES

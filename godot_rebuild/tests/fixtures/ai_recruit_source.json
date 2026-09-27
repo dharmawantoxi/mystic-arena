@@ -1650,6 +1650,61 @@
     }
   },
   {
+    "hero_type": "vraskhan",
+    "price": 1400,
+    "initial": 1399,
+    "success": false,
+    "balance": 1399,
+    "count": 0,
+    "reserve": 1400,
+    "target": "vraskhan",
+    "hero": null
+  },
+  {
+    "hero_type": "vraskhan",
+    "price": 1400,
+    "initial": 1400,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "vraskhan",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 223,
+      "skill_damage": 571,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "vraskhan",
+    "price": 1400,
+    "initial": 1401,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "vraskhan",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 223,
+      "skill_damage": 571,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
