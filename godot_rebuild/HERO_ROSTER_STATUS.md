@@ -1,21 +1,22 @@
-# Daftar tepat migrasi hero — 166 playable, 56 pending
+# Daftar tepat migrasi hero — 170 playable, 52 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending), static 4532 PASS.
-Batch 7 (level 5: Vhalzun, Krobellus) lulus lokal; CI batch 7 menyusul di run berikutnya.
+CI Godot 4.7.2: **437801 checks** pada run 36305458357 (166 playable, 56 pending), static 4602 PASS.
+Batch 8 (level 6: Kunkka, Gravewake, Syrentha, Thalgryn) lulus validasi lokal; CI batch 8 menyusul
+di run berikutnya.
 
 - Enam starter selesai (empat sudah ada sebelum sesi); tujuh boss recipe khusus
   selesai (level 1, 2, 3, 4 dan level 5 Vhalzun + Krobellus); 150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai
   sumber**, dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 56 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Semua 52 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 166 ID
+## Selesai — 170 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -35,6 +36,10 @@ Batch 7 (level 5: Vhalzun, Krobellus) lulus lokal; CI batch 7 menyusul di run be
 | `ignis_drachorn` | 4 | 850 | `boss_level_four_skills.gd` | `boss_level_four_source_oracle.py` / `boss_level_four_checks.gd` |
 | `krobellus` | 5 | 1500 | `boss_level_five_skills.gd` | `boss_level_five_source_oracle.py` / `boss_level_five_checks.gd` |
 | `vhalzun` | 5 | 1200 | `boss_level_five_skills.gd` | `boss_level_five_source_oracle.py` / `boss_level_five_checks.gd` |
+| `kunkka` | 6 | 900 | `boss_level_six_skills.gd` | `boss_level_six_source_oracle.py` / `boss_level_six_checks.gd` |
+| `gravewake` | 6 | 1000 | `boss_level_six_skills.gd` | `boss_level_six_source_oracle.py` / `boss_level_six_checks.gd` |
+| `syrentha` | 6 | 1100 | `boss_level_six_skills.gd` | `boss_level_six_source_oracle.py` / `boss_level_six_checks.gd` |
+| `thalgryn` | 6 | 1200 | `boss_level_six_skills.gd` | `boss_level_six_source_oracle.py` / `boss_level_six_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -186,14 +191,10 @@ Batch 7 (level 5: Vhalzun, Krobellus) lulus lokal; CI batch 7 menyusul di run be
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 56 ID dan recipe yang menjadi blocker
+## Belum selesai — 52 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
-| `gravewake` | 6 | 1000 | `_cast_q_gravewake_anchor` / `_cast_w_gravewake_tide` / `_cast_e_gravewake_shell` / `_cast_r_gravewake_ravage` |
-| `kunkka` | 6 | 900 | `_cast_q_kunkka_tide` / `_cast_w_kunkka_xmark` / `_cast_e_kunkka_ghost` / `_cast_r_kunkka_torrent` |
-| `syrentha` | 6 | 1100 | `_cast_q_syrentha_riptide` / `_cast_w_syrentha_song` / `_cast_e_syrentha_mirror` / `_cast_r_syrentha_siren` |
-| `thalgryn` | 6 | 1200 | `_cast_q_thalgryn_waveform` / `_cast_w_thalgryn_adaptive` / `_cast_e_thalgryn_morph` / `_cast_r_thalgryn_replicate` |
 | `akashari` | 7 | 1200 | `_cast_q_akashari_strike` / `_cast_w_akashari_blink` / `_cast_e_akashari_scream` / `_cast_r_akashari_sonic` |
 | `malzareth` | 7 | 1100 | `_cast_q_malzareth_disruption` / `_cast_w_malzareth_soul` / `_cast_e_malzareth_poison` / `_cast_r_malzareth_disillusion` |
 | `nyxarath` | 7 | 1000 | `_cast_q_nyxarath_shadowraze` / `_cast_w_nyxarath_necro` / `_cast_e_nyxarath_presence` / `_cast_r_nyxarath_requiem` |

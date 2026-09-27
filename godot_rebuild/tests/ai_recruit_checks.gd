@@ -13,6 +13,11 @@ const SYLARA = preload("res://data/heroes/sylara.tres")
 const FIXTURE := "res://tests/fixtures/ai_recruit_source.json"
 const STATS := "res://data/ai/hero_combat_stats.json"
 const RECRUITMENT := "res://data/ai/recruitment.json"
+# The "missing kit" examples must stay on a CHEAP STILL-PENDING hero: never on a
+# playable one (AA/Nyzrak/Ignis/Kunkka/... are playable now). Update this pair
+# in the same batch that finishes the ID; _catalog locks it against drift.
+const PENDING_ID := "nyxarath"
+const PENDING_COST := 1000
 
 
 func run(check: Callable) -> void:
@@ -94,6 +99,14 @@ func _catalog(check: Callable) -> void:
 		stats.size() == 222 and stats.size() == metadata.catalog.size(),
 		"222 numeric source baselines present"
 	)
+	check.call(
+		(
+			metadata.catalog.has(PENDING_ID)
+			and int(metadata.catalog[PENDING_ID].cost) == PENDING_COST
+			and not World.PLAYABLE_AI_HEROES.has(PENDING_ID)
+		),
+		"Pending example is a real, unported, cheap kit: " + PENDING_ID
+	)
 	for hero_type in metadata.catalog:
 		check.call(stats.has(hero_type), "No missing source hero numeric baseline")
 		if stats.has(hero_type):
@@ -122,18 +135,18 @@ func _guards(check: Callable) -> void:
 	var world := _world()
 	_fund(world, 1000)
 	var recruit := Recruit.new()
-	var draft := _target("kunkka", 900)
+	var draft := _target(PENDING_ID, PENDING_COST)
 	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
 	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == "kunkka" and draft.reserve() == 900,
+		draft.purchase_target == PENDING_ID and draft.reserve() == PENDING_COST,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
 		world.units.is_empty() and world.economy.gold[1] == 1000, "Missing kit has no effects"
 	)
 	check.call(
-		not world._buy_ai_hero("kunkka", 400, Vector2(1120, 90)),
+		not world._buy_ai_hero(PENDING_ID, 400, Vector2(1120, 90)),
 		"Boss metadata is not a playable kit"
 	)
 	check.call(not world._buy_ai_hero("kaizen", 1, Vector2(1120, 90)), "Forged cost rejected")
@@ -155,7 +168,9 @@ func _guards(check: Callable) -> void:
 		"Dead owned hero still blocks duplicate"
 	)
 	world.winner = 0
-	check.call(not recruit.try_buy(world, _target("kunkka", 900)), "Finished match blocks draft")
+	check.call(
+		not recruit.try_buy(world, _target(PENDING_ID, PENDING_COST)), "Finished match blocks draft"
+	)
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
@@ -191,7 +206,7 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var missing := _target("kunkka", 900)
+	var missing := _target(PENDING_ID, PENDING_COST)
 	world.economy.credit_kill(1, 1000)
 	check.call(
 		not adapter.try_buy(world, missing) and missing.reserve() == 900,

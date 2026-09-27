@@ -1,14 +1,17 @@
-# Checkpoint migrasi setelah PR #283 — 166/222, BELUM selesai
+# Checkpoint migrasi setelah PR #283 — 170/222, BELUM selesai
 
-**166 dari 222 hero target selesai; 56 masih pending.**
+**170 dari 222 hero target selesai; 52 masih pending.**
 Target tetap semua 222 kit, tidak dikurangi. Progres sesi ini disimpan di branch
 `arena/01a0e1d1-mystic-arena` (checkpoint sebelumnya: PR draft #285 dari
 `arena/01a0e17d-mystic-arena`).
 **Jangan merge tanpa perintah pengguna.**
 
-**Sinkronisasi GitHub:** batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G) sudah ter-push ke `arena/01a0e17d-mystic-arena` dan CI hijau 413735 checks (run 36302839552). Manifest dan docs sudah remote.
+**Sinkronisasi GitHub:** batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G)
+sudah ter-push ke `arena/01a0e17d-mystic-arena` dan CI hijau 413735 checks (run 36302839552).
+Sesi ini: batch 7 (Vhalzun 1200G, Krobellus 1500G) ter-push ke `arena/01a0e1d1-mystic-arena`,
+CI hijau **437801 checks** pada run 36305458357, static 4602 PASS. Batch 8 (level 6) menyusul.
 
-Daftar tepat **semua 166 selesai dan semua 56 belum selesai**, harga summon,
+Daftar tepat **semua 170 selesai dan semua 52 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
 [`data/ai/hero_migration_status.json`](data/ai/hero_migration_status.json).
@@ -26,7 +29,8 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 4 | Alchemist | 161 / 61 | [358.305 checks, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
 | 5 | Ancient Apparition (800G), Nyzrak (850G) | 163 / 59 | [lint fixed, then 413735](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
 | 6 | Ignis Drachorn (850G) | **164 / 58** | [413735 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
-| 7 | Vhalzun (1200G), Krobellus (1500G) — level 5 | **166 / 56** | lihat run batch 7 di bawah |
+| 7 | Vhalzun (1200G), Krobellus (1500G) — level 5 | **166 / 56** | [437801 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305458357) |
+| 8 | Kunkka (900G), Gravewake (1000G), Syrentha (1100G), Thalgryn (1200G) — level 6 | **170 / 52** | lihat run batch 8 di bawah |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
 validation (**4.476 checks**, termasuk guard manifest), gdparse, gdlint dan
@@ -64,6 +68,21 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   `int(skill × 0,5)` (bukan persen max-HP), Crypt AOE 200/2,5 + heal 15%.
   Keduanya tidak menyetel rage/defense/vortex/flux/clones/dragon, sehingga
   `update_timers` sumber benar-benar tidak melakukan apa pun untuk level 5.
+- **Kunkka (900 G):** Tide garis 250/lebar 70 x1,8 (butuh target; jarak 0 = batal),
+  X Mark AOE 120 berpusat di target x1,5 + attack clock 60, Ghost Ship garis
+  300/80 x2,2 + clock 90 + heal 15%, Torrent AOE 200 di target (hero bila tanpa
+  target) x3,0 + clock 120 + heal 20%. **Gravewake (1000 G):** Anchor garis
+  200/60 x1,4 + slow 0,5/180, Tide AOE 120 di target x1,3 + clock 60, Shell
+  `defense_boost` 300 tick + heal 12% (tanpa mitigasi, sesuai audit sumber),
+  Ravage AOE 200 x2,0 + slow 0,5/180 + heal 10%. **Syrentha (1100 G):** Riptide
+  garis 250/70 x1,3 + slow, Song AOE 150 x1,0 + clock 120 + slow 0,7/240,
+  Mirror rage 360 + damage 1,4x nilai katalog mentah + heal 12%, Siren AOE 220
+  x2,2 + clock 150 + heal 10%. **Thalgryn (1200 G):** Waveform garis 250/50
+  x1,6 lalu surge maksimal 200 px ke arah target (diukur sebelum damage),
+  Adaptive target x2,0 + splash 60 px x0,7 yang tidak mengenai target lagi,
+  Morph rage 300 + damage 1,35x katalog + heal 14%, Replicate AOE 200 x2,0 +
+  slow 0,4/180 + heal 10%. Keempatnya memakai visual 60/90/60/100 (sumber tidak
+  punya override untuk ID ini).
 - **Interaksi:** oracle memakai Hero Thorne dan Tower asli, bukan hanya receipt
   HP. Sekolah/source attribution, mitigasi, reflect, shield, dan tower yang
   tidak mempunyai `attack_timer` diuji. Skill tanpa source/school di Python
@@ -83,18 +102,22 @@ native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
 ## Sisa dan blocker tepat
 
-**56 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
+**52 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
 oracle/native test per perilakunya. Metode Q/W/E/R untuk masing-masing ID
 tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--56-id-dan-recipe-yang-menjadi-blocker).
-Blocker implementasi: sisa 56 recipe (level 6 dst) belum diport; batch 5+6 sudah
-lulus CI, batch 7 (level 5) sudah lulus validasi lokal + oraclesumber. Tidak ada
-klaim 222 playable.
+Blocker implementasi: sisa 52 recipe (level 7 dst) belum diport; batch 5+6 dan
+batch 7 (level 5, CI 437801 checks) sudah lulus CI, batch 8 (level 6) sudah lulus
+validasi lokal + oracle sumber. Tidak ada klaim 222 playable.
 
 Lanjut berdasarkan level sumber:
-1. Level 5 (Vhalzun + Krobellus) selesai di batch 7. Berikutnya **level 6**:
-   Kunkka (900G), Gravewake (1000G), Syrentha (1100G), Thalgryn (1200G), lalu
-   **level 7**: Nyxarath (1000G), Malzareth (1100G), Akashari (1200G),
-   Vorenmarr (1300G), dst sesuai manifest.
+1. Level 5 (Vhalzun + Krobellus) selesai di batch 7, level 6 (Kunkka, Gravewake,
+   Syrentha, Thalgryn) selesai di batch 8. Berikutnya **level 7**: Nyxarath
+   (1000G), Malzareth (1100G), Akashari (1200G), Vorenmarr (1300G), lalu level 9
+   dst sesuai manifest.
+1a. Contoh "kit belum ada" di `tests/ai_recruit_checks.gd` sekarang memakai
+   konstanta `PENDING_ID`/`PENDING_COST` (nyxarath 1000 G sejak batch 8) dan
+   dikunci `_catalog()`. Jangan memakai ID yang sudah playable (AA/Nyzrak/Ignis/
+   Kunkka/dst) sebagai contoh pending.
 2. Mesin tangkap oracle bersama ada di `tests/boss_level_source_oracle.py`
    (hanya menjalankan recipe sumber per ID yang disebut), harness banding
    native ada di `tests/boss_tier_checks.gd`. Keduanya BUKAN kit bersama.
