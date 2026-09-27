@@ -1705,6 +1705,61 @@
     }
   },
   {
+    "hero_type": "aurethzar",
+    "price": 2100,
+    "initial": 2099,
+    "success": false,
+    "balance": 2099,
+    "count": 0,
+    "reserve": 2100,
+    "target": "aurethzar",
+    "hero": null
+  },
+  {
+    "hero_type": "aurethzar",
+    "price": 2100,
+    "initial": 2100,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "aurethzar",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2289,
+      "hp": 2289,
+      "damage": 177,
+      "skill_damage": 468,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "aurethzar",
+    "price": 2100,
+    "initial": 2101,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "aurethzar",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2289,
+      "hp": 2289,
+      "damage": 177,
+      "skill_damage": 468,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

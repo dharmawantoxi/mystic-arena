@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["krognarr", "raz", "vraskhan"]
+const IDS := ["krognarr", "raz", "vraskhan", "aurethzar"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -30,6 +30,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_raz(world, hero, target, key, structures)
 		"vraskhan":
 			_vraskhan(world, hero, target, key, structures)
+		"aurethzar":
+			_aurethzar(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -97,6 +99,27 @@ static func _vraskhan(world, hero: HeroState, target, key: String, structures: A
 		"r":
 			# Omni: AOE 220 1.8x skill, attack delay max(timer, 60).
 			_radial(world, hero, structures, 220.0, 1.8, 60)
+
+
+static func _aurethzar(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Marksman: target 1.3x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.3)
+		"w":
+			# Piercing: AOE 200 1.1x skill.
+			_radial(world, hero, structures, 200.0, 1.1)
+		"e":
+			# Frost: target 1.0x skill, slow 0.5 for 90.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.0)
+			world.apply_slow(target.id, 0.5, 90)
+		"r":
+			# Thunder: AOE 250 1.9x skill, attack delay max(timer, 70).
+			_radial(world, hero, structures, 250.0, 1.9, 70)
 
 
 #HEROES
