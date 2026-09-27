@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["auroth"]
+const IDS := ["auroth", "morvein"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"auroth":
 			_auroth(world, hero, target, key, structures)
+		"morvein":
+			_morvein(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -50,6 +52,25 @@ static func _auroth(world, hero: HeroState, target, key: String, structures: Arr
 		"r":
 			# Guardian: AOE 240 1.9x skill, attack delay max(timer, 70).
 			_radial(world, hero, structures, 240.0, 1.9, 70)
+
+
+static func _morvein(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Puncture: target int(1.3x), below 30% HP int(x1.5).
+			if target == null:
+				return
+			_execute_hit(world, hero, target, 1.3, 1.5)
+		"w":
+			# Violent strike: AOE 190 1.2x skill.
+			_radial(world, hero, structures, 190.0, 1.2)
+		"e":
+			# Spectral charge: AOE 205 1.05x skill.
+			_radial(world, hero, structures, 205.0, 1.05)
+		"r":
+			# Phantom form: AOE 250 1.95x skill, heal 12%.
+			_radial(world, hero, structures, 250.0, 1.95)
+			hero.heal_hp(int(hero.max_hp * 0.12))
 
 
 #HEROES

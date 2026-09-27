@@ -2695,6 +2695,61 @@
     }
   },
   {
+    "hero_type": "morvein",
+    "price": 1900,
+    "initial": 1899,
+    "success": false,
+    "balance": 1899,
+    "count": 0,
+    "reserve": 1900,
+    "target": "morvein",
+    "hero": null
+  },
+  {
+    "hero_type": "morvein",
+    "price": 1900,
+    "initial": 1900,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "morvein",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2011,
+      "hp": 2011,
+      "damage": 270,
+      "skill_damage": 661,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "morvein",
+    "price": 1900,
+    "initial": 1901,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "morvein",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2011,
+      "hp": 2011,
+      "damage": 270,
+      "skill_damage": 661,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
