@@ -287,6 +287,150 @@
       "reduction": 1,
       "cast_hp": 1364.0,
       "tick_hp": 1364.0
+    },
+    {
+      "hero": "nyzrak",
+      "key": "r",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 1595.0,
+      "tick_hp": 1595.0
+    },
+    {
+      "hero": "nyzrak",
+      "key": "r",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 1594.25,
+      "tick_hp": 1594.25
+    },
+    {
+      "hero": "nyzrak",
+      "key": "r",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 1594.0,
+      "tick_hp": 1594.0
+    },
+    {
+      "hero": "nyzrak",
+      "key": "r",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 1534.0,
+      "tick_hp": 1534.0
+    },
+    {
+      "hero": "nyzrak",
+      "key": "r",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 1354.75,
+      "tick_hp": 1354.75
+    },
+    {
+      "hero": "nyzrak",
+      "key": "r",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 1295.0,
+      "tick_hp": 1295.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "e",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 1941.0,
+      "tick_hp": 1941.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "e",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 1940.25,
+      "tick_hp": 1940.25
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "e",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 1940.0,
+      "tick_hp": 1940.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "e",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 1941.0,
+      "tick_hp": 1941.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "e",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 1716.0,
+      "tick_hp": 1716.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "e",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 1641.0,
+      "tick_hp": 1641.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "r",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 1941.0,
+      "tick_hp": 1941.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "r",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 1940.25,
+      "tick_hp": 1940.25
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "r",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 1940.0,
+      "tick_hp": 1940.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "r",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 1941.0,
+      "tick_hp": 1941.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "r",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 1716.0,
+      "tick_hp": 1716.0
+    },
+    {
+      "hero": "ignis_drachorn",
+      "key": "r",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 1641.0,
+      "tick_hp": 1641.0
     }
   ],
   "burn": [

@@ -12,6 +12,9 @@ from sylara_source_oracle import Target
 
 FIXTURE = Path(__file__).parent / "fixtures/boss_level_one_source.json"
 IDS = ("gornak", "morgath", "drakar", "abaddon")
+# Per-ID extra source state recorded by later recipe oracles. Kept empty here so
+# the level-one fixture stays byte-identical; nothing is invented or shared.
+STATE_EXTRAS = {}
 
 
 def targets(coords):
@@ -32,6 +35,9 @@ def state(hero, enemies):
     result["mana_void_origin"] = [hero.mana_void_x, hero.mana_void_y]
     if hero.hero_type == "alchemist":
         result["alchemy_target"] = [hero.w_target_x, hero.w_target_y]
+    extra = STATE_EXTRAS.get(hero.hero_type)
+    if extra is not None:
+        result.update(extra(hero))
     return result
 
 

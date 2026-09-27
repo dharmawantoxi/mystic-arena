@@ -184,8 +184,33 @@ from alchemist_source_oracle import source_fixture as alchemist_fixture
 check(alchemist_fixture() == json.loads((ROOT / "tests/fixtures/alchemist_source.json").read_text()), "Alchemist source behavior drift")
 check("AlchemistChecks.new().run(_check)" in ai_tests, "Alchemist native suite must run")
 
+from level_three_source_oracle import source_fixture as level_three_fixture
+check(level_three_fixture() == json.loads((ROOT / "tests/fixtures/level_three_source.json").read_text()), "Level-three boss source behavior drift")
+check("LevelThreeChecks.new().run(_check)" in ai_tests, "Level-three boss native suite must run")
+
+from boss_recipe_source_oracle import source_fixture as boss_recipe_fixture
+check(boss_recipe_fixture() == json.loads((ROOT / "tests/fixtures/boss_recipe_source.json").read_text()), "Own-recipe boss source behavior drift")
+check("BossRecipeChecks.new().run(_check)" in ai_tests, "Own-recipe boss native suite must run")
+
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)
+
+# No GDScript may hardcode a hero that is still pending as its "this hero has
+# no native kit" probe: finishing a batch would silently invert the assertion.
+# Such IDs are resolved from the manifest at runtime instead.
+_manifest = json.loads((ROOT / "data/ai/hero_migration_status.json").read_text())
+_pending_ids = {k for k, v in _manifest["heroes"].items() if v["status"] != "playable"}
+check(bool(_pending_ids), "Manifest still tracks pending heroes honestly")
+for _gd in sorted(ROOT.rglob("*.gd")):
+    if ".godot" in _gd.parts:
+        continue
+    _text = _gd.read_text(encoding="utf-8")
+    for _kind in sorted(_pending_ids):
+        check('"' + _kind + '"' not in _text,
+              f"Pending hero id hardcoded in GDScript: {_kind} in {_gd.name}")
+
+from roster_doc import validate as validate_roster_doc
+validate_roster_doc(check)
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

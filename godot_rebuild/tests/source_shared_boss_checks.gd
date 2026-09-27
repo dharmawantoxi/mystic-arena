@@ -2,6 +2,8 @@ extends "res://tests/starter_finish_checks.gd"
 ## Per-ID behavioral checks; numeric baseline alone never registers a playable kit.
 const Shared = preload("res://scripts/combat/source_shared_boss_skills.gd")
 const Roster = preload("res://scripts/data/hero_roster.gd")
+const Recipe = preload("res://scripts/combat/boss_recipe_skills.gd")
+const LevelThree = preload("res://scripts/combat/boss_level_three_skills.gd")
 const SHARED_FIXTURE := "res://tests/fixtures/source_shared_boss.json"
 
 
@@ -75,16 +77,36 @@ func _lifecycle(kind: String, check: Callable) -> void:
 
 
 func _no_fallback(check: Callable) -> void:
-	var world := Battle.new()
-	var fake = Roster.DEFINITIONS.kaizen.duplicate()
-	fake.id = "ancient_apparition"
-	var hero := world.spawn_hero(fake, world.RED, Vector2(500, 340))
-	_enemies(world, [[550, 340]])
-	for key in ["q", "w", "e", "r"]:
-		check.call(
-			not Shared.cast(world, hero, key, []), "No generic substitution for source recipe"
-		)
-		check.call(not helpers._skill(world, hero.id, key), "Dispatcher refuses unported recipe")
+	# 1. Permanent: a hero that owns a source recipe must never be served by the
+	#    shared fallback, whether or not its own recipe is ported yet.
+	for recipe_id in Recipe.IDS + LevelThree.IDS:
+		var world := Battle.new()
+		var clone = Roster.DEFINITIONS.kaizen.duplicate()
+		clone.id = recipe_id
+		var recipe_hero := world.spawn_hero(clone, world.RED, Vector2(500, 340))
+		_enemies(world, [[550, 340]])
+		for key in ["q", "w", "e", "r"]:
+			check.call(
+				not Shared.cast(world, recipe_hero, key, []),
+				"No generic substitution for source recipe"
+			)
+	# 2. Batch progress: the dispatcher must still refuse every hero whose
+	#    catalog entry has metadata but no native kit yet.
+	var catalog: Dictionary = (
+		JSON.parse_string(FileAccess.get_file_as_string("res://data/ai/recruitment.json")).catalog
+	)
+	for kind in catalog:
+		if Roster.DEFINITIONS.has(kind):
+			continue
+		var world := Battle.new()
+		var fake = Roster.DEFINITIONS.kaizen.duplicate()
+		fake.id = kind
+		var hero := world.spawn_hero(fake, world.RED, Vector2(500, 340))
+		_enemies(world, [[550, 340]])
+		for key in ["q", "w", "e", "r"]:
+			check.call(
+				not helpers._skill(world, hero.id, key), "Dispatcher refuses unported recipe"
+			)
 
 
 func _schools(check: Callable) -> void:
