@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["aeralith", "aurex"]
+const IDS := ["aeralith", "aurex", "nyxareva"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_aeralith(world, hero, target, key, structures)
 		"aurex":
 			_aurex(world, hero, target, key, structures)
+		"nyxareva":
+			_nyxareva(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -72,6 +74,27 @@ static func _aurex(world, hero: HeroState, target, key: String, structures: Arra
 		"r":
 			# Spin: AOE 210 1.8x skill, attack delay max(timer, 60).
 			_radial(world, hero, structures, 210.0, 1.8, 60)
+
+
+static func _nyxareva(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Darkslash: target 1.2x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.2)
+		"w":
+			# Mortal wound: target 1.4x skill, slow 0.5 for 90.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.4)
+			world.apply_slow(target.id, 0.5, 90)
+		"e":
+			# Sacrifice: AOE 170 1.1x skill.
+			_radial(world, hero, structures, 170.0, 1.1)
+		"r":
+			# Avatar: AOE 220 1.8x skill, attack delay max(timer, 60).
+			_radial(world, hero, structures, 220.0, 1.8, 60)
 
 
 #HEROES
