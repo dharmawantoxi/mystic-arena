@@ -1,20 +1,19 @@
-# Checkpoint migrasi setelah PR #283 — 161/222, BELUM selesai
+# Checkpoint migrasi setelah PR #283 — 163/222, BELUM selesai
 
-**157 dari 218 hero yang diminta di sesi ini selesai; 61 masih pending.**
+**163 dari 222 hero target selesai; 59 masih pending.**
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
-`arena/01a0e134-mystic-arena`, [PR draft #284](https://github.com/dharmawantoxi/mystic-arena/pull/284).
+`arena/01a0e17d-mystic-arena`, PR draft dari branch ini.
 **Jangan merge tanpa perintah pengguna.**
 
 **Batas sinkronisasi GitHub saat checkpoint:** kode teruji sampai `c029d50`
 sudah ter-push dan CI hijau. Push commit dokumentasi/manifest `639abeb`
-gagal autentikasi (`git`: credentials unavailable; `gh`: HTTP 401). Perubahan
-akhir tersimpan lokal/snapshot Arena, tidak hilang. **Reconnect GitHub di
+gagal autentikasi (`git`: credentials unavailable; `gh`: HTTP 401) di sesi
+sebelumnya. Perubahan batch 5 (Ancient Apparition + Nyzrak) tersimpan
+lokal/snapshot Arena, siap push setelah reconnect. **Reconnect GitHub di
 Arena** sebelum push lanjutan atau update PR; tidak memerlukan token/password
-di chat. Update judul/body PR terakhir juga gagal, sehingga isi PR remote
-mungkin masih menunjukkan hitungan lama. Jangan membuang commit lokal.
+di chat.
 
-
-Daftar tepat **semua 161 selesai dan semua 61 belum selesai**, harga summon,
+Daftar tepat **semua 163 selesai dan semua 59 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
 [`data/ai/hero_migration_status.json`](data/ai/hero_migration_status.json).
@@ -29,7 +28,8 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 1 | Vex, Zephyr | 6 / 216 | [50.666 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36295879312) |
 | 2 | Gornak, Morgath, Drakar, Abaddon | 10 / 212 | [95.314 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36296265931) |
 | 3 | 150 ID shared-source eksplisit (lihat daftar) | 160 / 62 | [340.054 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36297544475) |
-| 4 | Alchemist | **161 / 61** | [**358.305 checks**, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
+| 4 | Alchemist | 161 / 61 | [358.305 checks, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
+| 5 | Ancient Apparition (800G), Nyzrak (850G) | **163 / 59** | pending CI baru |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
 validation (**4.390 checks**, termasuk guard manifest), gdparse, gdlint dan

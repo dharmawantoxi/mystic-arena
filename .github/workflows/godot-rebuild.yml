@@ -63,6 +63,18 @@ jobs:
           python godot_rebuild/tests/ai_draft_source_oracle.py
           python godot_rebuild/tests/ai_upgrade_source_oracle.py
           python godot_rebuild/tests/ai_shield_source_oracle.py
+          python godot_rebuild/tests/thorne_source_oracle.py
+          python godot_rebuild/tests/grimjaw_source_oracle.py
+          python godot_rebuild/tests/sylara_source_oracle.py
+          python godot_rebuild/tests/vex_source_oracle.py
+          python godot_rebuild/tests/zephyr_source_oracle.py
+          python godot_rebuild/tests/starter_finish_source_oracle.py
+          python godot_rebuild/tests/boss_level_one_source_oracle.py
+          python godot_rebuild/tests/boss_level_three_source_oracle.py
+          python godot_rebuild/tests/hero_status_source_oracle.py
+          python godot_rebuild/tests/source_shared_boss_oracle.py
+          python godot_rebuild/tests/hero_school_source_oracle.py
+          python godot_rebuild/tests/alchemist_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')
