@@ -122,6 +122,7 @@ const DEFINITIONS := {
 	"nyxaroth": preload("res://data/heroes/nyxaroth.tres"),
 	"nyxharr": preload("res://data/heroes/nyxharr.tres"),
 	"nyxraal": preload("res://data/heroes/nyxraal.tres"),
+	"nyxthrael": preload("res://data/heroes/nyxthrael.tres"),
 	"obanai": preload("res://data/heroes/obanai.tres"),
 	"okeanora": preload("res://data/heroes/okeanora.tres"),
 	"pyraena": preload("res://data/heroes/pyraena.tres"),

@@ -3575,6 +3575,61 @@
     }
   },
   {
+    "hero_type": "nyxthrael",
+    "price": 2500,
+    "initial": 2499,
+    "success": false,
+    "balance": 2499,
+    "count": 0,
+    "reserve": 2500,
+    "target": "nyxthrael",
+    "hero": null
+  },
+  {
+    "hero_type": "nyxthrael",
+    "price": 2500,
+    "initial": 2500,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "nyxthrael",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2304,
+      "hp": 2304,
+      "damage": 183,
+      "skill_damage": 486,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "nyxthrael",
+    "price": 2500,
+    "initial": 2501,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "nyxthrael",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2304,
+      "hp": 2304,
+      "damage": 183,
+      "skill_damage": 486,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

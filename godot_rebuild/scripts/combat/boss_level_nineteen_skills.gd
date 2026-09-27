@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["akahime"]
+const IDS := ["akahime", "nyxthrael"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"akahime":
 			_akahime(world, hero, target, key, structures)
+		"nyxthrael":
+			_nyxthrael(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -49,6 +51,24 @@ static func _akahime(world, hero: HeroState, target, key: String, structures: Ar
 		"r":
 			# AOE 270 1.95x skill, attack delay max(timer, 70).
 			_radial(world, hero, structures, 270.0, 1.95, 70)
+
+
+static func _nyxthrael(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Target int(1.3x); strictly below 30% HP pre-hit int(x1.5).
+			if target == null:
+				return
+			_execute_hit(world, hero, target, 1.3, 1.5)
+		"w":
+			# AOE 195 1.15x skill.
+			_radial(world, hero, structures, 195.0, 1.15)
+		"e":
+			# AOE 210 1.0x skill, attack delay max(timer, 55).
+			_radial(world, hero, structures, 210.0, 1.0, 55)
+		"r":
+			# AOE 260 1.95x skill, attack delay max(timer, 75).
+			_radial(world, hero, structures, 260.0, 1.95, 75)
 
 
 #HEROES

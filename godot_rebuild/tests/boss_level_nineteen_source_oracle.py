@@ -15,7 +15,7 @@ from starter_finish_source_oracle import source_env, state as starter_state
 from boss_level_one_source_oracle import _cast_case, targets
 
 FIXTURE = Path(__file__).parent / "fixtures/boss_level_nineteen_source.json"
-IDS = ("akahime",)
+IDS = ("akahime", "nyxthrael")
 
 
 def state(hero, enemies):
