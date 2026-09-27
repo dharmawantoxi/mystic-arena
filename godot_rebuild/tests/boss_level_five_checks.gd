@@ -188,8 +188,14 @@ func _heal(row: Dictionary, check: Callable) -> void:
 		"one":
 			hero.hp = 1
 	var enemy = helpers._dummy(world, Vector2(550, 340))
-	var label := (
-		row.hero + " " + row.key + " " + String(row.hp_mode) + " anti " + str(row.anti_heal)
+	var label: String = (
+		String(row.hero)
+		+ " "
+		+ String(row.key)
+		+ " "
+		+ String(row.hp_mode)
+		+ " anti "
+		+ str(row.anti_heal)
 	)
 	var anti := float(row.anti_heal)
 	if anti > 0.0:
