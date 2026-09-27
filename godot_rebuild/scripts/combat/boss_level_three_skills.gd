@@ -57,6 +57,7 @@ static func _aa(world, hero: HeroState, target, key: String, structures: Array) 
 					if perp < width:
 						Common.hit(world, hero, enemy, 1.5)
 						world.apply_slow(enemy.id, 0.6, 180)
+			hero.w_dir = dir
 		"e":
 			if target == null:
 				return
@@ -77,6 +78,7 @@ static func _aa(world, hero: HeroState, target, key: String, structures: Array) 
 					if perp < width:
 						Common.hit(world, hero, enemy, 3.0)
 						world.apply_slow(enemy.id, 0.7, 240)
+			hero.r_dir = dir
 
 
 static func _nyz(world, hero: HeroState, target, key: String, structures: Array) -> void:

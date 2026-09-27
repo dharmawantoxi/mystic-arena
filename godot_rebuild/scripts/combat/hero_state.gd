@@ -82,6 +82,8 @@ var vortex_origin := Vector2.ZERO
 var vortex_timer := 0
 var shield_active := false
 var shield_timer := 0
+var w_dir := Vector2(1, 0)
+var r_dir := Vector2(1, 0)
 # Level 4 (Ignis Drachorn) dragon form.
 var dragon_form_active := false
 var dragon_form_timer := 0
