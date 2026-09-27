@@ -160,22 +160,9 @@ func _compare(hero, enemies: Array, expected: Dictionary, check: Callable, label
 			]
 		):
 			if expected[key] is Array:
-				var got = hero.get(key)
-				var exp = Vector2(expected[key][0], expected[key][1])
-				if got != exp:
-					print(
-						"::error::DEBUG MISMATCH ",
-						label,
-						" ",
-						key,
-						" got ",
-						got,
-						" exp ",
-						exp,
-						" raw ",
-						expected[key]
-					)
-				check.call(got == exp, label + " " + key)
+				check.call(
+					hero.get(key) == Vector2(expected[key][0], expected[key][1]), label + " " + key
+				)
 			else:
 				check.call(hero.get(key) == expected[key], label + " " + key)
 		elif key in ["target_id", "flux_target_id"]:
