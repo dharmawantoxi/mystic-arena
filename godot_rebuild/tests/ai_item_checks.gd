@@ -99,15 +99,19 @@ func _test_catalog(expected: Dictionary, check: Callable) -> void:
 	check.call(int(data.flat_cost) == 4500, "Source ITEM_FLAT_COST is 4500")
 	var items: Dictionary = data.items
 	check.call(items.size() == ITEM_COUNT, "Source ITEM_CATALOG holds 33 items")
+	var categories: Dictionary = data.categories
 	var melee := 0
 	var magic := 0
 	var drops := 0
 	var flat := 0
 	for item_id in items:
 		var entry: Dictionary = items[item_id]
-		check.call(String(entry.name) != "", "Item name must exist: " + item_id)
-		check.call((entry.category as String) in data.categories, "Unknown category: " + item_id)
-		check.call(int(entry.cost) > 0, "Item cost must be positive: " + item_id)
+		var label := String(item_id)
+		# No `as`/`in` mix: GDScript binds `as` looser than `in`, so the cast
+		# would swallow the membership test.
+		check.call(String(entry.name) != "", "Item name must exist: " + label)
+		check.call(categories.has(String(entry.category)), "Unknown category: " + label)
+		check.call(int(entry.cost) > 0, "Item cost must be positive: " + label)
 		if bool(entry.melee_only):
 			melee += 1
 		if bool(entry.magic_only):
