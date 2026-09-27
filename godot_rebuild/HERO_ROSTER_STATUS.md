@@ -1,4 +1,4 @@
-# Daftar tepat migrasi hero — 211 playable, 11 pending
+# Daftar tepat migrasi hero — 212 playable, 10 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
@@ -9,14 +9,14 @@ batch 10–17 level 9–15 + perbaikan tes batch 9).
   recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9–L15 ×4);
   150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
   dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 11 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Semua 10 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 211 ID
+## Selesai — 212 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -81,6 +81,7 @@ batch 10–17 level 9–15 + perbaikan tes batch 9).
 | `xyrael` | 17 | 2250 | `boss_level_seventeen_skills.gd` | `boss_level_seventeen_source_oracle.py` / `boss_level_seventeen_checks.gd` |
 | `nyxareth` | 17 | 2800 | `boss_level_seventeen_skills.gd` | `boss_level_seventeen_source_oracle.py` / `boss_level_seventeen_checks.gd` |
 | `cryssalia` | 18 | 2300 | `boss_level_eighteen_skills.gd` | `boss_level_eighteen_source_oracle.py` / `boss_level_eighteen_checks.gd` |
+| `kaelthar` | 18 | 2350 | `boss_level_eighteen_skills.gd` | `boss_level_eighteen_source_oracle.py` / `boss_level_eighteen_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -232,12 +233,11 @@ batch 10–17 level 9–15 + perbaikan tes batch 9).
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 11 ID dan recipe yang menjadi blocker
+## Belum selesai — 10 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
 | `aurelion` | 18 | 2900 | `_cast_q_aurelion_callcourage` / `_cast_w_aurelion_guardianassault` / `_cast_e_aurelion_kingscommand` / `_cast_r_aurelion_kingssummon` |
-| `kaelthar` | 18 | 2350 | `_cast_q_kaelthar_chargingfist` / `_cast_w_kaelthar_quake` / `_cast_e_kaelthar_fistcrack` / `_cast_r_kaelthar_fistbreak` |
 | `morkhaera` | 18 | 2400 | `_cast_q_morkhaera_spiritburst` / `_cast_w_morkhaera_airstrike` / `_cast_e_morkhaera_energyimpact` / `_cast_r_morkhaera_ethereal` |
 | `akahime` | 19 | 2450 | `_cast_q_akahime_petalbarrage` / `_cast_w_akahime_soulscroll` / `_cast_e_akahime_shadow` / `_cast_r_akahime_higanbana` |
 | `nyxthrael` | 19 | 2500 | `_cast_q_nyxthrael_ambush` / `_cast_w_nyxthrael_nightfall` / `_cast_e_nyxthrael_darknightfall` / `_cast_r_nyxthrael_shadowbringer` |

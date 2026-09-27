@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["cryssalia"]
+const IDS := ["cryssalia", "kaelthar"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"cryssalia":
 			_cryssalia(world, hero, target, key, structures)
+		"kaelthar":
+			_kaelthar(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -49,6 +51,25 @@ static func _cryssalia(world, hero: HeroState, target, key: String, structures: 
 		"r":
 			# AOE 280 1.95x skill, slow 0.5 for 120.
 			_radial(world, hero, structures, 280.0, 1.95, 0, 0.5, 120)
+
+
+static func _kaelthar(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Dash min(dist, 110) (d > 1), then target 1.3x skill.
+			if target == null:
+				return
+			_dash(hero, target, 110.0)
+			Common.hit(world, hero, target, 1.3)
+		"w":
+			# AOE 190 1.2x skill.
+			_radial(world, hero, structures, 190.0, 1.2)
+		"e":
+			# AOE 200 1.05x skill.
+			_radial(world, hero, structures, 200.0, 1.05)
+		"r":
+			# AOE 250 2.0x skill, attack delay max(timer, 75).
+			_radial(world, hero, structures, 250.0, 2.0, 75)
 
 
 #HEROES
