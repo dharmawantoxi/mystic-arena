@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["ignirus"]
+const IDS := ["ignirus", "leoric"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"ignirus":
 			_ignirus(world, hero, target, key, structures)
+		"leoric":
+			_leoric(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -49,6 +51,26 @@ static func _ignirus(world, hero: HeroState, target, key: String, structures: Ar
 		"r":
 			# AOE 280 1.95x skill, attack delay max(timer, 70).
 			_radial(world, hero, structures, 280.0, 1.95, 70)
+
+
+static func _leoric(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Dash min(dist, 100) (d > 1), then target 1.25x skill.
+			if target == null:
+				return
+			_dash(hero, target, 100.0)
+			Common.hit(world, hero, target, 1.25)
+		"w":
+			# AOE 190 1.15x skill.
+			_radial(world, hero, structures, 190.0, 1.15)
+		"e":
+			# AOE 200 1.0x skill, attack delay max(timer, 50).
+			_radial(world, hero, structures, 200.0, 1.0, 50)
+		"r":
+			# AOE 250 1.9x skill, heal 20%.
+			_radial(world, hero, structures, 250.0, 1.9)
+			hero.heal_hp(int(hero.max_hp * 0.20))
 
 
 #HEROES

@@ -2915,6 +2915,61 @@
     }
   },
   {
+    "hero_type": "leoric",
+    "price": 2050,
+    "initial": 2049,
+    "success": false,
+    "balance": 2049,
+    "count": 0,
+    "reserve": 2050,
+    "target": "leoric",
+    "hero": null
+  },
+  {
+    "hero_type": "leoric",
+    "price": 2050,
+    "initial": 2050,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "leoric",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2219,
+      "hp": 2219,
+      "damage": 268,
+      "skill_damage": 717,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "leoric",
+    "price": 2050,
+    "initial": 2051,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "leoric",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2219,
+      "hp": 2219,
+      "damage": 268,
+      "skill_damage": 717,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

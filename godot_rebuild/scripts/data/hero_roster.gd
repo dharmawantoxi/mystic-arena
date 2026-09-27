@@ -83,6 +83,7 @@ const DEFINITIONS := {
 	"kurogari": preload("res://data/heroes/kurogari.tres"),
 	"kyrenzai": preload("res://data/heroes/kyrenzai.tres"),
 	"kyumirra": preload("res://data/heroes/kyumirra.tres"),
+	"leoric": preload("res://data/heroes/leoric.tres"),
 	"luminar": preload("res://data/heroes/luminar.tres"),
 	"lyrenya": preload("res://data/heroes/lyrenya.tres"),
 	"lyrienne": preload("res://data/heroes/lyrienne.tres"),
