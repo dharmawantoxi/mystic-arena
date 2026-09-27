@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["cryssalia", "kaelthar"]
+const IDS := ["cryssalia", "kaelthar", "morkhaera"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_cryssalia(world, hero, target, key, structures)
 		"kaelthar":
 			_kaelthar(world, hero, target, key, structures)
+		"morkhaera":
+			_morkhaera(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -70,6 +72,25 @@ static func _kaelthar(world, hero: HeroState, target, key: String, structures: A
 		"r":
 			# AOE 250 2.0x skill, attack delay max(timer, 75).
 			_radial(world, hero, structures, 250.0, 2.0, 75)
+
+
+static func _morkhaera(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Target 1.25x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.25)
+		"w":
+			# AOE 200 1.15x skill.
+			_radial(world, hero, structures, 200.0, 1.15)
+		"e":
+			# AOE 215 1.0x skill, attack delay max(timer, 55).
+			_radial(world, hero, structures, 215.0, 1.0, 55)
+		"r":
+			# AOE 280 1.95x skill, heal 12%.
+			_radial(world, hero, structures, 280.0, 1.95)
+			hero.heal_hp(int(hero.max_hp * 0.12))
 
 
 #HEROES
