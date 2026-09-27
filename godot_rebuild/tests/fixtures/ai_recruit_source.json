@@ -2310,6 +2310,61 @@
     }
   },
   {
+    "hero_type": "velmyrth",
+    "price": 1700,
+    "initial": 1699,
+    "success": false,
+    "balance": 1699,
+    "count": 0,
+    "reserve": 1700,
+    "target": "velmyrth",
+    "hero": null
+  },
+  {
+    "hero_type": "velmyrth",
+    "price": 1700,
+    "initial": 1700,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "velmyrth",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1581,
+      "hp": 1581,
+      "damage": 235,
+      "skill_damage": 558,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "velmyrth",
+    "price": 1700,
+    "initial": 1701,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "velmyrth",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1581,
+      "hp": 1581,
+      "damage": 235,
+      "skill_damage": 558,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

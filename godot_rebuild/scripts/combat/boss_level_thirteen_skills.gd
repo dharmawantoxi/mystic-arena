@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["kaeldris", "pyraklos"]
+const IDS := ["kaeldris", "pyraklos", "velmyrth"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_kaeldris(world, hero, target, key, structures)
 		"pyraklos":
 			_pyraklos(world, hero, target, key, structures)
+		"velmyrth":
+			_velmyrth(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -73,6 +75,35 @@ static func _pyraklos(world, hero: HeroState, target, key: String, structures: A
 		"r":
 			# Arena: AOE 230 1.8x skill, attack delay max(timer, 60).
 			_radial(world, hero, structures, 230.0, 1.8, 60)
+
+
+static func _velmyrth(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Dagger: target 1.2x skill, slow 0.5 for 90.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.2)
+			world.apply_slow(target.id, 0.5, 90)
+		"w":
+			# Strike: teleport to (target.x, target.y - 20), then target 1.3x skill.
+			if target == null:
+				return
+			hero.position = target.position - Vector2(0, 20)
+			Common.hit(world, hero, target, 1.3)
+		"e":
+			# Blur: AOE 170 1.1x skill.
+			_radial(world, hero, structures, 170.0, 1.1)
+		"r":
+			# Coup: AOE 220, dmg = int(skill * 1.8); strictly below 30% HP
+			# (hp / max(1, max_hp), pre-hit) dmg = int(dmg * 1.6). No heal.
+			var base := int(hero.skill_damage() * 1.8)
+			for enemy in Common.enemies(world, hero, structures):
+				if hero.position.distance_to(enemy.position) <= 220.0:
+					var damage := base
+					if enemy.hp / maxf(1.0, _max_hp(enemy)) < 0.3:
+						damage = int(damage * 1.6)
+					world._deliver_hit(-1, hero.team, enemy, damage, "neutral", hero.position)
 
 
 #HEROES
