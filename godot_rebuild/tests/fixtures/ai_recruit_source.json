@@ -108,5 +108,60 @@
       "level": 1,
       "auto_cast": true
     }
+  },
+  {
+    "hero_type": "grimjaw",
+    "price": 450,
+    "initial": 449,
+    "success": false,
+    "balance": 449,
+    "count": 0,
+    "reserve": 450,
+    "target": "grimjaw",
+    "hero": null
+  },
+  {
+    "hero_type": "grimjaw",
+    "price": 450,
+    "initial": 450,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "grimjaw",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1120,
+      "hp": 1120,
+      "damage": 42,
+      "skill_damage": 26,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "grimjaw",
+    "price": 450,
+    "initial": 451,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "grimjaw",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1120,
+      "hp": 1120,
+      "damage": 42,
+      "skill_damage": 26,
+      "level": 1,
+      "auto_cast": true
+    }
   }
 ]

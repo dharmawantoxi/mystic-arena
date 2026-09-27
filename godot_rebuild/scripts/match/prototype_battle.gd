@@ -19,7 +19,8 @@ const MINIONS := {
 }
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const THORNE = preload("res://data/heroes/thorne.tres")
-const PLAYABLE_AI_HEROES := {"kaizen": KAIZEN, "thorne": THORNE}
+const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
+const PLAYABLE_AI_HEROES := {"kaizen": KAIZEN, "thorne": THORNE, "grimjaw": GRIMJAW}
 const HERO_SPAWN := Vector2(220, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
 const RED_HERO_SPAWN := Vector2(1120, 130)
@@ -400,8 +401,8 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	hero.follow_id = -1
 	hero.skill_timer = 0
 	# Source Hero.respawn clears Q timer, not universal W/E/R cooldowns.
-	# Preserve the original Kaizen rebuild contract; new Thorne follows source.
-	if hero.settings().id != "thorne":
+	# Preserve the original Kaizen rebuild contract; new kits follow source.
+	if hero.settings().id == "kaizen":
 		hero.w_cooldown = 0
 		hero.e_cooldown = 0
 		hero.r_cooldown = 0

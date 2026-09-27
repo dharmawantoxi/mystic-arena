@@ -6,6 +6,7 @@ const Definition = preload("res://scripts/data/minion_definition.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const ThorneSkills = preload("res://scripts/combat/thorne_skills.gd")
+const GrimjawSkills = preload("res://scripts/combat/grimjaw_skills.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
 const DamageRules = preload("res://scripts/combat/damage_rules.gd")
@@ -579,7 +580,10 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 	hero.attack_timer = hero.eff_attack_cd(hero.attack_cd_base)
 	# Same-team delivery is refused here; the source lacks the team
 	# check but can never aim at allies (AI targets enemies only).
-	return _deliver_hit(hero.id, hero.team, target, hero.damage, hero.dmg_school, hero.position)
+	var raw := (
+		hero.damage * (2 if hero.settings().id == "grimjaw" and hero.grimjaw_crit_timer > 0 else 1)
+	)
+	return _deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
 
 
 func upgrade_hero(hero_id: int) -> bool:
@@ -595,6 +599,8 @@ func _can_cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.e_cooldown > 0:
 		return false
+	if hero.settings().id == "grimjaw":
+		return GrimjawSkills.can_cast(self, hero, "e", structures)
 	if hero.settings().id == "thorne":
 		return ThorneSkills.can_cast(self, hero, "e", structures)
 	return _has_q_target(hero, structures)
@@ -607,6 +613,8 @@ func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.e_cooldown > 0:
 		return false
+	if hero.settings().id == "grimjaw":
+		return GrimjawSkills.cast(self, hero, "e", structures)
 	if hero.settings().id == "thorne":
 		return ThorneSkills.cast(self, hero, "e", structures)
 	if not _has_q_target(hero, structures):
@@ -624,6 +632,8 @@ func _can_cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.r_cooldown > 0:
 		return false
+	if hero.settings().id == "grimjaw":
+		return GrimjawSkills.can_cast(self, hero, "r", structures)
 	if hero.settings().id == "thorne":
 		return ThorneSkills.can_cast(self, hero, "r", structures)
 	return _has_q_target(hero, structures)
@@ -636,6 +646,8 @@ func _cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.r_cooldown > 0:
 		return false
+	if hero.settings().id == "grimjaw":
+		return GrimjawSkills.cast(self, hero, "r", structures)
 	if hero.settings().id == "thorne":
 		return ThorneSkills.cast(self, hero, "r", structures)
 	if not _has_q_target(hero, structures):
@@ -653,6 +665,8 @@ func _can_cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not is_running() or hero == null or not hero.alive:
 		return false
+	if hero.settings().id == "grimjaw":
+		return GrimjawSkills.can_cast(self, hero, "w", [])
 	if hero.settings().id == "thorne":
 		return ThorneSkills.can_cast(self, hero, "w", [])
 	return hero.w_cooldown <= 0
@@ -663,6 +677,8 @@ func cast_hero_w(hero_id: int) -> bool:
 	var hero := get_unit(hero_id) as HeroState
 	if not _can_cast_hero_w(hero_id):
 		return false
+	if hero.settings().id == "grimjaw":
+		return GrimjawSkills.cast(self, hero, "w", [])
 	if hero.settings().id == "thorne":
 		return ThorneSkills.cast(self, hero, "w", [])
 	hero.wind_wall_timer = 180
@@ -678,6 +694,8 @@ func can_cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.skill_timer > 0:
 		return false
+	if hero.settings().id == "grimjaw":
+		return GrimjawSkills.can_cast(self, hero, "q", structures)
 	if hero.settings().id == "thorne":
 		return ThorneSkills.can_cast(self, hero, "q", structures)
 	return _has_q_target(hero, structures)
@@ -692,6 +710,8 @@ func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 		return false
 	if hero.skill_timer > 0:
 		return false
+	if hero.settings().id == "grimjaw":
+		return GrimjawSkills.cast(self, hero, "q", structures)
 	if hero.settings().id == "thorne":
 		return ThorneSkills.cast(self, hero, "q", structures)
 	if not _has_q_target(hero, structures):
@@ -840,6 +860,12 @@ func _tick_hero(hero: HeroState) -> void:
 		hero.stun_timer -= 1
 	if hero.settings().id == "thorne":
 		ThorneSkills.tick(hero)
+	elif hero.settings().id == "grimjaw":
+		GrimjawSkills.tick(self, hero, _hero_skill_structures())
+
+
+func _hero_skill_structures() -> Array:
+	return []
 
 
 func _on_hero_death(hero: HeroState, source_id: int) -> void:

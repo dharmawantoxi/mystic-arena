@@ -1,5 +1,5 @@
 extends RefCounted
-## Numeric baselines for 222, real Kaizen/Thorne purchases; other kits pending.
+## Numeric baselines for 222, real Kaizen/Thorne/Grimjaw purchases; other kits pending.
 ## No unsupported hero may silently inherit Kaizen's kit.
 
 const World = preload("res://scripts/match/prototype_battle.gd")
@@ -8,6 +8,7 @@ const Recruit = preload("res://scripts/match/ai_recruitment.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const THORNE = preload("res://data/heroes/thorne.tres")
+const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
 const FIXTURE := "res://tests/fixtures/ai_recruit_source.json"
 const STATS := "res://data/ai/hero_combat_stats.json"
 const RECRUITMENT := "res://data/ai/recruitment.json"
@@ -106,17 +107,20 @@ func _catalog(check: Callable) -> void:
 	check.call(stats.thorne.base_hp == THORNE.max_hp, "Thorne native/source HP")
 	check.call(stats.thorne.base_damage == THORNE.damage, "Thorne native/source damage")
 	check.call(stats.thorne.cost == THORNE.cost, "Thorne native/source price")
+	check.call(stats.grimjaw.base_hp == GRIMJAW.max_hp, "Grimjaw native/source HP")
+	check.call(stats.grimjaw.base_damage == GRIMJAW.damage, "Grimjaw native/source damage")
+	check.call(stats.grimjaw.cost == GRIMJAW.cost, "Grimjaw native/source price")
 
 
 func _guards(check: Callable) -> void:
 	var world := _world()
 	_fund(world, 1000)
 	var recruit := Recruit.new()
-	var draft := _target("grimjaw", 450)
-	check.call(not recruit.try_buy(world, draft), "Missing Grimjaw kit cannot spawn Kaizen")
+	var draft := _target("sylara", 380)
+	check.call(not recruit.try_buy(world, draft), "Missing Sylara kit cannot spawn Kaizen")
 	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == "grimjaw" and draft.reserve() == 450,
+		draft.purchase_target == "sylara" and draft.reserve() == 380,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
@@ -145,7 +149,7 @@ func _guards(check: Callable) -> void:
 		"Dead owned hero still blocks duplicate"
 	)
 	world.winner = 0
-	check.call(not recruit.try_buy(world, _target("grimjaw", 450)), "Finished match blocks draft")
+	check.call(not recruit.try_buy(world, _target("sylara", 380)), "Finished match blocks draft")
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
@@ -181,9 +185,19 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var missing := _target("grimjaw", 450)
+	var missing := _target("sylara", 380)
 	world.economy.credit_kill(1, 1000)
 	check.call(
-		not adapter.try_buy(world, missing) and missing.reserve() == 450,
-		"Unsupported third kit keeps draft"
+		not adapter.try_buy(world, missing) and missing.reserve() == 380,
+		"Unsupported Sylara kit keeps draft without debit"
+	)
+	var grimjaw := _target("grimjaw", 450)
+	check.call(adapter.try_buy(world, grimjaw), "Grimjaw third real paid summon")
+	check.call(
+		world.units.size() == 3 and world.units[2].definition.id == "grimjaw",
+		"Three distinct native kits"
+	)
+	check.call(world.units[2].position == Vector2(1120, 170), "Third red summon source offset")
+	check.call(
+		world.economy.gold[1] == 650 and world.economy.is_balanced(), "Third kit debits exact 450 G"
 	)

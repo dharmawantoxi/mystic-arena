@@ -43,6 +43,13 @@ var bristleback_timer := 0
 var quill_timer := 0
 var warpath_timer := 0
 var warpath_original_attack_cd := 0
+# Grimjaw kit state (per instance; never stored on a shared definition).
+var blade_fury_timer := 0
+var heal_ward_timer := 0
+var heal_ward_position := Vector2.ZERO
+var omnislash_timer := 0
+var omnislash_target_id := -1
+var grimjaw_crit_timer := 0
 var q_stack := 0
 var q_reset_timer := 0
 var is_dashing := false

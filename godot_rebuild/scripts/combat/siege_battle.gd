@@ -32,6 +32,10 @@ func is_running() -> bool:
 	return winner == -1
 
 
+func _hero_skill_structures() -> Array:
+	return structures
+
+
 func setup_arena() -> bool:
 	if not is_running() or _arena_initialized or not structures.is_empty() or not units.is_empty():
 		return false

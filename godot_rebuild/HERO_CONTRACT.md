@@ -25,7 +25,7 @@ Mode **Pertandingan awal** men-spawn **satu Kaizen biru** dan **satu Kaizen mera
 
 ## Sengaja di luar
 
-Item/forge, unlock 400 G, dash/jump/tornado VFX, lima hero starter lain, AIPlayer (beli hero/upgrade lawan). Jangan mengklaim pertandingan Python selesai.
+Item/forge, unlock 400 G, dash/jump/tornado VFX, starter lain di scene otomatis, AIPlayer lengkap (beli hero/upgrade lawan). Jangan mengklaim pertandingan Python selesai.
 
 ## Adapter upgrade red (WIP AIPlayer)
 
@@ -36,10 +36,10 @@ memanggilnya otomatis; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
 
 ## Rekrut AI — fase awal, bukan roster playable lengkap
 
-Domain red kini memiliki transaksi Kaizen/Thorne berbayar eksplisit melalui
+Domain red kini memiliki transaksi Kaizen/Thorne/Grimjaw berbayar eksplisit melalui
 draft (lihat [AI_CONTRACT.md](AI_CONTRACT.md)). Kaizen merah gratis di scene
 tetap, tidak dihitung sebagai pembelian dan tidak diganti. Baseline numerik
-222 Hero sumber tersedia; 220 lainnya belum punya handler native, sehingga
+222 Hero sumber tersedia; 219 lainnya belum punya handler native, sehingga
 pembeliannya ditolak tanpa debit atau mengganti skill.
 
 Thorne (500 G) adalah hero melee nyata dengan Q Viscous Nose (cone/slow),
@@ -48,3 +48,11 @@ W Bristleback (mitigasi fisik/magic dan reflect), E Quill Spray AOE, R Warpath
 Hero + ThorneSkills Python, termasuk upgrade saat buff dan respawn.
 Resource `.tres` statis tidak dimutasi oleh buff. Kaizen lama tetap memakai
 kit sendiri. Belum ada animasi/UI Thorne atau AI controller di scene.
+
+Grimjaw (450 G) memakai Q spin 180 tick, W Healing Ward, E critical buff
+berulang 300 tick + radial AOE, R target-lock 90 tick. Oracle sumber
+`grimjaw_source.json` dibandingkan dengan combat native dan pembayaran red
+nyata. Seluruh ID hero kini memiliki marker polygon/warna prosedural sederhana
+berdasarkan ID dengan lingkar tim, mata arah hadap, HP dan seleksi. Ini
+**placeholder** bebas aset; bukan animasi/visual hero final atau bukti 219
+kit lainnya dapat dimainkan.

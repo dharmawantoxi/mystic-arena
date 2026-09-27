@@ -116,7 +116,15 @@ if (ROOT / "tests/fixtures/thorne_source.json").is_file():
         (ROOT / "tests/fixtures/thorne_source.json").read_text(encoding="utf-8")),
         "Thorne source skill/reflect/timer drift")
 
-# Recruitment is still a staged effort: only Kaizen has a native playable kit.
+check("GrimjawChecks.new().run(_check)" in ai_tests, "Grimjaw source kit suite must run")
+check((ROOT / "tests/fixtures/grimjaw_source.json").is_file(), "Grimjaw kit source fixture missing")
+if (ROOT / "tests/fixtures/grimjaw_source.json").is_file():
+    from grimjaw_source_oracle import source_fixture as grimjaw_source_fixture
+    check(grimjaw_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/grimjaw_source.json").read_text(encoding="utf-8")),
+        "Grimjaw source skill/timer/crit drift")
+
+# Recruitment is still staged: only Kaizen, Thorne and Grimjaw have native kits.
 # Execute the real Hero source oracle in this CI step (no workflow change).
 from ai_recruit_source_oracle import source_fixture as ai_recruit_source_fixture
 check("AIRecruitChecks.new().run(_check)" in ai_tests, "Real recruit suite must run")

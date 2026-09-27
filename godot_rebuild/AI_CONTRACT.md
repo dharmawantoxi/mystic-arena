@@ -70,7 +70,7 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
-## Roster 222 hero: baseline angka + Kaizen/Thorne playable, BELUM kit penuh
+## Roster 222 hero: baseline angka + Kaizen/Thorne/Grimjaw playable, BELUM kit penuh
 
 Permintaan lanjutan adalah enam starter + 216 boss playable, dikerjakan per
 fase, **belum selesai**. `data/ai/hero_combat_stats.json` sekarang mengunci
@@ -80,16 +80,16 @@ base, sekolah damage dan harga summon. Ini adalah **baseline angka**, bukan
 skill handler playable atau `.tres` kit. `ai_recruit_source_oracle.py`
 mengeksekusi `Hero.__init__` asli untuk semua 222 lewat AST (inventory kosong,
 audio stub) dan transaksi `_try_buy_hero` dengan Hero Kaizen asli pada gold
-399/400/401 dan Thorne pada 499/500/501. CI menjalankannya via `validate_project.py` karena perubahan
+399/400/401, Thorne 499/500/501 dan Grimjaw 449/450/451. CI menjalankannya via `validate_project.py` karena perubahan
 harus tetap di dalam `godot_rebuild/`.
 
 `ai_recruitment.gd` meneruskan draft ke callback sinkron transaksi
 `prototype_battle.gd::_buy_ai_hero` di world/ledger nyata. Saat ini **Kaizen
-dan Thorne** punya kit native. 220 hero lain (empat starter dan 216 boss),
+Thorne dan Grimjaw** punya kit native. 219 hero lain (tiga starter dan 216 boss),
 walaupun punya metadata dan baseline numerik, ditolak eksplisit dengan `kit`
 dan target serta reserve tetap tersimpan; tidak di-spawn sebagai Kaizen.
 Hero yang dimiliki red (termasuk mati) tidak dapat dibeli ulang. Kaizen 400 G,
-Thorne 500 G, offset first spawn Y90 dan berikutnya Y130, ID
+Thorne 500 G, Grimjaw 450 G, offset first spawn Y90, lalu Y130/Y170, ID
 registry/capacity/posisi/saldo valid, debit sekali setelah spawn. Wrapper scene
 tetap memakai Kaizen gratis red; adapter **tidak** mengubah scene atau
 membuat AIPlayer lengkap. Kontrak lima hero ditahan defensif di
@@ -104,7 +104,15 @@ sesuai sumber diuji lewat `thorne_source_oracle.py` (Hero/ThorneSkills asli)
 dan combat/ledger world native; bukan penggunaan kit Kaizen sebagai
 fallback. Kit Thorne tidak disambungkan ke scene otomatis.
 
-Lanjutan wajib: port empat starter lainnya dan 216 boss dengan handler skill,
+`grimjaw_skills.gd` mem-port Q Blade Fury (12 pulsa tiap 15 tick tanpa damage
+saat cast), W ward tetap di posisi cast 360 tick/heal hero dan sekutu,
+E AOE radial 60 + basic attack crit 2× selama 300 tick (tidak habis setelah
+satu hit), dan R target-lock Omnislash 90 tick. Fixture `grimjaw_source.json`
+berasal dari Hero/GrimjawSkills Python nyata; semua 222 ID memperoleh bentuk
+polygon dan warna prosedural deterministik sebagai *placeholder visual* saat
+kit mereka nanti aktif. Tidak ada aset baru atau klaim desain final.
+
+Lanjutan wajib: port tiga starter lainnya dan 216 boss dengan handler skill,
 serangan ranged, lifecycle, upgrade dan source oracle masing-masing sebelum
 memperluas registry kit native; lalu tes roster multi-hero/capacity dan
 integrasi scene tersendiri. Jangan mengklaim 222 kit dari file angka.
@@ -212,8 +220,9 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  baseline angka 222 sudah ada, kit playable Kaizen dan Thorne. Empat starter
-  lain + 216 boss, scene/presentasi dan oracle kit mereka masih pending.
+  baseline angka 222 sudah ada, kit playable Kaizen, Thorne dan Grimjaw. Tiga
+  starter lain + 216 boss dan oracle kit mereka masih pending; marker prosedural
+  bukan bukti kit playable atau tampilan hero final.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak
   memasukkan boss level saat ini. Draft starter pertama acak, boss pertama dari
   level terbaru, berikutnya berbobot source-level; tipe owned termasuk hero mati.

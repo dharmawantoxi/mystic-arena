@@ -1,0 +1,617 @@
+{
+  "casts": [
+    {
+      "key": "q",
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          420,
+          340
+        ]
+      ],
+      "with_enemies": false,
+      "success": false,
+      "repeat": false,
+      "state": {
+        "hp": 900,
+        "damage": 42,
+        "attack_timer": 0,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "active": "",
+        "visual": 0,
+        "spin": 0,
+        "ward": 0,
+        "crit": 0,
+        "slash": 0,
+        "locked": false,
+        "enemies": []
+      }
+    },
+    {
+      "key": "q",
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          420,
+          340
+        ]
+      ],
+      "with_enemies": true,
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 900,
+        "damage": 42,
+        "attack_timer": 0,
+        "q": 420,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "active": "q",
+        "visual": 180,
+        "spin": 180,
+        "ward": 0,
+        "crit": 0,
+        "slash": 0,
+        "locked": false,
+        "enemies": [
+          10000,
+          10000
+        ]
+      }
+    },
+    {
+      "key": "w",
+      "positions": [
+        [
+          450,
+          340
+        ]
+      ],
+      "with_enemies": false,
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 930,
+        "damage": 42,
+        "attack_timer": 0,
+        "q": 0,
+        "w": 240,
+        "e": 0,
+        "r": 0,
+        "active": "w",
+        "visual": 90,
+        "spin": 0,
+        "ward": 360,
+        "crit": 0,
+        "slash": 0,
+        "locked": false,
+        "enemies": []
+      }
+    },
+    {
+      "key": "w",
+      "positions": [
+        [
+          450,
+          340
+        ]
+      ],
+      "with_enemies": true,
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 930,
+        "damage": 42,
+        "attack_timer": 0,
+        "q": 0,
+        "w": 240,
+        "e": 0,
+        "r": 0,
+        "active": "w",
+        "visual": 90,
+        "spin": 0,
+        "ward": 360,
+        "crit": 0,
+        "slash": 0,
+        "locked": false,
+        "enemies": [
+          10000
+        ]
+      }
+    },
+    {
+      "key": "e",
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          440,
+          340
+        ],
+        [
+          439,
+          340
+        ]
+      ],
+      "with_enemies": false,
+      "success": false,
+      "repeat": false,
+      "state": {
+        "hp": 900,
+        "damage": 42,
+        "attack_timer": 0,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "active": "",
+        "visual": 0,
+        "spin": 0,
+        "ward": 0,
+        "crit": 0,
+        "slash": 0,
+        "locked": false,
+        "enemies": []
+      }
+    },
+    {
+      "key": "e",
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          440,
+          340
+        ],
+        [
+          439,
+          340
+        ]
+      ],
+      "with_enemies": true,
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 900,
+        "damage": 42,
+        "attack_timer": 0,
+        "q": 0,
+        "w": 0,
+        "e": 420,
+        "r": 0,
+        "active": "e",
+        "visual": 60,
+        "spin": 0,
+        "ward": 0,
+        "crit": 300,
+        "slash": 0,
+        "locked": false,
+        "enemies": [
+          9961,
+          9961,
+          10000
+        ]
+      }
+    },
+    {
+      "key": "r",
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          600,
+          340
+        ]
+      ],
+      "with_enemies": false,
+      "success": false,
+      "repeat": false,
+      "state": {
+        "hp": 900,
+        "damage": 42,
+        "attack_timer": 0,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "active": "",
+        "visual": 0,
+        "spin": 0,
+        "ward": 0,
+        "crit": 0,
+        "slash": 0,
+        "locked": false,
+        "enemies": []
+      }
+    },
+    {
+      "key": "r",
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          600,
+          340
+        ]
+      ],
+      "with_enemies": true,
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 900,
+        "damage": 42,
+        "attack_timer": 0,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 900,
+        "active": "r",
+        "visual": 90,
+        "spin": 0,
+        "ward": 0,
+        "crit": 0,
+        "slash": 90,
+        "locked": true,
+        "enemies": [
+          9935,
+          10000
+        ]
+      }
+    }
+  ],
+  "traces": {
+    "q": [
+      {
+        "tick": 1,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 420,
+          "w": 0,
+          "e": 0,
+          "r": 0,
+          "active": "q",
+          "visual": 180,
+          "spin": 179,
+          "ward": 0,
+          "crit": 0,
+          "slash": 0,
+          "locked": false,
+          "enemies": [
+            10000,
+            10000
+          ]
+        }
+      },
+      {
+        "tick": 15,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 420,
+          "w": 0,
+          "e": 0,
+          "r": 0,
+          "active": "q",
+          "visual": 180,
+          "spin": 165,
+          "ward": 0,
+          "crit": 0,
+          "slash": 0,
+          "locked": false,
+          "enemies": [
+            9974,
+            10000
+          ]
+        }
+      },
+      {
+        "tick": 16,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 420,
+          "w": 0,
+          "e": 0,
+          "r": 0,
+          "active": "q",
+          "visual": 180,
+          "spin": 164,
+          "ward": 0,
+          "crit": 0,
+          "slash": 0,
+          "locked": false,
+          "enemies": [
+            9974,
+            10000
+          ]
+        }
+      },
+      {
+        "tick": 165,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 420,
+          "w": 0,
+          "e": 0,
+          "r": 0,
+          "active": "q",
+          "visual": 180,
+          "spin": 15,
+          "ward": 0,
+          "crit": 0,
+          "slash": 0,
+          "locked": false,
+          "enemies": [
+            9714,
+            10000
+          ]
+        }
+      },
+      {
+        "tick": 180,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 420,
+          "w": 0,
+          "e": 0,
+          "r": 0,
+          "active": "q",
+          "visual": 180,
+          "spin": 0,
+          "ward": 0,
+          "crit": 0,
+          "slash": 0,
+          "locked": false,
+          "enemies": [
+            9688,
+            10000
+          ]
+        }
+      }
+    ],
+    "r": [
+      {
+        "tick": 1,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 0,
+          "w": 0,
+          "e": 0,
+          "r": 900,
+          "active": "r",
+          "visual": 90,
+          "spin": 0,
+          "ward": 0,
+          "crit": 0,
+          "slash": 89,
+          "locked": true,
+          "enemies": [
+            9935,
+            10000
+          ]
+        }
+      },
+      {
+        "tick": 2,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 0,
+          "w": 0,
+          "e": 0,
+          "r": 900,
+          "active": "r",
+          "visual": 90,
+          "spin": 0,
+          "ward": 0,
+          "crit": 0,
+          "slash": 88,
+          "locked": true,
+          "enemies": [
+            9920,
+            10000
+          ]
+        }
+      },
+      {
+        "tick": 8,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 0,
+          "w": 0,
+          "e": 0,
+          "r": 900,
+          "active": "r",
+          "visual": 90,
+          "spin": 0,
+          "ward": 0,
+          "crit": 0,
+          "slash": 82,
+          "locked": true,
+          "enemies": [
+            9920,
+            10000
+          ]
+        }
+      },
+      {
+        "tick": 90,
+        "state": {
+          "hp": 1120,
+          "damage": 42,
+          "attack_timer": 0,
+          "q": 0,
+          "w": 0,
+          "e": 0,
+          "r": 900,
+          "active": "r",
+          "visual": 90,
+          "spin": 0,
+          "ward": 0,
+          "crit": 0,
+          "slash": 0,
+          "locked": false,
+          "enemies": [
+            9755,
+            10000
+          ]
+        }
+      }
+    ],
+    "w": [
+      {
+        "tick": 1,
+        "hp": 932,
+        "near": 9991,
+        "far": 9990,
+        "ward": 359,
+        "ward_pos": [
+          500.0,
+          340.0
+        ]
+      },
+      {
+        "tick": 2,
+        "hp": 932,
+        "near": 9992,
+        "far": 9990,
+        "ward": 358,
+        "ward_pos": [
+          500.0,
+          340.0
+        ]
+      },
+      {
+        "tick": 359,
+        "hp": 932,
+        "near": 10000,
+        "far": 9990,
+        "ward": 1,
+        "ward_pos": [
+          500.0,
+          340.0
+        ]
+      },
+      {
+        "tick": 360,
+        "hp": 932,
+        "near": 10000,
+        "far": 9990,
+        "ward": 0,
+        "ward_pos": [
+          500.0,
+          340.0
+        ]
+      }
+    ]
+  },
+  "crit_attacks": {
+    "before": {
+      "hp": 1120,
+      "damage": 42,
+      "attack_timer": 0,
+      "q": 0,
+      "w": 0,
+      "e": 420,
+      "r": 0,
+      "active": "e",
+      "visual": 60,
+      "spin": 0,
+      "ward": 0,
+      "crit": 300,
+      "slash": 0,
+      "locked": false,
+      "enemies": [
+        9961
+      ]
+    },
+    "first": {
+      "hp": 1120,
+      "damage": 42,
+      "attack_timer": 32,
+      "q": 0,
+      "w": 0,
+      "e": 420,
+      "r": 0,
+      "active": "e",
+      "visual": 60,
+      "spin": 0,
+      "ward": 0,
+      "crit": 300,
+      "slash": 0,
+      "locked": false,
+      "enemies": [
+        9877
+      ]
+    },
+    "second": {
+      "hp": 1120,
+      "damage": 42,
+      "attack_timer": 32,
+      "q": 0,
+      "w": 0,
+      "e": 420,
+      "r": 0,
+      "active": "e",
+      "visual": 60,
+      "spin": 0,
+      "ward": 0,
+      "crit": 300,
+      "slash": 0,
+      "locked": false,
+      "enemies": [
+        9793
+      ]
+    },
+    "after": {
+      "hp": 1120,
+      "damage": 42,
+      "attack_timer": 32,
+      "q": 0,
+      "w": 0,
+      "e": 420,
+      "r": 0,
+      "active": "e",
+      "visual": 60,
+      "spin": 0,
+      "ward": 0,
+      "crit": 0,
+      "slash": 0,
+      "locked": false,
+      "enemies": [
+        9751
+      ]
+    }
+  }
+}
