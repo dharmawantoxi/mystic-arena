@@ -2,8 +2,8 @@
   "target": 222,
   "playable": 167,
   "pending": 55,
-  "verified_code_commit": "5492a87245d4db45a5b7b141203fa4965694b439",
-  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304610944",
+  "verified_code_commit": "8fc39ee98c10d423164bdcd04278b9de5608d4cd",
+  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305280464",
   "heroes": {
     "grimjaw": {
       "status": "playable",
@@ -2868,5 +2868,5 @@
       "blocker": null
     }
   },
-  "verification_note": "166 verified by linked CI (442071 native checks); Kunkka implementation complete, new CI pending."
+  "verification_note": "167 playable verified: Godot 4.7.2 import + run_all 457372 checks; static 4596, all source oracles, source-contract, gdtoolkit 4.5.0 PASS. No registered WIP."
 }

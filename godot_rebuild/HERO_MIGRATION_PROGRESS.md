@@ -1,13 +1,22 @@
-# Checkpoint migrasi native Godot — 167/222 implementasi, 55 pending
+# Checkpoint migrasi native Godot — 167/222 teruji, 55 pending
 
 Target tetap **222**. Sesi dari merge `50b7c07` (164/222).
 Branch `arena/01a0e1cb-mystic-arena`, PR draft
 [#287](https://github.com/dharmawantoxi/mystic-arena/pull/287). **Jangan merge.**
 
-**Status batch 9:** Kunkka implementasi/oracle selesai; validasi lokal dan
-lokal PASS dan CI menunggu. Checkpoint runtime terakhir teruji: **166/222**,
-commit `5492a87`, Godot 4.7.2 run **36304610944**, 442071 checks.
-Belum mengklaim 167 teruji sebelum CI batch 9 lulus.
+**Status batch 9: LULUS. 167/222 playable teruji, 55 pending.**
+Kode terakhir `8fc39ee98c10d423164bdcd04278b9de5608d4cd` sudah push.
+CI [36305280464](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305280464), Godot **4.7.2**, **457372 checks**;
+import, seluruh run_all lama/baru, scene/input/lifecycle PASS.
+Lokal **4596 static PASS**, source-contract, semua *_oracle.py,
+gdparse/gdlint/gdformat **4.5.0** PASS. Tidak ada kit WIP terdaftar.
+
+Evaluasi kapasitas: tiga batch selesai dan teruji; tidak membuka kit berikutnya
+sebelum handoff agar tidak meninggalkan implementasi parsial. Nyxarath hanya
+dibaca/audit awal (belum ada handler/resource/registration baru). Blocker engine
+lokal tetap TLS; CI resmi hijau. Langkah berikut: selesaikan sisa level6
+Gravewake/Syrentha/Thalgryn, kemudian Nyxarath dan pending level7. Target222
+belum selesai. Lanjut otomatis tiap batch lulus, tanpa meminta persetujuan.
 
 Daftar tepat selesai/pending, harga summon, level, recipe dan bukti pengujian:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md),
@@ -21,7 +30,7 @@ Registry eksplisit `scripts/data/hero_roster.gd`.
 | Baseline merge PR #285 | AA/Nyzrak/Ignis dan 161 sebelumnya | 164 / 58 | 50b7c07 | [413735](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
 | 7 | Krobellus 1500G, level5 | 165 / 57 | 64633eb | [427984](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304115611) |
 | 8 | Vhalzun 1200G, level5 | 166 / 56 | 5492a87 | [442071](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304610944) |
-| 9 | Kunkka 900G, level6 | 167 / 55 | batch berjalan | menunggu |
+| 9 | Kunkka 900G, level6 | **167 / 55** | 8fc39ee | [457372](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305280464) |
 
 Setiap batch sebelumnya sudah commit+push setelah seluruh validasi lokal,
 dan CI hijau sebelum mulai batch berikut. Engine lokal tidak tersedia:
@@ -121,23 +130,53 @@ export PATH="$PWD/godot_rebuild/.venv/bin:$PATH" # gdtoolkit==4.5.0 lokal
 
 Batch8 lokal: **4556 static PASS**, source-contract, seluruh oracle,
 gdparse/gdlint/gdformat4.5.0. Batch9 lokal: **4596 static PASS**, source-contract, seluruh *_oracle.py,
-gdparse/gdlint/gdformat4.5.0 PASS. CI engine menunggu.
+gdparse/gdlint/gdformat4.5.0 PASS. CI engine **457372 PASS**.
 Oracle --write hanya untuk regenerate dari eksekusi sumber; jangan mengedit
 fixture manual demi meloloskan drift. Setiap batch: oracle → resource →
 handler/state → combat/transaksi/run_all → static/oracle/lint → commit/push →
 CI; perbaiki kegagalan sebelum mulai batch berikut. Update manifest dan docs.
 
-## Pesan siap-salin (lengkapi receipt CI batch9 sebelum berhenti)
+## Pesan siap-salin untuk newchat
 
-Lanjutkan dari PR draft #287 branch arena/01a0e1cb-mystic-arena, bukan main
-50b7c07. Target tetap222, saat ini167 implementasi/55pending, checkpoint
-runtime terakhir166 (CI36304610944). Baca checkpoint ini dan manifest tepat,
-jangan memakai daftar/harga informal lama. Lanjut sisa level6, lalu Nyxarath
-level7; handler sumber per-ID, bukan fallback150. Hanya godot_rebuild, Python
-read-only; pertahankan Kaizen gratis, defender, QWER/basic/target/radius/
-school/source/cooldown/timer/lifecycle/upgrade/harga/quirk. Tanpa item/forge,
-AIPlayer penuh, rebalance/art final. Gunakan branch Arena sesi baru yang
-sistem tetapkan; PR draft, commit+push tiap batch teruji, jangan merge.
-Selesaikan semua oracle/static/source-contract/gdtoolkit4.5.0 dan CI Godot4.7.2.
-Gravewake1000G adalah sentinel penolakan pending sekarang karena Kunkka selesai.
-Simpan daftar tepat/progres/CI dan pesan lanjut sebelum konteks habis.
+> Lanjutkan migrasi native Godot dari PR **draft #287**, branch
+> `arena/01a0e1cb-mystic-arena`, **bukan hanya main 50b7c07**.
+> Kode teruji `8fc39ee` (checkpoint docs commit sesudahnya juga perlu diambil).
+> Saat ini **167/222 playable teruji / 55 pending**. Sesi ini menyelesaikan
+> Krobellus1500G, Vhalzun1200G, Kunkka900G. CI Godot4.7.2 **457372 checks**:
+> https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305280464
+> Lokal static **4596 PASS**, source-contract, semua oracle, gdtoolkit4.5.0
+> parser/lint/format PASS. Tidak ada WIP terdaftar, belum merge.
+>
+> Baca HERO_MIGRATION_PROGRESS.md, HERO_ROSTER_STATUS.md, manifest
+> data/ai/hero_migration_status.json dan kontrak. **Daftar/harga informal lama
+> salah sebagian**: Vhorethzir sudah shared-source playable; gunakan manifest
+> + sumber asli. Selanjutnya sisa level6 Gravewake1000G, Syrentha1100G,
+> Thalgryn1200G, kemudian Nyxarath1000G dan pending level7.
+>
+> Hanya ubah godot_rebuild; Python asli read-only. Target tetap222, tanpa
+> fallback generik untuk pending. Oracle harus menjalankan source_env + state
+> capture asli, .tres balanced dari core+constructor, handler per perilaku,
+> tes cast/traces/basic/respawn/roster/transaksi. Pertahankan QWER/target/radius/
+> school/source/cooldown/timer/lifecycle/upgrade/harga/quirk; boss upgrade480G.
+> Kaizen gratis + defender tetap, tanpa item/forge, AIPlayer penuh, rebalance,
+> refactor besar atau art final. AA directions, Nyzrak shield tanpa mitigasi,
+> Ignis dragon_blood tidak reset damage tetap.
+>
+> **Kunkka kini playable**: sentinel penolakan ai_recruit/source_shared sudah
+> pindah ke **Gravewake1000G**, dengan assert masih pending. Jangan kembalikan
+> tes penolakan ke Kunkka/AA/Nyzrak/Ignis yang playable. 55 pending ditolak
+> tanpa debit, spawn parsial, atau substitusi. Semua suite lama, semua
+> *_oracle.py (termasuk source_shared_boss_oracle.py), validate_project,
+> source-contract, gdtoolkit4.5.0 dan CI Godot4.7.2 wajib lulus sebelum batch
+> berikutnya. Sandbox gagal unduh engine TLS, runtime dilakukan CI resmi.
+>
+> Gunakan branch Arena sesi yang ditetapkan sistem; ambil checkpoint PR287
+> dulu jika checkout baru masih main. PR draft, commit+push tiap batch
+> teruji, jangan merge tanpa perintah eksplisit. Update manifest/roster/docs
+> dan jumlah sisa tiap batch. Sebelum konteks habis: validasi, simpan daftar
+> tepat dan blocker/receipt CI/next steps, commit+push, verifikasi remote dan
+> gh run list, berikan pesan lanjut. Jangan mendaftarkan WIP atau mengklaim222.
+
+**55 ID pending tepat (harga/level pada tabel di atas):**
+
+`gravewake`, `syrentha`, `thalgryn`, `akashari`, `malzareth`, `nyxarath`, `vorenmarr`, `kenshiro`, `khazan`, `naraka`, `wiro`, `aurethzar`, `krognarr`, `raz`, `vraskhan`, `aeralith`, `aurex`, `nyxareva`, `thalakryon`, `aurelix`, `aurelyssa`, `nazulmor`, `vargrath`, `kaeldris`, `pyraklos`, `solvarin`, `velmyrth`, `azureth`, `luminar`, `pyraethis`, `solara`, `auroth`, `morvein`, `thorvak`, `yamako`, `ignirus`, `leoric`, `seiryukong`, `shirotaka`, `kaelthorn`, `nyxareth`, `solvanth`, `xyrael`, `aurelion`, `cryssalia`, `kaelthar`, `morkhaera`, `akahime`, `nyxthrael`, `sylvantheros`, `vaelindra`, `astraelion`, `morthraxis`, `morvaenthir`, `thornvaegrim`.

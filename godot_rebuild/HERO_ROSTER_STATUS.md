@@ -1,8 +1,9 @@
 # Daftar tepat migrasi hero — 167 playable, 55 pending
 
 Target tetap **222**, belum selesai. Registry: `scripts/data/hero_roster.gd`.
-Manifest: `data/ai/hero_migration_status.json`. Krobellus batch 7: CI hijau 427984 checks run 36304115611; Vhalzun batch 8 hijau 442071 run 36304610944; Kunkka batch 9 CI menunggu.
-Baseline 164: Godot 4.7.2 run 36302839552, 413735 checks; static 4476.
+Manifest: `data/ai/hero_migration_status.json`.
+CI Godot 4.7.2: **457372 checks** pada [run 36305280464](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305280464),
+commit `8fc39ee`, **4596 static PASS**. Semua 167 playable teruji; tidak ada WIP terdaftar.
 
 Enam starter + sebelas boss recipe khusus + 150 ID shared-source eksplisit.
 Shared-source hanya untuk ID yang benar-benar menjalankan `_fallback_cast` di Python.
