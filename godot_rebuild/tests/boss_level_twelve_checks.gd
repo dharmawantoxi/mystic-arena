@@ -3,6 +3,7 @@ extends "res://tests/starter_finish_checks.gd"
 ## timers, attacks, respawn.
 const BOSS_FIXTURE := "res://tests/fixtures/boss_level_twelve_source.json"
 const BOSSES := {
+	"aurelyssa": preload("res://data/heroes/aurelyssa.tres"),
 	"aurelix": preload("res://data/heroes/aurelix.tres"),
 }
 

@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 187,
-  "pending": 35,
+  "playable": 188,
+  "pending": 34,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -711,7 +711,7 @@
       "blocker": null
     },
     "aurelyssa": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 12,
       "summon_cost": 1550,
       "source_recipe": {
@@ -720,10 +720,10 @@
         "e": "_cast_e_aurelyssa_wings",
         "r": "_cast_r_aurelyssa_phantom"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_twelve_skills.gd",
+      "oracle": "boss_level_twelve_source_oracle.py",
+      "native_test": "boss_level_twelve_checks.gd",
+      "blocker": null
     },
     "nazulmor": {
       "status": "pending",

@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["aurelix"]
+const IDS := ["aurelix", "aurelyssa"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"aurelix":
 			_aurelix(world, hero, target, key, structures)
+		"aurelyssa":
+			_aurelyssa(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -49,6 +51,25 @@ static func _aurelix(world, hero: HeroState, target, key: String, structures: Ar
 		"r":
 			# Transcend: AOE 240 1.8x skill, slow 0.5 for 90.
 			_radial(world, hero, structures, 240.0, 1.8, 0, 0.5, 90)
+
+
+static func _aurelyssa(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Whirlwind: AOE 140 1.1x skill.
+			_radial(world, hero, structures, 140.0, 1.1)
+		"w":
+			# Sweep: AOE 160 1.2x skill.
+			_radial(world, hero, structures, 160.0, 1.2)
+		"e":
+			# Wings: dash min(dist, 100) (d > 1) when a target exists, then AOE 120
+			# around the NEW position for 1.1x skill, even without a target.
+			if target != null:
+				_dash(hero, target, 100.0)
+			_radial(world, hero, structures, 120.0, 1.1)
+		"r":
+			# Phantom: AOE 220 1.8x skill, attack delay max(timer, 60).
+			_radial(world, hero, structures, 220.0, 1.8, 60)
 
 
 #HEROES
