@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["kaeldris", "pyraklos", "velmyrth"]
+const IDS := ["kaeldris", "pyraklos", "velmyrth", "solvarin"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -30,7 +30,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_pyraklos(world, hero, target, key, structures)
 		"velmyrth":
 			_velmyrth(world, hero, target, key, structures)
-		#DISPATCH
+		"solvarin":
+			_solvarin(world, hero, target, key, structures)
 		_:
 			return false
 	Common.trigger(hero, key, VISUAL[key])
@@ -106,7 +107,25 @@ static func _velmyrth(world, hero: HeroState, target, key: String, structures: A
 					world._deliver_hit(-1, hero.team, enemy, damage, "neutral", hero.position)
 
 
-#HEROES
+static func _solvarin(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Purification: target 1.3x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.3)
+		"w":
+			# Repel: AOE 180 1.2x skill, attack delay max(timer, 40).
+			_radial(world, hero, structures, 180.0, 1.2, 40)
+		"e":
+			# Degen: AOE 200 0.9x skill, slow 0.4 for 90.
+			_radial(world, hero, structures, 200.0, 0.9, 0, 0.4, 90)
+		"r":
+			# Guardian: AOE 280 2.0x skill, attack delay max(timer, 75), heal 12%.
+			_radial(world, hero, structures, 280.0, 2.0, 75)
+			hero.heal_hp(int(hero.max_hp * 0.12))
+
+
 static func _max_hp(target) -> float:
 	if target is HeroState:
 		return float(target.max_hp)

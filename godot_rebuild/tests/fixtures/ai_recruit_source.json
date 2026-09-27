@@ -2365,6 +2365,61 @@
     }
   },
   {
+    "hero_type": "solvarin",
+    "price": 2400,
+    "initial": 2399,
+    "success": false,
+    "balance": 2399,
+    "count": 0,
+    "reserve": 2400,
+    "target": "solvarin",
+    "hero": null
+  },
+  {
+    "hero_type": "solvarin",
+    "price": 2400,
+    "initial": 2400,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "solvarin",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2457,
+      "hp": 2457,
+      "damage": 174,
+      "skill_damage": 499,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "solvarin",
+    "price": 2400,
+    "initial": 2401,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "solvarin",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2457,
+      "hp": 2457,
+      "damage": 174,
+      "skill_damage": 499,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
