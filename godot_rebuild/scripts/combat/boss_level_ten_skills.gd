@@ -32,7 +32,6 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_vraskhan(world, hero, target, key, structures)
 		"aurethzar":
 			_aurethzar(world, hero, target, key, structures)
-		#DISPATCH
 		_:
 			return false
 	Common.trigger(hero, key, VISUAL[key])
@@ -122,7 +121,6 @@ static func _aurethzar(world, hero: HeroState, target, key: String, structures: 
 			_radial(world, hero, structures, 250.0, 1.9, 70)
 
 
-#HEROES
 static func _dash(hero: HeroState, target, max_step: float) -> void:
 	# Source: d = hypot(dx, dy); if d > 1: step = min(d, max_step).
 	var delta: Vector2 = target.position - hero.position
