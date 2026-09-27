@@ -3850,6 +3850,61 @@
     }
   },
   {
+    "hero_type": "thornvaegrim",
+    "price": 2700,
+    "initial": 2699,
+    "success": false,
+    "balance": 2699,
+    "count": 0,
+    "reserve": 2700,
+    "target": "thornvaegrim",
+    "hero": null
+  },
+  {
+    "hero_type": "thornvaegrim",
+    "price": 2700,
+    "initial": 2700,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "thornvaegrim",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2381,
+      "hp": 2381,
+      "damage": 179,
+      "skill_damage": 520,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "thornvaegrim",
+    "price": 2700,
+    "initial": 2701,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "thornvaegrim",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2381,
+      "hp": 2381,
+      "damage": 179,
+      "skill_damage": 520,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

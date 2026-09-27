@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["astraelion", "morvaenthir"]
+const IDS := ["astraelion", "morvaenthir", "thornvaegrim"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_astraelion(world, hero, target, key, structures)
 		"morvaenthir":
 			_morvaenthir(world, hero, target, key, structures)
+		"thornvaegrim":
+			_thornvaegrim(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -69,6 +71,25 @@ static func _morvaenthir(world, hero: HeroState, target, key: String, structures
 		"r":
 			# AOE 290 1.95x skill, attack delay max(timer, 75).
 			_radial(world, hero, structures, 290.0, 1.95, 75)
+
+
+static func _thornvaegrim(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Target 1.25x skill, slow 0.4 for 90.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.25)
+			world.apply_slow(target.id, 0.4, 90)
+		"w":
+			# AOE 200 1.15x skill.
+			_radial(world, hero, structures, 200.0, 1.15)
+		"e":
+			# AOE 215 1.0x skill.
+			_radial(world, hero, structures, 215.0, 1.0)
+		"r":
+			# AOE 270 1.95x skill, attack delay max(timer, 70).
+			_radial(world, hero, structures, 270.0, 1.95, 70)
 
 
 #HEROES
