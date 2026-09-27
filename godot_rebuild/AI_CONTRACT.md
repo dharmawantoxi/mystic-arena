@@ -247,12 +247,17 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
    terhadap `data/ai/item_catalog.json` oleh `validate_project.py` dan
    `ai_item_checks.gd`. Metadata mencatat juga `drops_on_death`; harga per item
    dibaca dari katalog (Astral Codex 6000, bukan flat 4500).
-2. [ ] **Suggestion** `suggest_item_for_hero` + `is_magic_hero`: pool per role
+2. [x] **Suggestion** `suggest_item_for_hero` + `is_magic_hero`: pool per role
    (tank/bruiser/fighter, marksman/assassin, mage/trickster atau magic,
    fallback), melee `range <= 80` menyisipkan `cleave_axe` di depan dan
    `holy_rapier` di belakang, ranged hanya `holy_rapier` di belakang; item
    owned dilewati; filter `melee_only`/`magic_only`. Catatan: `is_magic_hero`
    mengecualikan "anti-mage" dan memakai 18 kata kunci role.
+   `scripts/match/hero_items.gd` memuat katalog + keempat pool + gate. Oracle
+   merekam 29 role untuk `is_magic_hero`, 26 kasus saran dan 22 urutan beli
+   penuh (drain sampai `None`); `ai_item_checks.gd` mengulang drain yang sama.
+   `range <= 0` memakai fallback sumber 100 (jadi ranged), `Anti-Mage` memakai
+   pool mage tetapi seluruh item `magic_only` terfilter.
 3. **Inventory slot** `HeroItemInventory.add/remove/count/has/used_slots`
    (6 slot, gate melee/magic). Perhatian: `add` memanggil `_on_item_changed`
    yang menghitung ulang `max_hp` (`get_max_hp`) dan `apply_heal_amp`; kalau
@@ -285,8 +290,9 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-  Lapisan 1 selesai (metadata katalog 33 item + oracle + tes native);
-  lapisan 2-5 belum (lihat "Rencana port item AI").
+  Lapisan 1-2 selesai (metadata katalog 33 item + `suggest_item_for_hero`/
+  `is_magic_hero` + oracle + tes native); lapisan 3-5 belum (lihat "Rencana
+  port item AI").
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.

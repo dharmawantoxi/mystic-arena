@@ -2,6 +2,7 @@ extends RefCounted
 ## Native AI item metadata versus the real hero_items.ITEM_CATALOG exec.
 ## Metadata only: no stat effects, passives or Forge UI are ported here.
 
+const HeroItems = preload("res://scripts/match/hero_items.gd")
 const METADATA := "res://data/ai/item_catalog.json"
 const FIXTURE := "res://tests/fixtures/ai_items_source.json"
 # Source counts read from the executed ITEM_CATALOG (oracle asserts them too).
@@ -14,6 +15,77 @@ const DROPS_ON_DEATH_COUNT := 1
 func run(check: Callable) -> void:
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
 	_test_catalog(fixture.catalog, check)
+	_test_magic_roles(fixture.magic_roles, check)
+	_test_suggestions(fixture.suggestions, check)
+	_test_pools(fixture.pools, check)
+
+
+func _expected(row: Dictionary) -> String:
+	# The source returns None when no pool entry survives the gates.
+	return "" if row.suggestion == null else String(row.suggestion)
+
+
+func _owned(values: Array) -> Array:
+	var owned: Array = []
+	for value in values:
+		owned.append(String(value))
+	return owned
+
+
+func _test_magic_roles(rows: Array, check: Callable) -> void:
+	for row in rows:
+		var role: String = String(row.role)
+		check.call(
+			HeroItems.is_magic_hero(role) == bool(row.is_magic),
+			"AI is_magic_hero must match source for role: " + role
+		)
+	check.call(not HeroItems.is_magic_hero("Anti-Mage"), "Anti-Mage is not a magic hero")
+	check.call(HeroItems.is_magic_hero("Mage/Trickster"), "Mage/Trickster is a magic hero")
+
+
+func _test_suggestions(rows: Array, check: Callable) -> void:
+	var items := HeroItems.new()
+	for row in rows:
+		var role: String = String(row.role)
+		var attack_range := float(row.range)
+		var owned := _owned(row.owned)
+		var suggested := items.suggest_item_for_hero(role, attack_range, owned)
+		check.call(
+			suggested == _expected(row),
+			"AI suggestion for %s/%d must match source" % [role, int(attack_range)]
+		)
+		check.call(
+			items.is_melee(attack_range) == (HeroItems.source_range(attack_range) <= 80.0),
+			"AI melee range gate is 80 px"
+		)
+		if suggested != "":
+			check.call(items.item_cost(suggested) > 0, "AI suggestion must exist in catalog")
+
+
+func _test_pools(rows: Array, check: Callable) -> void:
+	var items := HeroItems.new()
+	for row in rows:
+		var role: String = String(row.role)
+		var attack_range := float(row.range)
+		var order: Array = []
+		var owned: Array = []
+		while order.size() <= items.max_slots() + 40:
+			var next_id := items.suggest_item_for_hero(role, attack_range, owned)
+			if next_id == "":
+				break
+			order.append(next_id)
+			owned.append(next_id)
+		var expected: Array = []
+		for value in row.order:
+			expected.append(String(value))
+		check.call(
+			order == expected,
+			"AI purchase order for %s/%d must match source pool" % [role, int(attack_range)]
+		)
+		check.call(
+			items.suggest_item_for_hero(role, attack_range, expected) == "",
+			"AI suggestion is empty once the whole pool is owned"
+		)
 
 
 func _test_catalog(expected: Dictionary, check: Callable) -> void:

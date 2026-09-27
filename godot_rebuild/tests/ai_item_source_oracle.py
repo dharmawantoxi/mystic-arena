@@ -13,6 +13,7 @@ import ast
 import json
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "hero_items.py"
@@ -21,6 +22,50 @@ FIXTURE = Path(__file__).parent / "fixtures/ai_items_source.json"
 
 _NAMES = frozenset({
     "MAX_ITEM_SLOTS", "ITEM_FLAT_COST", "MAGIC_ROLE_KEYWORDS", "ITEM_CATALOG",
+})
+_FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero")
+
+# (role, attack range, owned slots). Ranges 70/80 are melee, 81+ is ranged,
+# and 0 exercises the source `or 100` fallback.
+SUGGESTION_CASES = [
+    ("Bruiser", 70, []),
+    ("Fighter", 70, []),
+    ("Tank", 70, []),
+    ("Assassin", 70, []),
+    ("Marksman", 130, []),
+    ("Assassin", 130, []),
+    ("Mage", 130, []),
+    ("Mage/Trickster", 130, []),
+    ("Sorcerer", 130, []),
+    ("Boss/Magic", 130, []),
+    ("Anti-Mage", 70, []),
+    ("Anti-Mage", 130, ["astral_codex"]),
+    ("Ranger", 130, []),
+    ("Warrior", 70, []),
+    ("", 130, []),
+    ("", 70, []),
+    ("Warden", 80, []),
+    ("Warden", 81, []),
+    ("Warden", 0, []),
+    ("Bruiser", 70, ["cleave_axe", "leviathan_heart"]),
+    ("Bruiser", 70, ["cleave_axe", "leviathan_heart", "scarlet_bulwark"]),
+    ("Marksman", 130, ["dead_edge", "basilisk_breath", "gale_pike"]),
+    ("Mage", 130, ["astral_codex", "fulgur_scepter", "sage_scepter"]),
+    ("Anti-Mage", 130, ["astral_codex", "fulgur_scepter", "sage_scepter"]),
+    ("Warrior", 70, ["steel_aegis", "searbrand", "sundering_cudgel"]),
+    ("Warrior", 70, ["cleave_axe", "steel_aegis"]),
+]
+
+# Every role keyword of MAGIC_ROLE_KEYWORDS plus the documented exceptions.
+MAGIC_ROLE_CASES = [
+    "Mage", "Mage/Trickster", "Sorceress", "Caster", "Warlock", "Witch",
+    "Sage", "Prophet", "High Priestess", "Pyromancer", "Necromancer",
+    "Shaman", "Summoner", "Chorister", "Farseer", "Starweaver", "Hexblade",
+    "Eldritch Horror", "Boss/Magic", "Anti-Mage", "anti-mage", "Assassin",
+    "Bruiser", "Marksman", "Fighter", "Tank", "", "  ", "Paladin",
+]
+POOL_CASES = sorted({(role, rng) for role, rng, _ in SUGGESTION_CASES} | {
+    ("Tank", 130), ("Anti-Mage", 70), ("Sorcerer", 70), ("", 0),
 })
 
 
@@ -34,7 +79,7 @@ def _assignments():
     return nodes
 
 
-def source_namespace():
+def source_namespace(with_functions=False):
     """Exec only the constant assignments ITEM_CATALOG needs, in source order."""
     nodes = _assignments()
     by_name = {node.targets[0].id: node for node in nodes}
@@ -44,6 +89,11 @@ def source_namespace():
         if isinstance(ref, ast.Name) and ref.id in by_name:
             needed.add(ref.id)
     kept = [node for node in nodes if node.targets[0].id in needed]
+    if with_functions:
+        found = [node for node in ast.parse(SOURCE.read_text(encoding="utf-8")).body
+                 if isinstance(node, ast.FunctionDef) and node.name in _FUNCTIONS]
+        assert {node.name for node in found} == set(_FUNCTIONS), "source functions missing"
+        kept.extend(found)
     code = ast.fix_missing_locations(ast.Module(body=kept, type_ignores=[]))
     env = {}
     exec(compile(code, "<source hero_items constants>", "exec"), env)
@@ -73,10 +123,50 @@ def catalog(env=None):
     }
 
 
+def magic_roles(env):
+    """is_magic_hero for every source role keyword and its exceptions."""
+    return [{"role": role, "is_magic": env["is_magic_hero"](SimpleNamespace(role=role))}
+            for role in MAGIC_ROLE_CASES]
+
+
+def suggestions(env):
+    """suggest_item_for_hero for a fixed (role, range, owned) grid."""
+    rows = []
+    for role, attack_range, owned in SUGGESTION_CASES:
+        hero = SimpleNamespace(role=role, range=attack_range)
+        rows.append({
+            "role": role, "range": attack_range, "owned": list(owned),
+            "is_magic": env["is_magic_hero"](hero),
+            "suggestion": env["suggest_item_for_hero"](hero, set(owned)),
+        })
+    return rows
+
+
+def pools(env):
+    """Full purchase sequence per role/range: the pool order the source walks."""
+    rows = []
+    for role, attack_range in POOL_CASES:
+        hero = SimpleNamespace(role=role, range=attack_range)
+        owned = []
+        while True:
+            item_id = env["suggest_item_for_hero"](hero, set(owned))
+            if item_id is None:
+                break
+            owned.append(item_id)
+        rows.append({"role": role, "range": attack_range, "order": owned,
+                     "is_magic": env["is_magic_hero"](hero)})
+    return rows
+
+
 def source_fixture():
-    env = source_namespace()
+    env = source_namespace(with_functions=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
-    return json.loads(json.dumps({"catalog": catalog(env)}))
+    return json.loads(json.dumps({
+        "catalog": catalog(env),
+        "magic_roles": magic_roles(env),
+        "suggestions": suggestions(env),
+        "pools": pools(env),
+    }))
 
 
 if __name__ == "__main__":

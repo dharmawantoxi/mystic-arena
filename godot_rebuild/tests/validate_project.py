@@ -105,18 +105,47 @@ check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters 
 
 # CI already runs validate_project.py, so the read-only item oracle runs here.
 from ai_item_source_oracle import source_fixture as ai_item_source_fixture
+from ai_item_source_oracle import source_namespace as ai_item_source_namespace
 check("AIItemChecks.new().run(_check)" in ai_tests, "AI item suite must run")
 check((ROOT / "tests/fixtures/ai_items_source.json").is_file(), "AI items require source fixture")
+ai_items_fixture = ai_item_source_fixture()
 if (ROOT / "tests/fixtures/ai_items_source.json").is_file():
-    check(ai_item_source_fixture() == json.loads(
+    check(ai_items_fixture == json.loads(
         (ROOT / "tests/fixtures/ai_items_source.json").read_text(encoding="utf-8")),
         "AI item catalog source drift")
 item_catalog = json.loads((ROOT / "data/ai/item_catalog.json").read_text(encoding="utf-8"))
-check(item_catalog == ai_item_source_fixture()["catalog"],
+check(item_catalog == ai_items_fixture["catalog"],
       "data/ai/item_catalog.json drifted from source ITEM_CATALOG")
 check(len(item_catalog["items"]) == 33, "Update the AI item suite when ITEM_CATALOG changes")
 check(item_catalog["flat_cost"] == 4500 and item_catalog["max_slots"] == 6,
       "AI item constants must follow ITEM_FLAT_COST/MAX_ITEM_SLOTS")
+hero_items = (ROOT / "scripts/match/hero_items.gd").read_text(encoding="utf-8")
+
+
+def gd_string_array(name):
+    body = re.search(r"const %s: Array\[String\] = \[(.*?)\]" % name, hero_items, re.S)
+    return [part.strip().strip('"') for part in body.group(1).split(",") if part.strip()]
+
+
+gd_pools = {name: gd_string_array(name) for name in
+            ("TANK_POOL", "MARKSMAN_POOL", "MAGIC_POOL", "FALLBACK_POOL")}
+pool_ids = {sid for ids in gd_pools.values() for sid in ids}
+check(bool(pool_ids) and pool_ids <= set(item_catalog["items"]),
+      "AI item role pools must only reference catalog items")
+check(gd_string_array("MAGIC_ROLE_KEYWORDS")
+      == list(ai_item_source_namespace()["MAGIC_ROLE_KEYWORDS"]),
+      "AI magic role keywords must equal source MAGIC_ROLE_KEYWORDS")
+source_pools = {(row["role"], row["range"]): row["order"] for row in ai_items_fixture["pools"]}
+# Melee wraps the pool with cleave_axe + holy_rapier, ranged only appends the
+# rapier, so the fixture sequence length pins each pool transcription.
+check(len(source_pools[("Bruiser", 70)]) == len(gd_pools["TANK_POOL"]) + 2,
+      "Tank pool must match the source bruiser purchase order")
+check(len(source_pools[("Marksman", 130)]) == len(gd_pools["MARKSMAN_POOL"]) + 1,
+      "Marksman pool must match the source marksman purchase order")
+check(len(source_pools[("Mage", 130)]) == len(gd_pools["MAGIC_POOL"]) + 1,
+      "Magic pool must match the source mage purchase order")
+check(len(source_pools[("Ranger", 130)]) == len(gd_pools["FALLBACK_POOL"]) + 1,
+      "Fallback pool must match the source fallback purchase order")
 
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.

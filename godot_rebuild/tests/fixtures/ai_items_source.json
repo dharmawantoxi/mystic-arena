@@ -295,5 +295,886 @@
         "drops_on_death": false
       }
     }
-  }
+  },
+  "magic_roles": [
+    {
+      "role": "Mage",
+      "is_magic": true
+    },
+    {
+      "role": "Mage/Trickster",
+      "is_magic": true
+    },
+    {
+      "role": "Sorceress",
+      "is_magic": true
+    },
+    {
+      "role": "Caster",
+      "is_magic": true
+    },
+    {
+      "role": "Warlock",
+      "is_magic": true
+    },
+    {
+      "role": "Witch",
+      "is_magic": true
+    },
+    {
+      "role": "Sage",
+      "is_magic": true
+    },
+    {
+      "role": "Prophet",
+      "is_magic": true
+    },
+    {
+      "role": "High Priestess",
+      "is_magic": true
+    },
+    {
+      "role": "Pyromancer",
+      "is_magic": true
+    },
+    {
+      "role": "Necromancer",
+      "is_magic": true
+    },
+    {
+      "role": "Shaman",
+      "is_magic": true
+    },
+    {
+      "role": "Summoner",
+      "is_magic": true
+    },
+    {
+      "role": "Chorister",
+      "is_magic": true
+    },
+    {
+      "role": "Farseer",
+      "is_magic": true
+    },
+    {
+      "role": "Starweaver",
+      "is_magic": true
+    },
+    {
+      "role": "Hexblade",
+      "is_magic": true
+    },
+    {
+      "role": "Eldritch Horror",
+      "is_magic": true
+    },
+    {
+      "role": "Boss/Magic",
+      "is_magic": true
+    },
+    {
+      "role": "Anti-Mage",
+      "is_magic": false
+    },
+    {
+      "role": "anti-mage",
+      "is_magic": false
+    },
+    {
+      "role": "Assassin",
+      "is_magic": false
+    },
+    {
+      "role": "Bruiser",
+      "is_magic": false
+    },
+    {
+      "role": "Marksman",
+      "is_magic": false
+    },
+    {
+      "role": "Fighter",
+      "is_magic": false
+    },
+    {
+      "role": "Tank",
+      "is_magic": false
+    },
+    {
+      "role": "",
+      "is_magic": false
+    },
+    {
+      "role": "  ",
+      "is_magic": false
+    },
+    {
+      "role": "Paladin",
+      "is_magic": false
+    }
+  ],
+  "suggestions": [
+    {
+      "role": "Bruiser",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Fighter",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Tank",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Assassin",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Marksman",
+      "range": 130,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "dead_edge"
+    },
+    {
+      "role": "Assassin",
+      "range": 130,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "dead_edge"
+    },
+    {
+      "role": "Mage",
+      "range": 130,
+      "owned": [],
+      "is_magic": true,
+      "suggestion": "astral_codex"
+    },
+    {
+      "role": "Mage/Trickster",
+      "range": 130,
+      "owned": [],
+      "is_magic": true,
+      "suggestion": "astral_codex"
+    },
+    {
+      "role": "Sorcerer",
+      "range": 130,
+      "owned": [],
+      "is_magic": true,
+      "suggestion": "astral_codex"
+    },
+    {
+      "role": "Boss/Magic",
+      "range": 130,
+      "owned": [],
+      "is_magic": true,
+      "suggestion": "astral_codex"
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 130,
+      "owned": [
+        "astral_codex"
+      ],
+      "is_magic": false,
+      "suggestion": "octarine_core"
+    },
+    {
+      "role": "Ranger",
+      "range": 130,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "steel_aegis"
+    },
+    {
+      "role": "Warrior",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "",
+      "range": 130,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "steel_aegis"
+    },
+    {
+      "role": "",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Warden",
+      "range": 80,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Warden",
+      "range": 81,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "steel_aegis"
+    },
+    {
+      "role": "Warden",
+      "range": 0,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "steel_aegis"
+    },
+    {
+      "role": "Bruiser",
+      "range": 70,
+      "owned": [
+        "cleave_axe",
+        "leviathan_heart"
+      ],
+      "is_magic": false,
+      "suggestion": "scarlet_bulwark"
+    },
+    {
+      "role": "Bruiser",
+      "range": 70,
+      "owned": [
+        "cleave_axe",
+        "leviathan_heart",
+        "scarlet_bulwark"
+      ],
+      "is_magic": false,
+      "suggestion": "searbrand"
+    },
+    {
+      "role": "Marksman",
+      "range": 130,
+      "owned": [
+        "dead_edge",
+        "basilisk_breath",
+        "gale_pike"
+      ],
+      "is_magic": false,
+      "suggestion": "frostbound_eye"
+    },
+    {
+      "role": "Mage",
+      "range": 130,
+      "owned": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter"
+      ],
+      "is_magic": true,
+      "suggestion": "hex_idol"
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 130,
+      "owned": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter"
+      ],
+      "is_magic": false,
+      "suggestion": "octarine_core"
+    },
+    {
+      "role": "Warrior",
+      "range": 70,
+      "owned": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel"
+      ],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Warrior",
+      "range": 70,
+      "owned": [
+        "cleave_axe",
+        "steel_aegis"
+      ],
+      "is_magic": false,
+      "suggestion": "searbrand"
+    }
+  ],
+  "pools": [
+    {
+      "role": "",
+      "range": 0,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "",
+      "range": 130,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 130,
+      "order": [
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Assassin",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "dead_edge",
+        "basilisk_breath",
+        "gale_pike",
+        "frostbound_eye",
+        "sundering_cudgel",
+        "searbrand",
+        "monarch_wings",
+        "thunder_coil",
+        "sanguine_thorn",
+        "moon_shard",
+        "runic_gavel",
+        "corroder",
+        "demon_maw",
+        "octarine_core",
+        "steel_aegis",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Assassin",
+      "range": 130,
+      "order": [
+        "dead_edge",
+        "basilisk_breath",
+        "gale_pike",
+        "frostbound_eye",
+        "sundering_cudgel",
+        "searbrand",
+        "monarch_wings",
+        "thunder_coil",
+        "sanguine_thorn",
+        "moon_shard",
+        "runic_gavel",
+        "corroder",
+        "demon_maw",
+        "octarine_core",
+        "steel_aegis",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Boss/Magic",
+      "range": 130,
+      "order": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Bruiser",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "searbrand",
+        "razor_carapace",
+        "everfrost_guard",
+        "steel_aegis",
+        "abyss_breaker",
+        "solar_brand",
+        "demon_maw",
+        "corroder",
+        "fenrir_chain",
+        "octarine_core",
+        "moon_shard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Fighter",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "searbrand",
+        "razor_carapace",
+        "everfrost_guard",
+        "steel_aegis",
+        "abyss_breaker",
+        "solar_brand",
+        "demon_maw",
+        "corroder",
+        "fenrir_chain",
+        "octarine_core",
+        "moon_shard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Mage",
+      "range": 130,
+      "order": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Mage/Trickster",
+      "range": 130,
+      "order": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Marksman",
+      "range": 130,
+      "order": [
+        "dead_edge",
+        "basilisk_breath",
+        "gale_pike",
+        "frostbound_eye",
+        "sundering_cudgel",
+        "searbrand",
+        "monarch_wings",
+        "thunder_coil",
+        "sanguine_thorn",
+        "moon_shard",
+        "runic_gavel",
+        "corroder",
+        "demon_maw",
+        "octarine_core",
+        "steel_aegis",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Ranger",
+      "range": 130,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Sorcerer",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Sorcerer",
+      "range": 130,
+      "order": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Tank",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "searbrand",
+        "razor_carapace",
+        "everfrost_guard",
+        "steel_aegis",
+        "abyss_breaker",
+        "solar_brand",
+        "demon_maw",
+        "corroder",
+        "fenrir_chain",
+        "octarine_core",
+        "moon_shard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Tank",
+      "range": 130,
+      "order": [
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "searbrand",
+        "razor_carapace",
+        "everfrost_guard",
+        "steel_aegis",
+        "abyss_breaker",
+        "solar_brand",
+        "demon_maw",
+        "corroder",
+        "fenrir_chain",
+        "octarine_core",
+        "moon_shard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Warden",
+      "range": 0,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Warden",
+      "range": 80,
+      "order": [
+        "cleave_axe",
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Warden",
+      "range": 81,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Warrior",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    }
+  ]
 }
