@@ -1,8 +1,9 @@
 extends "res://tests/starter_finish_checks.gd"
-## Level-9 boss (batch 10: Kenshiro) real recipes, gates, timers, attacks, respawn.
+## Level-9 boss (batch 10: Kenshiro, Wiro) real recipes, gates, timers, attacks, respawn.
 const BOSS_FIXTURE := "res://tests/fixtures/boss_level_nine_source.json"
 const BOSSES := {
 	"kenshiro": preload("res://data/heroes/kenshiro.tres"),
+	"wiro": preload("res://data/heroes/wiro.tres"),
 }
 
 

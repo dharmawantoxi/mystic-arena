@@ -1,4 +1,4 @@
-# Daftar tepat migrasi hero — 175 playable, 47 pending
+# Daftar tepat migrasi hero — 176 playable, 46 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
@@ -6,18 +6,18 @@ CI Godot 4.7.2: run terakhir hijau 36309346449 (170 playable, 52 pending);
 batch 9 (174/48) menunggu CI, static lokal 4671 PASS; batch 10 (level 9,
 Kenshiro/Wiro) lulus static lokal, menunggu CI.
 
-- Enam starter selesai (empat sudah ada sebelum sesi); dua puluh tiga boss
+- Enam starter selesai (empat sudah ada sebelum sesi); dua puluh empat boss
   recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9 batch 10);
   150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
   dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 47 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Semua 46 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 175 ID
+## Selesai — 176 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -46,6 +46,7 @@ Kenshiro/Wiro) lulus static lokal, menunggu CI.
 | `nyxarath` | 7 | 1000 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
 | `vorenmarr` | 7 | 1300 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
 | `kenshiro` | 9 | 1300 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
+| `wiro` | 9 | 1300 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -197,13 +198,12 @@ Kenshiro/Wiro) lulus static lokal, menunggu CI.
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 47 ID dan recipe yang menjadi blocker
+## Belum selesai — 46 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
 | `khazan` | 9 | 1350 | `_cast_q_khazan_chained` / `_cast_w_khazan_leap` / `_cast_e_khazan_spin` / `_cast_r_khazan_vanish` |
 | `naraka` | 9 | 2000 | `_cast_q_naraka_chaos` / `_cast_w_naraka_shadowstep` / `_cast_e_naraka_hammer` / `_cast_r_naraka_execution` |
-| `wiro` | 9 | 1300 | `_cast_q_wiro_windcut` / `_cast_w_wiro_whirl` / `_cast_e_wiro_dash` / `_cast_r_wiro_typhoon` |
 | `aurethzar` | 10 | 2100 | `_cast_q_aurethzar_marksman` / `_cast_w_aurethzar_piercing` / `_cast_e_aurethzar_frost` / `_cast_r_aurethzar_thunder` |
 | `krognarr` | 10 | 1400 | `_cast_q_krognarr_strike` / `_cast_w_krognarr_seismic` / `_cast_e_krognarr_rampart` / `_cast_r_krognarr_eruption` |
 | `raz` | 10 | 1400 | `_cast_q_raz_overdrive` / `_cast_w_raz_searing` / `_cast_e_raz_surge` / `_cast_r_raz_gloom` |

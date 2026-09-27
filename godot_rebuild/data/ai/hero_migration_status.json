@@ -1,7 +1,7 @@
 {
   "target": 222,
-  "playable": 175,
-  "pending": 47,
+  "playable": 176,
+  "pending": 46,
   "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
   "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
   "heroes": {
@@ -561,7 +561,7 @@
       "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
     },
     "wiro": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 9,
       "summon_cost": 1300,
       "source_recipe": {
@@ -570,10 +570,10 @@
         "e": "_cast_e_wiro_dash",
         "r": "_cast_r_wiro_typhoon"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "boss_level_nine_skills.gd",
+      "oracle": "boss_level_nine_source_oracle.py",
+      "native_test": "boss_level_nine_checks.gd",
+      "blocker": null
     },
     "aurethzar": {
       "status": "pending",

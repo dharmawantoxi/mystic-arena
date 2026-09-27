@@ -151,6 +151,7 @@ const DEFINITIONS := {
 	"vorthakul": preload("res://data/heroes/vorthakul.tres"),
 	"vulkareth": preload("res://data/heroes/vulkareth.tres"),
 	"vyraeth": preload("res://data/heroes/vyraeth.tres"),
+	"wiro": preload("res://data/heroes/wiro.tres"),
 	"xaelmoran": preload("res://data/heroes/xaelmoran.tres"),
 	"xaerissa": preload("res://data/heroes/xaerissa.tres"),
 	"xareth": preload("res://data/heroes/xareth.tres"),
