@@ -6,6 +6,9 @@ const REGEN_SHIELD_MIN_LEVEL := 4
 const REGEN_SHIELD_COST := 850
 const CASTLE_SHIELD_COST := REGEN_SHIELD_COST
 
+# Source Tower.kills exists but nothing in the Python game ever increments it,
+# so AI kill-priority over towers degenerates to a stable order-preserving sort.
+var kills := 0
 var regen_shield_active := false
 var shield := 0.0
 var shield_max := 0.0

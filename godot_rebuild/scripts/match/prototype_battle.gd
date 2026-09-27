@@ -272,6 +272,16 @@ func _on_death(source_team: int, target: UnitState) -> void:
 		scheduler.cancel()
 
 
+func _on_hero_death(hero: HeroState, source_id: int) -> void:
+	super._on_hero_death(hero, source_id)
+	# Source Game._process_hero_kill: credit only when the last hit came from a
+	# real enemy hero (not the victim, not a tower/minion/castle). No popup.
+	var killer := get_unit(source_id) as HeroState
+	if killer == null or killer == hero or killer.team == hero.team:
+		return
+	killer.kills += 1
+
+
 func _retire_dead() -> void:
 	super._retire_dead()
 	# Intentional fix: destroyed slots are released, not left permanently 'taken'.

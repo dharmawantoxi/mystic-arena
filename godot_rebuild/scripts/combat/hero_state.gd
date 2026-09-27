@@ -28,6 +28,9 @@ var attack_seq := 0
 var attack_facing := 1.0
 var deaths := 0
 var killed_by := -1
+# Source Hero.kills: only incremented by Game._process_hero_kill/_process_boss_kill
+# when an enemy HERO lands the killing blow. AI upgrade priority reads it.
+var kills := 0
 var stun_timer := 0
 var w_cooldown := 0
 var w_cooldown_max := 0
