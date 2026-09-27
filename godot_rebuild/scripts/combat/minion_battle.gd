@@ -15,7 +15,13 @@ const BossLevelOneSkills = preload("res://scripts/combat/boss_level_one_skills.g
 const BossLevelThreeSkills = preload("res://scripts/combat/boss_level_three_skills.gd")
 const BossLevelFourSkills = preload("res://scripts/combat/boss_level_four_skills.gd")
 const AlchemistSkills = preload("res://scripts/combat/alchemist_skills.gd")
+const KrobellusSkills = preload("res://scripts/combat/krobellus_skills.gd")
+const VhalzunSkills = preload("res://scripts/combat/vhalzun_skills.gd")
+const KunkkaSkills = preload("res://scripts/combat/kunkka_skills.gd")
 const NATIVE_SKILLS := {
+	"kunkka": KunkkaSkills,
+	"vhalzun": VhalzunSkills,
+	"krobellus": KrobellusSkills,
 	"alchemist": AlchemistSkills,
 	"thorne": ThorneSkills,
 	"grimjaw": GrimjawSkills,

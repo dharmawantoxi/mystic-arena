@@ -77,7 +77,8 @@ func _lifecycle(kind: String, check: Callable) -> void:
 func _no_fallback(check: Callable) -> void:
 	var world := Battle.new()
 	var fake = Roster.DEFINITIONS.kaizen.duplicate()
-	fake.id = "kunkka"
+	check.call(not Roster.DEFINITIONS.has("gravewake"), "Rejection sentinel is still pending")
+	fake.id = "gravewake"
 	var hero := world.spawn_hero(fake, world.RED, Vector2(500, 340))
 	_enemies(world, [[550, 340]])
 	for key in ["q", "w", "e", "r"]:

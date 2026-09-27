@@ -1,9 +1,9 @@
 {
   "target": 222,
-  "playable": 164,
-  "pending": 58,
-  "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
-  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
+  "playable": 167,
+  "pending": 55,
+  "verified_code_commit": "8fc39ee98c10d423164bdcd04278b9de5608d4cd",
+  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305280464",
   "heroes": {
     "grimjaw": {
       "status": "playable",
@@ -306,7 +306,7 @@
       "blocker": null
     },
     "krobellus": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 5,
       "summon_cost": 1500,
       "source_recipe": {
@@ -315,10 +315,10 @@
         "e": "_cast_e_krobellus_siphon",
         "r": "_cast_r_krobellus_crypt"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "krobellus_skills.gd",
+      "oracle": "krobellus_source_oracle.py",
+      "native_test": "krobellus_checks.gd",
+      "blocker": null
     },
     "nyxara": {
       "status": "playable",
@@ -333,7 +333,7 @@
       "blocker": null
     },
     "vhalzun": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 5,
       "summon_cost": 1200,
       "source_recipe": {
@@ -342,10 +342,10 @@
         "e": "_cast_e_vhalzun_reapers_scythe",
         "r": "_cast_r_vhalzun_ghost_shroud"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "vhalzun_skills.gd",
+      "oracle": "vhalzun_source_oracle.py",
+      "native_test": "vhalzun_checks.gd",
+      "blocker": null
     },
     "gravewake": {
       "status": "pending",
@@ -363,7 +363,7 @@
       "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
     },
     "kunkka": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 6,
       "summon_cost": 900,
       "source_recipe": {
@@ -372,10 +372,10 @@
         "e": "_cast_e_kunkka_ghost",
         "r": "_cast_r_kunkka_torrent"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "kunkka_skills.gd",
+      "oracle": "kunkka_source_oracle.py",
+      "native_test": "kunkka_checks.gd",
+      "blocker": null
     },
     "syrentha": {
       "status": "pending",
@@ -2867,5 +2867,6 @@
       "native_test": "source_shared_boss_checks.gd",
       "blocker": null
     }
-  }
+  },
+  "verification_note": "167 playable verified: Godot 4.7.2 import + run_all 457372 checks; static 4596, all source oracles, source-contract, gdtoolkit 4.5.0 PASS. No registered WIP."
 }
