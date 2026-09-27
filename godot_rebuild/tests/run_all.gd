@@ -3,6 +3,7 @@ extends SceneTree
 
 const ThorneChecks = preload("res://tests/thorne_checks.gd")
 const GrimjawChecks = preload("res://tests/grimjaw_checks.gd")
+const AlchemistChecks = preload("res://tests/alchemist_checks.gd")
 const SourceSharedBossChecks = preload("res://tests/source_shared_boss_checks.gd")
 const HeroStatusChecks = preload("res://tests/hero_status_checks.gd")
 const BossLevelOneChecks = preload("res://tests/boss_level_one_checks.gd")
@@ -69,6 +70,7 @@ func _run() -> void:
 	BossLevelOneChecks.new().run(_check)
 	HeroStatusChecks.new().run(_check)
 	SourceSharedBossChecks.new().run(_check)
+	AlchemistChecks.new().run(_check)
 	AIRecruitChecks.new().run(_check)
 	AIBuildChecks.new().run(_check)
 	AIShieldChecks.new().run(_check)

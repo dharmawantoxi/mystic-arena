@@ -30,15 +30,17 @@ def state(hero, enemies):
     result["target_id"] = enemies.index(hero.target) if hero.target in enemies else -1
     result["blink_from"] = [hero.blink_from_x, hero.blink_from_y]
     result["mana_void_origin"] = [hero.mana_void_x, hero.mana_void_y]
+    if hero.hero_type == "alchemist":
+        result["alchemy_target"] = [hero.w_target_x, hero.w_target_y]
     return result
 
 
-def source_fixture():
+def source_fixture(ids=IDS):
     env = source_env()
     sys.modules["settings"].get_all_hero_types = env["get_all_hero_types"]
     H = env["SourceHero"]
     result = dict(casts=[], traces=[], attacks=[], respawn=[], execute=[], defense=[], catalog={}, levels={})
-    for kind in IDS:
+    for kind in ids:
         h = H(kind, "red", 500, 340)
         recipe = h.skills._SKILL_REGISTRY[kind]
         assert len(recipe) == 4 and all(hasattr(h.skills, method) for method in recipe.values())
@@ -72,7 +74,7 @@ def source_fixture():
                         hero.target = enemies[1]
                     env["tick_clocks"](hero)
                     hero.skills.update_timers(enemies, [], [])
-                    if tick in (1, 2, 29, 30, 39, 40, 179, 180, 239, 240, 299, 300, 479, 480, 481):
+                    if tick in (1, 2, 29, 30, 39, 40, 179, 180, 239, 240, 299, 300, 359, 360, 479, 480, 481):
                         rows.append(dict(tick=tick, state=state(hero, enemies)))
                 result["traces"].append(dict(hero=kind, key=key, mode=mode, positions=coords,
                     length=481, rows=rows))
@@ -104,7 +106,7 @@ def source_fixture():
                 max_hp=h.max_hp, skill_value=h.skill_damage, price=h.upgrade_cost()))
             assert h.upgrade() == (level < 15)
     # Execute is strict <30%, with int before doubling; leveled odd values tested.
-    for level in (1, 2, 15):
+    for level in ((1, 2, 15) if "drakar" in ids else ()):
         for hp in (2999, 3000, 3001):
             hero = H("drakar", "red", 500, 340)
             while hero.level < level:
@@ -113,7 +115,7 @@ def source_fixture():
             enemy.hp = hp
             assert hero.skills.cast_r([enemy], [], [])
             result["execute"].append(dict(level=level, hp=hp, after=max(0, enemy.hp)))
-    for kind in IDS:
+    for kind in ids:
         for school in ("physical", "magic"):
             hero = H(kind, "red", 500, 340)
             hero.skills.cast_e(targets([(550, 340)]), [], [])

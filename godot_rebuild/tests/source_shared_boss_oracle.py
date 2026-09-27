@@ -119,7 +119,7 @@ def hero_fixture(env, H, kind):
     return result
 
 
-def write_native_definitions(env, ids):
+def write_native_definitions(env, ids, write_membership=True):
     """Only folds original constructor data into explicit native .tres assets."""
     stats = json.loads((NATIVE / "data/ai/hero_combat_stats.json").read_text())
     catalog = env["get_all_hero_types"]()
@@ -141,7 +141,8 @@ def write_native_definitions(env, ids):
             else:
                 text += line + "\n"
         (NATIVE / f"data/heroes/{kind}.tres").write_text(text)
-    IDS_FILE.write_text('extends RefCounted\n## Audited original source shared-kit membership; no runtime fallback.\nconst IDS := '+json.dumps(ids)+'\n')
+    if write_membership:
+        IDS_FILE.write_text('extends RefCounted\n## Audited original source shared-kit membership; no runtime fallback.\nconst IDS := '+json.dumps(ids)+'\n')
 
 
 if __name__ == "__main__":

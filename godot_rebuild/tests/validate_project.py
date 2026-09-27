@@ -180,6 +180,10 @@ check(shared_ids == shared["ids"], "Native shared-kit membership must exactly ma
 from hero_school_source_oracle import source_fixture as hero_school_fixture
 check(hero_school_fixture() == json.loads((ROOT / "tests/fixtures/hero_school_source.json").read_text()), "Per-ID real hero mitigation and attribution drift")
 
+from alchemist_source_oracle import source_fixture as alchemist_fixture
+check(alchemist_fixture() == json.loads((ROOT / "tests/fixtures/alchemist_source.json").read_text()), "Alchemist source behavior drift")
+check("AlchemistChecks.new().run(_check)" in ai_tests, "Alchemist native suite must run")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

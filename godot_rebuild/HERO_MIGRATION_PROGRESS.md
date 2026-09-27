@@ -94,3 +94,13 @@ Commit `c111da2`, [CI 36297544475](https://github.com/dharmawantoxi/mystic-arena
 aktif. **160/222 kit selesai, 62 recipe khusus tersisa**. 150 ID shared-source
 tersimpan eksplisit di `scripts/data/source_shared_boss_ids.gd`; hanya ID itu
 boleh memakai handler tersebut. Langsung lanjut batch 4 Alchemist (sisa level 2).
+
+## Batch 4 — Alchemist (menunggu CI)
+
+Recipe asli: Q 1,1× target; W burst radius 100 pada posisi target + slow;
+E rage 360 tick/damage katalog 1,5×/heal 15%; R radius 200/2,5×/heal 100 per
+kill nyata. Oracle mencakup radius tepat, rage expiry saat upgrade, HP setter
+anti-heal, kill/target di luar radius, cooldown, melee, respawn, summon dan
+upgrade 1,6×. Hanya lima boss recipe khusus yang telah diimplementasikan;
+Alchemist belum dihitung selesai sampai CI batch ini lulus. Statis lokal
+3.397 checks; seluruh oracle lama/new, parser/lint/format lulus.

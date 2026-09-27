@@ -1,6 +1,7 @@
 extends RefCounted
 ## Explicit native kits with per-ID source and combat tests. No catalog fallback.
 const DEFINITIONS := {
+	"alchemist": preload("res://data/heroes/alchemist.tres"),
 	"kaizen": preload("res://data/heroes/kaizen.tres"),
 	"thorne": preload("res://data/heroes/thorne.tres"),
 	"grimjaw": preload("res://data/heroes/grimjaw.tres"),

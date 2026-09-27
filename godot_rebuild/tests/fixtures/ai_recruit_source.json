@@ -550,6 +550,61 @@
     }
   },
   {
+    "hero_type": "alchemist",
+    "price": 750,
+    "initial": 749,
+    "success": false,
+    "balance": 749,
+    "count": 0,
+    "reserve": 750,
+    "target": "alchemist",
+    "hero": null
+  },
+  {
+    "hero_type": "alchemist",
+    "price": 750,
+    "initial": 750,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "alchemist",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1664,
+      "hp": 1664,
+      "damage": 124,
+      "skill_damage": 302,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "alchemist",
+    "price": 750,
+    "initial": 751,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "alchemist",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1664,
+      "hp": 1664,
+      "damage": 124,
+      "skill_damage": 302,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

@@ -45,7 +45,10 @@ func _compare(hero, enemies: Array, expected: Dictionary, check: Callable, label
 						enemies[index].get(field) == expected.enemies[index][field],
 						label + " target " + str(index) + " " + field
 					)
-		elif key in ["position", "bramble_origin", "blink_from", "mana_void_origin"]:
+		elif (
+			key
+			in ["position", "bramble_origin", "blink_from", "mana_void_origin", "alchemy_target"]
+		):
 			check.call(
 				hero.get(key) == Vector2(expected[key][0], expected[key][1]), label + " " + key
 			)

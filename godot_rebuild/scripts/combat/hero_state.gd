@@ -69,6 +69,7 @@ var curse_timer := 0
 var curse_target_id := -1
 var bedlam_timer := 0
 # Source BossHeroSkills state (level-one recipes).
+var alchemy_target := Vector2.ZERO
 var rage_timer := 0
 var defense_timer := 0
 var flux_timer := 0

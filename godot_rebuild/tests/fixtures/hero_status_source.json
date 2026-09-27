@@ -239,6 +239,54 @@
       "reduction": 1,
       "cast_hp": 1503.0,
       "tick_hp": 1503.0
+    },
+    {
+      "hero": "alchemist",
+      "key": "e",
+      "missing": 1,
+      "reduction": 0,
+      "cast_hp": 1664.0,
+      "tick_hp": 1664.0
+    },
+    {
+      "hero": "alchemist",
+      "key": "e",
+      "missing": 1,
+      "reduction": 0.75,
+      "cast_hp": 1663.25,
+      "tick_hp": 1663.25
+    },
+    {
+      "hero": "alchemist",
+      "key": "e",
+      "missing": 1,
+      "reduction": 1,
+      "cast_hp": 1663.0,
+      "tick_hp": 1663.0
+    },
+    {
+      "hero": "alchemist",
+      "key": "e",
+      "missing": 300,
+      "reduction": 0,
+      "cast_hp": 1613.0,
+      "tick_hp": 1613.0
+    },
+    {
+      "hero": "alchemist",
+      "key": "e",
+      "missing": 300,
+      "reduction": 0.75,
+      "cast_hp": 1426.25,
+      "tick_hp": 1426.25
+    },
+    {
+      "hero": "alchemist",
+      "key": "e",
+      "missing": 300,
+      "reduction": 1,
+      "cast_hp": 1364.0,
+      "tick_hp": 1364.0
     }
   ],
   "burn": [
