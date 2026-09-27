@@ -2,9 +2,8 @@
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI Godot 4.7.2: run terakhir hijau 36309346449 (170 playable, 52 pending);
-batch 9 (174/48) menunggu CI, static lokal 4671 PASS; batch 10 (level 9,
-Kenshiro/Wiro) + batch 11 (Khazan/Naraka) lulus static lokal, menunggu CI.
+CI Godot 4.7.2: run terakhir hijau 36322892875 (178 playable, 44 pending,
+632.522 checks; batch 10–11 level 9 + perbaikan tes batch 9).
 
 - Enam starter selesai (empat sudah ada sebelum sesi); dua puluh enam boss
   recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9 batch 10);

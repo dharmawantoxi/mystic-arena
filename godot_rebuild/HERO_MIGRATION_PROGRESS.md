@@ -29,8 +29,8 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 7 | Vhalzun (1200G), Krobellus (1500G) | **166 / 56** | [CI hijau](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36308407983) |
 | 8 | Kunkka (900G), Gravewake (1000G), Syrentha (1100G), Thalgryn (1200G) | **170 / 52** | [CI hijau](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36309346449) |
 | 9 | Akashari (1200G), Malzareth (1100G), Nyxarath (1000G), Vorenmarr (1300G) | **174 / 48** | merged PR #291 (main c4381c0) |
-| 10 | Kenshiro (1300G), Wiro (1300G) — level sumber 9 | **176 / 46** | static lokal 4.720 PASS, menunggu CI |
-| 11 | Khazan (1350G), Naraka (2000G) — level sumber 9 selesai | **178 / 44** | static lokal 4.744 PASS, menunggu CI |
+| 10 | Kenshiro (1300G), Wiro (1300G) — level sumber 9 | **176 / 46** | [CI hijau, 632.522 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36322892875) |
+| 11 | Khazan (1350G), Naraka (2000G) — level sumber 9 selesai | **178 / 44** | [CI hijau, 632.522 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36322892875) |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
 validation (**4.744 checks**, termasuk guard manifest), gdparse, gdlint dan
@@ -93,7 +93,8 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   min(d,100) bila d>1 lalu target 1.1×, R typhoon AOE200 1.8× slow 0.5/90).
   Sumber memanggil `take_damage(dmg, team)` tanpa source/school → hit
   **netral**. Fixture `boss_level_nine_source.json` compact 1 baris, trace
-  181 tick (tidak ada timer >90).
+  181 tick (tidak ada timer >90). Visual timer mengikuti dispatcher sumber
+  (60/90/60/100 menimpa nilai recipe), dibuktikan CI.
   Khazan (Q chained 1.3×, W leap min(d,110) lalu AOE90 1.2× dari posisi BARU
   walau tanpa target, E spin AOE160 1.1×, R vanish AOE210 1.9× heal 8%) dan
   Naraka (Q chaos 1.3×, W shadowstep min(d,120) lalu 1.3×, E hammer AOE180
@@ -127,7 +128,12 @@ masing-masing ID tercantum di
 Blocker implementasi: sisa 44 recipe (level 10–20) belum diport; batch 7 (run
 36308407983) dan batch 8 (run 36309346449) lulus CI Godot 4.7.2 plus validasi
 lokal (oracle, static checks, source contract, gdparse/gdlint/gdformat);
-batch 9 sudah merge (PR #291); batch 10–11 lulus validasi lokal dan menunggu CI.
+batch 9 sudah merge (PR #291) tetapi suite native-nya belum pernah jalan di CI;
+batch 10–11 (PR #292) memperbaiki 3 bug tes batch 9 dan CI hijau run 36322892875
+(632.522 checks Godot 4.7.2): (1) `boss_level_seven_checks.gd:43` parse error
+`skill_key :=` dari Variant → `run_all.gd` gagal compile; (2) roster L7 hanya
+diberi 4000G padahal total 4600G; (3) tes penolakan pending didanai 1000G < harga
+pending sehingga AIDraft berhenti di gerbang gold sebelum gerbang kit.
 Tidak ada klaim 222 playable.
 
 Lanjut berdasarkan level sumber (lihat `hero_skills/_bundle.py` read-only:
@@ -141,7 +147,9 @@ registry dispatch, `update_timers` bersama dan metode recipe masing-masing):
 3. Per batch: oracle → handler/state/resource → native combat/transactions →
    semua oracle lama + static/parser/lint/format → CI import + run_all → update
    jumlah/manifest/dokumentasi. Jangan melanjutkan batch kalau masih gagal.
-4. Test penolakan pending (`ai_recruit` + `shared_no_fallback`) memakai ID yang
+4. Tes penolakan pending harus didanai ≥ harga ID pending (sekarang 2500G untuk
+   aurethzar 2100G) agar gerbang kit native yang diuji, bukan gerbang gold.
+5. Test penolakan pending (`ai_recruit` + `shared_no_fallback`) memakai ID yang
    **masih pending** (saat ini aurethzar 2100G); ganti mengikuti manifest tiap
    kali satu batch membuat ID tersebut playable.
 
@@ -173,7 +181,7 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 > Saat ini 178/222 kit native teruji (6 starter + L1×4 + Alchemist + AA, Nyzrak,
 > Ignis + L5×2, L6×4, L7×4, L9×4 + 150 ID shared-handler),
 > tersisa 44 (level 10–20, 11 level × 4).
-> CI hijau Godot 4.7.2 terakhir run 36309346449, static lokal 4744 checks PASS.
+> CI hijau Godot 4.7.2 run 36322892875 (632.522 checks), static lokal 4744 PASS.
 > Baca godot_rebuild/AI_CONTRACT.md, SHIELD_CONTRACT.md, HERO_CONTRACT.md,
 > HERO_MIGRATION_PROGRESS.md, HERO_ROSTER_STATUS.md dan manifest
 > data/ai/hero_migration_status.json. Lanjut level 10 (Aurethzar, Krognarr,
