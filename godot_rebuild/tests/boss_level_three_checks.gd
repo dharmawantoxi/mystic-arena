@@ -164,7 +164,7 @@ func _compare(hero, enemies: Array, expected: Dictionary, check: Callable, label
 				var exp = Vector2(expected[key][0], expected[key][1])
 				if got != exp:
 					print(
-						"DEBUG MISMATCH ",
+						"::error::DEBUG MISMATCH ",
 						label,
 						" ",
 						key,
