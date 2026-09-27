@@ -63,6 +63,13 @@ app = (ROOT / "app/app.gd").read_text(encoding="utf-8")
 check("queue_free()" in app and "remove_child" in app, "Navigation must clean up screens")
 check("call_deferred" in app, "Navigation must leave input callback before replacing screens")
 
+ai_policy = (ROOT / "scripts/match/ai_policy.gd").read_text(encoding="utf-8")
+ai_tests = (ROOT / "tests/run_all.gd").read_text(encoding="utf-8")
+check("AIPolicyChecks.new().run(_check)" in ai_tests, "AI policy suite must run alongside old suites")
+check((ROOT / "AI_CONTRACT.md").is_file(), "AI policy scope must be documented")
+check((ROOT / "tests/fixtures/ai_policy_source.json").is_file(), "AI policy needs source oracle fixture")
+check("control_heroes.call()" in ai_policy, "AI must control heroes before thinking")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")
