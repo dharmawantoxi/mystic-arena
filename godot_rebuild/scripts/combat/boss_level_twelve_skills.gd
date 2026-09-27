@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["aurelix", "aurelyssa"]
+const IDS := ["aurelix", "aurelyssa", "vargrath"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -28,6 +28,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_aurelix(world, hero, target, key, structures)
 		"aurelyssa":
 			_aurelyssa(world, hero, target, key, structures)
+		"vargrath":
+			_vargrath(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -70,6 +72,27 @@ static func _aurelyssa(world, hero: HeroState, target, key: String, structures: 
 		"r":
 			# Phantom: AOE 220 1.8x skill, attack delay max(timer, 60).
 			_radial(world, hero, structures, 220.0, 1.8, 60)
+
+
+static func _vargrath(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Bloodthirst: target 1.2x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.2)
+		"w":
+			# Charge: dash min(dist, 110) (d > 1) when a target exists, then AOE 100
+			# around the NEW position for 1.2x skill, even without a target.
+			if target != null:
+				_dash(hero, target, 110.0)
+			_radial(world, hero, structures, 100.0, 1.2)
+		"e":
+			# Devilstrike: AOE 170 1.1x skill.
+			_radial(world, hero, structures, 170.0, 1.1)
+		"r":
+			# Soul dominion: AOE 230 1.8x skill, attack delay max(timer, 60).
+			_radial(world, hero, structures, 230.0, 1.8, 60)
 
 
 #HEROES

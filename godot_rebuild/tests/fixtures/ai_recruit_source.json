@@ -2090,6 +2090,61 @@
     }
   },
   {
+    "hero_type": "vargrath",
+    "price": 1600,
+    "initial": 1599,
+    "success": false,
+    "balance": 1599,
+    "count": 0,
+    "reserve": 1600,
+    "target": "vargrath",
+    "hero": null
+  },
+  {
+    "hero_type": "vargrath",
+    "price": 1600,
+    "initial": 1600,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "vargrath",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1664,
+      "hp": 1664,
+      "damage": 245,
+      "skill_damage": 615,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "vargrath",
+    "price": 1600,
+    "initial": 1601,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "vargrath",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1664,
+      "hp": 1664,
+      "damage": 245,
+      "skill_damage": 615,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

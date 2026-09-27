@@ -54,7 +54,8 @@ def source_fixture():
                      "nyxareva",
                      "thalakryon",
                      "aurelix",
-                     "aurelyssa"]
+                     "aurelyssa",
+                     "vargrath"]
     playable = explicit_kits + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]

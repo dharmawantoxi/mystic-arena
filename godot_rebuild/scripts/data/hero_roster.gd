@@ -145,6 +145,7 @@ const DEFINITIONS := {
 	"valekris": preload("res://data/heroes/valekris.tres"),
 	"valthar": preload("res://data/heroes/valthar.tres"),
 	"vardrok": preload("res://data/heroes/vardrok.tres"),
+	"vargrath": preload("res://data/heroes/vargrath.tres"),
 	"vargroth": preload("res://data/heroes/vargroth.tres"),
 	"varkul": preload("res://data/heroes/varkul.tres"),
 	"varkuthar": preload("res://data/heroes/varkuthar.tres"),

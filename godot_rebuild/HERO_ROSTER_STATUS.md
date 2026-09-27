@@ -1,4 +1,4 @@
-# Daftar tepat migrasi hero — 188 playable, 34 pending
+# Daftar tepat migrasi hero — 189 playable, 33 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
@@ -9,14 +9,14 @@ batch 10–13 level 9–11 + perbaikan tes batch 9).
   recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9×4, L10×4, L11×4);
   150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
   dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 34 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Semua 33 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 188 ID
+## Selesai — 189 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -58,6 +58,7 @@ batch 10–13 level 9–11 + perbaikan tes batch 9).
 | `thalakryon` | 11 | 2200 | `boss_level_eleven_skills.gd` | `boss_level_eleven_source_oracle.py` / `boss_level_eleven_checks.gd` |
 | `aurelix` | 12 | 1550 | `boss_level_twelve_skills.gd` | `boss_level_twelve_source_oracle.py` / `boss_level_twelve_checks.gd` |
 | `aurelyssa` | 12 | 1550 | `boss_level_twelve_skills.gd` | `boss_level_twelve_source_oracle.py` / `boss_level_twelve_checks.gd` |
+| `vargrath` | 12 | 1600 | `boss_level_twelve_skills.gd` | `boss_level_twelve_source_oracle.py` / `boss_level_twelve_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -209,12 +210,11 @@ batch 10–13 level 9–11 + perbaikan tes batch 9).
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 34 ID dan recipe yang menjadi blocker
+## Belum selesai — 33 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
 | `nazulmor` | 12 | 2300 | `_cast_q_nazulmor_typhoon` / `_cast_w_nazulmor_aquashield` / `_cast_e_nazulmor_tidalrage` / `_cast_r_nazulmor_chaotic` |
-| `vargrath` | 12 | 1600 | `_cast_q_vargrath_bloodthirst` / `_cast_w_vargrath_charge` / `_cast_e_vargrath_devilstrike` / `_cast_r_vargrath_souldom` |
 | `kaeldris` | 13 | 1650 | `_cast_q_kaeldris_overwhelming` / `_cast_w_kaeldris_press` / `_cast_e_kaeldris_moment` / `_cast_r_kaeldris_duel` |
 | `pyraklos` | 13 | 1700 | `_cast_q_pyraklos_spearmars` / `_cast_w_pyraklos_rebuke` / `_cast_e_pyraklos_bulwark` / `_cast_r_pyraklos_arena` |
 | `solvarin` | 13 | 2400 | `_cast_q_solvarin_purification` / `_cast_w_solvarin_repel` / `_cast_e_solvarin_degen` / `_cast_r_solvarin_guardian` |
