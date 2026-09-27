@@ -200,6 +200,10 @@ from vhalzun_source_oracle import source_fixture as vhalzun_fixture
 check(vhalzun_fixture() == json.loads((ROOT / "tests/fixtures/vhalzun_source.json").read_text()), "Vhalzun source behavior drift")
 check("VhalzunChecks.new().run(_check)" in ai_tests, "Vhalzun native suite must run")
 
+from kunkka_source_oracle import source_fixture as kunkka_fixture
+check(kunkka_fixture() == json.loads((ROOT / "tests/fixtures/kunkka_source.json").read_text()), "Kunkka source behavior drift")
+check("KunkkaChecks.new().run(_check)" in ai_tests, "Kunkka native suite must run")
+
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)
 

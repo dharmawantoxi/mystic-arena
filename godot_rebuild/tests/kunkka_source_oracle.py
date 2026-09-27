@@ -1,4 +1,4 @@
-"""Execute Vhalzun' actual recipes; no copied skill arithmetic in the oracle.
+"""Execute Kunkka' actual recipes; no copied skill arithmetic in the oracle.
 
 The existing source_env executes balanced _core catalogs, Hero construction,
 BossHeroSkills, HP setter, projectile update, clocks and respawn read-only.
@@ -11,8 +11,8 @@ from starter_finish_source_oracle import source_env
 from boss_level_one_source_oracle import source_fixture as boss_fixture, _cast_case, state, targets
 from source_shared_boss_oracle import write_native_definitions
 
-FIXTURE = Path(__file__).parent / "fixtures/vhalzun_source.json"
-KIND = "vhalzun"
+FIXTURE = Path(__file__).parent / "fixtures/kunkka_source.json"
+KIND = "kunkka"
 
 
 def source_fixture():
@@ -38,6 +38,20 @@ def source_fixture():
                   (649, 340), (650, 340), (651, 340), (699, 340),
                   (700, 340), (701, 340), (350, 340), (500, 490), (500, 491)]
         _cast_case(result, H, KIND, key, coords, 0)
+        # Directional strips (strict projection/width); mirrored/vertical/diagonal.
+        for coords in (
+            [(550, 340), (499, 340), (500, 340), (501, 340),
+             (749, 340), (750, 340), (751, 340), (799, 340), (800, 340), (801, 340),
+             (600, 409), (600, 410), (600, 411), (600, 419), (600, 420), (600, 421)],
+            [(500, 390), (500, 589), (500, 590), (500, 639), (500, 640),
+             (569, 440), (570, 440), (579, 440), (580, 440)],
+            [(450, 340), (251, 340), (250, 340), (201, 340), (200, 340)],
+            [(530, 380), (530, 395), (510, 330), (575, 440), (700, 500)],
+            # Target-centred W120 and R200, not centered on the caster.
+            [(620, 340), (739, 340), (740, 340), (741, 340),
+             (819, 340), (820, 340), (821, 340), (419, 340), (420, 340), (421, 340)],
+        ):
+            _cast_case(result, H, KIND, key, coords, 0)
         h = H(KIND, "red", 500, 340)
         enemies = targets([(550, 340)])
         called = []
@@ -98,5 +112,5 @@ if __name__ == "__main__":
         FIXTURE.write_text(json.dumps(result, separators=(",", ":")) + "\n")
         write_native_definitions(source_env(), (KIND,), write_membership=False)
     else:
-        assert result == json.loads(FIXTURE.read_text()), "Vhalzun source behavior drift"
-    print("PASS: Vhalzun real QWER, dispatch, radii, clocks/recast, heal/anti-heal, target quirks, attacks, respawn, upgrades")
+        assert result == json.loads(FIXTURE.read_text()), "Kunkka source behavior drift"
+    print("PASS: Kunkka real QWER, dispatch, radii, clocks/recast, heal/anti-heal, target quirks, attacks, respawn, upgrades")

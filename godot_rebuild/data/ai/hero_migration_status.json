@@ -1,9 +1,9 @@
 {
   "target": 222,
-  "playable": 166,
-  "pending": 56,
-  "verified_code_commit": "64633eb5d06840b4c2b0c49e33c867048c56428f",
-  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304115611",
+  "playable": 167,
+  "pending": 55,
+  "verified_code_commit": "5492a87245d4db45a5b7b141203fa4965694b439",
+  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304610944",
   "heroes": {
     "grimjaw": {
       "status": "playable",
@@ -363,7 +363,7 @@
       "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
     },
     "kunkka": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 6,
       "summon_cost": 900,
       "source_recipe": {
@@ -372,10 +372,10 @@
         "e": "_cast_e_kunkka_ghost",
         "r": "_cast_r_kunkka_torrent"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "kunkka_skills.gd",
+      "oracle": "kunkka_source_oracle.py",
+      "native_test": "kunkka_checks.gd",
+      "blocker": null
     },
     "syrentha": {
       "status": "pending",
@@ -2868,5 +2868,5 @@
       "blocker": null
     }
   },
-  "verification_note": "165 verified by linked CI (427984 native checks); Vhalzun complete implementation, new CI pending."
+  "verification_note": "166 verified by linked CI (442071 native checks); Kunkka implementation complete, new CI pending."
 }

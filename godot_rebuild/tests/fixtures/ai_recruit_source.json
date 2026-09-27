@@ -880,6 +880,61 @@
     }
   },
   {
+    "hero_type": "kunkka",
+    "price": 900,
+    "initial": 899,
+    "success": false,
+    "balance": 899,
+    "count": 0,
+    "reserve": 900,
+    "target": "kunkka",
+    "hero": null
+  },
+  {
+    "hero_type": "kunkka",
+    "price": 900,
+    "initial": 900,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "kunkka",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1941,
+      "hp": 1941,
+      "damage": 195,
+      "skill_damage": 778,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "kunkka",
+    "price": 900,
+    "initial": 901,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "kunkka",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1941,
+      "hp": 1941,
+      "damage": 195,
+      "skill_damage": 778,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

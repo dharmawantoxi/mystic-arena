@@ -1,14 +1,14 @@
-# Daftar tepat migrasi hero — 166 playable, 56 pending
+# Daftar tepat migrasi hero — 167 playable, 55 pending
 
 Target tetap **222**, belum selesai. Registry: `scripts/data/hero_roster.gd`.
-Manifest: `data/ai/hero_migration_status.json`. Krobellus batch 7: CI hijau 427984 checks run 36304115611; Vhalzun batch 8 CI menunggu.
+Manifest: `data/ai/hero_migration_status.json`. Krobellus batch 7: CI hijau 427984 checks run 36304115611; Vhalzun batch 8 hijau 442071 run 36304610944; Kunkka batch 9 CI menunggu.
 Baseline 164: Godot 4.7.2 run 36302839552, 413735 checks; static 4476.
 
-Enam starter + sepuluh boss recipe khusus + 150 ID shared-source eksplisit.
+Enam starter + sebelas boss recipe khusus + 150 ID shared-source eksplisit.
 Shared-source hanya untuk ID yang benar-benar menjalankan `_fallback_cast` di Python.
-56 pending ditolak tanpa debit, spawn parsial atau substitusi. Python asli read-only.
+55 pending ditolak tanpa debit, spawn parsial atau substitusi. Python asli read-only.
 
-## Selesai — 166 ID
+## Selesai — 167 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -37,6 +37,7 @@ Shared-source hanya untuk ID yang benar-benar menjalankan `_fallback_cast` di Py
 | `gravefang` | 5 | 1100 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `krobellus` | 5 | 1500 | `krobellus_skills.gd` | `krobellus_source_oracle.py` / `krobellus_checks.gd` |
 | `vhalzun` | 5 | 1200 | `vhalzun_skills.gd` | `vhalzun_source_oracle.py` / `vhalzun_checks.gd` |
+| `kunkka` | 6 | 900 | `kunkka_skills.gd` | `kunkka_source_oracle.py` / `kunkka_checks.gd` |
 | `nyxara` | 5 | 950 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `vaerith` | 8 | 1200 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `vhorethzir` | 8 | 1000 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -179,7 +180,7 @@ Shared-source hanya untuk ID yang benar-benar menjalankan `_fallback_cast` di Py
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 56 ID dan recipe yang menjadi blocker
+## Belum selesai — 55 ID dan recipe yang menjadi blocker
 
 Setiap ID membutuhkan implementasi empat recipe, oracle eksekusi asli, dan tes native.
 Jangan daftarkan hanya karena metadata atau `.tres` ada. Harga di bawah dari sumber,
@@ -188,7 +189,6 @@ bukan perkiraan berdasarkan level boss.
 | ID | Level sumber | Summon G | Recipe Q / W / E / R |
 |---|---:|---:|---|
 | `gravewake` | 6 | 1000 | `_cast_q_gravewake_anchor` / `_cast_w_gravewake_tide` / `_cast_e_gravewake_shell` / `_cast_r_gravewake_ravage` |
-| `kunkka` | 6 | 900 | `_cast_q_kunkka_tide` / `_cast_w_kunkka_xmark` / `_cast_e_kunkka_ghost` / `_cast_r_kunkka_torrent` |
 | `syrentha` | 6 | 1100 | `_cast_q_syrentha_riptide` / `_cast_w_syrentha_song` / `_cast_e_syrentha_mirror` / `_cast_r_syrentha_siren` |
 | `thalgryn` | 6 | 1200 | `_cast_q_thalgryn_waveform` / `_cast_w_thalgryn_adaptive` / `_cast_e_thalgryn_morph` / `_cast_r_thalgryn_replicate` |
 | `akashari` | 7 | 1200 | `_cast_q_akashari_strike` / `_cast_w_akashari_blink` / `_cast_e_akashari_scream` / `_cast_r_akashari_sonic` |

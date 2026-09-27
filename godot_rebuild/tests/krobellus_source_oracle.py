@@ -19,6 +19,17 @@ def source_fixture():
     result = boss_fixture((KIND,))
     env = source_env()
     H = env["SourceHero"]
+    sample = H(KIND, "red", 500, 340)
+    result["definition"] = {
+        native: getattr(sample, source) for native, source in (
+            ("max_hp", "base_hp"), ("damage", "base_damage"),
+            ("speed_px_per_tick", "speed"), ("attack_range_px", "range"),
+            ("attack_cooldown_ticks", "attack_cooldown"),
+            ("base_skill", "skill_damage_base"), ("skill_range_px", "skill_range"),
+            ("skill_cooldown_max", "skill_cooldown_max"),
+            ("dmg_school", "dmg_school"), ("is_melee", "is_melee_hero"),
+            ("w_cooldown_max", "w_cooldown_max"),
+            ("e_cooldown_max", "e_cooldown_max"), ("r_cooldown_max", "r_cooldown_max"))}
     result.update(clocks=[], healing=[], selection=[])
     for key in "qwer":
         # All three radial boundaries, including behind/vertical, exact and +1.

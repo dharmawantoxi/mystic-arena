@@ -13,6 +13,11 @@ func run(check: Callable) -> void:
 		FileAccess.get_file_as_string("res://tests/fixtures/krobellus_source.json")
 	)
 	check.call(KROBELLS.catalog_damage == fixture.catalog.krobellus.damage, "Krobellus catalog")
+	for field in fixture.definition:
+		check.call(
+			_hero(Battle.new(), "krobellus").settings().get(field) == fixture.definition[field],
+			"krobellus balanced constructor field " + field
+		)
 	_levels("krobellus", fixture.levels.krobellus, check)
 	for row in fixture.casts:
 		_cast(row, check)
