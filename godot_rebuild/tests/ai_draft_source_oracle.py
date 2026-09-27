@@ -75,6 +75,7 @@ def build_source():
 
 
 def configure(env, metadata):
+    env["AI_HERO_PREFERENCES"] = metadata["starters"]
     env["get_all_hero_types"] = lambda: metadata["catalog"]
     env["HERO_TYPES"] = metadata["fallback"]
     configs = {int(key): {"mini_bosses": dict(enumerate(value["bosses"]))}
@@ -140,7 +141,8 @@ def source_fixture():
     for level in (1, 2, 7, 54):
         # Starter wait -> exact payment -> newest boss wait -> saved boss purchase.
         result["purchases"].append(purchase_case(env, level, [], [
-            {}, {}, {"credit": 49}, {"credit": 1}, {}, {}, {"credit": 100000}, {}, {}]))
+            {}, {}, {"credit": metadata["catalog"][metadata["starters"][0]]["cost"] - 351},
+            {"credit": 1}, {}, {}, {"credit": 100000}, {}, {}]))
         result["purchases"].append(purchase_case(env, level, ["kaizen"], [
             {}, {}, {"own_target": True}, {}, {"credit": 100000}, {"own_pool": True}], initial=0, draw=0.5))
     result["purchases"].append(purchase_case(env, 7, ["kaizen"], [

@@ -77,7 +77,15 @@ func _test_pools_and_choices(fixture: Dictionary, check: Callable) -> void:
 		check.call(_same(_calls, row.calls), "AI exact candidates/weights/RNG calls")
 
 
-func _test_purchase(row: Dictionary, metadata: Dictionary, check: Callable) -> void:
+func _test_purchase(row: Dictionary, metadata: Dictionary, report: Callable) -> void:
+	var check := func(ok: bool, message: String) -> void:
+		report.call(
+			ok,
+			(
+				"%s (level=%s, initial owned=%s, synthetic=%s)"
+				% [message, row.level, row.owned, not metadata.is_empty()]
+			)
+		)
 	var draft := Draft.new(metadata)
 	draft.level_number = int(row.level)
 	_bind_choices(draft, row.draw)
@@ -117,19 +125,19 @@ func _test_adapter_failure(check: Callable) -> void:
 	_owned = []
 	_receipts.clear()
 	_wallet = Economy.new()
-	_wallet.credit_kill(1, 50)
+	_wallet.credit_kill(1, 150)
 	_reject_purchase = true
 	check.call(
-		not draft.try_buy(_owned, 400, _purchase), "AI failed native adapter refuses purchase"
+		not draft.try_buy(_owned, 500, _purchase), "AI failed native adapter refuses purchase"
 	)
 	check.call(
-		draft.reserve() == 400 and draft.total_heroes_bought == 0, "AI failed spawn retains draft"
+		draft.reserve() == 500 and draft.total_heroes_bought == 0, "AI failed spawn retains draft"
 	)
 	check.call(_owned.is_empty() and _receipts.is_empty(), "AI failed spawn has no roster mutation")
-	check.call(_wallet.gold[1] == 400 and _wallet.is_balanced(), "AI failed spawn never debits")
+	check.call(_wallet.gold[1] == 500 and _wallet.is_balanced(), "AI failed spawn never debits")
 	_calls.clear()
 	_reject_purchase = false
-	check.call(draft.try_buy(_owned, 400, _purchase), "AI saved draft retries successful adapter")
+	check.call(draft.try_buy(_owned, 500, _purchase), "AI saved draft retries successful adapter")
 	check.call(_calls.is_empty(), "AI retry does not reroll")
 	check.call(
 		draft.reserve() == 0 and draft.total_heroes_bought == 1, "AI success clears draft once"
