@@ -1,14 +1,14 @@
-# Checkpoint migrasi — 178/222, BELUM selesai
+# Checkpoint migrasi — 182/222, BELUM selesai
 
-**178 dari 222 hero target selesai; 44 masih pending.**
+**182 dari 222 hero target selesai; 40 masih pending.**
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
 `arena/01a0e17d-mystic-arena` / `arena/01a0e217-mystic-arena` (batch 9, merge PR #291 → main c4381c0) /
-sesi lanjutan `arena/01a0e2f7-mystic-arena` (batch 10–11, PR draft #292), PR draft dari branch sesi.
+sesi lanjutan `arena/01a0e2f7-mystic-arena` (batch 10–12, PR draft #292), PR draft dari branch sesi.
 **Jangan merge tanpa perintah pengguna.**
 
 **Sinkronisasi GitHub:** batch 7 (Vhalzun 1200G, Krobellus 1500G — level 5) ditambahkan setelah PR #285; batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G) CI hijau 413735 checks (run 36302839552). Manifest dan docs sudah remote.
 
-Daftar tepat **semua 178 selesai dan semua 44 belum selesai**, harga summon,
+Daftar tepat **semua 182 selesai dan semua 40 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
 [`data/ai/hero_migration_status.json`](data/ai/hero_migration_status.json).
@@ -31,9 +31,10 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 9 | Akashari (1200G), Malzareth (1100G), Nyxarath (1000G), Vorenmarr (1300G) | **174 / 48** | merged PR #291 (main c4381c0) |
 | 10 | Kenshiro (1300G), Wiro (1300G) — level sumber 9 | **176 / 46** | [CI hijau, 632.522 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36322892875) |
 | 11 | Khazan (1350G), Naraka (2000G) — level sumber 9 selesai | **178 / 44** | [CI hijau, 632.522 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36322892875) |
+| 12 | Krognarr (1400G), Raz (1400G), Vraskhan (1400G), Aurethzar (2100G) — level sumber 10 | **182 / 40** | [CI hijau](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36323731902) |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
-validation (**4.744 checks**, termasuk guard manifest), gdparse, gdlint dan
+validation (**4.821 checks**, termasuk guard manifest), gdparse, gdlint dan
 gdformat juga lulus (413735 native checks di Godot 4.7.2). Engine sandbox tidak dapat
 diunduh (TLS ke release-assets/CDN gagal), sehingga import dan seluruh tes
 engine dijalankan di workflow Godot resmi yang sudah ada. **Bukan klaim engine
@@ -56,7 +57,7 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   ID-ID ini dan benar-benar dispatch ke `BossHeroSkills._fallback_cast`.
   Oracle merekam jalur itu **per ID**, menjalankan QWER, exact cooldown/recast,
   melee/homing, upgrade level 1–15, respawn dan pembelian asli. Allowlist eksplisit
-  dikunci CI; **tidak ada fallback native untuk 44 recipe yang belum diport**.
+  dikunci CI; **tidak ada fallback native untuk 40 recipe yang belum diport**.
 - **Alchemist (750 G):** target-centered W100/slow, E rage 360 + heal 15%,
   R200/heal 100 per kill nyata. Uji zero/multiple kill, radius, anti-heal,
   timer expiry saat upgrade, attack, respawn, summon dan upgrade.
@@ -75,7 +76,7 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   AOE 220 stun 150) dan Thalgryn (cone 250×50 + surge min(dist,200) dari posisi
   pre-surge, adaptive target 2.0× + tetangga 60 0.7×, morph rage 300 ×1.35,
   replicate AOE slow 0.4/180). Rage expiry selalu reset damage ke katalog raw;
-  update oracle pembelian sumber kini mencakup seluruh 178 roster (534 baris).
+  update oracle pembelian sumber kini mencakup seluruh 182 roster (546 baris).
 - **L7:** Akashari (Q strike 1.6×/slow, W blink min(dist,150) + AOE 80 dari
   posisi BARU, E scream AOE150, R sonic AOE220 2.3×/slow), Malzareth (Q
   disruption AOE100 di target/x+100, W soul target 1.4×+tetangga 60 0.7×, E
@@ -101,12 +102,20 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   1.1× + attack delay max(timer,30), R execution AOE230 int(1.8×), bila
   hp/max(1,max_hp) **< 0.3** sebelum hit → int(×1.6), heal 10%; execute diuji
   level 1/2/15 × hp 2999/3000/3001).
+- **L10 (batch 12):** Krognarr (Q 1.3×, W AOE170 1.1× delay 30, E AOE120
+  0.9× heal 8%, R AOE210 1.8× delay 60), Raz (Q 1.2×, W dash min(d,100) lalu
+  1.4×, E AOE160 1.1×, R AOE200 1.8× delay 50), Vraskhan (Q dash min(d,90)
+  lalu 1.2×, W teleport ke (target.x, target.y−20) lalu 1.3×, E AOE170 1.1×,
+  R AOE220 1.8× delay 60), Aurethzar (Q 1.3×, W AOE200 1.1×, E target 1.0×
+  slow 0.5/90, R AOE250 1.9× delay 70). Delay = `attack_timer = max(.., n)`
+  (Common.stun). Hit netral. Dispatch lewat `boss_recipe_registry.gd` (IDS
+  eksplisit per handler; ID pending → null, tanpa substitusi).
 - **Interaksi:** oracle memakai Hero Thorne dan Tower asli, bukan hanya receipt
   HP. Sekolah/source attribution, mitigasi, reflect, shield, dan tower yang
   tidak mempunyai `attack_timer` diuji. Skill tanpa source/school di Python
   tetap **netral**, tidak otomatis memakai sekolah caster.
-- **Ekonomi:** 534 pembelian sumber (178 × harga−1/tepat/+1, seluruh roster
-  playable termasuk 28 kit recipe khusus + 150 shared). Boss upgrade
+- **Ekonomi:** 546 pembelian sumber (182 × harga−1/tepat/+1, seluruh roster
+  playable termasuk 32 kit recipe khusus + 150 shared). Boss upgrade
   **1,6×** starter: Lv1→2 **480 G**; threshold reserve ±1, hero hidup/mati,
   saldo, registry dan clock diuji. Anti-heal mengikuti HP setter: cap dahulu,
   baru potong kenaikan HP. Resource bersama tidak dimutasi.
@@ -121,11 +130,11 @@ native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
 ## Sisa dan blocker tepat
 
-**44 boss** (level 10–20) mempunyai empat recipe khusus yang belum diport dan
+**40 boss** (level 11–20) mempunyai empat recipe khusus yang belum diport dan
 belum memiliki oracle/native test per perilakunya. Metode Q/W/E/R untuk
 masing-masing ID tercantum di
-[daftar status](HERO_ROSTER_STATUS.md#belum-selesai--44-id-dan-recipe-yang-menjadi-blocker).
-Blocker implementasi: sisa 44 recipe (level 10–20) belum diport; batch 7 (run
+[daftar status](HERO_ROSTER_STATUS.md#belum-selesai--40-id-dan-recipe-yang-menjadi-blocker).
+Blocker implementasi: sisa 40 recipe (level 11–20) belum diport; batch 7 (run
 36308407983) dan batch 8 (run 36309346449) lulus CI Godot 4.7.2 plus validasi
 lokal (oracle, static checks, source contract, gdparse/gdlint/gdformat);
 batch 9 sudah merge (PR #291) tetapi suite native-nya belum pernah jalan di CI;
@@ -138,19 +147,22 @@ Tidak ada klaim 222 playable.
 
 Lanjut berdasarkan level sumber (lihat `hero_skills/_bundle.py` read-only:
 registry dispatch, `update_timers` bersama dan metode recipe masing-masing):
-1. Level 10: aurethzar (2100G), krognarr (1400G), raz (1400G), vraskhan
-   (1400G) — buat `boss_level_ten_skills.gd` / oracle / checks meniru
-   `boss_level_nine_*` (fixture compact 1 baris, trace pendek). Level 9 selesai
-   (batch 10–11). Tidak ada level sumber 8 untuk recipe khusus.
+1. Level 11: aeralith (1450G), aurex (1500G), nyxareva (1500G), thalakryon
+   (2200G) — buat `boss_level_eleven_skills.gd` / oracle / checks meniru
+   `boss_level_ten_*` (VISUAL 60/90/60/100, fixture compact 1 baris, trace
+   pendek) dan **daftarkan handler di `HANDLERS` pada
+   `scripts/combat/boss_recipe_registry.gd`**, bukan di `minion_battle.gd`
+   (file itu tepat 1000 baris = batas gdlint max-file-lines). Level 9–10 selesai.
+   Bila recipe punya timer, tambahkan tick lewat registry juga.
 2. Lanjut level 10 dst sesuai manifest sampai 222. Jangan memasukkan mereka ke
    handler 150 shared-source: source mereka memang berbeda.
 3. Per batch: oracle → handler/state/resource → native combat/transactions →
    semua oracle lama + static/parser/lint/format → CI import + run_all → update
    jumlah/manifest/dokumentasi. Jangan melanjutkan batch kalau masih gagal.
 4. Tes penolakan pending harus didanai ≥ harga ID pending (sekarang 2500G untuk
-   aurethzar 2100G) agar gerbang kit native yang diuji, bukan gerbang gold.
+   aeralith 1450G) agar gerbang kit native yang diuji, bukan gerbang gold.
 5. Test penolakan pending (`ai_recruit` + `shared_no_fallback`) memakai ID yang
-   **masih pending** (saat ini aurethzar 2100G); ganti mengikuti manifest tiap
+   **masih pending** (saat ini aeralith 1450G); ganti mengikuti manifest tiap
    kali satu batch membuat ID tersebut playable.
 
 ## Menjalankan validasi
@@ -178,16 +190,16 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 
 > Lanjutkan migrasi 222 hero dari snapshot checkpoint Arena terbaru untuk PR
 > draft dari branch sesi batch 10 (arena/01a0e2f7-mystic-arena, basis main c4381c0).
-> Saat ini 178/222 kit native teruji (6 starter + L1×4 + Alchemist + AA, Nyzrak,
-> Ignis + L5×2, L6×4, L7×4, L9×4 + 150 ID shared-handler),
-> tersisa 44 (level 10–20, 11 level × 4).
-> CI hijau Godot 4.7.2 run 36322892875 (632.522 checks), static lokal 4744 PASS.
+> Saat ini 182/222 kit native teruji (6 starter + L1×4 + Alchemist + AA, Nyzrak,
+> Ignis + L5×2, L6×4, L7×4, L9×4, L10×4 + 150 ID shared-handler),
+> tersisa 40 (level 11–20, 10 level × 4).
+> CI hijau Godot 4.7.2 run 36323731902, static lokal 4821 PASS.
 > Baca godot_rebuild/AI_CONTRACT.md, SHIELD_CONTRACT.md, HERO_CONTRACT.md,
 > HERO_MIGRATION_PROGRESS.md, HERO_ROSTER_STATUS.md dan manifest
-> data/ai/hero_migration_status.json. Lanjut level 10 (Aurethzar, Krognarr,
-> Raz, Vraskhan) dst sesuai level sumber; lanjut otomatis
+> data/ai/hero_migration_status.json. Lanjut level 11 (Aeralith, Aurex,
+> Nyxareva, Thalakryon) dst; handler baru lewat boss_recipe_registry.gd sesuai level sumber; lanjut otomatis
 > setelah tiap batch lulus. Hanya ubah godot_rebuild/; Python asli read-only.
-> Jangan memakai kit generik pengganti: 44 pending mempunyai recipe khusus.
+> Jangan memakai kit generik pengganti: 40 pending mempunyai recipe khusus.
 > Pertahankan skill, serangan, cooldown, lifecycle, school/source dan harga
 > (upgrade boss 1,6×), dengan source oracle dan tes native tiap perilaku.
 > Jalankan semua tes lama, static, parser/lint/format dan CI Godot 4.7.2;
