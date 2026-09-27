@@ -152,7 +152,7 @@ func _respawn(row: Dictionary, check: Callable) -> void:
 
 func _roster(check: Callable) -> void:
 	var world := World.new()
-	world.economy.credit_kill(world.RED, 8000)
+	world.economy.credit_kill(world.RED, 10000)
 	var index := 0
 	for kind in BOSSES:
 		var definition = BOSSES[kind]
