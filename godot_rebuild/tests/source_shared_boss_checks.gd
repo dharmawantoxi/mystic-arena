@@ -76,10 +76,10 @@ func _lifecycle(kind: String, check: Callable) -> void:
 
 func _no_fallback(check: Callable) -> void:
 	var world := Battle.new()
-	# astraelion is a pending recipe ID: a forged definition must not resolve
-	# to any native kit (akahime moved to a real kit in batch 21).
+	# Unknown recipe ID: a forged definition must not resolve to any native kit
+	# (all 222 catalog heroes have real recipes, so no pending ID remains).
 	var fake = Roster.DEFINITIONS.kaizen.duplicate()
-	fake.id = "astraelion"
+	fake.id = "unported_probe"
 	var hero := world.spawn_hero(fake, world.RED, Vector2(500, 340))
 	_enemies(world, [[550, 340]])
 	for key in ["q", "w", "e", "r"]:

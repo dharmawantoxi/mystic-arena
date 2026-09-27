@@ -122,19 +122,21 @@ func _guards(check: Callable) -> void:
 	var world := _world()
 	_fund(world, 4000)
 	var recruit := Recruit.new()
-	# Funded above the pending price so AIDraft reaches the native kit gate.
-	# astraelion (2600G, level 20) is still pending after batch 21; pending kits
-	# must stay rejected without debit or substitution (akahime was replaced
-	# here once its real kit landed).
+	# Every catalog hero now has a native kit, so the draft can no longer pick a
+	# missing kit. The adapter-refusal guard uses a registry-ID collision
+	# instead: the draft and its reserve must survive with no debit or spawn.
 	var draft := _target("astraelion", 2600)
-	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
-	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
+	var taken := world._next_id
+	world._by_id[taken] = world.units
+	check.call(not recruit.try_buy(world, draft), "Adapter refusal cannot spawn")
+	check.call(world.transaction_error == "capacity", "Adapter refusal is explicit")
+	world._by_id.erase(taken)
 	check.call(
 		draft.purchase_target == "astraelion" and draft.reserve() == 2600,
-		"Missing kit retains draft/reserve"
+		"Adapter refusal retains draft/reserve"
 	)
 	check.call(
-		world.units.is_empty() and world.economy.gold[1] == 4000, "Missing kit has no effects"
+		world.units.is_empty() and world.economy.gold[1] == 4000, "Adapter refusal has no effects"
 	)
 	check.call(
 		not world._buy_ai_hero("astraelion", 400, Vector2(1120, 90)),
@@ -201,7 +203,7 @@ func _multi_roster(check: Callable) -> void:
 	world.economy.credit_kill(1, 1000)
 	check.call(
 		not adapter.try_buy(world, missing) and missing.reserve() == 2600,
-		"Unsupported boss kit keeps draft without debit"
+		"Unaffordable boss draft keeps reserve without debit"
 	)
 	var grimjaw := _target("grimjaw", 450)
 	check.call(adapter.try_buy(world, grimjaw), "Grimjaw third real paid summon")
