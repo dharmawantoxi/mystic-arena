@@ -1,0 +1,439 @@
+{
+  "skills": [
+    {
+      "skill": "q",
+      "with_enemies": false,
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          550,
+          340
+        ],
+        [
+          460,
+          380
+        ],
+        [
+          390,
+          340
+        ]
+      ],
+      "success": false,
+      "repeat": false,
+      "hp": 1000,
+      "damage": 41,
+      "attack_cd": 35,
+      "skill_timer": 0,
+      "w_cooldown": 0,
+      "e_cooldown": 0,
+      "r_cooldown": 0,
+      "active_skill": "",
+      "active_timer": 0,
+      "viscous": 0,
+      "bristleback": 0,
+      "quill": 0,
+      "warpath": 0,
+      "enemies": []
+    },
+    {
+      "skill": "q",
+      "with_enemies": true,
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          550,
+          340
+        ],
+        [
+          460,
+          380
+        ],
+        [
+          390,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "hp": 1000,
+      "damage": 41,
+      "attack_cd": 35,
+      "skill_timer": 300,
+      "w_cooldown": 0,
+      "e_cooldown": 0,
+      "r_cooldown": 0,
+      "active_skill": "q",
+      "active_timer": 40,
+      "viscous": 30,
+      "bristleback": 0,
+      "quill": 0,
+      "warpath": 0,
+      "enemies": [
+        {
+          "hp": 9944,
+          "slow": 0.4,
+          "slow_timer": 180
+        },
+        {
+          "hp": 10000,
+          "slow": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "hp": 10000,
+          "slow": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "hp": 10000,
+          "slow": 0.0,
+          "slow_timer": 0
+        }
+      ]
+    },
+    {
+      "skill": "w",
+      "with_enemies": false,
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          600,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "hp": 1020,
+      "damage": 41,
+      "attack_cd": 35,
+      "skill_timer": 0,
+      "w_cooldown": 240,
+      "e_cooldown": 0,
+      "r_cooldown": 0,
+      "active_skill": "w",
+      "active_timer": 100,
+      "viscous": 0,
+      "bristleback": 240,
+      "quill": 0,
+      "warpath": 0,
+      "enemies": []
+    },
+    {
+      "skill": "w",
+      "with_enemies": true,
+      "positions": [
+        [
+          450,
+          340
+        ],
+        [
+          600,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "hp": 1020,
+      "damage": 41,
+      "attack_cd": 35,
+      "skill_timer": 0,
+      "w_cooldown": 240,
+      "e_cooldown": 0,
+      "r_cooldown": 0,
+      "active_skill": "w",
+      "active_timer": 100,
+      "viscous": 0,
+      "bristleback": 240,
+      "quill": 0,
+      "warpath": 0,
+      "enemies": [
+        {
+          "hp": 9965,
+          "slow": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "hp": 10000,
+          "slow": 0.0,
+          "slow_timer": 0
+        }
+      ]
+    },
+    {
+      "skill": "e",
+      "with_enemies": false,
+      "positions": [
+        [
+          410,
+          340
+        ],
+        [
+          400,
+          340
+        ],
+        [
+          399,
+          340
+        ]
+      ],
+      "success": false,
+      "repeat": false,
+      "hp": 1000,
+      "damage": 41,
+      "attack_cd": 35,
+      "skill_timer": 0,
+      "w_cooldown": 0,
+      "e_cooldown": 0,
+      "r_cooldown": 0,
+      "active_skill": "",
+      "active_timer": 0,
+      "viscous": 0,
+      "bristleback": 0,
+      "quill": 0,
+      "warpath": 0,
+      "enemies": []
+    },
+    {
+      "skill": "e",
+      "with_enemies": true,
+      "positions": [
+        [
+          410,
+          340
+        ],
+        [
+          400,
+          340
+        ],
+        [
+          399,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "hp": 1000,
+      "damage": 41,
+      "attack_cd": 35,
+      "skill_timer": 0,
+      "w_cooldown": 0,
+      "e_cooldown": 420,
+      "r_cooldown": 0,
+      "active_skill": "e",
+      "active_timer": 60,
+      "viscous": 0,
+      "bristleback": 0,
+      "quill": 30,
+      "warpath": 0,
+      "enemies": [
+        {
+          "hp": 9916,
+          "slow": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "hp": 9916,
+          "slow": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "hp": 10000,
+          "slow": 0.0,
+          "slow_timer": 0
+        }
+      ]
+    },
+    {
+      "skill": "r",
+      "with_enemies": false,
+      "positions": [
+        [
+          386,
+          340
+        ],
+        [
+          380,
+          340
+        ],
+        [
+          379,
+          340
+        ]
+      ],
+      "success": false,
+      "repeat": false,
+      "hp": 1000,
+      "damage": 41,
+      "attack_cd": 35,
+      "skill_timer": 0,
+      "w_cooldown": 0,
+      "e_cooldown": 0,
+      "r_cooldown": 0,
+      "active_skill": "",
+      "active_timer": 0,
+      "viscous": 0,
+      "bristleback": 0,
+      "quill": 0,
+      "warpath": 0,
+      "enemies": []
+    },
+    {
+      "skill": "r",
+      "with_enemies": true,
+      "positions": [
+        [
+          386,
+          340
+        ],
+        [
+          380,
+          340
+        ],
+        [
+          379,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "hp": 1050,
+      "damage": 61,
+      "attack_cd": 23,
+      "skill_timer": 0,
+      "w_cooldown": 0,
+      "e_cooldown": 0,
+      "r_cooldown": 900,
+      "active_skill": "r",
+      "active_timer": 120,
+      "viscous": 0,
+      "bristleback": 0,
+      "quill": 0,
+      "warpath": 300,
+      "enemies": [
+        {
+          "hp": 9895,
+          "slow": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "hp": 9895,
+          "slow": 0.0,
+          "slow_timer": 0
+        },
+        {
+          "hp": 10000,
+          "slow": 0.0,
+          "slow_timer": 0
+        }
+      ]
+    }
+  ],
+  "timers": [
+    {
+      "mode": "w",
+      "before": {
+        "bristleback": 1,
+        "warpath": 0,
+        "damage": 41,
+        "attack_cd": 35,
+        "level": 1
+      },
+      "after": {
+        "bristleback": 0,
+        "warpath": 0,
+        "damage": 41,
+        "attack_cd": 35,
+        "level": 1
+      }
+    },
+    {
+      "mode": "r",
+      "before": {
+        "bristleback": 0,
+        "warpath": 1,
+        "damage": 61,
+        "attack_cd": 23,
+        "level": 1
+      },
+      "after": {
+        "bristleback": 0,
+        "warpath": 0,
+        "damage": 41,
+        "attack_cd": 35,
+        "level": 1
+      }
+    },
+    {
+      "mode": "r_upgrade",
+      "before": {
+        "bristleback": 0,
+        "warpath": 1,
+        "damage": 51,
+        "attack_cd": 23,
+        "level": 2
+      },
+      "after": {
+        "bristleback": 0,
+        "warpath": 0,
+        "damage": 51,
+        "attack_cd": 35,
+        "level": 2
+      }
+    }
+  ],
+  "reflect": [
+    {
+      "school": "physical",
+      "active": false,
+      "before": 1000,
+      "hp": 900,
+      "attacker_hp": 10000,
+      "bristleback": 0
+    },
+    {
+      "school": "physical",
+      "active": true,
+      "before": 1020,
+      "hp": 950,
+      "attacker_hp": 9948,
+      "bristleback": 240
+    },
+    {
+      "school": "magic",
+      "active": false,
+      "before": 1000,
+      "hp": 900,
+      "attacker_hp": 10000,
+      "bristleback": 0
+    },
+    {
+      "school": "magic",
+      "active": true,
+      "before": 1020,
+      "hp": 935,
+      "attacker_hp": 9944,
+      "bristleback": 240
+    }
+  ],
+  "respawn": {
+    "x": 1120.0,
+    "y": 130.0,
+    "hp": 1960,
+    "alive": true,
+    "w": 123,
+    "e": 77,
+    "r": 321,
+    "q": 0,
+    "active": "",
+    "visual": 0
+  }
+}

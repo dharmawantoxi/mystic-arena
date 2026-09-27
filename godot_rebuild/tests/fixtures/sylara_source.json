@@ -1,0 +1,1085 @@
+{
+  "casts": [
+    {
+      "key": "q",
+      "populated": false,
+      "positions": [
+        [
+          620,
+          340
+        ],
+        [
+          650,
+          340
+        ],
+        [
+          679,
+          340
+        ],
+        [
+          680,
+          340
+        ],
+        [
+          600,
+          354
+        ],
+        [
+          600,
+          355
+        ],
+        [
+          400,
+          340
+        ]
+      ],
+      "success": false,
+      "repeat": false,
+      "state": {
+        "hp": 500,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "visual": 0,
+        "active": "",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": []
+      }
+    },
+    {
+      "key": "q",
+      "populated": true,
+      "positions": [
+        [
+          620,
+          340
+        ],
+        [
+          650,
+          340
+        ],
+        [
+          679,
+          340
+        ],
+        [
+          680,
+          340
+        ],
+        [
+          600,
+          354
+        ],
+        [
+          600,
+          355
+        ],
+        [
+          400,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 500,
+        "speed": 1.5,
+        "attack_cd": 30,
+        "q": 360,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "visual": 180,
+        "active": "q",
+        "focus": 180,
+        "windrun": 0,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": [
+          {
+            "hp": 9905,
+            "attack_timer": 0
+          },
+          {
+            "hp": 9920,
+            "attack_timer": 0
+          },
+          {
+            "hp": 9934,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          },
+          {
+            "hp": 9948,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          }
+        ]
+      }
+    },
+    {
+      "key": "w",
+      "populated": false,
+      "positions": [
+        [
+          620,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 530,
+        "speed": 3.0,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 240,
+        "e": 0,
+        "r": 0,
+        "visual": 180,
+        "active": "w",
+        "focus": 0,
+        "windrun": 180,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": []
+      }
+    },
+    {
+      "key": "w",
+      "populated": true,
+      "positions": [
+        [
+          620,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 530,
+        "speed": 3.0,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 240,
+        "e": 0,
+        "r": 0,
+        "visual": 180,
+        "active": "w",
+        "focus": 0,
+        "windrun": 180,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": [
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          }
+        ]
+      }
+    },
+    {
+      "key": "e",
+      "populated": false,
+      "positions": [
+        [
+          700,
+          340
+        ]
+      ],
+      "success": false,
+      "repeat": false,
+      "state": {
+        "hp": 500,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "visual": 0,
+        "active": "",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": []
+      }
+    },
+    {
+      "key": "e",
+      "populated": true,
+      "positions": [
+        [
+          700,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 500,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 420,
+        "r": 0,
+        "visual": 150,
+        "active": "e",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 150,
+        "bound": true,
+        "powershot": 0,
+        "enemies": [
+          {
+            "hp": 9934,
+            "attack_timer": 45
+          }
+        ]
+      }
+    },
+    {
+      "key": "r",
+      "populated": false,
+      "positions": [
+        [
+          620,
+          340
+        ],
+        [
+          760,
+          340
+        ],
+        [
+          790,
+          340
+        ],
+        [
+          800,
+          340
+        ],
+        [
+          650,
+          365
+        ],
+        [
+          650,
+          375
+        ],
+        [
+          400,
+          340
+        ]
+      ],
+      "success": false,
+      "repeat": false,
+      "state": {
+        "hp": 500,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "visual": 0,
+        "active": "",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": []
+      }
+    },
+    {
+      "key": "r",
+      "populated": true,
+      "positions": [
+        [
+          620,
+          340
+        ],
+        [
+          760,
+          340
+        ],
+        [
+          790,
+          340
+        ],
+        [
+          800,
+          340
+        ],
+        [
+          650,
+          365
+        ],
+        [
+          650,
+          375
+        ],
+        [
+          400,
+          340
+        ]
+      ],
+      "success": true,
+      "repeat": false,
+      "state": {
+        "hp": 500,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 900,
+        "visual": 60,
+        "active": "r",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 60,
+        "enemies": [
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          },
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          }
+        ]
+      }
+    },
+    {
+      "key": "e_boundary",
+      "radius": 199,
+      "success": true,
+      "state": {
+        "hp": 658,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 420,
+        "r": 0,
+        "visual": 150,
+        "active": "e",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 150,
+        "bound": true,
+        "powershot": 0,
+        "enemies": [
+          {
+            "hp": 9934,
+            "attack_timer": 45
+          }
+        ]
+      }
+    },
+    {
+      "key": "e_boundary",
+      "radius": 200,
+      "success": true,
+      "state": {
+        "hp": 658,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 420,
+        "r": 0,
+        "visual": 150,
+        "active": "e",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 150,
+        "bound": true,
+        "powershot": 0,
+        "enemies": [
+          {
+            "hp": 9934,
+            "attack_timer": 45
+          }
+        ]
+      }
+    },
+    {
+      "key": "e_boundary",
+      "radius": 201,
+      "success": false,
+      "state": {
+        "hp": 658,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "visual": 0,
+        "active": "",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": [
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          }
+        ]
+      }
+    },
+    {
+      "key": "e_boundary",
+      "radius": 206,
+      "success": false,
+      "state": {
+        "hp": 658,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "visual": 0,
+        "active": "",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": [
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          }
+        ]
+      }
+    },
+    {
+      "key": "e_boundary",
+      "radius": 208,
+      "success": false,
+      "state": {
+        "hp": 658,
+        "speed": 1.5,
+        "attack_cd": 52,
+        "q": 0,
+        "w": 0,
+        "e": 0,
+        "r": 0,
+        "visual": 0,
+        "active": "",
+        "focus": 0,
+        "windrun": 0,
+        "shackle": 0,
+        "bound": false,
+        "powershot": 0,
+        "enemies": [
+          {
+            "hp": 10000,
+            "attack_timer": 0
+          }
+        ]
+      }
+    }
+  ],
+  "ticks": {
+    "q": [
+      {
+        "tick": 1,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 30,
+          "q": 360,
+          "w": 0,
+          "e": 0,
+          "r": 0,
+          "visual": 180,
+          "active": "q",
+          "focus": 179,
+          "windrun": 0,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 9905,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 179,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 30,
+          "q": 360,
+          "w": 0,
+          "e": 0,
+          "r": 0,
+          "visual": 180,
+          "active": "q",
+          "focus": 1,
+          "windrun": 0,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 9905,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 180,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 360,
+          "w": 0,
+          "e": 0,
+          "r": 0,
+          "visual": 180,
+          "active": "q",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 9905,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      }
+    ],
+    "w": [
+      {
+        "tick": 1,
+        "state": {
+          "hp": 658,
+          "speed": 3.0,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 240,
+          "e": 0,
+          "r": 0,
+          "visual": 180,
+          "active": "w",
+          "focus": 0,
+          "windrun": 179,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 179,
+        "state": {
+          "hp": 658,
+          "speed": 3.0,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 240,
+          "e": 0,
+          "r": 0,
+          "visual": 180,
+          "active": "w",
+          "focus": 0,
+          "windrun": 1,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 180,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 240,
+          "e": 0,
+          "r": 0,
+          "visual": 180,
+          "active": "w",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      }
+    ],
+    "e": [
+      {
+        "tick": 1,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 0,
+          "e": 420,
+          "r": 0,
+          "visual": 150,
+          "active": "e",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 149,
+          "bound": true,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 9934,
+              "attack_timer": 45
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 15,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 0,
+          "e": 420,
+          "r": 0,
+          "visual": 150,
+          "active": "e",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 135,
+          "bound": true,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 9896,
+              "attack_timer": 30
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 16,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 0,
+          "e": 420,
+          "r": 0,
+          "visual": 150,
+          "active": "e",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 134,
+          "bound": true,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 9896,
+              "attack_timer": 30
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 150,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 0,
+          "e": 420,
+          "r": 0,
+          "visual": 150,
+          "active": "e",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 9554,
+              "attack_timer": 30
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      }
+    ],
+    "r": [
+      {
+        "tick": 1,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 0,
+          "e": 0,
+          "r": 900,
+          "visual": 60,
+          "active": "r",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 59,
+          "enemies": [
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 59,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 0,
+          "e": 0,
+          "r": 900,
+          "visual": 60,
+          "active": "r",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 1,
+          "enemies": [
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            },
+            {
+              "hp": 10000,
+              "attack_timer": 0
+            }
+          ]
+        }
+      },
+      {
+        "tick": 60,
+        "state": {
+          "hp": 658,
+          "speed": 1.5,
+          "attack_cd": 52,
+          "q": 0,
+          "w": 0,
+          "e": 0,
+          "r": 900,
+          "visual": 60,
+          "active": "r",
+          "focus": 0,
+          "windrun": 0,
+          "shackle": 0,
+          "bound": false,
+          "powershot": 0,
+          "enemies": [
+            {
+              "hp": 9921,
+              "attack_timer": 0
+            },
+            {
+              "hp": 9938,
+              "attack_timer": 0
+            },
+            {
+              "hp": 9925,
+              "attack_timer": 0
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "windrun": [
+    {
+      "school": "physical",
+      "roll": 0.0,
+      "hp": 530
+    },
+    {
+      "school": "physical",
+      "roll": 0.7499,
+      "hp": 530
+    },
+    {
+      "school": "physical",
+      "roll": 0.75,
+      "hp": 450
+    },
+    {
+      "school": "physical",
+      "roll": 0.99,
+      "hp": 450
+    },
+    {
+      "school": "magic",
+      "roll": 0.0,
+      "hp": 450
+    },
+    {
+      "school": "magic",
+      "roll": 0.7499,
+      "hp": 450
+    },
+    {
+      "school": "magic",
+      "roll": 0.75,
+      "hp": 450
+    },
+    {
+      "school": "magic",
+      "roll": 0.99,
+      "hp": 450
+    }
+  ],
+  "projectiles": [
+    {
+      "tick": 0,
+      "hp": 10000,
+      "count": 1,
+      "positions": [
+        [
+          500.0,
+          335.0
+        ]
+      ]
+    },
+    {
+      "tick": 1,
+      "hp": 10000,
+      "count": 1,
+      "positions": [
+        [
+          509.49176419437737,
+          335.3954901747657
+        ]
+      ]
+    },
+    {
+      "tick": 2,
+      "hp": 10000,
+      "count": 1,
+      "positions": [
+        [
+          518.7647031268697,
+          337.46009753556564
+        ]
+      ]
+    },
+    {
+      "tick": 12,
+      "hp": 10000,
+      "count": 1,
+      "positions": [
+        [
+          611.4940924517922,
+          358.10617114356495
+        ]
+      ]
+    },
+    {
+      "tick": 13,
+      "hp": 9943,
+      "count": 1,
+      "positions": [
+        [
+          620.0,
+          360.0
+        ]
+      ]
+    },
+    {
+      "tick": 14,
+      "hp": 9943,
+      "count": 0,
+      "positions": []
+    },
+    {
+      "tick": 16,
+      "hp": 9943,
+      "count": 0,
+      "positions": []
+    }
+  ]
+}

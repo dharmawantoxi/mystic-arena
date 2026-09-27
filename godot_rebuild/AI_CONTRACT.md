@@ -53,8 +53,8 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
   available kosong dan pembelian sukses membersihkan target+harga reserve.
 - Reserve = `max(0, target_cost)` bila target ada, selain itu nol. Nonhero boleh
   belanja tepat pada `gold == cost + reserve`, tidak pada satu gold di bawahnya.
-  Reserve sudah diterapkan pada upgrade tower/nexus/hero dan kedua pembelian
-  shield nyata per kandidat; build/item dan pemilihan prioritas kandidat masih pending.
+  Reserve sudah diterapkan pada build tower, upgrade tower/nexus/hero dan kedua
+  pembelian shield nyata per kandidat; item dan pemilihan prioritas kandidat masih pending.
 - `try_buy` menerima roster tipe authoritative, snapshot gold, dan callback
   **sinkron/atomik** `(hero_type, cost, position) -> bool`. Callback wajib
   memvalidasi ulang wallet/capacity, spawn kit benar, debit, lalu tambah roster;
@@ -69,6 +69,95 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
   tanpa return-false adapter. Tes kegagalan ini bukan klaim cabang sumber identik.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
+
+## Roster 222 hero: baseline angka + Kaizen/Thorne/Grimjaw/Sylara playable, BELUM kit penuh
+
+Permintaan lanjutan adalah enam starter + 216 boss playable, dikerjakan per
+fase, **belum selesai**. `data/ai/hero_combat_stats.json` sekarang mengunci
+angka final hasil konstruksi `Hero` Python asli untuk **222 ID**, mencakup
+normalisasi melee/ranged, catch-up starter awal dan balance catalog, skill
+base, sekolah damage dan harga summon. Ini adalah **baseline angka**, bukan
+skill handler playable atau `.tres` kit. `ai_recruit_source_oracle.py`
+mengeksekusi `Hero.__init__` asli untuk semua 222 lewat AST (inventory kosong,
+audio stub) dan transaksi `_try_buy_hero` dengan Hero Kaizen asli pada gold
+399/400/401, Thorne 499/500/501 dan Grimjaw 449/450/451 dan Sylara 379/380/381. CI menjalankannya via `validate_project.py` karena perubahan
+harus tetap di dalam `godot_rebuild/`.
+
+`ai_recruitment.gd` meneruskan draft ke callback sinkron transaksi
+`prototype_battle.gd::_buy_ai_hero` di world/ledger nyata. Saat ini **Kaizen,
+Thorne, Grimjaw dan Sylara** punya kit native. 218 hero lain (dua starter dan 216 boss),
+walaupun punya metadata dan baseline numerik, ditolak eksplisit dengan `kit`
+dan target serta reserve tetap tersimpan; tidak di-spawn sebagai Kaizen.
+Hero yang dimiliki red (termasuk mati) tidak dapat dibeli ulang. Kaizen 400 G,
+Thorne 500 G, Grimjaw 450 G, Sylara 380 G, offset first spawn Y90, lalu Y130/Y170/Y210, ID
+registry/capacity/posisi/saldo valid, debit sekali setelah spawn. Wrapper scene
+tetap memakai Kaizen gratis red; adapter **tidak** mengubah scene atau
+membuat AIPlayer lengkap. Kontrak lima hero ditahan defensif di
+transaksi; `_ai_step` tetap memegang gate policy aslinya. Tidak ada item/forge.
+
+`thorne_skills.gd` mem-port Q cone 60/slow 0,4 (180 tick), W armor fisik
+30% / sihir 15% dan reflect 25% damage setelah mitigasi, E radial 100,
+R Warpath damage/CD buff 300 tick dan restore damage dari level TERKINI.
+W bisa cast tanpa target; Q/E/R butuh target dalam 1,15×skill range.
+Cooldown/HP/visual, upgrade saat buff, timer dan respawn W/E/R tertahan
+sesuai sumber diuji lewat `thorne_source_oracle.py` (Hero/ThorneSkills asli)
+dan combat/ledger world native; bukan penggunaan kit Kaizen sebagai
+fallback. Kit Thorne tidak disambungkan ke scene otomatis.
+
+`grimjaw_skills.gd` mem-port Q Blade Fury (12 pulsa tiap 15 tick tanpa damage
+saat cast), W ward tetap di posisi cast 360 tick/heal hero dan sekutu,
+E AOE radial 60 + basic attack crit 2× selama 300 tick (tidak habis setelah
+satu hit), dan R target-lock Omnislash 90 tick. Fixture `grimjaw_source.json`
+berasal dari Hero/GrimjawSkills Python nyata; semua 222 ID memperoleh bentuk
+polygon dan warna prosedural deterministik sebagai *placeholder visual* saat
+kit mereka nanti aktif. Tidak ada aset baru atau klaim desain final.
+
+`sylara_skills.gd` mem-port Q Focus Fire (pierce berurutan/attack cooldown
+sementara), W Windrun (speed 2×, heal dan evasion fisik 75%), E Shackle
+(200px, stun/pulsa 15 tick), R Powershot (charge 60 tick, lima ray cone,
+satu hit per target). Basic attack ranged memakai homing arrow milik hero
+(sumber 9,5px/tick dan cap enam per hero), bukan damage instan; bentuk
+pelurunya tetap prosedural sederhana. Fixture mengeksekusi Hero.update
+projectile loop asli selain SylaraSkills, dan membandingkan evasion
+boundary, impact, Q/E/R dan timer native. Vex/Zephyr tetap ditolak.
+
+Lanjutan wajib: port dua starter lainnya dan 216 boss dengan handler skill,
+serangan ranged, lifecycle, upgrade dan source oracle masing-masing sebelum
+memperluas registry kit native; lalu tes roster multi-hero/capacity dan
+integrasi scene tersendiri. Jangan mengklaim 222 kit dari file angka.
+
+## Build tower lawan: transaksi domain nyata, belum dijadwalkan scene
+
+`ai_build.gd::try_build` mem-port `_try_build_tower` secara eksplisit, dengan
+slot kosong red diambil dari `world.slots` authoritative. Pemilihan slot uniform
+lalu jenis archer/cannon/ice/mage berbobot 0,35/0,25/0,20/0,20; picker sinkron
+bisa diinjeksi untuk tes, pilihan di luar kandidat ditolak. **Gate policy 150 G**
+tetap pada `_ai_step`/`ai_policy.gd`, tidak diterapkan sebagai harga: transaksi
+build adalah **100 G + reserve draft terkini** untuk eligibility, debit **100 G**.
+Tidak ada draw picker bila slot kosong tidak ada atau saldo di bawah threshold.
+Counter `total_built` bertambah sekali setelah transaksi berhasil, tidak di
+world atau saat gagal. Tidak ada controller otomatis baru.
+
+`prototype_battle.gd::_build_tower_for` memvalidasi team, slot canonical/owner,
+lane, posisi, okupansi, jenis, saldo/reserve, kapasitas, ID registry dan hasil
+match sebelum spawn lalu debit sekali via ledger yang sama. Wrapper build lama
+tetap Archer tanpa reserve (UI blue dan defender sementara red tidak diubah).
+Lv1 non-Archer **bukan** resource Lv2: sumber membuat Archer Lv1 lalu mengubah
+`tower_type` dan memanggil `_apply_level_stats`; tabel jenis lain tidak punya
+Lv1 sehingga HP 2000, shield 800, damage 20, range 180, CD 35 dan efek 0
+jatuh ke Archer Lv1, tetapi identitas, muzzle, dan jenis proyektil mengikuti
+jenis pilihan. Native menduplikasi definisi Archer Lv1 **per instance** lalu
+mengubah hanya `id`, `display_name`, `tower_path`. Resource `.tres` bersama
+tetap utuh. Upgrade Lv1 AI tetap mencoba cannon terlebih dahulu tanpa melihat
+jenis build, sehingga misalnya Ice Lv1 dapat menjadi Cannon Lv2 (175 G).
+
+`ai_build_source_oracle.py` mengeksekusi AST AIPlayer dan Tower sumber tanpa
+import game/pygame: 96 attempt untuk slot 0/1/3, empat path, reserve 0/400,
+threshold ±, 8 batas sampling dan empat stat/tembakan/upgrade Lv1. CI menjalankan
+oracle baru lewat `validate_project.py` agar perubahan tetap hanya dalam
+`godot_rebuild/`; runner native menguji slot/registry/ledger/proyektil/upgrade
+nyata serta kegagalan transaksi. Stream seed RNG Godot tidak disamakan dengan
+Python; tes mengunci kandidat, bobot, batas dan draw yang diperlukan saja.
 
 ## Upgrade lawan: transaksi domain nyata, per kandidat
 
@@ -113,7 +202,7 @@ kontrol hero atau roster lengkap. Fixture mencakup 52 trace jadwal 200 tick,
 batas round tepat pada elite 0.25/0.75 (count 24), level clamp, step gagal,
 dan 486 skenario prioritas/RNG. Tes native membandingkan scalar JSON numerik
 sebagai integer/float, tidak membandingkan array Variant numerik secara langsung.
-Delapan oracle lama tetap berjalan; oracle policy, draft, upgrade dan shield AI ditambahkan.
+Delapan oracle lama tetap berjalan; oracle policy, draft, upgrade, shield dan build AI ditambahkan.
 
 `ai_draft_source_oracle.py` mengeksekusi init, pool, choose, buy dan reserve asli.
 Hero constructor diganti receipt (bukan kit); picker mencatat candidate order dan
@@ -140,7 +229,9 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  data, kit, scene/presentasi, upgrade, death/respawn, oracle.
+  baseline angka 222 sudah ada, kit playable Kaizen, Thorne, Grimjaw dan Sylara. Dua
+  starter lain + 216 boss dan oracle kit mereka masih pending; marker prosedural
+  bukan bukti kit playable atau tampilan hero final.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak
   memasukkan boss level saat ini. Draft starter pertama acak, boss pertama dari
   level terbaru, berikutnya berbobot source-level; tipe owned termasuk hero mati.
@@ -148,7 +239,8 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
   hanya karena kurang gold. Hapus target ketika available kosong atau pembelian sukses.
 - [ ] Transaksi red memakai ledger yang sama, reserve pada seluruh belanja non-hero,
   tanpa bonus gold. Hero spawn `RED_BASE_X-60, RED_BASE_Y+30+(count*40-40)`.
-- [ ] Build slot acak; jenis archer/cannon/ice/mage berbobot .35/.25/.20/.20.
+- [x] Build slot acak; jenis archer/cannon/ice/mage berbobot .35/.25/.20/.20;
+  hanya adapter per aksi, belum terhubung ke scene.
 - [ ] Upgrade tower kills descending stabil; Lv1 path cannon/ice/archer/mage.
 - [x] Transaksi upgrade tower/nexus/hero red per kandidat dengan live reserve;
   hero mati tetap eligible, batas level sumber, ledger dan counter nyata.

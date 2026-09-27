@@ -25,11 +25,40 @@ Mode **Pertandingan awal** men-spawn **satu Kaizen biru** dan **satu Kaizen mera
 
 ## Sengaja di luar
 
-Item/forge, unlock 400 G, dash/jump/tornado VFX, lima hero starter lain, AIPlayer (beli hero/upgrade lawan). Jangan mengklaim pertandingan Python selesai.
+Item/forge, unlock 400 G, dash/jump/tornado VFX, starter lain di scene otomatis, AIPlayer lengkap (beli hero/upgrade lawan). Jangan mengklaim pertandingan Python selesai.
 
 ## Adapter upgrade red (WIP AIPlayer)
 
 Domain menyediakan upgrade red per kandidat dengan reserve gold; hero red mati
 atau respawning tetap eligible sesuai sumber AIPlayer, tanpa mengubah HP/alive
 atau respawn timer. UI blue masih menolak hero mati. Belum ada scheduler AI yang
-memanggilnya otomatis, roster baru, atau kit selain Kaizen; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
+memanggilnya otomatis; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
+
+## Rekrut AI — fase awal, bukan roster playable lengkap
+
+Domain red kini memiliki transaksi Kaizen/Thorne/Grimjaw/Sylara berbayar eksplisit melalui
+draft (lihat [AI_CONTRACT.md](AI_CONTRACT.md)). Kaizen merah gratis di scene
+tetap, tidak dihitung sebagai pembelian dan tidak diganti. Baseline numerik
+222 Hero sumber tersedia; 218 lainnya belum punya handler native, sehingga
+pembeliannya ditolak tanpa debit atau mengganti skill.
+
+Thorne (500 G) adalah hero melee nyata dengan Q Viscous Nose (cone/slow),
+W Bristleback (mitigasi fisik/magic dan reflect), E Quill Spray AOE, R Warpath
+(buff attack/cooldown sementara). Fixture `thorne_source.json` diambil dari
+Hero + ThorneSkills Python, termasuk upgrade saat buff dan respawn.
+Resource `.tres` statis tidak dimutasi oleh buff. Kaizen lama tetap memakai
+kit sendiri. Belum ada animasi/UI Thorne atau AI controller di scene.
+
+Grimjaw (450 G) memakai Q spin 180 tick, W Healing Ward, E critical buff
+berulang 300 tick + radial AOE, R target-lock 90 tick. Oracle sumber
+`grimjaw_source.json` dibandingkan dengan combat native dan pembayaran red
+nyata. Seluruh ID hero kini memiliki marker polygon/warna prosedural sederhana
+berdasarkan ID dengan lingkar tim, mata arah hadap, HP dan seleksi. Ini
+**placeholder** bebas aset; bukan animasi/visual hero final atau bukti 218
+kit lainnya dapat dimainkan.
+
+Sylara (380 G) adalah marksman ranged native pertama: serangan dasar homing
+9,5px/tick, Q line-pierce dan Focus Fire, W Windrun + evasion fisik 75%,
+E Shackle, R Powershot setelah charge. Oracle `sylara_source.json` menjalankan
+skill dan loop projectile sumber Python nyata. Peluru sementara hanya titik
+prosedural; bukan panah/efek final. Masih 218 kit yang belum playable.

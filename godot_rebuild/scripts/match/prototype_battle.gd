@@ -18,6 +18,12 @@ const MINIONS := {
 	"dark_rider": preload("res://data/minions/dark_rider.tres")
 }
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
+const THORNE = preload("res://data/heroes/thorne.tres")
+const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
+const SYLARA = preload("res://data/heroes/sylara.tres")
+const PLAYABLE_AI_HEROES := {
+	"kaizen": KAIZEN, "thorne": THORNE, "grimjaw": GRIMJAW, "sylara": SYLARA
+}
 const HERO_SPAWN := Vector2(220, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
 const RED_HERO_SPAWN := Vector2(1120, 130)
@@ -144,28 +150,87 @@ func slot_at(point: Vector2) -> int:
 
 
 func build_tower(team: int, slot_id: int) -> bool:
+	# Existing player command and temporary defender remain plain Archer, no draft reserve.
+	return _build_tower_for(team, slot_id, "archer")
+
+
+func _build_tower_for(team: int, slot_id: int, path: String, reserve: int = 0) -> bool:
 	transaction_error = ""
 	var slot := get_slot(slot_id)
 	if not is_running() or team not in [BLUE, RED]:
 		transaction_error = "finished"
-	elif slot == null or slot.team != team:
+	elif slot == null or slot.id != slot_id or slot.team != team:
+		transaction_error = "owner"
+	elif slot.lane not in [0, 1, 2] or not slot.position.is_finite():
 		transaction_error = "owner"
 	elif slot.structure_id != -1:
 		transaction_error = "occupied"
-	elif economy.gold[team] < Economy.BUILD_COST:
+	elif path not in ["archer", "cannon", "ice", "mage"]:
+		transaction_error = "path"
+	elif economy.gold[team] < Economy.BUILD_COST + maxi(0, reserve):
 		transaction_error = "gold"
-	elif structures.size() >= structure_limit():
+	elif structures.size() >= structure_limit() or _next_id <= 0 or _by_id.has(_next_id):
 		transaction_error = "capacity"
 	if not transaction_error.is_empty():
 		return false
-	var tower := spawn_structure(ARCHER, team, slot.position, slot.lane)
+	# Python constructs an Archer Lv1, then changes tower_type and reapplies
+	# stats. Missing non-Archer Lv1 stats fall back to Archer Lv1, but path
+	# identity (and thus projectile kind/muzzle and later upgrade) stays distinct.
+	var definition: StructureDefinition = ARCHER
+	if path != "archer":
+		definition = ARCHER.duplicate() as StructureDefinition
+		definition.id = path + "_level_1"
+		definition.display_name = path.capitalize() + " Lv.1"
+		definition.tower_path = path
+	var tower := spawn_structure(definition, team, slot.position, slot.lane)
 	if tower == null:
 		transaction_error = "capacity"
 		return false
-	# No callbacks/await occur between validation and debit. Never put a side effect in assert().
+	# No callbacks/await between validation and debit. Never put side effects in assert().
 	economy.spend(team, Economy.BUILD_COST)
 	slot.structure_id = tower.id
 	_record({"kind": "build", "team": team, "slot_id": slot.id, "target_id": tower.id})
+	return true
+
+
+func _buy_ai_hero(hero_type: String, cost: int, pos: Vector2) -> bool:
+	# Draft callback: synchronous atomic red purchase, not a UI command.
+	# Unregistered catalog entries have metadata only, not native kits yet.
+	transaction_error = ""
+	var kit: HeroDefinition = PLAYABLE_AI_HEROES.get(hero_type) as HeroDefinition
+	if not is_running():
+		transaction_error = "finished"
+	elif kit == null or kit.id != hero_type or cost != kit.cost or cost <= 0:
+		transaction_error = "kit"
+	elif not pos.is_finite():
+		transaction_error = "position"
+	elif economy.gold[RED] < cost:
+		transaction_error = "gold"
+	elif units.size() >= MAX_UNITS or _next_id <= 0 or _by_id.has(_next_id):
+		transaction_error = "capacity"
+	else:
+		var count := 0
+		for unit in units:
+			if unit.is_hero and unit.team == RED:
+				if get_unit(unit.id) != unit or unit.definition == null:
+					transaction_error = "registry"
+					break
+				count += 1
+				if unit.definition.id == hero_type:
+					transaction_error = "owned"
+					break
+		if transaction_error.is_empty() and count >= 5:
+			transaction_error = "capacity"
+		elif transaction_error.is_empty() and pos != RED_HERO_SPAWN + Vector2(0, count * 40 - 40):
+			transaction_error = "position"
+	if not transaction_error.is_empty():
+		return false
+	var hero := spawn_hero(kit, RED, pos)
+	if hero == null:
+		transaction_error = "capacity"
+		return false
+	economy.spend(RED, cost)
+	_record({"kind": "hero_buy", "team": RED, "target_id": hero.id, "hero_type": hero_type})
 	return true
 
 
@@ -338,9 +403,12 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	hero.has_destination = false
 	hero.follow_id = -1
 	hero.skill_timer = 0
-	hero.w_cooldown = 0
-	hero.e_cooldown = 0
-	hero.r_cooldown = 0
+	# Source Hero.respawn clears Q timer, not universal W/E/R cooldowns.
+	# Preserve the original Kaizen rebuild contract; new kits follow source.
+	if hero.settings().id == "kaizen":
+		hero.w_cooldown = 0
+		hero.e_cooldown = 0
+		hero.r_cooldown = 0
 	hero.attack_timer = 0
 	hero.q_stack = 0
 	hero.q_reset_timer = 0

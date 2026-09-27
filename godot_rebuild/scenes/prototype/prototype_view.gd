@@ -3,6 +3,7 @@ extends "res://scenes/siege/siege_view.gd"
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const HeroMarker = preload("res://scripts/ui/hero_marker.gd")
 
 
 func _draw() -> void:
@@ -11,6 +12,9 @@ func _draw() -> void:
 		return
 	var world := session.world as Prototype
 	var match_session := session as PrototypeSession
+	for arrow in world.hero_projectiles:
+		var ink := Color("73cbbb") if arrow.team == 0 else Color("d78579")
+		draw_circle(arrow.position, 3, ink)
 	for slot in world.slots:
 		if slot.structure_id != -1:
 			continue
@@ -47,22 +51,16 @@ func _draw_unit(unit: UnitState) -> void:
 	var hero := unit as HeroState
 	var point := hero.position
 	var radius := hero.settings().radius_px
-	var color := Color("73cbbb") if hero.team == 0 else Color("d78579")
+	var team_color := Color("73cbbb") if hero.team == 0 else Color("d78579")
+	var fill := HeroMarker.fill(hero.definition.id)
 	if hero.id == session.selected_id:
 		draw_arc(point, radius + 12, 0, TAU, 36, Color("f4d491"), 2, true)
-	draw_circle(point + Vector2(0, 4), radius + 3, Color("071518"))
-	draw_colored_polygon(
-		PackedVector2Array(
-			[
-				point + Vector2(0, -radius - 4),
-				point + Vector2(radius + 4, 0),
-				point + Vector2(0, radius + 4),
-				point + Vector2(-radius - 4, 0)
-			]
-		),
-		color.darkened(0.15)
-	)
-	draw_line(point, point + Vector2(hero.facing * (radius + 10), 0), color, 3, true)
+	# Team outline, stable ID polygon, and facing eye are intentionally basic.
+	draw_circle(point + Vector2(0, 4), radius + 5, Color("071518"))
+	draw_circle(point, radius + 5, team_color)
+	draw_colored_polygon(HeroMarker.body(point, radius, hero.definition.id), fill)
+	draw_circle(point + Vector2(hero.facing * 5, -2), 3, Color("e1fff4"))
+	draw_line(point, point + Vector2(hero.facing * (radius + 10), 0), team_color, 2, true)
 	var health := float(hero.hp) / maxf(1.0, hero.max_hp)
 	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34, 4)), Color("071518"))
-	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34 * health, 4)), color)
+	draw_rect(Rect2(point + Vector2(-17, -radius - 14), Vector2(34 * health, 4)), team_color)

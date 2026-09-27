@@ -95,6 +95,57 @@ check("python godot_rebuild/tests/ai_upgrade_source_oracle.py" in workflow, "CI 
 ai_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
 check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters must read live reserve")
 
+# CI already runs validate_project.py: execute the read-only build oracle here so
+# the new fixture is enforced without editing the workflow outside godot_rebuild/.
+from ai_build_source_oracle import source_fixture as ai_build_source_fixture
+check("AIBuildChecks.new().run(_check)" in ai_tests, "AI build domain suite must run")
+check((ROOT / "tests/fixtures/ai_build_source.json").is_file(), "AI build requires source fixture")
+if (ROOT / "tests/fixtures/ai_build_source.json").is_file():
+    check(ai_build_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/ai_build_source.json").read_text(encoding="utf-8")),
+        "AI build source oracle drift")
+ai_build = (ROOT / "scripts/match/ai_build.gd").read_text(encoding="utf-8")
+check("draft.reserve()" in ai_build and "_build_tower_for" in ai_build,
+      "AI build must use live draft reserve and real match transaction")
+
+check("ThorneChecks.new().run(_check)" in ai_tests, "Thorne source kit suite must run")
+check((ROOT / "tests/fixtures/thorne_source.json").is_file(), "Thorne kit source fixture missing")
+if (ROOT / "tests/fixtures/thorne_source.json").is_file():
+    from thorne_source_oracle import source_fixture as thorne_source_fixture
+    check(thorne_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/thorne_source.json").read_text(encoding="utf-8")),
+        "Thorne source skill/reflect/timer drift")
+
+check("GrimjawChecks.new().run(_check)" in ai_tests, "Grimjaw source kit suite must run")
+check((ROOT / "tests/fixtures/grimjaw_source.json").is_file(), "Grimjaw kit source fixture missing")
+if (ROOT / "tests/fixtures/grimjaw_source.json").is_file():
+    from grimjaw_source_oracle import source_fixture as grimjaw_source_fixture
+    check(grimjaw_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/grimjaw_source.json").read_text(encoding="utf-8")),
+        "Grimjaw source skill/timer/crit drift")
+
+check("SylaraChecks.new().run(_check)" in ai_tests, "Sylara source kit suite must run")
+check((ROOT / "tests/fixtures/sylara_source.json").is_file(), "Sylara kit source fixture missing")
+if (ROOT / "tests/fixtures/sylara_source.json").is_file():
+    from sylara_source_oracle import source_fixture as sylara_source_fixture
+    check(sylara_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/sylara_source.json").read_text(encoding="utf-8")),
+        "Sylara source skill/evasion/projectile drift")
+
+# Recruitment is still staged: only Kaizen, Thorne, Grimjaw and Sylara have native kits.
+# Execute the real Hero source oracle in this CI step (no workflow change).
+from ai_recruit_source_oracle import source_fixture as ai_recruit_source_fixture
+check("AIRecruitChecks.new().run(_check)" in ai_tests, "Real recruit suite must run")
+check((ROOT / "tests/fixtures/ai_recruit_source.json").is_file(), "Recruit source fixture missing")
+check((ROOT / "data/ai/hero_combat_stats.json").is_file(), "Hero numeric baseline missing")
+if (ROOT / "tests/fixtures/ai_recruit_source.json").is_file() and (ROOT / "data/ai/hero_combat_stats.json").is_file():
+    purchases, stats = ai_recruit_source_fixture()
+    check(purchases == json.loads((ROOT / "tests/fixtures/ai_recruit_source.json").read_text(encoding="utf-8")),
+          "Real source recruit drift")
+    check(stats == json.loads((ROOT / "data/ai/hero_combat_stats.json").read_text(encoding="utf-8")),
+          "222 source Hero stat baselines drift")
+    check(set(stats) == set(recruitment["catalog"]), "Every recruitment ID must have source Hero numbers")
+
 check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
 check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")
 check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields require source fixture")

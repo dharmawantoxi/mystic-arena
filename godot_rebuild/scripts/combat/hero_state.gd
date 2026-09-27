@@ -37,6 +37,26 @@ var r_cooldown := 0
 var r_cooldown_max := 0
 var active_skill := ""
 var active_skill_timer := 0
+# Thorne kit state is per hero instance, never stored in the shared .tres.
+var viscous_timer := 0
+var bristleback_timer := 0
+var quill_timer := 0
+var warpath_timer := 0
+var warpath_original_attack_cd := 0
+# Grimjaw kit state (per instance; never stored on a shared definition).
+var blade_fury_timer := 0
+var heal_ward_timer := 0
+var heal_ward_position := Vector2.ZERO
+var omnislash_timer := 0
+var omnislash_target_id := -1
+var grimjaw_crit_timer := 0
+# Sylara state: only this hero uses projectile, Windrun and ranged timers.
+var focus_fire_timer := 0
+var windrun_timer := 0
+var windrun_original_speed := 0.0
+var shackle_timer := 0
+var shackle_target_id := -1
+var powershot_timer := 0
 var q_stack := 0
 var q_reset_timer := 0
 var is_dashing := false

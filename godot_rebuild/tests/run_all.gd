@@ -1,6 +1,11 @@
 extends SceneTree
 ## Native, dependency-free headless regression runner. Exit code 1 means failure.
 
+const ThorneChecks = preload("res://tests/thorne_checks.gd")
+const GrimjawChecks = preload("res://tests/grimjaw_checks.gd")
+const SylaraChecks = preload("res://tests/sylara_checks.gd")
+const AIRecruitChecks = preload("res://tests/ai_recruit_checks.gd")
+const AIBuildChecks = preload("res://tests/ai_build_checks.gd")
 const AIShieldChecks = preload("res://tests/ai_shield_checks.gd")
 const AIShieldSceneChecks = preload("res://tests/ai_shield_scene_checks.gd")
 const AIUpgradeChecks = preload("res://tests/ai_upgrade_checks.gd")
@@ -53,6 +58,11 @@ func _physics_steps(count: int) -> void:
 
 func _run() -> void:
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
+	ThorneChecks.new().run(_check)
+	GrimjawChecks.new().run(_check)
+	SylaraChecks.new().run(_check)
+	AIRecruitChecks.new().run(_check)
+	AIBuildChecks.new().run(_check)
 	AIShieldChecks.new().run(_check)
 	AIUpgradeChecks.new().run(_check)
 	AIDraftChecks.new().run(_check)
