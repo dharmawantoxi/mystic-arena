@@ -1,9 +1,9 @@
 {
   "target": 222,
-  "playable": 164,
-  "pending": 58,
-  "verified_code_commit": "c029d5074212891ecf0b1c1b755ead368558688d",
-  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563",
+  "playable": 165,
+  "pending": 57,
+  "verified_code_commit": "50b7c07d4fb05d40d1a5b9a971b6d2f761709026",
+  "verified_ci": "https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552",
   "heroes": {
     "grimjaw": {
       "status": "playable",
@@ -306,7 +306,7 @@
       "blocker": null
     },
     "krobellus": {
-      "status": "pending",
+      "status": "playable",
       "source_level": 5,
       "summon_cost": 1500,
       "source_recipe": {
@@ -315,10 +315,10 @@
         "e": "_cast_e_krobellus_siphon",
         "r": "_cast_r_krobellus_crypt"
       },
-      "native_handler": null,
-      "oracle": null,
-      "native_test": null,
-      "blocker": "Recipe khusus sumber belum diport; source oracle perilaku dan tes native per recipe belum dibuat. Ditolak tanpa debit/substitusi."
+      "native_handler": "krobellus_skills.gd",
+      "oracle": "krobellus_source_oracle.py",
+      "native_test": "krobellus_checks.gd",
+      "blocker": null
     },
     "nyxara": {
       "status": "playable",
@@ -2867,5 +2867,6 @@
       "native_test": "source_shared_boss_checks.gd",
       "blocker": null
     }
-  }
+  },
+  "verification_note": "164 baseline verified by linked CI; Krobellus implementation complete, current-branch CI pending."
 }

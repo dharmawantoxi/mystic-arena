@@ -1,3 +1,38 @@
+# Checkpoint sesi PR lanjutan — batch 7 Krobellus
+
+**165 implementasi playable / 57 pending; target tetap 222.**
+Krobellus selesai implementasi dan oracle; validasi lokal PASS (4516 static,
+source-contract, semua oracle termasuk shared 150, gdparse/gdlint/gdformat
+4.5.0). CI engine branch ini menunggu.
+Baseline merge `50b7c07` tetap 164 teruji, run [36302839552](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552).
+Branch aktif `arena/01a0e1cb-mystic-arena`; PR draft akan dibuat, jangan merge.
+
+Batch 7: Q150/1,5×; W120/1×/attack timer max75; E selected target 1,3× +
+heal 0,5× skill; R200/2,5× + heal 15%. Semua skill netral tanpa source,
+bukan atribusi magic caster. Cooldown 220/240/420/900, visual final
+60/90/60/100 (trigger cooldown menimpa timer visual recipe). Tidak ada ghost
+DOT atau silence state tambahan. Basic magic homing; Lv1→2 480G.
+
+Oracle + native: radius batas, target retention/reselection, dead/friendly
+filter, stun max, traces move/upgrade/retarget/death, cooldown recast tepat,
+heal cap sebelum anti-heal Lv1/2/15, attack, respawn, lifecycle, roster,
+purchase ±1 dan upgrade reserve ±1. Tambah coverage pembelian dan
+Hero-v-Hero/Tower untuk AA/Nyzrak/Ignis yang terlewat oracle lintas-hero lama.
+
+**Koreksi handoff lama:** manifest sumber berbeda dari daftar informal. Vhorethzir
+sudah shared-source playable. Naraka 2000G, Aurethzar 2100G, dst: jangan
+mengganti harga dengan angka di pesan lama. Daftar tepat selesai/pending dan
+harga sekarang di [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md).
+Kunkka 900G tetap pending dan tetap ID tes penolakan. Level 5 masih Vhalzun
+1200G; level 6 Gravewake 1000G/Kunkka 900G. Lanjut urutan level sumber.
+
+Unduh Godot lokal 4.7.2 masih gagal TLS release-assets; engine dijalankan CI
+resmi, bukan klaim runtime lokal. Python read-only, hanya godot_rebuild berubah.
+
+---
+
+## Arsip checkpoint merge sebelumnya (angka di bawah historis)
+
 # Checkpoint migrasi setelah PR #283 — 164/222, BELUM selesai
 
 **164 dari 222 hero target selesai; 58 masih pending.**

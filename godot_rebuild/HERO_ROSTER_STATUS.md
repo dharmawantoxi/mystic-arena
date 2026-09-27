@@ -1,20 +1,14 @@
-# Daftar tepat migrasi hero — 164 playable, 58 pending
+# Daftar tepat migrasi hero — 165 playable, 57 pending
 
-Target tetap **222**, bukan selesai. Registry native eksplisit:
-`scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending), static 4476 PASS.
+Target tetap **222**, belum selesai. Registry: `scripts/data/hero_roster.gd`.
+Manifest: `data/ai/hero_migration_status.json`. Krobellus batch 7: CI branch ini menunggu.
+Baseline 164: Godot 4.7.2 run 36302839552, 413735 checks; static 4476.
 
-- Enam starter selesai (empat sudah ada sebelum sesi); lima boss recipe khusus
-  selesai; 150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai
-  sumber**, dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 59 pending mempunyai recipe khusus. Blocker masing-masing: empat
-  metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
-  Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
-- “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
-  unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
-  dan defender lama. Python asli tidak diubah.
+Enam starter + sembilan boss recipe khusus + 150 ID shared-source eksplisit.
+Shared-source hanya untuk ID yang benar-benar menjalankan `_fallback_cast` di Python.
+57 pending ditolak tanpa debit, spawn parsial atau substitusi. Python asli read-only.
 
-## Selesai — 161 ID
+## Selesai — 165 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -29,18 +23,19 @@ CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending
 | `gornak` | 1 | 500 | `boss_level_one_skills.gd` | `boss_level_one_source_oracle.py` / `boss_level_one_checks.gd` |
 | `morgath` | 1 | 550 | `boss_level_one_skills.gd` | `boss_level_one_source_oracle.py` / `boss_level_one_checks.gd` |
 | `alchemist` | 2 | 750 | `alchemist_skills.gd` | `alchemist_source_oracle.py` / `alchemist_checks.gd` |
-| `ancient_apparition` | 3 | 800 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
-| `nyzrak` | 3 | 850 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
-| `ignis_drachorn` | 4 | 850 | `boss_level_four_skills.gd` | `boss_level_four_source_oracle.py` / `boss_level_four_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
+| `ancient_apparition` | 3 | 800 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
+| `nyzrak` | 3 | 850 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
 | `varkul` | 3 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `xerathis` | 3 | 800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
+| `ignis_drachorn` | 4 | 850 | `boss_level_four_skills.gd` | `boss_level_four_source_oracle.py` / `boss_level_four_checks.gd` |
 | `pyrenth` | 4 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `vokrahn` | 4 | 850 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `zharok` | 4 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `gravefang` | 5 | 1100 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
+| `krobellus` | 5 | 1500 | `krobellus_skills.gd` | `krobellus_source_oracle.py` / `krobellus_checks.gd` |
 | `nyxara` | 5 | 950 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `vaerith` | 8 | 1200 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `vhorethzir` | 8 | 1000 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -183,11 +178,14 @@ CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 58 ID dan recipe yang menjadi blocker
+## Belum selesai — 57 ID dan recipe yang menjadi blocker
 
-| ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
+Setiap ID membutuhkan implementasi empat recipe, oracle eksekusi asli, dan tes native.
+Jangan daftarkan hanya karena metadata atau `.tres` ada. Harga di bawah dari sumber,
+bukan perkiraan berdasarkan level boss.
+
+| ID | Level sumber | Summon G | Recipe Q / W / E / R |
 |---|---:|---:|---|
-| `krobellus` | 5 | 1500 | `_cast_q_krobellus_exorcism` / `_cast_w_krobellus_silence` / `_cast_e_krobellus_siphon` / `_cast_r_krobellus_crypt` |
 | `vhalzun` | 5 | 1200 | `_cast_q_vhalzun_death_pulse` / `_cast_w_vhalzun_heartstopper` / `_cast_e_vhalzun_reapers_scythe` / `_cast_r_vhalzun_ghost_shroud` |
 | `gravewake` | 6 | 1000 | `_cast_q_gravewake_anchor` / `_cast_w_gravewake_tide` / `_cast_e_gravewake_shell` / `_cast_r_gravewake_ravage` |
 | `kunkka` | 6 | 900 | `_cast_q_kunkka_tide` / `_cast_w_kunkka_xmark` / `_cast_e_kunkka_ghost` / `_cast_r_kunkka_torrent` |
