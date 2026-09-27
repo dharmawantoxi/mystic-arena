@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["kaeldris"]
+const IDS := ["kaeldris", "pyraklos"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"kaeldris":
 			_kaeldris(world, hero, target, key, structures)
+		"pyraklos":
+			_pyraklos(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -52,6 +54,25 @@ static func _kaeldris(world, hero: HeroState, target, key: String, structures: A
 		"r":
 			# Duel: AOE 220 1.8x skill, attack delay max(timer, 60).
 			_radial(world, hero, structures, 220.0, 1.8, 60)
+
+
+static func _pyraklos(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Spear of Mars: target 1.3x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.3)
+		"w":
+			# Rebuke: AOE 170 1.1x skill.
+			_radial(world, hero, structures, 170.0, 1.1)
+		"e":
+			# Bulwark: AOE 130 0.7x skill, heal 12%.
+			_radial(world, hero, structures, 130.0, 0.7)
+			hero.heal_hp(int(hero.max_hp * 0.12))
+		"r":
+			# Arena: AOE 230 1.8x skill, attack delay max(timer, 60).
+			_radial(world, hero, structures, 230.0, 1.8, 60)
 
 
 #HEROES

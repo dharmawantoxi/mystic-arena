@@ -2255,6 +2255,61 @@
     }
   },
   {
+    "hero_type": "pyraklos",
+    "price": 1700,
+    "initial": 1699,
+    "success": false,
+    "balance": 1699,
+    "count": 0,
+    "reserve": 1700,
+    "target": "pyraklos",
+    "hero": null
+  },
+  {
+    "hero_type": "pyraklos",
+    "price": 1700,
+    "initial": 1700,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "pyraklos",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1733,
+      "hp": 1733,
+      "damage": 253,
+      "skill_damage": 632,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "pyraklos",
+    "price": 1700,
+    "initial": 1701,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "pyraklos",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1733,
+      "hp": 1733,
+      "damage": 253,
+      "skill_damage": 632,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

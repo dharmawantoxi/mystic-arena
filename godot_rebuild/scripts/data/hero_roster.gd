@@ -112,6 +112,7 @@ const DEFINITIONS := {
 	"obanai": preload("res://data/heroes/obanai.tres"),
 	"okeanora": preload("res://data/heroes/okeanora.tres"),
 	"pyraena": preload("res://data/heroes/pyraena.tres"),
+	"pyraklos": preload("res://data/heroes/pyraklos.tres"),
 	"pyrenth": preload("res://data/heroes/pyrenth.tres"),
 	"pyrhaan": preload("res://data/heroes/pyrhaan.tres"),
 	"rakzhan": preload("res://data/heroes/rakzhan.tres"),
