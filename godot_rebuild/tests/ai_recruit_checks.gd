@@ -120,23 +120,26 @@ func _catalog(check: Callable) -> void:
 
 func _guards(check: Callable) -> void:
 	var world := _world()
-	_fund(world, 1000)
+	_fund(world, 4000)
 	var recruit := Recruit.new()
-	# kenshiro (1300G) is still pending after the level-7 batch; pending kits
-	# must stay rejected without debit or substitution (nyxarath was replaced
-	# here once its real kit landed).
-	var draft := _target("kenshiro", 1300)
-	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
-	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
+	# Every catalog hero now has a native kit, so the draft can no longer pick a
+	# missing kit. The adapter-refusal guard uses a registry-ID collision
+	# instead: the draft and its reserve must survive with no debit or spawn.
+	var draft := _target("astraelion", 2600)
+	var taken := world._next_id
+	world._by_id[taken] = world.units
+	check.call(not recruit.try_buy(world, draft), "Adapter refusal cannot spawn")
+	check.call(world.transaction_error == "capacity", "Adapter refusal is explicit")
+	world._by_id.erase(taken)
 	check.call(
-		draft.purchase_target == "kenshiro" and draft.reserve() == 1300,
-		"Missing kit retains draft/reserve"
+		draft.purchase_target == "astraelion" and draft.reserve() == 2600,
+		"Adapter refusal retains draft/reserve"
 	)
 	check.call(
-		world.units.is_empty() and world.economy.gold[1] == 1000, "Missing kit has no effects"
+		world.units.is_empty() and world.economy.gold[1] == 4000, "Adapter refusal has no effects"
 	)
 	check.call(
-		not world._buy_ai_hero("kenshiro", 400, Vector2(1120, 90)),
+		not world._buy_ai_hero("astraelion", 400, Vector2(1120, 90)),
 		"Boss metadata is not a playable kit"
 	)
 	check.call(not world._buy_ai_hero("kaizen", 1, Vector2(1120, 90)), "Forged cost rejected")
@@ -158,12 +161,14 @@ func _guards(check: Callable) -> void:
 		"Dead owned hero still blocks duplicate"
 	)
 	world.winner = 0
-	check.call(not recruit.try_buy(world, _target("kenshiro", 1300)), "Finished match blocks draft")
+	check.call(
+		not recruit.try_buy(world, _target("astraelion", 2600)), "Finished match blocks draft"
+	)
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
 	check.call(
-		world.economy.gold[1] == 600 and world.economy.is_balanced(),
+		world.economy.gold[1] == 3600 and world.economy.is_balanced(),
 		"Failed purchases do not debit"
 	)
 
@@ -194,11 +199,11 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var missing := _target("kenshiro", 1300)
+	var missing := _target("astraelion", 2600)
 	world.economy.credit_kill(1, 1000)
 	check.call(
-		not adapter.try_buy(world, missing) and missing.reserve() == 1300,
-		"Unsupported boss kit keeps draft without debit"
+		not adapter.try_buy(world, missing) and missing.reserve() == 2600,
+		"Unaffordable boss draft keeps reserve without debit"
 	)
 	var grimjaw := _target("grimjaw", 450)
 	check.call(adapter.try_buy(world, grimjaw), "Grimjaw third real paid summon")

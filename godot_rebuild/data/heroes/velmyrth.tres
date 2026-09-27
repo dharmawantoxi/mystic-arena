@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "velmyrth"
+display_name = "Velmyrth"
+max_hp = 1581
+damage = 235
+speed_px_per_tick = 2.18
+attack_range_px = 70
+attack_cooldown_ticks = 30
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Phantom Assassin"
+role = "Boss/Assassin"
+cost = 1700
+unlock_cost = 0
+base_skill = 558
+skill_cooldown_max = 190
+skill_range_px = 140
+dmg_school = "physical"
+is_melee = true
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 235
+is_boss_hero = true

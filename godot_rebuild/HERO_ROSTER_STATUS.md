@@ -1,22 +1,20 @@
-# Daftar tepat migrasi hero — 174 playable, 48 pending
+# Daftar tepat migrasi hero — 222 playable, 0 pending
 
-Target tetap **222**, bukan selesai. Registry native eksplisit:
+Target **222** tercapai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI Godot 4.7.2: run terakhir hijau 36309346449 (170 playable, 52 pending);
-batch 9 (174/48) menunggu CI, static lokal 4671 PASS.
+CI Godot 4.7.2: run terakhir hijau 36328859162 (222 playable, 0 pending;
+batch 10–22 level 9–20 + perbaikan tes batch 9).
 
-- Enam starter selesai (empat sudah ada sebelum sesi); dua puluh dua boss
-  recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4);
+- Enam starter selesai (empat sudah ada sebelum sesi); enam puluh enam boss
+  recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9–L20 ×4);
   150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
   dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 48 pending mempunyai recipe khusus. Blocker masing-masing: empat
-  metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
-  Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
+- 0 pending: semua recipe khusus sudah diport dengan source oracle dan tes native.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 174 ID
+## Selesai — 222 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -44,6 +42,54 @@ batch 9 (174/48) menunggu CI, static lokal 4671 PASS.
 | `malzareth` | 7 | 1100 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
 | `nyxarath` | 7 | 1000 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
 | `vorenmarr` | 7 | 1300 | `boss_level_seven_skills.gd` | `boss_level_seven_source_oracle.py` / `boss_level_seven_checks.gd` |
+| `kenshiro` | 9 | 1300 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
+| `wiro` | 9 | 1300 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
+| `khazan` | 9 | 1350 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
+| `naraka` | 9 | 2000 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
+| `krognarr` | 10 | 1400 | `boss_level_ten_skills.gd` | `boss_level_ten_source_oracle.py` / `boss_level_ten_checks.gd` |
+| `raz` | 10 | 1400 | `boss_level_ten_skills.gd` | `boss_level_ten_source_oracle.py` / `boss_level_ten_checks.gd` |
+| `vraskhan` | 10 | 1400 | `boss_level_ten_skills.gd` | `boss_level_ten_source_oracle.py` / `boss_level_ten_checks.gd` |
+| `aurethzar` | 10 | 2100 | `boss_level_ten_skills.gd` | `boss_level_ten_source_oracle.py` / `boss_level_ten_checks.gd` |
+| `aeralith` | 11 | 1450 | `boss_level_eleven_skills.gd` | `boss_level_eleven_source_oracle.py` / `boss_level_eleven_checks.gd` |
+| `aurex` | 11 | 1500 | `boss_level_eleven_skills.gd` | `boss_level_eleven_source_oracle.py` / `boss_level_eleven_checks.gd` |
+| `nyxareva` | 11 | 1500 | `boss_level_eleven_skills.gd` | `boss_level_eleven_source_oracle.py` / `boss_level_eleven_checks.gd` |
+| `thalakryon` | 11 | 2200 | `boss_level_eleven_skills.gd` | `boss_level_eleven_source_oracle.py` / `boss_level_eleven_checks.gd` |
+| `aurelix` | 12 | 1550 | `boss_level_twelve_skills.gd` | `boss_level_twelve_source_oracle.py` / `boss_level_twelve_checks.gd` |
+| `aurelyssa` | 12 | 1550 | `boss_level_twelve_skills.gd` | `boss_level_twelve_source_oracle.py` / `boss_level_twelve_checks.gd` |
+| `vargrath` | 12 | 1600 | `boss_level_twelve_skills.gd` | `boss_level_twelve_source_oracle.py` / `boss_level_twelve_checks.gd` |
+| `nazulmor` | 12 | 2300 | `boss_level_twelve_skills.gd` | `boss_level_twelve_source_oracle.py` / `boss_level_twelve_checks.gd` |
+| `kaeldris` | 13 | 1650 | `boss_level_thirteen_skills.gd` | `boss_level_thirteen_source_oracle.py` / `boss_level_thirteen_checks.gd` |
+| `pyraklos` | 13 | 1700 | `boss_level_thirteen_skills.gd` | `boss_level_thirteen_source_oracle.py` / `boss_level_thirteen_checks.gd` |
+| `velmyrth` | 13 | 1700 | `boss_level_thirteen_skills.gd` | `boss_level_thirteen_source_oracle.py` / `boss_level_thirteen_checks.gd` |
+| `solvarin` | 13 | 2400 | `boss_level_thirteen_skills.gd` | `boss_level_thirteen_source_oracle.py` / `boss_level_thirteen_checks.gd` |
+| `azureth` | 14 | 1700 | `boss_level_fourteen_skills.gd` | `boss_level_fourteen_source_oracle.py` / `boss_level_fourteen_checks.gd` |
+| `luminar` | 14 | 1750 | `boss_level_fourteen_skills.gd` | `boss_level_fourteen_source_oracle.py` / `boss_level_fourteen_checks.gd` |
+| `solara` | 14 | 1800 | `boss_level_fourteen_skills.gd` | `boss_level_fourteen_source_oracle.py` / `boss_level_fourteen_checks.gd` |
+| `pyraethis` | 14 | 2500 | `boss_level_fourteen_skills.gd` | `boss_level_fourteen_source_oracle.py` / `boss_level_fourteen_checks.gd` |
+| `auroth` | 15 | 1850 | `boss_level_fifteen_skills.gd` | `boss_level_fifteen_source_oracle.py` / `boss_level_fifteen_checks.gd` |
+| `morvein` | 15 | 1900 | `boss_level_fifteen_skills.gd` | `boss_level_fifteen_source_oracle.py` / `boss_level_fifteen_checks.gd` |
+| `thorvak` | 15 | 1950 | `boss_level_fifteen_skills.gd` | `boss_level_fifteen_source_oracle.py` / `boss_level_fifteen_checks.gd` |
+| `yamako` | 15 | 2600 | `boss_level_fifteen_skills.gd` | `boss_level_fifteen_source_oracle.py` / `boss_level_fifteen_checks.gd` |
+| `ignirus` | 16 | 2000 | `boss_level_sixteen_skills.gd` | `boss_level_sixteen_source_oracle.py` / `boss_level_sixteen_checks.gd` |
+| `leoric` | 16 | 2050 | `boss_level_sixteen_skills.gd` | `boss_level_sixteen_source_oracle.py` / `boss_level_sixteen_checks.gd` |
+| `shirotaka` | 16 | 2100 | `boss_level_sixteen_skills.gd` | `boss_level_sixteen_source_oracle.py` / `boss_level_sixteen_checks.gd` |
+| `seiryukong` | 16 | 2700 | `boss_level_sixteen_skills.gd` | `boss_level_sixteen_source_oracle.py` / `boss_level_sixteen_checks.gd` |
+| `kaelthorn` | 17 | 2150 | `boss_level_seventeen_skills.gd` | `boss_level_seventeen_source_oracle.py` / `boss_level_seventeen_checks.gd` |
+| `solvanth` | 17 | 2200 | `boss_level_seventeen_skills.gd` | `boss_level_seventeen_source_oracle.py` / `boss_level_seventeen_checks.gd` |
+| `xyrael` | 17 | 2250 | `boss_level_seventeen_skills.gd` | `boss_level_seventeen_source_oracle.py` / `boss_level_seventeen_checks.gd` |
+| `nyxareth` | 17 | 2800 | `boss_level_seventeen_skills.gd` | `boss_level_seventeen_source_oracle.py` / `boss_level_seventeen_checks.gd` |
+| `cryssalia` | 18 | 2300 | `boss_level_eighteen_skills.gd` | `boss_level_eighteen_source_oracle.py` / `boss_level_eighteen_checks.gd` |
+| `kaelthar` | 18 | 2350 | `boss_level_eighteen_skills.gd` | `boss_level_eighteen_source_oracle.py` / `boss_level_eighteen_checks.gd` |
+| `morkhaera` | 18 | 2400 | `boss_level_eighteen_skills.gd` | `boss_level_eighteen_source_oracle.py` / `boss_level_eighteen_checks.gd` |
+| `aurelion` | 18 | 2900 | `boss_level_eighteen_skills.gd` | `boss_level_eighteen_source_oracle.py` / `boss_level_eighteen_checks.gd` |
+| `akahime` | 19 | 2450 | `boss_level_nineteen_skills.gd` | `boss_level_nineteen_source_oracle.py` / `boss_level_nineteen_checks.gd` |
+| `nyxthrael` | 19 | 2500 | `boss_level_nineteen_skills.gd` | `boss_level_nineteen_source_oracle.py` / `boss_level_nineteen_checks.gd` |
+| `sylvantheros` | 19 | 2550 | `boss_level_nineteen_skills.gd` | `boss_level_nineteen_source_oracle.py` / `boss_level_nineteen_checks.gd` |
+| `vaelindra` | 19 | 3000 | `boss_level_nineteen_skills.gd` | `boss_level_nineteen_source_oracle.py` / `boss_level_nineteen_checks.gd` |
+| `astraelion` | 20 | 2600 | `boss_level_twenty_skills.gd` | `boss_level_twenty_source_oracle.py` / `boss_level_twenty_checks.gd` |
+| `morvaenthir` | 20 | 2650 | `boss_level_twenty_skills.gd` | `boss_level_twenty_source_oracle.py` / `boss_level_twenty_checks.gd` |
+| `thornvaegrim` | 20 | 2700 | `boss_level_twenty_skills.gd` | `boss_level_twenty_source_oracle.py` / `boss_level_twenty_checks.gd` |
+| `morthraxis` | 20 | 3100 | `boss_level_twenty_skills.gd` | `boss_level_twenty_source_oracle.py` / `boss_level_twenty_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -195,55 +241,7 @@ batch 9 (174/48) menunggu CI, static lokal 4671 PASS.
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 48 ID dan recipe yang menjadi blocker
+## Belum selesai — 0 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
-| `kenshiro` | 9 | 1300 | `_cast_q_kenshiro_swiftslash` / `_cast_w_kenshiro_assault` / `_cast_e_kenshiro_gale` / `_cast_r_kenshiro_supremacy` |
-| `khazan` | 9 | 1350 | `_cast_q_khazan_chained` / `_cast_w_khazan_leap` / `_cast_e_khazan_spin` / `_cast_r_khazan_vanish` |
-| `naraka` | 9 | 2000 | `_cast_q_naraka_chaos` / `_cast_w_naraka_shadowstep` / `_cast_e_naraka_hammer` / `_cast_r_naraka_execution` |
-| `wiro` | 9 | 1300 | `_cast_q_wiro_windcut` / `_cast_w_wiro_whirl` / `_cast_e_wiro_dash` / `_cast_r_wiro_typhoon` |
-| `aurethzar` | 10 | 2100 | `_cast_q_aurethzar_marksman` / `_cast_w_aurethzar_piercing` / `_cast_e_aurethzar_frost` / `_cast_r_aurethzar_thunder` |
-| `krognarr` | 10 | 1400 | `_cast_q_krognarr_strike` / `_cast_w_krognarr_seismic` / `_cast_e_krognarr_rampart` / `_cast_r_krognarr_eruption` |
-| `raz` | 10 | 1400 | `_cast_q_raz_overdrive` / `_cast_w_raz_searing` / `_cast_e_raz_surge` / `_cast_r_raz_gloom` |
-| `vraskhan` | 10 | 1400 | `_cast_q_vraskhan_thorned` / `_cast_w_vraskhan_leap` / `_cast_e_vraskhan_deathslash` / `_cast_r_vraskhan_omni` |
-| `aeralith` | 11 | 1450 | `_cast_q_aeralith_tailwind` / `_cast_w_aeralith_windblade` / `_cast_e_aeralith_vacuum` / `_cast_r_aeralith_skyrider` |
-| `aurex` | 11 | 1500 | `_cast_q_aurex_shieldcrash` / `_cast_w_aurex_voltblast` / `_cast_e_aurex_aegis` / `_cast_r_aurex_spin` |
-| `nyxareva` | 11 | 1500 | `_cast_q_nyxareva_darkslash` / `_cast_w_nyxareva_mortalwound` / `_cast_e_nyxareva_sacrifice` / `_cast_r_nyxareva_avatar` |
-| `thalakryon` | 11 | 2200 | `_cast_q_thalakryon_bolt` / `_cast_w_thalakryon_aquashield` / `_cast_e_thalakryon_tidalrage` / `_cast_r_thalakryon_metamorph` |
-| `aurelix` | 12 | 1550 | `_cast_q_aurelix_timebomb` / `_cast_w_aurelix_will` / `_cast_e_aurelix_shockwave` / `_cast_r_aurelix_transcend` |
-| `aurelyssa` | 12 | 1550 | `_cast_q_aurelyssa_whirlwind` / `_cast_w_aurelyssa_sweep` / `_cast_e_aurelyssa_wings` / `_cast_r_aurelyssa_phantom` |
-| `nazulmor` | 12 | 2300 | `_cast_q_nazulmor_typhoon` / `_cast_w_nazulmor_aquashield` / `_cast_e_nazulmor_tidalrage` / `_cast_r_nazulmor_chaotic` |
-| `vargrath` | 12 | 1600 | `_cast_q_vargrath_bloodthirst` / `_cast_w_vargrath_charge` / `_cast_e_vargrath_devilstrike` / `_cast_r_vargrath_souldom` |
-| `kaeldris` | 13 | 1650 | `_cast_q_kaeldris_overwhelming` / `_cast_w_kaeldris_press` / `_cast_e_kaeldris_moment` / `_cast_r_kaeldris_duel` |
-| `pyraklos` | 13 | 1700 | `_cast_q_pyraklos_spearmars` / `_cast_w_pyraklos_rebuke` / `_cast_e_pyraklos_bulwark` / `_cast_r_pyraklos_arena` |
-| `solvarin` | 13 | 2400 | `_cast_q_solvarin_purification` / `_cast_w_solvarin_repel` / `_cast_e_solvarin_degen` / `_cast_r_solvarin_guardian` |
-| `velmyrth` | 13 | 1700 | `_cast_q_velmyrth_dagger` / `_cast_w_velmyrth_strike` / `_cast_e_velmyrth_blur` / `_cast_r_velmyrth_coup` |
-| `azureth` | 14 | 1700 | `_cast_q_azureth_arcanebolt` / `_cast_w_azureth_concussive` / `_cast_e_azureth_ancientseal` / `_cast_r_azureth_mysticflare` |
-| `luminar` | 14 | 1750 | `_cast_q_luminar_illuminate` / `_cast_w_luminar_blindinglight` / `_cast_e_luminar_wisp` / `_cast_r_luminar_spiritform` |
-| `pyraethis` | 14 | 2500 | `_cast_q_pyraethis_icarusdive` / `_cast_w_pyraethis_firespirits` / `_cast_e_pyraethis_sunray` / `_cast_r_pyraethis_supernova` |
-| `solara` | 14 | 1800 | `_cast_q_solara_starbreaker` / `_cast_w_solara_celestialhammer` / `_cast_e_solara_luminosity` / `_cast_r_solara_solarguardian` |
-| `auroth` | 15 | 1850 | `_cast_q_auroth_ionicedge` / `_cast_w_auroth_ward` / `_cast_e_auroth_consecration` / `_cast_r_auroth_guardian` |
-| `morvein` | 15 | 1900 | `_cast_q_morvein_puncture` / `_cast_w_morvein_violentstrike` / `_cast_e_morvein_spectralcharge` / `_cast_r_morvein_phantomform` |
-| `thorvak` | 15 | 1950 | `_cast_q_thorvak_seed` / `_cast_w_thorvak_natureswrath` / `_cast_e_thorvak_vengeance` / `_cast_r_thorvak_dryad` |
-| `yamako` | 15 | 2600 | `_cast_q_yamako_deepforest` / `_cast_w_yamako_woodcreation` / `_cast_e_yamako_woodgolem` / `_cast_r_yamako_kannon` |
-| `ignirus` | 16 | 2000 | `_cast_q_ignirus_searingtorrent` / `_cast_w_ignirus_flameshot` / `_cast_e_ignirus_burstfireball` / `_cast_r_ignirus_vengeance` |
-| `leoric` | 16 | 2050 | `_cast_q_leoric_fearlesscharge` / `_cast_w_leoric_sacredhammer` / `_cast_e_leoric_concealblast` / `_cast_r_leoric_immortality` |
-| `seiryukong` | 16 | 2700 | `_cast_q_seiryukong_boundless` / `_cast_w_seiryukong_treedance` / `_cast_e_seiryukong_jingusoldiers` / `_cast_r_seiryukong_wukong` |
-| `shirotaka` | 16 | 2100 | `_cast_q_shirotaka_hiraishin` / `_cast_w_shirotaka_waterboundary` / `_cast_e_shirotaka_shadowclones` / `_cast_r_shirotaka_paperbomb` |
-| `kaelthorn` | 17 | 2150 | `_cast_q_kaelthorn_bravestfighter` / `_cast_w_kaelthorn_justiceblade` / `_cast_e_kaelthorn_defendersassault` / `_cast_r_kaelthorn_chivalryfists` |
-| `nyxareth` | 17 | 2800 | `_cast_q_nyxareth_starsplit` / `_cast_w_nyxareth_realworld` / `_cast_e_nyxareth_spacetime` / `_cast_r_nyxareth_astrorealm` |
-| `solvanth` | 17 | 2200 | `_cast_q_solvanth_ringpunishment` / `_cast_w_solvanth_gloriouspathway` / `_cast_e_solvanth_laworder` / `_cast_r_solvanth_wrath` |
-| `xyrael` | 17 | 2250 | `_cast_q_xyrael_finch` / `_cast_w_xyrael_defiant` / `_cast_e_xyrael_tempest` / `_cast_r_xyrael_lightness` |
-| `aurelion` | 18 | 2900 | `_cast_q_aurelion_callcourage` / `_cast_w_aurelion_guardianassault` / `_cast_e_aurelion_kingscommand` / `_cast_r_aurelion_kingssummon` |
-| `cryssalia` | 18 | 2300 | `_cast_q_cryssalia_frostshock` / `_cast_w_cryssalia_bitterfrost` / `_cast_e_cryssalia_frostbites` / `_cast_r_cryssalia_coldest` |
-| `kaelthar` | 18 | 2350 | `_cast_q_kaelthar_chargingfist` / `_cast_w_kaelthar_quake` / `_cast_e_kaelthar_fistcrack` / `_cast_r_kaelthar_fistbreak` |
-| `morkhaera` | 18 | 2400 | `_cast_q_morkhaera_spiritburst` / `_cast_w_morkhaera_airstrike` / `_cast_e_morkhaera_energyimpact` / `_cast_r_morkhaera_ethereal` |
-| `akahime` | 19 | 2450 | `_cast_q_akahime_petalbarrage` / `_cast_w_akahime_soulscroll` / `_cast_e_akahime_shadow` / `_cast_r_akahime_higanbana` |
-| `nyxthrael` | 19 | 2500 | `_cast_q_nyxthrael_ambush` / `_cast_w_nyxthrael_nightfall` / `_cast_e_nyxthrael_darknightfall` / `_cast_r_nyxthrael_shadowbringer` |
-| `sylvantheros` | 19 | 2550 | `_cast_q_sylvantheros_sprout` / `_cast_w_sylvantheros_teleport` / `_cast_e_sylvantheros_treants` / `_cast_r_sylvantheros_wrath` |
-| `vaelindra` | 19 | 3000 | `_cast_q_vaelindra_energywave` / `_cast_w_vaelindra_spacering` / `_cast_e_vaelindra_violetrequiem` / `_cast_r_vaelindra_realm` |
-| `astraelion` | 20 | 2600 | `_cast_q_astraelion_swordfall` / `_cast_w_astraelion_spiritblade` / `_cast_e_astraelion_forceescape` / `_cast_r_astraelion_zeroreturn` |
-| `morthraxis` | 20 | 3100 | `_cast_q_morthraxis_batimpale` / `_cast_w_morthraxis_sanguine` / `_cast_e_morthraxis_phantommob` / `_cast_r_morthraxis_baleful` |
-| `morvaenthir` | 20 | 2650 | `_cast_q_morvaenthir_soulfragment` / `_cast_w_morvaenthir_spiritbind` / `_cast_e_morvaenthir_essence` / `_cast_r_morvaenthir_shadowrealm` |
-| `thornvaegrim` | 20 | 2700 | `_cast_q_thornvaegrim_bramble` / `_cast_w_thornvaegrim_twistedadvance` / `_cast_e_thornvaegrim_saplingthrow` / `_cast_r_thornvaegrim_grasp` |
