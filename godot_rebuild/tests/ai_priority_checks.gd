@@ -120,11 +120,14 @@ func _heroes(world: World, kills: Array) -> Array[int]:
 	_fund(world, 1000000)
 	for index in range(kills.size()):
 		var hero_type: String = HERO_TYPES[index]
-		var before := world._next_id
-		world._buy_ai_hero(
-			hero_type, int(World.PLAYABLE_AI_HEROES[hero_type].cost), Vector2(1120, 90)
-		)
-		var hero := world.get_unit(before) as World.HeroState
+		var kit: Variant = World.PLAYABLE_AI_HEROES[hero_type]
+		assert(world._buy_ai_hero(hero_type, int(kit.cost), Vector2(1120, 90)))
+		var hero: World.HeroState = null
+		for unit in world.units:
+			if unit.is_hero and unit.team == 1 and not ids.has(unit.id):
+				var candidate := unit as World.HeroState
+				if candidate.settings().id == hero_type:
+					hero = candidate
 		for previous in range(1, 14):
 			world._upgrade_hero_for(1, hero.id, previous)
 		hero.kills = int(kills[index])
