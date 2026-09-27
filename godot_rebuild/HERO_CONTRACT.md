@@ -26,3 +26,10 @@ Mode **Pertandingan awal** men-spawn **satu Kaizen biru** dan **satu Kaizen mera
 ## Sengaja di luar
 
 Item/forge, unlock 400 G, dash/jump/tornado VFX, lima hero starter lain, AIPlayer (beli hero/upgrade lawan). Jangan mengklaim pertandingan Python selesai.
+
+## Adapter upgrade red (WIP AIPlayer)
+
+Domain menyediakan upgrade red per kandidat dengan reserve gold; hero red mati
+atau respawning tetap eligible sesuai sumber AIPlayer, tanpa mengubah HP/alive
+atau respawn timer. UI blue masih menolak hero mati. Belum ada scheduler AI yang
+memanggilnya otomatis, roster baru, atau kit selain Kaizen; lihat [AI_CONTRACT.md](AI_CONTRACT.md).

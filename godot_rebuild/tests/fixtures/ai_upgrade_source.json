@@ -1,0 +1,5250 @@
+{
+  "towers": [
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 174,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 174,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 1,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 2000,
+          "shield": 0,
+          "shield_max": 800,
+          "damage": 20,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 175,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "tower_type": "cannon",
+          "hp": 3000,
+          "max_hp": 3000,
+          "shield": 1200,
+          "shield_max": 1200,
+          "damage": 42,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 176,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "tower_type": "cannon",
+          "hp": 3000,
+          "max_hp": 3000,
+          "shield": 1200,
+          "shield_max": 1200,
+          "damage": 42,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 574,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 574,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 1,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 2000,
+          "shield": 0,
+          "shield_max": 800,
+          "damage": 20,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 575,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "tower_type": "cannon",
+          "hp": 3000,
+          "max_hp": 3000,
+          "shield": 1200,
+          "shield_max": 1200,
+          "damage": 42,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 1,
+      "gold": 576,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "tower_type": "cannon",
+          "hp": 3000,
+          "max_hp": 3000,
+          "shield": 1200,
+          "shield_max": 1200,
+          "damage": 42,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 324,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 324,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 2625,
+          "shield": 0,
+          "shield_max": 1050,
+          "damage": 33,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 325,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "archer",
+          "hp": 3375,
+          "max_hp": 3375,
+          "shield": 1350,
+          "shield_max": 1350,
+          "damage": 50,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 326,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "archer",
+          "hp": 3375,
+          "max_hp": 3375,
+          "shield": 1350,
+          "shield_max": 1350,
+          "damage": 50,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 724,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 724,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 2625,
+          "shield": 0,
+          "shield_max": 1050,
+          "damage": 33,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 725,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "archer",
+          "hp": 3375,
+          "max_hp": 3375,
+          "shield": 1350,
+          "shield_max": 1350,
+          "damage": 50,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 2,
+      "gold": 726,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "archer",
+          "hp": 3375,
+          "max_hp": 3375,
+          "shield": 1350,
+          "shield_max": 1350,
+          "damage": 50,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 549,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 549,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 3375,
+          "shield": 0,
+          "shield_max": 1350,
+          "damage": 50,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 550,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "archer",
+          "hp": 4375,
+          "max_hp": 4375,
+          "shield": 1750,
+          "shield_max": 1750,
+          "damage": 72,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 551,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "archer",
+          "hp": 4375,
+          "max_hp": 4375,
+          "shield": 1750,
+          "shield_max": 1750,
+          "damage": 72,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 949,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 949,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 3375,
+          "shield": 0,
+          "shield_max": 1350,
+          "damage": 50,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 950,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "archer",
+          "hp": 4375,
+          "max_hp": 4375,
+          "shield": 1750,
+          "shield_max": 1750,
+          "damage": 72,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 3,
+      "gold": 951,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "archer",
+          "hp": 4375,
+          "max_hp": 4375,
+          "shield": 1750,
+          "shield_max": 1750,
+          "damage": 72,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 849,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 849,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 4375,
+          "shield": 0,
+          "shield_max": 1750,
+          "damage": 72,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 850,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "archer",
+          "hp": 5500,
+          "max_hp": 5500,
+          "shield": 2200,
+          "shield_max": 2200,
+          "damage": 98,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 851,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "archer",
+          "hp": 5500,
+          "max_hp": 5500,
+          "shield": 2200,
+          "shield_max": 2200,
+          "damage": 98,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 1249,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 1249,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 4375,
+          "shield": 0,
+          "shield_max": 1750,
+          "damage": 72,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 1250,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "archer",
+          "hp": 5500,
+          "max_hp": 5500,
+          "shield": 2200,
+          "shield_max": 2200,
+          "damage": 98,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 4,
+      "gold": 1251,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "archer",
+          "hp": 5500,
+          "max_hp": 5500,
+          "shield": 2200,
+          "shield_max": 2200,
+          "damage": 98,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1299,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 1299,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 5500,
+          "shield": 0,
+          "shield_max": 2200,
+          "damage": 98,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1300,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 7000,
+          "max_hp": 7000,
+          "shield": 2800,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1301,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 7000,
+          "max_hp": 7000,
+          "shield": 2800,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1699,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 1699,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 5500,
+          "shield": 0,
+          "shield_max": 2200,
+          "damage": 98,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1700,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 7000,
+          "max_hp": 7000,
+          "shield": 2800,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 5,
+      "gold": 1701,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 7000,
+          "max_hp": 7000,
+          "shield": 2800,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 0,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 0,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 7000,
+          "shield": 0,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 1,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 1,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 7000,
+          "shield": 0,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 399,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 399,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 7000,
+          "shield": 0,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 400,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 400,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 7000,
+          "shield": 0,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "archer",
+      "level": 6,
+      "gold": 401,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 401,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "archer",
+          "hp": 1,
+          "max_hp": 7000,
+          "shield": 0,
+          "shield_max": 2800,
+          "damage": 130,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 324,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 324,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 3000,
+          "shield": 0,
+          "shield_max": 1200,
+          "damage": 42,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 325,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "cannon",
+          "hp": 3750,
+          "max_hp": 3750,
+          "shield": 1500,
+          "shield_max": 1500,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 326,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "cannon",
+          "hp": 3750,
+          "max_hp": 3750,
+          "shield": 1500,
+          "shield_max": 1500,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 724,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 724,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 3000,
+          "shield": 0,
+          "shield_max": 1200,
+          "damage": 42,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 725,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "cannon",
+          "hp": 3750,
+          "max_hp": 3750,
+          "shield": 1500,
+          "shield_max": 1500,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 2,
+      "gold": 726,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "cannon",
+          "hp": 3750,
+          "max_hp": 3750,
+          "shield": 1500,
+          "shield_max": 1500,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 549,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 549,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 3750,
+          "shield": 0,
+          "shield_max": 1500,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 550,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "cannon",
+          "hp": 4750,
+          "max_hp": 4750,
+          "shield": 1900,
+          "shield_max": 1900,
+          "damage": 84,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 551,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "cannon",
+          "hp": 4750,
+          "max_hp": 4750,
+          "shield": 1900,
+          "shield_max": 1900,
+          "damage": 84,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 949,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 949,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 3750,
+          "shield": 0,
+          "shield_max": 1500,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 950,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "cannon",
+          "hp": 4750,
+          "max_hp": 4750,
+          "shield": 1900,
+          "shield_max": 1900,
+          "damage": 84,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 3,
+      "gold": 951,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "cannon",
+          "hp": 4750,
+          "max_hp": 4750,
+          "shield": 1900,
+          "shield_max": 1900,
+          "damage": 84,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 849,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 849,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 4750,
+          "shield": 0,
+          "shield_max": 1900,
+          "damage": 84,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 850,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "cannon",
+          "hp": 6000,
+          "max_hp": 6000,
+          "shield": 2400,
+          "shield_max": 2400,
+          "damage": 116,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 851,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "cannon",
+          "hp": 6000,
+          "max_hp": 6000,
+          "shield": 2400,
+          "shield_max": 2400,
+          "damage": 116,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 1249,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 1249,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 4750,
+          "shield": 0,
+          "shield_max": 1900,
+          "damage": 84,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 1250,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "cannon",
+          "hp": 6000,
+          "max_hp": 6000,
+          "shield": 2400,
+          "shield_max": 2400,
+          "damage": 116,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 4,
+      "gold": 1251,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "cannon",
+          "hp": 6000,
+          "max_hp": 6000,
+          "shield": 2400,
+          "shield_max": 2400,
+          "damage": 116,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1299,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 1299,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 6000,
+          "shield": 0,
+          "shield_max": 2400,
+          "damage": 116,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1300,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 7500,
+          "max_hp": 7500,
+          "shield": 3000,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1301,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 7500,
+          "max_hp": 7500,
+          "shield": 3000,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1699,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 1699,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 6000,
+          "shield": 0,
+          "shield_max": 2400,
+          "damage": 116,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1700,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 7500,
+          "max_hp": 7500,
+          "shield": 3000,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 5,
+      "gold": 1701,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 7500,
+          "max_hp": 7500,
+          "shield": 3000,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 0,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 0,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 7500,
+          "shield": 0,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 1,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 1,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 7500,
+          "shield": 0,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 399,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 399,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 7500,
+          "shield": 0,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 400,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 400,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 7500,
+          "shield": 0,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "cannon",
+      "level": 6,
+      "gold": 401,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 401,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "cannon",
+          "hp": 1,
+          "max_hp": 7500,
+          "shield": 0,
+          "shield_max": 3000,
+          "damage": 155,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 324,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 324,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 2375,
+          "shield": 0,
+          "shield_max": 950,
+          "damage": 20,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 325,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "ice",
+          "hp": 3125,
+          "max_hp": 3125,
+          "shield": 1250,
+          "shield_max": 1250,
+          "damage": 32,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 326,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "ice",
+          "hp": 3125,
+          "max_hp": 3125,
+          "shield": 1250,
+          "shield_max": 1250,
+          "damage": 32,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 724,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 724,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 2375,
+          "shield": 0,
+          "shield_max": 950,
+          "damage": 20,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 725,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "ice",
+          "hp": 3125,
+          "max_hp": 3125,
+          "shield": 1250,
+          "shield_max": 1250,
+          "damage": 32,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 2,
+      "gold": 726,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "ice",
+          "hp": 3125,
+          "max_hp": 3125,
+          "shield": 1250,
+          "shield_max": 1250,
+          "damage": 32,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 549,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 549,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 3125,
+          "shield": 0,
+          "shield_max": 1250,
+          "damage": 32,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 550,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "ice",
+          "hp": 4000,
+          "max_hp": 4000,
+          "shield": 1600,
+          "shield_max": 1600,
+          "damage": 45,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 551,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "ice",
+          "hp": 4000,
+          "max_hp": 4000,
+          "shield": 1600,
+          "shield_max": 1600,
+          "damage": 45,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 949,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 949,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 3125,
+          "shield": 0,
+          "shield_max": 1250,
+          "damage": 32,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 950,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "ice",
+          "hp": 4000,
+          "max_hp": 4000,
+          "shield": 1600,
+          "shield_max": 1600,
+          "damage": 45,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 3,
+      "gold": 951,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "ice",
+          "hp": 4000,
+          "max_hp": 4000,
+          "shield": 1600,
+          "shield_max": 1600,
+          "damage": 45,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 849,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 849,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 4000,
+          "shield": 0,
+          "shield_max": 1600,
+          "damage": 45,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 850,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "ice",
+          "hp": 5125,
+          "max_hp": 5125,
+          "shield": 2050,
+          "shield_max": 2050,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 851,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "ice",
+          "hp": 5125,
+          "max_hp": 5125,
+          "shield": 2050,
+          "shield_max": 2050,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 1249,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 1249,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 4000,
+          "shield": 0,
+          "shield_max": 1600,
+          "damage": 45,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 1250,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "ice",
+          "hp": 5125,
+          "max_hp": 5125,
+          "shield": 2050,
+          "shield_max": 2050,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 4,
+      "gold": 1251,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "ice",
+          "hp": 5125,
+          "max_hp": 5125,
+          "shield": 2050,
+          "shield_max": 2050,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1299,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 1299,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 5125,
+          "shield": 0,
+          "shield_max": 2050,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1300,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 6500,
+          "max_hp": 6500,
+          "shield": 2600,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1301,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 6500,
+          "max_hp": 6500,
+          "shield": 2600,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1699,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 1699,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 5125,
+          "shield": 0,
+          "shield_max": 2050,
+          "damage": 60,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1700,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 6500,
+          "max_hp": 6500,
+          "shield": 2600,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 5,
+      "gold": 1701,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 6500,
+          "max_hp": 6500,
+          "shield": 2600,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 0,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 0,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 6500,
+          "shield": 0,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 1,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 1,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 6500,
+          "shield": 0,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 399,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 399,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 6500,
+          "shield": 0,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 400,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 400,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 6500,
+          "shield": 0,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "ice",
+      "level": 6,
+      "gold": 401,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 401,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "ice",
+          "hp": 1,
+          "max_hp": 6500,
+          "shield": 0,
+          "shield_max": 2600,
+          "damage": 78,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 324,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 324,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 2125,
+          "shield": 0,
+          "shield_max": 850,
+          "damage": 17,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 325,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "mage",
+          "hp": 2750,
+          "max_hp": 2750,
+          "shield": 1100,
+          "shield_max": 1100,
+          "damage": 26,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 326,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "mage",
+          "hp": 2750,
+          "max_hp": 2750,
+          "shield": 1100,
+          "shield_max": 1100,
+          "damage": 26,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 724,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 724,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 2125,
+          "shield": 0,
+          "shield_max": 850,
+          "damage": 17,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 725,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "mage",
+          "hp": 2750,
+          "max_hp": 2750,
+          "shield": 1100,
+          "shield_max": 1100,
+          "damage": 26,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 2,
+      "gold": 726,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "mage",
+          "hp": 2750,
+          "max_hp": 2750,
+          "shield": 1100,
+          "shield_max": 1100,
+          "damage": 26,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 549,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 549,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 2750,
+          "shield": 0,
+          "shield_max": 1100,
+          "damage": 26,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 550,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "mage",
+          "hp": 3625,
+          "max_hp": 3625,
+          "shield": 1450,
+          "shield_max": 1450,
+          "damage": 39,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 551,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "mage",
+          "hp": 3625,
+          "max_hp": 3625,
+          "shield": 1450,
+          "shield_max": 1450,
+          "damage": 39,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 949,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 949,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 2750,
+          "shield": 0,
+          "shield_max": 1100,
+          "damage": 26,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 950,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "mage",
+          "hp": 3625,
+          "max_hp": 3625,
+          "shield": 1450,
+          "shield_max": 1450,
+          "damage": 39,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 3,
+      "gold": 951,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "mage",
+          "hp": 3625,
+          "max_hp": 3625,
+          "shield": 1450,
+          "shield_max": 1450,
+          "damage": 39,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 849,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 849,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 3625,
+          "shield": 0,
+          "shield_max": 1450,
+          "damage": 39,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 850,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "mage",
+          "hp": 4625,
+          "max_hp": 4625,
+          "shield": 1850,
+          "shield_max": 1850,
+          "damage": 55,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 851,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "mage",
+          "hp": 4625,
+          "max_hp": 4625,
+          "shield": 1850,
+          "shield_max": 1850,
+          "damage": 55,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 1249,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 1249,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 3625,
+          "shield": 0,
+          "shield_max": 1450,
+          "damage": 39,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 1250,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "mage",
+          "hp": 4625,
+          "max_hp": 4625,
+          "shield": 1850,
+          "shield_max": 1850,
+          "damage": 55,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 4,
+      "gold": 1251,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "mage",
+          "hp": 4625,
+          "max_hp": 4625,
+          "shield": 1850,
+          "shield_max": 1850,
+          "damage": 55,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1299,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 1299,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 4625,
+          "shield": 0,
+          "shield_max": 1850,
+          "damage": 55,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1300,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 5875,
+          "max_hp": 5875,
+          "shield": 2350,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1301,
+      "reserved": 0,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 5875,
+          "max_hp": 5875,
+          "shield": 2350,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1699,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 1699,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 4625,
+          "shield": 0,
+          "shield_max": 1850,
+          "damage": 55,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1700,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 5875,
+          "max_hp": 5875,
+          "shield": 2350,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 5,
+      "gold": 1701,
+      "reserved": 400,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 5875,
+          "max_hp": 5875,
+          "shield": 2350,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 0,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 0,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 5875,
+          "shield": 0,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 1,
+      "reserved": 0,
+      "expected": {
+        "success": false,
+        "gold": 1,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 5875,
+          "shield": 0,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 399,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 399,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 5875,
+          "shield": 0,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 400,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 400,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 5875,
+          "shield": 0,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "path": "mage",
+      "level": 6,
+      "gold": 401,
+      "reserved": 400,
+      "expected": {
+        "success": false,
+        "gold": 401,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 6,
+          "tower_type": "mage",
+          "hp": 1,
+          "max_hp": 5875,
+          "shield": 0,
+          "shield_max": 2350,
+          "damage": 70,
+          "timer": 17,
+          "no_damage_timer": 9
+        }
+      }
+    }
+  ],
+  "nexuses": [
+    {
+      "level": 1,
+      "gold": 499,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 499,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 1,
+          "hp": 1,
+          "max_hp": 4000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 35,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 499,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 499,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 1,
+          "hp": 1,
+          "max_hp": 4000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 35,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 500,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 2501,
+          "max_hp": 6000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 500,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 2501,
+          "max_hp": 6000,
+          "shield": 1800,
+          "shield_max": 6000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 501,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 2501,
+          "max_hp": 6000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 501,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 2501,
+          "max_hp": 6000,
+          "shield": 1800,
+          "shield_max": 6000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 899,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 899,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 1,
+          "hp": 1,
+          "max_hp": 4000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 35,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 899,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 899,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 1,
+          "hp": 1,
+          "max_hp": 4000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 35,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 900,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 2501,
+          "max_hp": 6000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 900,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 2501,
+          "max_hp": 6000,
+          "shield": 1800,
+          "shield_max": 6000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 901,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 2501,
+          "max_hp": 6000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 901,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 2501,
+          "max_hp": 6000,
+          "shield": 1800,
+          "shield_max": 6000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 899,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 899,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 6000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 899,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 899,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 6000,
+          "shield": 1800,
+          "shield_max": 6000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 900,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 3001,
+          "max_hp": 8500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 900,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 3001,
+          "max_hp": 8500,
+          "shield": 2550,
+          "shield_max": 8500,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 901,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 3001,
+          "max_hp": 8500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 901,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 3001,
+          "max_hp": 8500,
+          "shield": 2550,
+          "shield_max": 8500,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 1299,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 1299,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 6000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 1299,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 1299,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 6000,
+          "shield": 1800,
+          "shield_max": 6000,
+          "damage": 55,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 1300,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 3001,
+          "max_hp": 8500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 1300,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 3001,
+          "max_hp": 8500,
+          "shield": 2550,
+          "shield_max": 8500,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 1301,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 3001,
+          "max_hp": 8500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 1301,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 3001,
+          "max_hp": 8500,
+          "shield": 2550,
+          "shield_max": 8500,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1499,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 1499,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 1,
+          "max_hp": 8500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1499,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 1499,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 1,
+          "max_hp": 8500,
+          "shield": 2550,
+          "shield_max": 8500,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1500,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "hp": 3501,
+          "max_hp": 11500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1500,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "hp": 3501,
+          "max_hp": 11500,
+          "shield": 3450,
+          "shield_max": 11500,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1501,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "hp": 3501,
+          "max_hp": 11500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1501,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "hp": 3501,
+          "max_hp": 11500,
+          "shield": 3450,
+          "shield_max": 11500,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1899,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 1899,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 1,
+          "max_hp": 8500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1899,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 1899,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 1,
+          "max_hp": 8500,
+          "shield": 2550,
+          "shield_max": 8500,
+          "damage": 80,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1900,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "hp": 3501,
+          "max_hp": 11500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1900,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "hp": 3501,
+          "max_hp": 11500,
+          "shield": 3450,
+          "shield_max": 11500,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1901,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "hp": 3501,
+          "max_hp": 11500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 3,
+      "gold": 1901,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "hp": 3501,
+          "max_hp": 11500,
+          "shield": 3450,
+          "shield_max": 11500,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2399,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 2399,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "hp": 1,
+          "max_hp": 11500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2399,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 2399,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 4,
+          "hp": 1,
+          "max_hp": 11500,
+          "shield": 3450,
+          "shield_max": 11500,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2400,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "hp": 4001,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2400,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "hp": 4001,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2401,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "hp": 4001,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2401,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "hp": 4001,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2799,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 2799,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "hp": 1,
+          "max_hp": 11500,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2799,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 2799,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 4,
+          "hp": 1,
+          "max_hp": 11500,
+          "shield": 3450,
+          "shield_max": 11500,
+          "damage": 115,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2800,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 4001,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2800,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 4001,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2801,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 4001,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 4,
+      "gold": 2801,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 4001,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 0,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 0,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 0,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 0,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 1,
+      "reserved": 0,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 1,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 1,
+      "reserved": 0,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 1,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 399,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 399,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 399,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 399,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 400,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 400,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 400,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 400,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 401,
+      "reserved": 400,
+      "paid": false,
+      "expected": {
+        "success": false,
+        "gold": 401,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 1200,
+          "shield_max": 4000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    },
+    {
+      "level": 5,
+      "gold": 401,
+      "reserved": 400,
+      "paid": true,
+      "expected": {
+        "success": false,
+        "gold": 401,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 5,
+          "hp": 1,
+          "max_hp": 15000,
+          "shield": 4500,
+          "shield_max": 15000,
+          "damage": 160,
+          "timer": 17,
+          "shield_no_damage_timer": 9
+        }
+      }
+    }
+  ],
+  "heroes": [
+    {
+      "level": 1,
+      "gold": 299,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 299,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 1,
+          "hp": 0,
+          "max_hp": 770,
+          "damage": 45,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 299,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 299,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 1,
+          "hp": 1,
+          "max_hp": 770,
+          "damage": 45,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 300,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 0,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 300,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 301,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 0,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 301,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 699,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 699,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 1,
+          "hp": 0,
+          "max_hp": 770,
+          "damage": 45,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 699,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 699,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 1,
+          "hp": 1,
+          "max_hp": 770,
+          "damage": 45,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 700,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 0,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 700,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 701,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 0,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 1,
+      "gold": 701,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 499,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 499,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 0,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 499,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 499,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 500,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 0,
+          "max_hp": 1270,
+          "damage": 69,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 500,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 1,
+          "max_hp": 1270,
+          "damage": 69,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 501,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 0,
+          "max_hp": 1270,
+          "damage": 69,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 501,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 3,
+          "hp": 1,
+          "max_hp": 1270,
+          "damage": 69,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 899,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 899,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 0,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 899,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 899,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 2,
+          "hp": 1,
+          "max_hp": 1001,
+          "damage": 56,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 900,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 0,
+          "max_hp": 1270,
+          "damage": 69,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 900,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 1,
+          "max_hp": 1270,
+          "damage": 69,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 901,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 0,
+          "max_hp": 1270,
+          "damage": 69,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 2,
+      "gold": 901,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 3,
+          "hp": 1,
+          "max_hp": 1270,
+          "damage": 69,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 3599,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 3599,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 7,
+          "hp": 0,
+          "max_hp": 3118,
+          "damage": 155,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 3599,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 3599,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 7,
+          "hp": 1,
+          "max_hp": 3118,
+          "damage": 155,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 3600,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 8,
+          "hp": 0,
+          "max_hp": 3696,
+          "damage": 182,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 3600,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 8,
+          "hp": 1,
+          "max_hp": 3696,
+          "damage": 182,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 3601,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 8,
+          "hp": 0,
+          "max_hp": 3696,
+          "damage": 182,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 3601,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 8,
+          "hp": 1,
+          "max_hp": 3696,
+          "damage": 182,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 3999,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 3999,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 7,
+          "hp": 0,
+          "max_hp": 3118,
+          "damage": 155,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 3999,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 3999,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 7,
+          "hp": 1,
+          "max_hp": 3118,
+          "damage": 155,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 4000,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 8,
+          "hp": 0,
+          "max_hp": 3696,
+          "damage": 182,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 4000,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 8,
+          "hp": 1,
+          "max_hp": 3696,
+          "damage": 182,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 4001,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 8,
+          "hp": 0,
+          "max_hp": 3696,
+          "damage": 182,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 7,
+      "gold": 4001,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 8,
+          "hp": 1,
+          "max_hp": 3696,
+          "damage": 182,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19199,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 19199,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 14,
+          "hp": 0,
+          "max_hp": 8547,
+          "damage": 400,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19199,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 19199,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 14,
+          "hp": 1,
+          "max_hp": 8547,
+          "damage": 400,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19200,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19200,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 0,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19201,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19201,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 1,
+        "count": 1,
+        "reserve": 0,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19599,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 19599,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 14,
+          "hp": 0,
+          "max_hp": 8547,
+          "damage": 400,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19599,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 19599,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 14,
+          "hp": 1,
+          "max_hp": 8547,
+          "damage": 400,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19600,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19600,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 400,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19601,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 14,
+      "gold": 19601,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": true,
+        "gold": 401,
+        "count": 1,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 0,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 0,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 0,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 0,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 1,
+      "reserved": 0,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 1,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 1,
+      "reserved": 0,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 1,
+        "count": 0,
+        "reserve": 0,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 399,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 399,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 399,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 399,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 400,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 400,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 400,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 400,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 401,
+      "reserved": 400,
+      "alive": false,
+      "expected": {
+        "success": false,
+        "gold": 401,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 0,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": false,
+          "skill_timer": 29
+        }
+      }
+    },
+    {
+      "level": 15,
+      "gold": 401,
+      "reserved": 400,
+      "alive": true,
+      "expected": {
+        "success": false,
+        "gold": 401,
+        "count": 0,
+        "reserve": 400,
+        "state": {
+          "level": 15,
+          "hp": 1,
+          "max_hp": 9625,
+          "damage": 450,
+          "alive": true,
+          "skill_timer": 29
+        }
+      }
+    }
+  ]
+}

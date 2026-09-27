@@ -189,7 +189,7 @@ func _process(_delta: float) -> void:
 	%NexusButton.text = "Upgrade Nexus"
 	%SellButton.text = "Jual tower"
 	if tower != null and tower.settings().structure_kind == "tower":
-		%SellButton.text = "Jual · %d G" % tower.settings().sale_refund
+		%SellButton.text = "Jual · %d G" % tower.sale_value()
 		%UpgradeButton.text = (
 			"Upgrade Lv.%d · %d G" % [tower.settings().level + 1, price]
 			if price > 0

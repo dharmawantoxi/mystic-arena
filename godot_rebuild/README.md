@@ -252,6 +252,14 @@ python godot_rebuild/tests/structure_source_oracle.py
 python godot_rebuild/tests/match_source_oracle.py
 python godot_rebuild/tests/upgrade_source_oracle.py
 python godot_rebuild/tests/nexus_source_oracle.py
+python godot_rebuild/tests/cannon_source_oracle.py
+python godot_rebuild/tests/ice_source_oracle.py
+python godot_rebuild/tests/mage_source_oracle.py
+python godot_rebuild/tests/kaizen_source_oracle.py
+python godot_rebuild/tests/ai_source_oracle.py
+python godot_rebuild/tests/ai_draft_source_oracle.py
+python godot_rebuild/tests/ai_upgrade_source_oracle.py
+python godot_rebuild/tests/ai_shield_source_oracle.py
 ```
 
 Untuk parser/linter, pasang `gdtoolkit==4.5.0` dalam virtualenv terpisah. Tidak perlu memasangnya di komputer pemain.
@@ -272,8 +280,18 @@ Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot
 10. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Upgrade Archer dan periksa perubahan harga/refund/HP/shield serta jumlah panah. Pilih nexus biru, upgrade ke level 2+ dan amati HP/shield/komposisi/minion menguat. Pause harus membekukan keduanya; restart mengembalikan 1000 G dan nexus level 1.
 11. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
 
+## AIPlayer (WIP, belum terhubung ke scene)
+
+Policy berpikir/prioritas, pool/draft/reserve, dan adapter upgrade/shield red per
+kandidat tersedia untuk pengujian native. Adapter upgrade/shield memakai world/ledger
+nyata tetapi belum dipanggil otomatis di scene. Metadata summon mencakup enam starter dan 216 boss; **ini bukan roster
+playable**. Pertandingan masih memakai lawan sementara. Batas implementasi dan
+checklist integrasi penuh: [AI_CONTRACT.md](AI_CONTRACT.md).
+
 ## Langkah pengembangan berikutnya
 
 Fondasi, combat minion, siege tier 1, prototipe wave/ekonomi/build-sell, upgrade Archer, dan upgrade nexus + scaling/AI/komposisi sudah diimplementasikan (CI sesi baru menyusul). Berikutnya: uji Windows → tower tambahan → hero/skill dan AI asli → lengkapi satu pertandingan kecil → perluasan sistem/konten. Lihat [rencana lengkap](../docs/RENCANA_MIGRASI_GODOT_DARI_NOL.md).
 
 Jangan mengedit game Python atau mengaktifkan converter lama untuk membuat proyek ini berjalan. Jika menemukan error, simpan pesan lengkap beserta versi Godot dan langkah reproduksi, lalu perbaiki di proyek baru.
+
+Paid shield, regen dan refund domain: [SHIELD_CONTRACT.md](SHIELD_CONTRACT.md). Belum ada tombol purchase shield atau AI otomatis.

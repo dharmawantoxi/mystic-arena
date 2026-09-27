@@ -194,7 +194,7 @@ func sell_tower(team: int, entity_id: int) -> bool:
 		else:
 			flying.append(shot)
 	projectiles = flying
-	economy.credit_sale(team, tower.settings().sale_refund)
+	economy.credit_sale(team, tower.sale_value())
 	_record({"kind": "sale", "team": team, "target_id": entity_id})
 	return true
 
@@ -487,8 +487,14 @@ func upgrade_price(entity_id: int, target_path: String = "archer") -> int:
 
 
 func upgrade_tower(entity_id: int, expected_level: int, target_path: String = "archer") -> bool:
+	return _upgrade_tower_for(BLUE, entity_id, expected_level, target_path)
+
+
+func _upgrade_tower_for(
+	team: int, entity_id: int, expected_level: int, target_path: String, reserve: int = 0
+) -> bool:
 	transaction_error = ""
-	var tower := _owned_tower(entity_id)
+	var tower := _owned_tower(entity_id, team)
 	var target: StructureDefinition = null
 	if tower != null:
 		target = _upgrade_target(tower.settings().level, tower.settings().tower_path, target_path)
@@ -503,12 +509,12 @@ func upgrade_tower(entity_id: int, expected_level: int, target_path: String = "a
 		transaction_error = "path"
 	elif cost <= 0:
 		transaction_error = "max_level"
-	elif economy.gold[BLUE] < cost:
+	elif economy.gold[team] < cost + maxi(0, reserve):
 		transaction_error = "gold"
 	if not transaction_error.is_empty():
 		return false
 	# Source resets HP/shield fully but retains cooldown, target, regen timer and in-flight shots.
-	economy.spend(BLUE, cost)
+	economy.spend(team, cost)
 	tower.definition = target
 	tower.hp = tower.definition.max_hp
 	tower.shield_max = tower.settings().shield_capacity
@@ -544,9 +550,15 @@ func nexus_upgrade_price(entity_id: int) -> int:
 
 
 func upgrade_nexus(entity_id: int, expected_level: int) -> bool:
+	return _upgrade_nexus_for(BLUE, entity_id, expected_level)
+
+
+func _upgrade_nexus_for(team: int, entity_id: int, expected_level: int, reserve: int = 0) -> bool:
 	transaction_error = ""
-	var nexus := _owned_nexus(entity_id)
-	var cost := nexus_upgrade_price(entity_id)
+	var nexus := _owned_nexus(entity_id, team)
+	var cost := 0
+	if nexus != null and nexus.settings().level < NexusUpgrades.LEVELS.size():
+		cost = NexusUpgrades.LEVELS[nexus.settings().level].upgrade_price
 	if not is_running():
 		transaction_error = "finished"
 	elif nexus == null:
@@ -555,11 +567,11 @@ func upgrade_nexus(entity_id: int, expected_level: int) -> bool:
 		transaction_error = "stale"
 	elif cost <= 0:
 		transaction_error = "max_level"
-	elif economy.gold[BLUE] < cost:
+	elif economy.gold[team] < cost + maxi(0, reserve):
 		transaction_error = "gold"
 	if not transaction_error.is_empty():
 		return false
-	economy.spend(BLUE, cost)
+	economy.spend(team, cost)
 	var old_max: int = nexus.definition.max_hp
 	var old_hp: float = nexus.hp
 	var target = NexusUpgrades.LEVELS[expected_level]
@@ -577,25 +589,29 @@ func upgrade_nexus(entity_id: int, expected_level: int) -> bool:
 	return true
 
 
-func _owned_nexus(entity_id: int) -> StructureState:
+func _owned_nexus(entity_id: int, team: int = BLUE) -> StructureState:
+	if team not in [BLUE, RED]:
+		return null
 	var nexus := get_unit(entity_id) as StructureState
-	if nexus == null or not nexus.alive or nexus.team != BLUE:
+	if nexus == null or not nexus.alive or nexus.team != team:
 		return null
 	if nexus.settings().structure_kind != "nexus":
 		return null
-	if nexuses[BLUE] == null or nexuses[BLUE].id != entity_id:
+	if nexuses[team] == null or nexuses[team].id != entity_id:
 		return null
 	return nexus
 
 
-func _owned_tower(entity_id: int) -> StructureState:
+func _owned_tower(entity_id: int, team: int = BLUE) -> StructureState:
+	if team not in [BLUE, RED]:
+		return null
 	var tower := get_unit(entity_id) as StructureState
-	if tower == null or not tower.alive or tower.team != BLUE:
+	if tower == null or not tower.alive or tower.team != team:
 		return null
 	if tower.settings().structure_kind != "tower":
 		return null
 	for slot in slots:
-		if slot.team == BLUE and slot.structure_id == entity_id:
+		if slot.team == team and slot.structure_id == entity_id:
 			return tower
 	return null
 
@@ -677,6 +693,10 @@ func _cast_blue_r(hero_id: int) -> bool:
 
 
 func _upgrade_blue_hero(hero_id: int, expected_level: int) -> bool:
+	return _upgrade_hero_for(BLUE, hero_id, expected_level)
+
+
+func _upgrade_hero_for(team: int, hero_id: int, expected_level: int, reserve: int = 0) -> bool:
 	transaction_error = ""
 	var hero := get_unit(hero_id) as HeroState
 	var cost := 0
@@ -684,17 +704,55 @@ func _upgrade_blue_hero(hero_id: int, expected_level: int) -> bool:
 		cost = hero.upgrade_cost()
 	if not is_running():
 		transaction_error = "finished"
-	elif hero == null or not hero.alive or hero.team != BLUE:
+	elif team not in [BLUE, RED] or hero == null or hero.team != team:
+		transaction_error = "owner"
+	elif team == BLUE and not hero.alive:
 		transaction_error = "owner"
 	elif hero.level != expected_level:
 		transaction_error = "stale"
 	elif cost <= 0:
 		transaction_error = "max_level"
-	elif economy.gold[BLUE] < cost:
+	elif economy.gold[team] < cost + maxi(0, reserve):
 		transaction_error = "gold"
 	if not transaction_error.is_empty():
 		return false
-	economy.spend(BLUE, cost)
+	economy.spend(team, cost)
 	upgrade_hero(hero.id)
 	_record({"kind": "hero_upgrade", "target_id": hero.id, "level": hero.level})
+	return true
+
+
+func _activate_regen_shield_for(team: int, entity_id: int, reserve: int = 0) -> bool:
+	return _purchase_shield_for(team, entity_id, false, reserve)
+
+
+func _activate_castle_shield_for(team: int, entity_id: int, reserve: int = 0) -> bool:
+	return _purchase_shield_for(team, entity_id, true, reserve)
+
+
+func _purchase_shield_for(team: int, entity_id: int, castle: bool, reserve: int) -> bool:
+	transaction_error = ""
+	var target := _owned_nexus(entity_id, team) if castle else _owned_tower(entity_id, team)
+	var cost := StructureState.CASTLE_SHIELD_COST if castle else StructureState.REGEN_SHIELD_COST
+	if not is_running():
+		transaction_error = "finished"
+	elif target == null:
+		transaction_error = "owner"
+	elif (
+		not target.can_activate_castle_shield()
+		if castle
+		else not target.can_activate_regen_shield()
+	):
+		transaction_error = "shield"
+	elif economy.gold[team] < cost + maxi(0, reserve):
+		transaction_error = "gold"
+	if not transaction_error.is_empty():
+		return false
+	# No await/callback between eligibility, activation and the ledger debit.
+	if castle:
+		target.activate_castle_shield()
+	else:
+		target.activate_regen_shield()
+	economy.spend(team, cost)
+	_record({"kind": "castle_shield" if castle else "regen_shield", "target_id": entity_id})
 	return true

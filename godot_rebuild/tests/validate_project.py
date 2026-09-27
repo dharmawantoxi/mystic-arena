@@ -4,6 +4,7 @@ Run with Python 3, no dependencies: python godot_rebuild/tests/validate_project.
 """
 from pathlib import Path
 import re
+import json
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +63,48 @@ check("PROCESS_MODE_PAUSABLE" in sim, "Simulation must pause")
 app = (ROOT / "app/app.gd").read_text(encoding="utf-8")
 check("queue_free()" in app and "remove_child" in app, "Navigation must clean up screens")
 check("call_deferred" in app, "Navigation must leave input callback before replacing screens")
+
+ai_policy = (ROOT / "scripts/match/ai_policy.gd").read_text(encoding="utf-8")
+ai_tests = (ROOT / "tests/run_all.gd").read_text(encoding="utf-8")
+check("AIPolicyChecks.new().run(_check)" in ai_tests, "AI policy suite must run alongside old suites")
+check((ROOT / "AI_CONTRACT.md").is_file(), "AI policy scope must be documented")
+check((ROOT / "tests/fixtures/ai_policy_source.json").is_file(), "AI policy needs source oracle fixture")
+check("control_heroes.call()" in ai_policy, "AI must control heroes before thinking")
+
+check("AIDraftChecks.new().run(_check)" in ai_tests, "AI draft suite must remain in the native runner")
+recruitment = json.loads((ROOT / "data/ai/recruitment.json").read_text(encoding="utf-8"))
+check(recruitment["starters"] == ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"],
+      "AI starter preference order must match source")
+check(set(recruitment["fallback"]) == set(recruitment["starters"]), "AI fallback is starter catalog only")
+check(len(recruitment["levels"]) == 54, "Update AI policy elite level count when source levels change")
+for hero_type, entry in recruitment["catalog"].items():
+    check(isinstance(hero_type, str) and bool(hero_type), "AI catalog IDs must be nonempty strings")
+    check(isinstance(entry["cost"], int) and entry["cost"] > 0, f"Invalid summon price: {hero_type}")
+    check(type(entry["is_boss_hero"]) is bool, f"Invalid boss flag: {hero_type}")
+for key, entry in recruitment["levels"].items():
+    check(key.isdigit() and int(key) >= 1, f"Invalid AI source level: {key}")
+    check(all(hero_type in recruitment["catalog"] for hero_type in entry["bosses"]),
+          f"Missing summon metadata for level {key}")
+check((ROOT / "tests/fixtures/ai_draft_source.json").is_file(), "AI draft needs source fixture")
+workflow = (ROOT.parent / ".github/workflows/godot-rebuild.yml").read_text(encoding="utf-8")
+check("python godot_rebuild/tests/ai_draft_source_oracle.py" in workflow, "CI must detect recruitment data drift")
+
+check("AIUpgradeChecks.new().run(_check)" in ai_tests, "AI upgrade suite must remain alongside baseline suites")
+check((ROOT / "tests/fixtures/ai_upgrade_source.json").is_file(), "AI upgrades require source fixture")
+check("python godot_rebuild/tests/ai_upgrade_source_oracle.py" in workflow, "CI must check AI upgrades oracle")
+ai_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
+check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters must read live reserve")
+
+check("AIShieldChecks.new().run(_check)" in ai_tests, "AI shield domain suite must remain in runner")
+check("await AIShieldSceneChecks.new().run(self, app, _check)" in ai_tests, "Paid shield refund/reset UI suite must run")
+check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields require source fixture")
+check("python godot_rebuild/tests/ai_shield_source_oracle.py" in workflow, "CI must check paid shield oracle")
+ai_shields = (ROOT / "scripts/match/ai_shields.gd").read_text(encoding="utf-8")
+check(ai_shields.count("draft.reserve()") == 2, "Both paid shield adapters must use live reserve")
+shield_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
+check('tower.sale_value()' in shield_screen, "UI sale quote must include purchased shield")
+
+check((ROOT / "SHIELD_CONTRACT.md").is_file(), "Paid shield semantics must be documented")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
