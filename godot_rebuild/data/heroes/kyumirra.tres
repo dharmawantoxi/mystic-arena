@@ -1,0 +1,31 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "kyumirra"
+display_name = "Kyumirra"
+max_hp = 2496
+damage = 212
+speed_px_per_tick = 1.55
+attack_range_px = 220
+attack_cooldown_ticks = 44
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Fox Enchantress"
+role = "Boss/Nine-Tailed Fox"
+cost = 3750
+unlock_cost = 0
+base_skill = 642
+skill_cooldown_max = 290
+skill_range_px = 220
+dmg_school = "magic"
+is_melee = false
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 212

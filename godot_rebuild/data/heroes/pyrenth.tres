@@ -1,0 +1,31 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "pyrenth"
+display_name = "Pyrenth"
+max_hp = 1525
+damage = 177
+speed_px_per_tick = 1.53
+attack_range_px = 70
+attack_cooldown_ticks = 37
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Devourer"
+role = "Boss/Demon Lord"
+cost = 750
+unlock_cost = 0
+base_skill = 616
+skill_cooldown_max = 240
+skill_range_px = 200
+dmg_school = "physical"
+is_melee = true
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 177

@@ -38,7 +38,11 @@ def source_fixture():
             skill_cooldown=hero.skill_cooldown_max, skill_range=hero.skill_range,
             dmg_school=hero.dmg_school, is_melee=hero.is_melee_hero)
     result = []
-    for hero_type, price in (("kaizen", 400), ("thorne", 500), ("grimjaw", 450), ("sylara", 380), ("vex", 420), ("zephyr", 420), ("gornak", 500), ("morgath", 550), ("drakar", 600), ("abaddon", 700)):
+    from source_shared_boss_oracle import eligible_ids
+    playable = ["kaizen", "thorne", "grimjaw", "sylara", "vex", "zephyr",
+                "gornak", "morgath", "drakar", "abaddon"] + eligible_ids(env)
+    for hero_type in playable:
+        price = catalog[hero_type]["cost"]
         for initial in (price - 1, price, price + 1):
             player = ai_type()
             player.gold = initial

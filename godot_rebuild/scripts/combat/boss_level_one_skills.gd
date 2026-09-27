@@ -1,6 +1,7 @@
 extends RefCounted
 ## BossHeroSkills registry recipes for the four level-1 unlocks ONLY.
 ## Not _fallback_cast; unported boss IDs remain rejected.
+const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const IDS := ["gornak", "morgath", "drakar", "abaddon"]
@@ -9,27 +10,7 @@ const IDS := ["gornak", "morgath", "drakar", "abaddon"]
 static func can_cast(world, hero: HeroState, key: String, structures: Array) -> bool:
 	if not Common.ready(world, hero, key) or hero.settings().id not in IDS:
 		return false
-	# BossHeroSkills._generic_cast differs from BaseSkill target slack:
-	# max(int(skill_range or 100), 140), stable FIRST nearest on ties.
-	var reach := maxi(int(hero.skill_range), 140)
-	var nearby = null
-	var best := INF
-	for enemy in Common.enemies(world, hero, structures):
-		var distance := hero.position.distance_to(enemy.position)
-		if distance <= reach and distance < best:
-			nearby = enemy
-			best = distance
-	if nearby == null:
-		return false
-	var target = Common.current(world, hero)
-	if target == null or hero.position.distance_to(target.position) > reach:
-		if nearby is HeroState or nearby in world.units:
-			hero.target_id = nearby.id
-			hero.target_struct = null
-		else:
-			hero.target_id = -1
-			hero.target_struct = nearby
-	return true
+	return BossCommon.can_cast(world, hero, key, structures)
 
 
 static func cast(world, hero: HeroState, key: String, structures: Array) -> bool:

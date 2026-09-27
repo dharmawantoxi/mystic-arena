@@ -170,6 +170,13 @@ from hero_status_source_oracle import source_fixture as hero_status_fixture
 check(hero_status_fixture() == json.loads((ROOT / "tests/fixtures/hero_status_source.json").read_text()), "Hero status source behavior drift")
 check("HeroStatusChecks.new().run(_check)" in ai_tests, "Hero status native suite must run")
 
+from source_shared_boss_oracle import source_fixture as source_shared_fixture
+shared = source_shared_fixture()
+check(shared == json.loads((ROOT / "tests/fixtures/source_shared_boss.json").read_text()), "Shared source boss behavior drift")
+check("SourceSharedBossChecks.new().run(_check)" in ai_tests, "Shared boss per-ID native suite must run")
+shared_ids = re.findall(r'"([a-z0-9_]+)"', (ROOT / "scripts/data/source_shared_boss_ids.gd").read_text())
+check(shared_ids == shared["ids"], "Native shared-kit membership must exactly match source dispatch")
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

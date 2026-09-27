@@ -23,18 +23,7 @@ const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
 const SYLARA = preload("res://data/heroes/sylara.tres")
 const VEX = preload("res://data/heroes/vex.tres")
 const ZEPHYR = preload("res://data/heroes/zephyr.tres")
-const PLAYABLE_AI_HEROES := {
-	"kaizen": KAIZEN,
-	"thorne": THORNE,
-	"grimjaw": GRIMJAW,
-	"sylara": SYLARA,
-	"vex": VEX,
-	"zephyr": ZEPHYR,
-	"gornak": preload("res://data/heroes/gornak.tres"),
-	"morgath": preload("res://data/heroes/morgath.tres"),
-	"drakar": preload("res://data/heroes/drakar.tres"),
-	"abaddon": preload("res://data/heroes/abaddon.tres")
-}
+const PLAYABLE_AI_HEROES = preload("res://scripts/data/hero_roster.gd").DEFINITIONS
 const HERO_SPAWN := Vector2(220, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
 const RED_HERO_SPAWN := Vector2(1120, 130)

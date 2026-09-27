@@ -61,3 +61,14 @@ semua boss native. Setiap ID harus punya oracle QWER/attack/cooldown/lifecycle,
 level dan harga serta tes native sebelum dianggap playable. 62 boss dengan
 recipe khusus yang belum diport tetap ditolak. Hitungan selesai tetap 10 sampai
 batch ini lulus CI.
+
+### Batch 3 implementasi — menunggu engine
+
+150 ID allowlist ada di `scripts/data/source_shared_boss_ids.gd`. Setiap ID
+menjalankan Hero/BossHeroSkills asli dan wrapper oracle mencatat bahwa dispatch
+benar-benar masuk `_fallback_cast` (bukan recipe yang terlewat). Native mengunci
+Q/W single-target, E150/R200 AOE, multiplier, atribusi school/source, gate boss,
+cooldown/recast tepat, homing/melee, level 1–15 dan respawn. Resource angka hanya
+input; bukan bukti playable. Oracle pembelian nyata sekarang 480 transaksi
+(160 calon kit × harga−1/tepat/+1). Static 3.352 checks + parser/lint/format lulus.
+Belum menaikkan hitungan selesai sampai seluruh suite engine lulus.

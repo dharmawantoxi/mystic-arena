@@ -10,6 +10,7 @@ const GrimjawSkills = preload("res://scripts/combat/grimjaw_skills.gd")
 const VexSkills = preload("res://scripts/combat/vex_skills.gd")
 const ZephyrSkills = preload("res://scripts/combat/zephyr_skills.gd")
 const SylaraSkills = preload("res://scripts/combat/sylara_skills.gd")
+const SourceSharedBossSkills = preload("res://scripts/combat/source_shared_boss_skills.gd")
 const BossLevelOneSkills = preload("res://scripts/combat/boss_level_one_skills.gd")
 const NATIVE_SKILLS := {
 	"thorne": ThorneSkills,
@@ -645,12 +646,20 @@ func upgrade_hero(hero_id: int) -> bool:
 
 
 func _cast_extended_hero_skill(hero: HeroState, key: String, structures: Array) -> bool:
-	var handler = NATIVE_SKILLS.get(hero.settings().id)
+	var handler = (
+		SourceSharedBossSkills
+		if hero.settings().id in SourceSharedBossSkills.IDS
+		else NATIVE_SKILLS.get(hero.settings().id)
+	)
 	return handler.cast(self, hero, key, structures) if handler != null else false
 
 
 func _can_cast_extended_hero_skill(hero: HeroState, key: String, structures: Array) -> bool:
-	var handler = NATIVE_SKILLS.get(hero.settings().id)
+	var handler = (
+		SourceSharedBossSkills
+		if hero.settings().id in SourceSharedBossSkills.IDS
+		else NATIVE_SKILLS.get(hero.settings().id)
+	)
 	return handler.can_cast(self, hero, key, structures) if handler != null else false
 
 

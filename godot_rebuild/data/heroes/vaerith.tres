@@ -1,0 +1,31 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "vaerith"
+display_name = "Vaerith"
+max_hp = 1595
+damage = 215
+speed_px_per_tick = 1.56
+attack_range_px = 70
+attack_cooldown_ticks = 39
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Web Matriarch"
+role = "Boss/Broodmother"
+cost = 1200
+unlock_cost = 0
+base_skill = 577
+skill_cooldown_max = 200
+skill_range_px = 200
+dmg_school = "physical"
+is_melee = true
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 215

@@ -39,7 +39,7 @@ func _fund(world: World, amount: int) -> void:
 
 func _target(kind: String, cost: int) -> Draft:
 	var draft := Draft.new()
-	draft.level_number = 3
+	draft.level_number = 55
 	draft.purchase_target = kind
 	draft.purchase_target_cost = cost
 	return draft
