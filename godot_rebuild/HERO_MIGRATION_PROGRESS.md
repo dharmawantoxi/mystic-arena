@@ -25,7 +25,7 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 4 | Alchemist | 161 / 61 | [358.305 checks, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
 | 5 | Ancient Apparition (800G), Nyzrak (850G) | 163 / 59 | [lint fixed, then 413735](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
 | 6 | Ignis Drachorn (850G) | **164 / 58** | [413735 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
-| 7 | Vhalzun (1200G), Krobellus (1500G) | **166 / 56** | menunggu CI |
+| 7 | Vhalzun (1200G), Krobellus (1500G) | **166 / 56** | [CI hijau](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36308407983) |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
 validation (**4.476 checks**, termasuk guard manifest), gdparse, gdlint dan
