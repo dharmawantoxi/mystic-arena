@@ -1760,6 +1760,61 @@
     }
   },
   {
+    "hero_type": "aeralith",
+    "price": 1450,
+    "initial": 1449,
+    "success": false,
+    "balance": 1449,
+    "count": 0,
+    "reserve": 1450,
+    "target": "aeralith",
+    "hero": null
+  },
+  {
+    "hero_type": "aeralith",
+    "price": 1450,
+    "initial": 1450,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "aeralith",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 221,
+      "skill_damage": 635,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "aeralith",
+    "price": 1450,
+    "initial": 1451,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "aeralith",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1803,
+      "hp": 1803,
+      "damage": 221,
+      "skill_damage": 635,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
