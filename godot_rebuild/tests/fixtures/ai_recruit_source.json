@@ -1540,6 +1540,61 @@
     }
   },
   {
+    "hero_type": "krognarr",
+    "price": 1400,
+    "initial": 1399,
+    "success": false,
+    "balance": 1399,
+    "count": 0,
+    "reserve": 1400,
+    "target": "krognarr",
+    "hero": null
+  },
+  {
+    "hero_type": "krognarr",
+    "price": 1400,
+    "initial": 1400,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "krognarr",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1595,
+      "hp": 1595,
+      "damage": 227,
+      "skill_damage": 654,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "krognarr",
+    "price": 1400,
+    "initial": 1401,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "krognarr",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1595,
+      "hp": 1595,
+      "damage": 227,
+      "skill_damage": 654,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

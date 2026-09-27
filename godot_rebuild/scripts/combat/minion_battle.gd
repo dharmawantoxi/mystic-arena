@@ -18,6 +18,7 @@ const BossLevelFiveSkills = preload("res://scripts/combat/boss_level_five_skills
 const BossLevelSixSkills = preload("res://scripts/combat/boss_level_six_skills.gd")
 const BossLevelSevenSkills = preload("res://scripts/combat/boss_level_seven_skills.gd")
 const BossLevelNineSkills = preload("res://scripts/combat/boss_level_nine_skills.gd")
+const BossRecipeRegistry = preload("res://scripts/combat/boss_recipe_registry.gd")
 const AlchemistSkills = preload("res://scripts/combat/alchemist_skills.gd")
 const NATIVE_SKILLS := {
 	"alchemist": AlchemistSkills,
@@ -678,7 +679,7 @@ func _cast_extended_hero_skill(hero: HeroState, key: String, structures: Array) 
 	var handler = (
 		SourceSharedBossSkills
 		if hero.settings().id in SourceSharedBossSkills.IDS
-		else NATIVE_SKILLS.get(hero.settings().id)
+		else BossRecipeRegistry.handler(hero.settings().id, NATIVE_SKILLS)
 	)
 	return handler.cast(self, hero, key, structures) if handler != null else false
 
@@ -687,7 +688,7 @@ func _can_cast_extended_hero_skill(hero: HeroState, key: String, structures: Arr
 	var handler = (
 		SourceSharedBossSkills
 		if hero.settings().id in SourceSharedBossSkills.IDS
-		else NATIVE_SKILLS.get(hero.settings().id)
+		else BossRecipeRegistry.handler(hero.settings().id, NATIVE_SKILLS)
 	)
 	return handler.can_cast(self, hero, key, structures) if handler != null else false
 

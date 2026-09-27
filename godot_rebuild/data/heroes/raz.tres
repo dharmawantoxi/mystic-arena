@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "raz"
+display_name = "Raz"
+max_hp = 1803
+damage = 220
+speed_px_per_tick = 1.95
+attack_range_px = 70
+attack_cooldown_ticks = 33
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Heat of Despair"
+role = "Boss/Fire Monk"
+cost = 1400
+unlock_cost = 0
+base_skill = 584
+skill_cooldown_max = 190
+skill_range_px = 140
+dmg_school = "physical"
+is_melee = true
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 220
+is_boss_hero = true

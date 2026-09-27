@@ -1,22 +1,22 @@
-# Daftar tepat migrasi hero — 178 playable, 44 pending
+# Daftar tepat migrasi hero — 179 playable, 43 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
 CI Godot 4.7.2: run terakhir hijau 36322892875 (178 playable, 44 pending,
 632.522 checks; batch 10–11 level 9 + perbaikan tes batch 9).
 
-- Enam starter selesai (empat sudah ada sebelum sesi); dua puluh dua boss
-  recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9 batch 10);
+- Enam starter selesai (empat sudah ada sebelum sesi); dua puluh tiga boss
+  recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9×4, L10 batch 12);
   150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
   dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 44 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Semua 43 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 178 ID
+## Selesai — 179 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -48,6 +48,7 @@ CI Godot 4.7.2: run terakhir hijau 36322892875 (178 playable, 44 pending,
 | `wiro` | 9 | 1300 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
 | `khazan` | 9 | 1350 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
 | `naraka` | 9 | 2000 | `boss_level_nine_skills.gd` | `boss_level_nine_source_oracle.py` / `boss_level_nine_checks.gd` |
+| `krognarr` | 10 | 1400 | `boss_level_ten_skills.gd` | `boss_level_ten_source_oracle.py` / `boss_level_ten_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -199,12 +200,11 @@ CI Godot 4.7.2: run terakhir hijau 36322892875 (178 playable, 44 pending,
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 44 ID dan recipe yang menjadi blocker
+## Belum selesai — 43 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
 | `aurethzar` | 10 | 2100 | `_cast_q_aurethzar_marksman` / `_cast_w_aurethzar_piercing` / `_cast_e_aurethzar_frost` / `_cast_r_aurethzar_thunder` |
-| `krognarr` | 10 | 1400 | `_cast_q_krognarr_strike` / `_cast_w_krognarr_seismic` / `_cast_e_krognarr_rampart` / `_cast_r_krognarr_eruption` |
 | `raz` | 10 | 1400 | `_cast_q_raz_overdrive` / `_cast_w_raz_searing` / `_cast_e_raz_surge` / `_cast_r_raz_gloom` |
 | `vraskhan` | 10 | 1400 | `_cast_q_vraskhan_thorned` / `_cast_w_vraskhan_leap` / `_cast_e_vraskhan_deathslash` / `_cast_r_vraskhan_omni` |
 | `aeralith` | 11 | 1450 | `_cast_q_aeralith_tailwind` / `_cast_w_aeralith_windblade` / `_cast_e_aeralith_vacuum` / `_cast_r_aeralith_skyrider` |
