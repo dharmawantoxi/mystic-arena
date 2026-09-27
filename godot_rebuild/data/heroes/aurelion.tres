@@ -1,0 +1,32 @@
+[gd_resource type="Resource" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "aurelion"
+display_name = "Aurelion"
+max_hp = 2452
+damage = 194
+speed_px_per_tick = 1.4
+attack_range_px = 120
+attack_cooldown_ticks = 44
+gold_reward = 0
+radius_px = 16.0
+regen_per_tick = 0.0
+armor = 0.0
+magic_resist = 0.0
+title = "The Golden Sovereign"
+role = "True Boss/Royal King"
+cost = 2900
+unlock_cost = 0
+base_skill = 574
+skill_cooldown_max = 240
+skill_range_px = 160
+dmg_school = "magic"
+is_melee = false
+w_cooldown_max = 240
+e_cooldown_max = 420
+r_cooldown_max = 900
+catalog_damage = 194
+is_boss_hero = true

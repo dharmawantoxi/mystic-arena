@@ -76,10 +76,10 @@ func _lifecycle(kind: String, check: Callable) -> void:
 
 func _no_fallback(check: Callable) -> void:
 	var world := Battle.new()
-	# cryssalia is a pending recipe ID: a forged definition must not resolve
-	# to any native kit (kaelthorn moved to a real kit in batch 19).
+	# akahime is a pending recipe ID: a forged definition must not resolve
+	# to any native kit (cryssalia moved to a real kit in batch 20).
 	var fake = Roster.DEFINITIONS.kaizen.duplicate()
-	fake.id = "cryssalia"
+	fake.id = "akahime"
 	var hero := world.spawn_hero(fake, world.RED, Vector2(500, 340))
 	_enemies(world, [[550, 340]])
 	for key in ["q", "w", "e", "r"]:

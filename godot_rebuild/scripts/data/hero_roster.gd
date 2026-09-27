@@ -34,6 +34,7 @@ const DEFINITIONS := {
 	"brumhar": preload("res://data/heroes/brumhar.tres"),
 	"celwynn": preload("res://data/heroes/celwynn.tres"),
 	"cogsworth": preload("res://data/heroes/cogsworth.tres"),
+	"cryssalia": preload("res://data/heroes/cryssalia.tres"),
 	"deidara": preload("res://data/heroes/deidara.tres"),
 	"dorakai": preload("res://data/heroes/dorakai.tres"),
 	"drav": preload("res://data/heroes/drav.tres"),

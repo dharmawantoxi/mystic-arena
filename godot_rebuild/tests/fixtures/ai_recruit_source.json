@@ -3300,6 +3300,61 @@
     }
   },
   {
+    "hero_type": "cryssalia",
+    "price": 2300,
+    "initial": 2299,
+    "success": false,
+    "balance": 2299,
+    "count": 0,
+    "reserve": 2300,
+    "target": "cryssalia",
+    "hero": null
+  },
+  {
+    "hero_type": "cryssalia",
+    "price": 2300,
+    "initial": 2300,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "cryssalia",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2410,
+      "hp": 2410,
+      "damage": 183,
+      "skill_damage": 483,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "cryssalia",
+    "price": 2300,
+    "initial": 2301,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "cryssalia",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2410,
+      "hp": 2410,
+      "damage": 183,
+      "skill_damage": 483,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
