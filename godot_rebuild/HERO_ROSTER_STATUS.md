@@ -1,4 +1,4 @@
-# Daftar tepat migrasi hero — 201 playable, 21 pending
+# Daftar tepat migrasi hero — 202 playable, 20 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
@@ -9,14 +9,14 @@ batch 10–16 level 9–14 + perbaikan tes batch 9).
   recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9–L14 ×4);
   150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
   dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 21 pending mempunyai recipe khusus. Blocker masing-masing: empat
+- Semua 20 pending mempunyai recipe khusus. Blocker masing-masing: empat
   metode sumber yang tercantum belum diport/diberi source oracle dan tes native.
   Semua ditolak transaksi tanpa debit maupun substitusi; bukan sekadar kurang art.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 201 ID
+## Selesai — 202 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -71,6 +71,7 @@ batch 10–16 level 9–14 + perbaikan tes batch 9).
 | `auroth` | 15 | 1850 | `boss_level_fifteen_skills.gd` | `boss_level_fifteen_source_oracle.py` / `boss_level_fifteen_checks.gd` |
 | `morvein` | 15 | 1900 | `boss_level_fifteen_skills.gd` | `boss_level_fifteen_source_oracle.py` / `boss_level_fifteen_checks.gd` |
 | `thorvak` | 15 | 1950 | `boss_level_fifteen_skills.gd` | `boss_level_fifteen_source_oracle.py` / `boss_level_fifteen_checks.gd` |
+| `yamako` | 15 | 2600 | `boss_level_fifteen_skills.gd` | `boss_level_fifteen_source_oracle.py` / `boss_level_fifteen_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -222,11 +223,10 @@ batch 10–16 level 9–14 + perbaikan tes batch 9).
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 21 ID dan recipe yang menjadi blocker
+## Belum selesai — 20 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
-| `yamako` | 15 | 2600 | `_cast_q_yamako_deepforest` / `_cast_w_yamako_woodcreation` / `_cast_e_yamako_woodgolem` / `_cast_r_yamako_kannon` |
 | `ignirus` | 16 | 2000 | `_cast_q_ignirus_searingtorrent` / `_cast_w_ignirus_flameshot` / `_cast_e_ignirus_burstfireball` / `_cast_r_ignirus_vengeance` |
 | `leoric` | 16 | 2050 | `_cast_q_leoric_fearlesscharge` / `_cast_w_leoric_sacredhammer` / `_cast_e_leoric_concealblast` / `_cast_r_leoric_immortality` |
 | `seiryukong` | 16 | 2700 | `_cast_q_seiryukong_boundless` / `_cast_w_seiryukong_treedance` / `_cast_e_seiryukong_jingusoldiers` / `_cast_r_seiryukong_wukong` |

@@ -2805,6 +2805,61 @@
     }
   },
   {
+    "hero_type": "yamako",
+    "price": 2600,
+    "initial": 2599,
+    "success": false,
+    "balance": 2599,
+    "count": 0,
+    "reserve": 2600,
+    "target": "yamako",
+    "hero": null
+  },
+  {
+    "hero_type": "yamako",
+    "price": 2600,
+    "initial": 2600,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "yamako",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2427,
+      "hp": 2427,
+      "damage": 182,
+      "skill_damage": 524,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "yamako",
+    "price": 2600,
+    "initial": 2601,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "yamako",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 2427,
+      "hp": 2427,
+      "damage": 182,
+      "skill_damage": 524,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

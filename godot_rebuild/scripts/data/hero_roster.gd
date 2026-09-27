@@ -188,6 +188,7 @@ const DEFINITIONS := {
 	"xerathis": preload("res://data/heroes/xerathis.tres"),
 	"xharokh": preload("res://data/heroes/xharokh.tres"),
 	"xirthalis": preload("res://data/heroes/xirthalis.tres"),
+	"yamako": preload("res://data/heroes/yamako.tres"),
 	"yhoranth": preload("res://data/heroes/yhoranth.tres"),
 	"yomigetsu": preload("res://data/heroes/yomigetsu.tres"),
 	"zahkareth": preload("res://data/heroes/zahkareth.tres"),
