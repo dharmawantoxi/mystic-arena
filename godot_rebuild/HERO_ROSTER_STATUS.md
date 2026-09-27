@@ -2,7 +2,7 @@
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI Godot 4.7.2: 163 playable — batch 5 pending CI baru (sebelumnya 358.305 checks c029d50).
+CI Godot 4.7.2: **413735 checks** pada run 36302839552 (164 playable, 58 pending), static 4476 PASS.
 
 - Enam starter selesai (empat sudah ada sebelum sesi); lima boss recipe khusus
   selesai; 150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai
