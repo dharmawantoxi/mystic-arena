@@ -120,7 +120,7 @@ func _catalog(check: Callable) -> void:
 
 func _guards(check: Callable) -> void:
 	var world := _world()
-	_fund(world, 2500)
+	_fund(world, 4000)
 	var recruit := Recruit.new()
 	# Funded above the pending price so AIDraft reaches the native kit gate.
 	# ignirus (2000G, level 16) is still pending after batch 17; pending kits
@@ -134,7 +134,7 @@ func _guards(check: Callable) -> void:
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
-		world.units.is_empty() and world.economy.gold[1] == 2500, "Missing kit has no effects"
+		world.units.is_empty() and world.economy.gold[1] == 4000, "Missing kit has no effects"
 	)
 	check.call(
 		not world._buy_ai_hero("ignirus", 400, Vector2(1120, 90)),
@@ -164,7 +164,7 @@ func _guards(check: Callable) -> void:
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
 	check.call(
-		world.economy.gold[1] == 2100 and world.economy.is_balanced(),
+		world.economy.gold[1] == 3600 and world.economy.is_balanced(),
 		"Failed purchases do not debit"
 	)
 
