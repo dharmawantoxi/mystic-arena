@@ -1815,6 +1815,61 @@
     }
   },
   {
+    "hero_type": "aurex",
+    "price": 1500,
+    "initial": 1499,
+    "success": false,
+    "balance": 1499,
+    "count": 0,
+    "reserve": 1500,
+    "target": "aurex",
+    "hero": null
+  },
+  {
+    "hero_type": "aurex",
+    "price": 1500,
+    "initial": 1500,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "aurex",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1636,
+      "hp": 1636,
+      "damage": 152,
+      "skill_damage": 392,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "aurex",
+    "price": 1500,
+    "initial": 1501,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "aurex",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1636,
+      "hp": 1636,
+      "damage": 152,
+      "skill_damage": 392,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,

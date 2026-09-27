@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["aeralith"]
+const IDS := ["aeralith", "aurex"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -26,6 +26,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 	match hero.settings().id:
 		"aeralith":
 			_aeralith(world, hero, target, key, structures)
+		"aurex":
+			_aurex(world, hero, target, key, structures)
 		#DISPATCH
 		_:
 			return false
@@ -49,6 +51,27 @@ static func _aeralith(world, hero: HeroState, target, key: String, structures: A
 		"r":
 			# Skyrider: AOE 240 1.8x skill.
 			_radial(world, hero, structures, 240.0, 1.8)
+
+
+static func _aurex(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Shieldcrash: target 1.3x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.3)
+		"w":
+			# Voltblast: target 1.4x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.4)
+		"e":
+			# Aegis: AOE 130 0.9x skill, heal 10%.
+			_radial(world, hero, structures, 130.0, 0.9)
+			hero.heal_hp(int(hero.max_hp * 0.10))
+		"r":
+			# Spin: AOE 210 1.8x skill, attack delay max(timer, 60).
+			_radial(world, hero, structures, 210.0, 1.8, 60)
 
 
 #HEROES
