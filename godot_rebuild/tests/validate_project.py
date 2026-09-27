@@ -92,6 +92,14 @@ check("python godot_rebuild/tests/ai_draft_source_oracle.py" in workflow, "CI mu
 check("AIUpgradeChecks.new().run(_check)" in ai_tests, "AI upgrade suite must remain alongside baseline suites")
 check((ROOT / "tests/fixtures/ai_upgrade_source.json").is_file(), "AI upgrades require source fixture")
 check("python godot_rebuild/tests/ai_upgrade_source_oracle.py" in workflow, "CI must check AI upgrades oracle")
+# Candidate ordering oracle runs inside this CI step: no workflow edit needed.
+from ai_priority_source_oracle import source_fixture as ai_priority_source_fixture
+check("AIPriorityChecks.new().run(_check)" in ai_tests, "AI candidate priority suite must run")
+check((ROOT / "tests/fixtures/ai_priority_source.json").is_file(), "AI priority requires source fixture")
+if (ROOT / "tests/fixtures/ai_priority_source.json").is_file():
+    check(ai_priority_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/ai_priority_source.json").read_text(encoding="utf-8")),
+        "AI candidate priority source drift")
 ai_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
 check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters must read live reserve")
 
@@ -152,6 +160,8 @@ check((ROOT / "tests/fixtures/ai_shield_source.json").is_file(), "AI shields req
 check("python godot_rebuild/tests/ai_shield_source_oracle.py" in workflow, "CI must check paid shield oracle")
 ai_shields = (ROOT / "scripts/match/ai_shields.gd").read_text(encoding="utf-8")
 check(ai_shields.count("draft.reserve()") == 2, "Both paid shield adapters must use live reserve")
+check("_stable_kills_descending" in ai_shields and "can_activate_regen_shield" in ai_shields,
+      "Regen shield candidates must use the source kills-descending stable order")
 shield_screen = (ROOT / "scenes/prototype/prototype_screen.gd").read_text(encoding="utf-8")
 check('tower.sale_value()' in shield_screen, "UI sale quote must include purchased shield")
 

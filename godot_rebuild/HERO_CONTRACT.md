@@ -34,18 +34,17 @@ atau respawning tetap eligible sesuai sumber AIPlayer, tanpa mengubah HP/alive
 atau respawn timer. UI blue masih menolak hero mati. Belum ada scheduler AI yang
 memanggilnya otomatis; lihat [AI_CONTRACT.md](AI_CONTRACT.md).
 
-## Roster kit native — 161 playable, 61 pending (bukan AIPlayer penuh)
+## Roster kit native — 222 playable, 0 pending (bukan AIPlayer penuh)
 
 Registry eksplisit `scripts/data/hero_roster.gd` berisi enam starter, Gornak,
-Morgath, Drakar, Abaddon, Alchemist, serta 150 ID yang benar-benar memakai
-jalur shared-source di Python asli. Daftar tepat, source recipe dan bukti per
-hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Sisa **61 boss** tidak
-punya kit native dan ditolak tanpa debit/substitusi. Scene tetap pasangan
+Morgath, Drakar, Abaddon, Alchemist dan 61 boss recipe khusus lainnya, serta
+150 ID yang benar-benar memakai jalur shared-source di Python asli. Daftar
+tepat, source recipe dan bukti per hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md).
+**0 pending**; ID di luar registry ditolak tanpa debit/substitusi. Scene tetap pasangan
 Kaizen gratis dan defender lama, tidak otomatis memakai seluruh registry.
 
 Sumber `BossHeroSkills._fallback_cast` hanya dipakai untuk allowlist 150 ID
-yang tidak mempunyai recipe sumber; bukan pengganti recipe khusus yang belum
-diport. Setiap ID dites QWER, attack melee/homing, cooldown/recast, upgrade
+yang tidak mempunyai recipe sumber; bukan pengganti recipe khusus. Setiap ID dites QWER, attack melee/homing, cooldown/recast, upgrade
 1–15, respawn, summon threshold serta combat terhadap Hero/Tower asli.
 Morgath mempertahankan basic beam/hit instan sesuai pengecualian sumber.
 
@@ -56,8 +55,8 @@ Anti-heal mengikuti HP setter sumber (cap sebelum memotong gain). Shadow Realm
 memblokir burn termasuk tick aktif terakhir; tower tidak diberi stun yang
 memerlukan atribut `attack_timer` yang tidak ada di sumber.
 
-Fixture source dan suite native lama tetap dijalankan. CI Godot 4.7.2
-`c029d50`: **358.305 native checks**. Progres batch, batas konteks sesi dan
+Fixture source dan suite native lama tetap dijalankan. CI Godot 4.7.2 hijau
+pada main `8119e31` (run 36329618088). Progres batch, batas konteks sesi dan
 pesan lanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
 Placeholder polygon/warna hero dan titik proyektil tetap sederhana; bukan
 art final, bukan klaim AIPlayer, item/forge atau seluruh pertandingan selesai.

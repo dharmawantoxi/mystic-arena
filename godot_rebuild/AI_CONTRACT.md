@@ -70,27 +70,28 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
-## Roster 222 — 161 kit native, 61 recipe khusus pending
+## Roster 222 — 222 kit native, 0 pending
 
 Metadata dan baseline konstruktor `data/ai/hero_combat_stats.json` tetap
 mencakup seluruh 222 ID. Baseline angka **bukan** bukti playable. Registry
-`scripts/data/hero_roster.gd` kini mengizinkan **161 kit** yang punya handler,
-source oracle dan tes native. Daftar tepat semua selesai/pending dengan
-harga, recipe dan blocker: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md).
+`scripts/data/hero_roster.gd` kini mengizinkan **222 kit** yang punya handler,
+source oracle dan tes native; **0 pending**. Daftar tepat dengan harga, recipe
+dan bukti per hero: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md).
 
 - Enam starter: Kaizen, Thorne, Grimjaw, Sylara, Vex, Zephyr.
-- Lima boss dengan recipe tersendiri: Gornak, Morgath, Drakar, Abaddon,
-  Alchemist. Basic Morgath tetap beam/hit instan; bukan projectile generik.
+- Enam puluh enam boss dengan recipe tersendiri (termasuk Gornak, Morgath,
+  Drakar, Abaddon, Alchemist, level 1–20). Basic Morgath tetap beam/hit instan;
+  bukan projectile generik.
 - 150 boss berbagi `BossHeroSkills._fallback_cast` **di sumber asli**. Oracle
   per ID mencatat dispatch nyata, QWER, cooldown, attack, level/upgrade,
   respawn serta combat Hero/Tower. Native memakai allowlist tertutup, tidak
-  menjadikannya fallback bagi 61 boss lain yang memiliki recipe berbeda.
-- **61 pending** tetap ditolak dengan `kit`, saldo/roster tidak berubah,
-  draft/reserve tetap. Tidak ada substitusi Kaizen atau shared kit.
+  menjadikannya fallback bagi boss lain yang memiliki recipe berbeda.
+- **0 pending.** ID di luar registry tetap ditolak dengan `kit`, saldo/roster
+  tidak berubah, draft/reserve tetap. Tidak ada substitusi Kaizen atau shared kit.
 
 Adapter `ai_recruitment.gd` tetap meneruskan draft ke transaksi sinkron
 `prototype_battle.gd::_buy_ai_hero`, memakai registry/world/ledger nyata.
-Oracle pembelian kini **483 transaksi** (161 × harga−1/tepat/+1), ID/posisi/
+Oracle pembelian kini **666 transaksi** (222 × harga−1/tepat/+1), ID/posisi/
 capacity/ownership dan double debit diuji. Offset first spawn Y90 tetap,
 sementara Kaizen gratis red scene Y130 tetap dan tidak dihitung pembelian.
 Scene tidak menyalakan AIPlayer atau pembelian otomatis.
@@ -101,9 +102,10 @@ school tetap netral, berbeda dari skill yang eksplisit membawa school hero.
 Mitigasi/reflect/shield, tidak memberi stun palsu pada tower, anti-heal serta
 Shadow Realm/burn akhir durasi dikunci dengan objek sumber nyata.
 
-CI Godot 4.7.2 `c029d50`: **358.305 native checks**, semua suite lama tetap.
-Target masih 222; batch berikutnya Nyzrak + Ancient Apparition, kemudian
-Ignis Drachorn dan sisa menurut level sumber. Catatan batch dan pesan
+CI Godot 4.7.2 hijau pada main `8119e31`
+([run 36329618088](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36329618088)),
+semua suite lama tetap. Target 222 tercapai (PR #292 sudah merge).
+Catatan batch dan pesan
 kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
 Tidak ada item/forge, AIPlayer penuh, rebalance atau art final.
 
@@ -160,16 +162,28 @@ Fungsi internal `_upgrade_*_for` menerima tim dan reserve; wrapper UI lama tetap
   blue tetap menolak hero mati sebagaimana kontrak UI sebelumnya.
 - Adapter membaca `draft.reserve()` setiap permintaan: tidak memakai harga draft
   yang dicache saat adapter dibuat. Counter baru nol pada instance match berikutnya.
-- Ini **per kandidat**, bukan loop pemilihan kandidat. Urutan kills descending
-  stabil, atribusi kills sumber, policy scheduler dan wiring scene belum aktif.
+- `try_tower_priority`/`try_hero_priority` memilih kandidat dengan **urutan
+  kills descending stabil** (tie memakai urutan asli: tower urutan slot/world,
+  hero urutan roster). Godot `sort_custom` tidak stabil, jadi tie dipecah oleh
+  indeks awal. Kandidat yang tidak terjangkau dilewati, pemindaian lanjut ke
+  kandidat berikutnya, dan berhenti pada sukses pertama — sama seperti sumber.
+  Tower kandidat = tower red hidup Lv<6; hero kandidat = hero red Lv<15
+  termasuk mati/respawning. Policy scheduler dan wiring scene belum aktif.
   Tidak menambahkan sorting berdasarkan angka kills palsu atau team kill total.
+- **Atribusi kills sumber:** `Hero.kills` hanya bertambah lewat
+  `Game._process_hero_kill` — pukulan terakhir dari hero musuh nyata (bukan
+  korban sendiri, bukan tower/minion/burn/castle), tanpa popup. `Tower.kills`
+  ada di sumber tetapi **tidak pernah di-increment** oleh game Python, sehingga
+  prioritas tower nyata jatuh ke urutan asli; native meniru itu (nilai tetap 0).
 - Method internal bukan command UI. Pause dicegah oleh session yang tidak
   mengeksekusi command/tick; tidak ada loop background atau timer baru.
 
 ## Shield berbayar per kandidat
 
 `ai_shields.gd` memakai transaksi world untuk Regen Shield (tower Lv4–6) dan
-Castle Shield (sesudah wave 10, tanpa gate Lv4). Keduanya 850 G + reserve
+Castle Shield (sesudah wave 10, tanpa gate Lv4). `try_regen_priority` memakai
+semua tower red hidup yang eligible (termasuk Lv6), diurutkan kills descending
+stabil dan berhenti pada pembelian pertama yang berhasil. Keduanya 850 G + reserve
 untuk eligibility saldo, debit hanya 850. Tidak ada roll RNG atau increment
 counter upgrade. Flag per instance, regen/damage, upgrade dan refund mengikuti
 metode sumber; lihat [SHIELD_CONTRACT.md](SHIELD_CONTRACT.md). Scene belum
@@ -207,12 +221,50 @@ bukan receipt. Tes tambahan menolak owner/team/ID/type/stale/path/dead/finished,
 menguji reserve berubah, non-double-debit, counter dan gate UI blue tetap sama.
 Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 
+`ai_priority_source_oracle.py` mengeksekusi `_try_upgrade_tower_new`,
+`_try_activate_regen_shield` dan `_try_upgrade_hero` dengan banyak kandidat:
+16 kasus tower (tie, kills acak, Lv1 path, reserve 0/400, gold nol dan gold
+yang hanya cukup untuk kandidat berikutnya), 3 urutan regen shield dan 3 urutan
+upgrade hero. Urutan tower dibaca dari list sumber yang disortir in-place;
+urutan shield/hero direkonstruksi dari panggilan berulang karena listnya lokal.
+`ai_priority_checks.gd` mengulang skenario itu pada world/ledger nyata dan
+menguji atribusi kill hero (killer musuh, korban, self-kill, killer bukan hero)
+serta `Tower.kills` yang tetap nol.
+CI Godot 4.7.2 branch `arena/01a0e398-mystic-arena` (PR draft #293) hijau:
+**1.174.376 native checks**, static lokal 5580 PASS.
+
+## Rencana port item AI (belum dikerjakan, hasil survei sumber)
+
+Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
+(`_entity.py` ~6474). Urutan kerja yang disarankan, satu commit per lapisan:
+
+1. **Metadata katalog** → `data/ai/item_catalog.json` dari `ITEM_CATALOG`
+   (33 item, `ITEM_FLAT_COST = 4500`, `MAX_ITEM_SLOTS = 6`, flag `melee_only`/
+   `magic_only`, kategori). Oracle wajib mengeksekusi konstanta sumber (katalog
+   memakai nama `CATEGORY_*`, `ast.literal_eval` gagal).
+2. **Suggestion** `suggest_item_for_hero` + `is_magic_hero`: pool per role
+   (tank/bruiser/fighter, marksman/assassin, mage/trickster atau magic,
+   fallback), melee `range <= 80` menyisipkan `cleave_axe` di depan dan
+   `holy_rapier` di belakang, ranged hanya `holy_rapier` di belakang; item
+   owned dilewati; filter `melee_only`/`magic_only`. Catatan: `is_magic_hero`
+   mengecualikan "anti-mage" dan memakai 18 kata kunci role.
+3. **Inventory slot** `HeroItemInventory.add/remove/count/has/used_slots`
+   (6 slot, gate melee/magic). Perhatian: `add` memanggil `_on_item_changed`
+   yang menghitung ulang `max_hp` (`get_max_hp`) dan `apply_heal_amp`; kalau
+   stat belum diport, ini **wajib** ditulis sebagai batasan eksplisit, bukan
+   diklaim parity. `clear_on_death` menghapus `holy_rapier` permanen.
+4. **Adapter AI** `ai_items.gd::try_buy`: kandidat = hero red **hidup** dengan
+   slot kosong, urut `(kills, level)` descending (Python `sort` stabil,
+   tuple key), `gold >= cost + reserve`, debit lewat ledger match, tanpa
+   counter khusus di sumber.
+5. Stat effects, pasif/aura/aktif, Forge UI dan `update_auras` adalah fase
+   terpisah yang jauh lebih besar; jangan digabung ke commit adapter.
+
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
-- [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  baseline angka 222 tersedia; 161 kit native dengan oracle/tes telah lulus,
-  61 recipe khusus masih pending (lihat manifest). Marker prosedural bukan
-  bukti kit/playability atau tampilan final.
+- [x] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
+  222 kit native dengan oracle/tes telah lulus, 0 pending (lihat manifest).
+  Marker prosedural bukan bukti tampilan final.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak
   memasukkan boss level saat ini. Draft starter pertama acak, boss pertama dari
   level terbaru, berikutnya berbobot source-level; tipe owned termasuk hero mati.
@@ -222,15 +274,16 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
   tanpa bonus gold. Hero spawn `RED_BASE_X-60, RED_BASE_Y+30+(count*40-40)`.
 - [x] Build slot acak; jenis archer/cannon/ice/mage berbobot .35/.25/.20/.20;
   hanya adapter per aksi, belum terhubung ke scene.
-- [ ] Upgrade tower kills descending stabil; Lv1 path cannon/ice/archer/mage.
+- [x] Upgrade tower kills descending stabil; Lv1 path cannon/ice/archer/mage.
 - [x] Transaksi upgrade tower/nexus/hero red per kandidat dengan live reserve;
   hero mati tetap eligible, batas level sumber, ledger dan counter nyata.
-- [ ] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
+- [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
+  **Belum dimulai** (baru survei sumber, lihat "Rencana port item AI").
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
-- [ ] Prioritas kandidat Regen Shield kills descending stabil.
+- [x] Prioritas kandidat Regen Shield kills descending stabil.
 - [ ] Kontrol hero setiap tick: jalur auto-cast bersama pemain, skill counter
   berdasarkan perubahan active timer; lane ancaman maksimum (tie top/mid/bot),
   minion terdekat secara Euclidean, destination auto; fallback tower terdekat
@@ -243,3 +296,19 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
 perangkat fisik dari tes policy ini.
+
+## Status sesi `arena/01a0e398-mystic-arena` (PR draft #293)
+
+Selesai: sinkronisasi dokumen 222/222 + merge PR #292, atribusi kills sumber,
+urutan kandidat kills descending stabil untuk upgrade tower, upgrade hero dan
+regen shield, oracle `ai_priority_source_oracle.py` + `ai_priority_checks.gd`.
+CI hijau 1.174.376 checks, static lokal 5580 PASS. Berikutnya: port item AI
+sesuai lima langkah di atas, lalu kontrol hero per tick, baru integrasi scene.
+
+> Pesan siap-salin: Lanjutkan di branch arena/01a0e398-mystic-arena (PR draft
+> #293, basis main 8119e31). Baca AI_CONTRACT.md bagian "Rencana port item AI"
+> dan kerjakan langkah 1–4 (metadata katalog, suggest_item_for_hero,
+> HeroItemInventory slot, adapter ai_items.gd) dengan oracle + tes native,
+> satu commit per lapisan. Sumber read-only: hero_items.py dan
+> _entity.py::AIPlayer._try_buy_item (~6474). Hanya ubah godot_rebuild/;
+> minion_battle.gd tetap 1000 baris; jangan merge tanpa perintah pengguna.
