@@ -1,7 +1,6 @@
 extends "res://tests/starter_finish_checks.gd"
 ## Krobellus source kit real recipes, gates, timers, attacks, respawn.
 const BOSS_FIXTURE := "res://tests/fixtures/krobellus_source.json"
-const Skills = preload("res://scripts/combat/boss_level_five_skills.gd")
 const BOSSES := {"krobellus": preload("res://data/heroes/krobellus.tres")}
 
 
@@ -36,9 +35,10 @@ func _cast(row: Dictionary, check: Callable) -> void:
 	var enemies := _enemies(world, row.positions)
 	if row.target >= 0:
 		hero.target_id = enemies[int(row.target)].id
-	check.call(Skills.cast(world, hero, row.key, []) == row.ok, row.hero + " cast " + row.key)
+	check.call(helpers._skill(world, hero.id, row.key) == row.ok, row.hero + " cast " + row.key)
 	check.call(
-		Skills.cast(world, hero, row.key, []) == row.repeat, row.hero + " duplicate cast " + row.key
+		helpers._skill(world, hero.id, row.key) == row.repeat,
+		row.hero + " duplicate cast " + row.key
 	)
 	_compare(hero, enemies, row.state, check, row.hero + " " + row.key)
 
@@ -51,7 +51,7 @@ func _trace(row: Dictionary, check: Callable) -> void:
 	hero.target_id = enemies[0].id
 	enemies[0].cooldown_ticks = 90
 	check.call(
-		Skills.cast(world, hero, row.key, []), "Krobellus timer cast " + row.hero + " " + row.key
+		helpers._skill(world, hero.id, row.key), "Krobellus timer cast " + row.hero + " " + row.key
 	)
 	var moment := 0
 	for tick in range(1, int(row.get("length", 481)) + 1):
@@ -112,7 +112,7 @@ func _respawn(row: Dictionary, check: Callable) -> void:
 	var hero := _hero(world, row.hero)
 	var enemies := _enemies(world, [[550, 340]])
 	for key in ["q", "w", "e", "r"]:
-		check.call(Skills.cast(world, hero, key, []), "Pre-death activation " + row.hero)
+		check.call(helpers._skill(world, hero.id, key), "Pre-death activation " + row.hero)
 	hero.attack_timer = 17
 	hero.hp = 0
 	hero.alive = false
@@ -126,12 +126,17 @@ func _roster(check: Callable) -> void:
 	world.economy.credit_kill(world.RED, 4000)
 	var before: int = world.economy.gold[world.RED]
 	check.call(
-		not world._buy_ai_hero("krobellus", 1500, Vector2(1120, 90)),
-		"Krobellus remains blocked before runtime verification"
+		world._buy_ai_hero("krobellus", 1500, Vector2(1120, 90)),
+		"Krobellus source kit is purchasable at exact catalog cost"
 	)
-	check.call(world.economy.gold[world.RED] == before, "Pending Krobellus purchase does not debit")
-	check.call(world.units.is_empty(), "Pending Krobellus purchase never partially spawns")
-	check.call(world.economy.is_balanced(), "Pending Krobellus keeps ledger balanced")
+	check.call(
+		world.economy.gold[world.RED] == before - 1500, "Krobellus purchase debits exact price"
+	)
+	check.call(world.units.size() == 1, "Krobellus purchase spawns exactly one hero")
+	check.call(
+		world.units[0].definition.id == "krobellus", "Krobellus purchase preserves exact identity"
+	)
+	check.call(world.economy.is_balanced(), "Krobellus roster ledger balanced")
 
 
 func _compare(hero, enemies: Array, expected: Dictionary, check: Callable, label: String) -> void:

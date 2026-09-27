@@ -2,15 +2,15 @@
 
 ## Status saat ini
 
-**Target tetap 222. Status terverifikasi pada manifest: 164 playable, 58 pending.**
-Tidak ada pengurangan target dan tidak ada klaim selesai 222. Baseline branch sesi berasal dari `50b7c07` (merge PR #285 ke `main`). Semua perubahan sesi ini hanya di `godot_rebuild/`; Python asli tetap read-only.
+**Target tetap 222. Manifest staged: 165 playable, 57 pending; batch registry final masih menunggu CI.** Tidak ada pengurangan target atau klaim 222 selesai. Baseline branch sesi berasal dari `50b7c07` (merge PR #285 ke `main`). Semua perubahan sesi hanya di `godot_rebuild/`; Python asli read-only.
 
-- Branch kerja yang diwajibkan Arena: `arena/01a0e1d3-mystic-arena`.
-- CI baseline sebelum perubahan sesi: [Godot 4.7.2, 413735 native checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552), static 4.476 PASS.
-- **Batch WIP Krobellus (1500G): belum playable dan tetap ditolak.** Oracle eksekusi sumber, fixture, handler khusus serta tes native langsung sudah ditambahkan. Handler belum dimasukkan ke `hero_roster.gd`/dispatch/manifest playable karena native Godot runtime belum dijalankan pada batch ini. Perlu jalankan CI Godot 4.7.2, perbaiki semua temuan, baru daftarkan kit dan ubah hitungan. Belum ada push/CI baru untuk WIP ini.
-- Validasi lokal sesudah perbaikan: `validate_project.py` (**4508 static checks**), `check_source_contract.py`, seluruh `*source_oracle.py` termasuk source-shared (150 ID), serta `gdparse`, `gdlint`, `gdformat --check` dengan `gdtoolkit==4.5.0` semuanya PASS. Dua temuan CI sudah diperbaiki sebelum batch dapat didaftarkan: [36304792506](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304792506) gagal compile karena tipe `before` belum eksplisit (ditetapkan `int`); [36305416457](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305416457) compile/import lulus tetapi native runner gagal 212 dari 431433 assertions. Kegagalan Krobellus menunjukkan durasi visual recipe kembali memakai default dispatcher 60/90/60/100 (bukan timer lokal recipe), serta transaksi harus dites melalui `prototype_battle` bukan `minion_battle`. Keduanya sudah disesuaikan; seluruh validasi lokal diulang pass dan CI perlu dijalankan ulang. **Krobellus tetap pending/tidak di-roster.** Engine lokal tidak tersedia.
+- Branch Arena wajib: `arena/01a0e1d3-mystic-arena`; PR draft [#288](https://github.com/dharmawantoxi/mystic-arena/pull/288).
+- CI baseline sebelum perubahan sesi: [Godot 4.7.2, 413735 native checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552), static 4476 PASS.
+- **Krobellus (1500G)** source oracle, handler, native cast/trace/attack/respawn/roster test sudah ditambahkan. Direct handler/native kit test hijau pada [CI run 36305961876: 431437 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305961876). Setelah itu dispatch, registry, manifest dan source recruit transaction fixture diperbarui; **integrasi final belum terverifikasi CI**, sehingga jangan lanjut batch lain/merge sebelum CI hijau. Jika gagal, pertahankan penolakan Krobellus dan perbaiki.
+- Dua kegagalan sebelumnya sudah ditangani: [36304792506](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36304792506) compile type inference (`before` kini `int`); [36305416457](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305416457) native runner 212/431433 karena visual timer harus default source dispatcher 60/90/60/100 dan transaksi dites melalui `prototype_battle`. Run langsung sesudah perbaikan lulus, kemudian integrasi roster dibuat.
+- Validasi lokal sebelum integrasi registry lulus (4508 static checks). Sesudah registry/recruitment fixture diperbarui seluruh lokal validasi dijalankan ulang dan lulus: `validate_project.py` **4513 static checks**, source-contract, semua source oracle termasuk source-shared (150 ID), dan gdparse/gdlint/gdformat 4.5.0. Final native CI integrated masih menunggu.
 
-Daftar mesin dan status resmi tetap `data/ai/hero_migration_status.json`; daftar manusia dan recipe tepat ada di [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Karena Krobellus belum terdaftar, status tepat masih **164/222 dan 58 pending**.
+Daftar mesin resmi `data/ai/hero_migration_status.json`; daftar lengkap ID/harga/recipe ada di [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest staged kini 165/222; final CI untuk dispatch, pembelian dan roster Krobellus masih wajib.
 
 ## Batch selesai sebelum sesi ini
 
@@ -22,7 +22,7 @@ Daftar mesin dan status resmi tetap `data/ai/hero_migration_status.json`; daftar
 | 3 | 150 ID shared-source eksplisit | 160 / 62 | [340.054 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36297544475) |
 | 4 | Alchemist | 161 / 61 | [358.305 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
 | 5–6 | Ancient Apparition, Nyzrak, Ignis Drachorn | **164 / 58** | [413735 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
-| WIP sesi ini | Krobellus — source oracle + draft handler/test, belum masuk roster | **164 / 58** | Belum dijalankan |
+| 7 staged | Krobellus (1500G) — kit direct test PASS; roster/source recruit integration staged | **165 / 57** | Direct test [431437 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305961876); final integration CI pending |
 
 ## Perilaku/paritas yang sudah dikunci
 
@@ -30,13 +30,18 @@ Daftar mesin dan status resmi tetap `data/ai/hero_migration_status.json`; daftar
   school/source semantics, upgrade, respawn, harga sumber dan lifecycle diuji
   pada tiap kit yang playable.
 - Krobellus draft berasal dari recipe sumber yang dieksekusi, bukan metadata:
-  Exorcism radius 150 / skill damage ×1.5 (visual 50); Silence radius 120 /
-  skill damage ×1 / stun 75 (visual 60); Siphon selected target / ×1.3 / heal
-  50% skill damage (visual 50); Crypt radius 200 / ×2.5 / heal 15% max HP
-  (visual 90). Source oracle juga merekam cooldown Q220/W240/E420/R900,
+  Exorcism radius 150 / skill damage ×1.5; Silence radius 120 / skill damage
+  ×1 / stun 75; Siphon selected target / ×1.3 / heal 50% skill damage; Crypt
+  radius 200 / ×2.5 / heal 15% max HP. Source methods set brief visual timers,
+  tetapi wrapper menetapkan source dispatcher defaults Q/W/E/R 60/90/60/100.
+  Oracle juga merekam cooldown Q220/W240/E420/R900,
   basic projectile, level 1–15, gate, timer trace dan respawn.
-- Draft Krobellus belum di-dispatch atau bisa dibeli: pengujian transaksi
-  memastikan ID pending tidak debit dan tidak spawn/substitusi parsial.
+- Krobellus kini memiliki dispatch/roster eksplisit dan source recruit oracle
+  menambahkan transaksi aktual. Direct native test sudah lulus; final CI harus
+  memastikan pembelian 1500G tepat, debit/identity, roster dan seluruh suite lama.
+- Pending lain tetap tidak di-dispatch: transaksi menolak tanpa debit, partial
+  spawn atau substitusi; `ai_recruit` dan `source_shared` memakai Kunkka (900G)
+  sebagai ID pending murah.
 - Harga upgrade boss tetap 1,6×; starter Lv1→2 = 480G. Kaizen gratis dan
   defender scene dipertahankan.
 
@@ -49,19 +54,16 @@ bukan seluruh fitur game Python selesai dimigrasikan.
 
 ## Langkah berikut (wajib, jangan melompati gate)
 
-1. Periksa diff WIP dan jalankan ulang semua validasi lokal yang tercantum di
-   bawah. Push WIP ke branch Arena ini dan buka/pertahankan PR draft, lalu
-   tunggu **CI Godot 4.7.2 import + `tests/run_all.gd` hijau**.
-2. Jika CI gagal, jangan daftarkan Krobellus; perbaiki, ulangi seluruh validasi,
-   push commit perbaikan dan jalankan CI ulang. Jika lulus, buat commit berikutnya
-   yang mendaftarkan kit (`hero_roster.gd`, dispatch dan manifest), update status
-   ke 165 playable / 57 pending dan dokumen, kemudian jalankan CI ulang. Kit
-   hanya dinyatakan playable bila hasil CI untuk registrasi final juga hijau.
-3. Setelah batch final terverifikasi, lanjut berdasarkan recipe unik dalam
-   manifest (bukan handler shared generik): Krobellus lalu Vhalzun (level sumber
-   5), Gravewake/Kunkka/Syrentha/Thalgryn (6), Akashari/Malzareth/Nyxarath/
-   Vorenmarr (7), dan seterusnya. Sisa tepat 58 ID tetap tercantum dalam
-   `HERO_ROSTER_STATUS.md`; daftar biaya/recipe sumber tidak diubah.
+1. Jalankan ulang semua validasi lokal setelah integrasi registry/recruitment
+   fixture, commit+push ke branch Arena ini dan pertahankan PR draft #288. Tunggu
+   **CI Godot 4.7.2 import + `tests/run_all.gd` hijau** untuk versi integrasi.
+2. Jika CI gagal, Krobellus belum selesai: perbaiki atau pulihkan roster/dispatch/
+   manifest ke pending tanpa debit/substitusi; ulangi semua suite, push dan CI.
+   Hanya final green yang mengunci batch pada **165 playable / 57 pending**.
+3. Sesudah final green, lanjut recipe unik manifest: Vhalzun (level 5), lalu
+   Gravewake/Kunkka/Syrentha/Thalgryn (6), Akashari/Malzareth/Nyxarath/Vorenmarr
+   (7), dan seterusnya. Sisa tepat 57 ID tercantum dalam `HERO_ROSTER_STATUS.md`;
+   harga dan recipe sumber tetap.
 4. Untuk tiap batch: jalankan oracle sumber → angka `.tres` dari katalog sumber
    seimbang `core.get_all_hero_types` → handler state → tes native cast/trace/
    attack/respawn/roster/transaksi → semua suite lama → source-contract/static/
@@ -90,24 +92,22 @@ sumber Python asli dan menulis fixture di `godot_rebuild/tests/fixtures/`.
 
 > Lanjutkan migrasi native Godot target 222 dari branch Arena
 > `arena/01a0e1d3-mystic-arena`, baseline `50b7c07` (merge PR #285 ke main).
-> Status resmi 164 playable / 58 pending; CI terakhir yang terverifikasi sebelum
-> perubahan ini Godot 4.7.2 413735 checks, run
-> https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552,
-> static lokal WIP 4508 PASS. Batch WIP Krobellus 1500G ada di godot_rebuild
-> (oracle+fixture, handler khusus, tes direct); BELUM playable, BELUM di roster
-> atau dispatch, dan harus tetap ditolak tanpa debit/spawn parsial. Validasi
-> lokal sudah pass: validate_project 4508, check_source_contract, seluruh source
-> oracle termasuk 150 shared, gdparse/gdlint/gdformat 4.5.0. CI run 36304792506 gagal compile karena tipe `before` belum eksplisit; run
-> 36305416457 compile/import lulus tetapi runner gagal 212/431433 assertions.
-> Disesuaikan timer visual ke default source dispatcher 60/90/60/100 dan tes
-> transaksi ke prototype_battle; seluruh validasi lokal diulang pass. Wajib push
-> commit fix dan tunggu CI Godot 4.7.2. Hanya setelah CI WIP hijau,
-> daftarkan Krobellus dan ubah menjadi 165/57, lalu CI final harus hijau sebelum
-> klaim batch selesai. Sesudah itu lanjut source recipes berikutnya (Vhalzun,
-> Gravewake, Kunkka, Syrentha, Thalgryn, dst sesuai manifest), otomatis tiap
-> batch lulus. Hanya ubah godot_rebuild; Python read-only. Tanpa item/forge,
+> PR draft #288 pada branch yang sama. Manifest staged 165 playable / 57 pending;
+> Krobellus 1500G sudah di roster/dispatch setelah direct handler + native test
+> hijau 431437 checks di CI run
+> https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305961876.
+> Integrasi roster/purchase dan source-recruit fixture baru saja ditambahkan,
+> sehingga batch BELUM final sampai CI terbaru Godot 4.7.2 full `run_all` hijau.
+> Sebelumnya run 36304792506 gagal compile (`before` type); 36305416457 lulus
+> import tetapi gagal 212/431433 assertions. Sudah diperbaiki visual source
+> default 60/90/60/100 dan tes transaction memakai prototype_battle.
+> Validasi lokal sesudah integrasi: validate_project 4513, source-contract,
+> semua source oracle termasuk 150 shared, gdparse/gdlint/gdformat 4.5.0 PASS.
+> `ai_recruit_source_oracle` kini mencatat 486 transaksi kit terdaftar. Tunggu CI;
+> jika gagal, kembalikan Krobellus ke pending/ditolak tanpa debit sampai fix.
+> Jika final pass lanjut Vhalzun, Gravewake, Kunkka, Syrentha, Thalgryn dst sesuai
+> manifest. Hanya ubah godot_rebuild; Python read-only. Tanpa item/forge,
 > AIPlayer penuh, fitur lain, refactor besar, rebalance atau final art. Pertahankan
-> Kaizen gratis dan defender. Jangan kurangi 222, jangan pakai fallback generik
-> untuk pending, jangan klaim selesai sebelum 222. Jangan merge tanpa perintah.
-> Update jumlah, pending tepat, blocker, hasil tes/CI tiap batch. Branch coding
-> tetap yang di atas; commit+push progres batch demi batch.
+> Kaizen gratis dan defender. Jangan kurangi 222, jangan fallback generik untuk
+> pending, jangan klaim selesai sebelum 222. Jangan merge tanpa perintah. Commit+
+> push progres per batch ke branch ini.

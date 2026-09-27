@@ -1,22 +1,26 @@
-# Daftar tepat migrasi hero — 164 playable, 58 pending
+# Daftar tepat migrasi hero — 165 playable, 57 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI terakhir sebelum WIP: Godot 4.7.2 **413735 checks** pada run 36302839552
-(164 playable, 58 pending), static baseline 4476 PASS. Validasi statis WIP lokal
-4508 PASS. CI #36304792506 compile gagal (`before` type inference); #36305416457 compile/import lulus tetapi runner gagal 212/431433 checks pada Krobellus visual timer/transaction-test world. Kedua masalah diperbaiki (source default visual 60/90/60/100; prototype transaction test), menunggu CI rerun.
+CI terakhir hijau sebelum integrasi roster: Godot 4.7.2 **431437 checks** pada
+[run 36305961876](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36305961876)
+(Krobellus handler/source/native test langsung lulus saat masih pending). Validasi
+statis lokal sesudah integrasi 4513 PASS. Integrasi dispatch/roster/transaksi Krobellus baru
+terdaftar dan **CI final integrasi sedang menunggu**; sampai hijau, status batch
+belum dianggap selesai.
 
-- Enam starter selesai (empat sudah ada sebelum sesi); lima boss recipe khusus
-  selesai; 150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai
-  sumber**, dibuktikan per ID. Ini bukan fallback native untuk boss pending.
-- Semua 58 pending mempunyai recipe khusus dan tetap ditolak tanpa debit maupun
-  substitusi. Krobellus memiliki draft handler/oracle/test lokal tetapi belum
-  di-dispatch atau di-roster; blocker belum diangkat sebelum native CI hijau.
+- Enam starter selesai (empat sudah ada sebelum sesi); enam boss recipe khusus
+  tercatat, termasuk Krobellus; 150 boss mengikuti jalur `_fallback_cast` yang
+  **benar-benar dipakai sumber**, dibuktikan per ID. Ini bukan fallback native
+  untuk pending.
+- Semua 57 pending mempunyai recipe khusus dan tetap ditolak tanpa debit maupun
+  substitusi. User-facing count manifest 165/57; CI final integrasi roster belum
+  selesai.
 - “Playable” berarti kit/domain native tervalidasi, bukan AIPlayer otomatis,
   unlock UI lengkap, item/forge atau art final. Scene tetap dua Kaizen gratis
   dan defender lama. Python asli tidak diubah.
 
-## Selesai — 164 ID
+## Selesai — 165 ID
 
 | ID | Level sumber (0=starter) | Summon G | Handler native | Oracle + tes native |
 |---|---:|---:|---|---|
@@ -34,6 +38,7 @@ CI terakhir sebelum WIP: Godot 4.7.2 **413735 checks** pada run 36302839552
 | `ancient_apparition` | 3 | 800 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
 | `nyzrak` | 3 | 850 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
 | `ignis_drachorn` | 4 | 850 | `boss_level_four_skills.gd` | `boss_level_four_source_oracle.py` / `boss_level_four_checks.gd` |
+| `krobellus` | 5 | 1500 | `boss_level_five_skills.gd` | `krobellus_source_oracle.py` / `krobellus_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -185,11 +190,10 @@ CI terakhir sebelum WIP: Godot 4.7.2 **413735 checks** pada run 36302839552
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 58 ID dan recipe yang menjadi blocker
+## Belum selesai — 57 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
-| `krobellus` | 5 | 1500 | `_cast_q_krobellus_exorcism` / `_cast_w_krobellus_silence` / `_cast_e_krobellus_siphon` / `_cast_r_krobellus_crypt` |
 | `vhalzun` | 5 | 1200 | `_cast_q_vhalzun_death_pulse` / `_cast_w_vhalzun_heartstopper` / `_cast_e_vhalzun_reapers_scythe` / `_cast_r_vhalzun_ghost_shroud` |
 | `gravewake` | 6 | 1000 | `_cast_q_gravewake_anchor` / `_cast_w_gravewake_tide` / `_cast_e_gravewake_shell` / `_cast_r_gravewake_ravage` |
 | `kunkka` | 6 | 900 | `_cast_q_kunkka_tide` / `_cast_w_kunkka_xmark` / `_cast_e_kunkka_ghost` / `_cast_r_kunkka_torrent` |
