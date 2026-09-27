@@ -12,6 +12,9 @@ func _draw() -> void:
 		return
 	var world := session.world as Prototype
 	var match_session := session as PrototypeSession
+	for arrow in world.hero_projectiles:
+		var ink := Color("73cbbb") if arrow.team == 0 else Color("d78579")
+		draw_circle(arrow.position, 3, ink)
 	for slot in world.slots:
 		if slot.structure_id != -1:
 			continue

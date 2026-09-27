@@ -1,6 +1,6 @@
 """Read-only source oracle for actual Hero purchases, not receipts.
 
-Executes the real AIPlayer._try_buy_hero and Hero.__init__ for Kaizen/Thorne/Grimjaw
+Executes the real AIPlayer._try_buy_hero and Hero.__init__ for Kaizen/Thorne/Grimjaw/Sylara
 with empty-inventory/audio stubs. It does NOT prove the other 220 kits.
 """
 import ast
@@ -38,7 +38,7 @@ def source_fixture():
             skill_cooldown=hero.skill_cooldown_max, skill_range=hero.skill_range,
             dmg_school=hero.dmg_school, is_melee=hero.is_melee_hero)
     result = []
-    for hero_type, price in (("kaizen", 400), ("thorne", 500), ("grimjaw", 450)):
+    for hero_type, price in (("kaizen", 400), ("thorne", 500), ("grimjaw", 450), ("sylara", 380)):
         for initial in (price - 1, price, price + 1):
             player = ai_type()
             player.gold = initial
@@ -67,4 +67,4 @@ if __name__ == "__main__":
         assert purchases == json.loads(FIXTURE.read_text(encoding="utf-8")), "AI real recruit drift"
         assert stats == json.loads(STATS.read_text(encoding="utf-8")), "Hero combat stat drift"
     print(f"PASS: {len(stats)} source Hero numeric baselines, {len(purchases)} "
-          "Kaizen/Thorne/Grimjaw purchases (other kits still pending)")
+          "Kaizen/Thorne/Grimjaw/Sylara purchases (other kits still pending)")

@@ -20,7 +20,10 @@ const MINIONS := {
 const KAIZEN = preload("res://data/heroes/kaizen.tres")
 const THORNE = preload("res://data/heroes/thorne.tres")
 const GRIMJAW = preload("res://data/heroes/grimjaw.tres")
-const PLAYABLE_AI_HEROES := {"kaizen": KAIZEN, "thorne": THORNE, "grimjaw": GRIMJAW}
+const SYLARA = preload("res://data/heroes/sylara.tres")
+const PLAYABLE_AI_HEROES := {
+	"kaizen": KAIZEN, "thorne": THORNE, "grimjaw": GRIMJAW, "sylara": SYLARA
+}
 const HERO_SPAWN := Vector2(220, 540)
 # Source AIPlayer: RED_BASE_X - 60, RED_BASE_Y + 30. Not a shop purchase.
 const RED_HERO_SPAWN := Vector2(1120, 130)

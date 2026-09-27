@@ -70,7 +70,7 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
-## Roster 222 hero: baseline angka + Kaizen/Thorne/Grimjaw playable, BELUM kit penuh
+## Roster 222 hero: baseline angka + Kaizen/Thorne/Grimjaw/Sylara playable, BELUM kit penuh
 
 Permintaan lanjutan adalah enam starter + 216 boss playable, dikerjakan per
 fase, **belum selesai**. `data/ai/hero_combat_stats.json` sekarang mengunci
@@ -80,16 +80,16 @@ base, sekolah damage dan harga summon. Ini adalah **baseline angka**, bukan
 skill handler playable atau `.tres` kit. `ai_recruit_source_oracle.py`
 mengeksekusi `Hero.__init__` asli untuk semua 222 lewat AST (inventory kosong,
 audio stub) dan transaksi `_try_buy_hero` dengan Hero Kaizen asli pada gold
-399/400/401, Thorne 499/500/501 dan Grimjaw 449/450/451. CI menjalankannya via `validate_project.py` karena perubahan
+399/400/401, Thorne 499/500/501 dan Grimjaw 449/450/451 dan Sylara 379/380/381. CI menjalankannya via `validate_project.py` karena perubahan
 harus tetap di dalam `godot_rebuild/`.
 
 `ai_recruitment.gd` meneruskan draft ke callback sinkron transaksi
-`prototype_battle.gd::_buy_ai_hero` di world/ledger nyata. Saat ini **Kaizen
-Thorne dan Grimjaw** punya kit native. 219 hero lain (tiga starter dan 216 boss),
+`prototype_battle.gd::_buy_ai_hero` di world/ledger nyata. Saat ini **Kaizen,
+Thorne, Grimjaw dan Sylara** punya kit native. 218 hero lain (dua starter dan 216 boss),
 walaupun punya metadata dan baseline numerik, ditolak eksplisit dengan `kit`
 dan target serta reserve tetap tersimpan; tidak di-spawn sebagai Kaizen.
 Hero yang dimiliki red (termasuk mati) tidak dapat dibeli ulang. Kaizen 400 G,
-Thorne 500 G, Grimjaw 450 G, offset first spawn Y90, lalu Y130/Y170, ID
+Thorne 500 G, Grimjaw 450 G, Sylara 380 G, offset first spawn Y90, lalu Y130/Y170/Y210, ID
 registry/capacity/posisi/saldo valid, debit sekali setelah spawn. Wrapper scene
 tetap memakai Kaizen gratis red; adapter **tidak** mengubah scene atau
 membuat AIPlayer lengkap. Kontrak lima hero ditahan defensif di
@@ -112,7 +112,16 @@ berasal dari Hero/GrimjawSkills Python nyata; semua 222 ID memperoleh bentuk
 polygon dan warna prosedural deterministik sebagai *placeholder visual* saat
 kit mereka nanti aktif. Tidak ada aset baru atau klaim desain final.
 
-Lanjutan wajib: port tiga starter lainnya dan 216 boss dengan handler skill,
+`sylara_skills.gd` mem-port Q Focus Fire (pierce berurutan/attack cooldown
+sementara), W Windrun (speed 2×, heal dan evasion fisik 75%), E Shackle
+(200px, stun/pulsa 15 tick), R Powershot (charge 60 tick, lima ray cone,
+satu hit per target). Basic attack ranged memakai homing arrow milik hero
+(sumber 9,5px/tick dan cap enam per hero), bukan damage instan; bentuk
+pelurunya tetap prosedural sederhana. Fixture mengeksekusi Hero.update
+projectile loop asli selain SylaraSkills, dan membandingkan evasion
+boundary, impact, Q/E/R dan timer native. Vex/Zephyr tetap ditolak.
+
+Lanjutan wajib: port dua starter lainnya dan 216 boss dengan handler skill,
 serangan ranged, lifecycle, upgrade dan source oracle masing-masing sebelum
 memperluas registry kit native; lalu tes roster multi-hero/capacity dan
 integrasi scene tersendiri. Jangan mengklaim 222 kit dari file angka.
@@ -220,7 +229,7 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  baseline angka 222 sudah ada, kit playable Kaizen, Thorne dan Grimjaw. Tiga
+  baseline angka 222 sudah ada, kit playable Kaizen, Thorne, Grimjaw dan Sylara. Dua
   starter lain + 216 boss dan oracle kit mereka masih pending; marker prosedural
   bukan bukti kit playable atau tampilan hero final.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak

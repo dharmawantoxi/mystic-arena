@@ -50,6 +50,13 @@ var heal_ward_position := Vector2.ZERO
 var omnislash_timer := 0
 var omnislash_target_id := -1
 var grimjaw_crit_timer := 0
+# Sylara state: only this hero uses projectile, Windrun and ranged timers.
+var focus_fire_timer := 0
+var windrun_timer := 0
+var windrun_original_speed := 0.0
+var shackle_timer := 0
+var shackle_target_id := -1
+var powershot_timer := 0
 var q_stack := 0
 var q_reset_timer := 0
 var is_dashing := false

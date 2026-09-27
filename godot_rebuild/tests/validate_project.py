@@ -124,7 +124,15 @@ if (ROOT / "tests/fixtures/grimjaw_source.json").is_file():
         (ROOT / "tests/fixtures/grimjaw_source.json").read_text(encoding="utf-8")),
         "Grimjaw source skill/timer/crit drift")
 
-# Recruitment is still staged: only Kaizen, Thorne and Grimjaw have native kits.
+check("SylaraChecks.new().run(_check)" in ai_tests, "Sylara source kit suite must run")
+check((ROOT / "tests/fixtures/sylara_source.json").is_file(), "Sylara kit source fixture missing")
+if (ROOT / "tests/fixtures/sylara_source.json").is_file():
+    from sylara_source_oracle import source_fixture as sylara_source_fixture
+    check(sylara_source_fixture() == json.loads(
+        (ROOT / "tests/fixtures/sylara_source.json").read_text(encoding="utf-8")),
+        "Sylara source skill/evasion/projectile drift")
+
+# Recruitment is still staged: only Kaizen, Thorne, Grimjaw and Sylara have native kits.
 # Execute the real Hero source oracle in this CI step (no workflow change).
 from ai_recruit_source_oracle import source_fixture as ai_recruit_source_fixture
 check("AIRecruitChecks.new().run(_check)" in ai_tests, "Real recruit suite must run")
