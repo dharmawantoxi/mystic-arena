@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["kaelthorn", "solvanth", "xyrael"]
+const IDS := ["kaelthorn", "solvanth", "xyrael", "nyxareth"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -30,7 +30,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_solvanth(world, hero, target, key, structures)
 		"xyrael":
 			_xyrael(world, hero, target, key, structures)
-		#DISPATCH
+		"nyxareth":
+			_nyxareth(world, hero, target, key, structures)
 		_:
 			return false
 	Common.trigger(hero, key, VISUAL[key])
@@ -94,7 +95,25 @@ static func _xyrael(world, hero: HeroState, target, key: String, structures: Arr
 			_radial(world, hero, structures, 250.0, 1.95, 75)
 
 
-#HEROES
+static func _nyxareth(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Target 1.3x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.3)
+		"w":
+			# AOE 205 1.2x skill.
+			_radial(world, hero, structures, 205.0, 1.2)
+		"e":
+			# AOE 220 1.05x skill, attack delay max(timer, 55).
+			_radial(world, hero, structures, 220.0, 1.05, 55)
+		"r":
+			# AOE 300 2.2x skill, attack delay max(timer, 80), heal 12%.
+			_radial(world, hero, structures, 300.0, 2.2, 80)
+			hero.heal_hp(int(hero.max_hp * 0.12))
+
+
 static func _execute_hit(world, hero: HeroState, target, mult: float, bonus: float) -> void:
 	# Source: dmg = int(skill * mult); if hp / max(1, max_hp) < 0.3 (pre-hit):
 	# dmg = int(dmg * bonus). Neutral, unattributed take_damage.

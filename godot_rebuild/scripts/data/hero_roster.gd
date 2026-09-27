@@ -110,6 +110,7 @@ const DEFINITIONS := {
 	"nyxallaria": preload("res://data/heroes/nyxallaria.tres"),
 	"nyxara": preload("res://data/heroes/nyxara.tres"),
 	"nyxarath": preload("res://data/heroes/nyxarath.tres"),
+	"nyxareth": preload("res://data/heroes/nyxareth.tres"),
 	"nyxareva": preload("res://data/heroes/nyxareva.tres"),
 	"nyxariel": preload("res://data/heroes/nyxariel.tres"),
 	"nyxaris": preload("res://data/heroes/nyxaris.tres"),
