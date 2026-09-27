@@ -8,6 +8,9 @@ on:
       - '_core.py'
       - 'levels/level_data.py'
       - '_entity.py'
+      - 'bosses/boss_data.py'
+      - 'hero_balance.py'
+      - 'hero_archetypes.py'
       - 'towers/_bundle.py'
       - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
@@ -17,6 +20,9 @@ on:
       - '_core.py'
       - 'levels/level_data.py'
       - '_entity.py'
+      - 'bosses/boss_data.py'
+      - 'hero_balance.py'
+      - 'hero_archetypes.py'
       - 'towers/_bundle.py'
       - 'map_components/_bundle.py'
       - '.github/workflows/godot-rebuild.yml'
@@ -54,6 +60,7 @@ jobs:
           python godot_rebuild/tests/mage_source_oracle.py
           python godot_rebuild/tests/kaizen_source_oracle.py
           python godot_rebuild/tests/ai_source_oracle.py
+          python godot_rebuild/tests/ai_draft_source_oracle.py
           gdparse $(find godot_rebuild -name '*.gd')
           gdlint $(find godot_rebuild -name '*.gd')
           gdformat --check $(find godot_rebuild -name '*.gd')

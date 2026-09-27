@@ -1,0 +1,1358 @@
+{
+  "starters": [
+    "thorne",
+    "grimjaw",
+    "vex",
+    "sylara",
+    "kaizen",
+    "zephyr"
+  ],
+  "catalog": {
+    "kaizen": {
+      "cost": 400,
+      "is_boss_hero": false
+    },
+    "grimjaw": {
+      "cost": 450,
+      "is_boss_hero": false
+    },
+    "sylara": {
+      "cost": 380,
+      "is_boss_hero": false
+    },
+    "vex": {
+      "cost": 420,
+      "is_boss_hero": false
+    },
+    "thorne": {
+      "cost": 500,
+      "is_boss_hero": false
+    },
+    "zephyr": {
+      "cost": 420,
+      "is_boss_hero": false
+    },
+    "gornak": {
+      "cost": 500,
+      "is_boss_hero": true
+    },
+    "morgath": {
+      "cost": 550,
+      "is_boss_hero": true
+    },
+    "drakar": {
+      "cost": 600,
+      "is_boss_hero": true
+    },
+    "razak": {
+      "cost": 650,
+      "is_boss_hero": true
+    },
+    "khalros": {
+      "cost": 700,
+      "is_boss_hero": true
+    },
+    "gorath": {
+      "cost": 750,
+      "is_boss_hero": true
+    },
+    "varkul": {
+      "cost": 750,
+      "is_boss_hero": true
+    },
+    "xerathis": {
+      "cost": 800,
+      "is_boss_hero": true
+    },
+    "nyzrak": {
+      "cost": 850,
+      "is_boss_hero": true
+    },
+    "zharok": {
+      "cost": 650,
+      "is_boss_hero": true
+    },
+    "pyrenth": {
+      "cost": 750,
+      "is_boss_hero": true
+    },
+    "vokrahn": {
+      "cost": 850,
+      "is_boss_hero": true
+    },
+    "nyxara": {
+      "cost": 950,
+      "is_boss_hero": true
+    },
+    "gravefang": {
+      "cost": 1100,
+      "is_boss_hero": true
+    },
+    "vhalzun": {
+      "cost": 1200,
+      "is_boss_hero": true
+    },
+    "gravewake": {
+      "cost": 1000,
+      "is_boss_hero": true
+    },
+    "syrentha": {
+      "cost": 1100,
+      "is_boss_hero": true
+    },
+    "thalgryn": {
+      "cost": 1200,
+      "is_boss_hero": true
+    },
+    "malzareth": {
+      "cost": 1100,
+      "is_boss_hero": true
+    },
+    "akashari": {
+      "cost": 1200,
+      "is_boss_hero": true
+    },
+    "vorenmarr": {
+      "cost": 1300,
+      "is_boss_hero": true
+    },
+    "vaerith": {
+      "cost": 1200,
+      "is_boss_hero": true
+    },
+    "xirthalis": {
+      "cost": 1200,
+      "is_boss_hero": true
+    },
+    "vhyssarion": {
+      "cost": 1200,
+      "is_boss_hero": true
+    },
+    "kenshiro": {
+      "cost": 1300,
+      "is_boss_hero": true
+    },
+    "khazan": {
+      "cost": 1350,
+      "is_boss_hero": true
+    },
+    "wiro": {
+      "cost": 1300,
+      "is_boss_hero": true
+    },
+    "krognarr": {
+      "cost": 1400,
+      "is_boss_hero": true
+    },
+    "raz": {
+      "cost": 1400,
+      "is_boss_hero": true
+    },
+    "vraskhan": {
+      "cost": 1400,
+      "is_boss_hero": true
+    },
+    "aeralith": {
+      "cost": 1450,
+      "is_boss_hero": true
+    },
+    "aurex": {
+      "cost": 1500,
+      "is_boss_hero": true
+    },
+    "nyxareva": {
+      "cost": 1500,
+      "is_boss_hero": true
+    },
+    "aurelix": {
+      "cost": 1550,
+      "is_boss_hero": true
+    },
+    "aurelyssa": {
+      "cost": 1550,
+      "is_boss_hero": true
+    },
+    "vargrath": {
+      "cost": 1600,
+      "is_boss_hero": true
+    },
+    "kaeldris": {
+      "cost": 1650,
+      "is_boss_hero": true
+    },
+    "pyraklos": {
+      "cost": 1700,
+      "is_boss_hero": true
+    },
+    "velmyrth": {
+      "cost": 1700,
+      "is_boss_hero": true
+    },
+    "azureth": {
+      "cost": 1700,
+      "is_boss_hero": true
+    },
+    "luminar": {
+      "cost": 1750,
+      "is_boss_hero": true
+    },
+    "solara": {
+      "cost": 1800,
+      "is_boss_hero": true
+    },
+    "auroth": {
+      "cost": 1850,
+      "is_boss_hero": true
+    },
+    "morvein": {
+      "cost": 1900,
+      "is_boss_hero": true
+    },
+    "thorvak": {
+      "cost": 1950,
+      "is_boss_hero": true
+    },
+    "ignirus": {
+      "cost": 2000,
+      "is_boss_hero": true
+    },
+    "leoric": {
+      "cost": 2050,
+      "is_boss_hero": true
+    },
+    "shirotaka": {
+      "cost": 2100,
+      "is_boss_hero": true
+    },
+    "kaelthorn": {
+      "cost": 2150,
+      "is_boss_hero": true
+    },
+    "solvanth": {
+      "cost": 2200,
+      "is_boss_hero": true
+    },
+    "xyrael": {
+      "cost": 2250,
+      "is_boss_hero": true
+    },
+    "cryssalia": {
+      "cost": 2300,
+      "is_boss_hero": true
+    },
+    "kaelthar": {
+      "cost": 2350,
+      "is_boss_hero": true
+    },
+    "morkhaera": {
+      "cost": 2400,
+      "is_boss_hero": true
+    },
+    "akahime": {
+      "cost": 2450,
+      "is_boss_hero": true
+    },
+    "nyxthrael": {
+      "cost": 2500,
+      "is_boss_hero": true
+    },
+    "sylvantheros": {
+      "cost": 2550,
+      "is_boss_hero": true
+    },
+    "astraelion": {
+      "cost": 2600,
+      "is_boss_hero": true
+    },
+    "morvaenthir": {
+      "cost": 2650,
+      "is_boss_hero": true
+    },
+    "thornvaegrim": {
+      "cost": 2700,
+      "is_boss_hero": true
+    },
+    "kurogari": {
+      "cost": 2800,
+      "is_boss_hero": true
+    },
+    "morvekhar": {
+      "cost": 3000,
+      "is_boss_hero": true
+    },
+    "vorgath": {
+      "cost": 2900,
+      "is_boss_hero": true
+    },
+    "grimstalker": {
+      "cost": 2950,
+      "is_boss_hero": true
+    },
+    "kryvoxar": {
+      "cost": 3000,
+      "is_boss_hero": true
+    },
+    "vargroth": {
+      "cost": 3100,
+      "is_boss_hero": true
+    },
+    "drav": {
+      "cost": 3100,
+      "is_boss_hero": true
+    },
+    "lyrienne": {
+      "cost": 3200,
+      "is_boss_hero": true
+    },
+    "valthar": {
+      "cost": 3300,
+      "is_boss_hero": true
+    },
+    "khalzaredh": {
+      "cost": 3250,
+      "is_boss_hero": true
+    },
+    "nyxaroth": {
+      "cost": 3350,
+      "is_boss_hero": true
+    },
+    "veshtrax": {
+      "cost": 3400,
+      "is_boss_hero": true
+    },
+    "grimjack": {
+      "cost": 3450,
+      "is_boss_hero": true
+    },
+    "morvaeth": {
+      "cost": 3500,
+      "is_boss_hero": true
+    },
+    "vulkareth": {
+      "cost": 3550,
+      "is_boss_hero": true
+    },
+    "aelyrion": {
+      "cost": 3600,
+      "is_boss_hero": true
+    },
+    "kaervosth": {
+      "cost": 3650,
+      "is_boss_hero": true
+    },
+    "morvyssk": {
+      "cost": 3700,
+      "is_boss_hero": true
+    },
+    "kyumirra": {
+      "cost": 3750,
+      "is_boss_hero": true
+    },
+    "morvakhul": {
+      "cost": 3800,
+      "is_boss_hero": true
+    },
+    "nyxariel": {
+      "cost": 3850,
+      "is_boss_hero": true
+    },
+    "morthyrax": {
+      "cost": 3950,
+      "is_boss_hero": true
+    },
+    "sanguiveth": {
+      "cost": 4000,
+      "is_boss_hero": true
+    },
+    "xerakhotep": {
+      "cost": 4050,
+      "is_boss_hero": true
+    },
+    "ignakhor": {
+      "cost": 4100,
+      "is_boss_hero": true
+    },
+    "kazureth": {
+      "cost": 4200,
+      "is_boss_hero": true
+    },
+    "sethrakhar": {
+      "cost": 4250,
+      "is_boss_hero": true
+    },
+    "kaelvyrn": {
+      "cost": 4300,
+      "is_boss_hero": true
+    },
+    "thorvin": {
+      "cost": 4350,
+      "is_boss_hero": true
+    },
+    "xaerissa": {
+      "cost": 4400,
+      "is_boss_hero": true
+    },
+    "celwynn": {
+      "cost": 4500,
+      "is_boss_hero": true
+    },
+    "rynvara": {
+      "cost": 4550,
+      "is_boss_hero": true
+    },
+    "syrindra": {
+      "cost": 4600,
+      "is_boss_hero": true
+    },
+    "ghrakmaal": {
+      "cost": 4700,
+      "is_boss_hero": true
+    },
+    "selunara": {
+      "cost": 4750,
+      "is_boss_hero": true
+    },
+    "vessyra": {
+      "cost": 4800,
+      "is_boss_hero": true
+    },
+    "rakzhan": {
+      "cost": 4900,
+      "is_boss_hero": true
+    },
+    "sirakzan": {
+      "cost": 4950,
+      "is_boss_hero": true
+    },
+    "valekris": {
+      "cost": 5000,
+      "is_boss_hero": true
+    },
+    "infrakzaar": {
+      "cost": 5100,
+      "is_boss_hero": true
+    },
+    "xarnathul": {
+      "cost": 5150,
+      "is_boss_hero": true
+    },
+    "zhyrakaan": {
+      "cost": 5200,
+      "is_boss_hero": true
+    },
+    "kaerissa": {
+      "cost": 5300,
+      "is_boss_hero": true
+    },
+    "thorgaruk": {
+      "cost": 5350,
+      "is_boss_hero": true
+    },
+    "zorathiel": {
+      "cost": 5400,
+      "is_boss_hero": true
+    },
+    "nyxallaria": {
+      "cost": 5500,
+      "is_boss_hero": true
+    },
+    "vhaerinth": {
+      "cost": 5550,
+      "is_boss_hero": true
+    },
+    "xharokh": {
+      "cost": 5600,
+      "is_boss_hero": true
+    },
+    "kazreth": {
+      "cost": 5700,
+      "is_boss_hero": true
+    },
+    "varkuthar": {
+      "cost": 5750,
+      "is_boss_hero": true
+    },
+    "zhyvrek": {
+      "cost": 5800,
+      "is_boss_hero": true
+    },
+    "azkharion": {
+      "cost": 5900,
+      "is_boss_hero": true
+    },
+    "thargoroth": {
+      "cost": 5950,
+      "is_boss_hero": true
+    },
+    "zahkareth": {
+      "cost": 6000,
+      "is_boss_hero": true
+    },
+    "bhorgathul": {
+      "cost": 6100,
+      "is_boss_hero": true
+    },
+    "morkhelvis": {
+      "cost": 6150,
+      "is_boss_hero": true
+    },
+    "vorthakul": {
+      "cost": 6200,
+      "is_boss_hero": true
+    },
+    "urgharun": {
+      "cost": 6300,
+      "is_boss_hero": true
+    },
+    "yhoranth": {
+      "cost": 6350,
+      "is_boss_hero": true
+    },
+    "zulkhaven": {
+      "cost": 6400,
+      "is_boss_hero": true
+    },
+    "emberwick": {
+      "cost": 6500,
+      "is_boss_hero": true
+    },
+    "grondarthul": {
+      "cost": 6550,
+      "is_boss_hero": true
+    },
+    "xareth": {
+      "cost": 6600,
+      "is_boss_hero": true
+    },
+    "kaedrin": {
+      "cost": 6700,
+      "is_boss_hero": true
+    },
+    "morvaeth2": {
+      "cost": 6750,
+      "is_boss_hero": true
+    },
+    "vardrok": {
+      "cost": 6800,
+      "is_boss_hero": true
+    },
+    "nixweaver": {
+      "cost": 6900,
+      "is_boss_hero": true
+    },
+    "nyxraal": {
+      "cost": 6950,
+      "is_boss_hero": true
+    },
+    "xarnthuul": {
+      "cost": 7000,
+      "is_boss_hero": true
+    },
+    "lyrenya": {
+      "cost": 7100,
+      "is_boss_hero": true
+    },
+    "vyraeth": {
+      "cost": 7150,
+      "is_boss_hero": true
+    },
+    "zorothrax": {
+      "cost": 7200,
+      "is_boss_hero": true
+    },
+    "akiraze": {
+      "cost": 7300,
+      "is_boss_hero": true
+    },
+    "brumhar": {
+      "cost": 7350,
+      "is_boss_hero": true
+    },
+    "zorashi": {
+      "cost": 7400,
+      "is_boss_hero": true
+    },
+    "akaroth": {
+      "cost": 7500,
+      "is_boss_hero": true
+    },
+    "kassadin": {
+      "cost": 7550,
+      "is_boss_hero": true
+    },
+    "shimorakh": {
+      "cost": 7600,
+      "is_boss_hero": true
+    },
+    "kaizoku_raijin": {
+      "cost": 7700,
+      "is_boss_hero": true
+    },
+    "korokai": {
+      "cost": 7750,
+      "is_boss_hero": true
+    },
+    "verdanix": {
+      "cost": 7800,
+      "is_boss_hero": true
+    },
+    "broggmar": {
+      "cost": 7900,
+      "is_boss_hero": true
+    },
+    "ursath": {
+      "cost": 7950,
+      "is_boss_hero": true
+    },
+    "zhaeris": {
+      "cost": 8000,
+      "is_boss_hero": true
+    },
+    "kairenji": {
+      "cost": 8150,
+      "is_boss_hero": true
+    },
+    "karzhul": {
+      "cost": 8200,
+      "is_boss_hero": true
+    },
+    "xerakkuth": {
+      "cost": 8100,
+      "is_boss_hero": true
+    },
+    "kaelthys": {
+      "cost": 8300,
+      "is_boss_hero": true
+    },
+    "kaoruken": {
+      "cost": 8350,
+      "is_boss_hero": true
+    },
+    "vaelkorr": {
+      "cost": 8250,
+      "is_boss_hero": true
+    },
+    "aurelian": {
+      "cost": 8450,
+      "is_boss_hero": true
+    },
+    "morvath": {
+      "cost": 8500,
+      "is_boss_hero": true
+    },
+    "pyrhaan": {
+      "cost": 8400,
+      "is_boss_hero": true
+    },
+    "garumenshi": {
+      "cost": 8550,
+      "is_boss_hero": true
+    },
+    "thoraz": {
+      "cost": 8600,
+      "is_boss_hero": true
+    },
+    "vhaerith": {
+      "cost": 8500,
+      "is_boss_hero": true
+    },
+    "dorakai": {
+      "cost": 8650,
+      "is_boss_hero": true
+    },
+    "hitokage": {
+      "cost": 8700,
+      "is_boss_hero": true
+    },
+    "kazuren": {
+      "cost": 8600,
+      "is_boss_hero": true
+    },
+    "obanai": {
+      "cost": 8750,
+      "is_boss_hero": true
+    },
+    "sanguire": {
+      "cost": 8700,
+      "is_boss_hero": true
+    },
+    "sasori": {
+      "cost": 8800,
+      "is_boss_hero": true
+    },
+    "abaddon": {
+      "cost": 700,
+      "is_boss_hero": true
+    },
+    "alchemist": {
+      "cost": 750,
+      "is_boss_hero": true
+    },
+    "ancient_apparition": {
+      "cost": 800,
+      "is_boss_hero": true
+    },
+    "ignis_drachorn": {
+      "cost": 850,
+      "is_boss_hero": true
+    },
+    "krobellus": {
+      "cost": 1500,
+      "is_boss_hero": true
+    },
+    "kunkka": {
+      "cost": 900,
+      "is_boss_hero": true
+    },
+    "nyxarath": {
+      "cost": 1000,
+      "is_boss_hero": true
+    },
+    "vhorethzir": {
+      "cost": 1000,
+      "is_boss_hero": true
+    },
+    "naraka": {
+      "cost": 2000,
+      "is_boss_hero": true
+    },
+    "aurethzar": {
+      "cost": 2100,
+      "is_boss_hero": true
+    },
+    "thalakryon": {
+      "cost": 2200,
+      "is_boss_hero": true
+    },
+    "nazulmor": {
+      "cost": 2300,
+      "is_boss_hero": true
+    },
+    "solvarin": {
+      "cost": 2400,
+      "is_boss_hero": true
+    },
+    "pyraethis": {
+      "cost": 2500,
+      "is_boss_hero": true
+    },
+    "yamako": {
+      "cost": 2600,
+      "is_boss_hero": true
+    },
+    "seiryukong": {
+      "cost": 2700,
+      "is_boss_hero": true
+    },
+    "nyxareth": {
+      "cost": 2800,
+      "is_boss_hero": true
+    },
+    "aurelion": {
+      "cost": 2900,
+      "is_boss_hero": true
+    },
+    "vaelindra": {
+      "cost": 3000,
+      "is_boss_hero": true
+    },
+    "morthraxis": {
+      "cost": 3100,
+      "is_boss_hero": true
+    },
+    "nexthyrius": {
+      "cost": 3200,
+      "is_boss_hero": true
+    },
+    "molgravar": {
+      "cost": 3300,
+      "is_boss_hero": true
+    },
+    "seraphienne": {
+      "cost": 3400,
+      "is_boss_hero": true
+    },
+    "solareth": {
+      "cost": 3500,
+      "is_boss_hero": true
+    },
+    "okeanora": {
+      "cost": 3600,
+      "is_boss_hero": true
+    },
+    "vaelmyrra": {
+      "cost": 3700,
+      "is_boss_hero": true
+    },
+    "zarethyr": {
+      "cost": 3800,
+      "is_boss_hero": true
+    },
+    "nyrethzalv": {
+      "cost": 3900,
+      "is_boss_hero": true
+    },
+    "nyrellieth": {
+      "cost": 4000,
+      "is_boss_hero": true
+    },
+    "nyxharr": {
+      "cost": 4200,
+      "is_boss_hero": true
+    },
+    "ravokkar": {
+      "cost": 4400,
+      "is_boss_hero": true
+    },
+    "malzeroth": {
+      "cost": 4600,
+      "is_boss_hero": true
+    },
+    "zharakzuul": {
+      "cost": 4800,
+      "is_boss_hero": true
+    },
+    "grondmauris": {
+      "cost": 5000,
+      "is_boss_hero": true
+    },
+    "lyssarethys": {
+      "cost": 5200,
+      "is_boss_hero": true
+    },
+    "kaerinya": {
+      "cost": 5400,
+      "is_boss_hero": true
+    },
+    "xelnarath": {
+      "cost": 5600,
+      "is_boss_hero": true
+    },
+    "kyrenzai": {
+      "cost": 5800,
+      "is_boss_hero": true
+    },
+    "xaelmoran": {
+      "cost": 6000,
+      "is_boss_hero": true
+    },
+    "thalryndel": {
+      "cost": 6200,
+      "is_boss_hero": true
+    },
+    "grimkor": {
+      "cost": 6400,
+      "is_boss_hero": true
+    },
+    "kaineroth": {
+      "cost": 6600,
+      "is_boss_hero": true
+    },
+    "zyvareth": {
+      "cost": 6800,
+      "is_boss_hero": true
+    },
+    "kagetsuka": {
+      "cost": 7000,
+      "is_boss_hero": true
+    },
+    "deidara": {
+      "cost": 7200,
+      "is_boss_hero": true
+    },
+    "sunakage": {
+      "cost": 7400,
+      "is_boss_hero": true
+    },
+    "pyraena": {
+      "cost": 7600,
+      "is_boss_hero": true
+    },
+    "cogsworth": {
+      "cost": 7800,
+      "is_boss_hero": true
+    },
+    "yomigetsu": {
+      "cost": 8000,
+      "is_boss_hero": true
+    },
+    "akirakumo": {
+      "cost": 8200,
+      "is_boss_hero": true
+    },
+    "kaithros": {
+      "cost": 8400,
+      "is_boss_hero": true
+    },
+    "nyxaris": {
+      "cost": 8600,
+      "is_boss_hero": true
+    },
+    "tsukiyora": {
+      "cost": 8800,
+      "is_boss_hero": true
+    },
+    "hollowbane": {
+      "cost": 9000,
+      "is_boss_hero": true
+    }
+  },
+  "fallback": {
+    "kaizen": {
+      "cost": 400
+    },
+    "grimjaw": {
+      "cost": 450
+    },
+    "sylara": {
+      "cost": 380
+    },
+    "vex": {
+      "cost": 420
+    },
+    "thorne": {
+      "cost": 500
+    },
+    "zephyr": {
+      "cost": 420
+    }
+  },
+  "levels": {
+    "1": {
+      "bosses": [
+        "gornak",
+        "morgath",
+        "drakar",
+        "abaddon"
+      ]
+    },
+    "2": {
+      "bosses": [
+        "razak",
+        "khalros",
+        "gorath",
+        "alchemist"
+      ]
+    },
+    "3": {
+      "bosses": [
+        "varkul",
+        "xerathis",
+        "nyzrak",
+        "ancient_apparition"
+      ]
+    },
+    "4": {
+      "bosses": [
+        "zharok",
+        "pyrenth",
+        "vokrahn",
+        "ignis_drachorn"
+      ]
+    },
+    "5": {
+      "bosses": [
+        "nyxara",
+        "gravefang",
+        "vhalzun",
+        "krobellus"
+      ]
+    },
+    "6": {
+      "bosses": [
+        "gravewake",
+        "syrentha",
+        "thalgryn",
+        "kunkka"
+      ]
+    },
+    "7": {
+      "bosses": [
+        "malzareth",
+        "akashari",
+        "vorenmarr",
+        "nyxarath"
+      ]
+    },
+    "8": {
+      "bosses": [
+        "xirthalis",
+        "vhyssarion",
+        "vaerith",
+        "vhorethzir"
+      ]
+    },
+    "9": {
+      "bosses": [
+        "kenshiro",
+        "khazan",
+        "wiro",
+        "naraka"
+      ]
+    },
+    "10": {
+      "bosses": [
+        "krognarr",
+        "raz",
+        "vraskhan",
+        "aurethzar"
+      ]
+    },
+    "11": {
+      "bosses": [
+        "aeralith",
+        "aurex",
+        "nyxareva",
+        "thalakryon"
+      ]
+    },
+    "12": {
+      "bosses": [
+        "aurelix",
+        "aurelyssa",
+        "vargrath",
+        "nazulmor"
+      ]
+    },
+    "13": {
+      "bosses": [
+        "kaeldris",
+        "pyraklos",
+        "velmyrth",
+        "solvarin"
+      ]
+    },
+    "14": {
+      "bosses": [
+        "azureth",
+        "luminar",
+        "solara",
+        "pyraethis"
+      ]
+    },
+    "15": {
+      "bosses": [
+        "auroth",
+        "morvein",
+        "thorvak",
+        "yamako"
+      ]
+    },
+    "16": {
+      "bosses": [
+        "ignirus",
+        "leoric",
+        "shirotaka",
+        "seiryukong"
+      ]
+    },
+    "17": {
+      "bosses": [
+        "kaelthorn",
+        "solvanth",
+        "xyrael",
+        "nyxareth"
+      ]
+    },
+    "18": {
+      "bosses": [
+        "cryssalia",
+        "kaelthar",
+        "morkhaera",
+        "aurelion"
+      ]
+    },
+    "19": {
+      "bosses": [
+        "akahime",
+        "nyxthrael",
+        "sylvantheros",
+        "vaelindra"
+      ]
+    },
+    "20": {
+      "bosses": [
+        "astraelion",
+        "morvaenthir",
+        "thornvaegrim",
+        "morthraxis"
+      ]
+    },
+    "21": {
+      "bosses": [
+        "kurogari",
+        "morvekhar",
+        "vorgath",
+        "nexthyrius"
+      ]
+    },
+    "22": {
+      "bosses": [
+        "grimstalker",
+        "kryvoxar",
+        "vargroth",
+        "molgravar"
+      ]
+    },
+    "23": {
+      "bosses": [
+        "drav",
+        "lyrienne",
+        "valthar",
+        "seraphienne"
+      ]
+    },
+    "24": {
+      "bosses": [
+        "khalzaredh",
+        "nyxaroth",
+        "veshtrax",
+        "solareth"
+      ]
+    },
+    "25": {
+      "bosses": [
+        "grimjack",
+        "morvaeth",
+        "vulkareth",
+        "okeanora"
+      ]
+    },
+    "26": {
+      "bosses": [
+        "aelyrion",
+        "kaervosth",
+        "morvyssk",
+        "vaelmyrra"
+      ]
+    },
+    "27": {
+      "bosses": [
+        "kyumirra",
+        "morvakhul",
+        "nyxariel",
+        "zarethyr"
+      ]
+    },
+    "28": {
+      "bosses": [
+        "morthyrax",
+        "sanguiveth",
+        "xerakhotep",
+        "nyrethzalv"
+      ]
+    },
+    "29": {
+      "bosses": [
+        "ignakhor",
+        "kazureth",
+        "sethrakhar",
+        "nyrellieth"
+      ]
+    },
+    "30": {
+      "bosses": [
+        "kaelvyrn",
+        "thorvin",
+        "xaerissa",
+        "nyxharr"
+      ]
+    },
+    "31": {
+      "bosses": [
+        "celwynn",
+        "rynvara",
+        "syrindra",
+        "ravokkar"
+      ]
+    },
+    "32": {
+      "bosses": [
+        "ghrakmaal",
+        "selunara",
+        "vessyra",
+        "malzeroth"
+      ]
+    },
+    "33": {
+      "bosses": [
+        "rakzhan",
+        "sirakzan",
+        "valekris",
+        "zharakzuul"
+      ]
+    },
+    "34": {
+      "bosses": [
+        "infrakzaar",
+        "xarnathul",
+        "zhyrakaan",
+        "grondmauris"
+      ]
+    },
+    "35": {
+      "bosses": [
+        "kaerissa",
+        "thorgaruk",
+        "zorathiel",
+        "lyssarethys"
+      ]
+    },
+    "36": {
+      "bosses": [
+        "nyxallaria",
+        "vhaerinth",
+        "xharokh",
+        "kaerinya"
+      ]
+    },
+    "37": {
+      "bosses": [
+        "kazreth",
+        "varkuthar",
+        "zhyvrek",
+        "xelnarath"
+      ]
+    },
+    "38": {
+      "bosses": [
+        "azkharion",
+        "thargoroth",
+        "zahkareth",
+        "kyrenzai"
+      ]
+    },
+    "39": {
+      "bosses": [
+        "bhorgathul",
+        "morkhelvis",
+        "vorthakul",
+        "xaelmoran"
+      ]
+    },
+    "40": {
+      "bosses": [
+        "urgharun",
+        "yhoranth",
+        "zulkhaven",
+        "thalryndel"
+      ]
+    },
+    "41": {
+      "bosses": [
+        "emberwick",
+        "grondarthul",
+        "xareth",
+        "grimkor"
+      ]
+    },
+    "42": {
+      "bosses": [
+        "kaedrin",
+        "morvaeth2",
+        "vardrok",
+        "kaineroth"
+      ]
+    },
+    "43": {
+      "bosses": [
+        "nixweaver",
+        "nyxraal",
+        "xarnthuul",
+        "zyvareth"
+      ]
+    },
+    "44": {
+      "bosses": [
+        "lyrenya",
+        "vyraeth",
+        "zorothrax",
+        "kagetsuka"
+      ]
+    },
+    "45": {
+      "bosses": [
+        "akiraze",
+        "brumhar",
+        "zorashi",
+        "deidara"
+      ]
+    },
+    "46": {
+      "bosses": [
+        "akaroth",
+        "kassadin",
+        "shimorakh",
+        "sunakage"
+      ]
+    },
+    "47": {
+      "bosses": [
+        "kaizoku_raijin",
+        "korokai",
+        "verdanix",
+        "pyraena"
+      ]
+    },
+    "48": {
+      "bosses": [
+        "broggmar",
+        "ursath",
+        "zhaeris",
+        "cogsworth"
+      ]
+    },
+    "49": {
+      "bosses": [
+        "kairenji",
+        "karzhul",
+        "xerakkuth",
+        "yomigetsu"
+      ]
+    },
+    "50": {
+      "bosses": [
+        "kaelthys",
+        "kaoruken",
+        "vaelkorr",
+        "akirakumo"
+      ]
+    },
+    "51": {
+      "bosses": [
+        "aurelian",
+        "morvath",
+        "pyrhaan",
+        "kaithros"
+      ]
+    },
+    "52": {
+      "bosses": [
+        "garumenshi",
+        "thoraz",
+        "vhaerith",
+        "nyxaris"
+      ]
+    },
+    "53": {
+      "bosses": [
+        "dorakai",
+        "hitokage",
+        "kazuren",
+        "tsukiyora"
+      ]
+    },
+    "54": {
+      "bosses": [
+        "obanai",
+        "sanguire",
+        "sasori",
+        "hollowbane"
+      ]
+    }
+  },
+  "spawn_origin": [
+    1120,
+    130
+  ]
+}

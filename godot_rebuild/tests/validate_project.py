@@ -4,6 +4,7 @@ Run with Python 3, no dependencies: python godot_rebuild/tests/validate_project.
 """
 from pathlib import Path
 import re
+import json
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -69,6 +70,24 @@ check("AIPolicyChecks.new().run(_check)" in ai_tests, "AI policy suite must run 
 check((ROOT / "AI_CONTRACT.md").is_file(), "AI policy scope must be documented")
 check((ROOT / "tests/fixtures/ai_policy_source.json").is_file(), "AI policy needs source oracle fixture")
 check("control_heroes.call()" in ai_policy, "AI must control heroes before thinking")
+
+check("AIDraftChecks.new().run(_check)" in ai_tests, "AI draft suite must remain in the native runner")
+recruitment = json.loads((ROOT / "data/ai/recruitment.json").read_text(encoding="utf-8"))
+check(recruitment["starters"] == ["thorne", "grimjaw", "vex", "sylara", "kaizen", "zephyr"],
+      "AI starter preference order must match source")
+check(set(recruitment["fallback"]) == set(recruitment["starters"]), "AI fallback is starter catalog only")
+check(len(recruitment["levels"]) == 54, "Update AI policy elite level count when source levels change")
+for hero_type, entry in recruitment["catalog"].items():
+    check(isinstance(hero_type, str) and bool(hero_type), "AI catalog IDs must be nonempty strings")
+    check(isinstance(entry["cost"], int) and entry["cost"] > 0, f"Invalid summon price: {hero_type}")
+    check(type(entry["is_boss_hero"]) is bool, f"Invalid boss flag: {hero_type}")
+for key, entry in recruitment["levels"].items():
+    check(key.isdigit() and int(key) >= 1, f"Invalid AI source level: {key}")
+    check(all(hero_type in recruitment["catalog"] for hero_type in entry["bosses"]),
+          f"Missing summon metadata for level {key}")
+check((ROOT / "tests/fixtures/ai_draft_source.json").is_file(), "AI draft needs source fixture")
+workflow = (ROOT.parent / ".github/workflows/godot-rebuild.yml").read_text(encoding="utf-8")
+check("python godot_rebuild/tests/ai_draft_source_oracle.py" in workflow, "CI must detect recruitment data drift")
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

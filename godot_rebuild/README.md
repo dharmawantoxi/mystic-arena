@@ -252,6 +252,12 @@ python godot_rebuild/tests/structure_source_oracle.py
 python godot_rebuild/tests/match_source_oracle.py
 python godot_rebuild/tests/upgrade_source_oracle.py
 python godot_rebuild/tests/nexus_source_oracle.py
+python godot_rebuild/tests/cannon_source_oracle.py
+python godot_rebuild/tests/ice_source_oracle.py
+python godot_rebuild/tests/mage_source_oracle.py
+python godot_rebuild/tests/kaizen_source_oracle.py
+python godot_rebuild/tests/ai_source_oracle.py
+python godot_rebuild/tests/ai_draft_source_oracle.py
 ```
 
 Untuk parser/linter, pasang `gdtoolkit==4.5.0` dalam virtualenv terpisah. Tidak perlu memasangnya di komputer pemain.
@@ -271,6 +277,13 @@ Workflow **Godot Rebuild (native, fresh project)** pada `.github/workflows/godot
 9. Buka **Tower & nexus**, inspeksi bangunan, kirim wave satu tim, amati projectile dan shield/HP.
 10. Buka **Pertandingan awal**, pilih slot biru, bangun/jual Archer, amati wave otomatis dan gold. Upgrade Archer dan periksa perubahan harga/refund/HP/shield serta jumlah panah. Pilih nexus biru, upgrade ke level 2+ dan amati HP/shield/komposisi/minion menguat. Pause harus membekukan keduanya; restart mengembalikan 1000 G dan nexus level 1.
 11. Kembali ke menu, ulangi. Periksa Debugger untuk error dan Remote tree untuk screen sisa.
+
+## AIPlayer (WIP, belum terhubung ke scene)
+
+Policy berpikir/prioritas dan policy pool/draft/reserve tersedia untuk pengujian
+native. Metadata summon mencakup enam starter dan 216 boss; **ini bukan roster
+playable**. Pertandingan masih memakai lawan sementara. Batas implementasi dan
+checklist integrasi penuh: [AI_CONTRACT.md](AI_CONTRACT.md).
 
 ## Langkah pengembangan berikutnya
 
