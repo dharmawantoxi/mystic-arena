@@ -123,21 +123,21 @@ func _guards(check: Callable) -> void:
 	_fund(world, 2500)
 	var recruit := Recruit.new()
 	# Funded above the pending price so AIDraft reaches the native kit gate.
-	# aurelix (1550G, level 12) is still pending after batch 13; pending kits
-	# must stay rejected without debit or substitution (aeralith was replaced
+	# kaeldris (1650G, level 13) is still pending after batch 14; pending kits
+	# must stay rejected without debit or substitution (aurelix was replaced
 	# here once its real kit landed).
-	var draft := _target("aurelix", 1550)
+	var draft := _target("kaeldris", 1650)
 	check.call(not recruit.try_buy(world, draft), "Missing boss kit cannot spawn Kaizen")
 	check.call(world.transaction_error == "kit", "Missing kit refusal is explicit")
 	check.call(
-		draft.purchase_target == "aurelix" and draft.reserve() == 1550,
+		draft.purchase_target == "kaeldris" and draft.reserve() == 1650,
 		"Missing kit retains draft/reserve"
 	)
 	check.call(
 		world.units.is_empty() and world.economy.gold[1] == 2500, "Missing kit has no effects"
 	)
 	check.call(
-		not world._buy_ai_hero("aurelix", 400, Vector2(1120, 90)),
+		not world._buy_ai_hero("kaeldris", 400, Vector2(1120, 90)),
 		"Boss metadata is not a playable kit"
 	)
 	check.call(not world._buy_ai_hero("kaizen", 1, Vector2(1120, 90)), "Forged cost rejected")
@@ -159,7 +159,7 @@ func _guards(check: Callable) -> void:
 		"Dead owned hero still blocks duplicate"
 	)
 	world.winner = 0
-	check.call(not recruit.try_buy(world, _target("aurelix", 1550)), "Finished match blocks draft")
+	check.call(not recruit.try_buy(world, _target("kaeldris", 1650)), "Finished match blocks draft")
 	check.call(
 		not world._buy_ai_hero("kaizen", 400, Vector2(1120, 130)), "Finished match blocks purchase"
 	)
@@ -195,10 +195,10 @@ func _multi_roster(check: Callable) -> void:
 	check.call(
 		not world._buy_ai_hero("thorne", 500, Vector2(1120, 170)), "Dead Thorne remains owned"
 	)
-	var missing := _target("aurelix", 1550)
+	var missing := _target("kaeldris", 1650)
 	world.economy.credit_kill(1, 1000)
 	check.call(
-		not adapter.try_buy(world, missing) and missing.reserve() == 1550,
+		not adapter.try_buy(world, missing) and missing.reserve() == 1650,
 		"Unsupported boss kit keeps draft without debit"
 	)
 	var grimjaw := _target("grimjaw", 450)

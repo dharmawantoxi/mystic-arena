@@ -5,6 +5,7 @@ extends RefCounted
 const HANDLERS := [
 	preload("res://scripts/combat/boss_level_ten_skills.gd"),
 	preload("res://scripts/combat/boss_level_eleven_skills.gd"),
+	preload("res://scripts/combat/boss_level_twelve_skills.gd"),
 ]
 
 

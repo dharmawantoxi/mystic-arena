@@ -22,6 +22,7 @@ const DEFINITIONS := {
 	"akirakumo": preload("res://data/heroes/akirakumo.tres"),
 	"akiraze": preload("res://data/heroes/akiraze.tres"),
 	"aurelian": preload("res://data/heroes/aurelian.tres"),
+	"aurelix": preload("res://data/heroes/aurelix.tres"),
 	"aurethzar": preload("res://data/heroes/aurethzar.tres"),
 	"aurex": preload("res://data/heroes/aurex.tres"),
 	"azkharion": preload("res://data/heroes/azkharion.tres"),
