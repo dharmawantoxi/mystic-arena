@@ -162,16 +162,28 @@ Fungsi internal `_upgrade_*_for` menerima tim dan reserve; wrapper UI lama tetap
   blue tetap menolak hero mati sebagaimana kontrak UI sebelumnya.
 - Adapter membaca `draft.reserve()` setiap permintaan: tidak memakai harga draft
   yang dicache saat adapter dibuat. Counter baru nol pada instance match berikutnya.
-- Ini **per kandidat**, bukan loop pemilihan kandidat. Urutan kills descending
-  stabil, atribusi kills sumber, policy scheduler dan wiring scene belum aktif.
+- `try_tower_priority`/`try_hero_priority` memilih kandidat dengan **urutan
+  kills descending stabil** (tie memakai urutan asli: tower urutan slot/world,
+  hero urutan roster). Godot `sort_custom` tidak stabil, jadi tie dipecah oleh
+  indeks awal. Kandidat yang tidak terjangkau dilewati, pemindaian lanjut ke
+  kandidat berikutnya, dan berhenti pada sukses pertama — sama seperti sumber.
+  Tower kandidat = tower red hidup Lv<6; hero kandidat = hero red Lv<15
+  termasuk mati/respawning. Policy scheduler dan wiring scene belum aktif.
   Tidak menambahkan sorting berdasarkan angka kills palsu atau team kill total.
+- **Atribusi kills sumber:** `Hero.kills` hanya bertambah lewat
+  `Game._process_hero_kill` — pukulan terakhir dari hero musuh nyata (bukan
+  korban sendiri, bukan tower/minion/burn/castle), tanpa popup. `Tower.kills`
+  ada di sumber tetapi **tidak pernah di-increment** oleh game Python, sehingga
+  prioritas tower nyata jatuh ke urutan asli; native meniru itu (nilai tetap 0).
 - Method internal bukan command UI. Pause dicegah oleh session yang tidak
   mengeksekusi command/tick; tidak ada loop background atau timer baru.
 
 ## Shield berbayar per kandidat
 
 `ai_shields.gd` memakai transaksi world untuk Regen Shield (tower Lv4–6) dan
-Castle Shield (sesudah wave 10, tanpa gate Lv4). Keduanya 850 G + reserve
+Castle Shield (sesudah wave 10, tanpa gate Lv4). `try_regen_priority` memakai
+semua tower red hidup yang eligible (termasuk Lv6), diurutkan kills descending
+stabil dan berhenti pada pembelian pertama yang berhasil. Keduanya 850 G + reserve
 untuk eligibility saldo, debit hanya 850. Tidak ada roll RNG atau increment
 counter upgrade. Flag per instance, regen/damage, upgrade dan refund mengikuti
 metode sumber; lihat [SHIELD_CONTRACT.md](SHIELD_CONTRACT.md). Scene belum
@@ -209,6 +221,16 @@ bukan receipt. Tes tambahan menolak owner/team/ID/type/stale/path/dead/finished,
 menguji reserve berubah, non-double-debit, counter dan gate UI blue tetap sama.
 Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 
+`ai_priority_source_oracle.py` mengeksekusi `_try_upgrade_tower_new`,
+`_try_activate_regen_shield` dan `_try_upgrade_hero` dengan banyak kandidat:
+16 kasus tower (tie, kills acak, Lv1 path, reserve 0/400, gold nol dan gold
+yang hanya cukup untuk kandidat berikutnya), 3 urutan regen shield dan 3 urutan
+upgrade hero. Urutan tower dibaca dari list sumber yang disortir in-place;
+urutan shield/hero direkonstruksi dari panggilan berulang karena listnya lokal.
+`ai_priority_checks.gd` mengulang skenario itu pada world/ledger nyata dan
+menguji atribusi kill hero (killer musuh, korban, self-kill, killer bukan hero)
+serta `Tower.kills` yang tetap nol.
+
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [x] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
@@ -223,15 +245,15 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
   tanpa bonus gold. Hero spawn `RED_BASE_X-60, RED_BASE_Y+30+(count*40-40)`.
 - [x] Build slot acak; jenis archer/cannon/ice/mage berbobot .35/.25/.20/.20;
   hanya adapter per aksi, belum terhubung ke scene.
-- [ ] Upgrade tower kills descending stabil; Lv1 path cannon/ice/archer/mage.
+- [x] Upgrade tower kills descending stabil; Lv1 path cannon/ice/archer/mage.
 - [x] Transaksi upgrade tower/nexus/hero red per kandidat dengan live reserve;
   hero mati tetap eligible, batas level sumber, ledger dan counter nyata.
-- [ ] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
+- [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
-- [ ] Prioritas kandidat Regen Shield kills descending stabil.
+- [x] Prioritas kandidat Regen Shield kills descending stabil.
 - [ ] Kontrol hero setiap tick: jalur auto-cast bersama pemain, skill counter
   berdasarkan perubahan active timer; lane ancaman maksimum (tie top/mid/bot),
   minion terdekat secara Euclidean, destination auto; fallback tower terdekat
