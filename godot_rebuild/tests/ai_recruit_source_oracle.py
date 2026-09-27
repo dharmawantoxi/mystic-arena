@@ -51,7 +51,8 @@ def source_fixture():
                      "kenshiro", "wiro", "khazan", "naraka", "krognarr", "raz", "vraskhan", "aurethzar",
                      "aeralith",
                      "aurex",
-                     "nyxareva"]
+                     "nyxareva",
+                     "thalakryon"]
     playable = explicit_kits + eligible_ids(env)
     for hero_type in playable:
         price = catalog[hero_type]["cost"]

@@ -9,7 +9,7 @@ extends RefCounted
 const BossCommon = preload("res://scripts/combat/boss_skill_common.gd")
 const Common = preload("res://scripts/combat/skill_common.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
-const IDS := ["aeralith", "aurex", "nyxareva"]
+const IDS := ["aeralith", "aurex", "nyxareva", "thalakryon"]
 const VISUAL := {"q": 60, "w": 90, "e": 60, "r": 100}
 
 
@@ -30,7 +30,8 @@ static func cast(world, hero: HeroState, key: String, structures: Array) -> bool
 			_aurex(world, hero, target, key, structures)
 		"nyxareva":
 			_nyxareva(world, hero, target, key, structures)
-		#DISPATCH
+		"thalakryon":
+			_thalakryon(world, hero, target, key, structures)
 		_:
 			return false
 	Common.trigger(hero, key, VISUAL[key])
@@ -97,7 +98,26 @@ static func _nyxareva(world, hero: HeroState, target, key: String, structures: A
 			_radial(world, hero, structures, 220.0, 1.8, 60)
 
 
-#HEROES
+static func _thalakryon(world, hero: HeroState, target, key: String, structures: Array) -> void:
+	match key:
+		"q":
+			# Bolt: target 1.3x skill.
+			if target == null:
+				return
+			Common.hit(world, hero, target, 1.3)
+		"w":
+			# Aquashield: AOE 150 0.8x skill, heal 12%.
+			_radial(world, hero, structures, 150.0, 0.8)
+			hero.heal_hp(int(hero.max_hp * 0.12))
+		"e":
+			# Tidal rage: AOE 190 1.2x skill, attack delay max(timer, 40).
+			_radial(world, hero, structures, 190.0, 1.2, 40)
+		"r":
+			# Metamorph: AOE 260 2.0x skill, attack delay max(timer, 75), heal 10%.
+			_radial(world, hero, structures, 260.0, 2.0, 75)
+			hero.heal_hp(int(hero.max_hp * 0.10))
+
+
 static func _dash(hero: HeroState, target, max_step: float) -> void:
 	# Source: d = hypot(dx, dy); if d > 1: step = min(d, max_step).
 	var delta: Vector2 = target.position - hero.position
