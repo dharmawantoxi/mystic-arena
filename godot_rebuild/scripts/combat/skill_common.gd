@@ -1,6 +1,7 @@
 extends RefCounted
 ## Only source BaseSkill utilities, not a replacement hero kit.
 
+const StructureState = preload("res://scripts/combat/structure_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 
 
@@ -37,6 +38,9 @@ static func bound_target(world, hero: HeroState, structures: Array):
 
 
 static func stun(target, duration: int) -> void:
+	# Tower/Castle source objects have no attack_timer: do not stun their fire clock.
+	if target is StructureState:
+		return
 	# BaseSkill._apply_stun uses max, never shortens an existing clock.
 	if target is HeroState:
 		target.attack_timer = maxi(target.attack_timer, duration)
@@ -50,7 +54,7 @@ static func hit(world, hero: HeroState, target, multiplier: float, attributed :=
 		hero.team,
 		target,
 		int(hero.skill_damage() * multiplier),
-		hero.dmg_school,
+		hero.dmg_school if attributed else "neutral",
 		hero.position
 	)
 

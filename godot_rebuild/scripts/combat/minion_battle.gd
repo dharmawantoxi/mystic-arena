@@ -338,7 +338,7 @@ func _deliver_hit(
 	# Shared one-shot damage path for melee and projectile impacts. Visuals never call this.
 	if not is_running() or target == null or not target.alive or source_team == target.team:
 		return false
-	if raw_damage <= 0 or school not in ["physical", "magic"]:
+	if raw_damage <= 0 or school not in ["physical", "magic", "neutral"]:
 		return false
 	if target is HeroState:
 		var defender := target as HeroState
@@ -346,7 +346,7 @@ func _deliver_hit(
 			return false
 		if damage_type == "projectile" and school != "magic" and defender.wind_wall_timer > 0:
 			return false
-		if defender.windrun_timer > 0 and school == "physical":
+		if defender.windrun_timer > 0 and school != "magic":
 			var roll := (
 				float(windrun_roll_override.call())
 				if windrun_roll_override.is_valid()
@@ -388,8 +388,12 @@ func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float
 		# Structures absorb through armor + shield. Previously only the
 		# siege override did this; hero AOE needs it at this level too.
 		return (target as StructureState).absorb(raw_damage, school)
-	var damage := DamageRules.resolve(
-		raw_damage, target.definition.armor, target.definition.magic_resist, school
+	var damage := (
+		raw_damage
+		if school == "neutral"
+		else DamageRules.resolve(
+			raw_damage, target.definition.armor, target.definition.magic_resist, school
+		)
 	)
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var keep := 0.85 if school == "magic" else 0.70

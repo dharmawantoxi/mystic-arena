@@ -92,13 +92,47 @@ func _schools(check: Callable) -> void:
 		FileAccess.get_file_as_string("res://tests/fixtures/hero_school_source.json")
 	)
 	for row in rows:
-		var world := Battle.new()
+		var world := World.new()
 		var hero := _hero(world, row.hero)
-		var defender := world.spawn_hero(Roster.DEFINITIONS.thorne, world.BLUE, Vector2(550, 340))
-		check.call(world.cast_hero_w(defender.id), "Source Thorne mitigation activation")
-		check.call(helpers._skill(world, hero.id, row.key), row.hero + " real hero-v-hero cast")
+		var defender
+		if row.victim == "hero":
+			defender = world.spawn_hero(Roster.DEFINITIONS.thorne, world.BLUE, Vector2(550, 340))
+			check.call(world.cast_hero_w(defender.id), "Source Thorne mitigation activation")
+		else:
+			defender = world.spawn_structure(world.ARCHER, world.BLUE, Vector2(550, 340))
+			defender.cooldown_ticks = 17
+		var success := false
+		match row.key:
+			"q":
+				success = world.cast_hero_q(hero.id, world.structures)
+			"w":
+				success = world.cast_hero_w(hero.id)
+			"e":
+				success = world.cast_hero_e(hero.id, world.structures)
+			"r":
+				success = world._cast_hero_r(hero.id, world.structures)
+		check.call(success, row.hero + " real " + row.victim + " cast")
 		check.call(
 			defender.hp == row.target_hp and defender.alive == row.target_alive,
-			row.hero + " source damage school mitigation"
+			row.hero + " source school " + row.victim
 		)
-		check.call(hero.hp == row.hp, row.hero + " source attribution/post-mitigation reflect")
+		check.call(
+			hero.hp == row.hp,
+			(
+				row.hero
+				+ " "
+				+ row.key
+				+ " "
+				+ row.victim
+				+ " reflect HP actual="
+				+ str(hero.hp)
+				+ " expected="
+				+ str(row.hp)
+			)
+		)
+		if row.victim == "tower":
+			check.call(defender.shield == row.shield, row.hero + " source tower shield")
+			check.call(
+				defender.cooldown_ticks == row.clock,
+				row.hero + " tower has no source attack_timer stun"
+			)

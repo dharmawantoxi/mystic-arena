@@ -79,7 +79,7 @@ static func _drakar(world, hero: HeroState, target, key: String, structures: Arr
 			var maximum: float = target.max_hp if target is HeroState else target.definition.max_hp
 			if target.hp / maximum < 0.3:
 				damage *= 2
-			world._deliver_hit(-1, hero.team, target, damage, hero.dmg_school, hero.position)
+			world._deliver_hit(-1, hero.team, target, damage, "neutral", hero.position)
 
 
 static func _abaddon(world, hero: HeroState, target, key: String, structures: Array) -> void:
@@ -120,7 +120,7 @@ static func tick(world, hero: HeroState, _structures: Array) -> void:
 			var target = Common.current(world, hero)
 			if target != null:
 				world._deliver_hit(
-					-1, hero.team, target, int(hero.damage * 0.5), hero.dmg_school, hero.position
+					-1, hero.team, target, int(hero.damage * 0.5), "neutral", hero.position
 				)
 
 
