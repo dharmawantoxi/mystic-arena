@@ -1,14 +1,14 @@
-# Checkpoint migrasi — 182/222, BELUM selesai
+# Checkpoint migrasi — 186/222, BELUM selesai
 
-**182 dari 222 hero target selesai; 40 masih pending.**
+**186 dari 222 hero target selesai; 36 masih pending.**
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
 `arena/01a0e17d-mystic-arena` / `arena/01a0e217-mystic-arena` (batch 9, merge PR #291 → main c4381c0) /
-sesi lanjutan `arena/01a0e2f7-mystic-arena` (batch 10–12, PR draft #292), PR draft dari branch sesi.
+sesi lanjutan `arena/01a0e2f7-mystic-arena` (batch 10–13, PR draft #292), PR draft dari branch sesi.
 **Jangan merge tanpa perintah pengguna.**
 
 **Sinkronisasi GitHub:** batch 7 (Vhalzun 1200G, Krobellus 1500G — level 5) ditambahkan setelah PR #285; batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G) CI hijau 413735 checks (run 36302839552). Manifest dan docs sudah remote.
 
-Daftar tepat **semua 182 selesai dan semua 40 belum selesai**, harga summon,
+Daftar tepat **semua 186 selesai dan semua 36 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
 [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
 [`data/ai/hero_migration_status.json`](data/ai/hero_migration_status.json).
@@ -32,9 +32,10 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 10 | Kenshiro (1300G), Wiro (1300G) — level sumber 9 | **176 / 46** | [CI hijau, 632.522 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36322892875) |
 | 11 | Khazan (1350G), Naraka (2000G) — level sumber 9 selesai | **178 / 44** | [CI hijau, 632.522 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36322892875) |
 | 12 | Krognarr (1400G), Raz (1400G), Vraskhan (1400G), Aurethzar (2100G) — level sumber 10 | **182 / 40** | [CI hijau](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36323731902) |
+| 13 | Aeralith (1450G), Aurex (1500G), Nyxareva (1500G), Thalakryon (2200G) — level sumber 11 | **186 / 36** | [CI hijau](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36324671719) |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
-validation (**4.821 checks**, termasuk guard manifest), gdparse, gdlint dan
+validation (**4.894 checks**, termasuk guard manifest), gdparse, gdlint dan
 gdformat juga lulus (413735 native checks di Godot 4.7.2). Engine sandbox tidak dapat
 diunduh (TLS ke release-assets/CDN gagal), sehingga import dan seluruh tes
 engine dijalankan di workflow Godot resmi yang sudah ada. **Bukan klaim engine
@@ -57,7 +58,7 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   ID-ID ini dan benar-benar dispatch ke `BossHeroSkills._fallback_cast`.
   Oracle merekam jalur itu **per ID**, menjalankan QWER, exact cooldown/recast,
   melee/homing, upgrade level 1–15, respawn dan pembelian asli. Allowlist eksplisit
-  dikunci CI; **tidak ada fallback native untuk 40 recipe yang belum diport**.
+  dikunci CI; **tidak ada fallback native untuk 36 recipe yang belum diport**.
 - **Alchemist (750 G):** target-centered W100/slow, E rage 360 + heal 15%,
   R200/heal 100 per kill nyata. Uji zero/multiple kill, radius, anti-heal,
   timer expiry saat upgrade, attack, respawn, summon dan upgrade.
@@ -76,7 +77,7 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   AOE 220 stun 150) dan Thalgryn (cone 250×50 + surge min(dist,200) dari posisi
   pre-surge, adaptive target 2.0× + tetangga 60 0.7×, morph rage 300 ×1.35,
   replicate AOE slow 0.4/180). Rage expiry selalu reset damage ke katalog raw;
-  update oracle pembelian sumber kini mencakup seluruh 182 roster (546 baris).
+  update oracle pembelian sumber kini mencakup seluruh 186 roster (558 baris).
 - **L7:** Akashari (Q strike 1.6×/slow, W blink min(dist,150) + AOE 80 dari
   posisi BARU, E scream AOE150, R sonic AOE220 2.3×/slow), Malzareth (Q
   disruption AOE100 di target/x+100, W soul target 1.4×+tetangga 60 0.7×, E
@@ -110,12 +111,19 @@ lokal, GPU, perangkat fisik atau visual final teruji.**
   slow 0.5/90, R AOE250 1.9× delay 70). Delay = `attack_timer = max(.., n)`
   (Common.stun). Hit netral. Dispatch lewat `boss_recipe_registry.gd` (IDS
   eksplisit per handler; ID pending → null, tanpa substitusi).
+- **L11 (batch 13):** Aeralith (Q 1.2×, W AOE190 1.1×, E AOE170 1.1× slow
+  0.5/90, R AOE240 1.8×), Aurex (Q 1.3×, W target 1.4×, E AOE130 0.9× heal
+  10%, R AOE210 1.8× delay 60), Nyxareva (Q 1.2×, W target 1.4× slow 0.5/90,
+  E AOE170 1.1×, R AOE220 1.8× delay 60), Thalakryon (Q 1.3×, W AOE150 0.8×
+  heal 12%, E AOE190 1.2× delay 40, R AOE260 2.0× delay 75 heal 10%).
+  Catatan: gdparse tidak mendeteksi jumlah argumen salah; CI Godot yang
+  menangkap (signature `_radial` sempat tidak ikut diperbarui).
 - **Interaksi:** oracle memakai Hero Thorne dan Tower asli, bukan hanya receipt
   HP. Sekolah/source attribution, mitigasi, reflect, shield, dan tower yang
   tidak mempunyai `attack_timer` diuji. Skill tanpa source/school di Python
   tetap **netral**, tidak otomatis memakai sekolah caster.
-- **Ekonomi:** 546 pembelian sumber (182 × harga−1/tepat/+1, seluruh roster
-  playable termasuk 32 kit recipe khusus + 150 shared). Boss upgrade
+- **Ekonomi:** 558 pembelian sumber (186 × harga−1/tepat/+1, seluruh roster
+  playable termasuk 36 kit recipe khusus + 150 shared). Boss upgrade
   **1,6×** starter: Lv1→2 **480 G**; threshold reserve ±1, hero hidup/mati,
   saldo, registry dan clock diuji. Anti-heal mengikuti HP setter: cap dahulu,
   baru potong kenaikan HP. Resource bersama tidak dimutasi.
@@ -130,11 +138,11 @@ native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
 ## Sisa dan blocker tepat
 
-**40 boss** (level 11–20) mempunyai empat recipe khusus yang belum diport dan
+**36 boss** (level 12–20) mempunyai empat recipe khusus yang belum diport dan
 belum memiliki oracle/native test per perilakunya. Metode Q/W/E/R untuk
 masing-masing ID tercantum di
-[daftar status](HERO_ROSTER_STATUS.md#belum-selesai--40-id-dan-recipe-yang-menjadi-blocker).
-Blocker implementasi: sisa 40 recipe (level 11–20) belum diport; batch 7 (run
+[daftar status](HERO_ROSTER_STATUS.md#belum-selesai--36-id-dan-recipe-yang-menjadi-blocker).
+Blocker implementasi: sisa 36 recipe (level 12–20) belum diport; batch 7 (run
 36308407983) dan batch 8 (run 36309346449) lulus CI Godot 4.7.2 plus validasi
 lokal (oracle, static checks, source contract, gdparse/gdlint/gdformat);
 batch 9 sudah merge (PR #291) tetapi suite native-nya belum pernah jalan di CI;
@@ -147,12 +155,12 @@ Tidak ada klaim 222 playable.
 
 Lanjut berdasarkan level sumber (lihat `hero_skills/_bundle.py` read-only:
 registry dispatch, `update_timers` bersama dan metode recipe masing-masing):
-1. Level 11: aeralith (1450G), aurex (1500G), nyxareva (1500G), thalakryon
-   (2200G) — buat `boss_level_eleven_skills.gd` / oracle / checks meniru
-   `boss_level_ten_*` (VISUAL 60/90/60/100, fixture compact 1 baris, trace
+1. Level 12: aurelix (1550G), aurelyssa (1550G), vargrath (1600G), nazulmor
+   (2300G) — buat `boss_level_twelve_skills.gd` / oracle / checks meniru
+   `boss_level_eleven_*` (`_radial` sudah punya delay + slow) (VISUAL 60/90/60/100, fixture compact 1 baris, trace
    pendek) dan **daftarkan handler di `HANDLERS` pada
    `scripts/combat/boss_recipe_registry.gd`**, bukan di `minion_battle.gd`
-   (file itu tepat 1000 baris = batas gdlint max-file-lines). Level 9–10 selesai.
+   (file itu tepat 1000 baris = batas gdlint max-file-lines). Level 9–11 selesai.
    Bila recipe punya timer, tambahkan tick lewat registry juga.
 2. Lanjut level 10 dst sesuai manifest sampai 222. Jangan memasukkan mereka ke
    handler 150 shared-source: source mereka memang berbeda.
@@ -160,9 +168,9 @@ registry dispatch, `update_timers` bersama dan metode recipe masing-masing):
    semua oracle lama + static/parser/lint/format → CI import + run_all → update
    jumlah/manifest/dokumentasi. Jangan melanjutkan batch kalau masih gagal.
 4. Tes penolakan pending harus didanai ≥ harga ID pending (sekarang 2500G untuk
-   aeralith 1450G) agar gerbang kit native yang diuji, bukan gerbang gold.
+   aurelix 1550G) agar gerbang kit native yang diuji, bukan gerbang gold.
 5. Test penolakan pending (`ai_recruit` + `shared_no_fallback`) memakai ID yang
-   **masih pending** (saat ini aeralith 1450G); ganti mengikuti manifest tiap
+   **masih pending** (saat ini aurelix 1550G); ganti mengikuti manifest tiap
    kali satu batch membuat ID tersebut playable.
 
 ## Menjalankan validasi
@@ -190,16 +198,16 @@ fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 
 > Lanjutkan migrasi 222 hero dari snapshot checkpoint Arena terbaru untuk PR
 > draft dari branch sesi batch 10 (arena/01a0e2f7-mystic-arena, basis main c4381c0).
-> Saat ini 182/222 kit native teruji (6 starter + L1×4 + Alchemist + AA, Nyzrak,
-> Ignis + L5×2, L6×4, L7×4, L9×4, L10×4 + 150 ID shared-handler),
-> tersisa 40 (level 11–20, 10 level × 4).
-> CI hijau Godot 4.7.2 run 36323731902, static lokal 4821 PASS.
+> Saat ini 186/222 kit native teruji (6 starter + L1×4 + Alchemist + AA, Nyzrak,
+> Ignis + L5×2, L6×4, L7×4, L9×4, L10×4, L11×4 + 150 ID shared-handler),
+> tersisa 36 (level 12–20, 9 level × 4).
+> CI hijau Godot 4.7.2 run 36324671719, static lokal 4894 PASS.
 > Baca godot_rebuild/AI_CONTRACT.md, SHIELD_CONTRACT.md, HERO_CONTRACT.md,
 > HERO_MIGRATION_PROGRESS.md, HERO_ROSTER_STATUS.md dan manifest
-> data/ai/hero_migration_status.json. Lanjut level 11 (Aeralith, Aurex,
-> Nyxareva, Thalakryon) dst; handler baru lewat boss_recipe_registry.gd sesuai level sumber; lanjut otomatis
+> data/ai/hero_migration_status.json. Lanjut level 12 (Aurelix, Aurelyssa,
+> Vargrath, Nazulmor) dst; handler baru lewat boss_recipe_registry.gd sesuai level sumber; lanjut otomatis
 > setelah tiap batch lulus. Hanya ubah godot_rebuild/; Python asli read-only.
-> Jangan memakai kit generik pengganti: 40 pending mempunyai recipe khusus.
+> Jangan memakai kit generik pengganti: 36 pending mempunyai recipe khusus.
 > Pertahankan skill, serangan, cooldown, lifecycle, school/source dan harga
 > (upgrade boss 1,6×), dengan source oracle dan tes native tiap perilaku.
 > Jalankan semua tes lama, static, parser/lint/format dan CI Godot 4.7.2;

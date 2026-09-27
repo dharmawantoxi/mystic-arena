@@ -2,11 +2,11 @@
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
-CI Godot 4.7.2: run terakhir hijau 36323731902 (182 playable, 40 pending;
-batch 10–12 level 9–10 + perbaikan tes batch 9).
+CI Godot 4.7.2: run terakhir hijau 36324671719 (186 playable, 36 pending;
+batch 10–13 level 9–11 + perbaikan tes batch 9).
 
-- Enam starter selesai (empat sudah ada sebelum sesi); dua puluh enam boss
-  recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9×4, L10 batch 12);
+- Enam starter selesai (empat sudah ada sebelum sesi); tiga puluh boss
+  recipe khusus selesai (L1×4, Alchemist, AA, Nyzrak, Ignis, L5×2, L6×4, L7×4, L9×4, L10×4, L11×4);
   150 boss mengikuti jalur `_fallback_cast` yang **benar-benar dipakai sumber**,
   dibuktikan per ID. Ini bukan fallback native untuk boss pending.
 - Semua 36 pending mempunyai recipe khusus. Blocker masing-masing: empat
