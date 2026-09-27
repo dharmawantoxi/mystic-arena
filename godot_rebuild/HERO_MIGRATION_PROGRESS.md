@@ -1,106 +1,132 @@
-# Migrasi roster setelah PR #283 — WIP, jangan merge
+# Checkpoint migrasi setelah PR #283 — 161/222, BELUM selesai
 
-Target tetap **222 kit playable**. Baseline angka tidak dihitung sebagai kit.
-Branch sesi: `arena/01a0e134-mystic-arena`. Python sumber read-only.
+**157 dari 218 hero yang diminta di sesi ini selesai; 61 masih pending.**
+Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
+`arena/01a0e134-mystic-arena`, [PR draft #284](https://github.com/dharmawantoxi/mystic-arena/pull/284).
+**Jangan merge tanpa perintah pengguna.**
 
-## Batch 1 — dua starter tersisa
+Daftar tepat **semua 161 selesai dan semua 61 belum selesai**, harga summon,
+level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
+[HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md). Manifest mesin:
+[`data/ai/hero_migration_status.json`](data/ai/hero_migration_status.json).
+Registry: `scripts/data/hero_roster.gd`; transaksi menolak semua pending tanpa
+debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 
-- Baseline teruji sebelum sesi: Kaizen, Thorne, Grimjaw, Sylara (4/222).
-- Vex dan Zephyr: selesai dan lulus CI Godot 4.7.2 pada commit `63778c4`.
-  **6/222 selesai, 216 boss tersisa**. CI [36295879312](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36295879312): **50.666 native checks** (seluruh suite lama ikut).
-- Harga summon keduanya **420 G** (bukan unlock menu).
-- Vex: Q orb/line, W burst/slow dan ring bergerak 30 < r <= 55 tiap 20 tick,
-  E prison 150 tick/stun max/pulsa 10 tick, R AOE 180/2.5×.
-- Zephyr: Q trap snapshot posisi target/240 tick, W heal 40+2/tick dan
-  immunity semua damage positif/180 tick, E curse 180 tick/pulsa 20,
-  R Bedlam 240 tick/pulsa 15. Basic keduanya magic homing, bukan hit instan.
-- Shared helper hanya menyalin BaseSkill dan pemilihan target E yang identik.
-  Kit tetap terpisah. Dispatcher menolak ID tanpa handler.
-- Oracle mengeksekusi skill asli, pernyataan clock Hero.update asli, loop
-  projectile asli, Hero.upgrade/respawn asli. Uji batas, cast kosong/ulang,
-  target mati/bergerak, upgrade selama efek, damage realm, respawn.
-- Seluruh oracle lama + source contract lulus lokal. Static: 2.154 checks;
-  gdparse/gdlint/gdformat lulus. Download engine 4.7.2 di sandbox gagal TLS
-  ke release-assets; engine testing dilakukan lewat workflow Godot yang ada.
+## Batch yang telah lulus
 
-## Batch berikutnya
+| Batch | Hero selesai dalam batch | Total / sisa | CI Godot 4.7.2 |
+|---|---|---|---|
+| Baseline PR #283 | Kaizen, Thorne, Grimjaw, Sylara | 4 / 218 | Baseline diterima |
+| 1 | Vex, Zephyr | 6 / 216 | [50.666 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36295879312) |
+| 2 | Gornak, Morgath, Drakar, Abaddon | 10 / 212 | [95.314 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36296265931) |
+| 3 | 150 ID shared-source eksplisit (lihat daftar) | 160 / 62 | [340.054 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36297544475) |
+| 4 | Alchemist | **161 / 61** | [**358.305 checks**, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
 
-Batch starter lulus; langsung lanjut Gornak, Morgath, Drakar, Abaddon
-(boss level sumber 1). **216 boss belum diport**, bukan pengganti generic kit. Daftar
-ID authoritative ada di `data/ai/recruitment.json` (catalog dengan
-`is_boss_hero=true`). Sebelum berhenti sesi, manifest selesai/pending per-ID
-akan diperbarui. Tidak ada perubahan AIPlayer scene, item/forge, balance,
-Kaizen gratis, defender, maupun art final.
+Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
+validation (**4.390 checks**, termasuk guard manifest), gdparse, gdlint dan
+gdformat juga lulus. Engine sandbox tidak dapat
+diunduh (TLS ke release-assets/CDN gagal), sehingga import dan seluruh tes
+engine dijalankan di workflow Godot resmi yang sudah ada. **Bukan klaim engine
+lokal, GPU, perangkat fisik atau visual final teruji.**
 
-## Batch 2 — boss level sumber 1 (menunggu CI)
+## Apa yang diport dan dikunci oleh tes
 
-Gornak, Morgath, Drakar, Abaddon: implementasi + oracle + tes native ditulis.
-Belum menambah hitungan selesai sebelum engine lulus. Port memakai recipe
-`BossHeroSkills._SKILL_REGISTRY` asli, bukan `_fallback_cast` untuk empat ID ini.
-Gate boss max(skill_range, 140), tanpa slack starter; visual duration final
-berasal dari trigger cooldown, bukan nilai sementara di recipe. Morgath memakai
-basic beam/hit langsung sesuai pengecualian `_do_attack`, bukan homing arrow.
-Oracle menguji seluruh QWER, target tie/stale, radius, teleport overshoot,
-DOT/clone retarget/dead target, heal, rage reset saat upgrade, execute <30%,
-flag defense yang tidak mengurangi damage, respawn dan harga sumber. Static
-2.216 checks + seluruh oracle lama/new dan parser/lint/format lulus lokal.
+- **Vex (420 G):** Q orb/line, W burst/slow dan moving ring DOT (30 < r ≤ 55),
+  E prison 150 tick/stun max/pulsa 10, R AOE 180/2,5×. Magic homing basic.
+- **Zephyr (420 G):** Q fixed-origin trap 240 tick, W heal + immunity 180,
+  E curse DOT, R Bedlam. Magic homing basic. Burn diproses sebelum timer realm
+  habis, sehingga tick aktif terakhir tetap immune.
+- **Gornak:** blink berhenti 60px dari target; counterspell AOE/stun; mana void.
+  **Morgath:** basic beam/hit instan adalah pengecualian sumber, bukan arrow;
+  flux DOT dan clone mengikuti target/timer sumber. **Drakar:** rage reset ke
+  damage katalog, bukan level aktif; execute strictly <30%; flag defense tidak
+  diberi mitigasi rekaan. **Abaddon:** heal bukan shield baru; dash 80px tetap
+  dapat melewati target sebagaimana sumber.
+- **150 boss shared-source:** sumber sendiri tidak mempunyai entry recipe untuk
+  ID-ID ini dan benar-benar dispatch ke `BossHeroSkills._fallback_cast`.
+  Oracle merekam jalur itu **per ID**, menjalankan QWER, exact cooldown/recast,
+  melee/homing, upgrade level 1–15, respawn dan pembelian asli. Allowlist eksplisit
+  dikunci CI; **tidak ada fallback native untuk 61 recipe yang belum diport**.
+- **Alchemist (750 G):** target-centered W100/slow, E rage 360 + heal 15%,
+  R200/heal 100 per kill nyata. Uji zero/multiple kill, radius, anti-heal,
+  timer expiry saat upgrade, attack, respawn, summon dan upgrade.
+- **Interaksi:** oracle memakai Hero Thorne dan Tower asli, bukan hanya receipt
+  HP. Sekolah/source attribution, mitigasi, reflect, shield, dan tower yang
+  tidak mempunyai `attack_timer` diuji. Skill tanpa source/school di Python
+  tetap **netral**, tidak otomatis memakai sekolah caster.
+- **Ekonomi:** 483 pembelian sumber (161 × harga−1/tepat/+1). Boss upgrade
+  **1,6×** starter: Lv1→2 **480 G**; threshold reserve ±1, hero hidup/mati,
+  saldo, registry dan clock diuji. Anti-heal mengikuti HP setter: cap dahulu,
+  baru potong kenaikan HP. Resource bersama tidak dimutasi.
 
-### Batch 2 lulus
+## Yang tidak berubah
 
-Commit `3efc68e`, [CI 36296265931](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36296265931):
-**95.314 native checks**, **2.234 static checks**. Keempat boss level 1 selesai;
-**10/222 kit, sisa 212**. Tambahan interaksi nyata source HP setter anti-heal
-(cap dahulu baru potong gain), serta burn sebelum expiry Shadow Realm.
+Hanya `godot_rebuild/` diubah; Python asli read-only. Kaizen gratis kedua tim,
+defender scene lama, UI/scene scheduler lama tetap. Tidak ada AIPlayer penuh,
+item/forge, desain ulang balance, pembelian AI otomatis atau art final. Marker
+hero/proyektil tetap prosedural sederhana. “Playable” di sini adalah kit/domain
+native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
-## Batch 3 — 150 boss yang benar-benar berbagi jalur sumber (belum selesai)
+## Sisa dan blocker tepat
 
-Audit registry sumber: 66 boss mempunyai recipe khusus; 150 lainnya memang
-menjalankan `BossHeroSkills._fallback_cast` asli. Port berikutnya akan memakai
-allowlist eksplisit yang dibuktikan dari registry source, bukan fallback untuk
-semua boss native. Setiap ID harus punya oracle QWER/attack/cooldown/lifecycle,
-level dan harga serta tes native sebelum dianggap playable. 62 boss dengan
-recipe khusus yang belum diport tetap ditolak. Hitungan selesai tetap 10 sampai
-batch ini lulus CI.
+**61 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
+oracle/native test per perilakunya. Metode Q/W/E/R untuk masing-masing ID
+tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--61-id-dan-recipe-yang-menjadi-blocker).
+Tidak ada blocker credential; blocker utamanya sisa implementasi/verifikasi
+melebihi konteks kerja aman sesi ini. Tidak ada klaim 222 playable.
 
-### Batch 3 implementasi — menunggu engine
+Lanjut berdasarkan level sumber:
+1. **Nyzrak + Ancient Apparition** (sisa level 3), kemudian **Ignis Drachorn**
+   (sisa level 4). Lihat `hero_skills/_bundle.py` read-only: registry dispatch,
+   `update_timers` bersama dan metode recipe masing-masing.
+2. AA membutuhkan vortex DOT fixed position, beam geometry serta stun clock.
+   Nyzrak membutuhkan beam/radial/curse/heal; audit konsumen `shield_active` /
+   `shield_timer` di Hero asli—jangan mengarang shield yang tidak dikonsumsi.
+   Ignis membutuhkan cone, sweep dan dua buff dengan expiry/reset berbeda.
+3. Berikutnya level 5 dst sesuai manifest. Jangan memasukkan mereka ke handler
+   150 shared-source: source mereka memang berbeda.
+4. Per batch: oracle → handler/state/resource → native combat/transactions →
+   semua oracle lama + static/parser/lint/format → CI import + run_all → update
+   jumlah/manifest/dokumentasi. Jangan melanjutkan batch kalau masih gagal.
 
-150 ID allowlist ada di `scripts/data/source_shared_boss_ids.gd`. Setiap ID
-menjalankan Hero/BossHeroSkills asli dan wrapper oracle mencatat bahwa dispatch
-benar-benar masuk `_fallback_cast` (bukan recipe yang terlewat). Native mengunci
-Q/W single-target, E150/R200 AOE, multiplier, atribusi school/source, gate boss,
-cooldown/recast tepat, homing/melee, level 1–15 dan respawn. Resource angka hanya
-input; bukan bukti playable. Oracle pembelian nyata sekarang 480 transaksi
-(160 calon kit × harga−1/tepat/+1). Static 3.352 checks + parser/lint/format lulus.
-Belum menaikkan hitungan selesai sampai seluruh suite engine lulus.
+## Menjalankan validasi
 
-### Koreksi yang ditemukan suite batch 3
+```sh
+python godot_rebuild/tests/validate_project.py
+python godot_rebuild/tests/check_source_contract.py
+# Seluruh oracle lama/new yang berakhiran source_oracle.py:
+for t in godot_rebuild/tests/*source_oracle.py; do python "$t" || exit; done
+# Oracle kelompok 150 juga dijalankan otomatis oleh validate_project.py:
+python godot_rebuild/tests/source_shared_boss_oracle.py
+gdparse $(find godot_rebuild -name '*.gd')
+gdlint $(find godot_rebuild -name '*.gd')
+gdformat --check $(find godot_rebuild -name '*.gd')
+# Dengan Godot 4.7.2 tersedia:
+godot --headless --path godot_rebuild --editor --import
+godot --headless --path godot_rebuild --script res://tests/run_all.gd
+```
 
-- Harga upgrade boss sumber 1,6× starter: Lv1→2 **480 G**, bukan 300 G.
-  Per-ID level 1–15, threshold reserve ±1, hero hidup/mati, clock dan ledger
-  diuji; berlaku juga untuk empat boss batch 2.
-- Damage skill tanpa argumen `source`/`school` di sumber adalah **netral**,
-  bukan otomatis magic caster. Native kini membedakannya; school eksplisit
-  pada kelompok shared-source tetap digunakan. Oracle memakai Hero Thorne
-  dan Tower asli, menguji mitigasi, reflect, shield, dan no-stun tower
-  (Tower sumber tidak memiliki `attack_timer`).
-- Harness duel harus memberi Thorne daftar musuh yang sama: W-nya juga
-  melakukan burst 35 pada caster sebelum skill diuji. Koreksi fixture memakai
-  roster sumber nyata, bukan menghapus assertion reflect.
+Parser/lint menggunakan `gdtoolkit==4.5.0`. Oracle `--write` hanya menulis artefak
+native; setelah membangkitkan daftar GDScript lakukan gdformat. Jangan mengedit
+fixture manual untuk meloloskan hasil yang berbeda dari sumber.
 
-### Batch 3 lulus
+## Pesan siap-salin untuk sesi berikutnya
 
-Commit `c111da2`, [CI 36297544475](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36297544475):
-**340.054 native checks**, **3.359 static checks**, seluruh suite lama tetap
-aktif. **160/222 kit selesai, 62 recipe khusus tersisa**. 150 ID shared-source
-tersimpan eksplisit di `scripts/data/source_shared_boss_ids.gd`; hanya ID itu
-boleh memakai handler tersebut. Langsung lanjut batch 4 Alchemist (sisa level 2).
-
-## Batch 4 — Alchemist (menunggu CI)
-
-Recipe asli: Q 1,1× target; W burst radius 100 pada posisi target + slow;
-E rage 360 tick/damage katalog 1,5×/heal 15%; R radius 200/2,5×/heal 100 per
-kill nyata. Oracle mencakup radius tepat, rage expiry saat upgrade, HP setter
-anti-heal, kill/target di luar radius, cooldown, melee, respawn, summon dan
-upgrade 1,6×. Hanya lima boss recipe khusus yang telah diimplementasikan;
-Alchemist belum dihitung selesai sampai CI batch ini lulus. Statis lokal
-3.397 checks; seluruh oracle lama/new, parser/lint/format lulus.
+> Lanjutkan migrasi 222 hero dari checkpoint PR draft #284. Saat ini 161/222
+> kit native teruji (6 starter + Gornak, Morgath, Drakar, Abaddon, Alchemist +
+> 150 ID yang benar-benar memakai shared handler di sumber), tersisa tepat 61.
+> Baca godot_rebuild/AI_CONTRACT.md, SHIELD_CONTRACT.md, HERO_CONTRACT.md,
+> HERO_MIGRATION_PROGRESS.md, HERO_ROSTER_STATUS.md dan manifest
+> data/ai/hero_migration_status.json. Mulai batch Nyzrak + Ancient Apparition,
+> lalu Ignis Drachorn dan seluruh sisa sesuai level sumber; lanjut otomatis
+> setelah tiap batch lulus, jangan berhenti untuk meminta instruksi berikutnya.
+> Hanya ubah godot_rebuild/; Python asli read-only. Jangan memakai kit generik
+> pengganti: 61 pending mempunyai recipe khusus. Pertahankan skill, serangan,
+> cooldown, lifecycle, school/source dan harga (upgrade boss 1,6×), dengan
+> source oracle dan tes native tiap perilaku. Jalankan semua tes lama, static,
+> parser/lint/format dan CI Godot 4.7.2; perbaiki sebelum lanjut. Pending harus
+> tetap ditolak tanpa debit/substitusi. Kaizen gratis dan defender scene tetap;
+> tanpa item/forge, AIPlayer penuh, rebalance atau art final. Pakai branch sesi
+> Arena yang ditetapkan dan PR draft, jangan merge. Update daftar/jumlah tiap
+> batch. Jika konteks habis, simpan progres teruji, daftar tepat pending beserta
+> blocker dan pesan lanjutan; jangan mengurangi target atau klaim 222 selesai.

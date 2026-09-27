@@ -1,5 +1,5 @@
 extends RefCounted
-## Numeric baselines for 222, real Kaizen/Thorne/Grimjaw/Sylara purchases; other kits pending.
+## Baselines for 222; real per-ID purchases only for the tested native registry.
 ## No unsupported hero may silently inherit Kaizen's kit.
 
 const World = preload("res://scripts/match/prototype_battle.gd")

@@ -1,7 +1,7 @@
 """Read-only source oracle for actual Hero purchases, not receipts.
 
-Executes the real AIPlayer._try_buy_hero and Hero.__init__ for Kaizen/Thorne/Grimjaw/Sylara
-with empty-inventory/audio stubs. It does NOT prove the other 220 kits.
+Executes real AIPlayer._try_buy_hero and Hero.__init__ for the explicit native
+roster, with empty-inventory/audio stubs. Metadata alone never proves a kit.
 """
 import ast
 import json
@@ -71,4 +71,4 @@ if __name__ == "__main__":
         assert purchases == json.loads(FIXTURE.read_text(encoding="utf-8")), "AI real recruit drift"
         assert stats == json.loads(STATS.read_text(encoding="utf-8")), "Hero combat stat drift"
     print(f"PASS: {len(stats)} source Hero numeric baselines, {len(purchases)} "
-          "Kaizen/Thorne/Grimjaw/Sylara purchases (other kits still pending)")
+          "real native-roster purchases (unregistered recipes still pending)")

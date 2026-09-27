@@ -70,61 +70,42 @@ asli dan konfigurasi level asli. Harga unlock menu tidak dipakai untuk summon.
 - RNG instance dapat di-seed dan picker bisa diinjeksi. Kandidat, bobot dan
   batas interval weighted sama; **stream seed Godot tidak diklaim identik Python**.
 
-## Roster 222 hero: baseline angka + Kaizen/Thorne/Grimjaw/Sylara/Vex/Zephyr playable, BELUM kit penuh
+## Roster 222 — 161 kit native, 61 recipe khusus pending
 
-Permintaan lanjutan adalah enam starter + 216 boss playable, dikerjakan per
-fase, **belum selesai**. `data/ai/hero_combat_stats.json` sekarang mengunci
-angka final hasil konstruksi `Hero` Python asli untuk **222 ID**, mencakup
-normalisasi melee/ranged, catch-up starter awal dan balance catalog, skill
-base, sekolah damage dan harga summon. Ini adalah **baseline angka**, bukan
-skill handler playable atau `.tres` kit. `ai_recruit_source_oracle.py`
-mengeksekusi `Hero.__init__` asli untuk semua 222 lewat AST (inventory kosong,
-audio stub) dan transaksi `_try_buy_hero` dengan Hero Kaizen asli pada gold
-399/400/401, Thorne 499/500/501 dan Grimjaw 449/450/451 dan Sylara 379/380/381. CI menjalankannya via `validate_project.py` karena perubahan
-harus tetap di dalam `godot_rebuild/`.
+Metadata dan baseline konstruktor `data/ai/hero_combat_stats.json` tetap
+mencakup seluruh 222 ID. Baseline angka **bukan** bukti playable. Registry
+`scripts/data/hero_roster.gd` kini mengizinkan **161 kit** yang punya handler,
+source oracle dan tes native. Daftar tepat semua selesai/pending dengan
+harga, recipe dan blocker: [HERO_ROSTER_STATUS.md](HERO_ROSTER_STATUS.md).
 
-`ai_recruitment.gd` meneruskan draft ke callback sinkron transaksi
-`prototype_battle.gd::_buy_ai_hero` di world/ledger nyata. Saat ini **Kaizen,
-Thorne, Grimjaw, Sylara, Vex dan Zephyr** punya kit native. 216 hero lain (seluruhnya boss),
-walaupun punya metadata dan baseline numerik, ditolak eksplisit dengan `kit`
-dan target serta reserve tetap tersimpan; tidak di-spawn sebagai Kaizen.
-Hero yang dimiliki red (termasuk mati) tidak dapat dibeli ulang. Kaizen 400 G,
-Thorne 500 G, Grimjaw 450 G, Sylara 380 G, offset first spawn Y90, lalu Y130/Y170/Y210, ID
-registry/capacity/posisi/saldo valid, debit sekali setelah spawn. Wrapper scene
-tetap memakai Kaizen gratis red; adapter **tidak** mengubah scene atau
-membuat AIPlayer lengkap. Kontrak lima hero ditahan defensif di
-transaksi; `_ai_step` tetap memegang gate policy aslinya. Tidak ada item/forge.
+- Enam starter: Kaizen, Thorne, Grimjaw, Sylara, Vex, Zephyr.
+- Lima boss dengan recipe tersendiri: Gornak, Morgath, Drakar, Abaddon,
+  Alchemist. Basic Morgath tetap beam/hit instan; bukan projectile generik.
+- 150 boss berbagi `BossHeroSkills._fallback_cast` **di sumber asli**. Oracle
+  per ID mencatat dispatch nyata, QWER, cooldown, attack, level/upgrade,
+  respawn serta combat Hero/Tower. Native memakai allowlist tertutup, tidak
+  menjadikannya fallback bagi 61 boss lain yang memiliki recipe berbeda.
+- **61 pending** tetap ditolak dengan `kit`, saldo/roster tidak berubah,
+  draft/reserve tetap. Tidak ada substitusi Kaizen atau shared kit.
 
-`thorne_skills.gd` mem-port Q cone 60/slow 0,4 (180 tick), W armor fisik
-30% / sihir 15% dan reflect 25% damage setelah mitigasi, E radial 100,
-R Warpath damage/CD buff 300 tick dan restore damage dari level TERKINI.
-W bisa cast tanpa target; Q/E/R butuh target dalam 1,15×skill range.
-Cooldown/HP/visual, upgrade saat buff, timer dan respawn W/E/R tertahan
-sesuai sumber diuji lewat `thorne_source_oracle.py` (Hero/ThorneSkills asli)
-dan combat/ledger world native; bukan penggunaan kit Kaizen sebagai
-fallback. Kit Thorne tidak disambungkan ke scene otomatis.
+Adapter `ai_recruitment.gd` tetap meneruskan draft ke transaksi sinkron
+`prototype_battle.gd::_buy_ai_hero`, memakai registry/world/ledger nyata.
+Oracle pembelian kini **483 transaksi** (161 × harga−1/tepat/+1), ID/posisi/
+capacity/ownership dan double debit diuji. Offset first spawn Y90 tetap,
+sementara Kaizen gratis red scene Y130 tetap dan tidak dihitung pembelian.
+Scene tidak menyalakan AIPlayer atau pembelian otomatis.
 
-`grimjaw_skills.gd` mem-port Q Blade Fury (12 pulsa tiap 15 tick tanpa damage
-saat cast), W ward tetap di posisi cast 360 tick/heal hero dan sekutu,
-E AOE radial 60 + basic attack crit 2× selama 300 tick (tidak habis setelah
-satu hit), dan R target-lock Omnislash 90 tick. Fixture `grimjaw_source.json`
-berasal dari Hero/GrimjawSkills Python nyata; semua 222 ID memperoleh bentuk
-polygon dan warna prosedural deterministik sebagai *placeholder visual* saat
-kit mereka nanti aktif. Tidak ada aset baru atau klaim desain final.
+Harga upgrade boss adalah 1,6× starter (Lv1→2 **480 G**), diuji per ID,
+level 1–15 dan reserve ±1 dengan hero hidup/mati. Source damage tanpa source/
+school tetap netral, berbeda dari skill yang eksplisit membawa school hero.
+Mitigasi/reflect/shield, tidak memberi stun palsu pada tower, anti-heal serta
+Shadow Realm/burn akhir durasi dikunci dengan objek sumber nyata.
 
-`sylara_skills.gd` mem-port Q Focus Fire (pierce berurutan/attack cooldown
-sementara), W Windrun (speed 2×, heal dan evasion fisik 75%), E Shackle
-(200px, stun/pulsa 15 tick), R Powershot (charge 60 tick, lima ray cone,
-satu hit per target). Basic attack ranged memakai homing arrow milik hero
-(sumber 9,5px/tick dan cap enam per hero), bukan damage instan; bentuk
-pelurunya tetap prosedural sederhana. Fixture mengeksekusi Hero.update
-projectile loop asli selain SylaraSkills, dan membandingkan evasion
-boundary, impact, Q/E/R dan timer native. Vex/Zephyr selesai pada batch lanjutan di bawah.
-
-Lanjutan wajib: port 216 boss dengan handler skill,
-serangan ranged, lifecycle, upgrade dan source oracle masing-masing sebelum
-memperluas registry kit native; lalu tes roster multi-hero/capacity dan
-integrasi scene tersendiri. Jangan mengklaim 222 kit dari file angka.
+CI Godot 4.7.2 `c029d50`: **358.305 native checks**, semua suite lama tetap.
+Target masih 222; batch berikutnya Nyzrak + Ancient Apparition, kemudian
+Ignis Drachorn dan sisa menurut level sumber. Catatan batch dan pesan
+kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
+Tidak ada item/forge, AIPlayer penuh, rebalance atau art final.
 
 ## Build tower lawan: transaksi domain nyata, belum dijadwalkan scene
 
@@ -229,8 +210,9 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
 - [ ] Roster enam starter dan seluruh boss yang eligible dari level sebelumnya:
-  baseline angka 222 sudah ada, kit playable Kaizen, Thorne, Grimjaw, Sylara, Vex dan Zephyr. 216 boss dan oracle kit mereka masih pending; marker prosedural
-  bukan bukti kit playable atau tampilan hero final.
+  baseline angka 222 tersedia; 161 kit native dengan oracle/tes telah lulus,
+  61 recipe khusus masih pending (lihat manifest). Marker prosedural bukan
+  bukti kit/playability atau tampilan final.
 - [x] Policy pool terurut boss lalu starter, deduplikasi, source-level pertama; tidak
   memasukkan boss level saat ini. Draft starter pertama acak, boss pertama dari
   level terbaru, berikutnya berbobot source-level; tipe owned termasuk hero mati.
@@ -261,15 +243,3 @@ Tidak membuktikan upgrade hero dengan item atau kit hero selain Kaizen.
 
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
 perangkat fisik dari tes policy ini.
-
-## Batch starter lanjutan setelah #283
-
-Vex dan Zephyr selesai: masing-masing 420 G, magic homing basic attack,
-handler Q/W/E/R tersendiri dan lifecycle sumber. Vex: orb/line, eclipse
-burst + ring DOT, prison/stun, flux AOE. Zephyr: bramble fixed-origin,
-Shadow Realm heal/immunity, curse DOT dan Bedlam. `starter_finish_source_oracle.py`
-mengeksekusi kode sumber asli untuk batas, cooldown, moving/dead target,
-upgrade saat efek, respawn serta projectile. Helper bersama hanya BaseSkill
-atau blok sumber yang identik. CI 4.7.2 commit `63778c4`: 50.666 checks;
-**6 playable, 216 boss pending**, semuanya ditolak tanpa debit/substitusi.
-Daftar/progres batch: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).

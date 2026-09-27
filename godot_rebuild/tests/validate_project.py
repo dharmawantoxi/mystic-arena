@@ -132,7 +132,7 @@ if (ROOT / "tests/fixtures/sylara_source.json").is_file():
         (ROOT / "tests/fixtures/sylara_source.json").read_text(encoding="utf-8")),
         "Sylara source skill/evasion/projectile drift")
 
-# Recruitment is still staged: only Kaizen, Thorne, Grimjaw and Sylara have native kits.
+# Recruitment is staged: only the explicit native registry has playable kits.
 # Execute the real Hero source oracle in this CI step (no workflow change).
 from ai_recruit_source_oracle import source_fixture as ai_recruit_source_fixture
 check("AIRecruitChecks.new().run(_check)" in ai_tests, "Real recruit suite must run")
@@ -183,6 +183,9 @@ check(hero_school_fixture() == json.loads((ROOT / "tests/fixtures/hero_school_so
 from alchemist_source_oracle import source_fixture as alchemist_fixture
 check(alchemist_fixture() == json.loads((ROOT / "tests/fixtures/alchemist_source.json").read_text()), "Alchemist source behavior drift")
 check("AlchemistChecks.new().run(_check)" in ai_tests, "Alchemist native suite must run")
+
+from hero_manifest_checks import validate_manifest
+validate_manifest(ROOT, check)
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)

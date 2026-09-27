@@ -36,4 +36,4 @@ if __name__ == "__main__":
         FIXTURE.write_text(json.dumps(result, separators=(",", ":"))+"\n")
     else:
         assert result == json.loads(FIXTURE.read_text()), "Real hero school/reflect source drift"
-    print("PASS: 1248 per-ID Hero-v-Hero/Tower mitigation/reflect/source attribution checks")
+    print(f"PASS: {len(result)} per-ID Hero-v-Hero/Tower mitigation/reflect/source attribution checks")

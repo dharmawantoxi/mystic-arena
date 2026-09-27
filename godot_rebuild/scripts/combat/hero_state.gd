@@ -1,5 +1,5 @@
 extends "res://scripts/combat/unit_state.gd"
-## Kaizen-1 hero state: identity, level math, skill/cooldown helpers.
+## Per-instance native hero identity, level math and source kit/cooldown state.
 ## Inherits hp/alive/facing/position plus the flat tower-debuff fields
 ## from UnitState. Battle wiring (spawn/strike/cast/tick) lives in
 ## minion_battle.gd; this file holds pure per-hero math only.
