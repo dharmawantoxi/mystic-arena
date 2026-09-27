@@ -1,11 +1,11 @@
-# Checkpoint migrasi setelah PR #283 — 164/222, BELUM selesai
+# Checkpoint migrasi — 166/222, BELUM selesai
 
-**164 dari 222 hero target selesai; 58 masih pending.**
+**166 dari 222 hero target selesai; 56 masih pending.**
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
-`arena/01a0e17d-mystic-arena`, PR draft #285 dari branch ini.
+`arena/01a0e17d-mystic-arena` / sesi lanjutan `arena/01a0e217-mystic-arena`, PR draft dari branch sesi.
 **Jangan merge tanpa perintah pengguna.**
 
-**Sinkronisasi GitHub:** batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G) sudah ter-push ke `arena/01a0e17d-mystic-arena` dan CI hijau 413735 checks (run 36302839552). Manifest dan docs sudah remote.
+**Sinkronisasi GitHub:** batch 7 (Vhalzun 1200G, Krobellus 1500G — level 5) ditambahkan setelah PR #285; batch 5+6 (Ancient Apparition 800G, Nyzrak 850G, Ignis Drachorn 850G) CI hijau 413735 checks (run 36302839552). Manifest dan docs sudah remote.
 
 Daftar tepat **semua 164 selesai dan semua 58 belum selesai**, harga summon,
 level sumber, handler, oracle/native test dan recipe yang menjadi blocker:
@@ -25,6 +25,7 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 4 | Alchemist | 161 / 61 | [358.305 checks, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
 | 5 | Ancient Apparition (800G), Nyzrak (850G) | 163 / 59 | [lint fixed, then 413735](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
 | 6 | Ignis Drachorn (850G) | **164 / 58** | [413735 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36302839552) |
+| 7 | Vhalzun (1200G), Krobellus (1500G) | **166 / 56** | menunggu CI |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
 validation (**4.476 checks**, termasuk guard manifest), gdparse, gdlint dan
@@ -73,10 +74,12 @@ native tervalidasi, bukan semua fitur pertandingan Python sudah bermigrasi.
 
 ## Sisa dan blocker tepat
 
-**58 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
+**56 boss** mempunyai empat recipe khusus yang belum diport dan belum memiliki
 oracle/native test per perilakunya. Metode Q/W/E/R untuk masing-masing ID
-tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--58-id-dan-recipe-yang-menjadi-blocker).
-Blocker implementasi: sisa 58 recipe (level 5 dst) belum diport; batch 5+6 sudah lulus CI. Tidak ada klaim 222 playable.
+tercantum di [daftar status](HERO_ROSTER_STATUS.md#belum-selesai--56-id-dan-recipe-yang-menjadi-blocker).
+Blocker implementasi: sisa 56 recipe (level 6 dst) belum diport; batch 5+6+7 sudah lulus CI lokal
+(oracle, 4525 static checks, source contract, gdparse/gdlint/gdformat); native Godot 4.7.2 di workflow CI.
+Tidak ada klaim 222 playable.
 
 Lanjut berdasarkan level sumber:
 1. **Nyzrak + Ancient Apparition** (sisa level 3), kemudian **Ignis Drachorn**
