@@ -2640,6 +2640,61 @@
     }
   },
   {
+    "hero_type": "auroth",
+    "price": 1850,
+    "initial": 1849,
+    "success": false,
+    "balance": 1849,
+    "count": 0,
+    "reserve": 1850,
+    "target": "auroth",
+    "hero": null
+  },
+  {
+    "hero_type": "auroth",
+    "price": 1850,
+    "initial": 1850,
+    "success": true,
+    "balance": 0,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "auroth",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1941,
+      "hp": 1941,
+      "damage": 175,
+      "skill_damage": 434,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
+    "hero_type": "auroth",
+    "price": 1850,
+    "initial": 1851,
+    "success": true,
+    "balance": 1,
+    "count": 1,
+    "reserve": 0,
+    "target": "",
+    "hero": {
+      "hero_type": "auroth",
+      "team": "red",
+      "x": 1120.0,
+      "y": 90.0,
+      "max_hp": 1941,
+      "hp": 1941,
+      "damage": 175,
+      "skill_damage": 434,
+      "level": 1,
+      "auto_cast": true
+    }
+  },
+  {
     "hero_type": "aelyrion",
     "price": 3600,
     "initial": 3599,
