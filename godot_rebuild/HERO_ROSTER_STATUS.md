@@ -1,4 +1,4 @@
-# Daftar tepat migrasi hero — 163 playable, 59 pending
+# Daftar tepat migrasi hero — 164 playable, 58 pending
 
 Target tetap **222**, bukan selesai. Registry native eksplisit:
 `scripts/data/hero_roster.gd`. Manifest mesin: `data/ai/hero_migration_status.json`.
@@ -31,6 +31,7 @@ CI Godot 4.7.2: 163 playable — batch 5 pending CI baru (sebelumnya 358.305 che
 | `alchemist` | 2 | 750 | `alchemist_skills.gd` | `alchemist_source_oracle.py` / `alchemist_checks.gd` |
 | `ancient_apparition` | 3 | 800 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
 | `nyzrak` | 3 | 850 | `boss_level_three_skills.gd` | `boss_level_three_source_oracle.py` / `boss_level_three_checks.gd` |
+| `ignis_drachorn` | 4 | 850 | `boss_level_four_skills.gd` | `boss_level_four_source_oracle.py` / `boss_level_four_checks.gd` |
 | `gorath` | 2 | 750 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `khalros` | 2 | 700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `razak` | 2 | 650 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
@@ -182,11 +183,10 @@ CI Godot 4.7.2: 163 playable — batch 5 pending CI baru (sebelumnya 358.305 che
 | `sanguire` | 54 | 8700 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 | `sasori` | 54 | 8800 | `source_shared_boss_skills.gd` | `source_shared_boss_oracle.py` / `source_shared_boss_checks.gd` |
 
-## Belum selesai — 59 ID dan recipe yang menjadi blocker
+## Belum selesai — 58 ID dan recipe yang menjadi blocker
 
 | ID | Level sumber | Summon G | Metode Q / W / E / R sumber yang belum diport & diuji |
 |---|---:|---:|---|
-| `ignis_drachorn` | 4 | 850 | `_cast_q_dragon_breath` / `_cast_w_dragon_tail` / `_cast_e_dragon_blood` / `_cast_r_elder_dragon_form` |
 | `krobellus` | 5 | 1500 | `_cast_q_krobellus_exorcism` / `_cast_w_krobellus_silence` / `_cast_e_krobellus_siphon` / `_cast_r_krobellus_crypt` |
 | `vhalzun` | 5 | 1200 | `_cast_q_vhalzun_death_pulse` / `_cast_w_vhalzun_heartstopper` / `_cast_e_vhalzun_reapers_scythe` / `_cast_r_vhalzun_ghost_shroud` |
 | `gravewake` | 6 | 1000 | `_cast_q_gravewake_anchor` / `_cast_w_gravewake_tide` / `_cast_e_gravewake_shell` / `_cast_r_gravewake_ravage` |

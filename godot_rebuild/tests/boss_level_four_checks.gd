@@ -1,10 +1,7 @@
 extends "res://tests/starter_finish_checks.gd"
-## Ancient Apparition + Nyzrak real recipes, gates, timers, attacks, respawn.
-const BOSS_FIXTURE := "res://tests/fixtures/boss_level_three_source.json"
-const BOSSES := {
-	"ancient_apparition": preload("res://data/heroes/ancient_apparition.tres"),
-	"nyzrak": preload("res://data/heroes/nyzrak.tres")
-}
+## Ignis Drachorn real recipes, gates, timers, attacks, respawn.
+const BOSS_FIXTURE := "res://tests/fixtures/boss_level_four_source.json"
+const BOSSES := {"ignis_drachorn": preload("res://data/heroes/ignis_drachorn.tres")}
 
 
 func _hero(world: Battle, kind: String) -> Battle.HeroState:
@@ -16,7 +13,7 @@ func run(check: Callable) -> void:
 	for kind in BOSSES:
 		check.call(
 			BOSSES[kind].catalog_damage == fixture.catalog[kind].damage,
-			"Level3 boss raw catalog damage oracle"
+			"Level4 boss raw catalog damage oracle"
 		)
 	for kind in BOSSES:
 		_levels(kind, fixture.levels[kind], check)
@@ -54,14 +51,14 @@ func _trace(row: Dictionary, check: Callable) -> void:
 	hero.target_id = enemies[0].id
 	enemies[0].cooldown_ticks = 90
 	check.call(
-		helpers._skill(world, hero.id, row.key), "Level3 timer cast " + row.hero + " " + row.key
+		helpers._skill(world, hero.id, row.key), "Level4 timer cast " + row.hero + " " + row.key
 	)
 	var moment := 0
-	for tick in range(1, int(row.get("length", 481)) + 1):
+	for tick in range(1, int(row.get("length", 601)) + 1):
 		if tick == 2 and row.mode == "move_upgrade":
 			hero.position.x += 100
 			enemies[0].position.x += 200
-			check.call(hero.upgrade(), "Upgrade during level3 effect")
+			check.call(hero.upgrade(), "Upgrade during level4 effect")
 		if tick == 2 and row.mode == "retarget":
 			hero.target_id = enemies[1].id
 		if tick == 2 and row.mode == "target_dies":
@@ -77,7 +74,7 @@ func _trace(row: Dictionary, check: Callable) -> void:
 			)
 			moment += 1
 	check.call(
-		moment == row.rows.size(), "All level3 trace moments compared " + row.hero + " " + row.key
+		moment == row.rows.size(), "All level4 trace moments compared " + row.hero + " " + row.key
 	)
 
 
@@ -86,15 +83,15 @@ func _attack(row: Dictionary, check: Callable) -> void:
 	var hero := _hero(world, row.hero)
 	var target_point: Array = row.get("target_position", [560, 340])
 	var enemy = helpers._dummy(world, Vector2(target_point[0], target_point[1]))
-	check.call(world.hero_basic_attack(hero.id, enemy.id), "Level3 basic attack " + row.hero)
+	check.call(world.hero_basic_attack(hero.id, enemy.id), "Level4 basic attack " + row.hero)
 	for moment in row.rows:
 		if moment.tick > 0:
 			world._tick_hero(hero)
-		check.call(enemy.hp == moment.hp, "Level3 projectile impact " + row.hero)
-		check.call(hero.attack_timer == moment.attack_timer, "Level3 attack cooldown " + row.hero)
+		check.call(enemy.hp == moment.hp, "Level4 projectile impact " + row.hero)
+		check.call(hero.attack_timer == moment.attack_timer, "Level4 attack cooldown " + row.hero)
 		check.call(
 			world.hero_projectiles.size() == moment.positions.size(),
-			"Level3 arrow lifecycle " + row.hero
+			"Level4 arrow lifecycle " + row.hero
 		)
 		for index in range(mini(world.hero_projectiles.size(), moment.positions.size())):
 			var point: Array = moment.positions[index]
@@ -103,7 +100,7 @@ func _attack(row: Dictionary, check: Callable) -> void:
 					world.hero_projectiles[index].position.distance_to(Vector2(point[0], point[1]))
 					< 0.002
 				),
-				"Level3 homing trajectory " + row.hero
+				"Level4 homing trajectory " + row.hero
 			)
 
 
@@ -129,13 +126,13 @@ func _roster(check: Callable) -> void:
 		var definition = BOSSES[kind]
 		check.call(
 			world._buy_ai_hero(kind, definition.cost, Vector2(1120, 90 + index * 40)),
-			"Level3 real kits purchased " + kind
+			"Level4 real kits purchased " + kind
 		)
 		index += 1
-	check.call(world.economy.is_balanced(), "Level3 roster ledger balanced")
-	check.call(world.units.size() == BOSSES.size(), "Level3 heroes registered")
+	check.call(world.economy.is_balanced(), "Level4 roster ledger balanced")
+	check.call(world.units.size() == BOSSES.size(), "Level4 heroes registered")
 	for unit in world.units:
-		check.call(BOSSES.has(unit.definition.id), "Distinct level3 identity " + unit.definition.id)
+		check.call(BOSSES.has(unit.definition.id), "Distinct level4 identity " + unit.definition.id)
 
 
 func _compare(hero, enemies: Array, expected: Dictionary, check: Callable, label: String) -> void:

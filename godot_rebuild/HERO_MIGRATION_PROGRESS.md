@@ -1,6 +1,6 @@
 # Checkpoint migrasi setelah PR #283 — 163/222, BELUM selesai
 
-**163 dari 222 hero target selesai; 59 masih pending.**
+**164 dari 222 hero target selesai; 59 masih pending.**
 Target tetap semua 222 kit, tidak dikurangi. Progres disimpan di branch sesi
 `arena/01a0e17d-mystic-arena`, PR draft dari branch ini.
 **Jangan merge tanpa perintah pengguna.**
@@ -29,7 +29,7 @@ debit/substitusi. Metadata/baseline angka 222 bukan bukti kit playable.
 | 2 | Gornak, Morgath, Drakar, Abaddon | 10 / 212 | [95.314 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36296265931) |
 | 3 | 150 ID shared-source eksplisit (lihat daftar) | 160 / 62 | [340.054 checks](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36297544475) |
 | 4 | Alchemist | 161 / 61 | [358.305 checks, c029d50](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36298034563) |
-| 5 | Ancient Apparition (800G), Nyzrak (850G) | **163 / 59** | pending CI baru |
+| 5 | Ancient Apparition (800G), Nyzrak (850G) | **164 / 58** | pending CI baru |
 
 Semua suite lama tetap dijalankan. Oracle sumber, source-contract, static
 validation (**4.390 checks**, termasuk guard manifest), gdparse, gdlint dan

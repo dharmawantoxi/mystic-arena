@@ -14,6 +14,7 @@ const DEFINITIONS := {
 	"abaddon": preload("res://data/heroes/abaddon.tres"),
 	"ancient_apparition": preload("res://data/heroes/ancient_apparition.tres"),
 	"nyzrak": preload("res://data/heroes/nyzrak.tres"),
+	"ignis_drachorn": preload("res://data/heroes/ignis_drachorn.tres"),
 	"aelyrion": preload("res://data/heroes/aelyrion.tres"),
 	"akaroth": preload("res://data/heroes/akaroth.tres"),
 	"akirakumo": preload("res://data/heroes/akirakumo.tres"),

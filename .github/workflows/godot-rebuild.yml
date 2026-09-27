@@ -71,6 +71,7 @@ jobs:
           python godot_rebuild/tests/starter_finish_source_oracle.py
           python godot_rebuild/tests/boss_level_one_source_oracle.py
           python godot_rebuild/tests/boss_level_three_source_oracle.py
+          python godot_rebuild/tests/boss_level_four_source_oracle.py
           python godot_rebuild/tests/hero_status_source_oracle.py
           python godot_rebuild/tests/source_shared_boss_oracle.py
           python godot_rebuild/tests/hero_school_source_oracle.py
