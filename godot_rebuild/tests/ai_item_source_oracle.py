@@ -10,8 +10,10 @@ stores the ``CATEGORY_*`` name, not its string value.
 This is test infrastructure, not a runtime converter. Python stays read-only.
 """
 import ast
+import contextlib
 import json
 import sys
+import types
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -24,6 +26,56 @@ _NAMES = frozenset({
     "MAX_ITEM_SLOTS", "ITEM_FLAT_COST", "MAGIC_ROLE_KEYWORDS", "ITEM_CATALOG",
 })
 _FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero")
+_LEVEL_MULT = "_hero_level_mult"
+# Real HeroItemInventory slot bookkeeping plus the stat chain `_on_item_changed`
+# reaches, so the fixture can show exactly what the rebuild does NOT port yet.
+_INVENTORY_METHODS = (
+    "__init__", "count", "has", "used_slots", "add", "remove", "_on_item_changed",
+    "get_max_hp", "get_bonus_hp", "get_hp_pct", "get_heal_amp", "_sum_stat",
+    "clear_on_death",
+)
+
+# (hero spec, ops). Every op result plus the slot list is recorded; the source
+# hero max_hp/hp/heal-amp calls are recorded too, as documented divergence.
+INVENTORY_CASES = [
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3, "hp": 500,
+      "max_hp": 700}, [
+        ["add", "leviathan_heart"], ["add", "cleave_axe"], ["add", "holy_rapier"],
+        ["count", "holy_rapier"], ["has", "cleave_axe"], ["used_slots"],
+        ["remove", 0], ["add", "leviathan_heart"], ["count", "leviathan_heart"],
+        ["clear_on_death"], ["has", "holy_rapier"], ["used_slots"],
+    ]),
+    ({"role": "Marksman", "range": 130, "base_hp": 540, "level": 5, "hp": 540,
+      "max_hp": 800}, [
+        ["add", "cleave_axe"], ["add", "dead_edge"], ["remove", -1], ["remove", 6],
+        ["remove", 1], ["remove", 0], ["remove", 0], ["used_slots"],
+    ]),
+    ({"role": "Warrior", "range": 70, "base_hp": 700, "level": 1, "hp": 700,
+      "max_hp": 700}, [
+        ["add", "astral_codex"], ["add", "vital_stone"], ["add", "steel_aegis"],
+        ["add", "not_an_item"], ["add", ""], ["used_slots"],
+    ]),
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 7, "hp": 480,
+      "max_hp": 900}, [
+        ["add", "astral_codex"], ["add", "vital_stone"], ["add", "abyss_breaker"],
+        ["add", "leviathan_heart"], ["used_slots"],
+    ]),
+    ({"role": "Fighter", "range": 80, "base_hp": 650, "level": 4, "hp": 650,
+      "max_hp": 750}, [
+        ["add", "searbrand"], ["add", "scarlet_bulwark"], ["add", "everfrost_guard"],
+        ["add", "steel_aegis"], ["add", "solar_brand"], ["add", "moon_shard"],
+        ["add", "demon_maw"], ["used_slots"],
+    ]),
+    ({"role": "Ranger", "range": 0, "base_hp": 520, "level": 2, "hp": 520,
+      "max_hp": 560}, [
+        ["add", "cleave_axe"], ["used_slots"], ["clear_on_death"],
+    ]),
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 6, "hp": 480,
+      "max_hp": 880}, [
+        ["add", "holy_rapier"], ["add", "runic_gavel"], ["clear_on_death"],
+        ["used_slots"], ["has", "runic_gavel"],
+    ]),
+]
 
 # (role, attack range, owned slots). Ranges 70/80 are melee, 81+ is ranged,
 # and 0 exercises the source `or 100` fallback.
@@ -79,7 +131,7 @@ def _assignments():
     return nodes
 
 
-def source_namespace(with_functions=False):
+def source_namespace(with_functions=False, with_inventory=False):
     """Exec only the constant assignments ITEM_CATALOG needs, in source order."""
     nodes = _assignments()
     by_name = {node.targets[0].id: node for node in nodes}
@@ -89,10 +141,15 @@ def source_namespace(with_functions=False):
         if isinstance(ref, ast.Name) and ref.id in by_name:
             needed.add(ref.id)
     kept = [node for node in nodes if node.targets[0].id in needed]
+    wanted = set()
     if with_functions:
+        wanted |= set(_FUNCTIONS)
+    if with_inventory:
+        wanted.add(_LEVEL_MULT)
+    if wanted:
         found = [node for node in ast.parse(SOURCE.read_text(encoding="utf-8")).body
-                 if isinstance(node, ast.FunctionDef) and node.name in _FUNCTIONS]
-        assert {node.name for node in found} == set(_FUNCTIONS), "source functions missing"
+                 if isinstance(node, ast.FunctionDef) and node.name in wanted]
+        assert {node.name for node in found} == wanted, "source functions missing"
         kept.extend(found)
     code = ast.fix_missing_locations(ast.Module(body=kept, type_ignores=[]))
     env = {}
@@ -158,14 +215,83 @@ def pools(env):
     return rows
 
 
+@contextlib.contextmanager
+def _core_module():
+    """`_hero_level_mult` imports HERO_LEVELS from _core, which needs pygame."""
+    from structure_source_oracle import namespace as core_namespace
+    stub = types.ModuleType("_core")
+    stub.HERO_LEVELS = core_namespace()["HERO_LEVELS"]
+    saved = sys.modules.get("_core")
+    sys.modules["_core"] = stub
+    try:
+        yield stub
+    finally:
+        if saved is None:
+            sys.modules.pop("_core", None)
+        else:
+            sys.modules["_core"] = saved
+
+
+def inventory_type(env):
+    """Exec the real slot/stat methods of HeroItemInventory, unchanged."""
+    tree = ast.parse(SOURCE.read_text(encoding="utf-8"))
+    original = next(n for n in tree.body
+                    if isinstance(n, ast.ClassDef) and n.name == "HeroItemInventory")
+    selected = [n for n in original.body
+                if isinstance(n, ast.FunctionDef) and n.name in _INVENTORY_METHODS]
+    assert {n.name for n in selected} == set(_INVENTORY_METHODS), "inventory methods missing"
+    node = ast.ClassDef(name="HeroItemInventory", bases=[], keywords=[],
+                        decorator_list=[], body=selected)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])),
+                 "<source HeroItemInventory slots>", "exec"), env)
+    return env["HeroItemInventory"]
+
+
+def inventory(env):
+    """Real add/remove/count/has/clear_on_death runs, per op snapshots."""
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for spec, ops in INVENTORY_CASES:
+            heal_calls = []
+            hero = SimpleNamespace(role=spec["role"], range=spec["range"],
+                                   base_hp=spec["base_hp"], level=spec["level"],
+                                   hp=spec["hp"], max_hp=spec["max_hp"])
+            hero.apply_heal_amp = lambda amount, duration: heal_calls.append(
+                [amount, duration])
+            inv = inv_type(hero)
+            log = []
+            for op in ops:
+                if op[0] == "clear_on_death":
+                    result = inv.clear_on_death()
+                elif op[0] == "used_slots":
+                    result = inv.used_slots()
+                else:
+                    result = getattr(inv, op[0])(op[1])
+                log.append({
+                    "op": op,
+                    "result": result,
+                    "slots": list(inv.slots),
+                    "used": inv.used_slots(),
+                    # Source-only: `_on_item_changed` recomputes max HP and
+                    # re-applies heal amp. The rebuild does not port this yet.
+                    "max_hp": hero.max_hp,
+                    "hp": hero.hp,
+                    "heal_calls": [list(call) for call in heal_calls],
+                })
+            rows.append({"hero": spec, "start": [spec["max_hp"], spec["hp"]], "log": log})
+    return rows
+
+
 def source_fixture():
-    env = source_namespace(with_functions=True)
+    env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
     return json.loads(json.dumps({
         "catalog": catalog(env),
         "magic_roles": magic_roles(env),
         "suggestions": suggestions(env),
         "pools": pools(env),
+        "inventory": inventory(env),
     }))
 
 

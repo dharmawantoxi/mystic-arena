@@ -1176,5 +1176,1024 @@
       ],
       "is_magic": false
     }
+  ],
+  "inventory": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3,
+        "hp": 500,
+        "max_hp": 700
+      },
+      "start": [
+        700,
+        500
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "leviathan_heart"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "cleave_axe"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "holy_rapier"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "count",
+            "holy_rapier"
+          ],
+          "result": 1,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "has",
+            "cleave_axe"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 3,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            0
+          ],
+          "result": "leviathan_heart",
+          "slots": [
+            null,
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1023,
+          "hp": 1023,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "leviathan_heart"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "count",
+            "leviathan_heart"
+          ],
+          "result": 1,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "clear_on_death"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "has",
+            "holy_rapier"
+          ],
+          "result": false,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 2,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Marksman",
+        "range": 130,
+        "base_hp": 540,
+        "level": 5,
+        "hp": 540,
+        "max_hp": 800
+      },
+      "start": [
+        800,
+        540
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "cleave_axe"
+          ],
+          "result": false,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 800,
+          "hp": 540,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "dead_edge"
+          ],
+          "result": true,
+          "slots": [
+            "dead_edge",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            -1
+          ],
+          "result": null,
+          "slots": [
+            "dead_edge",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            6
+          ],
+          "result": null,
+          "slots": [
+            "dead_edge",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            1
+          ],
+          "result": null,
+          "slots": [
+            "dead_edge",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            0
+          ],
+          "result": "dead_edge",
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            0
+          ],
+          "result": null,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 0,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Warrior",
+        "range": 70,
+        "base_hp": 700,
+        "level": 1,
+        "hp": 700,
+        "max_hp": 700
+      },
+      "start": [
+        700,
+        700
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "astral_codex"
+          ],
+          "result": false,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "vital_stone"
+          ],
+          "result": false,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "steel_aegis"
+          ],
+          "result": true,
+          "slots": [
+            "steel_aegis",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "not_an_item"
+          ],
+          "result": false,
+          "slots": [
+            "steel_aegis",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            ""
+          ],
+          "result": false,
+          "slots": [
+            "steel_aegis",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 1,
+          "slots": [
+            "steel_aegis",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 7,
+        "hp": 480,
+        "max_hp": 900
+      },
+      "start": [
+        900,
+        480
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "astral_codex"
+          ],
+          "result": true,
+          "slots": [
+            "astral_codex",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 2224,
+          "hp": 1804,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "vital_stone"
+          ],
+          "result": true,
+          "slots": [
+            "astral_codex",
+            "vital_stone",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 2544,
+          "hp": 2124,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "abyss_breaker"
+          ],
+          "result": true,
+          "slots": [
+            "astral_codex",
+            "vital_stone",
+            "abyss_breaker",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 2844,
+          "hp": 2424,
+          "heal_calls": [
+            [
+              0.16,
+              999999
+            ]
+          ]
+        },
+        {
+          "op": [
+            "add",
+            "leviathan_heart"
+          ],
+          "result": true,
+          "slots": [
+            "astral_codex",
+            "vital_stone",
+            "abyss_breaker",
+            "leviathan_heart",
+            null,
+            null
+          ],
+          "used": 4,
+          "max_hp": 3839,
+          "hp": 3419,
+          "heal_calls": [
+            [
+              0.16,
+              999999
+            ],
+            [
+              0.16,
+              999999
+            ]
+          ]
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 4,
+          "slots": [
+            "astral_codex",
+            "vital_stone",
+            "abyss_breaker",
+            "leviathan_heart",
+            null,
+            null
+          ],
+          "used": 4,
+          "max_hp": 3839,
+          "hp": 3419,
+          "heal_calls": [
+            [
+              0.16,
+              999999
+            ],
+            [
+              0.16,
+              999999
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Fighter",
+        "range": 80,
+        "base_hp": 650,
+        "level": 4,
+        "hp": 650,
+        "max_hp": 750
+      },
+      "start": [
+        750,
+        650
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "searbrand"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1685,
+          "hp": 1585,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "scarlet_bulwark"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1935,
+          "hp": 1835,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "everfrost_guard"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1935,
+          "hp": 1835,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "steel_aegis"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            null,
+            null
+          ],
+          "used": 4,
+          "max_hp": 1935,
+          "hp": 1835,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "solar_brand"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            "solar_brand",
+            null
+          ],
+          "used": 5,
+          "max_hp": 2215,
+          "hp": 2115,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "moon_shard"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            "solar_brand",
+            "moon_shard"
+          ],
+          "used": 6,
+          "max_hp": 2215,
+          "hp": 2115,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "demon_maw"
+          ],
+          "result": false,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            "solar_brand",
+            "moon_shard"
+          ],
+          "used": 6,
+          "max_hp": 2215,
+          "hp": 2115,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 6,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            "solar_brand",
+            "moon_shard"
+          ],
+          "used": 6,
+          "max_hp": 2215,
+          "hp": 2115,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Ranger",
+        "range": 0,
+        "base_hp": 520,
+        "level": 2,
+        "hp": 520,
+        "max_hp": 560
+      },
+      "start": [
+        560,
+        520
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "cleave_axe"
+          ],
+          "result": true,
+          "slots": [
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 676,
+          "hp": 636,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 1,
+          "slots": [
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 676,
+          "hp": 636,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "clear_on_death"
+          ],
+          "result": false,
+          "slots": [
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 676,
+          "hp": 636,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 6,
+        "hp": 480,
+        "max_hp": 880
+      },
+      "start": [
+        880,
+        480
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "holy_rapier"
+          ],
+          "result": true,
+          "slots": [
+            "holy_rapier",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1608,
+          "hp": 1208,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "runic_gavel"
+          ],
+          "result": true,
+          "slots": [
+            "holy_rapier",
+            "runic_gavel",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1858,
+          "hp": 1458,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "clear_on_death"
+          ],
+          "result": true,
+          "slots": [
+            null,
+            "runic_gavel",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1858,
+          "hp": 1458,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 1,
+          "slots": [
+            null,
+            "runic_gavel",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1858,
+          "hp": 1458,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "has",
+            "runic_gavel"
+          ],
+          "result": true,
+          "slots": [
+            null,
+            "runic_gavel",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1858,
+          "hp": 1458,
+          "heal_calls": []
+        }
+      ]
+    }
   ]
 }

@@ -258,11 +258,21 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
    penuh (drain sampai `None`); `ai_item_checks.gd` mengulang drain yang sama.
    `range <= 0` memakai fallback sumber 100 (jadi ranged), `Anti-Mage` memakai
    pool mage tetapi seluruh item `magic_only` terfilter.
-3. **Inventory slot** `HeroItemInventory.add/remove/count/has/used_slots`
+3. [x] **Inventory slot** `HeroItemInventory.add/remove/count/has/used_slots`
    (6 slot, gate melee/magic). Perhatian: `add` memanggil `_on_item_changed`
    yang menghitung ulang `max_hp` (`get_max_hp`) dan `apply_heal_amp`; kalau
    stat belum diport, ini **wajib** ditulis sebagai batasan eksplisit, bukan
    diklaim parity. `clear_on_death` menghapus `holy_rapier` permanen.
+   `scripts/match/hero_item_inventory.gd` + `HeroState.items` (gate role/range
+   di-refresh di `apply_level_stats`, bukan referensi balik ke hero supaya tidak
+   ada siklus RefCounted). **BATASAN EKSPLISIT: tidak ada parity stat.**
+   `_on_item_changed` (max HP = `base_hp * hp_mult` + hp/hp_pct item, heal amp
+   Abyss Breaker, reset timer pasif/aktif di `clear_on_death`) TIDAK diport:
+   beli/jatuhkan item hanya mengisi slot, `max_hp`/`hp` hero tidak berubah.
+   Oracle merekam `max_hp`/`hp`/`heal_calls` sumber per operasi (7 kasus, term.
+   duplikat item, slot penuh, `remove` -1/6, range 0 lolos gate melee) supaya
+   selisihnya terlihat; `ai_item_checks.gd` menegaskan HP hero tetap dan bahwa
+   sumber menaikkan max HP.
 4. **Adapter AI** `ai_items.gd::try_buy`: kandidat = hero red **hidup** dengan
    slot kosong, urut `(kills, level)` descending (Python `sort` stabil,
    tuple key), `gold >= cost + reserve`, debit lewat ledger match, tanpa
@@ -290,9 +300,9 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-  Lapisan 1-2 selesai (metadata katalog 33 item + `suggest_item_for_hero`/
-  `is_magic_hero` + oracle + tes native); lapisan 3-5 belum (lihat "Rencana
-  port item AI").
+  Lapisan 1-3 selesai (metadata katalog 33 item, `suggest_item_for_hero`/
+  `is_magic_hero`, slot `HeroItemInventory` tanpa stat effects); lapisan 4-5
+  belum (lihat "Rencana port item AI").
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.

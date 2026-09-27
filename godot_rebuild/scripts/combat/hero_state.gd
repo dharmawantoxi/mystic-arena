@@ -5,6 +5,7 @@ extends "res://scripts/combat/unit_state.gd"
 ## minion_battle.gd; this file holds pure per-hero math only.
 
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
+const HeroItemInventory = preload("res://scripts/match/hero_item_inventory.gd")
 const StructureState = preload("res://scripts/combat/structure_state.gd")
 const Damage = preload("res://scripts/combat/damage_rules.gd")
 
@@ -108,9 +109,15 @@ var is_retreating := false
 var auto_cast_enabled := false
 var auto_cast_check_timer := 0
 
+# Source Hero.items (HeroItemInventory): six slots, melee/magic gates, rapier
+# lost on death. Slot bookkeeping only - item stat effects are NOT ported, so
+# slots never change max_hp/hp here (see hero_item_inventory.gd).
+var items: HeroItemInventory = null
+
 
 func _init() -> void:
 	is_hero = true
+	items = HeroItemInventory.new()
 
 
 func settings() -> HeroDefinition:
@@ -126,6 +133,12 @@ func apply_level_stats() -> void:
 	damage = int(base_damage * float(data["dmg_mult"]))
 	skill_value = int(skill_base * float(data["skill_mult"]))
 	max_hp = float(int(base_hp * float(data["hp_mult"])))
+	# The source inventory reads role/range from the hero when equipping; the
+	# definition is assigned after construction, so refresh the gate copies
+	# here. Item HP bonuses stay out of max_hp until the stat phase is ported.
+	var kit := settings()
+	if kit != null:
+		items.set_hero_gate(kit.role, attack_range)
 
 
 func upgrade_cost() -> int:
