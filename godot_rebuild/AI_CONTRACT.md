@@ -391,6 +391,16 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      `handle_click` yang sama. Layout memakai container Godot, bukan rect
      pygame; string Indonesia di `SHOP_TEXT` menggantikan `tr()` sumber.
      Terpasang di HUD PrototypeMatch dengan toggle "Item Forge [I]".
+   - [x] **6a.** Kontrol hero AI setiap tick (`ai_hero_control.gd`): port
+     `_control_heroes` (auto-cast lewat `try_auto_cast` yang sama dengan pemain,
+     penanda `skill_timer == 0`, counter `total_skills_cast` dari kenaikan
+     `active_skill_timer`) dan `_assign_hero_lane` (ancaman per lane dari minion
+     hidup, tie -> TOP, minion musuh TERDEKAT secara Euclidean di lane itu ->
+     x-nya + y lane, taman `x=600`, fallback tower terdekat dengan standoff 60).
+     `destination_auto` membatalkan tujuan AI begitu musuh masuk aggro range 250
+     (tujuan manual tetap ditaati). Kontrol dijalankan di `step_tick` tetapi
+     masih di balik flag `ai_hero_control_enabled` (default mati) sampai
+     pengontrol AI tersambung ke scene.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -454,10 +464,10 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
 5 notify_damage, 6 miasma, 8 forge). Native: `ai_item_checks.gd` terdaftar di
 `run_all.gd`.
-CI Godot 4.7.2 run 36461967528 hijau untuk lapisan 5f-3 (commit `1a16c3a`):
-**1.179.086 native checks**, static lokal 5727 PASS; `gdlint`/`gdformat`/`gdparse`
+CI Godot 4.7.2 run 36465518225 hijau untuk lapisan 6a (commit `517b36b`):
+**1.179.129 native checks**, static lokal 5737 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
-(fixture 11.496 baris, masih di bawah 20k).
+(fixture 11.506 baris, masih di bawah 20k).
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -471,7 +481,10 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: kontrol hero per tick dan integrasi scene. Catatan alur sesi:
+Berikutnya: integrasi scene/session pengontrol AI (policy + adapter yang sudah ada
+belum dipanggil scene), termasuk jalur pause/reset dan seeded RNG. Catatan 6a:
+`towers` diteruskan eksplisit karena daftar struktur native juga memuat nexus,
+sedangkan sumber hanya menyusuri `all_towers`. Catatan alur sesi:
 repo pernah ter-clone ulang sehingga riwayat lokal tertinggal dari remote —
 selalu `git fetch origin arena/01a0e891-mystic-arena` dan reset ke FETCH_HEAD
 sebelum commit baru. Catatan 5f: `forge.gd` hanya
