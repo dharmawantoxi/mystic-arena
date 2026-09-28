@@ -274,6 +274,10 @@ func _on_death(source_team: int, target: UnitState) -> void:
 
 func _on_hero_death(hero: HeroState, source_id: int) -> void:
 	super._on_hero_death(hero, source_id)
+	# Source Hero.take_damage death branch (_entity.py:4742): the inventory
+	# destroys Holy Rapier for good. The source does not recalculate max HP
+	# there and the rapier carries no HP stat, so HP math stays untouched.
+	hero.items.clear_on_death()
 	# Source Game._process_hero_kill: credit only when the last hit came from a
 	# real enemy hero (not the victim, not a tower/minion/castle). No popup.
 	var killer := get_unit(source_id) as HeroState

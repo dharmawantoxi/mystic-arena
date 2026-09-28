@@ -79,6 +79,7 @@ func run(check: Callable) -> void:
 	_test_stats(fixture.stats, check)
 	_test_stat_application(fixture.stat_application, check)
 	_test_heal_amp(check)
+	_test_deaths(fixture.deaths, check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -566,3 +567,37 @@ func _test_heal_amp(check: Callable) -> void:
 		is_equal_approx(hero.hp, hero.max_hp - 500.0 + 116.0),
 		"Heal amp must amplify incoming heals by 16%"
 	)
+
+
+func _test_deaths(rows: Array, check: Callable) -> void:
+	for row in rows:
+		var spec: Dictionary = row.hero
+		var world := _world()
+		var kit: String = STAT_HEROES[String(spec.role)]
+		var hero := world.spawn_hero(World.PLAYABLE_AI_HEROES[kit], 1, Vector2(1000, 200))
+		hero.base_hp = int(spec.base_hp)
+		hero.level = int(spec.level)
+		hero.apply_level_stats()
+		hero.hp = hero.max_hp
+		for item_id in row.loadout:
+			assert(hero.items.add(String(item_id)), "death loadout refused an item")
+		var killer: World.HeroState = null
+		for unit in world.units:
+			if unit.is_hero and unit.team == 0:
+				killer = unit as World.HeroState
+		check.call(
+			hero.items.has("holy_rapier") == bool(row.dropped),
+			"Rapier presence must match the source drop flag"
+		)
+		var max_hp := hero.max_hp
+		world._on_hero_death(hero, killer.id)
+		check.call(not hero.alive, "AI item hero dies from the match death hook")
+		check.call(
+			hero.items.slots == _slot_values(row.slots),
+			"Death must destroy Holy Rapier and keep every other item"
+		)
+		check.call(hero.max_hp == max_hp, "Death must not recalculate hero max HP")
+		check.call(
+			int(row.max_hp) == int(row.max_hp_before), "Source death branch leaves max HP untouched"
+		)
+		check.call(killer.kills == 1, "Enemy hero last hit still credits one kill")

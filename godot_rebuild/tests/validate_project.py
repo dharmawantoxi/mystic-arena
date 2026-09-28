@@ -182,6 +182,11 @@ check("apply_item_change()" in (ROOT / "scripts/match/prototype_battle.gd").read
       encoding="utf-8"), "The item transaction must apply the source HP recalc")
 check(len(ai_items_fixture["stat_application"]) == 5,
       "Update the AI item suite when the stat application cases change")
+check("hero.items.clear_on_death()" in (ROOT / "scripts/match/prototype_battle.gd")
+      .read_text(encoding="utf-8"),
+      "The match death hook must destroy Holy Rapier like the source")
+check(len(ai_items_fixture["deaths"]) == 3,
+      "Update the AI item suite when the death cases change")
 
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.

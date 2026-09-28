@@ -317,8 +317,15 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      **Batasan 5b:** hanya HP/heal amp yang diterapkan. Damage/armor/crit/AS/
      evasion/lifesteal dst. belum dikonsumsi jalur serangan karena
      `minion_battle.gd` berada di batas 1000 baris (perlu bedah tanpa tambah
-     baris); `heal_amp_timer` belum dikurangi per tick; `clear_on_death` belum
-     dipanggil dari kematian hero.
+     baris); `heal_amp_timer` belum dikurangi per tick; `clear_on_death` sudah dipanggil dari hook
+     kematian match (lihat 5b+).
+   - [x] **5b+.** Kematian hero: `prototype_battle._on_hero_death` memanggil
+     `items.clear_on_death()` seperti cabang mati `Hero.take_damage`
+     (`_entity.py:4742`). Sumber TIDAK menghitung ulang max HP di cabang itu
+     dan Holy Rapier tidak punya stat HP, jadi rebuild juga tidak; oracle
+     mengunci 3 kasus (slot sesudah mati, flag `dropped`, max HP sebelum =
+     sesudah) dan native membunuh hero nyata lewat hook match (atribusi kill
+     tetap 1, item lain tetap di slot).
    - [ ] **5c.** Timer pasif/aktif per item + `HeroItemInventory.update`.
    - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
      Scorched Earth ke menara/boss).

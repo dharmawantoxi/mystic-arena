@@ -4980,5 +4980,76 @@
       ],
       "log": []
     }
+  ],
+  "deaths": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 4
+      },
+      "loadout": [
+        "holy_rapier",
+        "leviathan_heart",
+        "dead_edge"
+      ],
+      "dropped": true,
+      "slots": [
+        null,
+        "leviathan_heart",
+        "dead_edge",
+        null,
+        null,
+        null
+      ],
+      "max_hp": 1757,
+      "max_hp_before": 1757
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 2
+      },
+      "loadout": [
+        "astral_codex",
+        "holy_rapier"
+      ],
+      "dropped": true,
+      "slots": [
+        "astral_codex",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "max_hp": 904,
+      "max_hp_before": 904
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 1
+      },
+      "loadout": [
+        "leviathan_heart"
+      ],
+      "dropped": false,
+      "slots": [
+        "leviathan_heart",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "max_hp": 837,
+      "max_hp_before": 837
+    }
   ]
 }

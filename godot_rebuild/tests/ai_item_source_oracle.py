@@ -502,6 +502,40 @@ STAT_APPLICATION_CASES = [
 ]
 
 
+# (hero spec, loadout). Death destroys Holy Rapier only, and the source never
+# recalculates max HP in that branch.
+DEATH_CASES = [
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 4},
+     ["holy_rapier", "leviathan_heart", "dead_edge"]),
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 2},
+     ["astral_codex", "holy_rapier"]),
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 1},
+     ["leviathan_heart"]),
+]
+
+
+def deaths(env):
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for spec, loadout in DEATH_CASES:
+            hero = SimpleNamespace(role=spec["role"], range=spec["range"],
+                                   base_hp=spec["base_hp"], level=spec["level"],
+                                   hp=1000, max_hp=1000)
+            hero.apply_heal_amp = lambda amount, duration: None
+            inv = inv_type(hero)
+            for item_id in loadout:
+                assert inv.add(item_id), f"death loadout refused {item_id}"
+            before = hero.max_hp
+            dropped = inv.clear_on_death()
+            rows.append({
+                "hero": spec, "loadout": list(loadout), "dropped": dropped,
+                "slots": list(inv.slots), "max_hp": hero.max_hp,
+                "max_hp_before": before,
+            })
+    return rows
+
+
 def hero_stat_type(env):
     """Real Hero HP recalc/level-up plus the _core heal-amp debuff setter."""
     entity_tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
@@ -582,6 +616,7 @@ def source_fixture():
         "purchases": purchases(env),
         "stats": stats(env),
         "stat_application": stat_application(env),
+        "deaths": deaths(env),
     }))
 
 
