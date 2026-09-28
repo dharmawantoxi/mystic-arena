@@ -118,6 +118,14 @@
         "stats": {
           "armor": 6,
           "attack_speed": 30
+        },
+        "aura": {
+          "name": "Steel Aura",
+          "ally_radius": 320,
+          "ally_armor": 2,
+          "ally_attack_speed": 10,
+          "enemy_radius": 320,
+          "enemy_armor_reduction": 2
         }
       },
       "moon_shard": {
@@ -364,6 +372,12 @@
           "slow": 0.45,
           "slow_duration": 210,
           "cooldown": 1440
+        },
+        "aura": {
+          "name": "Freezing Aura",
+          "enemy_radius": 300,
+          "enemy_atk_slow": 0.3,
+          "enemy_anti_heal": 0.4
         }
       },
       "sundering_cudgel": {
@@ -460,6 +474,12 @@
           "damage": 30,
           "hp": 280,
           "hp_regen": 5
+        },
+        "aura": {
+          "name": "Scorched Earth",
+          "enemy_radius": 280,
+          "burn_dps": 28,
+          "blind": 0.18
         }
       },
       "runic_gavel": {
@@ -502,6 +522,12 @@
           "burn_dps": 22,
           "burn_duration": 180,
           "cooldown": 1080
+        },
+        "aura": {
+          "name": "Cauterize",
+          "enemy_radius": 300,
+          "enemy_anti_heal": 0.5,
+          "burn_dps": 6
         }
       },
       "astral_codex": {
@@ -9772,6 +9798,1079 @@
             230,
             255
           ]
+        }
+      ]
+    }
+  ],
+  "auras": [
+    {
+      "name": "bulwark_guard_allies",
+      "heroes": [
+        {
+          "tag": "h0",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "scarlet_bulwark"
+          ],
+          "guard_timer": 420,
+          "stale": null,
+          "max_hp": 1273
+        },
+        {
+          "tag": "h1",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 150,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h2",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 700,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h3",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "red",
+          "x": 200,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h4",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "red",
+          "x": 120,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "scarlet_bulwark"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1273
+        },
+        {
+          "tag": "h5",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 60,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "scarlet_bulwark",
+            "leviathan_heart"
+          ],
+          "guard_timer": 300,
+          "stale": null,
+          "max_hp": 1718
+        }
+      ],
+      "units": [
+        {
+          "tag": "h0",
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h1",
+          "team": "blue",
+          "x": 150,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h2",
+          "team": "blue",
+          "x": 700,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h3",
+          "team": "red",
+          "x": 200,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h4",
+          "team": "red",
+          "x": 120,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h5",
+          "team": "blue",
+          "x": 60,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u6",
+          "team": "blue",
+          "x": 130,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u7",
+          "team": "red",
+          "x": 140,
+          "y": 100,
+          "alive": true
+        }
+      ],
+      "auras": [
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 69
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 69
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 69
+        }
+      ],
+      "effects": []
+    },
+    {
+      "name": "everfrost_enemy_units",
+      "heroes": [
+        {
+          "tag": "h0",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "everfrost_guard"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h1",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 140,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h2",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "red",
+          "x": 520,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "everfrost_guard"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 2688
+        }
+      ],
+      "units": [
+        {
+          "tag": "h0",
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h1",
+          "team": "blue",
+          "x": 140,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h2",
+          "team": "red",
+          "x": 520,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u3",
+          "team": "red",
+          "x": 250,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u4",
+          "team": "red",
+          "x": 700,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u5",
+          "team": "blue",
+          "x": 430,
+          "y": 100,
+          "alive": true
+        }
+      ],
+      "auras": [
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        }
+      ],
+      "effects": [
+        {
+          "unit": 3,
+          "kind": "debuff",
+          "name": "atk_slow",
+          "amount": 0.3,
+          "duration": 30,
+          "source_team": null
+        },
+        {
+          "unit": 3,
+          "kind": "debuff",
+          "name": "anti_heal",
+          "amount": 0.4,
+          "duration": 30,
+          "source_team": null
+        },
+        {
+          "unit": 5,
+          "kind": "debuff",
+          "name": "atk_slow",
+          "amount": 0.3,
+          "duration": 30,
+          "source_team": null
+        },
+        {
+          "unit": 5,
+          "kind": "debuff",
+          "name": "anti_heal",
+          "amount": 0.4,
+          "duration": 30,
+          "source_team": null
+        }
+      ]
+    },
+    {
+      "name": "frost_second_source_covers",
+      "heroes": [
+        {
+          "tag": "h0",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "everfrost_guard"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h1",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 500,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "everfrost_guard"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h2",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "red",
+          "x": 480,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 2688
+        }
+      ],
+      "units": [
+        {
+          "tag": "h0",
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h1",
+          "team": "blue",
+          "x": 500,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h2",
+          "team": "red",
+          "x": 480,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u3",
+          "team": "red",
+          "x": 460,
+          "y": 100,
+          "alive": true
+        }
+      ],
+      "auras": [
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        }
+      ],
+      "effects": [
+        {
+          "unit": 2,
+          "kind": "debuff",
+          "name": "atk_slow",
+          "amount": 0.3,
+          "duration": 30,
+          "source_team": null
+        },
+        {
+          "unit": 2,
+          "kind": "debuff",
+          "name": "anti_heal",
+          "amount": 0.4,
+          "duration": 30,
+          "source_team": null
+        },
+        {
+          "unit": 3,
+          "kind": "debuff",
+          "name": "atk_slow",
+          "amount": 0.3,
+          "duration": 30,
+          "source_team": null
+        },
+        {
+          "unit": 3,
+          "kind": "debuff",
+          "name": "anti_heal",
+          "amount": 0.4,
+          "duration": 30,
+          "source_team": null
+        }
+      ]
+    },
+    {
+      "name": "solar_scorched_earth",
+      "heroes": [
+        {
+          "tag": "h0",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "solar_brand"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 2968
+        },
+        {
+          "tag": "h1",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "red",
+          "x": 400,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 2688
+        }
+      ],
+      "units": [
+        {
+          "tag": "h0",
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h1",
+          "team": "red",
+          "x": 400,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u2",
+          "team": "red",
+          "x": 300,
+          "y": 100,
+          "alive": true
+        }
+      ],
+      "auras": [
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        }
+      ],
+      "effects": [
+        {
+          "unit": 2,
+          "kind": "debuff",
+          "name": "burn",
+          "amount": 28.0,
+          "duration": 30,
+          "source_team": "blue"
+        },
+        {
+          "unit": 2,
+          "kind": "miss",
+          "name": null,
+          "amount": 0.18,
+          "duration": 30,
+          "source_team": null
+        }
+      ]
+    },
+    {
+      "name": "searbrand_cauterize",
+      "heroes": [
+        {
+          "tag": "h0",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "searbrand"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1343
+        },
+        {
+          "tag": "h1",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "red",
+          "x": 350,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 2688
+        }
+      ],
+      "units": [
+        {
+          "tag": "h0",
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h1",
+          "team": "red",
+          "x": 350,
+          "y": 100,
+          "alive": true
+        }
+      ],
+      "auras": [
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        }
+      ],
+      "effects": [
+        {
+          "unit": 1,
+          "kind": "debuff",
+          "name": "anti_heal",
+          "amount": 0.5,
+          "duration": 30,
+          "source_team": null
+        },
+        {
+          "unit": 1,
+          "kind": "debuff",
+          "name": "burn",
+          "amount": 6.0,
+          "duration": 30,
+          "source_team": "blue"
+        }
+      ]
+    },
+    {
+      "name": "steel_aegis_stacks",
+      "heroes": [
+        {
+          "tag": "h0",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "steel_aegis"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h1",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 200,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "steel_aegis"
+          ],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h2",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 250,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h3",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 700,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 1023
+        },
+        {
+          "tag": "h4",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "red",
+          "x": 300,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 2688
+        },
+        {
+          "tag": "h5",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "red",
+          "x": 900,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 2688
+        }
+      ],
+      "units": [
+        {
+          "tag": "h0",
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h1",
+          "team": "blue",
+          "x": 200,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h2",
+          "team": "blue",
+          "x": 250,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h3",
+          "team": "blue",
+          "x": 700,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h4",
+          "team": "red",
+          "x": 300,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h5",
+          "team": "red",
+          "x": 900,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u6",
+          "team": "red",
+          "x": 180,
+          "y": 100,
+          "alive": true
+        }
+      ],
+      "auras": [
+        {
+          "armor": 2,
+          "attack_speed": 10,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 2,
+          "attack_speed": 10,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 4,
+          "attack_speed": 20,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 4,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        }
+      ],
+      "effects": []
+    },
+    {
+      "name": "aura_reset_stale",
+      "heroes": [
+        {
+          "tag": "h0",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": {
+            "armor": 7,
+            "attack_speed": 5,
+            "armor_reduction": 3,
+            "guard_block": 99
+          },
+          "max_hp": 1023
+        },
+        {
+          "tag": "h1",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "red",
+          "x": 400,
+          "y": 100,
+          "alive": true,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": {
+            "armor": 1,
+            "attack_speed": 1,
+            "armor_reduction": 1,
+            "guard_block": 1
+          },
+          "max_hp": 2688
+        }
+      ],
+      "units": [
+        {
+          "tag": "h0",
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h1",
+          "team": "red",
+          "x": 400,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u2",
+          "team": "red",
+          "x": 300,
+          "y": 100,
+          "alive": true
+        }
+      ],
+      "auras": [
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        }
+      ],
+      "effects": []
+    },
+    {
+      "name": "dead_heroes_and_units",
+      "heroes": [
+        {
+          "tag": "h0",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true,
+          "loadout": [
+            "everfrost_guard",
+            "scarlet_bulwark"
+          ],
+          "guard_timer": 400,
+          "stale": null,
+          "max_hp": 1273
+        },
+        {
+          "tag": "h1",
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "team": "blue",
+          "x": 150,
+          "y": 100,
+          "alive": false,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": {
+            "armor": 4,
+            "attack_speed": 3,
+            "armor_reduction": 2,
+            "guard_block": 42
+          },
+          "max_hp": 1023
+        },
+        {
+          "tag": "h2",
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 480,
+          "level": 9,
+          "team": "red",
+          "x": 200,
+          "y": 100,
+          "alive": false,
+          "loadout": [],
+          "guard_timer": 0,
+          "stale": null,
+          "max_hp": 2688
+        }
+      ],
+      "units": [
+        {
+          "tag": "h0",
+          "team": "blue",
+          "x": 100,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "h1",
+          "team": "blue",
+          "x": 150,
+          "y": 100,
+          "alive": false
+        },
+        {
+          "tag": "h2",
+          "team": "red",
+          "x": 200,
+          "y": 100,
+          "alive": false
+        },
+        {
+          "tag": "u3",
+          "team": "red",
+          "x": 180,
+          "y": 100,
+          "alive": true
+        },
+        {
+          "tag": "u4",
+          "team": "red",
+          "x": 190,
+          "y": 100,
+          "alive": false
+        }
+      ],
+      "auras": [
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 60
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        },
+        {
+          "armor": 0,
+          "attack_speed": 0,
+          "armor_reduction": 0,
+          "guard_block": 0
+        }
+      ],
+      "effects": [
+        {
+          "unit": 3,
+          "kind": "debuff",
+          "name": "atk_slow",
+          "amount": 0.3,
+          "duration": 30,
+          "source_team": null
+        },
+        {
+          "unit": 3,
+          "kind": "debuff",
+          "name": "anti_heal",
+          "amount": 0.4,
+          "duration": 30,
+          "source_team": null
         }
       ]
     }

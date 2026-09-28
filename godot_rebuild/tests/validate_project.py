@@ -210,6 +210,22 @@ check("_notify_item_damage" in (ROOT / "scripts/match/prototype_battle.gd")
 check("_tick_hero_items(hero)" in (ROOT / "scripts/combat/minion_battle.gd")
       .read_text(encoding="utf-8"),
       "minion_battle._tick_hero must call the item tick hook")
+check(len(ai_items_fixture["auras"]) == 8,
+      "Update the AI item suite when the aura cases change")
+item_auras_gd = (ROOT / "scripts/match/item_auras.gd").read_text(encoding="utf-8")
+check("func update_auras(" in item_auras_gd,
+      "The rebuild must port source update_auras for layer 5d")
+check("func apply_debuff(" in (ROOT / "scripts/match/item_effects.gd")
+      .read_text(encoding="utf-8"),
+      "The item effect bus must carry aura debuffs for layer 5d")
+check("func apply_miss_chance(" in (ROOT / "scripts/match/item_effects.gd")
+      .read_text(encoding="utf-8"),
+      "The item effect bus must carry Solar blind for layer 5d")
+check("blind_amount" in unit_state_gd and "blind_timer" in unit_state_gd,
+      "Solar blind state must live on the shared debuff fields (5d)")
+prototype_gd = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check("_update_item_auras" in prototype_gd and "item_auras.update_auras(" in prototype_gd,
+      "The match tick must run the aura pass (5d)")
 
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.

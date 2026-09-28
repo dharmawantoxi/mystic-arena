@@ -110,8 +110,9 @@ var auto_cast_enabled := false
 var auto_cast_check_timer := 0
 
 # Source Hero.items (HeroItemInventory): six slots, melee/magic gates, rapier
-# lost on death. Slot bookkeeping only - item stat effects are NOT ported, so
-# slots never change max_hp/hp here (see hero_item_inventory.gd).
+# lost on death. Stat effects are ported: the inventory exposes pure getters and
+# apply_item_change() recalculates max_hp/hp here through recalc_item_stats()
+# (see hero_item_inventory.gd).
 var items: HeroItemInventory = null
 
 

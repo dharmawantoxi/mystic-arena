@@ -10,7 +10,10 @@ extends RefCounted
 ##
 ## LIMITATION, NOT PARITY (layer 5c-2 scope):
 ## - `on_basic_attack_hit()`, `_on_hit_common()`, `on_ranged_attack_hit()`
-##   (on-hit procs, 5e) and `update_auras()` (5d) are NOT ported here.
+##   (on-hit procs, 5e) are NOT ported here.
+## - `update_auras()` (5d) lives in `scripts/match/item_auras.gd`: it owns the
+##   aura_* fields below plus the Scarlet Bulwark / Everfrost / Solar Brand /
+##   Searbrand / Steel Aegis sends, and needs the whole unit list.
 ## - Hero runtime state (hp/pos/alive/facing/target_id) must be refreshed via
 ##   set_hero_runtime() every tick before tick_auto(); the inventory keeps no
 ##   hero reference.
@@ -75,7 +78,7 @@ var hero_position := Vector2.ZERO
 var hero_target_id := -1
 var catalog: Dictionary
 var slots: Array = []
-# Read by the getters below, never advanced in this layer (see header).
+# Rewritten by item_auras.update_auras() (5d) and read by the getters below.
 var aura_armor := 0
 var aura_as := 0
 var aura_armor_reduction := 0
@@ -91,7 +94,8 @@ var rend_timer := 0
 var empower_charge := 0
 # Remaining timers the source update() decrements. Nothing but tick_timers
 # moves them in this layer: the active/passive effects they gate (chain,
-# static charge, arctic blast, miasma, auras) are layers 5d/5e.
+# static charge, arctic blast, miasma) belong to 5e, while the aura pass in
+# item_auras.gd (5d) reads guard_timer but leaves every timer alone.
 var blood_frenzy_cd := 0
 var last_damage_timer := 0
 var guard_cd := 0

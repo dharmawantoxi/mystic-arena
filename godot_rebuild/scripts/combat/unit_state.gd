@@ -28,6 +28,11 @@ var skill_down_amount := 0.0
 var skill_down_timer := 0
 var anti_heal_amount := 0.0
 var anti_heal_timer := 0
+# Source TowerDebuffMixin blind_* fields (Solar Brand aura, layer 5d). The
+# blind tick lives in minion_battle._tick_debuffs; the miss roll that consumes
+# blind_amount is still unported (5e).
+var blind_amount := 0.0
+var blind_timer := 0
 # Abyss Breaker heal amp (source TowerDebuffMixin heal_amp_* fields).
 var heal_amp_amount := 0.0
 var heal_amp_timer := 0

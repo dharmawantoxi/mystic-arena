@@ -14,6 +14,7 @@ const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
 const BattleItemEffects = preload("res://scripts/match/battle_item_effects.gd")
 const ReflectItemEffects = preload("res://scripts/match/reflect_item_effects.gd")
+const ItemAuras = preload("res://scripts/match/item_auras.gd")
 const MINIONS := {
 	"goblin": preload("res://data/minions/goblin.tres"),
 	"orc": preload("res://data/minions/orc.tres"),
@@ -136,6 +137,7 @@ func step_tick() -> void:
 	if is_running():
 		_step_defender()
 		_step_hero_act()
+		_update_item_auras()
 
 
 func get_slot(id: int) -> Slot:
@@ -878,15 +880,15 @@ func _buy_item_for(team: int, hero_id: int, item_id: String, reserve: int = 0) -
 	return true
 
 
-# ── Item wiring (layer 5c-2): tick_timers + auto-triggers + damage notify ──
-# ── Item wiring (layer 5c-2): tick_timers + auto-triggers + damage notify ──
+# ── Item wiring: 5c-2 tick_timers + auto-triggers + damage notify, 5d auras ──
 var _item_rng := RandomNumberGenerator.new()
+var item_auras := ItemAuras.new()
 
 
 func _hero_enemy_list() -> Array:
 	# Source _get_all_enemies returns alive enemies (units+towers+bases); this
-	# rebuild only tracks units so far (towers/bases are StructureState and
-	# included later by 5d auras).
+	# rebuild only tracks units so far. Tower/base auras do not exist in the
+	# source aura block either (it reads minions + heroes + the live boss).
 	var enemies: Array = []
 	for unit in units:
 		if not unit.alive:
@@ -919,6 +921,26 @@ func _reflect_item_effects(_defender_team: int) -> ReflectItemEffects:
 	bus.world = self
 	bus.defender_team = _defender_team
 	return bus
+
+
+func _aura_item_effects() -> BattleItemEffects:
+	# Aura sends carry no dealer: the debuff source is the aura holder's team,
+	# which the aura pass puts in the effect itself.
+	var bus := BattleItemEffects.new()
+	bus.world = self
+	return bus
+
+
+func _update_item_auras() -> void:
+	# Port of the Game.update aura call (layer 5d): one pass per frame, after
+	# every entity update, over all heroes and the whole unit list (minions,
+	# heroes and boss heroes). Source _collect_all_units() reads the live game
+	# instance; the rebuild hands that same list to ItemAuras directly.
+	var heroes: Array[HeroState] = []
+	for unit in units:
+		if unit.is_hero:
+			heroes.append(unit as HeroState)
+	item_auras.update_auras(heroes, units, _aura_item_effects())
 
 
 func _tick_hero_items(hero: HeroState) -> void:
