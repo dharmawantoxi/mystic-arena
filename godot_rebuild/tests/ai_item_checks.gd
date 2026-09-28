@@ -745,15 +745,20 @@ func _test_auto_triggers(rows: Array, check: Callable) -> void:
 		inv.set_hero_scaling(int(spec.base_hp), int(spec.level), melee_flag)
 		var label := "%s %s hp=%.2f" % [String(spec.role), str(row.loadout), float(row.hp_ratio)]
 		var enemies: Array = _fx_enemies(row.enemy_deltas)
-		# Equip.
+		# Equip. Source _make_hero sets max_hp=1000, hp=int(1000*ratio); add()
+		# invokes _on_item_changed which sets max_hp=get_max_hp() and raises
+		# hp by (new_max - old_max) when new_max > old_max.
+		var old_max: int = 1000
+		var hp_ratio_f: float = float(row.hp_ratio)
+		var start_hp_i: int = int(float(old_max) * hp_ratio_f)
 		for item_id in row.loadout:
 			assert(inv.add(String(item_id)), "auto-trigger loadout refused: " + label)
-		# Source add() calls _on_item_changed which recomputes max_hp via
-		# get_max_hp() and raises hp by (new_max - old_max). Mirror that here
-		# so hp/max_hp reflect the equipped loadout before ticks.
 		var new_max: int = int(inv.get_max_hp())
-		var hp_ratio_f: float = float(row.hp_ratio)
-		var cur_hp: float = float(new_max) * hp_ratio_f
+		var cur_hp: float = float(start_hp_i)
+		if new_max > old_max:
+			cur_hp = mini(float(new_max), cur_hp + float(new_max - old_max))
+		elif cur_hp > float(new_max):
+			cur_hp = float(new_max)
 		var start_pos: Array = row.start_pos
 		# Seed Thunder Coil proc like the oracle.
 		if inv.has("thunder_coil"):
@@ -820,10 +825,17 @@ func _test_notify_damage(rows: Array, check: Callable) -> void:
 		var label := "%s %s dmg=%d" % [String(spec.role), str(row.loadout), int(row.damage)]
 		for item_id in row.loadout:
 			assert(inv.add(String(item_id)), "notify loadout refused: " + label)
-		# Source add() recalculates max_hp via _on_item_changed.
-		var n_max: int = int(inv.get_max_hp())
+		# Source _make_hero sets max_hp=1000, hp=int(1000*ratio); add() invokes
+		# _on_item_changed which raises hp by (new_max - old_max).
+		var old_max_n: int = 1000
 		var nhp_ratio: float = float(row.hp_ratio)
-		var n_hp: float = float(n_max) * nhp_ratio
+		var n_hp_start: int = int(float(old_max_n) * nhp_ratio)
+		var n_max: int = int(inv.get_max_hp())
+		var n_hp: float = float(n_hp_start)
+		if n_max > old_max_n:
+			n_hp = mini(float(n_max), n_hp + float(n_max - old_max_n))
+		elif n_hp > float(n_max):
+			n_hp = float(n_max)
 		var fx := _TestItemFx.new()
 		if inv.has("razor_carapace") and nhp_ratio < 0.5:
 			inv.tick_timers(1)
