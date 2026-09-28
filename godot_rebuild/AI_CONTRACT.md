@@ -377,6 +377,13 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      mati mengantre dan pesanan dikirim saat respawn; drop tanpa refund.
      Panel ItemShopUI (gambar + input) dan i18n belum port — pesan memakai kunci
      `tr()` sumber sebagai `status`.
+   - [x] **5f-2.** Panel ITEM FORGE (state + routing klik): `item_shop_ui.gd`
+     mem-port `get_item_class`/`_build_shop_pages`/`CLASS_ITEM_ORDER` (6 halaman,
+     grid 4x2, tab PHYSICAL/MAGIC/TANK), state `item_shop_open`/`itemshop_page`/
+     `itemshop_inspect_item`, dan kosakata tombol `handle_item_shop_click`
+     (`itemshop_close`, `_hero_`, `_page_`, `_buy_`, `_slot_`, `_card_`, popup
+     detail menelan klik, klik luar panel menutup). Data tampilan chip/kartu/tab
+     tersedia untuk Control; geometri pygame, font/warna dan i18n tetap di luar.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -440,10 +447,10 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
 5 notify_damage, 6 miasma, 8 forge). Native: `ai_item_checks.gd` terdaftar di
 `run_all.gd`.
-CI Godot 4.7.2 run 36450697654 hijau untuk lapisan 5f (commit `cac901b`):
-**1.178.978 native checks**, static lokal 5701 PASS; `gdlint`/`gdformat`/`gdparse`
+CI Godot 4.7.2 run 36455247721 hijau untuk lapisan 5f-2 (commit `de04849`):
+**1.179.060 native checks**, static lokal 5711 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
-(fixture 11.333 baris, masih di bawah 20k).
+(fixture 11.496 baris, masih di bawah 20k).
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
@@ -451,8 +458,8 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: panel ItemShopUI (gambar + input) di atas transaksi 5f, lalu
-kontrol hero per tick dan integrasi scene. Catatan 5f: `forge.gd` hanya
+Berikutnya: Control yang menggambar panel ITEM FORGE (geometri/font/i18n) di
+atas state 5f-2, lalu kontrol hero per tick dan integrasi scene. Catatan 5f: `forge.gd` hanya
 menganggap roster tim pemain (BLUE), dan kandidat AI tetap hidup-saja lewat
 `_buy_item_for`.
 Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
