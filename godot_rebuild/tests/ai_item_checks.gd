@@ -752,7 +752,7 @@ func _test_auto_triggers(rows: Array, check: Callable) -> void:
 		# Seed Thunder Coil proc like the oracle.
 		if inv.has("thunder_coil"):
 			var proc_rng := RandomNumberGenerator.new()
-			proc_rng.seed(0)
+			proc_rng.seed = 0
 			var fx := _TestItemFx.new()
 			inv.set_hero_runtime(
 				42, true, 1000.0, 1000, 0, 1.0, Vector2(100, 100), 100 if enemies.size() > 0 else -1
@@ -830,7 +830,7 @@ func _test_notify_damage(rows: Array, check: Callable) -> void:
 		var before: Dictionary = row.before
 		# Seed RNG for deterministic proc.
 		var rng := RandomNumberGenerator.new()
-		rng.seed(int(row.seed))
+		rng.seed = int(row.seed)
 		fx.clear()
 		inv.set_hero_runtime(
 			42, true, int(1000 * float(row.hp_ratio)), 1000, 0, 1.0, Vector2(100, 100), -1
