@@ -11329,5 +11329,168 @@
         }
       ]
     }
-  ]
+  ],
+  "shop_pages": {
+    "items_per_page": 8,
+    "pages": [
+      [
+        "dead_edge",
+        "holy_rapier",
+        "demon_maw",
+        "cleave_axe",
+        "moon_shard",
+        "monarch_wings",
+        "corroder",
+        "fenrir_chain"
+      ],
+      [
+        "sanguine_thorn",
+        "thunder_coil",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "gale_pike",
+        "basilisk_breath"
+      ],
+      [
+        "octarine_core",
+        "runic_gavel",
+        "astral_codex",
+        "sage_scepter",
+        "fulgur_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone"
+      ],
+      [
+        "vine_rod",
+        "spectral_charm"
+      ],
+      [
+        "leviathan_heart",
+        "steel_aegis",
+        "scarlet_bulwark",
+        "tempest_vane",
+        "abyss_breaker",
+        "razor_carapace",
+        "everfrost_guard",
+        "solar_brand"
+      ],
+      [
+        "searbrand"
+      ]
+    ],
+    "meta": [
+      [
+        "physical",
+        1,
+        2
+      ],
+      [
+        "physical",
+        2,
+        2
+      ],
+      [
+        "magic",
+        1,
+        2
+      ],
+      [
+        "magic",
+        2,
+        2
+      ],
+      [
+        "tank",
+        1,
+        2
+      ],
+      [
+        "tank",
+        2,
+        2
+      ]
+    ],
+    "classes": {
+      "dead_edge": "physical",
+      "holy_rapier": "physical",
+      "demon_maw": "physical",
+      "leviathan_heart": "tank",
+      "cleave_axe": "physical",
+      "steel_aegis": "tank",
+      "moon_shard": "physical",
+      "octarine_core": "magic",
+      "scarlet_bulwark": "tank",
+      "monarch_wings": "physical",
+      "corroder": "physical",
+      "tempest_vane": "tank",
+      "fenrir_chain": "physical",
+      "sanguine_thorn": "physical",
+      "abyss_breaker": "tank",
+      "thunder_coil": "physical",
+      "razor_carapace": "tank",
+      "everfrost_guard": "tank",
+      "sundering_cudgel": "physical",
+      "frostbound_eye": "physical",
+      "gale_pike": "physical",
+      "basilisk_breath": "physical",
+      "solar_brand": "tank",
+      "runic_gavel": "magic",
+      "searbrand": "tank",
+      "astral_codex": "magic",
+      "sage_scepter": "magic",
+      "fulgur_scepter": "magic",
+      "hex_idol": "magic",
+      "rift_veil": "magic",
+      "vital_stone": "magic",
+      "vine_rod": "magic",
+      "spectral_charm": "magic"
+    },
+    "class_order": {
+      "physical": [
+        "dead_edge",
+        "holy_rapier",
+        "demon_maw",
+        "cleave_axe",
+        "moon_shard",
+        "monarch_wings",
+        "corroder",
+        "fenrir_chain",
+        "sanguine_thorn",
+        "thunder_coil",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "gale_pike",
+        "basilisk_breath"
+      ],
+      "magic": [
+        "octarine_core",
+        "runic_gavel",
+        "astral_codex",
+        "sage_scepter",
+        "fulgur_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "vine_rod",
+        "spectral_charm"
+      ],
+      "tank": [
+        "leviathan_heart",
+        "steel_aegis",
+        "scarlet_bulwark",
+        "tempest_vane",
+        "abyss_breaker",
+        "razor_carapace",
+        "everfrost_guard",
+        "solar_brand",
+        "searbrand"
+      ]
+    },
+    "labels": {
+      "physical": "PHYSICAL",
+      "magic": "MAGIC",
+      "tank": "TANK"
+    }
+  }
 }

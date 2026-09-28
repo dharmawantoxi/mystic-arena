@@ -26,13 +26,18 @@ _NAMES = frozenset({
     "MAX_ITEM_SLOTS", "ITEM_FLAT_COST", "MAGIC_ROLE_KEYWORDS", "ITEM_CATALOG",
     # Miasma registry: module-level, keyed by id(target).
     "_MIASMA",
+    # Forge shop paging (5f-2).
+    "CLASS_PHYSICAL", "CLASS_MAGIC", "CLASS_TANK", "ITEM_CLASS_INFO",
+    "_ITEM_CLASS_OVERRIDES", "_MAP_CATEGORY_TO_CLASS", "ITEMS_PER_PAGE",
+    "CLASS_ITEM_ORDER",
 })
 _FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero",
               "_apply_miasma", "_tick_miasma")
 # Forge shop (layer 5f): the real buy/queue/deliver/drop/target-resolution
 # functions; `tr`, `_notify` and the `_play_*` sound helpers are stubbed.
 _FORGE_FUNCTIONS = ("pending_forge_items", "deliver_pending_forge_items",
-                    "_resolve_shop_target", "_try_buy", "_try_drop")
+                    "_resolve_shop_target", "_try_buy", "_try_drop",
+                    "get_item_class", "_build_shop_pages")
 _LEVEL_MULT = "_hero_level_mult"
 # Real HeroItemInventory slot bookkeeping plus the stat chain `_on_item_changed`
 # reaches, so the fixture can show exactly what the rebuild does NOT port yet.
@@ -1246,6 +1251,24 @@ def forge(env):
     return rows
 
 
+def shop_pages(env):
+    """Real get_item_class/_build_shop_pages: the ITEM FORGE paging."""
+    env = source_namespace(with_functions=True, with_forge=True)
+    with _core_module():
+        pages, meta = env["_build_shop_pages"]()
+        return {
+            "items_per_page": env["ITEMS_PER_PAGE"],
+            "pages": [list(page) for page in pages],
+            "meta": [[cls, idx, total] for cls, idx, total in meta],
+            "classes": {sid: env["get_item_class"](sid)
+                        for sid in env["ITEM_CATALOG"]},
+            "class_order": {cls: list(ids)
+                            for cls, ids in env["CLASS_ITEM_ORDER"].items()},
+            "labels": {cls: env["ITEM_CLASS_INFO"][cls][0]
+                       for cls in env["ITEM_CLASS_INFO"]},
+        }
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -1265,6 +1288,7 @@ def source_fixture():
         "notify_damage": notify_damage(env),
         "miasma": miasma(env),
         "forge": forge(env),
+        "shop_pages": shop_pages(env),
     }))
 
 

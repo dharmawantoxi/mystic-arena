@@ -8,6 +8,7 @@ const HeroItems = preload("res://scripts/match/hero_items.gd")
 const Inventory = preload("res://scripts/match/hero_item_inventory.gd")
 const AIItems = preload("res://scripts/match/ai_items.gd")
 const Draft = preload("res://scripts/match/ai_draft.gd")
+const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const METADATA := "res://data/ai/item_catalog.json"
 const FIXTURE := "res://tests/fixtures/ai_items_source.json"
@@ -92,6 +93,8 @@ func run(check: Callable) -> void:
 	_test_miasma_wiring(check)
 	_test_forge(fixture.forge, check)
 	_test_forge_wiring(check)
+	_test_shop_pages(fixture.shop_pages, check)
+	_test_shop_clicks(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -1226,6 +1229,21 @@ func _forge_notify(step: Dictionary) -> String:
 	return "" if keys.is_empty() else String(keys[0])
 
 
+func _meta_match(got: Array, want: Array) -> bool:
+	# JSON parses every fixture number as float, so compare cast per element.
+	if got.size() != want.size():
+		return false
+	for index in range(got.size()):
+		var expected: Variant = want[index]
+		var actual: Variant = got[index]
+		if expected is String or actual is String:
+			if String(actual) != String(expected):
+				return false
+		elif int(actual) != int(expected):
+			return false
+	return true
+
+
 func _forge_slots_match(got: Array, want: Array) -> bool:
 	if got.size() != want.size():
 		return false
@@ -1269,3 +1287,138 @@ func _test_forge_wiring(check: Callable) -> void:
 	check.call(String(dropped.status) == "item_dropped", "Drop must report the source key")
 	check.call(not hero.items.has("dead_edge"), "Dropped item must leave the inventory")
 	check.call(world.forge.player_gold(world) == gold0 - 4500, "Drop must not refund gold")
+
+
+# ── Layer 5f-2: ITEM FORGE panel (paging + click routing) ───────────────────
+func _test_shop_pages(rows: Dictionary, check: Callable) -> void:
+	# Source get_item_class/_build_shop_pages: same class per item, same pages
+	# and the same PHYSICAL 1/2 style tab labels.
+	var shop := ItemShopUI.new()
+	check.call(
+		shop.page_count() == rows.pages.size(),
+		"Shop page count must match the source _build_shop_pages"
+	)
+	for index in range(rows.pages.size()):
+		var want: Array = rows.pages[index]
+		var got: Array = shop.pages[index]
+		check.call(got == want, "Shop page %d must match the source classes" % index)
+	for index in range(rows.meta.size()):
+		var meta: Array = rows.meta[index]
+		var got_meta: Array = shop.page_meta[index]
+		check.call(
+			_meta_match(got_meta, meta),
+			(
+				"Shop page meta %d must match the source class labels: %s vs %s"
+				% [index, str(got_meta), str(meta)]
+			)
+		)
+	check.call(
+		ItemShopUI.ITEMS_PER_PAGE == int(rows.items_per_page),
+		"Shop grid must stay 4x2 items per page"
+	)
+	for item_id in rows.classes:
+		check.call(
+			shop.item_class(String(item_id)) == String(rows.classes[item_id]),
+			"Shop class for %s must match the source get_item_class" % String(item_id)
+		)
+	for class_id in rows.class_order:
+		check.call(
+			shop.CLASS_ITEM_ORDER[String(class_id)] == rows.class_order[class_id],
+			"Shop display order must match CLASS_ITEM_ORDER for " + String(class_id)
+		)
+		check.call(
+			shop.CLASS_LABELS[String(class_id)] == String(rows.labels[String(class_id)]),
+			"Shop tab label must match ITEM_CLASS_INFO for " + String(class_id)
+		)
+	check.call(shop.item_class("not_an_item") == "physical", "Unknown shop item is PHYSICAL")
+
+
+func _test_shop_clicks(check: Callable) -> void:
+	# Click routing: the button-id vocabulary of handle_item_shop_click drives
+	# the same forge transactions (target chips, page tabs, buy, drop, inspect).
+	var world := _world()
+	_clear_heroes(world)
+	_fund_team(world, world.BLUE, 60000)
+	var alive := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	var dead := world.spawn_hero(World.VEX, world.BLUE, Vector2(260, 200))
+	alive.apply_item_change()
+	dead.apply_item_change()
+	dead.alive = false
+	var shop = world.item_shop
+	check.call(not shop.is_open, "Shop starts closed until the panel opens it")
+	check.call(
+		not shop.handle_click(world, world.forge, "itemshop_close", 1),
+		"Closed shop must ignore clicks"
+	)
+	shop.is_open = true
+	check.call(
+		shop.handle_click(world, world.forge, "itemshop_hero_1", 1),
+		"Hero chip click must be handled"
+	)
+	check.call(
+		world.forge.target_hero_id == dead.id, "Hero chip must select that hero as the buyer"
+	)
+	check.call(
+		shop.notice.dead and shop.notice_text().contains("after respawn"),
+		"Dead buyer must announce delivery after respawn"
+	)
+	check.call(
+		shop.handle_click(world, world.forge, "itemshop_buy_dead_edge", 1),
+		"Buy button click must be handled"
+	)
+	check.call(
+		dead.pending_items == ["dead_edge"], "Buy click must queue the order for the dead hero"
+	)
+	check.call(
+		shop.handle_click(world, world.forge, "itemshop_page_2", 1),
+		"Page tab click must be handled"
+	)
+	check.call(shop.page == 2, "Page tab must switch to the MAGIC page")
+	check.call(
+		not shop.handle_click(world, world.forge, "itemshop_page_9", 1) or shop.page == 2,
+		"Out-of-range page tab must not switch pages"
+	)
+	shop.handle_click(world, world.forge, "itemshop_hero_0", 1)
+	check.call(world.forge.target_hero_id == alive.id, "Live hero chip must move the buyer back")
+	shop.handle_click(world, world.forge, "itemshop_buy_demon_maw", 1)
+	check.call(alive.items.has("demon_maw"), "Buy click must equip the live hero")
+	check.call(
+		shop.handle_click(world, world.forge, "itemshop_card_demon_maw", 1),
+		"Item card click must open the detail popup"
+	)
+	check.call(shop.inspect_item == "demon_maw", "Card click must set the inspected item")
+	check.call(
+		shop.handle_click(world, world.forge, "itemshop_buy_moon_shard", 1),
+		"Detail popup must swallow other buttons"
+	)
+	check.call(not alive.items.has("moon_shard"), "Detail popup must block the grid buy click")
+	check.call(shop.inspect_item == "", "Any other click must close the detail popup")
+	check.call(
+		shop.handle_click(world, world.forge, "itemshop_slot_0", 3),
+		"Slot right-click must be handled"
+	)
+	check.call(not alive.items.has("demon_maw"), "Slot right-click must drop the item, no refund")
+	check.call(
+		shop.handle_click(world, world.forge, "itemshop_close", 1), "Close button must be handled"
+	)
+	check.call(not shop.is_open, "Close button must shut the shop")
+	shop.is_open = true
+	check.call(shop.click_outside_panel(), "Outside click must be consumed while open")
+	check.call(not shop.is_open, "Outside click must close the shop")
+	shop.is_open = true
+	var chips: Array = shop.hero_chips(world, world.forge)
+	check.call(chips.size() == 2, "Hero chips must list every summoned player hero")
+	check.call(
+		String(chips[1].label).begins_with("dead"),
+		"Dead hero chip must show the source dead status"
+	)
+	var cards: Array = shop.item_cards(world, world.forge)
+	check.call(cards.size() == 8, "MAGIC page one must expose its eight items")
+	check.call(String(cards[0].class) == "magic", "Page two cards must belong to MAGIC")
+	check.call(
+		(
+			shop.page_tabs()
+			== ["PHYSICAL 1/2", "PHYSICAL 2/2", "MAGIC 1/2", "MAGIC 2/2", "TANK 1/2", "TANK 2/2"]
+		),
+		"Page tabs must match the source class labels"
+	)

@@ -9,6 +9,7 @@ const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
 const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Forge = preload("res://scripts/match/forge.gd")
+const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
@@ -42,6 +43,8 @@ const HERO_BASE_NEAR := 100.0
 var economy := Economy.new()
 # Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
 var forge := Forge.new()
+# Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
+var item_shop := ItemShopUI.new()
 var scheduler := Scheduler.new()
 var slots: Array[Slot] = []
 var transaction_error := ""
