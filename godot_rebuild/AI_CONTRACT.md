@@ -370,7 +370,13 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      module-level per id(target)), jadi dua pemilik bisa menumpuk racun pada
      target yang sama; `UnitState` belum punya `max_hp`, jadi racun ke minion
      jatuh ke lantai 6 damage/tick.
-   - [ ] **5f.** Forge UI + drop item ke tanah.
+   - [x] **5f.** Forge shop (transaksi `_try_buy`/`_try_drop`/
+     `_resolve_shop_target`/antrian `pending_forge_items`): target tersimpan ->
+     terseleksi -> hero hidup pertama -> hero pertama; gerbang katalog/gold/
+     slot (antrian ikut dihitung)/role; hero hidup langsung memakai item, hero
+     mati mengantre dan pesanan dikirim saat respawn; drop tanpa refund.
+     Panel ItemShopUI (gambar + input) dan i18n belum port — pesan memakai kunci
+     `tr()` sumber sebagai `status`.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -432,12 +438,12 @@ Selesai: port item AI lapisan 1-4, satu commit per lapisan, basis main f1d34ed.
 Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 22 urutan pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
-5 notify_damage, 6 miasma). Native: `ai_item_checks.gd` terdaftar di
+5 notify_damage, 6 miasma, 8 forge). Native: `ai_item_checks.gd` terdaftar di
 `run_all.gd`.
-CI Godot 4.7.2 run 36444559362 hijau untuk lapisan 5e-2 (commit `a6df6c9`):
-**1.178.772 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
+CI Godot 4.7.2 run 36450697654 hijau untuk lapisan 5f (commit `cac901b`):
+**1.178.978 native checks**, static lokal 5701 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
-(fixture 10.132 baris, masih di bawah 20k).
+(fixture 11.333 baris, masih di bawah 20k).
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
@@ -445,8 +451,10 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: **5f** Forge UI + item drop (`drops_on_death`). Kontrol hero per
-tick dan integrasi scene tetap menunggu setelah fase item.
+Berikutnya: panel ItemShopUI (gambar + input) di atas transaksi 5f, lalu
+kontrol hero per tick dan integrasi scene. Catatan 5f: `forge.gd` hanya
+menganggap roster tim pemain (BLUE), dan kandidat AI tetap hidup-saja lewat
+`_buy_item_for`.
 Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
