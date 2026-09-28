@@ -9,6 +9,7 @@ const Inventory = preload("res://scripts/match/hero_item_inventory.gd")
 const AIItems = preload("res://scripts/match/ai_items.gd")
 const Draft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
+const ForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const METADATA := "res://data/ai/item_catalog.json"
 const FIXTURE := "res://tests/fixtures/ai_items_source.json"
@@ -95,6 +96,7 @@ func run(check: Callable) -> void:
 	_test_forge_wiring(check)
 	_test_shop_pages(fixture.shop_pages, check)
 	_test_shop_clicks(check)
+	_test_forge_panel(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -1421,4 +1423,88 @@ func _test_shop_clicks(check: Callable) -> void:
 			== ["PHYSICAL 1/2", "PHYSICAL 2/2", "MAGIC 1/2", "MAGIC 2/2", "TANK 1/2", "TANK 2/2"]
 		),
 		"Page tabs must match the source class labels"
+	)
+
+
+# ── Layer 5f-3: ITEM FORGE panel (Control view over item_shop_ui) ────────────
+func _test_forge_panel(check: Callable) -> void:
+	# The Control renders the shop view data and routes presses back through the
+	# source click vocabulary; no gameplay state lives in the panel itself.
+	var world := _world()
+	_clear_heroes(world)
+	_fund_team(world, world.BLUE, 60000)
+	var alive := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	var dead := world.spawn_hero(World.VEX, world.BLUE, Vector2(260, 200))
+	alive.apply_item_change()
+	dead.apply_item_change()
+	dead.alive = false
+	var panel := ForgePanel.new()
+	panel.bind(world)
+	panel.refresh()
+	check.call(not panel.visible, "Panel must stay hidden while the shop is closed")
+	world.item_shop.is_open = true
+	panel.refresh()
+	check.call(panel.visible, "Panel must follow item_shop_open")
+	var chips := panel.find_child("ItemForgeChips", true, false)
+	check.call(chips != null and chips.get_child_count() == 2, "Panel must draw two hero chips")
+	check.call(
+		chips.get_child(0).text.contains("BELI UNTUK 0"), "First chip must name the buyer index"
+	)
+	check.call(
+		String(chips.get_child(1).text).contains("dead"),
+		"Dead buyer chip must show the source dead status"
+	)
+	var tabs := panel.find_child("ItemForgeTabs", true, false)
+	check.call(tabs != null and tabs.get_child_count() == 6, "Panel must draw six class tabs")
+	check.call(
+		String(tabs.get_child(0).text) == "PHYSICAL 1/2",
+		"First tab must carry the source class label"
+	)
+	var grid := panel.find_child("ItemForgeGrid", true, false)
+	check.call(grid != null and grid.get_child_count() == 8, "Panel must draw the 4x2 page grid")
+	var first_cell := grid.get_child(0) as VBoxContainer
+	var buy_button := first_cell.get_child(1) as Button
+	check.call(
+		String(buy_button.text).contains("Beli") or String(buy_button.text).contains("BELI"),
+		"Card cell must expose a BUY button"
+	)
+	# Presses: chips -> tabs -> buy -> detail popup -> slots -> close.
+	check.call(panel.press("itemshop_hero_1"), "Chip press must reach the shop router")
+	check.call(world.forge.target_hero_id == dead.id, "Chip press must move the buyer")
+	panel.press("itemshop_buy_dead_edge")
+	check.call(dead.pending_items == ["dead_edge"], "Buy press must queue for the dead buyer")
+	panel.press("itemshop_page_2")
+	check.call(world.item_shop.page == 2, "Tab press must switch the shop page")
+	panel.refresh()
+	var magic_grid := panel.find_child("ItemForgeGrid", true, false)
+	check.call(magic_grid.get_child_count() == 8, "MAGIC page must redraw eight cards")
+	panel.press("itemshop_hero_0")
+	panel.press("itemshop_buy_demon_maw")
+	check.call(alive.items.has("demon_maw"), "Buy press must equip the live buyer")
+	var slots := panel.find_child("ItemForgeSlots", true, false)
+	check.call(slots != null and slots.get_child_count() == 6, "Panel must draw the six slots")
+	check.call(
+		String(slots.get_child(0).text) == "demon_maw", "Slot row must show the buyer inventory"
+	)
+	panel.press("itemshop_slot_0", 3)
+	check.call(not alive.items.has("demon_maw"), "Slot right-click must drop the item")
+	panel.press("itemshop_card_demon_maw")
+	check.call(world.item_shop.inspect_item == "demon_maw", "Card press must inspect the item")
+	panel.refresh()
+	var detail := panel.find_child("ItemForgeDetail", true, false)
+	check.call(detail != null and detail.visible, "Detail popup must appear when inspecting")
+	var swallowed := panel.press("itemshop_buy_moon_shard")
+	check.call(swallowed, "Detail popup must swallow other clicks")
+	check.call(world.item_shop.inspect_item == "", "Any other click must close the detail popup")
+	check.call(
+		panel.status_text("forge_queued") != "forge_queued",
+		"Status text must translate the forge status keys"
+	)
+	panel.press("itemshop_close")
+	check.call(not world.item_shop.is_open, "Close press must shut the shop")
+	panel.refresh()
+	check.call(not panel.visible, "Panel must hide with the shop")
+	check.call(
+		panel.status_text("inventory_full") != "inventory_full",
+		"inventory_full must carry a translated text"
 	)
