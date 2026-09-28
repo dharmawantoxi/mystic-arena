@@ -926,7 +926,9 @@ func _test_auras(check: Callable) -> void:
 	# Scarlet Bulwark guard: force guard_timer > 0 and verify block value.
 	assert(a1.items.add("scarlet_bulwark"), "scarlet_bulwark refused")
 	a1.apply_item_change()
-	a1.items.guard_timer = 1
+	# tick_timers decrements timers before auras read guard_timer, so seed
+	# a value >1 for it to remain positive through one step.
+	a1.items.guard_timer = 2
 	var armor_before := a2.items.aura_armor
 	world.step_tick()
 	check.call(
