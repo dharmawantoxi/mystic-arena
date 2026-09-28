@@ -12,6 +12,7 @@ const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const ForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
 const AiController = preload("res://scripts/match/ai_controller.gd")
+const AiBuild = preload("res://scripts/match/ai_build.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const METADATA := "res://data/ai/item_catalog.json"
@@ -107,6 +108,7 @@ func run(check: Callable) -> void:
 	_test_ai_actions(check)
 	_test_ai_defender_swap(check)
 	_test_ai_shield_nexus(check)
+	_test_ai_restart(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -1891,16 +1893,66 @@ func _test_ai_defender_swap(check: Callable) -> void:
 	var world := _world()
 	_clear_heroes(world)
 	_fund(world, 0)
-	world.defender_enabled = true
-	world.ai_enabled = true
+	world.set_ai_enabled(true)
+	check.call(
+		world.ai_enabled and world.ai_hero_control_enabled and not world.defender_enabled,
+		"Enabling the AI must park the temporary defender and own the heroes"
+	)
 	for _tick in range(300):
 		world.step_tick()
 	check.call(world._defender_built == 0, "Temporary defender must stand down while the AI runs")
 	_fund(world, 30000)
-	world.ai_enabled = false
+	world.set_ai_enabled(false)
+	check.call(
+		not world.ai_enabled and world.defender_enabled,
+		"Disabling the AI must restore the defender"
+	)
 	for _tick in range(300):
 		world.step_tick()
 	check.call(world._defender_built == 1, "Defender resumes once the AI is disabled")
+
+
+func _test_ai_restart(check: Callable) -> void:
+	# Source Game.reset(): a restarted match gets a brand-new AI whose clocks,
+	# counters and draft start over, and the match seed replays its draws.
+	var world := _ai_world(30000)
+	for _step in range(12):
+		world._ai_perform_step()
+	world.ai_controller.policy.think_timer = 1
+	world.step_tick()
+	world.ai_heroes.total_skills_cast = 3
+	check.call(
+		(
+			world.ai_controller.ticks > 0
+			and world.ai_build.total_built > 0
+			and world.ai_controller.steps_attempted > 0
+		),
+		"Seeded AI must act before the restart check"
+	)
+	world.reset_ai(11)
+	check.call(
+		(
+			world.ai_controller.ticks == 0
+			and world.ai_controller.think_ticks == 0
+			and world.ai_controller.steps_attempted == 0
+			and world.ai_controller.steps_completed == 0
+			and world.ai_controller.policy.think_timer == 90
+			and world.ai_build.total_built == 0
+			and world.ai_heroes.total_skills_cast == 0
+			and world.ai_draft.total_heroes_bought == 0
+			and world.ai_upgrades.total_upgraded == 0
+			and world.ai_draft.purchase_target == ""
+		),
+		"Restarting the AI must clear every clock, counter and the draft"
+	)
+	# The seed lands on every AI stream: the controller replays draw for draw.
+	var probe := AiController.new()
+	probe.rng.seed = 11
+	check.call(world.ai_controller.draw() == probe.draw(), "Restart must reseed the controller RNG")
+	var builder := world.ai_build
+	var other := AiBuild.new()
+	other.rng.seed = 12
+	check.call(builder.rng.randf() == other.rng.randf(), "Restart must reseed the build RNG")
 
 
 func _test_ai_shield_nexus(check: Callable) -> void:

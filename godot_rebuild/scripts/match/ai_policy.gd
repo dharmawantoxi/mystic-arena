@@ -36,6 +36,13 @@ func action_budget() -> int:
 	return 1 + lower
 
 
+func reset() -> void:
+	# Source Game.reset() builds a fresh AIPlayer: the think clock and the
+	# diagnostics of the last scried tick start over.
+	think_timer = THINK_INTERVAL
+	last_attempts = 0
+
+
 func advance(control_heroes: Callable, perform_step: Callable) -> int:
 	# The source controls heroes every tick, including the initial 90-tick wait.
 	control_heroes.call()

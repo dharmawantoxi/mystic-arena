@@ -542,6 +542,34 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 	return best
 
 
+func set_ai_enabled(enabled: bool) -> void:
+	# Single switch for the match: the real AI owns the red side, so the
+	# temporary defender (a stand-in from before layer 6c) parks while it runs
+	# and takes over again when the AI is switched off for a test.
+	ai_enabled = enabled
+	ai_hero_control_enabled = enabled
+	defender_enabled = not enabled
+
+
+func reset_ai(seed_value: int = -1) -> void:
+	# Source Game.reset() constructs a new AIPlayer: think clock, adapter
+	# counters, hero-skill counter and the persistent draft all return to their
+	# opening state. One seed drives every AI stream so a restart replays.
+	ai_controller.reset(seed_value)
+	ai_heroes.total_skills_cast = 0
+	ai_build.total_built = 0
+	ai_upgrades.total_upgraded = 0
+	ai_upgrades.total_nexus_upgrades = 0
+	ai_upgrades.total_hero_upgrades = 0
+	ai_draft.purchase_target = ""
+	ai_draft.purchase_target_cost = 0
+	ai_draft.total_heroes_bought = 0
+	ai_draft.source_levels = {}
+	if seed_value >= 0:
+		ai_build.rng.seed = seed_value + 1
+		ai_draft.rng.seed = seed_value + 2
+
+
 func _step_ai() -> void:
 	# Source Game.update: the AI runs once per tick, right after the entities.
 	if not ai_enabled:

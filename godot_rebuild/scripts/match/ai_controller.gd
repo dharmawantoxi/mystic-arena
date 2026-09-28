@@ -15,6 +15,9 @@ const AiPolicy = preload("res://scripts/match/ai_policy.gd")
 
 # Source random.random(); seeded so a schedule can be replayed in tests.
 var rng := RandomNumberGenerator.new()
+# Seed of the current run (source AIPlayer carries no seed; this is the
+# reproducibility handle a restarted match re-applies).
+var match_seed := -1
 var policy: AiPolicy
 # Diagnostics: ticks observed, thinking ticks, and actions attempted/completed.
 var ticks := 0
@@ -39,6 +42,20 @@ func tick(control_heroes: Callable, perform_step: Callable) -> int:
 	steps_attempted += policy.last_attempts
 	steps_completed += completed
 	return completed
+
+
+func reset(seed_value: int = -1) -> void:
+	# Source Game.reset(): a brand-new AIPlayer, so the clock, every counter and
+	# the diagnostics of the previous match are discarded. A non-negative seed
+	# deterministically replays the restarted schedule.
+	policy.reset()
+	ticks = 0
+	think_ticks = 0
+	steps_attempted = 0
+	steps_completed = 0
+	if seed_value >= 0:
+		match_seed = seed_value
+		rng.seed = seed_value
 
 
 func draw() -> float:
