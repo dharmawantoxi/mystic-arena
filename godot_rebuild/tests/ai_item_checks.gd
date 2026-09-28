@@ -759,30 +759,35 @@ func _test_auto_triggers(rows: Array, check: Callable) -> void:
 			)
 			inv.notify_damage_taken(50, 100, 1, true, proc_rng, fx)
 		var fx := _TestItemFx.new()
-		for tick_idx in range(int(row.ticks)):
+		var r_ticks: int = int(row.ticks)
+		var r_target: Variant = row.get("target_idx", null)
+		for tick_idx in range(r_ticks):
 			fx.clear()
 			# The oracle runs inv.update(1, enemies) which ticks timers AND
 			# auto-triggers in one call; in the rebuild those are separate
 			# methods so call both in the same order as the source.
 			inv.tick_timers(1)
 			# Read HP from previous tick's hero_hp (or init).
-			var start_hp := int(1000.0 * float(row.hp_ratio))
+			var hp_ratio_f: float = float(row.hp_ratio)
+			var start_hp_i: int = int(1000.0 * hp_ratio_f)
 			var tgt_id := -1
-			if int(row.target_idx) >= 0 and enemies.size() > int(row.target_idx):
-				tgt_id = 100 + int(row.target_idx)
+			if r_target != null:
+				var tidx_i: int = int(r_target)
+				if tidx_i >= 0 and enemies.size() > tidx_i:
+					tgt_id = 100 + tidx_i
+			var sp0: float = float(start_pos[0])
+			var sp1: float = float(start_pos[1])
 			inv.set_hero_runtime(
-				42, true, float(start_hp), 1000, 0, 1.0, Vector2(start_pos[0], start_pos[1]), tgt_id
+				42, true, float(start_hp_i), 1000, 0, 1.0, Vector2(sp0, sp1), tgt_id
 			)
 			inv.tick_auto(1, enemies, fx, rng)
-			start_hp = int(inv.hero_hp)
+			start_hp_i = int(inv.hero_hp)
 			# Apply nudge back for the next tick.
 			for n in fx.nudges:
 				var nd: Dictionary = n as Dictionary
 				if int(nd.hid) == 42:
-					start_pos = [
-						float(start_pos[0]) + float((nd.delta as Vector2).x),
-						float(start_pos[1]) + float((nd.delta as Vector2).y)
-					]
+					var dv: Vector2 = nd.delta as Vector2
+					start_pos = [sp0 + dv.x, sp1 + dv.y]
 			# Compare state snapshot.
 			var want: Dictionary = row.log[tick_idx].state
 			for key in want:
@@ -820,21 +825,18 @@ func _test_notify_damage(rows: Array, check: Callable) -> void:
 			assert(inv.add(String(item_id)), "notify loadout refused: " + label)
 		# Prime thornmail if hp_ratio < 0.5 like the oracle (single update tick).
 		var fx := _TestItemFx.new()
-		if inv.has("razor_carapace") and float(row.hp_ratio) < 0.5:
+		var nhp_ratio: float = float(row.hp_ratio)
+		var hp_val: int = int(1000.0 * nhp_ratio)
+		if inv.has("razor_carapace") and nhp_ratio < 0.5:
 			inv.tick_timers(1)
-			inv.set_hero_runtime(
-				42, true, int(1000 * float(row.hp_ratio)), 1000, 0, 1.0, Vector2(100, 100), -1
-			)
+			inv.set_hero_runtime(42, true, float(hp_val), 1000, 0, 1.0, Vector2(100, 100), -1)
 			inv.tick_auto(1, [], fx, RandomNumberGenerator.new())
-		# Record before-state of relevant timers.
-		var before: Dictionary = row.before
 		# Seed RNG for deterministic proc.
 		var rng := RandomNumberGenerator.new()
-		rng.seed = int(row.seed)
+		var seed_val: int = int(row.seed)
+		rng.seed = seed_val
 		fx.clear()
-		inv.set_hero_runtime(
-			42, true, int(1000 * float(row.hp_ratio)), 1000, 0, 1.0, Vector2(100, 100), -1
-		)
+		inv.set_hero_runtime(42, true, float(hp_val), 1000, 0, 1.0, Vector2(100, 100), -1)
 		var src_id := -1
 		var src_team := 0
 		var src_alive := false
