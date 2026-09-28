@@ -428,8 +428,8 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 22 urutan pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
 5 notify_damage). Native: `ai_item_checks.gd` terdaftar di `run_all.gd`.
-CI Godot 4.7.2 run 36433185892 hijau untuk lapisan 5d (commit `420f8df`):
-**1.178.698 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
+CI Godot 4.7.2 run 36439082075 hijau untuk lapisan 5e (commit `cb8e6a2`):
+**1.178.701 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` tetap 1000 baris.
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
@@ -438,11 +438,9 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: **5d** aura + `update_auras` (armor/AS/guard block/armor reduction
-buff sekutu, Scorched Earth DoT ke menara/boss), lalu 5e proc on-hit
-(`roll_crit`, `on_basic_attack_hit`, `_on_hit_common`, `on_ranged_attack_hit`
-+ chain/cleave/vine/miasma), terakhir 5f Forge UI + item drop
-(`drops_on_death`). Kontrol hero per tick dan integrasi scene tetap menunggu
+Berikutnya: **5e** proc on-hit (crit+lifesteal+cleave+bash+chain+frostbite
++empower+vine sudah port; miasma+polycephaly+soul-rend crit menunggu infra
+status debuff racun), lalu 5f Forge UI + item drop (`drops_on_death`). Kontrol hero per tick dan integrasi scene tetap menunggu
 setelah fase item.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft

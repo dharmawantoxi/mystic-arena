@@ -1,4 +1,4 @@
-# gdlint:disable=max-file-lines,max-line-length,class-definitions-order,unused-argument
+# gdlint:disable=max-file-lines,max-line-length,class-definitions-order,unused-argument,max-public-methods
 extends "res://scripts/combat/siege_battle.gd"
 ## Playable normal/level-1 subset. Wave/ledger/build rules are separate from the old manual labs.
 
@@ -1105,3 +1105,70 @@ func _aura_catalog(item_id: String) -> Dictionary:
 		if unit is HeroState:
 			return (unit as HeroState).items.item(item_id)
 	return {}
+
+
+# ── Layer 5e: on-hit wiring (crit + lifesteal + cleave + on-hit procs) ──
+
+
+func hero_basic_attack(hero_id: int, target_id: int) -> bool:
+	# Override parent to apply item crit, bonus damage, ranged lifesteal and
+	# melee/ranged on-hit procs. Base validation/cooldown/timers mirror the
+	# parent; we patch the raw damage and add post-hit callbacks.
+	var hero: HeroState = get_unit(hero_id) as HeroState
+	var target: Object = get_unit(target_id)
+	if not is_running() or hero == null or target == null:
+		return false
+	if not hero.alive or not target.alive:
+		return false
+	if hero.stun_timer > 0 or hero.items.is_veiled():
+		return false
+	if hero.position.distance_to(target.position) > hero.eff_attack_range():
+		return false
+	if hero.attack_timer != 0:
+		return false
+	var dx: float = target.position.x - hero.position.x
+	if dx != 0.0:
+		hero.facing = 1.0 if dx > 0.0 else -1.0
+	hero.attack_facing = hero.facing
+	hero.attack_seq += 1
+	hero.attack_timer = hero.eff_attack_cd(hero.attack_cd_base)
+	var raw: int = hero.damage + int(hero.items.get_bonus_damage())
+	if hero.settings().id == "grimjaw" and hero.grimjaw_crit_timer > 0:
+		raw *= 2
+	hero.items.set_hero_runtime(
+		hero.id,
+		hero.alive,
+		hero.hp,
+		int(hero.max_hp),
+		hero.team,
+		hero.facing,
+		hero.position,
+		hero.target_id
+	)
+	var is_crit := false
+	var rend: Variant = hero.items.get_rend_crit()
+	if rend != null and target.id == hero.items.rend_target:
+		raw = int(float(raw) * float(rend))
+		is_crit = true
+	if not is_crit:
+		var cr: Array = hero.items.roll_crit(_item_rng)
+		if bool(cr[0]):
+			raw = int(float(raw) * float(cr[1]))
+			is_crit = true
+	var bus := _battle_item_effects(hero)
+	if not hero.is_melee and hero.settings().id != "morgath":
+		_hero_ranged_spawn(hero, target, raw)
+		var ls: float = hero.items.get_lifesteal_pct()
+		if ls > 0.0:
+			hero.hp = minf(hero.max_hp, hero.hp + float(raw) * ls)
+		hero.items.on_ranged_attack_hit(target.id, raw, _item_rng, bus)
+	else:
+		_deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
+		if target.alive:
+			hero.items.on_basic_attack_hit(target.id, raw, _item_rng, bus)
+	hero.hp = hero.items.hero_hp
+	return true
+
+
+func _hero_ranged_spawn(hero: HeroState, target: Object, damage: int) -> void:
+	HeroProjectiles.spawn(hero_projectiles, hero, target, damage)

@@ -740,6 +740,113 @@ func _enemy_alive(enemies: Array, eid: int) -> bool:
 	return false
 
 
+# ── Layer 5e: on-hit procs (roll_crit / basic & ranged attack hits) ──
+
+
+func roll_crit(_rng: RandomNumberGenerator) -> Array:
+	# Source returns (is_crit, mult). Soul Rend crit (rend_target) is handled
+	# by the caller before this roll per source _do_attack.
+	var crit: Array = get_crit()
+	var chance: float = float(crit[0])
+	var mult: float = float(crit[1])
+	if chance <= 0.0:
+		return [false, 1.0]
+	if _rng.randf() < chance:
+		return [true, mult]
+	return [false, 1.0]
+
+
+func on_basic_attack_hit(
+	target_id: int, damage: int, _rng: RandomNumberGenerator, effects: ItemEffects
+) -> void:
+	# Port of on_basic_attack_hit (melee): lifesteal + _on_hit_common + cleave.
+	if not hero_alive:
+		return
+	var ls: float = get_lifesteal_pct()
+	if ls > 0.0 and damage > 0:
+		hero_hp = mini(float(hero_max_hp), hero_hp + float(damage) * ls)
+	_on_hit_common(target_id, damage, _rng, effects)
+	var cleave: Variant = get_cleave()
+	if cleave != null and damage > 0:
+		var pct: float = float(cleave[0])
+		var radius: float = float(cleave[1])
+		var splash: int = int(float(damage) * pct)
+		if splash > 0:
+			effects.cleave_splash(target_id, hero_team, hero_position, splash, radius)
+
+
+func on_ranged_attack_hit(
+	target_id: int, damage: int, _rng: RandomNumberGenerator, effects: ItemEffects
+) -> void:
+	# Port of on_ranged_attack_hit: on-hit common only (no lifesteal/cleave).
+	if not hero_alive:
+		return
+	_on_hit_common(target_id, damage, _rng, effects)
+
+
+func _on_hit_common(
+	target_id: int, _damage: int, _rng: RandomNumberGenerator, effects: ItemEffects
+) -> void:
+	# Corroder: armor shred.
+	var shred: Variant = get_armor_shred()
+	if shred != null:
+		effects.apply_armor_shred(target_id, float(shred[0]), int(shred[1]))
+	# Abyss Breaker: Bash.
+	var bash: Variant = get_bash()
+	if bash != null and bash_cd <= 0:
+		var bash_dict: Dictionary = bash as Dictionary
+		if _rng.randf() < float(bash_dict.get("chance", 0.0)):
+			bash_cd = int(bash_dict.get("cooldown", 0))
+			effects.apply_stun(target_id, int(bash_dict.get("stun", 0)))
+			effects.deal_damage(target_id, hero_team, int(bash_dict.get("damage", 0)), "physical")
+			effects.notify(target_id, "BASH!")
+	# Fenrir Chain / Thunder Coil: arc chain.
+	var chain: Variant = get_on_attack_chain()
+	if chain != null:
+		var ch: Dictionary = chain as Dictionary
+		if float(ch.get("chance", 0.0)) > 0.0 and _rng.randf() < float(ch["chance"]):
+			var hit: Array = effects.chain_targets(
+				target_id, hero_team, float(ch["radius"]), int(ch["targets"])
+			)
+			if hit.is_empty():
+				hit = [target_id]
+			for tid in hit:
+				effects.deal_damage(int(tid), hero_team, int(ch["damage"]), "magic")
+			effects.chain_fx(hero_id, hit)
+	if target_id < 0:
+		return
+	# Sundering Cudgel: Piercing Bash.
+	if has("sundering_cudgel") and pierce_bash_cd <= 0:
+		var pb: Dictionary = item("sundering_cudgel").get("bash", {})
+		if _rng.randf() < float(pb.get("chance", 0.0)):
+			pierce_bash_cd = int(pb.get("cooldown", 0))
+			effects.apply_stun(target_id, int(pb.get("stun", 0)))
+			effects.deal_damage(target_id, hero_team, int(pb.get("damage", 0)), "magic")
+			effects.notify(target_id, "PIERCE!")
+	# Frostbound Eye: Frostbite (slow + atk_slow + anti_heal).
+	if has("frostbound_eye"):
+		var oa: Dictionary = item("frostbound_eye").get("on_attack", {})
+		effects.apply_slow(target_id, float(oa.get("slow", 0.0)), int(oa.get("duration", 0)))
+		effects.apply_atk_slow(
+			target_id, float(oa.get("atk_slow", 0.0)), int(oa.get("duration", 0))
+		)
+		effects.apply_anti_heal(
+			target_id, float(oa.get("anti_heal", 0.0)), int(oa.get("duration", 0))
+		)
+	# Runic Gavel: Empower Strike.
+	if has("runic_gavel") and empower_charge <= 0:
+		var bonus: int = consume_empower_strike()
+		if bonus > 0:
+			effects.deal_damage(target_id, hero_team, bonus, "magic")
+			effects.notify(target_id, "EMPOWER!")
+	# Vine Rod: Entangle (root = 100% slow).
+	if has("vine_rod") and vine_cd <= 0:
+		var vr: Dictionary = item("vine_rod").get("on_attack", {})
+		vine_cd = int(vr.get("cooldown", 0))
+		effects.apply_slow(target_id, 1.0, int(vr.get("root_duration", 0)))
+		effects.notify(target_id, "ROOT!")
+
+
 func _nearby_enemies(enemies: Array, radius: float) -> Array:
 	var ids: Array = []
 	for e in enemies:

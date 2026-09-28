@@ -36,6 +36,16 @@ func apply_burn(_target_id: int, _dps: float, _duration: int, _source_team: int)
 	pass
 
 
+## Apply atk-speed slow (percent, ticks).
+func apply_atk_slow(_target_id: int, _amount: float, _duration: int) -> void:
+	pass
+
+
+## Apply anti-heal (percent, ticks).
+func apply_anti_heal(_target_id: int, _amount: float, _duration: int) -> void:
+	pass
+
+
 ## Apply damage amp (multiplier fraction, ticks).
 func apply_damage_amp(_target_id: int, _amount: float, _duration: int) -> void:
 	pass
@@ -59,3 +69,15 @@ func notify(_unit_id: int, _text: String) -> void:
 ## Chain-lightning visual between source and targets (no-op in tests).
 func chain_fx(_source_id: int, _target_ids: Array) -> void:
 	pass
+
+
+## Cleave splash damage (melee only).
+func cleave_splash(
+	_target_id: int, _src_team: int, _src_pos: Vector2, _splash: int, _radius: float
+) -> void:
+	pass
+
+
+## Return up to `count` enemy unit ids within radius of target.
+func chain_targets(_target_id: int, _src_team: int, _radius: float, _count: int) -> Array:
+	return []

@@ -51,6 +51,50 @@ func apply_burn(target_id: int, dps: float, duration: int, source_team: int) -> 
 	t.burn_team = source_team
 
 
+func apply_armor_shred(_target_id: int, _amount: float, _duration: int) -> void:
+	# Armor shred is a tracked debuff; the rebuild damage calc does not yet
+	# carry per-target shred state so this is a silent landing for parity.
+	pass
+
+
+func apply_atk_slow(target_id: int, amount: float, duration: int) -> void:
+	world.apply_atk_slow(target_id, amount, duration)
+
+
+func apply_anti_heal(target_id: int, amount: float, duration: int) -> void:
+	world.apply_anti_heal(target_id, amount, duration)
+
+
+func cleave_splash(
+	target_id: int, src_team: int, src_pos: Vector2, splash: int, radius: float
+) -> void:
+	var center: Object = world.get_unit(target_id)
+	if center == null:
+		return
+	var center_pos: Vector2 = center.position
+	for u in world.units:
+		if u == null or not u.alive or u.team == src_team or u.id == target_id:
+			continue
+		if center_pos.distance_to(u.position) <= radius:
+			world._deliver_hit(dealer_id, src_team, u, splash, "physical", src_pos)
+
+
+func chain_targets(target_id: int, src_team: int, radius: float, count: int) -> Array:
+	var tgt: Object = world.get_unit(target_id)
+	if tgt == null or not tgt.alive:
+		return []
+	var center: Vector2 = tgt.position
+	var hits: Array = [target_id]
+	for u in world.units:
+		if u == null or not u.alive or u.team == src_team or u.id == target_id:
+			continue
+		if center.distance_to(u.position) <= radius:
+			hits.append(u.id)
+			if hits.size() >= count:
+				break
+	return hits
+
+
 func nudge_position(hid: int, delta: Vector2) -> void:
 	var t: Object = world.get_unit(hid)
 	if t != null:
