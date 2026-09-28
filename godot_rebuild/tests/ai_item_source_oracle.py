@@ -24,8 +24,30 @@ FIXTURE = Path(__file__).parent / "fixtures/ai_items_source.json"
 
 _NAMES = frozenset({
     "MAX_ITEM_SLOTS", "ITEM_FLAT_COST", "MAGIC_ROLE_KEYWORDS", "ITEM_CATALOG",
+    # Miasma registry: module-level, keyed by id(target).
+    "_MIASMA",
+    # Forge shop paging (5f-2).
+    "CLASS_PHYSICAL", "CLASS_MAGIC", "CLASS_TANK", "ITEM_CLASS_INFO",
+    "_ITEM_CLASS_OVERRIDES", "_MAP_CATEGORY_TO_CLASS", "ITEMS_PER_PAGE",
+    "CLASS_ITEM_ORDER",
 })
-_FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero")
+_FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero",
+              "_apply_miasma", "_tick_miasma")
+# Forge shop (layer 5f): the real buy/queue/deliver/drop/target-resolution
+# functions; `tr`, `_notify` and the `_play_*` sound helpers are stubbed.
+_FORGE_FUNCTIONS = ("pending_forge_items", "deliver_pending_forge_items",
+                    "_resolve_shop_target", "_try_buy", "_try_drop",
+                    "get_item_class", "_build_shop_pages")
+# Layer 6a: AIPlayer hero control (per ticks) lives in _entity.py.
+ENTITY = ROOT / "_entity.py"
+_HERO_CONTROL_METHODS = ("_control_heroes", "_assign_hero_lane")
+# Layer 6b: the per-tick scheduling wrapper AIPlayer.update/_ai_brain/_ai_elite.
+_SCHEDULE_METHODS = ("update", "_ai_brain", "_ai_elite", "_ai_reserve",
+                     "_control_heroes")
+# Levels traced for the schedule fixture (start, mid, elite, cap).
+SCHEDULE_LEVELS = (1, 20, 54)
+SCHEDULE_TICKS = 4
+_LANE_Y = {"LANE_Y_TOP": 150, "LANE_Y_MID": 380, "LANE_Y_BOT": 610}
 _LEVEL_MULT = "_hero_level_mult"
 # Real HeroItemInventory slot bookkeeping plus the stat chain `_on_item_changed`
 # reaches, so the fixture can show exactly what the rebuild does NOT port yet.
@@ -186,7 +208,7 @@ def _assignments():
     return nodes
 
 
-def source_namespace(with_functions=False, with_inventory=False):
+def source_namespace(with_functions=False, with_inventory=False, with_forge=False):
     """Exec only the constant assignments ITEM_CATALOG needs, in source order."""
     nodes = _assignments()
     by_name = {node.targets[0].id: node for node in nodes}
@@ -201,6 +223,8 @@ def source_namespace(with_functions=False, with_inventory=False):
         wanted |= set(_FUNCTIONS)
     if with_inventory:
         wanted.add(_LEVEL_MULT)
+    if with_forge:
+        wanted |= set(_FORGE_FUNCTIONS)
     if wanted:
         found = [node for node in ast.parse(SOURCE.read_text(encoding="utf-8")).body
                  if isinstance(node, ast.FunctionDef) and node.name in wanted]
@@ -230,7 +254,8 @@ def catalog(env=None):
             # bash/active). Presentation keys (icon/color/glow/desc) stay out.
             "stats": dict(data.get("stats", {})),
         }
-        for key in ("passive", "block", "on_attack", "bash", "active", "aura"):
+        for key in ("passive", "block", "on_attack", "bash", "active", "aura",
+                    "multishot"):
             if key in data:
                 entry[key] = data[key]
         items[item_id] = json.loads(json.dumps(entry))
@@ -597,6 +622,26 @@ def _make_hero(spec, hp_ratio=1.0, target=None, x=0, y=0, team="red", tag="hero"
     return hero
 
 
+# Miasma (Basilisk Breath): the source keeps one registry keyed by id(target)
+# with the last applier as source. The recorder replays an apply/tick script
+# against a stub target so the rebuild locks the % Max HP damage, the
+# [6, cap_damage] clamp, the refresh rules (max damage / max timer / min tick)
+# and the hardcoded 30-tick reset inside _tick_miasma.
+MIASMA_CASES = [
+    # (target max_hp, script of ("apply", overrides) and ("tick", count)).
+    (1000, [("apply", {}), ("tick", 6)]),
+    (5000, [("apply", {}), ("tick", 3)]),
+    (200, [("apply", {}), ("tick", 3)]),
+    (1000, [("apply", {}), ("tick", 2),
+            ("apply", {"max_hp_pct_per_tick": 0.05, "duration": 100,
+                       "tick": 60}),
+            ("tick", 2)]),
+    (1000, [("apply", {"duration": 2}), ("tick", 3)]),
+    # Short tick interval so the poison actually lands ($ Max HP damage +
+    # the hardcoded 30-tick reset) inside the recorded window.
+    (1500, [("apply", {"tick": 2}), ("tick", 3)]),
+]
+
 # (hero spec, loadout, hp_ratio, enemy positions relative to hero at (100,100),
 #  target_index (None = no target), ticks). Each enemy is at (100+dx, 100+dy).
 AUTO_TRIGGER_CASES = [
@@ -954,6 +999,533 @@ def notify_damage(env):
     return rows
 
 
+def miasma(env):
+    """Real _apply_miasma/_tick_miasma against a stub target, one script/row."""
+    # _install_effect_stubs swaps _tick_miasma for a no-op so the update()
+    # fixtures stay deterministic. The recorder re-execs the real functions
+    # into a fresh namespace and silences only the visual notifiers.
+    env = source_namespace(with_functions=True)
+    env["_fx_notify"] = lambda *args, **kwargs: None
+    env["_fx_chain"] = lambda *args, **kwargs: None
+    env["random"] = __import__("random")
+    env["math"] = __import__("math")
+    rows = []
+    with _core_module():
+        base = env["ITEM_CATALOG"]["basilisk_breath"]["on_attack"]
+        for max_hp, script in MIASMA_CASES:
+            registry = env["_MIASMA"]
+            registry.clear()
+            target = _EffectStub(0, 0, "blue", alive=True)
+            target.max_hp = max_hp
+            target.hp = max_hp
+            target._tag = "target"
+            hero = _make_hero({"role": "Marksman", "range": 130,
+                               "base_hp": 620, "level": 3}, x=0, y=0)
+            data = dict(base)
+            steps = []
+            for op, arg in script:
+                if op == "apply":
+                    data.update(arg)
+                    env["_apply_miasma"](target, hero, data)
+                else:
+                    for _ in range(arg):
+                        env["_tick_miasma"](1)
+                tracker = registry.get(id(target))
+                steps.append({
+                    "op": op,
+                    "arg": arg if op == "apply" else arg,
+                    "data": data if op == "apply" else None,
+                    "effects": [dict(e) for e in target.effects],
+                    "damage": None if tracker is None else tracker["damage"],
+                    "timer": None if tracker is None else tracker["timer"],
+                    "tick_cd": None if tracker is None else tracker["tick_cd"],
+                    "active": tracker is not None,
+                })
+                target.effects.clear()
+            rows.append({
+                "target_max_hp": max_hp,
+                "target_team": "blue",
+                "source_team": hero.team,
+                "script": [[op, arg] for op, arg in script],
+                "steps": steps,
+            })
+    return rows
+
+
+# Forge shop (layer 5f). Each case builds hero stubs with real inventories, a
+# game stub (gold, saved/selected target) and then replays buy/select/respawn/
+# drop steps. `notify` records the source tr() keys `_notify` received, so the
+# native port can be checked against the same message vocabulary.
+FORGE_CASES = [
+    # Dead selected hero: the order queues, respawn delivers, drop removes.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+            {"role": "Mage", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": False},
+        ],
+        "gold": 20000, "saved": None, "selected": 1,
+        "steps": [["buy", "dead_edge"], ["respawn", 1], ["buy", "corroder"],
+                  ["drop", 0], ["drop", 5]],
+    },
+    # Six slots: the sixth fits, the seventh is refused (inventory_full).
+    {
+        "heroes": [
+            {"role": "Mage", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 60000, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"], ["buy", "corroder"],
+                  ["buy", "moon_shard"], ["buy", "solar_brand"],
+                  ["buy", "searbrand"], ["buy", "runic_gavel"],
+                  ["buy", "frostbound_eye"]],
+    },
+    # Queued orders count against the slot cap: 5 worn + 1 pending blocks the
+    # seventh order with inventory_full.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 60000, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"], ["buy", "corroder"],
+                  ["buy", "moon_shard"], ["buy", "solar_brand"],
+                  ["buy", "searbrand"], ["kill", 0], ["buy", "runic_gavel"],
+                  ["buy", "frostbound_eye"]],
+    },
+    # Not enough gold: silent refusal, no debit and no queue.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 500, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"]],
+    },
+    # melee_only item on a ranged hero (silent) then a legal magic_only buy.
+    {
+        "heroes": [
+            {"role": "Mage", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 20000, "saved": None, "selected": None,
+        "steps": [["buy", "cleave_axe"], ["buy", "astral_codex"]],
+    },
+    # magic_only item on a non-magic role: the shop answers magic_only_denied.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 20000, "saved": None, "selected": None,
+        "steps": [["buy", "astral_codex"], ["buy", "dead_edge"]],
+    },
+    # No summoned hero at all.
+    {
+        "heroes": [],
+        "gold": 20000, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"]],
+    },
+    # Saved target outranks the selected one; a dead saved target queues.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+            {"role": "Marksman", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": False},
+        ],
+        "gold": 20000, "saved": 1, "selected": 0,
+        "steps": [["buy", "dead_edge"], ["respawn", 1], ["buy", "corroder"]],
+    },
+    # Nobody alive: the first dead hero receives the queue.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": False},
+            {"role": "Mage", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": False},
+        ],
+        "gold": 20000, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"], ["respawn", 0]],
+    },
+]
+
+
+class _ForgeHero:
+    def __init__(self, spec, index, inv_type):
+        self.role = spec["role"]
+        self.range = spec["range"]
+        self.base_hp = spec["base_hp"]
+        self.level = spec["level"]
+        self.max_hp = spec["max_hp"]
+        self.hp = spec["hp"]
+        self.alive = spec["alive"]
+        self.facing = 1
+        self.x = 0
+        self.y = 0
+        self.team = "blue"
+        self.target = None
+        self._tag = "hero%d" % index
+        self.name = "Hero%d" % index
+        self.apply_heal_amp = lambda amount, duration: None
+        self.items = inv_type(self)
+
+
+class _ForgeGame:
+    def __init__(self, heroes, gold):
+        self.heroes = heroes
+        self.gold = gold
+        self.itemshop_target_hero = None
+        self.selected_hero = None
+        self.item_shop_open = True
+        self.notes = []
+
+
+def forge(env):
+    """Real _try_buy/_try_drop/_resolve_shop_target plus the pending queue."""
+    # with_inventory: the real HeroItemInventory.add/remove path needs
+    # _hero_level_mult, exactly like the slot-bookkeeping recorder.
+    env = source_namespace(with_functions=True, with_inventory=True, with_forge=True)
+    tr_calls = []
+
+    def _tr(key, **values):
+        tr_calls.append({"key": key,
+                         "values": {k: str(v) for k, v in values.items()}})
+        return key
+
+    env["tr"] = _tr
+    env["_player_heroes"] = lambda game: list(game.heroes)
+    env["_get_game"] = lambda: None
+    env["_notify"] = lambda game, text, color: game.notes.append(str(text))
+    env["_play_error"] = lambda: None
+    env["_play_click"] = lambda: None
+    env["_play_buy"] = lambda: None
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for case in FORGE_CASES:
+            heroes = [_ForgeHero(spec, index, inv_type)
+                      for index, spec in enumerate(case["heroes"])]
+            game = _ForgeGame(heroes, case["gold"])
+            if case["saved"] is not None:
+                game.itemshop_target_hero = heroes[case["saved"]]
+            if case["selected"] is not None:
+                game.selected_hero = heroes[case["selected"]]
+            steps = []
+            for step in case["steps"]:
+                op = step[0]
+                result = None
+                delivered = []
+                if op == "buy":
+                    tr_calls.clear()
+                    game.notes.clear()
+                    env["_try_buy"](game, step[1])
+                    result = list(game.notes)
+                elif op == "drop":
+                    tr_calls.clear()
+                    game.notes.clear()
+                    env["_try_drop"](game, step[1])
+                    result = list(game.notes)
+                elif op == "select":
+                    game.selected_hero = heroes[step[1]]
+                elif op == "kill":
+                    heroes[step[1]].alive = False
+                elif op == "respawn":
+                    heroes[step[1]].alive = True
+                    delivered = list(
+                        env["deliver_pending_forge_items"](heroes[step[1]]))
+                steps.append({
+                    "op": op,
+                    "arg": None if len(step) < 2 else step[1],
+                    "notify": result,
+                    "tr": [dict(call) for call in tr_calls],
+                    "delivered": delivered,
+                    "gold": game.gold,
+                    "slots": [list(hero.items.slots) for hero in heroes],
+                    "pending": [list(env["pending_forge_items"](hero))
+                                for hero in heroes],
+                    "target_index": (None if game.itemshop_target_hero is None
+                                     else heroes.index(game.itemshop_target_hero)),
+                })
+            rows.append({
+                "gold": case["gold"],
+                "saved": case["saved"],
+                "selected": case["selected"],
+                "heroes": [{"role": spec["role"], "range": spec["range"],
+                            "base_hp": spec["base_hp"], "level": spec["level"],
+                            "alive": spec["alive"]}
+                           for spec in case["heroes"]],
+                "steps": steps,
+            })
+    return rows
+
+
+def shop_pages(env):
+    """Real get_item_class/_build_shop_pages: the ITEM FORGE paging."""
+    env = source_namespace(with_functions=True, with_forge=True)
+    with _core_module():
+        pages, meta = env["_build_shop_pages"]()
+        return {
+            "items_per_page": env["ITEMS_PER_PAGE"],
+            "pages": [list(page) for page in pages],
+            "meta": [[cls, idx, total] for cls, idx, total in meta],
+            "classes": {sid: env["get_item_class"](sid)
+                        for sid in env["ITEM_CATALOG"]},
+            "class_order": {cls: list(ids)
+                            for cls, ids in env["CLASS_ITEM_ORDER"].items()},
+            "labels": {cls: env["ITEM_CLASS_INFO"][cls][0]
+                       for cls in env["ITEM_CLASS_INFO"]},
+        }
+
+
+
+# Layer 6a: AIPlayer._control_heroes / _assign_hero_lane. The source class is
+# lifted by AST (it imports pygame at module import time) and run against hero,
+# minion and tower stubs that record move_to / _try_auto_cast calls.
+HERO_CONTROL_CASES = [
+    # Two lanes threatened: MID has more minions, so the hero takes MID and
+    # walks to the NEAREST blue minion in that lane (x of it, lane y).
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 5}],
+        "minions": [["blue", True, "top", 300, 150],
+                    ["blue", True, "mid", 700, 380],
+                    ["blue", True, "mid", 900, 380],
+                    ["red", True, "mid", 100, 380]],
+        "towers": [["blue", True, 900, 150]],
+        "bases": [],
+    },
+    # Tie on threats: TOP wins (dict insertion order in the source).
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 400, "y": 200,
+                    "active_skill_timer_delta": 0}],
+        "minions": [["blue", True, "bot", 500, 610],
+                    ["blue", True, "top", 420, 150]],
+        "towers": [],
+        "bases": [],
+    },
+    # Threatened lane without blue minions: the hero parks at x=600 of it.
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 200, "y": 400,
+                    "active_skill_timer_delta": 3}],
+        "minions": [["blue", False, "mid", 700, 380]],
+        "towers": [["blue", True, 800, 380]],
+        "bases": [],
+    },
+    # No threats at all: nearest blue tower, stopped 60 px short of it.
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 100, "y": 100,
+                    "active_skill_timer_delta": 0}],
+        "minions": [],
+        "towers": [["blue", True, 400, 100], ["blue", True, 900, 600]],
+        "bases": [["blue", True, 1000, 700]],
+    },
+    # Busy heroes are left alone: one has a target, one a destination, one is
+    # dead, and one is mid-skill (no auto-cast attempt either).
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": True,
+                    "destination": False, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 7},
+                   {"alive": True, "skill_timer": 0, "target": False,
+                    "destination": True, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 0},
+                   {"alive": False, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 9},
+                   {"alive": True, "skill_timer": 5, "target": False,
+                    "destination": False, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 4}],
+        "minions": [["blue", True, "top", 300, 150]],
+        "towers": [],
+        "bases": [],
+    },
+    # No threats and no living tower: the hero keeps whatever it was doing.
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 300, "y": 300,
+                    "active_skill_timer_delta": 0}],
+        "minions": [["red", True, "top", 200, 150]],
+        "towers": [["blue", False, 400, 100]],
+        "bases": [],
+    },
+]
+
+
+class _HeroStub:
+    def __init__(self, spec, index):
+        self.alive = spec["alive"]
+        self.skill_timer = spec["skill_timer"]
+        self.target = "target" if spec["target"] else None
+        self.destination = (10, 10) if spec["destination"] else None
+        self.x = spec["x"]
+        self.y = spec["y"]
+        self.active_skill_timer = 100
+        self._delta = spec["active_skill_timer_delta"]
+        self.moves = []
+        self.auto_casts = []
+        self._index = index
+
+    def _try_auto_cast(self, all_units, all_towers, all_bases):
+        self.auto_casts.append({"units": len(all_units),
+                                "towers": len(all_towers),
+                                "bases": len(all_bases)})
+        self.active_skill_timer += self._delta
+
+    def move_to(self, x, y, auto=False):
+        self.moves.append({"x": x, "y": y, "auto": bool(auto)})
+
+
+class _MinionStub:
+    def __init__(self, spec, index):
+        self.team = spec[0]
+        self.alive = spec[1]
+        self.lane = spec[2]
+        self.x = spec[3]
+        self.y = spec[4]
+        self._index = index
+
+
+class _TowerStub:
+    def __init__(self, spec, index):
+        self.team = spec[0]
+        self.alive = spec[1]
+        self.x = spec[2]
+        self.y = spec[3]
+        self._index = index
+
+
+def _hero_control_type(env):
+    """Exec the real AIPlayer hero-control methods, unchanged."""
+    tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+    original = next(n for n in tree.body
+                    if isinstance(n, ast.ClassDef) and n.name == "AIPlayer")
+    selected = [n for n in original.body
+                if isinstance(n, ast.FunctionDef)
+                and n.name in _HERO_CONTROL_METHODS]
+    assert {n.name for n in selected} == set(_HERO_CONTROL_METHODS), \
+        "hero control methods missing"
+    node = ast.ClassDef(name="AIPlayerHeroControl", bases=[], keywords=[],
+                        decorator_list=[], body=selected)
+    env["math"] = __import__("math")
+    env.update(_LANE_Y)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])),
+                 "<source AIPlayer hero control>", "exec"), env)
+    return env["AIPlayerHeroControl"]
+
+
+def hero_control(env):
+    """Real _control_heroes/_assign_hero_lane against recording stubs."""
+    env["math"] = __import__("math")
+    env.update(_LANE_Y)
+    control_type = _hero_control_type(env)
+    rows = []
+    for case in HERO_CONTROL_CASES:
+        ai = control_type()
+        ai.team = "red"
+        ai.total_skills_cast = 0
+        heroes = [_HeroStub(spec, index)
+                  for index, spec in enumerate(case["heroes"])]
+        ai.heroes = heroes
+        minions = [_MinionStub(spec, index)
+                   for index, spec in enumerate(case["minions"])]
+        towers = [_TowerStub(spec, index)
+                  for index, spec in enumerate(case["towers"])]
+        bases = [_TowerStub(spec, index) for index, spec in enumerate(case["bases"])]
+        ai._control_heroes(minions, list(heroes), towers, bases)
+        rows.append({
+            "heroes": [dict(spec) for spec in case["heroes"]],
+            "minions": [list(spec) for spec in case["minions"]],
+            "towers": [list(spec) for spec in case["towers"]],
+            "bases": [list(spec) for spec in case["bases"]],
+            "moves": [list(hero.moves) for hero in heroes],
+            "auto_casts": [list(hero.auto_casts) for hero in heroes],
+            "total_skills_cast": ai.total_skills_cast,
+        })
+    return rows
+
+
+
+class _ScheduleAI:
+    """AIPlayer scheduling wrapper with _control_heroes/_ai_step recorded."""
+
+    def __init__(self, level_number):
+        self.level_number = level_number
+        self.team = "red"
+        self.heroes = []
+        self.control_calls = 0
+        self.step_calls = []
+        # Primed so the first traced tick is a thinking tick.
+        self.think_timer = 1
+        self._hero_purchase_target = None
+        self._hero_purchase_target_cost = 0
+
+    def _control_heroes(self, all_minions, all_heroes, all_towers, all_bases):
+        self.control_calls += 1
+
+    def _ai_step(self, all_towers, build_slots, my_nexus, brain, elite):
+        self.step_calls.append([len(all_towers), brain, elite])
+        # True, False, True...: the action loop must stop on the first failure.
+        return len(self.step_calls) % 2 == 1
+
+
+def schedule(env):
+    """Real AIPlayer.update + brain/elite, with the action step stubbed."""
+    rows = []
+    with _core_module():
+        env["math"] = __import__("math")
+        env["random"] = __import__("random")
+        env["AI_THINK_INTERVAL"] = 90
+        env["AI_MAX_HEROES"] = 5
+        env["AI_HERO_BUY_PRIORITY"] = 0.45
+        env["AI_HERO_UPGRADE_PRIORITY"] = 0.4
+        env["AI_ITEM_PRIORITY"] = 0.35
+        env["AI_TOWER_UPGRADE_PRIORITY"] = 0.3
+        env["AI_NEXUS_UPGRADE_PRIORITY"] = 0.35
+        env["STARTING_GOLD"] = 1000
+        tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+        original = next(n for n in tree.body
+                        if isinstance(n, ast.ClassDef) and n.name == "AIPlayer")
+        selected = [n for n in original.body
+                    if isinstance(n, ast.FunctionDef)
+                    and n.name in _SCHEDULE_METHODS]
+        assert {n.name for n in selected} == set(_SCHEDULE_METHODS), \
+            "schedule methods missing"
+        node = ast.ClassDef(name="AIPlayerSchedule", bases=[], keywords=[],
+                            decorator_list=[], body=selected)
+        exec(compile(ast.fix_missing_locations(
+            ast.Module(body=[node], type_ignores=[])),
+            "<source AIPlayer schedule>", "exec"), env)
+        schedule_type = env["AIPlayerSchedule"]
+        for level in SCHEDULE_LEVELS:
+            ai = _ScheduleAI(level)
+            # _ScheduleAI first so its stubs win over the exec'd methods.
+            ai.__class__ = type("ScheduleAI", (_ScheduleAI, schedule_type), {})
+            trace = []
+            for _ in range(SCHEDULE_TICKS):
+                ai.step_calls = []
+                ai.control_calls = 0
+                ai.update([], [], [], None, [], [])
+                trace.append({
+                    "control_calls": ai.control_calls,
+                    "steps": [dict(towers=c[0], brain=c[1], elite=c[2])
+                              for c in ai.step_calls],
+                    "think_timer": ai.think_timer,
+                })
+            rows.append({
+                "level": level,
+                "brain": ai._ai_brain(),
+                "elite": ai._ai_elite(),
+                "reserve": ai._ai_reserve(),
+                "trace": trace,
+            })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -971,6 +1543,11 @@ def source_fixture():
         "timers": timers(env),
         "auto_triggers": auto_triggers(env),
         "notify_damage": notify_damage(env),
+        "miasma": miasma(env),
+        "forge": forge(env),
+        "shop_pages": shop_pages(env),
+        "hero_control": hero_control(env),
+        "schedule": schedule(env),
     }))
 
 

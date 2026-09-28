@@ -8,6 +8,16 @@ const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
 const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
 const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
+const Forge = preload("res://scripts/match/forge.gd")
+const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
+const AiController = preload("res://scripts/match/ai_controller.gd")
+const AiBuild = preload("res://scripts/match/ai_build.gd")
+const AiRecruitment = preload("res://scripts/match/ai_recruitment.gd")
+const AiUpgrades = preload("res://scripts/match/ai_upgrades.gd")
+const AiItems = preload("res://scripts/match/ai_items.gd")
+const AiShields = preload("res://scripts/match/ai_shields.gd")
+const AiDraft = preload("res://scripts/match/ai_draft.gd")
+const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
@@ -39,6 +49,27 @@ const HERO_PASSIVE_HEAL := 0.15
 const HERO_BASE_NEAR := 100.0
 
 var economy := Economy.new()
+# Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
+var forge := Forge.new()
+# Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
+var item_shop := ItemShopUI.new()
+# Layer 6a: per-tick AI hero control. The AI controller is not wired into the
+# playable scene yet, so this stays off unless a caller asks for it.
+var ai_heroes := AiHeroControl.new()
+# Layer 6b: scheduling wrapper (source AIPlayer.update). The scene still runs
+# the temporary defender; setting both flags hands the red side to the AI.
+var ai_controller := AiController.new()
+var ai_enabled := false
+var ai_hero_control_enabled := false
+# Layer 6c: the action adapters and the persistent draft target the red side.
+var ai_draft := AiDraft.new()
+var ai_build := AiBuild.new()
+var ai_recruitment := AiRecruitment.new()
+var ai_upgrades := AiUpgrades.new()
+var ai_items := AiItems.new()
+var ai_shields := AiShields.new()
+# Source Hero.aggro_range: an auto destination is abandoned inside this radius.
+const HERO_AGGRO_RANGE := 250.0
 var scheduler := Scheduler.new()
 var slots: Array[Slot] = []
 var transaction_error := ""
@@ -137,6 +168,9 @@ func step_tick() -> void:
 		_tick_auras_and_items()
 		_step_defender()
 		_step_hero_act()
+		# Source Game.update runs the AI right after the entity loop.
+		_step_ai_heroes()
+		_step_ai()
 
 
 func get_slot(id: int) -> Slot:
@@ -301,8 +335,9 @@ func _retire_dead() -> void:
 
 
 func _step_defender() -> void:
-	# Explicit temporary opponent, NOT a port of AIPlayer: three paid Archer purchases.
-	if not defender_enabled or _defender_built >= 3 or tick_count % 300 != 0:
+	# Explicit temporary opponent, NOT a port of AIPlayer: three paid Archer
+	# purchases. The real AI controller replaces it as soon as ai_enabled is set.
+	if ai_enabled or not defender_enabled or _defender_built >= 3 or tick_count % 300 != 0:
 		return
 	if build_tower(RED, [11, 14, 17][_defender_built]):
 		_defender_built += 1
@@ -319,6 +354,7 @@ func set_hero_destination(hero_id: int, point: Vector2) -> bool:
 		return false
 	hero.has_destination = true
 	hero.destination = point
+	hero.destination_auto = false
 	hero.follow_id = -1
 	return true
 
@@ -378,6 +414,11 @@ func _step_one_hero(hero: HeroState) -> void:
 			hero.is_retreating = true
 		if hero.is_retreating and ratio >= HERO_HEAL_RATIO:
 			hero.is_retreating = false
+		if hero.has_destination and hero.destination_auto and hero_aggro_target(hero) != null:
+			# Source: an AI destination yields to an enemy in aggro range in
+			# the same frame; a manual destination is obeyed in full.
+			hero.has_destination = false
+			hero.destination_auto = false
 		if hero.is_retreating:
 			_step_hero_retreat(hero)
 		elif hero.has_destination:
@@ -444,26 +485,186 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	hero.target_struct = null
 	hero.is_retreating = false
 	hero.respawn_timer = 0
+	# Layer 5f (source Hero.respawn -> deliver_pending_forge_items): Forge
+	# orders placed while the hero was dead land in the inventory now.
+	forge.deliver_pending_forge_items(hero)
+
+
+func try_auto_cast(hero: HeroState) -> void:
+	# Port of Hero._try_auto_cast: only with a living enemy inside skill_range.
+	# Priority R, then E (2+), W (HP < 40%), Q. The AI path calls this directly
+	# (source _control_heroes), while the player path adds its own gating in
+	# _step_hero_auto_cast.
+	var nearby := _hero_skill_nearby(hero)
+	if nearby <= 0:
+		return
+	var used := false
+	if hero.r_cooldown <= 0:
+		used = _cast_hero_r(hero.id, structures)
+	if not used and hero.e_cooldown <= 0 and nearby >= 2:
+		used = cast_hero_e(hero.id, structures)
+	if not used and hero.w_cooldown <= 0 and hero.hp / maxf(1.0, hero.max_hp) < 0.4:
+		used = cast_hero_w(hero.id)
+	if not used and hero.skill_timer <= 0:
+		cast_hero_q(hero.id, structures)
 
 
 func _step_hero_auto_cast(hero: HeroState) -> void:
-	# Port of Hero._try_auto_cast: every 20 ticks, only with a living
-	# enemy inside skill_range. Priority R, then E (2+), W (HP < 40%), Q.
+	# Player auto-cast: every 20 ticks, opt-in flag and no stun.
 	if hero.auto_cast_enabled and hero.stun_timer <= 0:
 		hero.auto_cast_check_timer -= 1
 		if hero.auto_cast_check_timer <= 0:
 			hero.auto_cast_check_timer = 20
-			var nearby := _hero_skill_nearby(hero)
-			if nearby > 0:
-				var used := false
-				if hero.r_cooldown <= 0:
-					used = _cast_hero_r(hero.id, structures)
-				if not used and hero.e_cooldown <= 0 and nearby >= 2:
-					used = cast_hero_e(hero.id, structures)
-				if not used and hero.w_cooldown <= 0 and hero.hp / maxf(1.0, hero.max_hp) < 0.4:
-					used = cast_hero_w(hero.id)
-				if not used and hero.skill_timer <= 0:
-					cast_hero_q(hero.id, structures)
+			try_auto_cast(hero)
+
+
+func move_to(hero: HeroState, point: Vector2, auto: bool) -> void:
+	# Port of Hero.move_to: a new destination cancels follow and retreat.
+	hero.has_destination = true
+	hero.destination = point
+	hero.destination_auto = auto
+	hero.follow_id = -1
+	hero.is_retreating = false
+
+
+func hero_aggro_target(hero: HeroState) -> UnitState:
+	# Port of Hero._find_aggro_target: nearest enemy inside HERO_AGGRO_RANGE
+	# (the source updates on `<=`, so an equidistant later unit wins).
+	var best: UnitState = null
+	var best_dist := HERO_AGGRO_RANGE
+	for unit in units:
+		if not unit.alive or unit.team == hero.team or unit.id == hero.id:
+			continue
+		var dist := hero.position.distance_to(unit.position)
+		if dist <= best_dist:
+			best_dist = dist
+			best = unit
+	return best
+
+
+func set_ai_enabled(enabled: bool) -> void:
+	# Single switch for the match: the real AI owns the red side, so the
+	# temporary defender (a stand-in from before layer 6c) parks while it runs
+	# and takes over again when the AI is switched off for a test.
+	ai_enabled = enabled
+	ai_hero_control_enabled = enabled
+	defender_enabled = not enabled
+
+
+func reset_ai(seed_value: int = -1) -> void:
+	# Source Game.reset() constructs a new AIPlayer: think clock, adapter
+	# counters, hero-skill counter and the persistent draft all return to their
+	# opening state. One seed drives every AI stream so a restart replays.
+	ai_controller.reset(seed_value)
+	ai_heroes.total_skills_cast = 0
+	ai_build.total_built = 0
+	ai_upgrades.total_upgraded = 0
+	ai_upgrades.total_nexus_upgrades = 0
+	ai_upgrades.total_hero_upgrades = 0
+	ai_draft.purchase_target = ""
+	ai_draft.purchase_target_cost = 0
+	ai_draft.total_heroes_bought = 0
+	ai_draft.source_levels = {}
+	if seed_value >= 0:
+		ai_build.rng.seed = seed_value + 1
+		ai_draft.rng.seed = seed_value + 2
+
+
+func _step_ai() -> void:
+	# Source Game.update: the AI runs once per tick, right after the entities.
+	if not ai_enabled:
+		return
+	ai_controller.tick(Callable(self, "_step_ai_heroes"), Callable(self, "_ai_perform_step"))
+
+
+func _ai_perform_step() -> bool:
+	# Source _ai_step: one ordered priority scan. Gates and rolls live in
+	# ai_policy.choose_step; every action goes through the real ledger adapter.
+	return ai_controller.policy.choose_step(
+		_ai_state(), Callable(self, "_ai_attempt"), Callable(ai_controller, "draw")
+	)
+
+
+func _ai_state() -> Dictionary:
+	# Source _ai_step locals: empty build slots, purse, full roster (dead heroes
+	# included), own living towers that can still upgrade, and own living towers.
+	return {
+		"empty_slots": _ai_empty_slots(),
+		"gold": economy.gold[RED],
+		"hero_count": _ai_roster().size(),
+		"upgradeable_towers": ai_upgrades.tower_candidates(self).size(),
+		"living_towers": _ai_living_towers().size(),
+	}
+
+
+func _ai_empty_slots() -> int:
+	var count := 0
+	for slot in slots:
+		if slot != null and slot.team == RED and slot.structure_id == -1 and slot.lane in [0, 1, 2]:
+			count += 1
+	return count
+
+
+func _ai_roster() -> Array:
+	var heroes: Array = []
+	for unit in units:
+		if unit.is_hero and unit.team == RED:
+			heroes.append(unit)
+	return heroes
+
+
+func _ai_living_towers() -> Array:
+	var towers: Array = []
+	for structure in structures:
+		if (
+			structure.alive
+			and structure.team == RED
+			and structure.settings().structure_kind == "tower"
+		):
+			towers.append(structure)
+	return towers
+
+
+func _ai_attempt(step: String) -> bool:
+	# Adapter per source priority; a false answer moves the scan to the next
+	# priority, exactly like the source returning from _ai_step.
+	var done := false
+	if step == "build":
+		done = ai_build.try_build(self, ai_draft)
+	elif step == "buy_hero":
+		done = ai_recruitment.try_buy(self, ai_draft)
+	elif step == "upgrade_hero":
+		done = ai_upgrades.try_hero_priority(self, ai_draft)
+	elif step == "buy_item":
+		done = ai_items.try_buy_priority(self, ai_draft)
+	elif step == "upgrade_tower":
+		done = ai_upgrades.try_tower_priority(self, ai_draft)
+	elif step == "regen_shield":
+		done = ai_shields.try_regen_priority(self, ai_draft)
+	elif step == "castle_shield" or step == "upgrade_nexus":
+		done = _ai_nexus_attempt(step)
+	return done
+
+
+func _ai_nexus_attempt(kind: String) -> bool:
+	# Source passes my_nexus to both shield and upgrade actions; a destroyed
+	# nexus simply fails the action.
+	var nexus := nexuses[RED]
+	if nexus == null or not nexus.alive:
+		return false
+	if kind == "castle_shield":
+		return ai_shields.try_castle(self, ai_draft, nexus.id)
+	return ai_upgrades.try_nexus(self, ai_draft, nexus.id)
+
+
+func _step_ai_heroes() -> void:
+	if not ai_hero_control_enabled:
+		return
+	var towers: Array = []
+	for structure in structures:
+		if structure.alive and structure.settings().structure_kind == "tower":
+			towers.append(structure)
+	ai_heroes.control_heroes(self, towers)
 
 
 func _hero_skill_nearby(hero: HeroState) -> int:
@@ -892,6 +1093,9 @@ func _hero_enemy_list() -> Array:
 	for unit in units:
 		if not unit.alive:
 			continue
+		# Only HeroState carries max_hp so far; minions/structure units fall
+		# back to 0, which leaves Miasma on them at its 6-damage floor.
+		var raw_max: Variant = unit.get("max_hp")
 		(
 			enemies
 			. append(
@@ -900,6 +1104,7 @@ func _hero_enemy_list() -> Array:
 					"pos": unit.position,
 					"team": unit.team,
 					"alive": true,
+					"max_hp": 0 if raw_max == null else int(raw_max),
 				}
 			)
 		)
@@ -940,7 +1145,9 @@ func _tick_hero_items(hero: HeroState) -> void:
 			hero.target_id,
 		)
 	)
-	hero.items.tick_auto(1, _hero_enemy_list(), _battle_item_effects(hero), _item_rng)
+	var enemies: Array = _hero_enemy_list()
+	hero.items.tick_miasma(1, enemies, _battle_item_effects(hero))
+	hero.items.tick_auto(1, enemies, _battle_item_effects(hero), _item_rng)
 	# Apply HP regen result back to hero.
 	hero.hp = hero.items.hero_hp
 
@@ -1161,11 +1368,11 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		var ls: float = hero.items.get_lifesteal_pct()
 		if ls > 0.0:
 			hero.hp = minf(hero.max_hp, hero.hp + float(raw) * ls)
-		hero.items.on_ranged_attack_hit(target.id, raw, _item_rng, bus)
+		hero.items.on_ranged_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
 	else:
 		_deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
 		if target.alive:
-			hero.items.on_basic_attack_hit(target.id, raw, _item_rng, bus)
+			hero.items.on_basic_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
 	hero.hp = hero.items.hero_hp
 	return true
 

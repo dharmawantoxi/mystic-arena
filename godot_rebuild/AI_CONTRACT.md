@@ -355,17 +355,78 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      native mereproduksi skenario yang sama lewat bus `_TestItemFx` dan
      menguji tick Leviathan regen di world nyata. `minion_battle.gd`
      tetap 1000 baris.
-     **Batasan 5c-2:** `damage_amp`/`armor_shred` dicatat di bus tetapi
-     field target belum ada (diperlukan 5e on-hit); miasma (`_tick_miasma`)
-     belum dipanggil; efek posisi Gale Pike menggeser `position` tanpa
-     collision; aura (5d) dan on-hit proc `on_basic_attack_hit`/
-     `_on_hit_common`/`on_ranged_attack_hit` (5e) belum port.
-   - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
+     **Batasan 5c-2:** `armor_shred` masih dicatat di bus tanpa state
+     target; efek posisi Gale Pike menggeser `position` tanpa collision.
+     Sudah menyusul: aura + `update_auras` (5d), on-hit proc
+     `on_basic_attack_hit`/`_on_hit_common`/`on_ranged_attack_hit` (5e), dan
+     Miasma/Polycephaly (5e-2).
+   - [x] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
      Scorched Earth ke menara/boss).
-   - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
-     Scorched Earth ke menara/boss).
-   - [ ] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
-   - [ ] **5f.** Forge UI + drop item ke tanah.
+   - [x] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
+   - [x] **5e-2.** Miasma (% Max HP per tick, clamp 6..cap, refresh
+     max-damage/max-timer/min-tick, reset 30 tick) + Polycephaly (ranged-only,
+     2 musuh terdekat dalam 200 px, 70% damage magic + Miasma); Soul Rend crit
+     sudah ada sejak 5e. Registry Miasma per inventaris (sumber: registry
+     module-level per id(target)), jadi dua pemilik bisa menumpuk racun pada
+     target yang sama; `UnitState` belum punya `max_hp`, jadi racun ke minion
+     jatuh ke lantai 6 damage/tick.
+   - [x] **5f.** Forge shop (transaksi `_try_buy`/`_try_drop`/
+     `_resolve_shop_target`/antrian `pending_forge_items`): target tersimpan ->
+     terseleksi -> hero hidup pertama -> hero pertama; gerbang katalog/gold/
+     slot (antrian ikut dihitung)/role; hero hidup langsung memakai item, hero
+     mati mengantre dan pesanan dikirim saat respawn; drop tanpa refund.
+     Panel ItemShopUI (gambar + input) dan i18n belum port — pesan memakai kunci
+     `tr()` sumber sebagai `status`.
+   - [x] **5f-2.** Panel ITEM FORGE (state + routing klik): `item_shop_ui.gd`
+     mem-port `get_item_class`/`_build_shop_pages`/`CLASS_ITEM_ORDER` (6 halaman,
+     grid 4x2, tab PHYSICAL/MAGIC/TANK), state `item_shop_open`/`itemshop_page`/
+     `itemshop_inspect_item`, dan kosakata tombol `handle_item_shop_click`
+     (`itemshop_close`, `_hero_`, `_page_`, `_buy_`, `_slot_`, `_card_`, popup
+     detail menelan klik, klik luar panel menutup). Data tampilan chip/kartu/tab
+     tersedia untuk Control; geometri pygame, font/warna dan i18n tetap di luar.
+   - [x] **5f-3.** Control panel ITEM FORGE (`item_forge_panel.gd`): menggambar
+     chip hero ("BELI UNTUK n"), tab kelas, grid kartu 4x2 dengan tombol BELI per
+     kartu, baris slot pembeli (klik kiri = inspeksi, klik kanan = drop) dan
+     popup detail; semua tekanan tombol dikembalikan lewat kosakata
+     `handle_click` yang sama. Layout memakai container Godot, bukan rect
+     pygame; string Indonesia di `SHOP_TEXT` menggantikan `tr()` sumber.
+     Terpasang di HUD PrototypeMatch dengan toggle "Item Forge [I]".
+   - [x] **6a.** Kontrol hero AI setiap tick (`ai_hero_control.gd`): port
+     `_control_heroes` (auto-cast lewat `try_auto_cast` yang sama dengan pemain,
+     penanda `skill_timer == 0`, counter `total_skills_cast` dari kenaikan
+     `active_skill_timer`) dan `_assign_hero_lane` (ancaman per lane dari minion
+     hidup, tie -> TOP, minion musuh TERDEKAT secara Euclidean di lane itu ->
+     x-nya + y lane, taman `x=600`, fallback tower terdekat dengan standoff 60).
+     `destination_auto` membatalkan tujuan AI begitu musuh masuk aggro range 250
+     (tujuan manual tetap ditaati). Kontrol dijalankan di `step_tick` tetapi
+     masih di balik flag `ai_hero_control_enabled` (default mati) sampai
+     pengontrol AI tersambung ke scene.
+   - [x] **6b.** Pembungkus jadwal (`ai_controller.gd`): port `AIPlayer.update`
+     (kontrol hero setiap tick, berpikir hanya saat `think_timer` habis, aksi
+     `1 + round(2*elite)`, berhenti pada prioritas pertama yang gagal) plus
+     diagnostik per tick dan passthrough `_ai_reserve` dari draft. Disambungkan
+     ke `prototype_battle.step_tick` lewat flag `ai_enabled`; `_ai_perform_step`
+     adalah seam pemindaian prioritas dan untuk sementara melaporkan "tidak ada
+     aksi" sehingga belum ada transaksi ekonomi saat scene masih memakai
+     defender sementara.
+   - [x] **6c.** Pemindaian prioritas nyata: `_ai_perform_step` memanggil
+     `ai_policy.choose_step(_ai_state(), _ai_attempt, ai_controller.draw)`,
+     sehingga urutan sumber (build -> beli hero -> upgrade hero -> item ->
+     upgrade tower -> regen shield -> castle shield -> upgrade nexus) berjalan
+     di atas adapter nyata dan ledger yang sama; `_step_defender` mundur selama
+     `ai_enabled` dan setiap undian memakai RNG ter-seed milik controller.
+     Aksi nexus gagal begitu nexus merah hancur.
+   - [x] **6d.** AI nyata mengambil alih pertandingan: `set_ai_enabled()` menjadi
+     satu sakelar yang memarkir defender sementara (dan menyalakan kontrol hero)
+     sementara AI memiliki sisi merah; `reset_ai(seed)` membangun ulang keadaan
+     AI seperti `Game.reset()` membuat `AIPlayer` baru (jam berpikir, counter
+     adapter, counter skill hero, draft persisten) dan menyemai ulang aliran
+     controller/build/draft dari seed pertandingan `AI_MATCH_SEED`. Sesi
+     prototipe menyalakannya setelah `setup_arena()`, jadi setiap pertandingan
+     bisa direproduksi. Jalur pause tetap tertutup karena tick sesi berhenti
+     (PROCESS_MODE_PAUSABLE): uji scene memastikan jam, jadwal dan dompet AI
+     tidak bergerak saat pause, dan setiap layar hasil restart memakai AI baru
+     dengan seed yang sama.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -377,7 +438,7 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
   level terbaru, berikutnya berbobot source-level; tipe owned termasuk hero mati.
 - [x] Policy target draft persisten sampai terbeli, reserve harga; jangan mengganti target
   hanya karena kurang gold. Hapus target ketika available kosong atau pembelian sukses.
-- [ ] Transaksi red memakai ledger yang sama, reserve pada seluruh belanja non-hero,
+- [x] Transaksi red memakai ledger yang sama, reserve pada seluruh belanja non-hero,
   tanpa bonus gold. Hero spawn `RED_BASE_X-60, RED_BASE_Y+30+(count*40-40)`.
 - [x] Build slot acak; jenis archer/cannon/ice/mage berbobot .35/.25/.20/.20;
   hanya adapter per aksi, belum terhubung ke scene.
@@ -427,10 +488,26 @@ Selesai: port item AI lapisan 1-4, satu commit per lapisan, basis main f1d34ed.
 Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 22 urutan pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
-5 notify_damage). Native: `ai_item_checks.gd` terdaftar di `run_all.gd`.
-CI Godot 4.7.2 run 36439082075 hijau untuk lapisan 5e (commit `cb8e6a2`):
-**1.178.701 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
-bersih; `minion_battle.gd` tetap 1000 baris.
+5 notify_damage, 6 miasma, 8 forge). Native: `ai_item_checks.gd` terdaftar di
+`run_all.gd`.
+CI Godot 4.7.2 run 36468688990 hijau untuk lapisan 6b (commit `987ff13`):
+**1.179.197 native checks**, static lokal 5747 PASS; `gdlint`/`gdformat`/`gdparse`
+bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
+(fixture 11.615 baris, masih di bawah 20k).
+CI Godot 4.7.2 run 36477994234 hijau untuk lapisan 6c (commit `efd3129`):
+**1.179.226 native checks**, static lokal 5765 PASS; `gdlint`/`gdformat`/`gdparse`
+bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tetap tepat 1000 baris
+dan fixture tidak berubah.
+CI Godot 4.7.2 run 36482247766 hijau untuk lapisan 6d (commit `6d9a49f`):
+**1.179.241 native checks**, static lokal 5768 PASS; `gdlint`/`gdformat`/`gdparse`
+bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tetap tepat 1000 baris
+dan fixture tidak berubah (lapisan ini tidak menyentuh oracle).
+Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
+`queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
+ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
+di dalam tree (membebaskan Button yang sedang mengirim sinyal = crash). Popup
+detail menelan klik lain (sesuai sumber), jadi tutup popup dulu sebelum menekan
+slot/kartu.
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
@@ -438,10 +515,21 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: **5e** proc on-hit (crit+lifesteal+cleave+bash+chain+frostbite
-+empower+vine sudah port; miasma+polycephaly+soul-rend crit menunggu infra
-status debuff racun), lalu 5f Forge UI + item drop (`drops_on_death`). Kontrol hero per tick dan integrasi scene tetap menunggu
-setelah fase item.
+Berikutnya: membuang sisa kode defender sementara (`_step_defender`,
+`defender_enabled`, `_defender_built`) beserta uji domainnya, lalu menutup
+skenario AI yang masih menggantung (retreat/heal hero merah dan pencarian
+target di luar lane). Undian 6c/6d memakai `ai_controller.draw()`; adapter
+build/draft memakai RNG ter-seed dari seed pertandingan yang sama. Catatan 6a:
+`towers` diteruskan eksplisit karena daftar struktur native juga memuat nexus,
+sedangkan sumber hanya menyusuri `all_towers`. Catatan alur sesi:
+repo pernah ter-clone ulang sehingga riwayat lokal tertinggal dari remote —
+selalu `git fetch origin arena/01a0e891-mystic-arena` dan reset ke FETCH_HEAD
+sebelum commit baru. Catatan 5f: `forge.gd` hanya
+menganggap roster tim pemain (BLUE), dan kandidat AI tetap hidup-saja lewat
+`_buy_item_for`.
+Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
+(null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
+`unit.max_hp` mematikan seluruh scene battle.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft
 > #294, basis main f6c4342). Lapisan 5c-2 sudah di-commit: setengah auto-trigger

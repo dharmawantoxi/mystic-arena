@@ -5,8 +5,10 @@ const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const PrototypeSession = preload("res://scripts/simulation/prototype_session.gd")
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const ItemForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 
 var result_shown := false
+var forge_panel: ItemForgePanel
 @onready var match_session: PrototypeSession = $Simulation
 
 
@@ -55,6 +57,7 @@ func _ready() -> void:
 	%AutoCastButton.pressed.connect(
 		func() -> void: match_session.request_autocast(match_session.selected_id)
 	)
+	_build_forge_ui()
 	%PauseButton.pressed.connect(pause_match)
 	%ResumeButton.pressed.connect(resume_match)
 	%RestartButton.pressed.connect(func() -> void: restart_requested.emit())
@@ -65,6 +68,8 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	var world := simulation.world as Prototype
+	if forge_panel != null and forge_panel.visible:
+		forge_panel.refresh()
 	%GoldLabel.text = "GOLD  %d G   ·   Lawan %d G" % [world.economy.gold[0], world.economy.gold[1]]
 	var next_wave := "menunggu lane bersih"
 	if world.scheduler.remaining_ticks > 0:
@@ -274,7 +279,38 @@ func _process(_delta: float) -> void:
 		pause_match()
 
 
+func _build_forge_ui() -> void:
+	# Layer 5f-3: the ITEM FORGE panel draws the item_shop_ui view data and
+	# routes every press back through the source click vocabulary.
+	forge_panel = ItemForgePanel.new()
+	forge_panel.name = "ItemForge"
+	forge_panel.bind(match_session.world)
+	forge_panel.visible = false
+	$HUD.add_child(forge_panel)
+	var toggle := Button.new()
+	toggle.name = "ForgeButton"
+	toggle.text = "Item Forge  [I]"
+	toggle.custom_minimum_size = Vector2(170, 52)
+	toggle.pressed.connect(_toggle_forge)
+	%PauseButton.get_parent().add_child(toggle)
+	%PauseButton.get_parent().move_child(toggle, %PauseButton.get_index())
+
+
+func _toggle_forge() -> void:
+	forge_panel.toggle_open()
+	forge_panel.refresh()
+
+
 func _unhandled_input(event: InputEvent) -> void:
+	if (
+		event is InputEventKey
+		and event.pressed
+		and not event.echo
+		and event.physical_keycode == KEY_I
+	):
+		_toggle_forge()
+		get_viewport().set_input_as_handled()
+		return
 	if (
 		event is InputEventKey
 		and event.pressed

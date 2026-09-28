@@ -3,6 +3,8 @@ extends "res://scripts/simulation/combat_session.gd"
 const Structure = preload("res://scripts/combat/structure_state.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+## One seed for the whole red AI: a restarted prototype match replays.
+const AI_MATCH_SEED := 20260929
 var selected_slot_id := -1
 var command: Dictionary = {}
 var last_action := "Pilih slot biru, lalu bangun Archer (100 G)."
@@ -15,7 +17,12 @@ func _init() -> void:
 
 func _ready() -> void:
 	super._ready()
-	(world as Prototype).setup_arena()
+	var match_world := world as Prototype
+	match_world.setup_arena()
+	# Layer 6d: the real AI replaces the temporary defender in the scene and
+	# every AI stream is seeded, so the match is reproducible.
+	match_world.reset_ai(AI_MATCH_SEED)
+	match_world.set_ai_enabled(true)
 
 
 func _physics_process(_delta: float) -> void:

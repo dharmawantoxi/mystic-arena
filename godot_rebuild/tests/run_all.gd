@@ -499,11 +499,35 @@ func _test_prototype_scene(app: Node) -> void:
 		var session = screen.simulation
 		var world = session.world
 		session.set_physics_process(false)
-		world.defender_enabled = false
 		_check(
 			screen.name == "PrototypeMatch" and app.screen_root.get_child_count() == 1,
 			"prototype has its own guarded menu route"
 		)
+		# Layer 6d: the real AI owns the red side from the first tick, the
+		# temporary defender stays parked and every battle tick reaches it.
+		_check(
+			(
+				world.ai_enabled
+				and world.ai_hero_control_enabled
+				and not world.defender_enabled
+				and world.ai_controller.ticks == world.tick_count
+				and world.ai_controller.match_seed == session.AI_MATCH_SEED
+			),
+			"restarted match hands the red side to the seeded AI"
+		)
+		world.reset_ai(1234)
+		_check(
+			(
+				world.ai_controller.ticks == 0
+				and world.ai_controller.think_ticks == 0
+				and world.ai_controller.match_seed == 1234
+				and world.ai_controller.policy.think_timer == 90
+				and world.ai_build.total_built == 0
+				and world.ai_heroes.total_skills_cast == 0
+			),
+			"match reset clears the AI clock and counters"
+		)
+		world.reset_ai(session.AI_MATCH_SEED)
 		_check(
 			(
 				world.structures.size() == 2
@@ -586,6 +610,9 @@ func _test_prototype_scene(app: Node) -> void:
 		_check(session.request_build(2), "build queues before pause")
 		var ticks: int = world.tick_count
 		var remaining: int = world.scheduler.remaining_ticks
+		var ai_ticks: int = world.ai_controller.ticks
+		var ai_timer: int = world.ai_controller.policy.think_timer
+		var ai_gold: int = world.economy.gold[1]
 		session.set_physics_process(true)
 		screen.pause_match()
 		await _physics_steps(3)
@@ -597,6 +624,14 @@ func _test_prototype_scene(app: Node) -> void:
 				and world.economy.gold[0] == 900
 			),
 			"pause cancels transactions and freezes income/wave clocks"
+		)
+		_check(
+			(
+				world.ai_controller.ticks == ai_ticks
+				and world.ai_controller.policy.think_timer == ai_timer
+				and world.economy.gold[1] == ai_gold
+			),
+			"pause freezes the AI clock, purse and schedule"
 		)
 		_check(
 			not session.request_build(2) and not session.request_sell(replacement_id),

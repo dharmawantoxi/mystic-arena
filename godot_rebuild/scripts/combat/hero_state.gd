@@ -103,8 +103,16 @@ var ulti_timer := 0
 var target_struct: StructureState = null
 var has_destination := false
 var destination := Vector2.ZERO
+# Layer 6a: destination ordered by the AI brain (`move_to(..., auto=True)`).
+# A manual destination always wins; an auto one is dropped as soon as an enemy
+# enters aggro range (source Hero.update destination_auto rule).
+var destination_auto := false
 var follow_id := -1
 var respawn_timer := 0
+# Layer 5f: Forge orders bought while the hero is dead (source
+# hero._pending_forge_items). Delivered by forge.deliver_pending_forge_items()
+# right after respawn.
+var pending_items: Array = []
 var is_retreating := false
 var auto_cast_enabled := false
 var auto_cast_check_timer := 0

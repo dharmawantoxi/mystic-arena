@@ -460,6 +460,13 @@
         "tick": 30,
         "duration": 180,
         "cap_damage": 60
+      },
+      "multishot": {
+        "name": "Polycephaly",
+        "chance": 0.3,
+        "targets": 2,
+        "radius": 200,
+        "damage_pct": 0.7
       }
     },
     "solar_brand": {

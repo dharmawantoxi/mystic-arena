@@ -461,6 +461,13 @@
           "tick": 30,
           "duration": 180,
           "cap_damage": 60
+        },
+        "multishot": {
+          "name": "Polycephaly",
+          "chance": 0.3,
+          "targets": 2,
+          "radius": 200,
+          "damage_pct": 0.7
         }
       },
       "solar_brand": {
@@ -9798,6 +9805,2153 @@
             230,
             255
           ]
+        }
+      ]
+    }
+  ],
+  "miasma": [
+    {
+      "target_max_hp": 1000,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {}
+        ],
+        [
+          "tick",
+          6
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {},
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,
+            "duration": 180,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 22,
+          "timer": 180,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 6,
+          "data": null,
+          "effects": [],
+          "damage": 22,
+          "timer": 174,
+          "tick_cd": 24,
+          "active": true
+        }
+      ]
+    },
+    {
+      "target_max_hp": 5000,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {}
+        ],
+        [
+          "tick",
+          3
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {},
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,
+            "duration": 180,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 60,
+          "timer": 180,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 3,
+          "data": null,
+          "effects": [],
+          "damage": 60,
+          "timer": 177,
+          "tick_cd": 27,
+          "active": true
+        }
+      ]
+    },
+    {
+      "target_max_hp": 200,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {}
+        ],
+        [
+          "tick",
+          3
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {},
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,
+            "duration": 180,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 6,
+          "timer": 180,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 3,
+          "data": null,
+          "effects": [],
+          "damage": 6,
+          "timer": 177,
+          "tick_cd": 27,
+          "active": true
+        }
+      ]
+    },
+    {
+      "target_max_hp": 1000,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {}
+        ],
+        [
+          "tick",
+          2
+        ],
+        [
+          "apply",
+          {
+            "max_hp_pct_per_tick": 0.05,
+            "duration": 100,
+            "tick": 60
+          }
+        ],
+        [
+          "tick",
+          2
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {},
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.05,
+            "tick": 60,
+            "duration": 100,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 22,
+          "timer": 180,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 2,
+          "data": null,
+          "effects": [],
+          "damage": 22,
+          "timer": 178,
+          "tick_cd": 28,
+          "active": true
+        },
+        {
+          "op": "apply",
+          "arg": {
+            "max_hp_pct_per_tick": 0.05,
+            "duration": 100,
+            "tick": 60
+          },
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.05,
+            "tick": 60,
+            "duration": 100,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 50,
+          "timer": 178,
+          "tick_cd": 28,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 2,
+          "data": null,
+          "effects": [],
+          "damage": 50,
+          "timer": 176,
+          "tick_cd": 26,
+          "active": true
+        }
+      ]
+    },
+    {
+      "target_max_hp": 1000,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {
+            "duration": 2
+          }
+        ],
+        [
+          "tick",
+          3
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {
+            "duration": 2
+          },
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,
+            "duration": 2,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 22,
+          "timer": 2,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 3,
+          "data": null,
+          "effects": [],
+          "damage": null,
+          "timer": null,
+          "tick_cd": null,
+          "active": false
+        }
+      ]
+    },
+    {
+      "target_max_hp": 1500,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {
+            "tick": 2
+          }
+        ],
+        [
+          "tick",
+          3
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {
+            "tick": 2
+          },
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 2,
+            "duration": 180,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 33,
+          "timer": 180,
+          "tick_cd": 2,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 3,
+          "data": null,
+          "effects": [
+            {
+              "kind": "damage",
+              "x": 0,
+              "y": 0,
+              "team": "blue",
+              "damage": 33,
+              "dmg_team": "red",
+              "school": "magic"
+            }
+          ],
+          "damage": 33,
+          "timer": 177,
+          "tick_cd": 29,
+          "active": true
+        }
+      ]
+    }
+  ],
+  "forge": [
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": 1,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        },
+        {
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": false
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_queued"
+          ],
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero1",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            [
+              "dead_edge"
+            ]
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "respawn",
+          "arg": 1,
+          "notify": null,
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero1",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [
+            "dead_edge"
+          ],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "buy",
+          "arg": "corroder",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero1",
+                "item": "Corroder"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 11000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "dead_edge",
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "drop",
+          "arg": 0,
+          "notify": [
+            "item_dropped"
+          ],
+          "tr": [
+            {
+              "key": "item_dropped",
+              "values": {
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 11000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "drop",
+          "arg": 5,
+          "notify": [],
+          "tr": [],
+          "delivered": [],
+          "gold": 11000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        }
+      ]
+    },
+    {
+      "gold": 60000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 55500,
+          "slots": [
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "corroder",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Corroder"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 51000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "moon_shard",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Moon Shard"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 46500,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "solar_brand",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Solar Brand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 41000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "searbrand",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Searbrand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 35250,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "runic_gavel",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Runic Gavel"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 30000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              "runic_gavel"
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "frostbound_eye",
+          "notify": [
+            "inventory_full"
+          ],
+          "tr": [
+            {
+              "key": "inventory_full",
+              "values": {
+                "hero": "Hero0"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 30000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              "runic_gavel"
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        }
+      ]
+    },
+    {
+      "gold": 60000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 55500,
+          "slots": [
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "corroder",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Corroder"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 51000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "moon_shard",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Moon Shard"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 46500,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "solar_brand",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Solar Brand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 41000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "searbrand",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Searbrand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 35250,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "kill",
+          "arg": 0,
+          "notify": null,
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Searbrand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 35250,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "runic_gavel",
+          "notify": [
+            "forge_queued"
+          ],
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero0",
+                "item": "Runic Gavel"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 30000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            [
+              "runic_gavel"
+            ]
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "frostbound_eye",
+          "notify": [
+            "inventory_full"
+          ],
+          "tr": [
+            {
+              "key": "inventory_full",
+              "values": {
+                "hero": "Hero0"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 30000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            [
+              "runic_gavel"
+            ]
+          ],
+          "target_index": 0
+        }
+      ]
+    },
+    {
+      "gold": 500,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [],
+          "tr": [],
+          "delivered": [],
+          "gold": 500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": null
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "cleave_axe",
+          "notify": [],
+          "tr": [],
+          "delivered": [],
+          "gold": 20000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": null
+        },
+        {
+          "op": "buy",
+          "arg": "astral_codex",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Astral Codex"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 14000,
+          "slots": [
+            [
+              "astral_codex",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "astral_codex",
+          "notify": [
+            "magic_only_denied"
+          ],
+          "tr": [
+            {
+              "key": "magic_only_denied",
+              "values": {
+                "hero": "Hero0"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 20000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": null
+        },
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 15500,
+          "slots": [
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": null,
+      "heroes": [],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "no_hero"
+          ],
+          "tr": [
+            {
+              "key": "no_hero",
+              "values": {}
+            }
+          ],
+          "delivered": [],
+          "gold": 20000,
+          "slots": [],
+          "pending": [],
+          "target_index": null
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": 1,
+      "selected": 0,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        },
+        {
+          "role": "Marksman",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": false
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_queued"
+          ],
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero1",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            [
+              "dead_edge"
+            ]
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "respawn",
+          "arg": 1,
+          "notify": null,
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero1",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [
+            "dead_edge"
+          ],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "buy",
+          "arg": "corroder",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero1",
+                "item": "Corroder"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 11000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "dead_edge",
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": false
+        },
+        {
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": false
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_queued"
+          ],
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [
+              "dead_edge"
+            ],
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "respawn",
+          "arg": 0,
+          "notify": null,
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [
+            "dead_edge"
+          ],
+          "gold": 15500,
+          "slots": [
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 0
+        }
+      ]
+    }
+  ],
+  "shop_pages": {
+    "items_per_page": 8,
+    "pages": [
+      [
+        "dead_edge",
+        "holy_rapier",
+        "demon_maw",
+        "cleave_axe",
+        "moon_shard",
+        "monarch_wings",
+        "corroder",
+        "fenrir_chain"
+      ],
+      [
+        "sanguine_thorn",
+        "thunder_coil",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "gale_pike",
+        "basilisk_breath"
+      ],
+      [
+        "octarine_core",
+        "runic_gavel",
+        "astral_codex",
+        "sage_scepter",
+        "fulgur_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone"
+      ],
+      [
+        "vine_rod",
+        "spectral_charm"
+      ],
+      [
+        "leviathan_heart",
+        "steel_aegis",
+        "scarlet_bulwark",
+        "tempest_vane",
+        "abyss_breaker",
+        "razor_carapace",
+        "everfrost_guard",
+        "solar_brand"
+      ],
+      [
+        "searbrand"
+      ]
+    ],
+    "meta": [
+      [
+        "physical",
+        1,
+        2
+      ],
+      [
+        "physical",
+        2,
+        2
+      ],
+      [
+        "magic",
+        1,
+        2
+      ],
+      [
+        "magic",
+        2,
+        2
+      ],
+      [
+        "tank",
+        1,
+        2
+      ],
+      [
+        "tank",
+        2,
+        2
+      ]
+    ],
+    "classes": {
+      "dead_edge": "physical",
+      "holy_rapier": "physical",
+      "demon_maw": "physical",
+      "leviathan_heart": "tank",
+      "cleave_axe": "physical",
+      "steel_aegis": "tank",
+      "moon_shard": "physical",
+      "octarine_core": "magic",
+      "scarlet_bulwark": "tank",
+      "monarch_wings": "physical",
+      "corroder": "physical",
+      "tempest_vane": "tank",
+      "fenrir_chain": "physical",
+      "sanguine_thorn": "physical",
+      "abyss_breaker": "tank",
+      "thunder_coil": "physical",
+      "razor_carapace": "tank",
+      "everfrost_guard": "tank",
+      "sundering_cudgel": "physical",
+      "frostbound_eye": "physical",
+      "gale_pike": "physical",
+      "basilisk_breath": "physical",
+      "solar_brand": "tank",
+      "runic_gavel": "magic",
+      "searbrand": "tank",
+      "astral_codex": "magic",
+      "sage_scepter": "magic",
+      "fulgur_scepter": "magic",
+      "hex_idol": "magic",
+      "rift_veil": "magic",
+      "vital_stone": "magic",
+      "vine_rod": "magic",
+      "spectral_charm": "magic"
+    },
+    "class_order": {
+      "physical": [
+        "dead_edge",
+        "holy_rapier",
+        "demon_maw",
+        "cleave_axe",
+        "moon_shard",
+        "monarch_wings",
+        "corroder",
+        "fenrir_chain",
+        "sanguine_thorn",
+        "thunder_coil",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "gale_pike",
+        "basilisk_breath"
+      ],
+      "magic": [
+        "octarine_core",
+        "runic_gavel",
+        "astral_codex",
+        "sage_scepter",
+        "fulgur_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "vine_rod",
+        "spectral_charm"
+      ],
+      "tank": [
+        "leviathan_heart",
+        "steel_aegis",
+        "scarlet_bulwark",
+        "tempest_vane",
+        "abyss_breaker",
+        "razor_carapace",
+        "everfrost_guard",
+        "solar_brand",
+        "searbrand"
+      ]
+    },
+    "labels": {
+      "physical": "PHYSICAL",
+      "magic": "MAGIC",
+      "tank": "TANK"
+    }
+  },
+  "hero_control": [
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 5
+        }
+      ],
+      "minions": [
+        [
+          "blue",
+          true,
+          "top",
+          300,
+          150
+        ],
+        [
+          "blue",
+          true,
+          "mid",
+          700,
+          380
+        ],
+        [
+          "blue",
+          true,
+          "mid",
+          900,
+          380
+        ],
+        [
+          "red",
+          true,
+          "mid",
+          100,
+          380
+        ]
+      ],
+      "towers": [
+        [
+          "blue",
+          true,
+          900,
+          150
+        ]
+      ],
+      "bases": [],
+      "moves": [
+        [
+          {
+            "x": 700,
+            "y": 380,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 5,
+            "towers": 1,
+            "bases": 0
+          }
+        ]
+      ],
+      "total_skills_cast": 1
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 400,
+          "y": 200,
+          "active_skill_timer_delta": 0
+        }
+      ],
+      "minions": [
+        [
+          "blue",
+          true,
+          "bot",
+          500,
+          610
+        ],
+        [
+          "blue",
+          true,
+          "top",
+          420,
+          150
+        ]
+      ],
+      "towers": [],
+      "bases": [],
+      "moves": [
+        [
+          {
+            "x": 420,
+            "y": 150,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 3,
+            "towers": 0,
+            "bases": 0
+          }
+        ]
+      ],
+      "total_skills_cast": 0
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 200,
+          "y": 400,
+          "active_skill_timer_delta": 3
+        }
+      ],
+      "minions": [
+        [
+          "blue",
+          false,
+          "mid",
+          700,
+          380
+        ]
+      ],
+      "towers": [
+        [
+          "blue",
+          true,
+          800,
+          380
+        ]
+      ],
+      "bases": [],
+      "moves": [
+        [
+          {
+            "x": 740.0333055812507,
+            "y": 381.99888981395833,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 2,
+            "towers": 1,
+            "bases": 0
+          }
+        ]
+      ],
+      "total_skills_cast": 1
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 100,
+          "y": 100,
+          "active_skill_timer_delta": 0
+        }
+      ],
+      "minions": [],
+      "towers": [
+        [
+          "blue",
+          true,
+          400,
+          100
+        ],
+        [
+          "blue",
+          true,
+          900,
+          600
+        ]
+      ],
+      "bases": [
+        [
+          "blue",
+          true,
+          1000,
+          700
+        ]
+      ],
+      "moves": [
+        [
+          {
+            "x": 340.0,
+            "y": 100.0,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 1,
+            "towers": 2,
+            "bases": 1
+          }
+        ]
+      ],
+      "total_skills_cast": 0
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": true,
+          "destination": false,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 7
+        },
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": true,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 0
+        },
+        {
+          "alive": false,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 9
+        },
+        {
+          "alive": true,
+          "skill_timer": 5,
+          "target": false,
+          "destination": false,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 4
+        }
+      ],
+      "minions": [
+        [
+          "blue",
+          true,
+          "top",
+          300,
+          150
+        ]
+      ],
+      "towers": [],
+      "bases": [],
+      "moves": [
+        [],
+        [],
+        [],
+        [
+          {
+            "x": 300,
+            "y": 150,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 5,
+            "towers": 0,
+            "bases": 0
+          }
+        ],
+        [
+          {
+            "units": 5,
+            "towers": 0,
+            "bases": 0
+          }
+        ],
+        [],
+        []
+      ],
+      "total_skills_cast": 1
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 300,
+          "y": 300,
+          "active_skill_timer_delta": 0
+        }
+      ],
+      "minions": [
+        [
+          "red",
+          true,
+          "top",
+          200,
+          150
+        ]
+      ],
+      "towers": [
+        [
+          "blue",
+          false,
+          400,
+          100
+        ]
+      ],
+      "bases": [],
+      "moves": [
+        []
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 2,
+            "towers": 1,
+            "bases": 0
+          }
+        ]
+      ],
+      "total_skills_cast": 0
+    }
+  ],
+  "schedule": [
+    {
+      "level": 1,
+      "brain": 0.0,
+      "elite": 0.0,
+      "reserve": 0,
+      "trace": [
+        {
+          "control_calls": 1,
+          "steps": [
+            {
+              "towers": 0,
+              "brain": 0.0,
+              "elite": 0.0
+            }
+          ],
+          "think_timer": 90
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 89
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 88
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 87
+        }
+      ]
+    },
+    {
+      "level": 20,
+      "brain": 1.0,
+      "elite": 0.0,
+      "reserve": 0,
+      "trace": [
+        {
+          "control_calls": 1,
+          "steps": [
+            {
+              "towers": 0,
+              "brain": 1.0,
+              "elite": 0.0
+            }
+          ],
+          "think_timer": 31
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 30
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 29
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 28
+        }
+      ]
+    },
+    {
+      "level": 54,
+      "brain": 1.0,
+      "elite": 1.0,
+      "reserve": 0,
+      "trace": [
+        {
+          "control_calls": 1,
+          "steps": [
+            {
+              "towers": 0,
+              "brain": 1.0,
+              "elite": 1.0
+            },
+            {
+              "towers": 0,
+              "brain": 1.0,
+              "elite": 1.0
+            }
+          ],
+          "think_timer": 9
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 8
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 7
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 6
         }
       ]
     }
