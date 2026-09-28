@@ -355,16 +355,21 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      native mereproduksi skenario yang sama lewat bus `_TestItemFx` dan
      menguji tick Leviathan regen di world nyata. `minion_battle.gd`
      tetap 1000 baris.
-     **Batasan 5c-2:** `damage_amp`/`armor_shred` dicatat di bus tetapi
-     field target belum ada (diperlukan 5e on-hit); miasma (`_tick_miasma`)
-     belum dipanggil; efek posisi Gale Pike menggeser `position` tanpa
-     collision; aura (5d) dan on-hit proc `on_basic_attack_hit`/
-     `_on_hit_common`/`on_ranged_attack_hit` (5e) belum port.
-   - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
+     **Batasan 5c-2:** `armor_shred` masih dicatat di bus tanpa state
+     target; efek posisi Gale Pike menggeser `position` tanpa collision.
+     Sudah menyusul: aura + `update_auras` (5d), on-hit proc
+     `on_basic_attack_hit`/`_on_hit_common`/`on_ranged_attack_hit` (5e), dan
+     Miasma/Polycephaly (5e-2).
+   - [x] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
      Scorched Earth ke menara/boss).
-   - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
-     Scorched Earth ke menara/boss).
-   - [ ] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
+   - [x] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
+   - [x] **5e-2.** Miasma (% Max HP per tick, clamp 6..cap, refresh
+     max-damage/max-timer/min-tick, reset 30 tick) + Polycephaly (ranged-only,
+     2 musuh terdekat dalam 200 px, 70% damage magic + Miasma); Soul Rend crit
+     sudah ada sejak 5e. Registry Miasma per inventaris (sumber: registry
+     module-level per id(target)), jadi dua pemilik bisa menumpuk racun pada
+     target yang sama; `UnitState` belum punya `max_hp`, jadi racun ke minion
+     jatuh ke lantai 6 damage/tick.
    - [ ] **5f.** Forge UI + drop item ke tanah.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
@@ -427,10 +432,12 @@ Selesai: port item AI lapisan 1-4, satu commit per lapisan, basis main f1d34ed.
 Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 22 urutan pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
-5 notify_damage). Native: `ai_item_checks.gd` terdaftar di `run_all.gd`.
-CI Godot 4.7.2 run 36439082075 hijau untuk lapisan 5e (commit `cb8e6a2`):
-**1.178.701 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
-bersih; `minion_battle.gd` tetap 1000 baris.
+5 notify_damage, 6 miasma). Native: `ai_item_checks.gd` terdaftar di
+`run_all.gd`.
+CI Godot 4.7.2 run 36444559362 hijau untuk lapisan 5e-2 (commit `a6df6c9`):
+**1.178.772 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
+bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
+(fixture 10.132 baris, masih di bawah 20k).
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
@@ -438,10 +445,11 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: **5e** proc on-hit (crit+lifesteal+cleave+bash+chain+frostbite
-+empower+vine sudah port; miasma+polycephaly+soul-rend crit menunggu infra
-status debuff racun), lalu 5f Forge UI + item drop (`drops_on_death`). Kontrol hero per tick dan integrasi scene tetap menunggu
-setelah fase item.
+Berikutnya: **5f** Forge UI + item drop (`drops_on_death`). Kontrol hero per
+tick dan integrasi scene tetap menunggu setelah fase item.
+Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
+(null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
+`unit.max_hp` mematikan seluruh scene battle.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft
 > #294, basis main f6c4342). Lapisan 5c-2 sudah di-commit: setengah auto-trigger
