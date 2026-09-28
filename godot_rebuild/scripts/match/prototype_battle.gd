@@ -1126,7 +1126,7 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		return false
 	if hero.attack_timer != 0:
 		return false
-	var dx := target.position.x - hero.position.x
+	var dx: float = target.position.x - hero.position.x
 	if dx != 0.0:
 		hero.facing = 1.0 if dx > 0.0 else -1.0
 	hero.attack_facing = hero.facing
