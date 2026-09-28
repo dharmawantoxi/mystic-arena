@@ -8,6 +8,8 @@ const MAX_HEROES := 5
 var level_number := 1
 var level_count := 54
 var think_timer := THINK_INTERVAL
+# Diagnostics for the controller: priorities attempted in the last think tick.
+var last_attempts := 0
 
 
 func brain() -> float:
@@ -42,10 +44,13 @@ func advance(control_heroes: Callable, perform_step: Callable) -> int:
 		return 0
 	think_timer = interval()
 	var completed := 0
+	var attempts := 0
 	for index in range(action_budget()):
+		attempts += 1
 		if not perform_step.call():
 			break
 		completed += 1
+	last_attempts = attempts
 	return completed
 
 

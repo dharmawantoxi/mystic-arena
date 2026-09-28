@@ -41,6 +41,12 @@ _FORGE_FUNCTIONS = ("pending_forge_items", "deliver_pending_forge_items",
 # Layer 6a: AIPlayer hero control (per ticks) lives in _entity.py.
 ENTITY = ROOT / "_entity.py"
 _HERO_CONTROL_METHODS = ("_control_heroes", "_assign_hero_lane")
+# Layer 6b: the per-tick scheduling wrapper AIPlayer.update/_ai_brain/_ai_elite.
+_SCHEDULE_METHODS = ("update", "_ai_brain", "_ai_elite", "_ai_reserve",
+                     "_control_heroes")
+# Levels traced for the schedule fixture (start, mid, elite, cap).
+SCHEDULE_LEVELS = (1, 20, 54)
+SCHEDULE_TICKS = 4
 _LANE_Y = {"LANE_Y_TOP": 150, "LANE_Y_MID": 380, "LANE_Y_BOT": 610}
 _LEVEL_MULT = "_hero_level_mult"
 # Real HeroItemInventory slot bookkeeping plus the stat chain `_on_item_changed`
@@ -1443,6 +1449,83 @@ def hero_control(env):
     return rows
 
 
+
+class _ScheduleAI:
+    """AIPlayer scheduling wrapper with _control_heroes/_ai_step recorded."""
+
+    def __init__(self, level_number):
+        self.level_number = level_number
+        self.team = "red"
+        self.heroes = []
+        self.control_calls = 0
+        self.step_calls = []
+        # Primed so the first traced tick is a thinking tick.
+        self.think_timer = 1
+        self._hero_purchase_target = None
+        self._hero_purchase_target_cost = 0
+
+    def _control_heroes(self, all_minions, all_heroes, all_towers, all_bases):
+        self.control_calls += 1
+
+    def _ai_step(self, all_towers, build_slots, my_nexus, brain, elite):
+        self.step_calls.append([len(all_towers), brain, elite])
+        # True, False, True...: the action loop must stop on the first failure.
+        return len(self.step_calls) % 2 == 1
+
+
+def schedule(env):
+    """Real AIPlayer.update + brain/elite, with the action step stubbed."""
+    rows = []
+    with _core_module():
+        env["math"] = __import__("math")
+        env["random"] = __import__("random")
+        env["AI_THINK_INTERVAL"] = 90
+        env["AI_MAX_HEROES"] = 5
+        env["AI_HERO_BUY_PRIORITY"] = 0.45
+        env["AI_HERO_UPGRADE_PRIORITY"] = 0.4
+        env["AI_ITEM_PRIORITY"] = 0.35
+        env["AI_TOWER_UPGRADE_PRIORITY"] = 0.3
+        env["AI_NEXUS_UPGRADE_PRIORITY"] = 0.35
+        env["STARTING_GOLD"] = 1000
+        tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+        original = next(n for n in tree.body
+                        if isinstance(n, ast.ClassDef) and n.name == "AIPlayer")
+        selected = [n for n in original.body
+                    if isinstance(n, ast.FunctionDef)
+                    and n.name in _SCHEDULE_METHODS]
+        assert {n.name for n in selected} == set(_SCHEDULE_METHODS), \
+            "schedule methods missing"
+        node = ast.ClassDef(name="AIPlayerSchedule", bases=[], keywords=[],
+                            decorator_list=[], body=selected)
+        exec(compile(ast.fix_missing_locations(
+            ast.Module(body=[node], type_ignores=[])),
+            "<source AIPlayer schedule>", "exec"), env)
+        schedule_type = env["AIPlayerSchedule"]
+        for level in SCHEDULE_LEVELS:
+            ai = _ScheduleAI(level)
+            # _ScheduleAI first so its stubs win over the exec'd methods.
+            ai.__class__ = type("ScheduleAI", (_ScheduleAI, schedule_type), {})
+            trace = []
+            for _ in range(SCHEDULE_TICKS):
+                ai.step_calls = []
+                ai.control_calls = 0
+                ai.update([], [], [], None, [], [])
+                trace.append({
+                    "control_calls": ai.control_calls,
+                    "steps": [dict(towers=c[0], brain=c[1], elite=c[2])
+                              for c in ai.step_calls],
+                    "think_timer": ai.think_timer,
+                })
+            rows.append({
+                "level": level,
+                "brain": ai._ai_brain(),
+                "elite": ai._ai_elite(),
+                "reserve": ai._ai_reserve(),
+                "trace": trace,
+            })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -1464,6 +1547,7 @@ def source_fixture():
         "forge": forge(env),
         "shop_pages": shop_pages(env),
         "hero_control": hero_control(env),
+        "schedule": schedule(env),
     }))
 
 

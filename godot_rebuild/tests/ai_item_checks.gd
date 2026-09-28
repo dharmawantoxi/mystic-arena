@@ -11,6 +11,7 @@ const Draft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const ForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
 const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
+const AiController = preload("res://scripts/match/ai_controller.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const METADATA := "res://data/ai/item_catalog.json"
@@ -101,6 +102,8 @@ func run(check: Callable) -> void:
 	_test_forge_panel(check)
 	_test_hero_control(fixture.hero_control, check)
 	_test_hero_control_wiring(check)
+	_test_ai_schedule(fixture.schedule, check)
+	_test_ai_controller_wiring(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -1669,3 +1672,97 @@ func _test_hero_control_wiring(check: Callable) -> void:
 	var idle := world.spawn_hero(World.GRIMJAW, world.RED, Vector2(200, 700))
 	world.step_tick()
 	check.call(not idle.has_destination, "Disabled AI control must not assign lanes")
+
+
+# ── Layer 6b: AI scheduling wrapper (AIPlayer.update) ───────────────────────
+func _test_ai_schedule(rows: Array, check: Callable) -> void:
+	# Source update(): control every tick, think only when the timer expires,
+	# 1 + round(2*elite) actions with a stop at the first failing priority.
+	for row in rows:
+		var controller := AiController.new()
+		controller.policy.level_number = int(row.level)
+		controller.policy.think_timer = 1
+		check.call(
+			absf(controller.policy.brain() - float(row.brain)) < 0.0001,
+			"AI brain for level %d must match source" % int(row.level)
+		)
+		check.call(
+			absf(controller.policy.elite() - float(row.elite)) < 0.0001,
+			"AI elite for level %d must match source" % int(row.level)
+		)
+		var trace: Array = row.trace
+		for index in range(trace.size()):
+			var want: Dictionary = trace[index]
+			var control_calls := [0]
+			var step_calls := [0]
+			var complete := controller.tick(
+				func() -> void: control_calls[0] += 1,
+				func() -> bool:
+					step_calls[0] += 1
+					# Same alternation as the oracle stub: True, False, ...
+					return step_calls[0] % 2 == 1
+			)
+			var label := "AI schedule level %d tick %d" % [int(row.level), index]
+			check.call(
+				control_calls[0] == int(want.control_calls),
+				"%s: hero control must run every tick" % label
+			)
+			check.call(
+				step_calls[0] == want.steps.size(),
+				"%s: priority attempts must match source (%d)" % [label, want.steps.size()]
+			)
+			check.call(
+				controller.policy.think_timer == int(want.think_timer),
+				"%s: think timer must match source %d" % [label, int(want.think_timer)]
+			)
+			check.call(
+				complete <= step_calls[0], "%s: completed actions cannot exceed attempts" % label
+			)
+		check.call(controller.think_ticks >= 1, "AI must count its thinking ticks")
+	# Elite budget: level 54 attempts up to three actions, level 1 only one.
+	check.call(AiController.new().policy.action_budget() == 1, "Level 1 budget is a single action")
+	var elite_controller := AiController.new()
+	elite_controller.policy.level_number = 54
+	check.call(elite_controller.policy.action_budget() == 3, "Level 54 budget is three actions")
+	# Reserve passthrough (source _ai_reserve).
+	var draft := _draft(5200)
+	check.call(
+		elite_controller.reserve(draft) == 5200, "AI reserve must follow the draft target cost"
+	)
+	check.call(AiController.new().reserve(null) == 0, "No draft means no reserve")
+
+
+func _test_ai_controller_wiring(check: Callable) -> void:
+	# With the controller enabled the red hero is controlled every tick, the
+	# blue side stays manual, and the temporary defender keeps its schedule.
+	var world := _world()
+	_clear_heroes(world)
+	var red := world.spawn_hero(World.THORNE, world.RED, Vector2(200, 380))
+	var blue := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	world.spawn_unit(GOBLIN, world.BLUE, 1).position = Vector2(520, 380)
+	world.ai_enabled = true
+	world.ai_hero_control_enabled = true
+	world.step_tick()
+	check.call(red.has_destination, "AI controller must hand the red hero a lane")
+	check.call(world.ai_controller.ticks == 1, "Controller must count one tick per battle tick")
+	check.call(
+		world.ai_controller.steps_attempted == 0,
+		"Before the first thinking tick the AI attempts no priority action"
+	)
+	check.call(not blue.has_destination, "Blue heroes must stay manual")
+	# Think timer expiry attempts the scan (no adapter is wired yet).
+	world.ai_controller.policy.think_timer = 1
+	world.step_tick()
+	check.call(
+		world.ai_controller.steps_attempted == 1,
+		"Expired think timer must attempt the priority scan once"
+	)
+	check.call(
+		world.ai_controller.steps_completed == 0,
+		"Unwired adapters report no action, so the scan completes nothing"
+	)
+	# Disabled controller leaves the tick untouched.
+	world.ai_enabled = false
+	var ticks := world.ai_controller.ticks
+	world.step_tick()
+	check.call(world.ai_controller.ticks == ticks, "Disabled AI controller must not tick")

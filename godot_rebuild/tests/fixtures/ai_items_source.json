@@ -11846,5 +11846,114 @@
       ],
       "total_skills_cast": 0
     }
+  ],
+  "schedule": [
+    {
+      "level": 1,
+      "brain": 0.0,
+      "elite": 0.0,
+      "reserve": 0,
+      "trace": [
+        {
+          "control_calls": 1,
+          "steps": [
+            {
+              "towers": 0,
+              "brain": 0.0,
+              "elite": 0.0
+            }
+          ],
+          "think_timer": 90
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 89
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 88
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 87
+        }
+      ]
+    },
+    {
+      "level": 20,
+      "brain": 1.0,
+      "elite": 0.0,
+      "reserve": 0,
+      "trace": [
+        {
+          "control_calls": 1,
+          "steps": [
+            {
+              "towers": 0,
+              "brain": 1.0,
+              "elite": 0.0
+            }
+          ],
+          "think_timer": 31
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 30
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 29
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 28
+        }
+      ]
+    },
+    {
+      "level": 54,
+      "brain": 1.0,
+      "elite": 1.0,
+      "reserve": 0,
+      "trace": [
+        {
+          "control_calls": 1,
+          "steps": [
+            {
+              "towers": 0,
+              "brain": 1.0,
+              "elite": 1.0
+            },
+            {
+              "towers": 0,
+              "brain": 1.0,
+              "elite": 1.0
+            }
+          ],
+          "think_timer": 9
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 8
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 7
+        },
+        {
+          "control_calls": 1,
+          "steps": [],
+          "think_timer": 6
+        }
+      ]
+    }
   ]
 }

@@ -10,6 +10,7 @@ const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Forge = preload("res://scripts/match/forge.gd")
 const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
+const AiController = preload("res://scripts/match/ai_controller.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
@@ -49,6 +50,10 @@ var item_shop := ItemShopUI.new()
 # Layer 6a: per-tick AI hero control. The AI controller is not wired into the
 # playable scene yet, so this stays off unless a caller asks for it.
 var ai_heroes := AiHeroControl.new()
+# Layer 6b: scheduling wrapper (source AIPlayer.update). The scene still runs
+# the temporary defender; setting both flags hands the red side to the AI.
+var ai_controller := AiController.new()
+var ai_enabled := false
 var ai_hero_control_enabled := false
 # Source Hero.aggro_range: an auto destination is abandoned inside this radius.
 const HERO_AGGRO_RANGE := 250.0
@@ -152,6 +157,7 @@ func step_tick() -> void:
 		_step_hero_act()
 		# Source Game.update runs the AI right after the entity loop.
 		_step_ai_heroes()
+		_step_ai()
 
 
 func get_slot(id: int) -> Slot:
@@ -520,6 +526,21 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 			best_dist = dist
 			best = unit
 	return best
+
+
+func _step_ai() -> void:
+	# Source Game.update: the AI runs once per tick, right after the entities.
+	if not ai_enabled:
+		return
+	ai_controller.tick(Callable(self, "_step_ai_heroes"), Callable(self, "_ai_perform_step"))
+
+
+func _ai_perform_step() -> bool:
+	# Priority scan of the source _ai_step. The adapters (build / buy hero /
+	# upgrade hero / item / upgrade tower / shields / nexus) exist as separate
+	# modules but the scene has not been handed to the AI yet, so the scan
+	# reports "nothing to do" and the schedule stays observable.
+	return false
 
 
 func _step_ai_heroes() -> void:
