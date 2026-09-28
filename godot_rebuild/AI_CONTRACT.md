@@ -428,8 +428,8 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 22 urutan pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
 5 notify_damage). Native: `ai_item_checks.gd` terdaftar di `run_all.gd`.
-CI Godot 4.7.2 run 36433185892 hijau untuk lapisan 5d (commit `420f8df`):
-**1.178.698 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
+CI Godot 4.7.2 run 36439082075 hijau untuk lapisan 5e (commit `cb8e6a2`):
+**1.178.701 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` tetap 1000 baris.
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
