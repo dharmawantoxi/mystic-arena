@@ -409,6 +409,13 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      adalah seam pemindaian prioritas dan untuk sementara melaporkan "tidak ada
      aksi" sehingga belum ada transaksi ekonomi saat scene masih memakai
      defender sementara.
+   - [x] **6c.** Pemindaian prioritas nyata: `_ai_perform_step` memanggil
+     `ai_policy.choose_step(_ai_state(), _ai_attempt, ai_controller.draw)`,
+     sehingga urutan sumber (build -> beli hero -> upgrade hero -> item ->
+     upgrade tower -> regen shield -> castle shield -> upgrade nexus) berjalan
+     di atas adapter nyata dan ledger yang sama; `_step_defender` mundur selama
+     `ai_enabled` dan setiap undian memakai RNG ter-seed milik controller.
+     Aksi nexus gagal begitu nexus merah hancur.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -420,7 +427,7 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
   level terbaru, berikutnya berbobot source-level; tipe owned termasuk hero mati.
 - [x] Policy target draft persisten sampai terbeli, reserve harga; jangan mengganti target
   hanya karena kurang gold. Hapus target ketika available kosong atau pembelian sukses.
-- [ ] Transaksi red memakai ledger yang sama, reserve pada seluruh belanja non-hero,
+- [x] Transaksi red memakai ledger yang sama, reserve pada seluruh belanja non-hero,
   tanpa bonus gold. Hero spawn `RED_BASE_X-60, RED_BASE_Y+30+(count*40-40)`.
 - [x] Build slot acak; jenis archer/cannon/ice/mage berbobot .35/.25/.20/.20;
   hanya adapter per aksi, belum terhubung ke scene.
@@ -476,6 +483,10 @@ CI Godot 4.7.2 run 36468688990 hijau untuk lapisan 6b (commit `987ff13`):
 **1.179.197 native checks**, static lokal 5747 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
 (fixture 11.615 baris, masih di bawah 20k).
+CI Godot 4.7.2 run 36477994234 hijau untuk lapisan 6c (commit `efd3129`):
+**1.179.226 native checks**, static lokal 5765 PASS; `gdlint`/`gdformat`/`gdparse`
+bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tetap tepat 1000 baris
+dan fixture tidak berubah.
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -489,10 +500,10 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: mengisi `_ai_perform_step` dengan pemindaian prioritas nyata
-(build -> beli hero -> upgrade hero -> item -> upgrade tower -> shield ->
-nexus) memakai adapter yang sudah ada, lalu mengganti defender sementara dan
-menutup jalur pause/reset + seeded RNG. Catatan 6a:
+Berikutnya: mengganti defender sementara di scene dan menutup jalur
+pause/reset + sebaran RNG (flag `ai_enabled` masih default mati sampai itu
+selesai). Undian 6c memakai `ai_controller.draw()`; adapter build/draft tetap
+memakai RNG ter-seed masing-masing. Catatan 6a:
 `towers` diteruskan eksplisit karena daftar struktur native juga memuat nexus,
 sedangkan sumber hanya menyusuri `all_towers`. Catatan alur sesi:
 repo pernah ter-clone ulang sehingga riwayat lokal tertinggal dari remote —
