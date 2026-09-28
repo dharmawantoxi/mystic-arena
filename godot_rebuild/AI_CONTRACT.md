@@ -438,11 +438,9 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: **5d** aura + `update_auras` (armor/AS/guard block/armor reduction
-buff sekutu, Scorched Earth DoT ke menara/boss), lalu 5e proc on-hit
-(`roll_crit`, `on_basic_attack_hit`, `_on_hit_common`, `on_ranged_attack_hit`
-+ chain/cleave/vine/miasma), terakhir 5f Forge UI + item drop
-(`drops_on_death`). Kontrol hero per tick dan integrasi scene tetap menunggu
+Berikutnya: **5e** proc on-hit (crit+lifesteal+cleave+bash+chain+frostbite
++empower+vine sudah port; miasma+polycephaly+soul-rend crit menunggu infra
+status debuff racun), lalu 5f Forge UI + item drop (`drops_on_death`). Kontrol hero per tick dan integrasi scene tetap menunggu
 setelah fase item.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft

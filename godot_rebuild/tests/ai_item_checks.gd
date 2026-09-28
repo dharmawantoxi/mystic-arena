@@ -85,6 +85,7 @@ func run(check: Callable) -> void:
 	_test_notify_damage(fixture.notify_damage, check)
 	_test_item_tick_wiring(check)
 	_test_auras(check)
+	_test_on_hit(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -937,3 +938,32 @@ func _test_auras(check: Callable) -> void:
 	check.call(
 		a2.items.aura_armor == armor_before, "aura_armor must reset and be recomputed each tick"
 	)
+
+
+func _test_on_hit(check: Callable) -> void:
+	# Layer 5e: crit + melee lifesteal on_basic_attack_hit must heal attacker.
+	var world := _world()
+	var h := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	var t := world.spawn_hero(World.VEX, world.RED, Vector2(260, 200))
+	_fund(world, 9999)
+	assert(h.items.add("dead_edge"), "dead_edge refused")
+	assert(h.items.add("demon_maw"), "demon_maw refused")
+	h.apply_item_change()
+	t.apply_item_change()
+	# Lower attacker HP so we can detect lifesteal.
+	h.hp = h.max_hp * 0.5
+	h.items.set_hero_runtime(
+		h.id, h.alive, h.hp, int(h.max_hp), h.team, h.facing, h.position, h.target_id
+	)
+	var hp0 := h.hp
+	var t_hp0 := t.hp
+	world.hero_basic_attack(h.id, t.id)
+	check.call(
+		h.items.hero_hp > hp0, "Melee lifesteal must heal attacker after on_basic_attack_hit"
+	)
+	check.call(t.hp < t_hp0, "Melee attack must damage target")
+	# roll_crit returns a 2-element [ok, mult] array.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1
+	var cr: Array = h.items.roll_crit(rng)
+	check.call(cr.size() == 2, "roll_crit must return 2-element [ok, mult] array")
