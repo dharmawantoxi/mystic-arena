@@ -11492,5 +11492,359 @@
       "magic": "MAGIC",
       "tank": "TANK"
     }
-  }
+  },
+  "hero_control": [
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 5
+        }
+      ],
+      "minions": [
+        [
+          "blue",
+          true,
+          "top",
+          300,
+          150
+        ],
+        [
+          "blue",
+          true,
+          "mid",
+          700,
+          380
+        ],
+        [
+          "blue",
+          true,
+          "mid",
+          900,
+          380
+        ],
+        [
+          "red",
+          true,
+          "mid",
+          100,
+          380
+        ]
+      ],
+      "towers": [
+        [
+          "blue",
+          true,
+          900,
+          150
+        ]
+      ],
+      "bases": [],
+      "moves": [
+        [
+          {
+            "x": 700,
+            "y": 380,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 5,
+            "towers": 1,
+            "bases": 0
+          }
+        ]
+      ],
+      "total_skills_cast": 1
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 400,
+          "y": 200,
+          "active_skill_timer_delta": 0
+        }
+      ],
+      "minions": [
+        [
+          "blue",
+          true,
+          "bot",
+          500,
+          610
+        ],
+        [
+          "blue",
+          true,
+          "top",
+          420,
+          150
+        ]
+      ],
+      "towers": [],
+      "bases": [],
+      "moves": [
+        [
+          {
+            "x": 420,
+            "y": 150,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 3,
+            "towers": 0,
+            "bases": 0
+          }
+        ]
+      ],
+      "total_skills_cast": 0
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 200,
+          "y": 400,
+          "active_skill_timer_delta": 3
+        }
+      ],
+      "minions": [
+        [
+          "blue",
+          false,
+          "mid",
+          700,
+          380
+        ]
+      ],
+      "towers": [
+        [
+          "blue",
+          true,
+          800,
+          380
+        ]
+      ],
+      "bases": [],
+      "moves": [
+        [
+          {
+            "x": 740.0333055812507,
+            "y": 381.99888981395833,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 2,
+            "towers": 1,
+            "bases": 0
+          }
+        ]
+      ],
+      "total_skills_cast": 1
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 100,
+          "y": 100,
+          "active_skill_timer_delta": 0
+        }
+      ],
+      "minions": [],
+      "towers": [
+        [
+          "blue",
+          true,
+          400,
+          100
+        ],
+        [
+          "blue",
+          true,
+          900,
+          600
+        ]
+      ],
+      "bases": [
+        [
+          "blue",
+          true,
+          1000,
+          700
+        ]
+      ],
+      "moves": [
+        [
+          {
+            "x": 340.0,
+            "y": 100.0,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 1,
+            "towers": 2,
+            "bases": 1
+          }
+        ]
+      ],
+      "total_skills_cast": 0
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": true,
+          "destination": false,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 7
+        },
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": true,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 0
+        },
+        {
+          "alive": false,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 9
+        },
+        {
+          "alive": true,
+          "skill_timer": 5,
+          "target": false,
+          "destination": false,
+          "x": 500,
+          "y": 400,
+          "active_skill_timer_delta": 4
+        }
+      ],
+      "minions": [
+        [
+          "blue",
+          true,
+          "top",
+          300,
+          150
+        ]
+      ],
+      "towers": [],
+      "bases": [],
+      "moves": [
+        [],
+        [],
+        [],
+        [
+          {
+            "x": 300,
+            "y": 150,
+            "auto": true
+          }
+        ]
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 5,
+            "towers": 0,
+            "bases": 0
+          }
+        ],
+        [
+          {
+            "units": 5,
+            "towers": 0,
+            "bases": 0
+          }
+        ],
+        [],
+        []
+      ],
+      "total_skills_cast": 1
+    },
+    {
+      "heroes": [
+        {
+          "alive": true,
+          "skill_timer": 0,
+          "target": false,
+          "destination": false,
+          "x": 300,
+          "y": 300,
+          "active_skill_timer_delta": 0
+        }
+      ],
+      "minions": [
+        [
+          "red",
+          true,
+          "top",
+          200,
+          150
+        ]
+      ],
+      "towers": [
+        [
+          "blue",
+          false,
+          400,
+          100
+        ]
+      ],
+      "bases": [],
+      "moves": [
+        []
+      ],
+      "auto_casts": [
+        [
+          {
+            "units": 2,
+            "towers": 1,
+            "bases": 0
+          }
+        ]
+      ],
+      "total_skills_cast": 0
+    }
+  ]
 }

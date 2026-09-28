@@ -38,6 +38,10 @@ _FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero",
 _FORGE_FUNCTIONS = ("pending_forge_items", "deliver_pending_forge_items",
                     "_resolve_shop_target", "_try_buy", "_try_drop",
                     "get_item_class", "_build_shop_pages")
+# Layer 6a: AIPlayer hero control (per ticks) lives in _entity.py.
+ENTITY = ROOT / "_entity.py"
+_HERO_CONTROL_METHODS = ("_control_heroes", "_assign_hero_lane")
+_LANE_Y = {"LANE_Y_TOP": 150, "LANE_Y_MID": 380, "LANE_Y_BOT": 610}
 _LEVEL_MULT = "_hero_level_mult"
 # Real HeroItemInventory slot bookkeeping plus the stat chain `_on_item_changed`
 # reaches, so the fixture can show exactly what the rebuild does NOT port yet.
@@ -1269,6 +1273,176 @@ def shop_pages(env):
         }
 
 
+
+# Layer 6a: AIPlayer._control_heroes / _assign_hero_lane. The source class is
+# lifted by AST (it imports pygame at module import time) and run against hero,
+# minion and tower stubs that record move_to / _try_auto_cast calls.
+HERO_CONTROL_CASES = [
+    # Two lanes threatened: MID has more minions, so the hero takes MID and
+    # walks to the NEAREST blue minion in that lane (x of it, lane y).
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 5}],
+        "minions": [["blue", True, "top", 300, 150],
+                    ["blue", True, "mid", 700, 380],
+                    ["blue", True, "mid", 900, 380],
+                    ["red", True, "mid", 100, 380]],
+        "towers": [["blue", True, 900, 150]],
+        "bases": [],
+    },
+    # Tie on threats: TOP wins (dict insertion order in the source).
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 400, "y": 200,
+                    "active_skill_timer_delta": 0}],
+        "minions": [["blue", True, "bot", 500, 610],
+                    ["blue", True, "top", 420, 150]],
+        "towers": [],
+        "bases": [],
+    },
+    # Threatened lane without blue minions: the hero parks at x=600 of it.
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 200, "y": 400,
+                    "active_skill_timer_delta": 3}],
+        "minions": [["blue", False, "mid", 700, 380]],
+        "towers": [["blue", True, 800, 380]],
+        "bases": [],
+    },
+    # No threats at all: nearest blue tower, stopped 60 px short of it.
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 100, "y": 100,
+                    "active_skill_timer_delta": 0}],
+        "minions": [],
+        "towers": [["blue", True, 400, 100], ["blue", True, 900, 600]],
+        "bases": [["blue", True, 1000, 700]],
+    },
+    # Busy heroes are left alone: one has a target, one a destination, one is
+    # dead, and one is mid-skill (no auto-cast attempt either).
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": True,
+                    "destination": False, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 7},
+                   {"alive": True, "skill_timer": 0, "target": False,
+                    "destination": True, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 0},
+                   {"alive": False, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 9},
+                   {"alive": True, "skill_timer": 5, "target": False,
+                    "destination": False, "x": 500, "y": 400,
+                    "active_skill_timer_delta": 4}],
+        "minions": [["blue", True, "top", 300, 150]],
+        "towers": [],
+        "bases": [],
+    },
+    # No threats and no living tower: the hero keeps whatever it was doing.
+    {
+        "heroes": [{"alive": True, "skill_timer": 0, "target": False,
+                    "destination": False, "x": 300, "y": 300,
+                    "active_skill_timer_delta": 0}],
+        "minions": [["red", True, "top", 200, 150]],
+        "towers": [["blue", False, 400, 100]],
+        "bases": [],
+    },
+]
+
+
+class _HeroStub:
+    def __init__(self, spec, index):
+        self.alive = spec["alive"]
+        self.skill_timer = spec["skill_timer"]
+        self.target = "target" if spec["target"] else None
+        self.destination = (10, 10) if spec["destination"] else None
+        self.x = spec["x"]
+        self.y = spec["y"]
+        self.active_skill_timer = 100
+        self._delta = spec["active_skill_timer_delta"]
+        self.moves = []
+        self.auto_casts = []
+        self._index = index
+
+    def _try_auto_cast(self, all_units, all_towers, all_bases):
+        self.auto_casts.append({"units": len(all_units),
+                                "towers": len(all_towers),
+                                "bases": len(all_bases)})
+        self.active_skill_timer += self._delta
+
+    def move_to(self, x, y, auto=False):
+        self.moves.append({"x": x, "y": y, "auto": bool(auto)})
+
+
+class _MinionStub:
+    def __init__(self, spec, index):
+        self.team = spec[0]
+        self.alive = spec[1]
+        self.lane = spec[2]
+        self.x = spec[3]
+        self.y = spec[4]
+        self._index = index
+
+
+class _TowerStub:
+    def __init__(self, spec, index):
+        self.team = spec[0]
+        self.alive = spec[1]
+        self.x = spec[2]
+        self.y = spec[3]
+        self._index = index
+
+
+def _hero_control_type(env):
+    """Exec the real AIPlayer hero-control methods, unchanged."""
+    tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+    original = next(n for n in tree.body
+                    if isinstance(n, ast.ClassDef) and n.name == "AIPlayer")
+    selected = [n for n in original.body
+                if isinstance(n, ast.FunctionDef)
+                and n.name in _HERO_CONTROL_METHODS]
+    assert {n.name for n in selected} == set(_HERO_CONTROL_METHODS), \
+        "hero control methods missing"
+    node = ast.ClassDef(name="AIPlayerHeroControl", bases=[], keywords=[],
+                        decorator_list=[], body=selected)
+    env["math"] = __import__("math")
+    env.update(_LANE_Y)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[node], type_ignores=[])),
+                 "<source AIPlayer hero control>", "exec"), env)
+    return env["AIPlayerHeroControl"]
+
+
+def hero_control(env):
+    """Real _control_heroes/_assign_hero_lane against recording stubs."""
+    env["math"] = __import__("math")
+    env.update(_LANE_Y)
+    control_type = _hero_control_type(env)
+    rows = []
+    for case in HERO_CONTROL_CASES:
+        ai = control_type()
+        ai.team = "red"
+        ai.total_skills_cast = 0
+        heroes = [_HeroStub(spec, index)
+                  for index, spec in enumerate(case["heroes"])]
+        ai.heroes = heroes
+        minions = [_MinionStub(spec, index)
+                   for index, spec in enumerate(case["minions"])]
+        towers = [_TowerStub(spec, index)
+                  for index, spec in enumerate(case["towers"])]
+        bases = [_TowerStub(spec, index) for index, spec in enumerate(case["bases"])]
+        ai._control_heroes(minions, list(heroes), towers, bases)
+        rows.append({
+            "heroes": [dict(spec) for spec in case["heroes"]],
+            "minions": [list(spec) for spec in case["minions"]],
+            "towers": [list(spec) for spec in case["towers"]],
+            "bases": [list(spec) for spec in case["bases"]],
+            "moves": [list(hero.moves) for hero in heroes],
+            "auto_casts": [list(hero.auto_casts) for hero in heroes],
+            "total_skills_cast": ai.total_skills_cast,
+        })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -1289,6 +1463,7 @@ def source_fixture():
         "miasma": miasma(env),
         "forge": forge(env),
         "shop_pages": shop_pages(env),
+        "hero_control": hero_control(env),
     }))
 
 

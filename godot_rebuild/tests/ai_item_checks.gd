@@ -10,6 +10,8 @@ const AIItems = preload("res://scripts/match/ai_items.gd")
 const Draft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const ForgePanel = preload("res://scripts/ui/item_forge_panel.gd")
+const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
+const GOBLIN = preload("res://data/minions/goblin.tres")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const METADATA := "res://data/ai/item_catalog.json"
 const FIXTURE := "res://tests/fixtures/ai_items_source.json"
@@ -97,6 +99,8 @@ func run(check: Callable) -> void:
 	_test_shop_pages(fixture.shop_pages, check)
 	_test_shop_clicks(check)
 	_test_forge_panel(check)
+	_test_hero_control(fixture.hero_control, check)
+	_test_hero_control_wiring(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -1512,3 +1516,156 @@ func _test_forge_panel(check: Callable) -> void:
 	)
 	# Free the Control subtree: a headless test never pumps a frame.
 	panel.free()
+
+
+# ── Layer 6a: AI hero control per tick (_control_heroes/_assign_hero_lane) ───
+class _ControlHero:
+	extends RefCounted
+	var is_hero := true
+	var team := 1
+	var alive := true
+	var skill_timer := 0
+	var active_skill_timer := 100
+	var target_id := -1
+	var target_struct: Variant = null
+	var has_destination := false
+	var position := Vector2.ZERO
+	var lane := -1
+	var id := 0
+	var moves: Array = []
+	var auto_casts := 0
+	var delta := 0
+
+
+class _ControlWorld:
+	extends RefCounted
+	# Duck-typed world for the control module: units, RED, try_auto_cast,
+	# move_to. Towers are passed in like the source `all_towers` list.
+	var units: Array = []
+	var towers: Array = []
+	var move_log: Array = []
+
+	func try_auto_cast(hero: Object) -> void:
+		hero.auto_casts += 1
+		hero.active_skill_timer += int(hero.delta)
+
+	func move_to(hero: Object, point: Vector2, auto: bool) -> void:
+		hero.has_destination = true
+		hero.position = point
+		hero.moves.append({"x": point.x, "y": point.y, "auto": auto})
+		move_log.append({"hero": hero.id, "x": point.x, "y": point.y, "auto": auto})
+
+
+func _test_hero_control(rows: Array, check: Callable) -> void:
+	var control := AiHeroControl.new()
+	for row in rows:
+		var world := _ControlWorld.new()
+		var heroes: Array = []
+		var specs: Array = row.heroes
+		for index in range(specs.size()):
+			var spec: Dictionary = specs[index]
+			var hero := _ControlHero.new()
+			hero.id = 100 + index
+			hero.alive = bool(spec.alive)
+			hero.skill_timer = int(spec.skill_timer)
+			hero.target_id = 1 if bool(spec.target) else -1
+			hero.has_destination = bool(spec.destination)
+			hero.position = Vector2(float(spec.x), float(spec.y))
+			hero.delta = int(spec.active_skill_timer_delta)
+			heroes.append(hero)
+			world.units.append(hero)
+		var minion_specs: Array = row.minions
+		for spec in minion_specs:
+			var minion := _ControlHero.new()
+			minion.is_hero = false
+			minion.id = 900 + world.units.size()
+			minion.team = 0 if String(spec[0]) == "blue" else 1
+			minion.alive = bool(spec[1])
+			minion.position = Vector2(float(spec[3]), float(spec[4]))
+			minion.lane = _lane_index(String(spec[2]))
+			world.units.append(minion)
+		for spec in row.towers:
+			var tower := _ControlHero.new()
+			tower.is_hero = false
+			tower.team = 0 if String(spec[0]) == "blue" else 1
+			tower.alive = bool(spec[1])
+			tower.position = Vector2(float(spec[2]), float(spec[3]))
+			world.towers.append(tower)
+		control.total_skills_cast = 0
+		control.control_heroes(world, world.towers)
+		var label := "Hero control case (%d heroes)" % heroes.size()
+		var want_rows: Array = row.moves
+		for index in range(heroes.size()):
+			var got: Array = heroes[index].moves
+			var want: Array = want_rows[index]
+			check.call(
+				got.size() == want.size(),
+				"%s: hero %d move count must match source" % [label, index]
+			)
+			if got.size() == want.size() and got.size() > 0:
+				check.call(
+					_move_match(got[0], want[0]),
+					"%s: hero %d destination must match source" % [label, index]
+				)
+				check.call(bool(got[0].auto), "%s: AI move must stay auto" % label)
+			check.call(
+				heroes[index].auto_casts == row.auto_casts[index].size(),
+				"%s: hero %d auto-cast attempts must match source" % [label, index]
+			)
+		check.call(
+			control.total_skills_cast == int(row.total_skills_cast),
+			"%s: total_skills_cast must match source" % label
+		)
+	# Tie-break: an equal threat count always resolves to TOP (lane 0).
+	check.call(control.busiest_lane([1, 1, 1]) == 0, "Lane tie must resolve to TOP")
+	check.call(control.busiest_lane([0, 2, 1]) == 1, "Lane with most threats must win")
+
+
+func _lane_index(name: String) -> int:
+	return ["top", "mid", "bot"].find(name)
+
+
+func _move_match(got: Dictionary, want: Dictionary) -> bool:
+	return absf(float(got.x) - float(want.x)) < 0.001 and absf(float(got.y) - float(want.y)) < 0.001
+
+
+func _test_hero_control_wiring(check: Callable) -> void:
+	# Real battle: the red AI hero takes the busiest lane in the same tick the
+	# control runs, while a blue hero is never touched by the AI brain.
+	var world := _world()
+	_clear_heroes(world)
+	var red := world.spawn_hero(World.THORNE, world.RED, Vector2(200, 380))
+	var blue := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	var minion := world.spawn_unit(GOBLIN, world.BLUE, 1)
+	minion.position = Vector2(500, 380)
+	world.ai_hero_control_enabled = true
+	var blue_destination := blue.has_destination
+	world.step_tick()
+	check.call(red.has_destination, "AI hero must receive a lane destination")
+	check.call(red.destination_auto, "AI destination must be flagged auto")
+	check.call(
+		absf(red.destination.y - 380.0) < 0.001,
+		"AI hero must head to the threatened lane y (mid = 380)"
+	)
+	# The control runs after the entity step, so the lane minion has already
+	# walked: the destination must match its x after the tick, not the spawn.
+	check.call(
+		absf(red.destination.x - minion.position.x) < 0.001,
+		"AI hero must aim at the nearest enemy minion x in that lane"
+	)
+	check.call(
+		blue.has_destination == blue_destination, "Blue heroes must stay under player control"
+	)
+	# The auto destination is dropped once an enemy is inside aggro range.
+	var enemy := world.spawn_hero(World.VEX, world.BLUE, Vector2(210, 380))
+	enemy.apply_item_change()
+	world.step_tick()
+	check.call(
+		not red.has_destination or not red.destination_auto,
+		"Auto destination must yield to an enemy inside aggro range"
+	)
+	# With the control off, a fresh hero keeps its schedule untouched.
+	world.ai_hero_control_enabled = false
+	var idle := world.spawn_hero(World.GRIMJAW, world.RED, Vector2(200, 700))
+	world.step_tick()
+	check.call(not idle.has_destination, "Disabled AI control must not assign lanes")

@@ -9,6 +9,7 @@ const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
 const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
 const Forge = preload("res://scripts/match/forge.gd")
+const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
@@ -45,6 +46,12 @@ var economy := Economy.new()
 var forge := Forge.new()
 # Layer 5f-2: ITEM FORGE panel state + click routing (drawing lives in the UI).
 var item_shop := ItemShopUI.new()
+# Layer 6a: per-tick AI hero control. The AI controller is not wired into the
+# playable scene yet, so this stays off unless a caller asks for it.
+var ai_heroes := AiHeroControl.new()
+var ai_hero_control_enabled := false
+# Source Hero.aggro_range: an auto destination is abandoned inside this radius.
+const HERO_AGGRO_RANGE := 250.0
 var scheduler := Scheduler.new()
 var slots: Array[Slot] = []
 var transaction_error := ""
@@ -143,6 +150,8 @@ func step_tick() -> void:
 		_tick_auras_and_items()
 		_step_defender()
 		_step_hero_act()
+		# Source Game.update runs the AI right after the entity loop.
+		_step_ai_heroes()
 
 
 func get_slot(id: int) -> Slot:
@@ -325,6 +334,7 @@ func set_hero_destination(hero_id: int, point: Vector2) -> bool:
 		return false
 	hero.has_destination = true
 	hero.destination = point
+	hero.destination_auto = false
 	hero.follow_id = -1
 	return true
 
@@ -384,6 +394,11 @@ func _step_one_hero(hero: HeroState) -> void:
 			hero.is_retreating = true
 		if hero.is_retreating and ratio >= HERO_HEAL_RATIO:
 			hero.is_retreating = false
+		if hero.has_destination and hero.destination_auto and hero_aggro_target(hero) != null:
+			# Source: an AI destination yields to an enemy in aggro range in
+			# the same frame; a manual destination is obeyed in full.
+			hero.has_destination = false
+			hero.destination_auto = false
 		if hero.is_retreating:
 			_step_hero_retreat(hero)
 		elif hero.has_destination:
@@ -455,24 +470,66 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	forge.deliver_pending_forge_items(hero)
 
 
+func try_auto_cast(hero: HeroState) -> void:
+	# Port of Hero._try_auto_cast: only with a living enemy inside skill_range.
+	# Priority R, then E (2+), W (HP < 40%), Q. The AI path calls this directly
+	# (source _control_heroes), while the player path adds its own gating in
+	# _step_hero_auto_cast.
+	var nearby := _hero_skill_nearby(hero)
+	if nearby <= 0:
+		return
+	var used := false
+	if hero.r_cooldown <= 0:
+		used = _cast_hero_r(hero.id, structures)
+	if not used and hero.e_cooldown <= 0 and nearby >= 2:
+		used = cast_hero_e(hero.id, structures)
+	if not used and hero.w_cooldown <= 0 and hero.hp / maxf(1.0, hero.max_hp) < 0.4:
+		used = cast_hero_w(hero.id)
+	if not used and hero.skill_timer <= 0:
+		cast_hero_q(hero.id, structures)
+
+
 func _step_hero_auto_cast(hero: HeroState) -> void:
-	# Port of Hero._try_auto_cast: every 20 ticks, only with a living
-	# enemy inside skill_range. Priority R, then E (2+), W (HP < 40%), Q.
+	# Player auto-cast: every 20 ticks, opt-in flag and no stun.
 	if hero.auto_cast_enabled and hero.stun_timer <= 0:
 		hero.auto_cast_check_timer -= 1
 		if hero.auto_cast_check_timer <= 0:
 			hero.auto_cast_check_timer = 20
-			var nearby := _hero_skill_nearby(hero)
-			if nearby > 0:
-				var used := false
-				if hero.r_cooldown <= 0:
-					used = _cast_hero_r(hero.id, structures)
-				if not used and hero.e_cooldown <= 0 and nearby >= 2:
-					used = cast_hero_e(hero.id, structures)
-				if not used and hero.w_cooldown <= 0 and hero.hp / maxf(1.0, hero.max_hp) < 0.4:
-					used = cast_hero_w(hero.id)
-				if not used and hero.skill_timer <= 0:
-					cast_hero_q(hero.id, structures)
+			try_auto_cast(hero)
+
+
+func move_to(hero: HeroState, point: Vector2, auto: bool) -> void:
+	# Port of Hero.move_to: a new destination cancels follow and retreat.
+	hero.has_destination = true
+	hero.destination = point
+	hero.destination_auto = auto
+	hero.follow_id = -1
+	hero.is_retreating = false
+
+
+func hero_aggro_target(hero: HeroState) -> UnitState:
+	# Port of Hero._find_aggro_target: nearest enemy inside HERO_AGGRO_RANGE
+	# (the source updates on `<=`, so an equidistant later unit wins).
+	var best: UnitState = null
+	var best_dist := HERO_AGGRO_RANGE
+	for unit in units:
+		if not unit.alive or unit.team == hero.team or unit.id == hero.id:
+			continue
+		var dist := hero.position.distance_to(unit.position)
+		if dist <= best_dist:
+			best_dist = dist
+			best = unit
+	return best
+
+
+func _step_ai_heroes() -> void:
+	if not ai_hero_control_enabled:
+		return
+	var towers: Array = []
+	for structure in structures:
+		if structure.alive and structure.settings().structure_kind == "tower":
+			towers.append(structure)
+	ai_heroes.control_heroes(self, towers)
 
 
 func _hero_skill_nearby(hero: HeroState) -> int:
