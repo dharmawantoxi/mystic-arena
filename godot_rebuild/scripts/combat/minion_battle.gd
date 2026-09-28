@@ -155,8 +155,7 @@ func step_tick() -> void:
 			_tick_hero(unit as HeroState)
 			continue
 		if unit.is_hero:
-			# Heroes tick their own timers + shared debuffs. No lane
-			# march, no AI orders, no passive heal in Kaizen-1.
+			# Heroes tick own timers + shared debuffs; no lane order or heal.
 			_tick_hero(unit as HeroState)
 			_tick_debuffs(unit)
 			_tick_burn(unit)
@@ -326,6 +325,10 @@ func _tick_debuffs(unit: UnitState) -> void:
 		unit.anti_heal_timer -= 1
 		if unit.anti_heal_timer <= 0:
 			unit.anti_heal_amount = 0.0
+	if unit.blind_timer > 0:
+		unit.blind_timer -= 1
+		if unit.blind_timer <= 0:
+			unit.blind_amount = 0.0
 
 
 func _eff_speed(unit: UnitState) -> float:
@@ -403,8 +406,7 @@ func _deliver_hit(
 
 func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float:
 	if target is StructureState:
-		# Structures absorb through armor + shield. Previously only the
-		# siege override did this; hero AOE needs it at this level too.
+		# Structures absorb through armor + shield; hero AOE needs it too.
 		return (target as StructureState).absorb(raw_damage, school)
 	var damage := (
 		raw_damage
@@ -507,9 +509,8 @@ func _ai_siege_priority(pairs: Array) -> UnitState:
 	var towers: Array = []
 	for pair in pairs:
 		var cand := pair[0] as StructureState
-		# Source checks hasattr(tower_kind), which Tower never sets;
-		# observable behavior is identical because every tower is
-		# already captured by the max_hp>=1500 branch above.
+		# Source checks hasattr(tower_kind), which Tower never sets; every tower
+		# is already captured by the max_hp>=1500 branch above instead.
 		if cand != null and cand.settings().structure_kind == "tower":
 			towers.append(pair)
 	if not towers.is_empty():
@@ -617,8 +618,7 @@ func spawn_hero(definition: HeroDefinition, team: int, pos: Vector2, level: int 
 	hero.position = pos
 	hero.facing = 1.0 if team == BLUE else -1.0
 	hero.attack_facing = hero.facing
-	# Source v27: auto-cast is ON for every hero, player or not. Source
-	# v29 removed the off path: the status button can only force it on.
+	# Source v27/v29: auto-cast is ON for every hero; the button only forces on.
 	hero.auto_cast_enabled = true
 	units.append(hero)
 	_by_id[hero.id] = hero
@@ -779,9 +779,8 @@ func can_cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 
 
 func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
-	# Port of KaizenSkills.cast_q: Q1 Steel Wind at stack 0, Q2 Dash
-	# Strike at stack 1. Structures (towers, then bases) mirror the
-	# source all_towers/all_bases arguments.
+	# Port of KaizenSkills.cast_q: Q1 Steel Wind at stack 0, Q2 Dash Strike at
+	# stack 1. Structures (towers, then bases) mirror all_towers/all_bases.
 	var hero := get_unit(hero_id) as HeroState
 	if not is_running() or hero == null or not hero.alive:
 		return false
@@ -964,9 +963,8 @@ func _hero_skill_structures() -> Array:
 
 
 func _on_hero_death(hero: HeroState, source_id: int) -> void:
-	# Port of the Hero.take_damage death branch: deaths+1, killer id,
-	# and a full debuff clear. No gold is credited (hero definitions
-	# carry gold_reward 0, locked by kaizen_checks).
+	# Port of the Hero.take_damage death branch: deaths+1, killer id and a full
+	# debuff clear. No gold is credited (gold_reward 0, locked by kaizen_checks).
 	hero.deaths += 1
 	hero.killed_by = source_id
 	hero.slow_amount = 0.0
@@ -977,6 +975,8 @@ func _on_hero_death(hero: HeroState, source_id: int) -> void:
 	hero.skill_down_timer = 0
 	hero.anti_heal_amount = 0.0
 	hero.anti_heal_timer = 0
+	hero.blind_amount = 0.0
+	hero.blind_timer = 0
 	hero.burn_dps = 0.0
 	hero.burn_timer = 0
 	hero.burn_accum = 0.0

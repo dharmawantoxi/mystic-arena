@@ -25,7 +25,10 @@ FIXTURE = Path(__file__).parent / "fixtures/ai_items_source.json"
 _NAMES = frozenset({
     "MAX_ITEM_SLOTS", "ITEM_FLAT_COST", "MAGIC_ROLE_KEYWORDS", "ITEM_CATALOG",
 })
-_FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero")
+# `update_auras` is exec'd with a stubbed `_collect_all_units`: the real helper
+# only reads `__main__.game_instance`, which does not exist in this test
+# process, so every aura case installs its own unit list first.
+_FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero", "update_auras")
 _LEVEL_MULT = "_hero_level_mult"
 # Real HeroItemInventory slot bookkeeping plus the stat chain `_on_item_changed`
 # reaches, so the fixture can show exactly what the rebuild does NOT port yet.
@@ -227,10 +230,11 @@ def catalog(env=None):
             "drops_on_death": bool(data.get("drops_on_death", False)),
             # Numeric stats the aggregation getters sum, plus the descriptor
             # blocks those getters read verbatim (passive/block/on_attack/
-            # bash/active). Presentation keys (icon/color/glow/desc) stay out.
+            # bash/active/aura). Presentation keys (icon/color/glow/desc) stay
+            # out.
             "stats": dict(data.get("stats", {})),
         }
-        for key in ("passive", "block", "on_attack", "bash", "active"):
+        for key in ("passive", "block", "on_attack", "bash", "active", "aura"):
             if key in data:
                 entry[key] = data[key]
         items[item_id] = json.loads(json.dumps(entry))
@@ -584,6 +588,8 @@ class _EffectStub:
         self._record("amp", amount=float(amount), duration=int(duration))
     def apply_armor_shred(self, amount, duration):
         self._record("shred", amount=float(amount), duration=int(duration))
+    def apply_miss_chance(self, amount, duration):
+        self._record("miss", amount=float(amount), duration=int(duration))
 
 
 def _make_hero(spec, hp_ratio=1.0, target=None, x=0, y=0, team="red", tag="hero"):
@@ -954,6 +960,256 @@ def notify_damage(env):
     return rows
 
 
+# update_auras() cases. Teams stay the source strings ("blue"/"red") and the
+# rebuild maps them to BLUE/RED ints; "team" 0/1 is never stored. Heroes are
+# real HeroItemInventory holders (max_hp comes from the real stat chain), units
+# are _EffectStubs that record every debuff they receive, or the hero objects
+# themselves when the source's hero list is also the unit list.
+AURA_CASES = [
+    # Bulwark Guard: allies in radius block; strongest block wins; a holder
+    # with guard_timer 0 grants nothing; enemies are never blocked.
+    {
+        "name": "bulwark_guard_allies",
+        "heroes": [
+            {"tag": "h0", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 100, "y": 100, "loadout": ["scarlet_bulwark"],
+             "guard_timer": 420},
+            {"tag": "h1", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 150, "y": 100, "loadout": []},
+            {"tag": "h2", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 700, "y": 100, "loadout": []},
+            {"tag": "h3", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "red", "x": 200, "y": 100, "loadout": []},
+            {"tag": "h4", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "red", "x": 120, "y": 100, "loadout": ["scarlet_bulwark"],
+             "guard_timer": 0},
+            {"tag": "h5", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 60, "y": 100,
+             "loadout": ["scarlet_bulwark", "leviathan_heart"], "guard_timer": 300},
+        ],
+        "units": [{"hero": 0}, {"hero": 1}, {"hero": 2}, {"hero": 3}, {"hero": 4},
+                  {"hero": 5},
+                  {"kind": "minion", "team": "blue", "x": 130, "y": 100},
+                  {"kind": "minion", "team": "red", "x": 140, "y": 100}],
+    },
+    # Freezing Aura hits every enemy unit (hero, minion, boss) of either team;
+    # allies, out-of-radius units and same-team minions stay clean.
+    {
+        "name": "everfrost_enemy_units",
+        "heroes": [
+            {"tag": "h0", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 100, "y": 100, "loadout": ["everfrost_guard"]},
+            {"tag": "h1", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 140, "y": 100, "loadout": []},
+            {"tag": "h2", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "red", "x": 520, "y": 100, "loadout": ["everfrost_guard"]},
+        ],
+        "units": [{"hero": 0}, {"hero": 1}, {"hero": 2},
+                  {"kind": "minion", "team": "red", "x": 250, "y": 100},
+                  {"kind": "minion", "team": "red", "x": 700, "y": 100},
+                  {"kind": "minion", "team": "blue", "x": 430, "y": 100}],
+    },
+    # The first frost holder out of range must not stop the second one.
+    {
+        "name": "frost_second_source_covers",
+        "heroes": [
+            {"tag": "h0", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 100, "y": 100, "loadout": ["everfrost_guard"]},
+            {"tag": "h1", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 500, "y": 100, "loadout": ["everfrost_guard"]},
+            {"tag": "h2", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "red", "x": 480, "y": 100, "loadout": []},
+        ],
+        "units": [{"hero": 0}, {"hero": 1}, {"hero": 2},
+                  {"kind": "minion", "team": "red", "x": 460, "y": 100}],
+    },
+    # Scorched Earth: burn (with the holder's team) + blind on enemies only,
+    # and exactly at the radius limit the unit stays clean.
+    {
+        "name": "solar_scorched_earth",
+        "heroes": [
+            {"tag": "h0", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "blue", "x": 100, "y": 100, "loadout": ["solar_brand"]},
+            {"tag": "h1", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "red", "x": 400, "y": 100, "loadout": []},
+        ],
+        "units": [{"hero": 0}, {"hero": 1},
+                  {"kind": "minion", "team": "red", "x": 300, "y": 100}],
+    },
+    # Cauterize: the 50% anti-heal lands before the light burn, both refreshed.
+    {
+        "name": "searbrand_cauterize",
+        "heroes": [
+            {"tag": "h0", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 100, "y": 100, "loadout": ["searbrand"]},
+            {"tag": "h1", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "red", "x": 350, "y": 100, "loadout": []},
+        ],
+        "units": [{"hero": 0}, {"hero": 1}],
+    },
+    # Steel Aegis: allies stack armor/AS per source, the holder never buffs
+    # itself, enemies lose 2 armor per source, minions get nothing, and
+    # out-of-radius heroes stay at zero.
+    {
+        "name": "steel_aegis_stacks",
+        "heroes": [
+            {"tag": "h0", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 100, "y": 100, "loadout": ["steel_aegis"]},
+            {"tag": "h1", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 200, "y": 100, "loadout": ["steel_aegis"]},
+            {"tag": "h2", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 250, "y": 100, "loadout": []},
+            {"tag": "h3", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 700, "y": 100, "loadout": []},
+            {"tag": "h4", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "red", "x": 300, "y": 100, "loadout": []},
+            {"tag": "h5", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "red", "x": 900, "y": 100, "loadout": []},
+        ],
+        "units": [{"hero": 0}, {"hero": 1}, {"hero": 2}, {"hero": 3}, {"hero": 4},
+                  {"hero": 5},
+                  {"kind": "minion", "team": "red", "x": 180, "y": 100}],
+    },
+    # Every aura field is recomputed from scratch, so stale values are wiped
+    # even when no aura touches the hero.
+    {
+        "name": "aura_reset_stale",
+        "heroes": [
+            {"tag": "h0", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 100, "y": 100, "loadout": [],
+             "stale": {"armor": 7, "attack_speed": 5, "armor_reduction": 3,
+                       "guard_block": 99}},
+            {"tag": "h1", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "red", "x": 400, "y": 100, "loadout": [],
+             "stale": {"armor": 1, "attack_speed": 1, "armor_reduction": 1,
+                       "guard_block": 1}},
+        ],
+        "units": [{"hero": 0}, {"hero": 1},
+                  {"kind": "minion", "team": "red", "x": 300, "y": 100}],
+    },
+    # Dead heroes still get their aura fields reset but never receive a guard
+    # block (and the dead holder's own guard is gone); dead units are inert.
+    {
+        "name": "dead_heroes_and_units",
+        "heroes": [
+            {"tag": "h0", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 100, "y": 100,
+             "loadout": ["everfrost_guard", "scarlet_bulwark"], "guard_timer": 400},
+            {"tag": "h1", "role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "team": "blue", "x": 150, "y": 100, "loadout": [], "alive": False,
+             "stale": {"armor": 4, "attack_speed": 3, "armor_reduction": 2,
+                       "guard_block": 42}},
+            {"tag": "h2", "role": "Mage", "range": 130, "base_hp": 480, "level": 9,
+             "team": "red", "x": 200, "y": 100, "loadout": [], "alive": False},
+        ],
+        "units": [{"hero": 0}, {"hero": 1}, {"hero": 2},
+                  {"kind": "minion", "team": "red", "x": 180, "y": 100},
+                  {"kind": "minion", "team": "red", "x": 190, "y": 100,
+                   "alive": False}],
+    },
+]
+
+
+def _aura_hero(spec, inv_type):
+    """Hero stub holding a real inventory; max_hp mirrors _on_item_changed."""
+    hero = SimpleNamespace(
+        role=spec["role"], range=spec["range"], base_hp=spec["base_hp"],
+        level=spec["level"], max_hp=1000, hp=1000,
+        alive=spec.get("alive", True), facing=1, x=spec["x"], y=spec["y"],
+        team=spec["team"], _tag=spec["tag"])
+    hero.apply_heal_amp = lambda amount, duration: None
+    inv = inv_type(hero)
+    for item_id in spec["loadout"]:
+        assert inv.add(item_id), "aura loadout refused %s" % item_id
+    inv.guard_timer = spec.get("guard_timer", 0)
+    hero.items = inv
+    # Source `_on_item_changed` recomputes max HP after every equip.
+    hero.max_hp = inv.get_max_hp()
+    hero.hp = hero.max_hp
+    stale = spec.get("stale")
+    if stale:
+        inv.aura_armor = stale["armor"]
+        inv.aura_as = stale["attack_speed"]
+        inv.aura_armor_reduction = stale["armor_reduction"]
+        inv.aura_guard_block = stale["guard_block"]
+    return hero
+
+
+def _aura_unit(entry, heroes, index):
+    """`_collect_all_units` stubs. Heroes are mirrored as separate stubs with
+    the same team/position/state so every unit can record what it receives
+    (the aura pass only reads team/x/y/alive from the unit list)."""
+    if "hero" in entry:
+        hero = heroes[entry["hero"]]
+        unit = _EffectStub(hero.x, hero.y, hero.team, alive=hero.alive)
+        unit._tag = hero._tag
+        return unit
+    unit = _EffectStub(entry["x"], entry["y"], entry["team"],
+                       alive=entry.get("alive", True))
+    unit._tag = entry.get("tag", "u%d" % index)
+    return unit
+
+
+def _aura_effect_rows(units):
+    """Flatten the stub-recorded debuffs in dispatch order."""
+    rows = []
+    for index, unit in enumerate(units):
+        for event in getattr(unit, "effects", []):
+            rows.append({
+                "unit": index,
+                "kind": event["kind"],
+                "name": event.get("name"),
+                "amount": float(event.get("amount", 0.0)),
+                "duration": int(event.get("duration", 0)),
+                "source_team": event.get("source_team"),
+            })
+    return rows
+
+
+def auras(env):
+    """Real `hero_items.update_auras`: source debuff sends and aura fields."""
+    env["math"] = __import__("math")
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for case in AURA_CASES:
+            heroes = [_aura_hero(spec, inv_type) for spec in case["heroes"]]
+            units = [_aura_unit(entry, heroes, index)
+                     for index, entry in enumerate(case["units"])]
+            # The real helper reads __main__.game_instance; every case stubs it
+            # with its own unit list and lets the source function stay as-is.
+            env["_collect_all_units"] = lambda all_heroes, _units=units: list(_units)
+            env["update_auras"](heroes)
+            rows.append({
+                "name": case["name"],
+                "heroes": [{
+                    "tag": spec["tag"], "role": spec["role"],
+                    "range": spec["range"], "base_hp": spec["base_hp"],
+                    "level": spec["level"], "team": spec["team"],
+                    "x": spec["x"], "y": spec["y"],
+                    "alive": spec.get("alive", True),
+                    "loadout": list(spec["loadout"]),
+                    "guard_timer": spec.get("guard_timer", 0),
+                    "stale": spec.get("stale"),
+                    "max_hp": hero.max_hp,
+                } for spec, hero in zip(case["heroes"], heroes)],
+                # Resolved unit list: the rebuild rebuilds one UnitState per
+                # row with this team/position/alive state and id = index.
+                "units": [{
+                    "tag": unit._tag, "team": unit.team, "x": unit.x,
+                    "y": unit.y, "alive": unit.alive,
+                } for unit in units],
+                "auras": [{
+                    "armor": inv.aura_armor,
+                    "attack_speed": inv.aura_as,
+                    "armor_reduction": inv.aura_armor_reduction,
+                    "guard_block": inv.aura_guard_block,
+                } for inv in [hero.items for hero in heroes]],
+                "effects": _aura_effect_rows(units),
+            })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -971,6 +1227,7 @@ def source_fixture():
         "timers": timers(env),
         "auto_triggers": auto_triggers(env),
         "notify_damage": notify_damage(env),
+        "auras": auras(env),
     }))
 
 

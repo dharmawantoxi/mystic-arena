@@ -55,3 +55,31 @@ func nudge_position(hid: int, delta: Vector2) -> void:
 	var t: Object = world.get_unit(hid)
 	if t != null:
 		t.position += delta
+
+
+func apply_debuff(
+	target_id: int, kind: String, amount: float, duration: int, source_team: int = -1
+) -> void:
+	# Source TowerDebuffMixin.apply_debuff dispatch (layer 5d). The battle world
+	# already ports each kind with the source stacking rules, so the aura pass
+	# reuses those instead of duplicating the field logic here.
+	match kind:
+		"atk_slow":
+			world.apply_atk_slow(target_id, amount, duration)
+		"anti_heal":
+			world.apply_anti_heal(target_id, amount, duration)
+		"burn":
+			world.apply_burn(target_id, amount, duration, source_team)
+		_:
+			pass
+
+
+func apply_miss_chance(target_id: int, amount: float, duration: int) -> void:
+	# Port of TowerDebuffMixin.apply_miss_chance: strongest blind wins and a
+	# longer refresh extends the timer, like every other item debuff.
+	var t: Object = world.get_unit(target_id)
+	if t == null:
+		return
+	if amount > t.blind_amount or t.blind_timer < duration:
+		t.blind_amount = amount
+		t.blind_timer = duration

@@ -5,7 +5,9 @@ extends RefCounted
 ## _deliver_hit / debuff / movement mutations.
 ##
 ## Layer 5c-2 scope: auto-triggers, notify_damage_taken (reflect), HP regen
-## and tick wiring. Auras (5d) and on-hit procs (5e) extend this bus later.
+## and tick wiring. Layer 5d adds the aura sends (`apply_debuff` for
+## atk_slow/anti_heal/burn and `apply_miss_chance`); on-hit procs (5e) extend
+## this bus next.
 
 
 ## Deal magic damage to target from source_team. Returns the post-mitigation
@@ -58,4 +60,18 @@ func notify(_unit_id: int, _text: String) -> void:
 
 ## Chain-lightning visual between source and targets (no-op in tests).
 func chain_fx(_source_id: int, _target_ids: Array) -> void:
+	pass
+
+
+## Apply one source `apply_debuff(kind, amount, duration, source_team = None)`
+## call. The auras send "atk_slow", "anti_heal" and "burn"; `source_team` -1 is
+## the source `None` (only burn carries a team).
+func apply_debuff(
+	_target_id: int, _kind: String, _amount: float, _duration: int, _source_team: int = -1
+) -> void:
+	pass
+
+
+## Apply blind (physical attackers miss) from the Solar Brand aura.
+func apply_miss_chance(_target_id: int, _amount: float, _duration: int) -> void:
 	pass

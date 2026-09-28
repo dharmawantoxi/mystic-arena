@@ -362,8 +362,6 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      `_on_hit_common`/`on_ranged_attack_hit` (5e) belum port.
    - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
      Scorched Earth ke menara/boss).
-   - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
-     Scorched Earth ke menara/boss).
    - [ ] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
    - [ ] **5f.** Forge UI + drop item ke tanah.
 
@@ -431,6 +429,10 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 CI Godot 4.7.2 run 36420567981 hijau untuk lapisan 5c-2 (commit `e84ca68`):
 **1.178.692 native checks**, static lokal 5694 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` tetap 1000 baris.
+Run perantara 36397880222 (commit `c082a3b`, sebelum perbaikan hp auto-trigger)
+juga menjalankan larik penuh: **1.178.692 native checks, 34 gagal**. Jumlah
+check-nya sama dengan run hijau di atas, tetapi run ini GAGAL - catatan hijau
+tetap 36420567981/36421346946 (`e84ca68`/`5e716690`).
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal

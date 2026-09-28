@@ -1,6 +1,9 @@
+# gdlint:disable=max-file-lines
 extends RefCounted
 ## Native AI item metadata versus the real hero_items.ITEM_CATALOG exec.
-## Metadata only: no stat effects, passives or Forge UI are ported here.
+## Layers 5a-5d: stat getters, inventory bookkeeping, purchase adapter, item
+## stat application, timer state machine, auto-triggers and the aura pass.
+## Forge UI, item drops and on-hit procs are still unported.
 
 const World = preload("res://scripts/match/prototype_battle.gd")
 const HeroItems = preload("res://scripts/match/hero_items.gd")
@@ -8,6 +11,9 @@ const Inventory = preload("res://scripts/match/hero_item_inventory.gd")
 const AIItems = preload("res://scripts/match/ai_items.gd")
 const Draft = preload("res://scripts/match/ai_draft.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
+const ItemAuras = preload("res://scripts/match/item_auras.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
+const UnitState = preload("res://scripts/combat/unit_state.gd")
 const METADATA := "res://data/ai/item_catalog.json"
 const FIXTURE := "res://tests/fixtures/ai_items_source.json"
 # Source counts read from the executed ITEM_CATALOG (oracle asserts them too).
@@ -84,6 +90,8 @@ func run(check: Callable) -> void:
 	_test_auto_triggers(fixture.auto_triggers, check)
 	_test_notify_damage(fixture.notify_damage, check)
 	_test_item_tick_wiring(check)
+	_test_auras(fixture.auras, check)
+	_test_aura_wiring(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -668,6 +676,11 @@ class _TestItemFx:
 	var nudges: Array = []
 	var notes: Array = []
 	var chains: Array = []
+	# Layer 5d: aura sends plus one ordered log, so the native test can compare
+	# the dispatch order against the source fixture row by row.
+	var debuff_calls: Array = []
+	var miss_calls: Array = []
+	var aura_calls: Array = []
 
 	func deal_damage(target_id: int, _src_team: int, amount: int, _school: String = "magic") -> int:
 		damage_calls.append({"tid": target_id, "amt": amount})
@@ -697,6 +710,25 @@ class _TestItemFx:
 	func chain_fx(_src: int, tgts: Array) -> void:
 		chains.append(tgts.duplicate())
 
+	func apply_debuff(
+		target_id: int, kind: String, amount: float, duration: int, source_team: int = -1
+	) -> void:
+		debuff_calls.append({"tid": target_id, "kind": kind, "amt": amount, "dur": duration})
+		# Same row shape as the source fixture: the method name is "debuff"
+		# and the debuff kind travels in the name slot.
+		aura_calls.append([target_id, "debuff", kind, amount, duration, _team_name(source_team)])
+
+	func apply_miss_chance(target_id: int, amount: float, duration: int) -> void:
+		miss_calls.append({"tid": target_id, "amt": amount, "dur": duration})
+		aura_calls.append([target_id, "miss", "", amount, duration, ""])
+
+	func _team_name(team: int) -> String:
+		if team == World.BLUE:
+			return "blue"
+		if team == World.RED:
+			return "red"
+		return ""
+
 	func clear() -> void:
 		damage_calls.clear()
 		stun_calls.clear()
@@ -707,6 +739,9 @@ class _TestItemFx:
 		nudges.clear()
 		notes.clear()
 		chains.clear()
+		debuff_calls.clear()
+		miss_calls.clear()
+		aura_calls.clear()
 
 
 func _fx_enemies(deltas: Array) -> Array:
@@ -900,3 +935,189 @@ func _test_item_tick_wiring(check: Callable) -> void:
 		hero.hp > hp0, "Leviathan Heart out-of-combat regen must fire when last_damage_timer is 0"
 	)
 	check.call(true, "AI item tick wiring: battle loop invokes inventory.tick_timers")
+
+
+# ── Layer 5d: the update_auras pass ──────────────────────────
+func _aura_team(value: Variant) -> int:
+	# Fixture teams keep the source strings; the rebuild uses BLUE/RED ints.
+	return World.BLUE if String(value) == "blue" else World.RED
+
+
+func _aura_call_equal(got: Array, want: Array) -> bool:
+	if got.size() != 6 or want.size() != 6:
+		return false
+	return (
+		int(got[0]) == int(want[0])
+		and String(got[1]) == String(want[1])
+		and String(got[2]) == String(want[2])
+		and absf(float(got[3]) - float(want[3])) < 0.0001
+		and int(got[4]) == int(want[4])
+		and String(got[5]) == String(want[5])
+	)
+
+
+func _test_auras(rows: Array, check: Callable) -> void:
+	for row in rows:
+		var label := String(row.name)
+		var heroes: Array[HeroState] = []
+		for spec in row.heroes:
+			var hero := HeroState.new()
+			hero.team = _aura_team(spec.team)
+			hero.alive = bool(spec.alive)
+			hero.position = Vector2(float(spec.x), float(spec.y))
+			var inv := hero.items
+			inv.set_hero_gate(String(spec.role), float(spec.range))
+			var melee_flag := 1 if float(spec.range) <= 80.0 else 0
+			inv.set_hero_scaling(int(spec.base_hp), int(spec.level), melee_flag)
+			for item_id in spec.loadout:
+				check.call(inv.add(String(item_id)), "aura loadout refused: " + label)
+			# Source add() runs _on_item_changed, so max HP follows the items.
+			hero.max_hp = float(inv.get_max_hp())
+			hero.hp = hero.max_hp
+			inv.guard_timer = int(spec.guard_timer)
+			if spec.stale != null:
+				var stale: Dictionary = spec.stale
+				inv.aura_armor = int(stale.armor)
+				inv.aura_as = int(stale.attack_speed)
+				inv.aura_armor_reduction = int(stale.armor_reduction)
+				inv.aura_guard_block = int(stale.guard_block)
+			check.call(
+				int(hero.max_hp) == int(spec.max_hp),
+				"aura hero max_hp must match the source recalc: " + label
+			)
+			heroes.append(hero)
+		var units: Array[UnitState] = []
+		for index in range(row.units.size()):
+			var u_spec: Dictionary = row.units[index]
+			var unit := UnitState.new()
+			unit.id = index
+			unit.team = _aura_team(u_spec.team)
+			unit.alive = bool(u_spec.alive)
+			unit.position = Vector2(float(u_spec.x), float(u_spec.y))
+			units.append(unit)
+		var fx := _TestItemFx.new()
+		ItemAuras.new().update_auras(heroes, units, fx)
+		for index in range(heroes.size()):
+			var want: Dictionary = row.auras[index]
+			var inv: Inventory = heroes[index].items
+			check.call(
+				inv.aura_armor == int(want.armor),
+				(
+					"aura_armor must match source: %s hero %d (got %d want %d)"
+					% [label, index, inv.aura_armor, int(want.armor)]
+				)
+			)
+			check.call(
+				inv.aura_as == int(want.attack_speed),
+				(
+					"aura_as must match source: %s hero %d (got %d want %d)"
+					% [label, index, inv.aura_as, int(want.attack_speed)]
+				)
+			)
+			check.call(
+				inv.aura_armor_reduction == int(want.armor_reduction),
+				(
+					"aura_armor_reduction must match source: %s hero %d (got %d want %d)"
+					% [label, index, inv.aura_armor_reduction, int(want.armor_reduction)]
+				)
+			)
+			check.call(
+				inv.aura_guard_block == int(want.guard_block),
+				(
+					"aura_guard_block must match source: %s hero %d (got %d want %d)"
+					% [label, index, inv.aura_guard_block, int(want.guard_block)]
+				)
+			)
+		var expected: Array = []
+		for effect in row.effects:
+			(
+				expected
+				. append(
+					[
+						int(effect.unit),
+						String(effect.kind),
+						"" if effect.name == null else String(effect.name),
+						float(effect.amount),
+						int(effect.duration),
+						"" if effect.source_team == null else String(effect.source_team),
+					]
+				)
+			)
+		check.call(
+			fx.aura_calls.size() == expected.size(),
+			(
+				"aura debuff count must match source: %s (got %d want %d)"
+				% [label, fx.aura_calls.size(), expected.size()]
+			)
+		)
+		for index in range(mini(fx.aura_calls.size(), expected.size())):
+			var got_row: Array = fx.aura_calls[index] as Array
+			var want_row: Array = expected[index] as Array
+			check.call(
+				_aura_call_equal(got_row, want_row),
+				(
+					"aura debuff %d must match source: %s (got %s want %s)"
+					% [index, label, str(got_row), str(want_row)]
+				)
+			)
+		check.call(true, "aura case completed: " + label)
+
+
+func _test_aura_wiring(check: Callable) -> void:
+	# The aura pass must run once per match tick over the real unit list:
+	# allies get Steel Aegis and Bulwark Guard, enemies get the aura debuffs.
+	var world := _world()
+	var holder := world.spawn_hero(World.THORNE, world.BLUE, Vector2(500, 200))
+	var ally := world.spawn_hero(World.SYLARA, world.BLUE, Vector2(560, 200))
+	var enemy := world.spawn_hero(World.VEX, world.RED, Vector2(620, 200))
+	var minion := world.spawn_unit(World.MINIONS["goblin"], world.RED, 0)
+	assert(holder != null and ally != null and enemy != null and minion != null)
+	minion.position = Vector2(520, 240)
+	# The goblin has 45 hp and every hero auto-casts/auto-attacks the nearest
+	# enemy before the aura pass runs, so it would die (regen clamps hp back to
+	# the definition max) and the aura alive filter would skip it. Stun every
+	# hero for the two ticks; stun never reaches update_auras.
+	for unit in world.units:
+		if unit.is_hero:
+			(unit as HeroState).stun_timer = 9999
+	for item_id in ["steel_aegis", "everfrost_guard", "solar_brand", "scarlet_bulwark"]:
+		assert(holder.items.add(String(item_id)), "aura wiring loadout refused")
+	holder.apply_item_change()
+	holder.items.guard_timer = 420
+	world.step_tick()
+	check.call(
+		holder.items.aura_armor == 0 and holder.items.aura_as == 0,
+		"Steel Aegis must never buff its own holder"
+	)
+	check.call(
+		ally.items.aura_armor == 2 and ally.items.aura_as == 10,
+		"Steel Aegis must buff nearby allies"
+	)
+	check.call(
+		enemy.items.aura_armor_reduction == 2 and enemy.items.aura_armor == 0,
+		"Steel Aegis must shred nearby enemy armor only"
+	)
+	var block := 35 + int(holder.max_hp * 0.02)
+	check.call(
+		holder.items.aura_guard_block == block and ally.items.aura_guard_block == block,
+		"Bulwark Guard must block the holder and nearby allies"
+	)
+	check.call(enemy.items.aura_guard_block == 0, "Bulwark Guard must not block enemies")
+	check.call(
+		is_equal_approx(minion.atk_slow_amount, 0.3), "Everfrost aura must slow an enemy minion"
+	)
+	check.call(
+		is_equal_approx(minion.anti_heal_amount, 0.4), "Everfrost aura must cut enemy healing"
+	)
+	check.call(is_equal_approx(minion.burn_dps, 28.0), "Solar Brand aura must burn an enemy minion")
+	check.call(
+		is_equal_approx(minion.blind_amount, 0.18), "Solar Brand aura must blind an enemy minion"
+	)
+	check.call(
+		is_equal_approx(enemy.atk_slow_amount, 0.3) and is_equal_approx(enemy.blind_amount, 0.18),
+		"Auras must hit enemy heroes as well"
+	)
+	world.step_tick()
+	check.call(minion.atk_slow_timer == 30, "Auras must refresh their debuffs every tick")
+	check.call(minion.alive, "wiring minion must survive the two ticks")
+	check.call(true, "aura wiring: the match tick runs update_auras")
