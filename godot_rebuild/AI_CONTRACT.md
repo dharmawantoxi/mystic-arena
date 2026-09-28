@@ -416,6 +416,17 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      di atas adapter nyata dan ledger yang sama; `_step_defender` mundur selama
      `ai_enabled` dan setiap undian memakai RNG ter-seed milik controller.
      Aksi nexus gagal begitu nexus merah hancur.
+   - [x] **6d.** AI nyata mengambil alih pertandingan: `set_ai_enabled()` menjadi
+     satu sakelar yang memarkir defender sementara (dan menyalakan kontrol hero)
+     sementara AI memiliki sisi merah; `reset_ai(seed)` membangun ulang keadaan
+     AI seperti `Game.reset()` membuat `AIPlayer` baru (jam berpikir, counter
+     adapter, counter skill hero, draft persisten) dan menyemai ulang aliran
+     controller/build/draft dari seed pertandingan `AI_MATCH_SEED`. Sesi
+     prototipe menyalakannya setelah `setup_arena()`, jadi setiap pertandingan
+     bisa direproduksi. Jalur pause tetap tertutup karena tick sesi berhenti
+     (PROCESS_MODE_PAUSABLE): uji scene memastikan jam, jadwal dan dompet AI
+     tidak bergerak saat pause, dan setiap layar hasil restart memakai AI baru
+     dengan seed yang sama.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -487,6 +498,10 @@ CI Godot 4.7.2 run 36477994234 hijau untuk lapisan 6c (commit `efd3129`):
 **1.179.226 native checks**, static lokal 5765 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tetap tepat 1000 baris
 dan fixture tidak berubah.
+CI Godot 4.7.2 run 36482247766 hijau untuk lapisan 6d (commit `6d9a49f`):
+**1.179.241 native checks**, static lokal 5768 PASS; `gdlint`/`gdformat`/`gdparse`
+bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tetap tepat 1000 baris
+dan fixture tidak berubah (lapisan ini tidak menyentuh oracle).
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -500,10 +515,11 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: mengganti defender sementara di scene dan menutup jalur
-pause/reset + sebaran RNG (flag `ai_enabled` masih default mati sampai itu
-selesai). Undian 6c memakai `ai_controller.draw()`; adapter build/draft tetap
-memakai RNG ter-seed masing-masing. Catatan 6a:
+Berikutnya: membuang sisa kode defender sementara (`_step_defender`,
+`defender_enabled`, `_defender_built`) beserta uji domainnya, lalu menutup
+skenario AI yang masih menggantung (retreat/heal hero merah dan pencarian
+target di luar lane). Undian 6c/6d memakai `ai_controller.draw()`; adapter
+build/draft memakai RNG ter-seed dari seed pertandingan yang sama. Catatan 6a:
 `towers` diteruskan eksplisit karena daftar struktur native juga memuat nexus,
 sedangkan sumber hanya menyusuri `all_towers`. Catatan alur sesi:
 repo pernah ter-clone ulang sehingga riwayat lokal tertinggal dari remote —
