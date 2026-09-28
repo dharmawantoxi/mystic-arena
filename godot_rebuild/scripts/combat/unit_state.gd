@@ -28,3 +28,6 @@ var skill_down_amount := 0.0
 var skill_down_timer := 0
 var anti_heal_amount := 0.0
 var anti_heal_timer := 0
+# Abyss Breaker heal amp (source TowerDebuffMixin heal_amp_* fields).
+var heal_amp_amount := 0.0
+var heal_amp_timer := 0

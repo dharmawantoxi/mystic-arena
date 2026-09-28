@@ -103,6 +103,95 @@ if (ROOT / "tests/fixtures/ai_priority_source.json").is_file():
 ai_upgrades = (ROOT / "scripts/match/ai_upgrades.gd").read_text(encoding="utf-8")
 check(ai_upgrades.count("draft.reserve()") == 3, "All three AI upgrade adapters must read live reserve")
 
+# CI already runs validate_project.py, so the read-only item oracle runs here.
+from ai_item_source_oracle import source_fixture as ai_item_source_fixture
+from ai_item_source_oracle import source_namespace as ai_item_source_namespace
+check("AIItemChecks.new().run(_check)" in ai_tests, "AI item suite must run")
+check((ROOT / "tests/fixtures/ai_items_source.json").is_file(), "AI items require source fixture")
+ai_items_fixture = ai_item_source_fixture()
+if (ROOT / "tests/fixtures/ai_items_source.json").is_file():
+    check(ai_items_fixture == json.loads(
+        (ROOT / "tests/fixtures/ai_items_source.json").read_text(encoding="utf-8")),
+        "AI item catalog source drift")
+item_catalog = json.loads((ROOT / "data/ai/item_catalog.json").read_text(encoding="utf-8"))
+check(item_catalog == ai_items_fixture["catalog"],
+      "data/ai/item_catalog.json drifted from source ITEM_CATALOG")
+check(len(item_catalog["items"]) == 33, "Update the AI item suite when ITEM_CATALOG changes")
+check(item_catalog["flat_cost"] == 4500 and item_catalog["max_slots"] == 6,
+      "AI item constants must follow ITEM_FLAT_COST/MAX_ITEM_SLOTS")
+check(set(item_catalog["categories"])
+      == {entry["category"] for entry in item_catalog["items"].values()},
+      "AI item catalog categories must be keyed by the category ids in use")
+hero_items = (ROOT / "scripts/match/hero_items.gd").read_text(encoding="utf-8")
+
+
+def gd_string_array(name):
+    body = re.search(r"const %s: Array\[String\] = \[(.*?)\]" % name, hero_items, re.S)
+    return [part.strip().strip('"') for part in body.group(1).split(",") if part.strip()]
+
+
+gd_pools = {name: gd_string_array(name) for name in
+            ("TANK_POOL", "MARKSMAN_POOL", "MAGIC_POOL", "FALLBACK_POOL")}
+pool_ids = {sid for ids in gd_pools.values() for sid in ids}
+check(bool(pool_ids) and pool_ids <= set(item_catalog["items"]),
+      "AI item role pools must only reference catalog items")
+check(gd_string_array("MAGIC_ROLE_KEYWORDS")
+      == list(ai_item_source_namespace()["MAGIC_ROLE_KEYWORDS"]),
+      "AI magic role keywords must equal source MAGIC_ROLE_KEYWORDS")
+source_pools = {(row["role"], row["range"]): row["order"] for row in ai_items_fixture["pools"]}
+# Melee wraps the pool with cleave_axe + holy_rapier, ranged only appends the
+# rapier, so the fixture sequence length pins each pool transcription.
+check(len(source_pools[("Bruiser", 70)]) == len(gd_pools["TANK_POOL"]) + 2,
+      "Tank pool must match the source bruiser purchase order")
+check(len(source_pools[("Marksman", 130)]) == len(gd_pools["MARKSMAN_POOL"]) + 1,
+      "Marksman pool must match the source marksman purchase order")
+check(len(source_pools[("Mage", 130)]) == len(gd_pools["MAGIC_POOL"]) + 1,
+      "Magic pool must match the source mage purchase order")
+check(len(source_pools[("Ranger", 130)]) == len(gd_pools["FALLBACK_POOL"]) + 1,
+      "Fallback pool must match the source fallback purchase order")
+ai_items = (ROOT / "scripts/match/ai_items.gd").read_text(encoding="utf-8")
+check("draft.reserve()" in ai_items and "_buy_item_for" in ai_items,
+      "AI item adapter must use the live draft reserve and the real transaction")
+check("total_items" not in ai_items,
+      "Source _try_buy_item keeps no counter; the adapter must not add one")
+check("hero.alive" in ai_items and "used_slots()" in ai_items,
+      "AI item candidates must be alive heroes with a free slot")
+check("_buy_item_for" in (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8"),
+      "AI item purchase must debit through the match ledger")
+check(len(ai_items_fixture["purchases"]) == 9,
+      "Update the AI item suite when the purchase cases change")
+check(len(ai_items_fixture["stats"]) == 25,
+      "Update the AI item suite when the stat loadouts change")
+check(all("stats" in entry for entry in item_catalog["items"].values()),
+      "AI item catalog must carry the numeric stats the getters sum")
+inventory_gd = (ROOT / "scripts/match/hero_item_inventory.gd").read_text(encoding="utf-8")
+missing_getters = [name for name in ai_items_fixture["stats"][0]["values"]
+                   if name not in ("empower_strike", "empower_charge")
+                   and ("func %s(" % name) not in inventory_gd]
+check(not missing_getters, f"AI item stat getters missing in the rebuild: {missing_getters}")
+check("func _on_item_changed(" not in inventory_gd,
+      "HP recalc lives on HeroState, never inside the inventory")
+hero_state_gd = (ROOT / "scripts/combat/hero_state.gd").read_text(encoding="utf-8")
+unit_state_gd = (ROOT / "scripts/combat/unit_state.gd").read_text(encoding="utf-8")
+check("func recalc_item_stats(" in hero_state_gd
+      and "func apply_item_change(" in hero_state_gd,
+      "HeroState must port Hero._recalc_item_stats and the equip recalc")
+check("func apply_heal_amp(" in hero_state_gd and "heal_amp_timer" in unit_state_gd,
+      "Heal amp must live on the shared debuff fields like the source")
+check("apply_item_change()" in (ROOT / "scripts/match/prototype_battle.gd").read_text(
+      encoding="utf-8"), "The item transaction must apply the source HP recalc")
+check(len(ai_items_fixture["stat_application"]) == 5,
+      "Update the AI item suite when the stat application cases change")
+check("hero.items.clear_on_death()" in (ROOT / "scripts/match/prototype_battle.gd")
+      .read_text(encoding="utf-8"),
+      "The match death hook must destroy Holy Rapier like the source")
+check(len(ai_items_fixture["deaths"]) == 3,
+      "Update the AI item suite when the death cases change")
+check("func tick_timers(" in inventory_gd,
+      "The inventory must port the source update() timer state machine")
+check(all(('var %s ' % attr) in inventory_gd for attr in ai_items_fixture["timer_attrs"]),
+      "Every source timer attribute needs a rebuild field")
+
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.
 from ai_build_source_oracle import source_fixture as ai_build_source_fixture

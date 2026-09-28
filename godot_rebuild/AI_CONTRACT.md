@@ -233,32 +233,118 @@ serta `Tower.kills` yang tetap nol.
 CI Godot 4.7.2 branch `arena/01a0e398-mystic-arena` (PR draft #293) hijau:
 **1.174.376 native checks**, static lokal 5580 PASS.
 
-## Rencana port item AI (belum dikerjakan, hasil survei sumber)
+## Rencana port item AI (hasil survei sumber, dikerjakan per lapisan)
 
 Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 (`_entity.py` ~6474). Urutan kerja yang disarankan, satu commit per lapisan:
 
-1. **Metadata katalog** → `data/ai/item_catalog.json` dari `ITEM_CATALOG`
+1. [x] **Metadata katalog** → `data/ai/item_catalog.json` dari `ITEM_CATALOG`
    (33 item, `ITEM_FLAT_COST = 4500`, `MAX_ITEM_SLOTS = 6`, flag `melee_only`/
    `magic_only`, kategori). Oracle wajib mengeksekusi konstanta sumber (katalog
    memakai nama `CATEGORY_*`, `ast.literal_eval` gagal).
-2. **Suggestion** `suggest_item_for_hero` + `is_magic_hero`: pool per role
+   `ai_item_source_oracle.py` meng-exec hanya assignment konstanta yang
+   direferensikan `ITEM_CATALOG` (tanpa import pygame); hasilnya diverifikasi
+   terhadap `data/ai/item_catalog.json` oleh `validate_project.py` dan
+   `ai_item_checks.gd`. Metadata mencatat juga `drops_on_death`; harga per item
+   dibaca dari katalog (Astral Codex 6000, bukan flat 4500).
+2. [x] **Suggestion** `suggest_item_for_hero` + `is_magic_hero`: pool per role
    (tank/bruiser/fighter, marksman/assassin, mage/trickster atau magic,
    fallback), melee `range <= 80` menyisipkan `cleave_axe` di depan dan
    `holy_rapier` di belakang, ranged hanya `holy_rapier` di belakang; item
    owned dilewati; filter `melee_only`/`magic_only`. Catatan: `is_magic_hero`
    mengecualikan "anti-mage" dan memakai 18 kata kunci role.
-3. **Inventory slot** `HeroItemInventory.add/remove/count/has/used_slots`
+   `scripts/match/hero_items.gd` memuat katalog + keempat pool + gate. Oracle
+   merekam 29 role untuk `is_magic_hero`, 26 kasus saran dan 22 urutan beli
+   penuh (drain sampai `None`); `ai_item_checks.gd` mengulang drain yang sama.
+   `range <= 0` memakai fallback sumber 100 (jadi ranged), `Anti-Mage` memakai
+   pool mage tetapi seluruh item `magic_only` terfilter.
+3. [x] **Inventory slot** `HeroItemInventory.add/remove/count/has/used_slots`
    (6 slot, gate melee/magic). Perhatian: `add` memanggil `_on_item_changed`
    yang menghitung ulang `max_hp` (`get_max_hp`) dan `apply_heal_amp`; kalau
    stat belum diport, ini **wajib** ditulis sebagai batasan eksplisit, bukan
    diklaim parity. `clear_on_death` menghapus `holy_rapier` permanen.
-4. **Adapter AI** `ai_items.gd::try_buy`: kandidat = hero red **hidup** dengan
+   `scripts/match/hero_item_inventory.gd` + `HeroState.items` (gate role/range
+   di-refresh di `apply_level_stats`, bukan referensi balik ke hero supaya tidak
+   ada siklus RefCounted). **BATASAN EKSPLISIT: tidak ada parity stat.**
+   `_on_item_changed` (max HP = `base_hp * hp_mult` + hp/hp_pct item, heal amp
+   Abyss Breaker, reset timer pasif/aktif di `clear_on_death`) TIDAK diport:
+   beli/jatuhkan item hanya mengisi slot, `max_hp`/`hp` hero tidak berubah.
+   Oracle merekam `max_hp`/`hp`/`heal_calls` sumber per operasi (7 kasus, term.
+   duplikat item, slot penuh, `remove` -1/6, range 0 lolos gate melee) supaya
+   selisihnya terlihat; `ai_item_checks.gd` menegaskan HP hero tetap dan bahwa
+   sumber menaikkan max HP.
+4. [x] **Adapter AI** `ai_items.gd::try_buy`: kandidat = hero red **hidup** dengan
    slot kosong, urut `(kills, level)` descending (Python `sort` stabil,
    tuple key), `gold >= cost + reserve`, debit lewat ledger match, tanpa
    counter khusus di sumber.
+   `candidates()` memecah tie dengan indeks roster (sort_custom Godot tidak
+   stabil); `try_buy_priority()` melanjutkan kandidat berikutnya saat gold
+   kurang, persis seperti sumber. Debit lewat
+   `prototype_battle._buy_item_for` (eligibilitas → equip → `economy.spend` +
+   event `hero_item`, atomik, harga dari metadata katalog). Oracle menjalankan
+   `AIPlayer._try_buy_item` nyata (stub modul `hero_items` + inventori sumber)
+   untuk 9 kasus: tie kills/level, hero mati, slot penuh, skip owned, item 6000
+   yang tak terbeli lalu kandidat lebih murah, dan reserve 400 yang memblokir
+   belanja 4500. Adapter **tidak** menambah counter apa pun.
 5. Stat effects, pasif/aura/aktif, Forge UI dan `update_auras` adalah fase
    terpisah yang jauh lebih besar; jangan digabung ke commit adapter.
+   - [x] **5a. Agregasi stat murni** → getter port di
+     `hero_item_inventory.gd` (`sum_stat`, bonus damage/hp/hp_pct/armor/
+     hp_regen, `get_max_hp`, attack speed, lifesteal, crit, cleave, CDR,
+     spell vamp, skill amp, evasion, move speed, heal amp, slow resist,
+     range bonus, true strike, reflect, gale AS, empower strike, block,
+     armor shred, on-attack chain, bash, veil/guard/rend). Katalog kini
+     membawa `stats` numerik + blok `passive`/`block`/`on_attack`/`bash`/
+     `active` (kunci presentasi tetap di luar). Oracle merekam 25 loadout ×
+     28 getter + empower/charge; `validate_project.py` menuntut setiap nama
+     getter sumber ada di rebuild.
+     **Batasan 5a:** tidak ada yang mengonsumsi getter ini di combat;
+     `_on_item_changed` belum diport sehingga beli item tetap tidak mengubah
+     `max_hp`/`hp`; seluruh timer (`blood_frenzy`/`ghost`/`thorn`/`gale`/
+     `veil`/`guard`/`rend`/`aura_*`) ada tapi inert, jadi cabang yang
+     bergantung timer selalu tertutup; `update()`,
+     `notify_damage_taken()`, `on_basic_attack_hit()`, `_on_hit_common()`,
+     `on_ranged_attack_hit()` dan `update_auras()` belum diport.
+   - [x] **5b.** Penerapan stat HP saat equip/level: `HeroState.recalc_item_stats`
+     (port `Hero._recalc_item_stats`), `apply_item_change` (port
+     `_on_item_changed`: recalc + `apply_heal_amp(amp, 999999)`),
+     `apply_heal_amp` + field `heal_amp_*` di `unit_state.gd` (sumber
+     `_core.py:900`), heal amp dikonsumsi `heal_hp` setelah anti-heal (urutan
+     setter sumber), dan `apply_level_stats` diakhiri recalc seperti sumber.
+     `_buy_item_for` memanggil `apply_item_change()` setelah equip sukses.
+     Oracle: 5 urutan equip/drop/level dengan `_recalc_item_stats`/
+     `_apply_level_stats`/`upgrade`/`apply_heal_amp` sumber nyata.
+     **Batasan 5b:** hanya HP/heal amp yang diterapkan. Damage/armor/crit/AS/
+     evasion/lifesteal dst. belum dikonsumsi jalur serangan karena
+     `minion_battle.gd` berada di batas 1000 baris (perlu bedah tanpa tambah
+     baris); `heal_amp_timer` belum dikurangi per tick; `clear_on_death` sudah dipanggil dari hook
+     kematian match (lihat 5b+).
+   - [x] **5b+.** Kematian hero: `prototype_battle._on_hero_death` memanggil
+     `items.clear_on_death()` seperti cabang mati `Hero.take_damage`
+     (`_entity.py:4742`). Sumber TIDAK menghitung ulang max HP di cabang itu
+     dan Holy Rapier tidak punya stat HP, jadi rebuild juga tidak; oracle
+     mengunci 3 kasus (slot sesudah mati, flag `dropped`, max HP sebelum =
+     sesudah) dan native membunuh hero nyata lewat hook match (atribusi kill
+     tetap 1, item lain tetap di slot).
+   - [x] **5c-1.** Mesin waktu timer: `hero_item_inventory.tick_timers(dt)`
+     memindah bagian timer murni dari `HeroItemInventory.update` (27 atribut
+     yang di-decrement sumber, `blood_frenzy_timer`/`blood_frenzy_cd`/
+     `last_damage_timer`, reset `rend_target` saat `rend_timer <= 0`, dan
+     pengisian `empower_charge` Runic Gavel). Oracle mengeksekusi `update`
+     sumber nyata (stub `_tick_miasma`/`_fx_notify`, `enemies=None`) untuk 4
+     kasus dan merekam seluruh timer per tick; `validate_project.py`
+     menuntut setiap atribut timer sumber punya field di rebuild.
+     **Batasan 5c-1:** tidak ada yang memanggil `tick_timers` per tick match
+     (loop tick ada di `minion_battle.gd`, batas 1000 baris); setengah efek
+     dari `update` (auto-trigger Blood Frenzy/Bulwark/Veil/Chains, Static
+     Charge, Arctic Blast, Miasma, aura) dan `notify_damage_taken` belum
+     diport - itu 5c-2/5d/5e.
+   - [ ] **5c-2.** Auto-trigger aktif + `notify_damage_taken` (Thunder Coil
+     proc, Thornmail reflect) + pemanggilan `tick_timers` dari loop match.
+   - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
+     Scorched Earth ke menara/boss).
+   - [ ] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
+   - [ ] **5f.** Forge UI + drop item ke tanah.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -280,7 +366,10 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-  **Belum dimulai** (baru survei sumber, lihat "Rencana port item AI").
+  Lapisan 1-4 + 5a selesai (metadata katalog 33 item termasuk `stats` numerik,
+  `suggest_item_for_hero`/`is_magic_hero`, slot `HeroItemInventory`, adapter
+  `ai_items.gd::try_buy` + transaksi ledger, agregasi stat murni); sisa 5b-5f
+  (penerapan stat, timer pasif/aktif, aura, proc on-hit, Forge UI).
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.
@@ -297,18 +386,49 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
 perangkat fisik dari tes policy ini.
 
-## Status sesi `arena/01a0e398-mystic-arena` (PR draft #293)
+## Status sesi `arena/01a0e3e4-mystic-arena` (PR draft #294)
 
-Selesai: sinkronisasi dokumen 222/222 + merge PR #292, atribusi kills sumber,
-urutan kandidat kills descending stabil untuk upgrade tower, upgrade hero dan
-regen shield, oracle `ai_priority_source_oracle.py` + `ai_priority_checks.gd`.
-CI hijau 1.174.376 checks, static lokal 5580 PASS. Berikutnya: port item AI
-sesuai lima langkah di atas, lalu kontrol hero per tick, baru integrasi scene.
+Selesai: port item AI lapisan 1-4, satu commit per lapisan, basis main f1d34ed.
 
-> Pesan siap-salin: Lanjutkan di branch arena/01a0e398-mystic-arena (PR draft
-> #293, basis main 8119e31). Baca AI_CONTRACT.md bagian "Rencana port item AI"
-> dan kerjakan langkah 1–4 (metadata katalog, suggest_item_for_hero,
-> HeroItemInventory slot, adapter ai_items.gd) dengan oracle + tes native,
-> satu commit per lapisan. Sumber read-only: hero_items.py dan
-> _entity.py::AIPlayer._try_buy_item (~6474). Hanya ubah godot_rebuild/;
-> minion_battle.gd tetap 1000 baris; jangan merge tanpa perintah pengguna.
+1. `data/ai/item_catalog.json` (33 item, flat 4500, 6 slot, kategori, flag
+   `melee_only`/`magic_only`/`drops_on_death`) + `ai_item_source_oracle.py`
+   yang meng-exec konstanta sumber (bukan `ast.literal_eval`).
+2. `scripts/match/hero_items.gd`: `is_magic_hero` (18 kata kunci, anti-mage
+   dikecualikan) + `suggest_item_for_hero` (4 pool role, sisipan cleave/rapier,
+   skip owned, gate melee/magic).
+3. `scripts/match/hero_item_inventory.gd` + `HeroState.items`: slot,
+   `add/remove/count/has/used_slots/owned`, `clear_on_death` menghapus rapier.
+   **Batasan: tanpa stat effects** (lihat langkah 3 di atas).
+4. `scripts/match/ai_items.gd` + `prototype_battle._buy_item_for`: kandidat
+   hidup ber-slot kosong, `(kills, level)` descending stabil, reserve draft
+   hidup, debit ledger nyata, tanpa counter baru.
+
+Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
+22 urutan pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata,
+25 loadout stat). Native: `ai_item_checks.gd` terdaftar di `run_all.gd`.
+CI Godot 4.7.2 run 36372292468 hijau untuk lapisan 1-4 + 5a + 5b + 5b+ + 5c-1:
+**1.176.651 native checks**; static lokal 5662 PASS,
+`gdlint`/`gdformat`/`gdparse` bersih, `minion_battle.gd` tetap 1000 baris.
+
+Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
+`CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
+di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
+nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
+himpunan kategori yang benar-benar dipakai.
+
+Berikutnya: **5b** - terapkan stat saat equip/level (`_on_item_changed`:
+`get_max_hp` + heal amp `apply_heal_amp`), masukkan bonus HP item ke
+`HeroState.apply_level_stats`, lalu konsumsi getter di jalur serangan/proyektil
+yang sudah ada. Setelah itu 5c timer pasif/aktif, 5d aura + `update_auras`,
+5e proc on-hit, 5f Forge UI. Kontrol hero per tick dan integrasi scene tetap
+menunggu setelah fase item.
+
+> Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft
+> #294, basis main f1d34ed). Baca AI_CONTRACT.md bagian "Rencana port item AI"
+> langkah 5b: port `_on_item_changed` (max HP = `get_max_hp`, heal amp) dan
+> cabang item di `Hero._apply_level_stats`, lalu konsumsi getter stat 5a di
+> jalur serangan/proyektil yang sudah ada - satu commit per potong, oracle +
+> tes native tiap lapisan. Sumber read-only: hero_items.py dan _entity.py.
+> Hanya ubah godot_rebuild/; minion_battle.gd tetap 1000 baris; timer
+> pasif/aktif, aura, proc on-hit dan Forge UI adalah lapisan 5c-5f, jangan
+> digabung; jangan merge tanpa perintah pengguna.

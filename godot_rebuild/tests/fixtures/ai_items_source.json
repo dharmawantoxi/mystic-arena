@@ -1,0 +1,5942 @@
+{
+  "catalog": {
+    "max_slots": 6,
+    "flat_cost": 4500,
+    "categories": {
+      "agility": "CATEGORY_AGILITY",
+      "arcane": "CATEGORY_ARCANE",
+      "attack_speed": "CATEGORY_AS",
+      "as_armor": "CATEGORY_AS_ARMOR",
+      "burst": "CATEGORY_BURST",
+      "caster": "CATEGORY_CASTER",
+      "control": "CATEGORY_CONTROL",
+      "crit": "CATEGORY_CRIT",
+      "damage": "CATEGORY_DAMAGE",
+      "frost": "CATEGORY_FROST",
+      "guard": "CATEGORY_GUARD",
+      "ice": "CATEGORY_ICE",
+      "inferno": "CATEGORY_INFERNO",
+      "lifesteal": "CATEGORY_LIFESTEAL",
+      "mortal": "CATEGORY_MORTAL",
+      "mystic": "CATEGORY_MYSTIC",
+      "pierce": "CATEGORY_PIERCE",
+      "poison": "CATEGORY_POISON",
+      "reach": "CATEGORY_REACH",
+      "shred": "CATEGORY_SHRED",
+      "splash": "CATEGORY_SPLASH",
+      "static": "CATEGORY_STATIC",
+      "tank": "CATEGORY_TANK",
+      "thorn": "CATEGORY_THORN",
+      "utility": "CATEGORY_UTILITY"
+    },
+    "items": {
+      "dead_edge": {
+        "name": "Dead Edge",
+        "category": "crit",
+        "cost": 4500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 52,
+          "crit_chance": 0.25,
+          "crit_mult": 2.0
+        }
+      },
+      "holy_rapier": {
+        "name": "Holy Rapier",
+        "category": "damage",
+        "cost": 4500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": true,
+        "stats": {
+          "damage": 120
+        }
+      },
+      "demon_maw": {
+        "name": "Demon Maw",
+        "category": "lifesteal",
+        "cost": 4500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 20,
+          "armor": 4,
+          "lifesteal": 0.2
+        },
+        "active": {
+          "name": "Blood Frenzy",
+          "hp_threshold": 0.35,
+          "lifesteal_bonus": 1.2,
+          "duration": 300,
+          "cooldown": 1500
+        }
+      },
+      "leviathan_heart": {
+        "name": "Leviathan Heart",
+        "category": "tank",
+        "cost": 4500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "hp_pct": 0.35,
+          "hp_regen": 6.0
+        },
+        "passive": {
+          "name": "Leviathan Vitality",
+          "out_of_combat_regen_pct": 0.015,
+          "combat_timeout": 300
+        }
+      },
+      "cleave_axe": {
+        "name": "Cleave Axe",
+        "category": "splash",
+        "cost": 4500,
+        "melee_only": true,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 34,
+          "hp_regen": 3.0
+        },
+        "passive": {
+          "name": "Cleave",
+          "cleave_pct": 0.5,
+          "cleave_radius": 110
+        }
+      },
+      "steel_aegis": {
+        "name": "Steel Aegis",
+        "category": "as_armor",
+        "cost": 4500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "armor": 6,
+          "attack_speed": 30
+        }
+      },
+      "moon_shard": {
+        "name": "Moon Shard",
+        "category": "attack_speed",
+        "cost": 4500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "attack_speed": 75
+        }
+      },
+      "octarine_core": {
+        "name": "Octarine Core",
+        "category": "caster",
+        "cost": 4500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 300,
+          "cooldown_reduction": 0.15,
+          "spell_vamp": 0.1,
+          "hp_regen": 2.0
+        }
+      },
+      "scarlet_bulwark": {
+        "name": "Scarlet Bulwark",
+        "category": "guard",
+        "cost": 5000,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 250,
+          "hp_regen": 8,
+          "armor": 6
+        },
+        "block": {
+          "chance": 0.55,
+          "melee_block": 25,
+          "ranged_block": 14
+        },
+        "active": {
+          "name": "Bulwark Guard",
+          "hp_threshold": 0.45,
+          "ally_radius": 320,
+          "base_block": 35,
+          "max_hp_block_pct": 0.02,
+          "duration": 420,
+          "cooldown": 2400
+        }
+      },
+      "monarch_wings": {
+        "name": "Monarch Wings",
+        "category": "agility",
+        "cost": 5000,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 38,
+          "attack_speed": 30,
+          "evasion": 0.28
+        }
+      },
+      "corroder": {
+        "name": "Corroder",
+        "category": "shred",
+        "cost": 4500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 65
+        },
+        "passive": {
+          "name": "Corrosion",
+          "armor_shred": 6,
+          "duration": 360
+        }
+      },
+      "tempest_vane": {
+        "name": "Tempest Vane",
+        "category": "utility",
+        "cost": 5500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 250,
+          "hp_regen": 4,
+          "move_speed_pct": 0.12
+        },
+        "active": {
+          "name": "Tempest Veil",
+          "hp_threshold": 0.4,
+          "duration": 150,
+          "cooldown": 1800
+        }
+      },
+      "fenrir_chain": {
+        "name": "Fenrir Chain",
+        "category": "control",
+        "cost": 5250,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 30,
+          "attack_speed": 30,
+          "hp": 250
+        },
+        "on_attack": {
+          "name": "Arc Chain",
+          "chance": 0.2,
+          "damage": 45,
+          "targets": 3,
+          "radius": 240
+        },
+        "active": {
+          "name": "Binding Chains",
+          "trigger_enemies": 2,
+          "trigger_radius": 220,
+          "root_radius": 220,
+          "root_duration": 72,
+          "damage": 80,
+          "cooldown": 1080
+        }
+      },
+      "sanguine_thorn": {
+        "name": "Sanguine Thorn",
+        "category": "burst",
+        "cost": 6000,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 25,
+          "attack_speed": 60,
+          "hp_regen": 5
+        },
+        "active": {
+          "name": "Soul Rend",
+          "duration": 300,
+          "crit_mult": 1.5,
+          "damage_amp": 0.3,
+          "cooldown": 1080
+        }
+      },
+      "abyss_breaker": {
+        "name": "Abyss Breaker",
+        "category": "control",
+        "cost": 5500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 35,
+          "hp": 300,
+          "hp_regen": 3,
+          "heal_amp": 0.16,
+          "slow_resist": 0.3
+        },
+        "bash": {
+          "chance": 0.22,
+          "damage": 55,
+          "stun": 54,
+          "cooldown": 140
+        },
+        "active": {
+          "name": "Overwhelm",
+          "stun": 72,
+          "cooldown": 1500
+        }
+      },
+      "thunder_coil": {
+        "name": "Thunder Coil",
+        "category": "static",
+        "cost": 5250,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 25,
+          "attack_speed": 65
+        },
+        "on_attack": {
+          "name": "Arc Lightning",
+          "chance": 0.22,
+          "damage": 40,
+          "targets": 3,
+          "radius": 240
+        },
+        "active": {
+          "name": "Static Charge",
+          "proc_chance": 0.2,
+          "duration": 480,
+          "tick": 30,
+          "damage": 65,
+          "targets": 4,
+          "radius": 260,
+          "cooldown": 1200
+        }
+      },
+      "razor_carapace": {
+        "name": "Razor Carapace",
+        "category": "thorn",
+        "cost": 5000,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 18,
+          "armor": 8,
+          "cooldown_reduction": 0.1
+        },
+        "active": {
+          "name": "Thornmail",
+          "hp_threshold": 0.55,
+          "reflect_pct": 0.85,
+          "duration": 270,
+          "cooldown": 1500
+        }
+      },
+      "everfrost_guard": {
+        "name": "Everfrost Guard",
+        "category": "frost",
+        "cost": 5500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "armor": 10,
+          "hp_regen": 5,
+          "cooldown_reduction": 0.1
+        },
+        "active": {
+          "name": "Arctic Blast",
+          "trigger_enemies": 2,
+          "radius": 280,
+          "damage": 130,
+          "slow": 0.45,
+          "slow_duration": 210,
+          "cooldown": 1440
+        }
+      },
+      "sundering_cudgel": {
+        "name": "Sundering Cudgel",
+        "category": "pierce",
+        "cost": 5000,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 48,
+          "attack_speed": 25
+        },
+        "bash": {
+          "name": "Piercing Bash",
+          "chance": 0.28,
+          "damage": 55,
+          "stun": 15,
+          "cooldown": 120
+        }
+      },
+      "frostbound_eye": {
+        "name": "Frostbound Eye",
+        "category": "ice",
+        "cost": 5250,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 20,
+          "hp": 250,
+          "hp_regen": 4
+        },
+        "on_attack": {
+          "name": "Frostbite",
+          "slow": 0.28,
+          "atk_slow": 0.28,
+          "anti_heal": 0.45,
+          "duration": 180
+        }
+      },
+      "gale_pike": {
+        "name": "Gale Pike",
+        "category": "reach",
+        "cost": 5250,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 18,
+          "attack_speed": 25,
+          "hp": 200,
+          "hp_regen": 3,
+          "range_bonus": 90
+        },
+        "active": {
+          "name": "Gale Leap",
+          "hp_threshold": 0.4,
+          "dash_distance": 130,
+          "as_bonus": 55,
+          "duration": 180,
+          "cooldown": 1500
+        }
+      },
+      "basilisk_breath": {
+        "name": "Basilisk Breath",
+        "category": "poison",
+        "cost": 5750,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 26,
+          "attack_speed": 30,
+          "hp": 260,
+          "hp_regen": 3
+        },
+        "on_attack": {
+          "name": "Miasma",
+          "max_hp_pct_per_tick": 0.022,
+          "tick": 30,
+          "duration": 180,
+          "cap_damage": 60
+        }
+      },
+      "solar_brand": {
+        "name": "Solar Brand",
+        "category": "inferno",
+        "cost": 5500,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 30,
+          "hp": 280,
+          "hp_regen": 5
+        }
+      },
+      "runic_gavel": {
+        "name": "Runic Gavel",
+        "category": "arcane",
+        "cost": 5250,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 28,
+          "hp": 250,
+          "hp_regen": 4,
+          "cooldown_reduction": 0.15
+        },
+        "passive": {
+          "name": "Empower Strike",
+          "charge_time": 540,
+          "damage": 130
+        }
+      },
+      "searbrand": {
+        "name": "Searbrand",
+        "category": "mortal",
+        "cost": 5750,
+        "melee_only": false,
+        "magic_only": false,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 20,
+          "hp": 320,
+          "hp_regen": 6,
+          "cooldown_reduction": 0.15
+        },
+        "active": {
+          "name": "Brand Burst",
+          "trigger_enemies": 2,
+          "radius": 320,
+          "damage": 110,
+          "burn_dps": 22,
+          "burn_duration": 180,
+          "cooldown": 1080
+        }
+      },
+      "astral_codex": {
+        "name": "Astral Codex",
+        "category": "mystic",
+        "cost": 6000,
+        "melee_only": false,
+        "magic_only": true,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 280,
+          "hp_regen": 4,
+          "cooldown_reduction": 0.18,
+          "spell_vamp": 0.12,
+          "skill_amp": 0.25
+        },
+        "active": {
+          "name": "Arcane Nova",
+          "trigger_enemies": 2,
+          "radius": 260,
+          "damage": 150,
+          "silence_duration": 90,
+          "cooldown": 1440
+        }
+      },
+      "sage_scepter": {
+        "name": "Sage Scepter",
+        "category": "caster",
+        "cost": 5000,
+        "melee_only": false,
+        "magic_only": true,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 200,
+          "hp_regen": 3,
+          "skill_amp": 0.15,
+          "spell_vamp": 0.08,
+          "cooldown_reduction": 0.08
+        }
+      },
+      "fulgur_scepter": {
+        "name": "Fulgur Scepter",
+        "category": "burst",
+        "cost": 6000,
+        "melee_only": false,
+        "magic_only": true,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 15,
+          "hp": 200,
+          "skill_amp": 0.1,
+          "spell_vamp": 0.08
+        },
+        "active": {
+          "name": "Energy Blast",
+          "damage": 300,
+          "cooldown": 1080
+        }
+      },
+      "hex_idol": {
+        "name": "Hex Idol",
+        "category": "control",
+        "cost": 5750,
+        "melee_only": false,
+        "magic_only": true,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 250,
+          "hp_regen": 4,
+          "spell_vamp": 0.06,
+          "cooldown_reduction": 0.1
+        },
+        "active": {
+          "name": "Hexcraft",
+          "stun": 150,
+          "silence": 150,
+          "cooldown": 1800
+        }
+      },
+      "rift_veil": {
+        "name": "Rift Veil",
+        "category": "burst",
+        "cost": 5500,
+        "melee_only": false,
+        "magic_only": true,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 260,
+          "hp_regen": 4,
+          "spell_vamp": 0.06
+        },
+        "active": {
+          "name": "Discord Field",
+          "trigger_enemies": 2,
+          "radius": 320,
+          "damage_amp": 0.15,
+          "duration": 360,
+          "cooldown": 1200
+        }
+      },
+      "vital_stone": {
+        "name": "Vital Stone",
+        "category": "lifesteal",
+        "cost": 5250,
+        "melee_only": false,
+        "magic_only": true,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 320,
+          "hp_regen": 6,
+          "spell_vamp": 0.2
+        },
+        "active": {
+          "name": "Vitality Pact",
+          "hp_threshold": 0.35,
+          "heal_pct": 0.25,
+          "cooldown": 2700
+        }
+      },
+      "vine_rod": {
+        "name": "Vine Rod",
+        "category": "control",
+        "cost": 5000,
+        "melee_only": false,
+        "magic_only": true,
+        "drops_on_death": false,
+        "stats": {
+          "damage": 15,
+          "hp": 240,
+          "hp_regen": 3,
+          "spell_vamp": 0.05
+        },
+        "on_attack": {
+          "name": "Entangle",
+          "root_duration": 60,
+          "cooldown": 540
+        }
+      },
+      "spectral_charm": {
+        "name": "Spectral Charm",
+        "category": "utility",
+        "cost": 5500,
+        "melee_only": false,
+        "magic_only": true,
+        "drops_on_death": false,
+        "stats": {
+          "hp": 230,
+          "hp_regen": 3,
+          "move_speed_pct": 0.1,
+          "spell_vamp": 0.06
+        },
+        "active": {
+          "name": "Spectral Form",
+          "hp_threshold": 0.3,
+          "duration": 150,
+          "cooldown": 1500
+        }
+      }
+    }
+  },
+  "magic_roles": [
+    {
+      "role": "Mage",
+      "is_magic": true
+    },
+    {
+      "role": "Mage/Trickster",
+      "is_magic": true
+    },
+    {
+      "role": "Sorceress",
+      "is_magic": true
+    },
+    {
+      "role": "Caster",
+      "is_magic": true
+    },
+    {
+      "role": "Warlock",
+      "is_magic": true
+    },
+    {
+      "role": "Witch",
+      "is_magic": true
+    },
+    {
+      "role": "Sage",
+      "is_magic": true
+    },
+    {
+      "role": "Prophet",
+      "is_magic": true
+    },
+    {
+      "role": "High Priestess",
+      "is_magic": true
+    },
+    {
+      "role": "Pyromancer",
+      "is_magic": true
+    },
+    {
+      "role": "Necromancer",
+      "is_magic": true
+    },
+    {
+      "role": "Shaman",
+      "is_magic": true
+    },
+    {
+      "role": "Summoner",
+      "is_magic": true
+    },
+    {
+      "role": "Chorister",
+      "is_magic": true
+    },
+    {
+      "role": "Farseer",
+      "is_magic": true
+    },
+    {
+      "role": "Starweaver",
+      "is_magic": true
+    },
+    {
+      "role": "Hexblade",
+      "is_magic": true
+    },
+    {
+      "role": "Eldritch Horror",
+      "is_magic": true
+    },
+    {
+      "role": "Boss/Magic",
+      "is_magic": true
+    },
+    {
+      "role": "Anti-Mage",
+      "is_magic": false
+    },
+    {
+      "role": "anti-mage",
+      "is_magic": false
+    },
+    {
+      "role": "Assassin",
+      "is_magic": false
+    },
+    {
+      "role": "Bruiser",
+      "is_magic": false
+    },
+    {
+      "role": "Marksman",
+      "is_magic": false
+    },
+    {
+      "role": "Fighter",
+      "is_magic": false
+    },
+    {
+      "role": "Tank",
+      "is_magic": false
+    },
+    {
+      "role": "",
+      "is_magic": false
+    },
+    {
+      "role": "  ",
+      "is_magic": false
+    },
+    {
+      "role": "Paladin",
+      "is_magic": false
+    }
+  ],
+  "suggestions": [
+    {
+      "role": "Bruiser",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Fighter",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Tank",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Assassin",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Marksman",
+      "range": 130,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "dead_edge"
+    },
+    {
+      "role": "Assassin",
+      "range": 130,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "dead_edge"
+    },
+    {
+      "role": "Mage",
+      "range": 130,
+      "owned": [],
+      "is_magic": true,
+      "suggestion": "astral_codex"
+    },
+    {
+      "role": "Mage/Trickster",
+      "range": 130,
+      "owned": [],
+      "is_magic": true,
+      "suggestion": "astral_codex"
+    },
+    {
+      "role": "Sorcerer",
+      "range": 130,
+      "owned": [],
+      "is_magic": true,
+      "suggestion": "astral_codex"
+    },
+    {
+      "role": "Boss/Magic",
+      "range": 130,
+      "owned": [],
+      "is_magic": true,
+      "suggestion": "astral_codex"
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 130,
+      "owned": [
+        "astral_codex"
+      ],
+      "is_magic": false,
+      "suggestion": "octarine_core"
+    },
+    {
+      "role": "Ranger",
+      "range": 130,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "steel_aegis"
+    },
+    {
+      "role": "Warrior",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "",
+      "range": 130,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "steel_aegis"
+    },
+    {
+      "role": "",
+      "range": 70,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Warden",
+      "range": 80,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Warden",
+      "range": 81,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "steel_aegis"
+    },
+    {
+      "role": "Warden",
+      "range": 0,
+      "owned": [],
+      "is_magic": false,
+      "suggestion": "steel_aegis"
+    },
+    {
+      "role": "Bruiser",
+      "range": 70,
+      "owned": [
+        "cleave_axe",
+        "leviathan_heart"
+      ],
+      "is_magic": false,
+      "suggestion": "scarlet_bulwark"
+    },
+    {
+      "role": "Bruiser",
+      "range": 70,
+      "owned": [
+        "cleave_axe",
+        "leviathan_heart",
+        "scarlet_bulwark"
+      ],
+      "is_magic": false,
+      "suggestion": "searbrand"
+    },
+    {
+      "role": "Marksman",
+      "range": 130,
+      "owned": [
+        "dead_edge",
+        "basilisk_breath",
+        "gale_pike"
+      ],
+      "is_magic": false,
+      "suggestion": "frostbound_eye"
+    },
+    {
+      "role": "Mage",
+      "range": 130,
+      "owned": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter"
+      ],
+      "is_magic": true,
+      "suggestion": "hex_idol"
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 130,
+      "owned": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter"
+      ],
+      "is_magic": false,
+      "suggestion": "octarine_core"
+    },
+    {
+      "role": "Warrior",
+      "range": 70,
+      "owned": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel"
+      ],
+      "is_magic": false,
+      "suggestion": "cleave_axe"
+    },
+    {
+      "role": "Warrior",
+      "range": 70,
+      "owned": [
+        "cleave_axe",
+        "steel_aegis"
+      ],
+      "is_magic": false,
+      "suggestion": "searbrand"
+    }
+  ],
+  "pools": [
+    {
+      "role": "",
+      "range": 0,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "",
+      "range": 130,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Anti-Mage",
+      "range": 130,
+      "order": [
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Assassin",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "dead_edge",
+        "basilisk_breath",
+        "gale_pike",
+        "frostbound_eye",
+        "sundering_cudgel",
+        "searbrand",
+        "monarch_wings",
+        "thunder_coil",
+        "sanguine_thorn",
+        "moon_shard",
+        "runic_gavel",
+        "corroder",
+        "demon_maw",
+        "octarine_core",
+        "steel_aegis",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Assassin",
+      "range": 130,
+      "order": [
+        "dead_edge",
+        "basilisk_breath",
+        "gale_pike",
+        "frostbound_eye",
+        "sundering_cudgel",
+        "searbrand",
+        "monarch_wings",
+        "thunder_coil",
+        "sanguine_thorn",
+        "moon_shard",
+        "runic_gavel",
+        "corroder",
+        "demon_maw",
+        "octarine_core",
+        "steel_aegis",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Boss/Magic",
+      "range": 130,
+      "order": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Bruiser",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "searbrand",
+        "razor_carapace",
+        "everfrost_guard",
+        "steel_aegis",
+        "abyss_breaker",
+        "solar_brand",
+        "demon_maw",
+        "corroder",
+        "fenrir_chain",
+        "octarine_core",
+        "moon_shard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Fighter",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "searbrand",
+        "razor_carapace",
+        "everfrost_guard",
+        "steel_aegis",
+        "abyss_breaker",
+        "solar_brand",
+        "demon_maw",
+        "corroder",
+        "fenrir_chain",
+        "octarine_core",
+        "moon_shard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Mage",
+      "range": 130,
+      "order": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Mage/Trickster",
+      "range": 130,
+      "order": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Marksman",
+      "range": 130,
+      "order": [
+        "dead_edge",
+        "basilisk_breath",
+        "gale_pike",
+        "frostbound_eye",
+        "sundering_cudgel",
+        "searbrand",
+        "monarch_wings",
+        "thunder_coil",
+        "sanguine_thorn",
+        "moon_shard",
+        "runic_gavel",
+        "corroder",
+        "demon_maw",
+        "octarine_core",
+        "steel_aegis",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Ranger",
+      "range": 130,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Sorcerer",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Sorcerer",
+      "range": 130,
+      "order": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone",
+        "spectral_charm",
+        "vine_rod",
+        "octarine_core",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "frostbound_eye",
+        "everfrost_guard",
+        "tempest_vane",
+        "corroder",
+        "moon_shard",
+        "thunder_coil",
+        "steel_aegis",
+        "demon_maw",
+        "dead_edge",
+        "holy_rapier"
+      ],
+      "is_magic": true
+    },
+    {
+      "role": "Tank",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "searbrand",
+        "razor_carapace",
+        "everfrost_guard",
+        "steel_aegis",
+        "abyss_breaker",
+        "solar_brand",
+        "demon_maw",
+        "corroder",
+        "fenrir_chain",
+        "octarine_core",
+        "moon_shard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Tank",
+      "range": 130,
+      "order": [
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "searbrand",
+        "razor_carapace",
+        "everfrost_guard",
+        "steel_aegis",
+        "abyss_breaker",
+        "solar_brand",
+        "demon_maw",
+        "corroder",
+        "fenrir_chain",
+        "octarine_core",
+        "moon_shard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Warden",
+      "range": 0,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Warden",
+      "range": 80,
+      "order": [
+        "cleave_axe",
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Warden",
+      "range": 81,
+      "order": [
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    },
+    {
+      "role": "Warrior",
+      "range": 70,
+      "order": [
+        "cleave_axe",
+        "steel_aegis",
+        "searbrand",
+        "sundering_cudgel",
+        "frostbound_eye",
+        "razor_carapace",
+        "moon_shard",
+        "demon_maw",
+        "leviathan_heart",
+        "scarlet_bulwark",
+        "solar_brand",
+        "thunder_coil",
+        "monarch_wings",
+        "octarine_core",
+        "gale_pike",
+        "dead_edge",
+        "corroder",
+        "everfrost_guard",
+        "holy_rapier"
+      ],
+      "is_magic": false
+    }
+  ],
+  "inventory": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3,
+        "hp": 500,
+        "max_hp": 700
+      },
+      "start": [
+        700,
+        500
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "leviathan_heart"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "cleave_axe"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "holy_rapier"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "count",
+            "holy_rapier"
+          ],
+          "result": 1,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "has",
+            "cleave_axe"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 3,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1181,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            0
+          ],
+          "result": "leviathan_heart",
+          "slots": [
+            null,
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1023,
+          "hp": 1023,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "leviathan_heart"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "count",
+            "leviathan_heart"
+          ],
+          "result": 1,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            "holy_rapier",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "clear_on_death"
+          ],
+          "result": true,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "has",
+            "holy_rapier"
+          ],
+          "result": false,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 2,
+          "slots": [
+            "leviathan_heart",
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Marksman",
+        "range": 130,
+        "base_hp": 540,
+        "level": 5,
+        "hp": 540,
+        "max_hp": 800
+      },
+      "start": [
+        800,
+        540
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "cleave_axe"
+          ],
+          "result": false,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 800,
+          "hp": 540,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "dead_edge"
+          ],
+          "result": true,
+          "slots": [
+            "dead_edge",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            -1
+          ],
+          "result": null,
+          "slots": [
+            "dead_edge",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            6
+          ],
+          "result": null,
+          "slots": [
+            "dead_edge",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            1
+          ],
+          "result": null,
+          "slots": [
+            "dead_edge",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            0
+          ],
+          "result": "dead_edge",
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "remove",
+            0
+          ],
+          "result": null,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 0,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 1458,
+          "hp": 1198,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Warrior",
+        "range": 70,
+        "base_hp": 700,
+        "level": 1,
+        "hp": 700,
+        "max_hp": 700
+      },
+      "start": [
+        700,
+        700
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "astral_codex"
+          ],
+          "result": false,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "vital_stone"
+          ],
+          "result": false,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 0,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "steel_aegis"
+          ],
+          "result": true,
+          "slots": [
+            "steel_aegis",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "not_an_item"
+          ],
+          "result": false,
+          "slots": [
+            "steel_aegis",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            ""
+          ],
+          "result": false,
+          "slots": [
+            "steel_aegis",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 1,
+          "slots": [
+            "steel_aegis",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 700,
+          "hp": 700,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 7,
+        "hp": 480,
+        "max_hp": 900
+      },
+      "start": [
+        900,
+        480
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "astral_codex"
+          ],
+          "result": true,
+          "slots": [
+            "astral_codex",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 2224,
+          "hp": 1804,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "vital_stone"
+          ],
+          "result": true,
+          "slots": [
+            "astral_codex",
+            "vital_stone",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 2544,
+          "hp": 2124,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "abyss_breaker"
+          ],
+          "result": true,
+          "slots": [
+            "astral_codex",
+            "vital_stone",
+            "abyss_breaker",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 2844,
+          "hp": 2424,
+          "heal_calls": [
+            [
+              0.16,
+              999999
+            ]
+          ]
+        },
+        {
+          "op": [
+            "add",
+            "leviathan_heart"
+          ],
+          "result": true,
+          "slots": [
+            "astral_codex",
+            "vital_stone",
+            "abyss_breaker",
+            "leviathan_heart",
+            null,
+            null
+          ],
+          "used": 4,
+          "max_hp": 3839,
+          "hp": 3419,
+          "heal_calls": [
+            [
+              0.16,
+              999999
+            ],
+            [
+              0.16,
+              999999
+            ]
+          ]
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 4,
+          "slots": [
+            "astral_codex",
+            "vital_stone",
+            "abyss_breaker",
+            "leviathan_heart",
+            null,
+            null
+          ],
+          "used": 4,
+          "max_hp": 3839,
+          "hp": 3419,
+          "heal_calls": [
+            [
+              0.16,
+              999999
+            ],
+            [
+              0.16,
+              999999
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Fighter",
+        "range": 80,
+        "base_hp": 650,
+        "level": 4,
+        "hp": 650,
+        "max_hp": 750
+      },
+      "start": [
+        750,
+        650
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "searbrand"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1685,
+          "hp": 1585,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "scarlet_bulwark"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1935,
+          "hp": 1835,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "everfrost_guard"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            null,
+            null,
+            null
+          ],
+          "used": 3,
+          "max_hp": 1935,
+          "hp": 1835,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "steel_aegis"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            null,
+            null
+          ],
+          "used": 4,
+          "max_hp": 1935,
+          "hp": 1835,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "solar_brand"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            "solar_brand",
+            null
+          ],
+          "used": 5,
+          "max_hp": 2215,
+          "hp": 2115,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "moon_shard"
+          ],
+          "result": true,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            "solar_brand",
+            "moon_shard"
+          ],
+          "used": 6,
+          "max_hp": 2215,
+          "hp": 2115,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "demon_maw"
+          ],
+          "result": false,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            "solar_brand",
+            "moon_shard"
+          ],
+          "used": 6,
+          "max_hp": 2215,
+          "hp": 2115,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 6,
+          "slots": [
+            "searbrand",
+            "scarlet_bulwark",
+            "everfrost_guard",
+            "steel_aegis",
+            "solar_brand",
+            "moon_shard"
+          ],
+          "used": 6,
+          "max_hp": 2215,
+          "hp": 2115,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Ranger",
+        "range": 0,
+        "base_hp": 520,
+        "level": 2,
+        "hp": 520,
+        "max_hp": 560
+      },
+      "start": [
+        560,
+        520
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "cleave_axe"
+          ],
+          "result": true,
+          "slots": [
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 676,
+          "hp": 636,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 1,
+          "slots": [
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 676,
+          "hp": 636,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "clear_on_death"
+          ],
+          "result": false,
+          "slots": [
+            "cleave_axe",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 676,
+          "hp": 636,
+          "heal_calls": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 6,
+        "hp": 480,
+        "max_hp": 880
+      },
+      "start": [
+        880,
+        480
+      ],
+      "log": [
+        {
+          "op": [
+            "add",
+            "holy_rapier"
+          ],
+          "result": true,
+          "slots": [
+            "holy_rapier",
+            null,
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1608,
+          "hp": 1208,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "add",
+            "runic_gavel"
+          ],
+          "result": true,
+          "slots": [
+            "holy_rapier",
+            "runic_gavel",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 2,
+          "max_hp": 1858,
+          "hp": 1458,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "clear_on_death"
+          ],
+          "result": true,
+          "slots": [
+            null,
+            "runic_gavel",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1858,
+          "hp": 1458,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "used_slots"
+          ],
+          "result": 1,
+          "slots": [
+            null,
+            "runic_gavel",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1858,
+          "hp": 1458,
+          "heal_calls": []
+        },
+        {
+          "op": [
+            "has",
+            "runic_gavel"
+          ],
+          "result": true,
+          "slots": [
+            null,
+            "runic_gavel",
+            null,
+            null,
+            null,
+            null
+          ],
+          "used": 1,
+          "max_hp": 1858,
+          "hp": 1458,
+          "heal_calls": []
+        }
+      ]
+    }
+  ],
+  "purchases": [
+    {
+      "heroes": [
+        {
+          "role": "Assassin",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Marksman",
+          "range": 130,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 13500,
+      "reserve": 0,
+      "calls": [
+        {
+          "success": true,
+          "gold": 9000,
+          "tag": 0,
+          "item": "cleave_axe"
+        },
+        {
+          "success": true,
+          "gold": 4500,
+          "tag": 0,
+          "item": "dead_edge"
+        },
+        {
+          "success": true,
+          "gold": 0,
+          "tag": 1,
+          "item": "cleave_axe"
+        },
+        {
+          "success": false,
+          "gold": 0,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 13500,
+      "slots": [
+        [
+          "cleave_axe",
+          "dead_edge",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "cleave_axe",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    },
+    {
+      "heroes": [
+        {
+          "role": "Assassin",
+          "range": 70,
+          "kills": 1,
+          "level": 2,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "kills": 5,
+          "level": 2,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Marksman",
+          "range": 130,
+          "kills": 3,
+          "level": 2,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 13500,
+      "reserve": 0,
+      "calls": [
+        {
+          "success": true,
+          "gold": 9000,
+          "tag": 1,
+          "item": "cleave_axe"
+        },
+        {
+          "success": true,
+          "gold": 4500,
+          "tag": 1,
+          "item": "leviathan_heart"
+        },
+        {
+          "success": true,
+          "gold": 0,
+          "tag": 2,
+          "item": "dead_edge"
+        },
+        {
+          "success": false,
+          "gold": 0,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 13500,
+      "slots": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "cleave_axe",
+          "leviathan_heart",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "dead_edge",
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    },
+    {
+      "heroes": [
+        {
+          "role": "Assassin",
+          "range": 70,
+          "kills": 4,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "kills": 4,
+          "level": 3,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Fighter",
+          "range": 70,
+          "kills": 4,
+          "level": 2,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Mage",
+          "range": 130,
+          "kills": 4,
+          "level": 4,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 13500,
+      "reserve": 0,
+      "calls": [
+        {
+          "success": true,
+          "gold": 7500,
+          "tag": 3,
+          "item": "astral_codex"
+        },
+        {
+          "success": true,
+          "gold": 1500,
+          "tag": 3,
+          "item": "fulgur_scepter"
+        },
+        {
+          "success": false,
+          "gold": 1500,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 12000,
+      "slots": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "astral_codex",
+          "fulgur_scepter",
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    },
+    {
+      "heroes": [
+        {
+          "role": "Mage/Trickster",
+          "range": 130,
+          "kills": 9,
+          "level": 5,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Assassin",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 5000,
+      "reserve": 0,
+      "calls": [
+        {
+          "success": true,
+          "gold": 500,
+          "tag": 1,
+          "item": "cleave_axe"
+        },
+        {
+          "success": false,
+          "gold": 500,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 4500,
+      "slots": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "cleave_axe",
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    },
+    {
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "kills": 9,
+          "level": 5,
+          "alive": false,
+          "owned": []
+        },
+        {
+          "role": "Assassin",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 9000,
+      "reserve": 0,
+      "calls": [
+        {
+          "success": true,
+          "gold": 4500,
+          "tag": 1,
+          "item": "cleave_axe"
+        },
+        {
+          "success": true,
+          "gold": 0,
+          "tag": 1,
+          "item": "dead_edge"
+        },
+        {
+          "success": false,
+          "gold": 0,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 9000,
+      "slots": [
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "cleave_axe",
+          "dead_edge",
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    },
+    {
+      "heroes": [
+        {
+          "role": "Assassin",
+          "range": 70,
+          "kills": 9,
+          "level": 5,
+          "alive": true,
+          "owned": [
+            "cleave_axe",
+            "dead_edge",
+            "basilisk_breath",
+            "gale_pike",
+            "frostbound_eye",
+            "sundering_cudgel"
+          ]
+        },
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 9000,
+      "reserve": 0,
+      "calls": [
+        {
+          "success": true,
+          "gold": 4500,
+          "tag": 1,
+          "item": "cleave_axe"
+        },
+        {
+          "success": true,
+          "gold": 0,
+          "tag": 1,
+          "item": "leviathan_heart"
+        },
+        {
+          "success": false,
+          "gold": 0,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 9000,
+      "slots": [
+        [
+          "cleave_axe",
+          "dead_edge",
+          "basilisk_breath",
+          "gale_pike",
+          "frostbound_eye",
+          "sundering_cudgel"
+        ],
+        [
+          "cleave_axe",
+          "leviathan_heart",
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    },
+    {
+      "heroes": [
+        {
+          "role": "Assassin",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": [
+            "cleave_axe",
+            "dead_edge"
+          ]
+        },
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 4800,
+      "reserve": 400,
+      "calls": [
+        {
+          "success": false,
+          "gold": 4800,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 0,
+      "slots": [
+        [
+          "cleave_axe",
+          "dead_edge",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    },
+    {
+      "heroes": [
+        {
+          "role": "Assassin",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": [
+            "cleave_axe",
+            "dead_edge"
+          ]
+        },
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "kills": 0,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 4800,
+      "reserve": 0,
+      "calls": [
+        {
+          "success": true,
+          "gold": 300,
+          "tag": 1,
+          "item": "cleave_axe"
+        },
+        {
+          "success": false,
+          "gold": 300,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 4500,
+      "slots": [
+        [
+          "cleave_axe",
+          "dead_edge",
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "cleave_axe",
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    },
+    {
+      "heroes": [
+        {
+          "role": "Mage",
+          "range": 130,
+          "kills": 2,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Mage/Trickster",
+          "range": 130,
+          "kills": 2,
+          "level": 1,
+          "alive": true,
+          "owned": []
+        },
+        {
+          "role": "Fighter",
+          "range": 70,
+          "kills": 1,
+          "level": 6,
+          "alive": true,
+          "owned": []
+        }
+      ],
+      "gold": 10500,
+      "reserve": 0,
+      "calls": [
+        {
+          "success": true,
+          "gold": 4500,
+          "tag": 0,
+          "item": "astral_codex"
+        },
+        {
+          "success": true,
+          "gold": 0,
+          "tag": 2,
+          "item": "cleave_axe"
+        },
+        {
+          "success": false,
+          "gold": 0,
+          "tag": -1,
+          "item": null
+        }
+      ],
+      "spent": 10500,
+      "slots": [
+        [
+          "astral_codex",
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        [
+          "cleave_axe",
+          null,
+          null,
+          null,
+          null,
+          null
+        ]
+      ]
+    }
+  ],
+  "stats": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [],
+      "slots": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 0,
+        "get_bonus_hp": 0,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 0,
+        "get_max_hp": 1674,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "dead_edge"
+      ],
+      "slots": [
+        "dead_edge",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 52,
+        "get_bonus_hp": 0,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 0,
+        "get_max_hp": 1674,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.25,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "cleave_axe"
+      ],
+      "slots": [
+        "cleave_axe",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 34,
+        "get_bonus_hp": 0,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 3.0,
+        "get_max_hp": 1674,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": [
+          0.5,
+          110
+        ],
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "demon_maw"
+      ],
+      "slots": [
+        "demon_maw",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 20,
+        "get_bonus_hp": 0,
+        "get_hp_pct": 0,
+        "get_armor": 4,
+        "get_hp_regen": 0,
+        "get_max_hp": 1674,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0.2,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "leviathan_heart",
+        "octarine_core"
+      ],
+      "slots": [
+        "leviathan_heart",
+        "octarine_core",
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 0,
+        "get_bonus_hp": 300,
+        "get_hp_pct": 0.35,
+        "get_armor": 0,
+        "get_hp_regen": 8.0,
+        "get_max_hp": 2664,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0.15,
+        "get_spell_vamp": 0.1,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "abyss_breaker"
+      ],
+      "slots": [
+        "abyss_breaker",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 35,
+        "get_bonus_hp": 300,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 3,
+        "get_max_hp": 1974,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0.16,
+        "get_slow_resist": 0.3,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": {
+          "chance": 0.22,
+          "damage": 55,
+          "stun": 54,
+          "cooldown": 140
+        },
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "runic_gavel"
+      ],
+      "slots": [
+        "runic_gavel",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 28,
+        "get_bonus_hp": 250,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 4,
+        "get_max_hp": 1924,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0.15,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "sundering_cudgel"
+      ],
+      "slots": [
+        "sundering_cudgel",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 48,
+        "get_bonus_hp": 0,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 0,
+        "get_max_hp": 1674,
+        "get_attack_speed_mult": 1.25,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": true,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "razor_carapace"
+      ],
+      "slots": [
+        "razor_carapace",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 18,
+        "get_bonus_hp": 0,
+        "get_hp_pct": 0,
+        "get_armor": 8,
+        "get_hp_regen": 0,
+        "get_max_hp": 1674,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0.1,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "gale_pike"
+      ],
+      "slots": [
+        "gale_pike",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 18,
+        "get_bonus_hp": 200,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 3,
+        "get_max_hp": 1874,
+        "get_attack_speed_mult": 1.25,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "fenrir_chain"
+      ],
+      "slots": [
+        "fenrir_chain",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 30,
+        "get_bonus_hp": 250,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 0,
+        "get_max_hp": 1924,
+        "get_attack_speed_mult": 1.3,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": {
+          "name": "Arc Chain",
+          "chance": 0.2,
+          "damage": 45,
+          "targets": 3,
+          "radius": 240
+        },
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "frostbound_eye"
+      ],
+      "slots": [
+        "frostbound_eye",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 20,
+        "get_bonus_hp": 250,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 4,
+        "get_max_hp": 1924,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "basilisk_breath"
+      ],
+      "slots": [
+        "basilisk_breath",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 26,
+        "get_bonus_hp": 260,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 3,
+        "get_max_hp": 1934,
+        "get_attack_speed_mult": 1.3,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "corroder"
+      ],
+      "slots": [
+        "corroder",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 65,
+        "get_bonus_hp": 0,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 0,
+        "get_max_hp": 1674,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": [
+          6,
+          360
+        ],
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "is_melee_hero": false,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "astral_codex"
+      ],
+      "slots": [
+        "astral_codex",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 0,
+        "get_bonus_hp": 280,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 4,
+        "get_max_hp": 2968,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0.18,
+        "get_spell_vamp": 0.12,
+        "get_skill_amp": 0.25,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "is_melee_hero": false,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "spectral_charm"
+      ],
+      "slots": [
+        "spectral_charm",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 0,
+        "get_bonus_hp": 230,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 3,
+        "get_max_hp": 2918,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0.06,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0.1,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "scarlet_bulwark",
+        "everfrost_guard",
+        "steel_aegis",
+        "tempest_vane",
+        "monarch_wings"
+      ],
+      "slots": [
+        "scarlet_bulwark",
+        "everfrost_guard",
+        "steel_aegis",
+        "tempest_vane",
+        "monarch_wings",
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 38,
+        "get_bonus_hp": 500,
+        "get_hp_pct": 0,
+        "get_armor": 22,
+        "get_hp_regen": 17,
+        "get_max_hp": 2174,
+        "get_attack_speed_mult": 1.6,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0.1,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0.28,
+        "get_move_speed_pct": 0.12,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": [
+          0.55,
+          25
+        ],
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "is_melee_hero": true,
+        "base_hp": 620,
+        "level": 5
+      },
+      "loadout": [
+        "thunder_coil",
+        "sanguine_thorn",
+        "moon_shard"
+      ],
+      "slots": [
+        "thunder_coil",
+        "sanguine_thorn",
+        "moon_shard",
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 50,
+        "get_bonus_hp": 0,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 5,
+        "get_max_hp": 1674,
+        "get_attack_speed_mult": 2.5,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": {
+          "name": "Arc Lightning",
+          "chance": 0.22,
+          "damage": 40,
+          "targets": 3,
+          "radius": 240
+        },
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Marksman",
+        "range": 130,
+        "is_melee_hero": false,
+        "base_hp": 540,
+        "level": 7
+      },
+      "loadout": [
+        "dead_edge",
+        "gale_pike",
+        "monarch_wings"
+      ],
+      "slots": [
+        "dead_edge",
+        "gale_pike",
+        "monarch_wings",
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 108,
+        "get_bonus_hp": 200,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 3,
+        "get_max_hp": 2387,
+        "get_attack_speed_mult": 1.55,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.25,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0.28,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 90,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Marksman",
+        "range": 130,
+        "is_melee_hero": false,
+        "base_hp": 540,
+        "level": 7
+      },
+      "loadout": [
+        "frostbound_eye",
+        "basilisk_breath",
+        "sundering_cudgel"
+      ],
+      "slots": [
+        "frostbound_eye",
+        "basilisk_breath",
+        "sundering_cudgel",
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 94,
+        "get_bonus_hp": 510,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 7,
+        "get_max_hp": 2697,
+        "get_attack_speed_mult": 1.55,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": true,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Marksman",
+        "range": 130,
+        "is_melee_hero": false,
+        "base_hp": 540,
+        "level": 7
+      },
+      "loadout": [
+        "scarlet_bulwark",
+        "everfrost_guard",
+        "steel_aegis",
+        "tempest_vane",
+        "moon_shard"
+      ],
+      "slots": [
+        "scarlet_bulwark",
+        "everfrost_guard",
+        "steel_aegis",
+        "tempest_vane",
+        "moon_shard",
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 0,
+        "get_bonus_hp": 500,
+        "get_hp_pct": 0,
+        "get_armor": 22,
+        "get_hp_regen": 17,
+        "get_max_hp": 2687,
+        "get_attack_speed_mult": 2.05,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0.1,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0.12,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": [
+          0.55,
+          14
+        ],
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "is_melee_hero": false,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone"
+      ],
+      "slots": [
+        "astral_codex",
+        "fulgur_scepter",
+        "sage_scepter",
+        "hex_idol",
+        "rift_veil",
+        "vital_stone"
+      ],
+      "values": {
+        "get_bonus_damage": 15,
+        "get_bonus_hp": 1510,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 21,
+        "get_max_hp": 4198,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0.36,
+        "get_spell_vamp": 0.6000000000000001,
+        "get_skill_amp": 0.5,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "is_melee_hero": false,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "vine_rod",
+        "spectral_charm",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "leviathan_heart"
+      ],
+      "slots": [
+        "vine_rod",
+        "spectral_charm",
+        "runic_gavel",
+        "searbrand",
+        "solar_brand",
+        "leviathan_heart"
+      ],
+      "values": {
+        "get_bonus_damage": 93,
+        "get_bonus_hp": 1320,
+        "get_hp_pct": 0.35,
+        "get_armor": 0,
+        "get_hp_regen": 27.0,
+        "get_max_hp": 5410,
+        "get_attack_speed_mult": 1.0,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.0,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0.3,
+        "get_spell_vamp": 0.11,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0.1,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Warden",
+        "range": 105,
+        "is_melee_hero": null,
+        "base_hp": 600,
+        "level": 3
+      },
+      "loadout": [
+        "gale_pike",
+        "dead_edge"
+      ],
+      "slots": [
+        "gale_pike",
+        "dead_edge",
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 70,
+        "get_bonus_hp": 200,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 3,
+        "get_max_hp": 1190,
+        "get_attack_speed_mult": 1.25,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.25,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 0,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    },
+    {
+      "hero": {
+        "role": "Warden",
+        "range": 130,
+        "is_melee_hero": null,
+        "base_hp": 600,
+        "level": 3
+      },
+      "loadout": [
+        "gale_pike",
+        "dead_edge"
+      ],
+      "slots": [
+        "gale_pike",
+        "dead_edge",
+        null,
+        null,
+        null,
+        null
+      ],
+      "values": {
+        "get_bonus_damage": 70,
+        "get_bonus_hp": 200,
+        "get_hp_pct": 0,
+        "get_armor": 0,
+        "get_hp_regen": 3,
+        "get_max_hp": 1190,
+        "get_attack_speed_mult": 1.25,
+        "get_lifesteal_pct": 0,
+        "get_crit": [
+          0.25,
+          2.0
+        ],
+        "get_cleave": null,
+        "get_cooldown_reduction": 0,
+        "get_spell_vamp": 0,
+        "get_skill_amp": 0,
+        "get_evasion": 0,
+        "get_move_speed_pct": 0,
+        "get_heal_amp": 0,
+        "get_slow_resist": 0,
+        "get_range_bonus": 90,
+        "has_true_strike": false,
+        "get_reflect_pct": 0.0,
+        "get_gale_as_bonus": 0,
+        "get_block": null,
+        "get_armor_shred": null,
+        "get_on_attack_chain": null,
+        "get_bash": null,
+        "is_veiled": false,
+        "is_guarding": false,
+        "get_rend_crit": null,
+        "empower_strike": 0,
+        "empower_charge": 540
+      }
+    }
+  ],
+  "stat_application": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 1
+      },
+      "start": [
+        620,
+        620
+      ],
+      "log": [
+        {
+          "op": "add:leviathan_heart",
+          "max_hp": 837,
+          "hp": 837,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1088,
+          "hp": 1088,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:octarine_core",
+          "max_hp": 1786,
+          "hp": 1786,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "leviathan_heart",
+            "octarine_core",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "remove:0",
+          "max_hp": 1323,
+          "hp": 1323,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            "octarine_core",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1602,
+          "hp": 1602,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            "octarine_core",
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "start": [
+        1023,
+        1023
+      ],
+      "log": [
+        {
+          "op": "add:abyss_breaker",
+          "max_hp": 1323,
+          "hp": 1323,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "abyss_breaker",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:searbrand",
+          "max_hp": 1643,
+          "hp": 1643,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "abyss_breaker",
+            "searbrand",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1922,
+          "hp": 1922,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "abyss_breaker",
+            "searbrand",
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 1
+      },
+      "start": [
+        480,
+        480
+      ],
+      "log": [
+        {
+          "op": "add:vital_stone",
+          "max_hp": 800,
+          "hp": 800,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "vital_stone",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:leviathan_heart",
+          "max_hp": 1080,
+          "hp": 1080,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:abyss_breaker",
+          "max_hp": 1485,
+          "hp": 1485,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            "abyss_breaker",
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "remove:2",
+          "max_hp": 1080,
+          "hp": 1080,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1274,
+          "hp": 1274,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1501,
+          "hp": 1501,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 6
+      },
+      "start": [
+        2077,
+        2077
+      ],
+      "log": [
+        {
+          "op": "remove:0",
+          "max_hp": 2077,
+          "hp": 2077,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:holy_rapier",
+          "max_hp": 2077,
+          "hp": 2077,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "holy_rapier",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "clear_on_death",
+          "max_hp": 2077,
+          "hp": 2077,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 2511,
+          "hp": 2077,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 1
+      },
+      "start": [
+        620,
+        620
+      ],
+      "log": []
+    }
+  ],
+  "deaths": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 4
+      },
+      "loadout": [
+        "holy_rapier",
+        "leviathan_heart",
+        "dead_edge"
+      ],
+      "dropped": true,
+      "slots": [
+        null,
+        "leviathan_heart",
+        "dead_edge",
+        null,
+        null,
+        null
+      ],
+      "max_hp": 1757,
+      "max_hp_before": 1757
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 2
+      },
+      "loadout": [
+        "astral_codex",
+        "holy_rapier"
+      ],
+      "dropped": true,
+      "slots": [
+        "astral_codex",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "max_hp": 904,
+      "max_hp_before": 904
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 1
+      },
+      "loadout": [
+        "leviathan_heart"
+      ],
+      "dropped": false,
+      "slots": [
+        "leviathan_heart",
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "max_hp": 837,
+      "max_hp_before": 837
+    }
+  ],
+  "timer_attrs": [
+    "guard_timer",
+    "guard_cd",
+    "veil_timer",
+    "veil_cd",
+    "chains_cd",
+    "rend_timer",
+    "rend_cd",
+    "bash_cd",
+    "overwhelm_cd",
+    "static_timer",
+    "static_cd",
+    "static_tick",
+    "thorn_timer",
+    "thorn_cd",
+    "arctic_cd",
+    "gale_timer",
+    "gale_cd",
+    "pierce_bash_cd",
+    "searbrand_cd",
+    "arcane_cd",
+    "fulgur_cd",
+    "hex_cd",
+    "rift_cd",
+    "pact_cd",
+    "vine_cd",
+    "ghost_timer",
+    "ghost_cd"
+  ],
+  "timers": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [],
+      "preset": {
+        "blood_frenzy_timer": 120,
+        "guard_cd": 40,
+        "static_tick": 7
+      },
+      "ticks": 3,
+      "log": [
+        {
+          "guard_timer": 0,
+          "guard_cd": 39,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 6,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 119,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 540,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 38,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 5,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 118,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 540,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 37,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 4,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 117,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 540,
+          "rend_target": null
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "runic_gavel"
+      ],
+      "preset": {
+        "empower_charge": 300,
+        "thorn_timer": 5
+      },
+      "ticks": 10,
+      "log": [
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 4,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 299,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 3,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 298,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 2,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 297,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 1,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 296,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 295,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 294,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 293,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 292,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 291,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 290,
+          "rend_target": null
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 2
+      },
+      "loadout": [
+        "leviathan_heart",
+        "dead_edge"
+      ],
+      "preset": {
+        "rend_timer": 4,
+        "veil_cd": 2,
+        "ghost_timer": 1,
+        "gale_cd": 9
+      },
+      "ticks": 5,
+      "log": [
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 1,
+          "chains_cd": 0,
+          "rend_timer": 3,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 8,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 540,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 2,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 7,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 540,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 1,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 6,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 540,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 5,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 540,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 4,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 540,
+          "rend_target": null
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 1
+      },
+      "loadout": [
+        "runic_gavel",
+        "holy_rapier"
+      ],
+      "preset": {
+        "empower_charge": 2
+      },
+      "ticks": 5,
+      "log": [
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 1,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 0,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 0,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 0,
+          "rend_target": null
+        },
+        {
+          "guard_timer": 0,
+          "guard_cd": 0,
+          "veil_timer": 0,
+          "veil_cd": 0,
+          "chains_cd": 0,
+          "rend_timer": 0,
+          "rend_cd": 0,
+          "bash_cd": 0,
+          "overwhelm_cd": 0,
+          "static_timer": 0,
+          "static_cd": 0,
+          "static_tick": 0,
+          "thorn_timer": 0,
+          "thorn_cd": 0,
+          "arctic_cd": 0,
+          "gale_timer": 0,
+          "gale_cd": 0,
+          "pierce_bash_cd": 0,
+          "searbrand_cd": 0,
+          "arcane_cd": 0,
+          "fulgur_cd": 0,
+          "hex_cd": 0,
+          "rift_cd": 0,
+          "pact_cd": 0,
+          "vine_cd": 0,
+          "ghost_timer": 0,
+          "ghost_cd": 0,
+          "blood_frenzy_timer": 0,
+          "blood_frenzy_cd": 0,
+          "last_damage_timer": 0,
+          "empower_charge": 0,
+          "rend_target": null
+        }
+      ]
+    }
+  ]
+}
