@@ -11,6 +11,12 @@ const Economy = preload("res://scripts/match/match_economy.gd")
 const Forge = preload("res://scripts/match/forge.gd")
 const AiHeroControl = preload("res://scripts/match/ai_hero_control.gd")
 const AiController = preload("res://scripts/match/ai_controller.gd")
+const AiBuild = preload("res://scripts/match/ai_build.gd")
+const AiRecruitment = preload("res://scripts/match/ai_recruitment.gd")
+const AiUpgrades = preload("res://scripts/match/ai_upgrades.gd")
+const AiItems = preload("res://scripts/match/ai_items.gd")
+const AiShields = preload("res://scripts/match/ai_shields.gd")
+const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
@@ -55,6 +61,13 @@ var ai_heroes := AiHeroControl.new()
 var ai_controller := AiController.new()
 var ai_enabled := false
 var ai_hero_control_enabled := false
+# Layer 6c: the action adapters and the persistent draft target the red side.
+var ai_draft := AiDraft.new()
+var ai_build := AiBuild.new()
+var ai_recruitment := AiRecruitment.new()
+var ai_upgrades := AiUpgrades.new()
+var ai_items := AiItems.new()
+var ai_shields := AiShields.new()
 # Source Hero.aggro_range: an auto destination is abandoned inside this radius.
 const HERO_AGGRO_RANGE := 250.0
 var scheduler := Scheduler.new()
@@ -322,8 +335,9 @@ func _retire_dead() -> void:
 
 
 func _step_defender() -> void:
-	# Explicit temporary opponent, NOT a port of AIPlayer: three paid Archer purchases.
-	if not defender_enabled or _defender_built >= 3 or tick_count % 300 != 0:
+	# Explicit temporary opponent, NOT a port of AIPlayer: three paid Archer
+	# purchases. The real AI controller replaces it as soon as ai_enabled is set.
+	if ai_enabled or not defender_enabled or _defender_built >= 3 or tick_count % 300 != 0:
 		return
 	if build_tower(RED, [11, 14, 17][_defender_built]):
 		_defender_built += 1
@@ -536,11 +550,83 @@ func _step_ai() -> void:
 
 
 func _ai_perform_step() -> bool:
-	# Priority scan of the source _ai_step. The adapters (build / buy hero /
-	# upgrade hero / item / upgrade tower / shields / nexus) exist as separate
-	# modules but the scene has not been handed to the AI yet, so the scan
-	# reports "nothing to do" and the schedule stays observable.
-	return false
+	# Source _ai_step: one ordered priority scan. Gates and rolls live in
+	# ai_policy.choose_step; every action goes through the real ledger adapter.
+	return ai_controller.policy.choose_step(
+		_ai_state(), Callable(self, "_ai_attempt"), Callable(ai_controller, "draw")
+	)
+
+
+func _ai_state() -> Dictionary:
+	# Source _ai_step locals: empty build slots, purse, full roster (dead heroes
+	# included), own living towers that can still upgrade, and own living towers.
+	return {
+		"empty_slots": _ai_empty_slots(),
+		"gold": economy.gold[RED],
+		"hero_count": _ai_roster().size(),
+		"upgradeable_towers": ai_upgrades.tower_candidates(self).size(),
+		"living_towers": _ai_living_towers().size(),
+	}
+
+
+func _ai_empty_slots() -> int:
+	var count := 0
+	for slot in slots:
+		if slot != null and slot.team == RED and slot.structure_id == -1 and slot.lane in [0, 1, 2]:
+			count += 1
+	return count
+
+
+func _ai_roster() -> Array:
+	var heroes: Array = []
+	for unit in units:
+		if unit.is_hero and unit.team == RED:
+			heroes.append(unit)
+	return heroes
+
+
+func _ai_living_towers() -> Array:
+	var towers: Array = []
+	for structure in structures:
+		if (
+			structure.alive
+			and structure.team == RED
+			and structure.settings().structure_kind == "tower"
+		):
+			towers.append(structure)
+	return towers
+
+
+func _ai_attempt(step: String) -> bool:
+	# Adapter per source priority; a false answer moves the scan to the next
+	# priority, exactly like the source returning from _ai_step.
+	var done := false
+	if step == "build":
+		done = ai_build.try_build(self, ai_draft)
+	elif step == "buy_hero":
+		done = ai_recruitment.try_buy(self, ai_draft)
+	elif step == "upgrade_hero":
+		done = ai_upgrades.try_hero_priority(self, ai_draft)
+	elif step == "buy_item":
+		done = ai_items.try_buy_priority(self, ai_draft)
+	elif step == "upgrade_tower":
+		done = ai_upgrades.try_tower_priority(self, ai_draft)
+	elif step == "regen_shield":
+		done = ai_shields.try_regen_priority(self, ai_draft)
+	elif step == "castle_shield" or step == "upgrade_nexus":
+		done = _ai_nexus_attempt(step)
+	return done
+
+
+func _ai_nexus_attempt(kind: String) -> bool:
+	# Source passes my_nexus to both shield and upgrade actions; a destroyed
+	# nexus simply fails the action.
+	var nexus := nexuses[RED]
+	if nexus == null or not nexus.alive:
+		return false
+	if kind == "castle_shield":
+		return ai_shields.try_castle(self, ai_draft, nexus.id)
+	return ai_upgrades.try_nexus(self, ai_draft, nexus.id)
 
 
 func _step_ai_heroes() -> void:

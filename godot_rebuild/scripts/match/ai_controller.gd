@@ -13,6 +13,8 @@ extends RefCounted
 
 const AiPolicy = preload("res://scripts/match/ai_policy.gd")
 
+# Source random.random(); seeded so a schedule can be replayed in tests.
+var rng := RandomNumberGenerator.new()
 var policy: AiPolicy
 # Diagnostics: ticks observed, thinking ticks, and actions attempted/completed.
 var ticks := 0
@@ -37,6 +39,10 @@ func tick(control_heroes: Callable, perform_step: Callable) -> int:
 	steps_attempted += policy.last_attempts
 	steps_completed += completed
 	return completed
+
+
+func draw() -> float:
+	return rng.randf()
 
 
 func reserve(draft: Object) -> int:

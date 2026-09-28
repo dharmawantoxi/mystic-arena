@@ -104,6 +104,9 @@ func run(check: Callable) -> void:
 	_test_hero_control_wiring(check)
 	_test_ai_schedule(fixture.schedule, check)
 	_test_ai_controller_wiring(check)
+	_test_ai_actions(check)
+	_test_ai_defender_swap(check)
+	_test_ai_shield_nexus(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -1750,7 +1753,7 @@ func _test_ai_controller_wiring(check: Callable) -> void:
 		"Before the first thinking tick the AI attempts no priority action"
 	)
 	check.call(not blue.has_destination, "Blue heroes must stay manual")
-	# Think timer expiry attempts the scan (no adapter is wired yet).
+	# Think timer expiry attempts the scan, now wired to the real adapters.
 	world.ai_controller.policy.think_timer = 1
 	world.step_tick()
 	check.call(
@@ -1758,11 +1761,172 @@ func _test_ai_controller_wiring(check: Callable) -> void:
 		"Expired think timer must attempt the priority scan once"
 	)
 	check.call(
-		world.ai_controller.steps_completed == 0,
-		"Unwired adapters report no action, so the scan completes nothing"
+		world.ai_controller.steps_completed <= 1,
+		"A thinking tick completes at most one priority action"
 	)
 	# Disabled controller leaves the tick untouched.
 	world.ai_enabled = false
 	var ticks := world.ai_controller.ticks
 	world.step_tick()
 	check.call(world.ai_controller.ticks == ticks, "Disabled AI controller must not tick")
+
+
+# ── Layer 6c: AI priority scan wired to the real adapters ───────────
+func _ai_world(gold: int) -> World:
+	var world := _world()
+	_clear_heroes(world)
+	_fund(world, gold)
+	world.defender_enabled = true
+	world.ai_enabled = true
+	world.ai_controller.rng.seed = 7
+	world.ai_build.rng.seed = 7
+	world.ai_draft.rng.seed = 7
+	world.ai_controller.policy.think_timer = 1
+	return world
+
+
+func _has_event(world: World, kind: String) -> bool:
+	for event in world.recent_events:
+		if String(event.get("kind", "")) == kind:
+			return true
+	return false
+
+
+func _red_towers(world: World) -> int:
+	var count := 0
+	for structure in world.structures:
+		if (
+			structure.alive
+			and structure.team == world.RED
+			and structure.settings().structure_kind == "tower"
+		):
+			count += 1
+	return count
+
+
+func _red_tower_id(world: World) -> int:
+	var entity_id := 0
+	for structure in world.structures:
+		if structure.team == world.RED and structure.settings().structure_kind == "tower":
+			entity_id = structure.id
+	return entity_id
+
+
+func _red_layout(world: World) -> String:
+	# Slot identity shows through the structure position: a different slot pick
+	# changes the replay string even when the action count matches.
+	var parts: PackedStringArray = []
+	for structure in world.structures:
+		if structure.team == world.RED:
+			parts.append("%d,%d" % [int(structure.position.x), int(structure.position.y)])
+	return "|".join(parts)
+
+
+func _test_ai_actions(check: Callable) -> void:
+	# Every source priority dispatches to its real adapter and the shared ledger.
+	var world := _ai_world(20000)
+	var gold0 := world.economy.gold[world.RED]
+	check.call(world._ai_attempt("build"), "AI build priority must build a red tower")
+	check.call(_red_towers(world) == 1, "AI build must place exactly one tower")
+	check.call(world.economy.gold[world.RED] == gold0 - 100, "AI build must debit the build cost")
+	check.call(_has_event(world, "build"), "AI build must record the real transaction")
+	check.call(world._ai_attempt("buy_hero"), "AI buy_hero priority must summon a hero")
+	check.call(world._ai_roster().size() == 1, "AI roster must hold the summoned hero")
+	check.call(_has_event(world, "hero_buy"), "AI hero purchase must hit the shared ledger")
+	var hero := world._ai_roster()[0] as World.HeroState
+	check.call(world._ai_attempt("upgrade_hero"), "AI upgrade_hero must upgrade the roster")
+	check.call(hero.level == 2, "AI hero upgrade must raise the hero level")
+	check.call(_has_event(world, "hero_upgrade"), "AI hero upgrade must hit the ledger")
+	check.call(world._ai_attempt("buy_item"), "AI buy_item must equip the suggested item")
+	check.call(hero.items.used_slots() == 1, "AI item must land in the hero inventory")
+	check.call(_has_event(world, "hero_item"), "AI item purchase must hit the ledger")
+	# The built tower is level 1 and takes one real upgrade step.
+	var tower_id := _red_tower_id(world)
+	var level0 := int(world.get_unit(tower_id).settings().level)
+	check.call(world._ai_attempt("upgrade_tower"), "AI upgrade_tower must upgrade a tower")
+	check.call(
+		int(world.get_unit(tower_id).settings().level) == level0 + 1,
+		"AI tower upgrade must raise the tower level"
+	)
+	check.call(_has_event(world, "upgrade"), "AI tower upgrade must hit the ledger")
+	# Determinism: the same seed replays the scan, another seed diverges.
+	var first := _ai_sequence(11)
+	var second := _ai_sequence(11)
+	var other := _ai_sequence(12)
+	check.call(not first.is_empty(), "Seeded AI schedule must perform actions")
+	check.call(first == second, "Same seed must replay the same AI action sequence")
+	check.call(other != first, "A different seed must change the AI action sequence")
+
+
+func _ai_sequence(seed_value: int) -> Array:
+	# One scan per step on a fresh world: every draw comes from the seeded
+	# controller/build/draft RNG, so no combat roll can leak into the replay.
+	var world := _ai_world(30000)
+	world.ai_controller.rng.seed = seed_value
+	world.ai_build.rng.seed = seed_value
+	world.ai_draft.rng.seed = seed_value
+	var rows: Array = []
+	for _step in range(30):
+		var done := world._ai_perform_step()
+		(
+			rows
+			. append(
+				(
+					"%s:%d:%d:%d:%s"
+					% [
+						str(done),
+						int(world.economy.gold[world.RED]),
+						world._ai_roster().size(),
+						_red_towers(world),
+						_red_layout(world),
+					]
+				)
+			)
+		)
+	return rows
+
+
+func _test_ai_defender_swap(check: Callable) -> void:
+	# The temporary defender and the real AI never run together.
+	var world := _world()
+	_clear_heroes(world)
+	_fund(world, 0)
+	world.defender_enabled = true
+	world.ai_enabled = true
+	for _tick in range(300):
+		world.step_tick()
+	check.call(world._defender_built == 0, "Temporary defender must stand down while the AI runs")
+	_fund(world, 30000)
+	world.ai_enabled = false
+	for _tick in range(300):
+		world.step_tick()
+	check.call(world._defender_built == 1, "Defender resumes once the AI is disabled")
+
+
+func _test_ai_shield_nexus(check: Callable) -> void:
+	# Regen shield needs a level 4+ tower; the castle shield a red nexus whose
+	# free shield already expired (source set_wave gate).
+	var world := _ai_world(60000)
+	check.call(world._ai_attempt("build"), "AI shield checks need a real red tower")
+	var tower_id := _red_tower_id(world)
+	for _step in range(3):
+		var level := int(world.get_unit(tower_id).settings().level)
+		if level >= 4:
+			break
+		check.call(
+			world._upgrade_tower_for(world.RED, tower_id, level, "archer"),
+			"Tower must reach the regen shield level"
+		)
+	check.call(
+		world._ai_attempt("regen_shield"), "AI regen_shield must activate on a level 4 tower"
+	)
+	check.call(
+		world.get_unit(tower_id).regen_shield_active, "Regen shield must be active on the tower"
+	)
+	var nexus := world.nexuses[world.RED]
+	nexus.set_wave(nexus.settings().free_shield_waves + 1)
+	check.call(world._ai_attempt("castle_shield"), "AI castle_shield must buy the red nexus shield")
+	check.call(
+		world.nexuses[world.RED].castle_shield_purchased,
+		"Castle shield purchase must stick to the red nexus"
+	)
