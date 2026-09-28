@@ -384,6 +384,13 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      (`itemshop_close`, `_hero_`, `_page_`, `_buy_`, `_slot_`, `_card_`, popup
      detail menelan klik, klik luar panel menutup). Data tampilan chip/kartu/tab
      tersedia untuk Control; geometri pygame, font/warna dan i18n tetap di luar.
+   - [x] **5f-3.** Control panel ITEM FORGE (`item_forge_panel.gd`): menggambar
+     chip hero ("BELI UNTUK n"), tab kelas, grid kartu 4x2 dengan tombol BELI per
+     kartu, baris slot pembeli (klik kiri = inspeksi, klik kanan = drop) dan
+     popup detail; semua tekanan tombol dikembalikan lewat kosakata
+     `handle_click` yang sama. Layout memakai container Godot, bukan rect
+     pygame; string Indonesia di `SHOP_TEXT` menggantikan `tr()` sumber.
+     Terpasang di HUD PrototypeMatch dengan toggle "Item Forge [I]".
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -447,10 +454,13 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
 5 notify_damage, 6 miasma, 8 forge). Native: `ai_item_checks.gd` terdaftar di
 `run_all.gd`.
-CI Godot 4.7.2 run 36455247721 hijau untuk lapisan 5f-2 (commit `de04849`):
-**1.179.060 native checks**, static lokal 5711 PASS; `gdlint`/`gdformat`/`gdparse`
+CI Godot 4.7.2 run 36458720458 hijau untuk lapisan 5f-3 (commit `6eb7fc9`):
+**1.179.086 native checks**, static lokal 5727 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
 (fixture 11.496 baris, masih di bawah 20k).
+Catatan panel: `refresh()` melepas node lama sebelum `queue_free()` supaya baris
+yang dibangun ulang langsung bisa dihitung tes; popup detail menelan klik lain
+(sesuai sumber), jadi tutup popup dulu sebelum menekan slot/kartu.
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
@@ -458,8 +468,10 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: Control yang menggambar panel ITEM FORGE (geometri/font/i18n) di
-atas state 5f-2, lalu kontrol hero per tick dan integrasi scene. Catatan 5f: `forge.gd` hanya
+Berikutnya: kontrol hero per tick dan integrasi scene. Catatan alur sesi:
+repo pernah ter-clone ulang sehingga riwayat lokal tertinggal dari remote —
+selalu `git fetch origin arena/01a0e891-mystic-arena` dan reset ke FETCH_HEAD
+sebelum commit baru. Catatan 5f: `forge.gd` hanya
 menganggap roster tim pemain (BLUE), dan kandidat AI tetap hidup-saja lewat
 `_buy_item_for`.
 Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
