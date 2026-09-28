@@ -900,6 +900,7 @@ func _hero_enemy_list() -> Array:
 					"pos": unit.position,
 					"team": unit.team,
 					"alive": true,
+					"max_hp": int(unit.max_hp),
 				}
 			)
 		)
@@ -940,7 +941,9 @@ func _tick_hero_items(hero: HeroState) -> void:
 			hero.target_id,
 		)
 	)
-	hero.items.tick_auto(1, _hero_enemy_list(), _battle_item_effects(hero), _item_rng)
+	var enemies: Array = _hero_enemy_list()
+	hero.items.tick_miasma(1, enemies, _battle_item_effects(hero))
+	hero.items.tick_auto(1, enemies, _battle_item_effects(hero), _item_rng)
 	# Apply HP regen result back to hero.
 	hero.hp = hero.items.hero_hp
 
@@ -1161,11 +1164,11 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		var ls: float = hero.items.get_lifesteal_pct()
 		if ls > 0.0:
 			hero.hp = minf(hero.max_hp, hero.hp + float(raw) * ls)
-		hero.items.on_ranged_attack_hit(target.id, raw, _item_rng, bus)
+		hero.items.on_ranged_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
 	else:
 		_deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
 		if target.alive:
-			hero.items.on_basic_attack_hit(target.id, raw, _item_rng, bus)
+			hero.items.on_basic_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
 	hero.hp = hero.items.hero_hp
 	return true
 

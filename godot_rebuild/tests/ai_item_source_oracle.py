@@ -24,8 +24,11 @@ FIXTURE = Path(__file__).parent / "fixtures/ai_items_source.json"
 
 _NAMES = frozenset({
     "MAX_ITEM_SLOTS", "ITEM_FLAT_COST", "MAGIC_ROLE_KEYWORDS", "ITEM_CATALOG",
+    # Miasma registry: module-level, keyed by id(target).
+    "_MIASMA",
 })
-_FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero")
+_FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero",
+              "_apply_miasma", "_tick_miasma")
 _LEVEL_MULT = "_hero_level_mult"
 # Real HeroItemInventory slot bookkeeping plus the stat chain `_on_item_changed`
 # reaches, so the fixture can show exactly what the rebuild does NOT port yet.
@@ -230,7 +233,8 @@ def catalog(env=None):
             # bash/active). Presentation keys (icon/color/glow/desc) stay out.
             "stats": dict(data.get("stats", {})),
         }
-        for key in ("passive", "block", "on_attack", "bash", "active", "aura"):
+        for key in ("passive", "block", "on_attack", "bash", "active", "aura",
+                    "multishot"):
             if key in data:
                 entry[key] = data[key]
         items[item_id] = json.loads(json.dumps(entry))
@@ -597,6 +601,26 @@ def _make_hero(spec, hp_ratio=1.0, target=None, x=0, y=0, team="red", tag="hero"
     return hero
 
 
+# Miasma (Basilisk Breath): the source keeps one registry keyed by id(target)
+# with the last applier as source. The recorder replays an apply/tick script
+# against a stub target so the rebuild locks the % Max HP damage, the
+# [6, cap_damage] clamp, the refresh rules (max damage / max timer / min tick)
+# and the hardcoded 30-tick reset inside _tick_miasma.
+MIASMA_CASES = [
+    # (target max_hp, script of ("apply", overrides) and ("tick", count)).
+    (1000, [("apply", {}), ("tick", 6)]),
+    (5000, [("apply", {}), ("tick", 3)]),
+    (200, [("apply", {}), ("tick", 3)]),
+    (1000, [("apply", {}), ("tick", 2),
+            ("apply", {"max_hp_pct_per_tick": 0.05, "duration": 100,
+                       "tick": 60}),
+            ("tick", 2)]),
+    (1000, [("apply", {"duration": 2}), ("tick", 3)]),
+    # Short tick interval so the poison actually lands ($ Max HP damage +
+    # the hardcoded 30-tick reset) inside the recorded window.
+    (1500, [("apply", {"tick": 2}), ("tick", 3)]),
+]
+
 # (hero spec, loadout, hp_ratio, enemy positions relative to hero at (100,100),
 #  target_index (None = no target), ticks). Each enemy is at (100+dx, 100+dy).
 AUTO_TRIGGER_CASES = [
@@ -954,6 +978,59 @@ def notify_damage(env):
     return rows
 
 
+def miasma(env):
+    """Real _apply_miasma/_tick_miasma against a stub target, one script/row."""
+    # _install_effect_stubs swaps _tick_miasma for a no-op so the update()
+    # fixtures stay deterministic. The recorder re-execs the real functions
+    # into a fresh namespace and silences only the visual notifiers.
+    env = source_namespace(with_functions=True)
+    env["_fx_notify"] = lambda *args, **kwargs: None
+    env["_fx_chain"] = lambda *args, **kwargs: None
+    env["random"] = __import__("random")
+    env["math"] = __import__("math")
+    rows = []
+    with _core_module():
+        base = env["ITEM_CATALOG"]["basilisk_breath"]["on_attack"]
+        for max_hp, script in MIASMA_CASES:
+            registry = env["_MIASMA"]
+            registry.clear()
+            target = _EffectStub(0, 0, "blue", alive=True)
+            target.max_hp = max_hp
+            target.hp = max_hp
+            target._tag = "target"
+            hero = _make_hero({"role": "Marksman", "range": 130,
+                               "base_hp": 620, "level": 3}, x=0, y=0)
+            data = dict(base)
+            steps = []
+            for op, arg in script:
+                if op == "apply":
+                    data.update(arg)
+                    env["_apply_miasma"](target, hero, data)
+                else:
+                    for _ in range(arg):
+                        env["_tick_miasma"](1)
+                tracker = registry.get(id(target))
+                steps.append({
+                    "op": op,
+                    "arg": arg if op == "apply" else arg,
+                    "data": data if op == "apply" else None,
+                    "effects": [dict(e) for e in target.effects],
+                    "damage": None if tracker is None else tracker["damage"],
+                    "timer": None if tracker is None else tracker["timer"],
+                    "tick_cd": None if tracker is None else tracker["tick_cd"],
+                    "active": tracker is not None,
+                })
+                target.effects.clear()
+            rows.append({
+                "target_max_hp": max_hp,
+                "target_team": "blue",
+                "source_team": hero.team,
+                "script": [[op, arg] for op, arg in script],
+                "steps": steps,
+            })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -971,6 +1048,7 @@ def source_fixture():
         "timers": timers(env),
         "auto_triggers": auto_triggers(env),
         "notify_damage": notify_damage(env),
+        "miasma": miasma(env),
     }))
 
 

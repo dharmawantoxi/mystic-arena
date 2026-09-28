@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends RefCounted
 ## Native AI item metadata versus the real hero_items.ITEM_CATALOG exec.
 ## Metadata only: no stat effects, passives or Forge UI are ported here.
@@ -86,6 +87,9 @@ func run(check: Callable) -> void:
 	_test_item_tick_wiring(check)
 	_test_auras(check)
 	_test_on_hit(check)
+	_test_miasma(fixture.miasma, check)
+	_test_multishot(check)
+	_test_miasma_wiring(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -967,3 +971,152 @@ func _test_on_hit(check: Callable) -> void:
 	rng.seed = 1
 	var cr: Array = h.items.roll_crit(rng)
 	check.call(cr.size() == 2, "roll_crit must return 2-element [ok, mult] array")
+
+
+# ── Layer 5e-2: Miasma (Basilisk Breath) + Polycephaly multishot ─────────────
+func _miasma_data() -> Dictionary:
+	var metadata: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(METADATA))
+	return metadata.items.basilisk_breath.on_attack
+
+
+func _test_miasma(rows: Array, check: Callable) -> void:
+	# Replay the source _apply_miasma/_tick_miasma scripts: % Max HP damage in
+	# [6, cap], max-damage/max-timer/min-tick refresh, hardcoded 30-tick reset
+	# and expiry on a dead target or a spent timer.
+	var data := _miasma_data()
+	var target_id := 500
+	var fx := _TestItemFx.new()
+	for row in rows:
+		var inv := Inventory.new()
+		inv.set_hero_gate("Marksman", 130.0)
+		inv.set_hero_scaling(620, 3, 0)
+		var max_hp := int(row.target_max_hp)
+		var enemies: Array = [
+			{
+				"id": target_id,
+				"pos": Vector2.ZERO,
+				"team": 1,
+				"alive": true,
+				"max_hp": max_hp,
+			}
+		]
+		var label := "Miasma %d max_hp" % max_hp
+		for step in row.steps:
+			var op := String(step.op)
+			if op == "apply":
+				var use: Dictionary = data.duplicate()
+				var overrides: Dictionary = step.arg
+				for key in overrides:
+					use[key] = overrides[key]
+				inv.apply_miasma(target_id, true, max_hp, use)
+			else:
+				fx.clear()
+				for _tick in range(int(step.arg)):
+					inv.tick_miasma(1, enemies, fx)
+			var tracker: Dictionary = inv.miasma.get(target_id, {})
+			check.call(
+				tracker.is_empty() != bool(step.active),
+				"%s: tracker presence must match source (%s)" % [label, op]
+			)
+			if bool(step.active):
+				check.call(
+					int(tracker.damage) == int(step.damage),
+					"%s: damage must match source %d" % [label, int(step.damage)]
+				)
+				check.call(
+					int(tracker.timer) == int(step.timer),
+					"%s: timer must match source %d" % [label, int(step.timer)]
+				)
+				check.call(
+					int(tracker.tick_cd) == int(step.tick_cd),
+					"%s: tick countdown must match source %d" % [label, int(step.tick_cd)]
+				)
+			if op == "tick":
+				var want := 0
+				for effect in step.effects:
+					if String(effect.kind) == "damage":
+						want += int(effect.damage)
+				var got := 0
+				for entry in fx.damage_calls:
+					got += int(entry.amt)
+				check.call(got == want, "%s: tick damage must match source %d" % [label, want])
+	# Dead targets drop their tracker.
+	var dead_inv := Inventory.new()
+	dead_inv.set_hero_gate("Marksman", 130.0)
+	dead_inv.set_hero_scaling(620, 3, 0)
+	dead_inv.apply_miasma(target_id, true, 1000, data)
+	var dead_enemies: Array = [
+		{"id": target_id, "pos": Vector2.ZERO, "team": 1, "alive": false, "max_hp": 1000}
+	]
+	dead_inv.tick_miasma(1, dead_enemies, fx)
+	check.call(dead_inv.miasma.is_empty(), "Miasma must drop the tracker when its target dies")
+
+
+func _test_multishot(check: Callable) -> void:
+	# Polycephaly: only ranged owners, 2 nearest enemies around the primary
+	# target inside 200 px, 70% damage and Miasma on each extra victim.
+	var world := _world()
+	var h := world.spawn_hero(World.SYLARA, world.BLUE, Vector2(200, 200))
+	var target := world.spawn_hero(World.VEX, world.RED, Vector2(300, 200))
+	var near1 := world.spawn_hero(World.VEX, world.RED, Vector2(340, 200))
+	var near2 := world.spawn_hero(World.GRIMJAW, world.RED, Vector2(300, 260))
+	var far := world.spawn_hero(World.VEX, world.RED, Vector2(900, 900))
+	assert(h.items.add("basilisk_breath"), "basilisk_breath refused")
+	for hero in [h, target, near1, near2, far]:
+		hero.apply_item_change()
+	var proc_seed := -1
+	for seed_value in range(64):
+		var probe := RandomNumberGenerator.new()
+		probe.seed = seed_value
+		if probe.randf() < 0.30:
+			proc_seed = seed_value
+			break
+	check.call(proc_seed >= 0, "Polycephaly test needs a seed inside the 30% proc")
+	var hp1 := near1.hp
+	var hp2 := near2.hp
+	var far_hp := far.hp
+	world._item_rng.seed = proc_seed
+	world.hero_basic_attack(h.id, target.id)
+	check.call(near1.hp < hp1, "Polycephaly must splash the nearest extra enemy")
+	check.call(near2.hp < hp2, "Polycephaly must splash the second extra enemy")
+	check.call(far.hp == far_hp, "Polycephaly must not reach enemies beyond 200 px")
+	check.call(
+		h.items.miasma.has(near1.id) and h.items.miasma.has(near2.id),
+		"Polycephaly must poison every extra victim with Miasma"
+	)
+	check.call(h.items.miasma.has(target.id), "Basilisk Breath must poison the attack target")
+	# Melee owners keep Miasma but never fire the extra shots.
+	var melee_world := _world()
+	var m := melee_world.spawn_hero(World.THORNE, melee_world.BLUE, Vector2(200, 200))
+	var m_target := melee_world.spawn_hero(World.VEX, melee_world.RED, Vector2(260, 200))
+	var m_extra := melee_world.spawn_hero(World.GRIMJAW, melee_world.RED, Vector2(300, 200))
+	assert(m.items.add("basilisk_breath"), "basilisk_breath refused (melee)")
+	for hero in [m, m_target, m_extra]:
+		hero.apply_item_change()
+	var extra_hp := m_extra.hp
+	melee_world._item_rng.seed = proc_seed
+	melee_world.hero_basic_attack(m.id, m_target.id)
+	check.call(m_extra.hp == extra_hp, "Polycephaly must stay ranged-only")
+	check.call(
+		m.items.miasma.has(m_target.id), "Melee Basilisk Breath must still poison its target"
+	)
+
+
+func _test_miasma_wiring(check: Callable) -> void:
+	# The battle tick loop must advance the Miasma timers like update() does.
+	var tick_world := _world()
+	var poisoner := tick_world.spawn_hero(World.THORNE, tick_world.BLUE, Vector2(200, 200))
+	var victim := tick_world.spawn_hero(World.VEX, tick_world.RED, Vector2(900, 900))
+	assert(poisoner.items.add("basilisk_breath"), "basilisk_breath refused (wiring)")
+	poisoner.apply_item_change()
+	victim.apply_item_change()
+	poisoner.items.apply_miasma(victim.id, true, int(victim.max_hp), _miasma_data())
+	var victim_hp := victim.hp
+	for _tick in range(32):
+		tick_world.step_tick()
+	check.call(victim.hp < victim_hp, "Battle tick must land the Miasma poison damage")
+	var tracker: Dictionary = poisoner.items.miasma.get(victim.id, {})
+	check.call(
+		int(tracker.get("tick_cd", -1)) <= 30,
+		"Miasma tick countdown must reset to the source 30-tick value"
+	)

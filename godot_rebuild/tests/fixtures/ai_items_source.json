@@ -461,6 +461,13 @@
           "tick": 30,
           "duration": 180,
           "cap_damage": 60
+        },
+        "multishot": {
+          "name": "Polycephaly",
+          "chance": 0.3,
+          "targets": 2,
+          "radius": 200,
+          "damage_pct": 0.7
         }
       },
       "solar_brand": {
@@ -9798,6 +9805,326 @@
             230,
             255
           ]
+        }
+      ]
+    }
+  ],
+  "miasma": [
+    {
+      "target_max_hp": 1000,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {}
+        ],
+        [
+          "tick",
+          6
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {},
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,
+            "duration": 180,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 22,
+          "timer": 180,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 6,
+          "data": null,
+          "effects": [],
+          "damage": 22,
+          "timer": 174,
+          "tick_cd": 24,
+          "active": true
+        }
+      ]
+    },
+    {
+      "target_max_hp": 5000,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {}
+        ],
+        [
+          "tick",
+          3
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {},
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,
+            "duration": 180,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 60,
+          "timer": 180,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 3,
+          "data": null,
+          "effects": [],
+          "damage": 60,
+          "timer": 177,
+          "tick_cd": 27,
+          "active": true
+        }
+      ]
+    },
+    {
+      "target_max_hp": 200,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {}
+        ],
+        [
+          "tick",
+          3
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {},
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,
+            "duration": 180,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 6,
+          "timer": 180,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 3,
+          "data": null,
+          "effects": [],
+          "damage": 6,
+          "timer": 177,
+          "tick_cd": 27,
+          "active": true
+        }
+      ]
+    },
+    {
+      "target_max_hp": 1000,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {}
+        ],
+        [
+          "tick",
+          2
+        ],
+        [
+          "apply",
+          {
+            "max_hp_pct_per_tick": 0.05,
+            "duration": 100,
+            "tick": 60
+          }
+        ],
+        [
+          "tick",
+          2
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {},
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.05,
+            "tick": 60,
+            "duration": 100,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 22,
+          "timer": 180,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 2,
+          "data": null,
+          "effects": [],
+          "damage": 22,
+          "timer": 178,
+          "tick_cd": 28,
+          "active": true
+        },
+        {
+          "op": "apply",
+          "arg": {
+            "max_hp_pct_per_tick": 0.05,
+            "duration": 100,
+            "tick": 60
+          },
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.05,
+            "tick": 60,
+            "duration": 100,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 50,
+          "timer": 178,
+          "tick_cd": 28,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 2,
+          "data": null,
+          "effects": [],
+          "damage": 50,
+          "timer": 176,
+          "tick_cd": 26,
+          "active": true
+        }
+      ]
+    },
+    {
+      "target_max_hp": 1000,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {
+            "duration": 2
+          }
+        ],
+        [
+          "tick",
+          3
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {
+            "duration": 2
+          },
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 30,
+            "duration": 2,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 22,
+          "timer": 2,
+          "tick_cd": 30,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 3,
+          "data": null,
+          "effects": [],
+          "damage": null,
+          "timer": null,
+          "tick_cd": null,
+          "active": false
+        }
+      ]
+    },
+    {
+      "target_max_hp": 1500,
+      "target_team": "blue",
+      "source_team": "red",
+      "script": [
+        [
+          "apply",
+          {
+            "tick": 2
+          }
+        ],
+        [
+          "tick",
+          3
+        ]
+      ],
+      "steps": [
+        {
+          "op": "apply",
+          "arg": {
+            "tick": 2
+          },
+          "data": {
+            "name": "Miasma",
+            "max_hp_pct_per_tick": 0.022,
+            "tick": 2,
+            "duration": 180,
+            "cap_damage": 60
+          },
+          "effects": [],
+          "damage": 33,
+          "timer": 180,
+          "tick_cd": 2,
+          "active": true
+        },
+        {
+          "op": "tick",
+          "arg": 3,
+          "data": null,
+          "effects": [
+            {
+              "kind": "damage",
+              "x": 0,
+              "y": 0,
+              "team": "blue",
+              "damage": 33,
+              "dmg_team": "red",
+              "school": "magic"
+            }
+          ],
+          "damage": 33,
+          "timer": 177,
+          "tick_cd": 29,
+          "active": true
         }
       ]
     }

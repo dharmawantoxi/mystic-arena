@@ -9,11 +9,13 @@ extends RefCounted
 ## battle layer directly.
 ##
 ## LIMITATION, NOT PARITY (layer 5c-2 scope):
-## - `on_basic_attack_hit()`, `_on_hit_common()`, `on_ranged_attack_hit()`
-##   (on-hit procs, 5e) and `update_auras()` (5d) are NOT ported here.
+## - `update_auras()` (5d) lives on the battle layer, not here.
 ## - Hero runtime state (hp/pos/alive/facing/target_id) must be refreshed via
 ##   set_hero_runtime() every tick before tick_auto(); the inventory keeps no
 ##   hero reference.
+## - Layer 5e-2 keeps the Miasma registry per inventory; the source registry is
+##   module-level and keyed by id(target), so two owners poisoning one target
+##   stack here. Every other Miasma rule (clamp, refresh, 30-tick reset) matches.
 ## The source-side values are locked in `tests/fixtures/ai_items_source.json`
 ## ("auto_triggers", "notify_damage"), so this contract updates as each layer
 ## lands.
@@ -116,6 +118,8 @@ var vine_cd := 0
 var ghost_cd := 0
 # Entity id of the Soul Rend target; -1 is the source None.
 var rend_target := -1
+# Layer 5e-2: Miasma trackers keyed by target id (damage, timer, tick_cd).
+var miasma: Dictionary = {}
 
 
 func _init(metadata: Dictionary = {}) -> void:
@@ -724,20 +728,88 @@ func notify_damage_taken(
 
 
 # ── Enemy list helpers (enemies is an Array of {id,pos,team,alive}) ─────────
-func _enemy_pos(enemies: Array, eid: int) -> Vector2:
+func _enemy_entry(enemies: Array, eid: int) -> Dictionary:
 	for e in enemies:
 		var d: Dictionary = e as Dictionary
 		if int(d.get("id", -2)) == eid:
-			return d.get("pos", Vector2.ZERO) as Vector2
-	return Vector2.ZERO
+			return d
+	return {}
+
+
+func _enemy_pos(enemies: Array, eid: int) -> Vector2:
+	return _enemy_entry(enemies, eid).get("pos", Vector2.ZERO) as Vector2
 
 
 func _enemy_alive(enemies: Array, eid: int) -> bool:
-	for e in enemies:
-		var d: Dictionary = e as Dictionary
-		if int(d.get("id", -2)) == eid:
-			return bool(d.get("alive", false)) and int(d.get("team", -1)) != hero_team
-	return false
+	var entry: Dictionary = _enemy_entry(enemies, eid)
+	return (
+		not entry.is_empty()
+		and bool(entry.get("alive", false))
+		and int(entry.get("team", -1)) != hero_team
+	)
+
+
+# ── Layer 5e-2: Miasma poison (Basilisk Breath) ──────────────
+func _is_ranged_hero() -> bool:
+	# Source reads `hero.is_melee_hero` and falls back to the `range >= 110`
+	# rule when the attribute is missing (Hero.is_melee_hero is < 110).
+	if hero_melee_flag >= 0:
+		return hero_melee_flag == 0
+	return hero_range >= 110.0
+
+
+func _miasma_damage(target_max_hp: int, data: Dictionary) -> int:
+	# Source: int(target.max_hp * pct), clamped to [6, cap_damage].
+	var raw := int(float(target_max_hp) * float(data.get("max_hp_pct_per_tick", 0.0)))
+	return maxi(6, mini(int(data.get("cap_damage", 9999)), raw))
+
+
+func apply_miasma(target_id: int, target_alive: bool, target_max_hp: int, data: Dictionary) -> void:
+	# Port of _apply_miasma. The source bails on a dead/absent target; a
+	# re-apply keeps the strongest damage, the longest timer and the shortest
+	# tick countdown.
+	if not target_alive or data.is_empty():
+		return
+	var dmg := _miasma_damage(target_max_hp, data)
+	var prev: Dictionary = miasma.get(target_id, {})
+	if prev.is_empty():
+		miasma[target_id] = {
+			"damage": dmg,
+			"timer": int(data.get("duration", 0)),
+			"tick_cd": int(data.get("tick", 0)),
+		}
+		return
+	prev["damage"] = maxi(int(prev["damage"]), dmg)
+	prev["timer"] = maxi(int(prev["timer"]), int(data.get("duration", 0)))
+	prev["tick_cd"] = mini(int(prev["tick_cd"]), int(data.get("tick", 0)))
+
+
+func tick_miasma(dt: int, enemies: Array, effects: ItemEffects) -> void:
+	# Port of _tick_miasma: decrement every tracker, land the poison damage when
+	# the tick countdown expires (the source resets it to a hardcoded 30), and
+	# drop a tracker when its target dies or its timer runs out.
+	if miasma.is_empty():
+		return
+	var expired: Array = []
+	for key in miasma.keys():
+		var tgt_id: int = int(key)
+		var entry: Dictionary = _enemy_entry(enemies, tgt_id)
+		if entry.is_empty() or not bool(entry.get("alive", false)):
+			expired.append(tgt_id)
+			continue
+		var m: Dictionary = miasma[tgt_id]
+		m["timer"] = int(m["timer"]) - dt
+		m["tick_cd"] = int(m["tick_cd"]) - dt
+		if int(m["tick_cd"]) <= 0:
+			m["tick_cd"] = 30
+			var dmg: int = int(m["damage"])
+			if dmg > 0:
+				effects.deal_damage(tgt_id, hero_team, dmg, "magic")
+			effects.notify(tgt_id, "POISON")
+		if int(m["timer"]) <= 0:
+			expired.append(tgt_id)
+	for key in expired:
+		miasma.erase(key)
 
 
 # ── Layer 5e: on-hit procs (roll_crit / basic & ranged attack hits) ──
@@ -757,7 +829,7 @@ func roll_crit(_rng: RandomNumberGenerator) -> Array:
 
 
 func on_basic_attack_hit(
-	target_id: int, damage: int, _rng: RandomNumberGenerator, effects: ItemEffects
+	target_id: int, damage: int, enemies: Array, rng: RandomNumberGenerator, effects: ItemEffects
 ) -> void:
 	# Port of on_basic_attack_hit (melee): lifesteal + _on_hit_common + cleave.
 	if not hero_alive:
@@ -765,7 +837,7 @@ func on_basic_attack_hit(
 	var ls: float = get_lifesteal_pct()
 	if ls > 0.0 and damage > 0:
 		hero_hp = mini(float(hero_max_hp), hero_hp + float(damage) * ls)
-	_on_hit_common(target_id, damage, _rng, effects)
+	_on_hit_common(target_id, damage, enemies, rng, effects)
 	var cleave: Variant = get_cleave()
 	if cleave != null and damage > 0:
 		var pct: float = float(cleave[0])
@@ -776,16 +848,16 @@ func on_basic_attack_hit(
 
 
 func on_ranged_attack_hit(
-	target_id: int, damage: int, _rng: RandomNumberGenerator, effects: ItemEffects
+	target_id: int, damage: int, enemies: Array, rng: RandomNumberGenerator, effects: ItemEffects
 ) -> void:
 	# Port of on_ranged_attack_hit: on-hit common only (no lifesteal/cleave).
 	if not hero_alive:
 		return
-	_on_hit_common(target_id, damage, _rng, effects)
+	_on_hit_common(target_id, damage, enemies, rng, effects)
 
 
 func _on_hit_common(
-	target_id: int, _damage: int, _rng: RandomNumberGenerator, effects: ItemEffects
+	target_id: int, damage: int, enemies: Array, rng: RandomNumberGenerator, effects: ItemEffects
 ) -> void:
 	# Corroder: armor shred.
 	var shred: Variant = get_armor_shred()
@@ -795,7 +867,7 @@ func _on_hit_common(
 	var bash: Variant = get_bash()
 	if bash != null and bash_cd <= 0:
 		var bash_dict: Dictionary = bash as Dictionary
-		if _rng.randf() < float(bash_dict.get("chance", 0.0)):
+		if rng.randf() < float(bash_dict.get("chance", 0.0)):
 			bash_cd = int(bash_dict.get("cooldown", 0))
 			effects.apply_stun(target_id, int(bash_dict.get("stun", 0)))
 			effects.deal_damage(target_id, hero_team, int(bash_dict.get("damage", 0)), "physical")
@@ -804,7 +876,7 @@ func _on_hit_common(
 	var chain: Variant = get_on_attack_chain()
 	if chain != null:
 		var ch: Dictionary = chain as Dictionary
-		if float(ch.get("chance", 0.0)) > 0.0 and _rng.randf() < float(ch["chance"]):
+		if float(ch.get("chance", 0.0)) > 0.0 and rng.randf() < float(ch["chance"]):
 			var hit: Array = effects.chain_targets(
 				target_id, hero_team, float(ch["radius"]), int(ch["targets"])
 			)
@@ -818,7 +890,7 @@ func _on_hit_common(
 	# Sundering Cudgel: Piercing Bash.
 	if has("sundering_cudgel") and pierce_bash_cd <= 0:
 		var pb: Dictionary = item("sundering_cudgel").get("bash", {})
-		if _rng.randf() < float(pb.get("chance", 0.0)):
+		if rng.randf() < float(pb.get("chance", 0.0)):
 			pierce_bash_cd = int(pb.get("cooldown", 0))
 			effects.apply_stun(target_id, int(pb.get("stun", 0)))
 			effects.deal_damage(target_id, hero_team, int(pb.get("damage", 0)), "magic")
@@ -833,6 +905,38 @@ func _on_hit_common(
 		effects.apply_anti_heal(
 			target_id, float(oa.get("anti_heal", 0.0)), int(oa.get("duration", 0))
 		)
+	# Basilisk Breath: Miasma (% max HP poison) plus Polycephaly extra shots.
+	if has("basilisk_breath"):
+		var oa: Dictionary = item("basilisk_breath").get("on_attack", {})
+		var entry: Dictionary = _enemy_entry(enemies, target_id)
+		apply_miasma(target_id, bool(entry.get("alive", false)), int(entry.get("max_hp", 0)), oa)
+		var ms: Dictionary = item("basilisk_breath").get("multishot", {})
+		if (
+			not ms.is_empty()
+			and _is_ranged_hero()
+			and not entry.is_empty()
+			and rng.randf() < float(ms.get("chance", 0.0))
+		):
+			var center: Vector2 = entry.get("pos", Vector2.ZERO) as Vector2
+			var extras: Array = _nearby_enemies_sorted_from(
+				enemies, center, float(ms.get("radius", 0.0)), target_id
+			)
+			var count: int = mini(extras.size(), int(ms.get("targets", 0)))
+			var splash: int = int(float(damage) * float(ms.get("damage_pct", 0.0)))
+			var hit: Array = []
+			for index in range(count):
+				var eid: int = int(extras[index])
+				if splash > 0:
+					effects.deal_damage(eid, hero_team, splash, "magic")
+				apply_miasma(
+					eid,
+					_enemy_alive(enemies, eid),
+					int(_enemy_entry(enemies, eid).get("max_hp", 0)),
+					oa
+				)
+				hit.append(eid)
+			if hit.size() > 0:
+				effects.chain_fx(hero_id, hit)
 	# Runic Gavel: Empower Strike.
 	if has("runic_gavel") and empower_charge <= 0:
 		var bonus: int = consume_empower_strike()
@@ -862,8 +966,14 @@ func _nearby_enemies(enemies: Array, radius: float) -> Array:
 
 
 func _nearby_enemies_sorted(enemies: Array, radius: float) -> Array:
+	return _nearby_enemies_sorted_from(enemies, hero_position, radius, -1)
+
+
+func _nearby_enemies_sorted_from(
+	enemies: Array, center: Vector2, radius: float, exclude_id: int
+) -> Array:
 	# Source sorts nearby by distance ascending; tie-break by insertion order
-	# (sort_custom is not stable).
+	# (sort_custom is not stable). Polycephaly measures from the hit target.
 	var entries: Array = []
 	for index in range(enemies.size()):
 		var d: Dictionary = enemies[index] as Dictionary
@@ -871,8 +981,10 @@ func _nearby_enemies_sorted(enemies: Array, radius: float) -> Array:
 			continue
 		if int(d.get("team", -1)) == hero_team:
 			continue
+		if int(d.get("id", -2)) == exclude_id:
+			continue
 		var epos: Vector2 = d.get("pos", Vector2.ZERO) as Vector2
-		var dist := hero_position.distance_to(epos)
+		var dist := center.distance_to(epos)
 		if dist <= radius:
 			entries.append({"id": int(d.get("id", -1)), "dist": dist, "idx": index})
 	# Python sort is stable: we approximate with (dist, idx) tuple key.
