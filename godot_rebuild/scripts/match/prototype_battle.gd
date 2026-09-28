@@ -892,6 +892,9 @@ func _hero_enemy_list() -> Array:
 	for unit in units:
 		if not unit.alive:
 			continue
+		# Only HeroState carries max_hp so far; minions/structure units fall
+		# back to 0, which leaves Miasma on them at its 6-damage floor.
+		var raw_max: Variant = unit.get("max_hp")
 		(
 			enemies
 			. append(
@@ -900,7 +903,7 @@ func _hero_enemy_list() -> Array:
 					"pos": unit.position,
 					"team": unit.team,
 					"alive": true,
-					"max_hp": int(unit.max_hp),
+					"max_hp": 0 if raw_max == null else int(raw_max),
 				}
 			)
 		)
