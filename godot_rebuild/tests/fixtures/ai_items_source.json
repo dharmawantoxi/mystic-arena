@@ -10128,5 +10128,1206 @@
         }
       ]
     }
+  ],
+  "forge": [
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": 1,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        },
+        {
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": false
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_queued"
+          ],
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero1",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            [
+              "dead_edge"
+            ]
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "respawn",
+          "arg": 1,
+          "notify": null,
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero1",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [
+            "dead_edge"
+          ],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "buy",
+          "arg": "corroder",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero1",
+                "item": "Corroder"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 11000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "dead_edge",
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "drop",
+          "arg": 0,
+          "notify": [
+            "item_dropped"
+          ],
+          "tr": [
+            {
+              "key": "item_dropped",
+              "values": {
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 11000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "drop",
+          "arg": 5,
+          "notify": [],
+          "tr": [],
+          "delivered": [],
+          "gold": 11000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        }
+      ]
+    },
+    {
+      "gold": 60000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 55500,
+          "slots": [
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "corroder",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Corroder"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 51000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "moon_shard",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Moon Shard"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 46500,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "solar_brand",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Solar Brand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 41000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "searbrand",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Searbrand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 35250,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "runic_gavel",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Runic Gavel"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 30000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              "runic_gavel"
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "frostbound_eye",
+          "notify": [
+            "inventory_full"
+          ],
+          "tr": [
+            {
+              "key": "inventory_full",
+              "values": {
+                "hero": "Hero0"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 30000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              "runic_gavel"
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        }
+      ]
+    },
+    {
+      "gold": 60000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 55500,
+          "slots": [
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "corroder",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Corroder"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 51000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "moon_shard",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Moon Shard"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 46500,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "solar_brand",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Solar Brand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 41000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "searbrand",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Searbrand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 35250,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "kill",
+          "arg": 0,
+          "notify": null,
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Searbrand"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 35250,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "runic_gavel",
+          "notify": [
+            "forge_queued"
+          ],
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero0",
+                "item": "Runic Gavel"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 30000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            [
+              "runic_gavel"
+            ]
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "buy",
+          "arg": "frostbound_eye",
+          "notify": [
+            "inventory_full"
+          ],
+          "tr": [
+            {
+              "key": "inventory_full",
+              "values": {
+                "hero": "Hero0"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 30000,
+          "slots": [
+            [
+              "dead_edge",
+              "corroder",
+              "moon_shard",
+              "solar_brand",
+              "searbrand",
+              null
+            ]
+          ],
+          "pending": [
+            [
+              "runic_gavel"
+            ]
+          ],
+          "target_index": 0
+        }
+      ]
+    },
+    {
+      "gold": 500,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [],
+          "tr": [],
+          "delivered": [],
+          "gold": 500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": null
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "cleave_axe",
+          "notify": [],
+          "tr": [],
+          "delivered": [],
+          "gold": 20000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": null
+        },
+        {
+          "op": "buy",
+          "arg": "astral_codex",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Astral Codex"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 14000,
+          "slots": [
+            [
+              "astral_codex",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "astral_codex",
+          "notify": [
+            "magic_only_denied"
+          ],
+          "tr": [
+            {
+              "key": "magic_only_denied",
+              "values": {
+                "hero": "Hero0"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 20000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": null
+        },
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 15500,
+          "slots": [
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            []
+          ],
+          "target_index": 0
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": null,
+      "heroes": [],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "no_hero"
+          ],
+          "tr": [
+            {
+              "key": "no_hero",
+              "values": {}
+            }
+          ],
+          "delivered": [],
+          "gold": 20000,
+          "slots": [],
+          "pending": [],
+          "target_index": null
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": 1,
+      "selected": 0,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": true
+        },
+        {
+          "role": "Marksman",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": false
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_queued"
+          ],
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero1",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            [
+              "dead_edge"
+            ]
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "respawn",
+          "arg": 1,
+          "notify": null,
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero1",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [
+            "dead_edge"
+          ],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        },
+        {
+          "op": "buy",
+          "arg": "corroder",
+          "notify": [
+            "forge_purchase"
+          ],
+          "tr": [
+            {
+              "key": "forge_purchase",
+              "values": {
+                "hero": "Hero1",
+                "item": "Corroder"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 11000,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              "dead_edge",
+              "corroder",
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 1
+        }
+      ]
+    },
+    {
+      "gold": 20000,
+      "saved": null,
+      "selected": null,
+      "heroes": [
+        {
+          "role": "Bruiser",
+          "range": 70,
+          "base_hp": 620,
+          "level": 3,
+          "alive": false
+        },
+        {
+          "role": "Mage",
+          "range": 130,
+          "base_hp": 500,
+          "level": 2,
+          "alive": false
+        }
+      ],
+      "steps": [
+        {
+          "op": "buy",
+          "arg": "dead_edge",
+          "notify": [
+            "forge_queued"
+          ],
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [],
+          "gold": 15500,
+          "slots": [
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [
+              "dead_edge"
+            ],
+            []
+          ],
+          "target_index": 0
+        },
+        {
+          "op": "respawn",
+          "arg": 0,
+          "notify": null,
+          "tr": [
+            {
+              "key": "forge_queued",
+              "values": {
+                "hero": "Hero0",
+                "item": "Dead Edge"
+              }
+            }
+          ],
+          "delivered": [
+            "dead_edge"
+          ],
+          "gold": 15500,
+          "slots": [
+            [
+              "dead_edge",
+              null,
+              null,
+              null,
+              null,
+              null
+            ],
+            [
+              null,
+              null,
+              null,
+              null,
+              null,
+              null
+            ]
+          ],
+          "pending": [
+            [],
+            []
+          ],
+          "target_index": 0
+        }
+      ]
+    }
   ]
 }

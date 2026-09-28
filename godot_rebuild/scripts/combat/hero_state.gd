@@ -105,6 +105,10 @@ var has_destination := false
 var destination := Vector2.ZERO
 var follow_id := -1
 var respawn_timer := 0
+# Layer 5f: Forge orders bought while the hero is dead (source
+# hero._pending_forge_items). Delivered by forge.deliver_pending_forge_items()
+# right after respawn.
+var pending_items: Array = []
 var is_retreating := false
 var auto_cast_enabled := false
 var auto_cast_check_timer := 0

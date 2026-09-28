@@ -90,6 +90,8 @@ func run(check: Callable) -> void:
 	_test_miasma(fixture.miasma, check)
 	_test_multishot(check)
 	_test_miasma_wiring(check)
+	_test_forge(fixture.forge, check)
+	_test_forge_wiring(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -334,6 +336,24 @@ func _fund(world: World, gold: int) -> void:
 	world.economy = Economy.new()
 	world.economy.gold[1] = gold
 	world.economy.opening[1] = gold
+
+
+func _fund_team(world: World, team: int, gold: int) -> void:
+	# Forge tests fund the player purse; _fund() above belongs to the RED AI.
+	world.economy = Economy.new()
+	world.economy.gold[team] = gold
+	world.economy.opening[team] = gold
+
+
+func _clear_heroes(world: World) -> void:
+	# setup_arena spawns a free mirrored Kaizen pair that is not part of the
+	# source player roster; the Forge scenarios build their own.
+	var doomed: Array = []
+	for unit in world.units:
+		if unit.is_hero:
+			doomed.append(unit)
+	for unit in doomed:
+		world.units.erase(unit)
 
 
 func _draft(reserved: int) -> Draft:
@@ -1120,3 +1140,132 @@ func _test_miasma_wiring(check: Callable) -> void:
 		int(tracker.get("tick_cd", -1)) <= 30,
 		"Miasma tick countdown must reset to the source 30-tick value"
 	)
+
+
+# ── Layer 5f: Forge shop (buy / queue / deliver / drop) ─────────────────────
+func _test_forge(rows: Array, check: Callable) -> void:
+	# Replay the source _try_buy/_try_drop/_resolve_shop_target scripts against
+	# real heroes: same tr() keys, same gold trail, same slots and queue.
+	for row in rows:
+		var world := _world()
+		_clear_heroes(world)
+		_fund_team(world, world.BLUE, int(row.gold))
+		var heroes: Array = []
+		var specs: Array = row.heroes
+		for index in range(specs.size()):
+			var spec: Dictionary = specs[index]
+			var key := "%s|%d" % [String(spec.role), int(spec.range)]
+			var definition: Variant = World.PLAYABLE_AI_HEROES[ROLE_HEROES[key]]
+			var hero := world.spawn_hero(definition, world.BLUE, Vector2(200 + 40 * index, 200))
+			assert(hero.settings().role == String(spec.role), "forge fixture role must match")
+			if not bool(spec.alive):
+				hero.alive = false
+			heroes.append(hero)
+			hero.apply_item_change()
+		if row.saved != null:
+			world.forge.set_target(int(heroes[int(row.saved)].id))
+		if row.selected != null:
+			world.forge.set_selected(int(heroes[int(row.selected)].id))
+		for step in row.steps:
+			var op := String(step.op)
+			var label := "Forge %s %s" % [op, str(step.arg)]
+			var delivered: Array = []
+			match op:
+				"buy":
+					var buy: Dictionary = world.forge.buy(world, String(step.arg))
+					check.call(
+						String(buy.status) == _forge_notify(step),
+						"%s: message must match source %s" % [label, _forge_notify(step)]
+					)
+				"drop":
+					var drop: Dictionary = world.forge.drop(world, int(step.arg))
+					check.call(
+						String(drop.status) == _forge_notify(step),
+						"%s: message must match source %s" % [label, _forge_notify(step)]
+					)
+				"select":
+					world.forge.set_selected(int(heroes[int(step.arg)].id))
+				"kill":
+					heroes[int(step.arg)].alive = false
+				"respawn":
+					var revived = heroes[int(step.arg)]
+					revived.alive = true
+					delivered = world.forge.deliver_pending_forge_items(revived)
+			check.call(
+				world.forge.player_gold(world) == int(step.gold),
+				"%s: gold must match source %d" % [label, int(step.gold)]
+			)
+			var want_slots: Array = step.slots
+			for index in range(heroes.size()):
+				var got: Array = heroes[index].items.slots
+				var want: Array = want_slots[index]
+				check.call(
+					_forge_slots_match(got, want),
+					"%s: hero %d slots must match source" % [label, index]
+				)
+				var want_pending: Array = step.pending[index]
+				check.call(
+					heroes[index].pending_items == want_pending,
+					"%s: hero %d pending queue must match source" % [label, index]
+				)
+			check.call(delivered == step.delivered, "%s: delivered list must match source" % label)
+			var want_target: Variant = step.target_index
+			if want_target == null:
+				pass
+			else:
+				check.call(
+					world.forge.target_hero_id == int(heroes[int(want_target)].id),
+					"%s: shop target must match source hero %d" % [label, int(want_target)]
+				)
+
+
+func _forge_notify(step: Dictionary) -> String:
+	# The fixture records the tr() keys the source notified with; a silent
+	# refusal notifies nothing at all.
+	var keys: Array = step.notify
+	return "" if keys.is_empty() else String(keys[0])
+
+
+func _forge_slots_match(got: Array, want: Array) -> bool:
+	if got.size() != want.size():
+		return false
+	for index in range(got.size()):
+		var expected: Variant = want[index]
+		var actual: Variant = got[index]
+		if expected == null:
+			if actual != null:
+				return false
+		elif String(actual) != String(expected):
+			return false
+	return true
+
+
+func _test_forge_wiring(check: Callable) -> void:
+	# A dead hero queues the order and the battle respawn delivers it; the
+	# dropped item leaves the inventory with no refund, exactly like the source.
+	var world := _world()
+	_clear_heroes(world)
+	_fund_team(world, world.BLUE, 50000)
+	var hero := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	hero.apply_item_change()
+	var gold0 := world.forge.player_gold(world)
+	world.forge.set_selected(hero.id)
+	hero.alive = false
+	var queued: Dictionary = world.forge.buy(world, "dead_edge")
+	check.call(String(queued.status) == "forge_queued", "Dead hero order must queue")
+	check.call(hero.pending_items == ["dead_edge"], "Queued order must sit on the hero")
+	check.call(world.forge.player_gold(world) == gold0 - 4500, "Queued order must still debit gold")
+	world.step_tick()
+	check.call(not hero.alive, "Hero must stay dead before its respawn timer elapses")
+	hero.respawn_timer = 1
+	var guardian := 0
+	while not hero.alive and guardian < 900:
+		world.step_tick()
+		guardian += 1
+	check.call(hero.alive, "Hero must respawn")
+	check.call(hero.items.has("dead_edge"), "Respawn must deliver the queued Forge order")
+	check.call(hero.pending_items.is_empty(), "Delivered order must leave the queue")
+	var dropped: Dictionary = world.forge.drop(world, 0)
+	check.call(String(dropped.status) == "item_dropped", "Drop must report the source key")
+	check.call(not hero.items.has("dead_edge"), "Dropped item must leave the inventory")
+	check.call(world.forge.player_gold(world) == gold0 - 4500, "Drop must not refund gold")

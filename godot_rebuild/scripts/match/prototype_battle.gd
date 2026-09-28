@@ -8,6 +8,7 @@ const IceUpgrades = preload("res://scripts/match/ice_upgrades.gd")
 const MageUpgrades = preload("res://scripts/match/mage_upgrades.gd")
 const NexusUpgrades = preload("res://scripts/match/nexus_upgrades.gd")
 const Economy = preload("res://scripts/match/match_economy.gd")
+const Forge = preload("res://scripts/match/forge.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
@@ -39,6 +40,8 @@ const HERO_PASSIVE_HEAL := 0.15
 const HERO_BASE_NEAR := 100.0
 
 var economy := Economy.new()
+# Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
+var forge := Forge.new()
 var scheduler := Scheduler.new()
 var slots: Array[Slot] = []
 var transaction_error := ""
@@ -444,6 +447,9 @@ func _step_hero_respawn(hero: HeroState) -> void:
 	hero.target_struct = null
 	hero.is_retreating = false
 	hero.respawn_timer = 0
+	# Layer 5f (source Hero.respawn -> deliver_pending_forge_items): Forge
+	# orders placed while the hero was dead land in the inventory now.
+	forge.deliver_pending_forge_items(hero)
 
 
 func _step_hero_auto_cast(hero: HeroState) -> void:

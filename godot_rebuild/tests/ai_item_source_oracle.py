@@ -29,6 +29,10 @@ _NAMES = frozenset({
 })
 _FUNCTIONS = ("is_magic_hero", "suggest_item_for_hero",
               "_apply_miasma", "_tick_miasma")
+# Forge shop (layer 5f): the real buy/queue/deliver/drop/target-resolution
+# functions; `tr`, `_notify` and the `_play_*` sound helpers are stubbed.
+_FORGE_FUNCTIONS = ("pending_forge_items", "deliver_pending_forge_items",
+                    "_resolve_shop_target", "_try_buy", "_try_drop")
 _LEVEL_MULT = "_hero_level_mult"
 # Real HeroItemInventory slot bookkeeping plus the stat chain `_on_item_changed`
 # reaches, so the fixture can show exactly what the rebuild does NOT port yet.
@@ -189,7 +193,7 @@ def _assignments():
     return nodes
 
 
-def source_namespace(with_functions=False, with_inventory=False):
+def source_namespace(with_functions=False, with_inventory=False, with_forge=False):
     """Exec only the constant assignments ITEM_CATALOG needs, in source order."""
     nodes = _assignments()
     by_name = {node.targets[0].id: node for node in nodes}
@@ -204,6 +208,8 @@ def source_namespace(with_functions=False, with_inventory=False):
         wanted |= set(_FUNCTIONS)
     if with_inventory:
         wanted.add(_LEVEL_MULT)
+    if with_forge:
+        wanted |= set(_FORGE_FUNCTIONS)
     if wanted:
         found = [node for node in ast.parse(SOURCE.read_text(encoding="utf-8")).body
                  if isinstance(node, ast.FunctionDef) and node.name in wanted]
@@ -1031,6 +1037,215 @@ def miasma(env):
     return rows
 
 
+# Forge shop (layer 5f). Each case builds hero stubs with real inventories, a
+# game stub (gold, saved/selected target) and then replays buy/select/respawn/
+# drop steps. `notify` records the source tr() keys `_notify` received, so the
+# native port can be checked against the same message vocabulary.
+FORGE_CASES = [
+    # Dead selected hero: the order queues, respawn delivers, drop removes.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+            {"role": "Mage", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": False},
+        ],
+        "gold": 20000, "saved": None, "selected": 1,
+        "steps": [["buy", "dead_edge"], ["respawn", 1], ["buy", "corroder"],
+                  ["drop", 0], ["drop", 5]],
+    },
+    # Six slots: the sixth fits, the seventh is refused (inventory_full).
+    {
+        "heroes": [
+            {"role": "Mage", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 60000, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"], ["buy", "corroder"],
+                  ["buy", "moon_shard"], ["buy", "solar_brand"],
+                  ["buy", "searbrand"], ["buy", "runic_gavel"],
+                  ["buy", "frostbound_eye"]],
+    },
+    # Queued orders count against the slot cap: 5 worn + 1 pending blocks the
+    # seventh order with inventory_full.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 60000, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"], ["buy", "corroder"],
+                  ["buy", "moon_shard"], ["buy", "solar_brand"],
+                  ["buy", "searbrand"], ["kill", 0], ["buy", "runic_gavel"],
+                  ["buy", "frostbound_eye"]],
+    },
+    # Not enough gold: silent refusal, no debit and no queue.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 500, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"]],
+    },
+    # melee_only item on a ranged hero (silent) then a legal magic_only buy.
+    {
+        "heroes": [
+            {"role": "Mage", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 20000, "saved": None, "selected": None,
+        "steps": [["buy", "cleave_axe"], ["buy", "astral_codex"]],
+    },
+    # magic_only item on a non-magic role: the shop answers magic_only_denied.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+        ],
+        "gold": 20000, "saved": None, "selected": None,
+        "steps": [["buy", "astral_codex"], ["buy", "dead_edge"]],
+    },
+    # No summoned hero at all.
+    {
+        "heroes": [],
+        "gold": 20000, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"]],
+    },
+    # Saved target outranks the selected one; a dead saved target queues.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": True},
+            {"role": "Marksman", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": False},
+        ],
+        "gold": 20000, "saved": 1, "selected": 0,
+        "steps": [["buy", "dead_edge"], ["respawn", 1], ["buy", "corroder"]],
+    },
+    # Nobody alive: the first dead hero receives the queue.
+    {
+        "heroes": [
+            {"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3,
+             "max_hp": 1000, "hp": 1000, "alive": False},
+            {"role": "Mage", "range": 130, "base_hp": 500, "level": 2,
+             "max_hp": 1000, "hp": 1000, "alive": False},
+        ],
+        "gold": 20000, "saved": None, "selected": None,
+        "steps": [["buy", "dead_edge"], ["respawn", 0]],
+    },
+]
+
+
+class _ForgeHero:
+    def __init__(self, spec, index, inv_type):
+        self.role = spec["role"]
+        self.range = spec["range"]
+        self.base_hp = spec["base_hp"]
+        self.level = spec["level"]
+        self.max_hp = spec["max_hp"]
+        self.hp = spec["hp"]
+        self.alive = spec["alive"]
+        self.facing = 1
+        self.x = 0
+        self.y = 0
+        self.team = "blue"
+        self.target = None
+        self._tag = "hero%d" % index
+        self.name = "Hero%d" % index
+        self.apply_heal_amp = lambda amount, duration: None
+        self.items = inv_type(self)
+
+
+class _ForgeGame:
+    def __init__(self, heroes, gold):
+        self.heroes = heroes
+        self.gold = gold
+        self.itemshop_target_hero = None
+        self.selected_hero = None
+        self.item_shop_open = True
+        self.notes = []
+
+
+def forge(env):
+    """Real _try_buy/_try_drop/_resolve_shop_target plus the pending queue."""
+    # with_inventory: the real HeroItemInventory.add/remove path needs
+    # _hero_level_mult, exactly like the slot-bookkeeping recorder.
+    env = source_namespace(with_functions=True, with_inventory=True, with_forge=True)
+    tr_calls = []
+
+    def _tr(key, **values):
+        tr_calls.append({"key": key,
+                         "values": {k: str(v) for k, v in values.items()}})
+        return key
+
+    env["tr"] = _tr
+    env["_player_heroes"] = lambda game: list(game.heroes)
+    env["_get_game"] = lambda: None
+    env["_notify"] = lambda game, text, color: game.notes.append(str(text))
+    env["_play_error"] = lambda: None
+    env["_play_click"] = lambda: None
+    env["_play_buy"] = lambda: None
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for case in FORGE_CASES:
+            heroes = [_ForgeHero(spec, index, inv_type)
+                      for index, spec in enumerate(case["heroes"])]
+            game = _ForgeGame(heroes, case["gold"])
+            if case["saved"] is not None:
+                game.itemshop_target_hero = heroes[case["saved"]]
+            if case["selected"] is not None:
+                game.selected_hero = heroes[case["selected"]]
+            steps = []
+            for step in case["steps"]:
+                op = step[0]
+                result = None
+                delivered = []
+                if op == "buy":
+                    tr_calls.clear()
+                    game.notes.clear()
+                    env["_try_buy"](game, step[1])
+                    result = list(game.notes)
+                elif op == "drop":
+                    tr_calls.clear()
+                    game.notes.clear()
+                    env["_try_drop"](game, step[1])
+                    result = list(game.notes)
+                elif op == "select":
+                    game.selected_hero = heroes[step[1]]
+                elif op == "kill":
+                    heroes[step[1]].alive = False
+                elif op == "respawn":
+                    heroes[step[1]].alive = True
+                    delivered = list(
+                        env["deliver_pending_forge_items"](heroes[step[1]]))
+                steps.append({
+                    "op": op,
+                    "arg": None if len(step) < 2 else step[1],
+                    "notify": result,
+                    "tr": [dict(call) for call in tr_calls],
+                    "delivered": delivered,
+                    "gold": game.gold,
+                    "slots": [list(hero.items.slots) for hero in heroes],
+                    "pending": [list(env["pending_forge_items"](hero))
+                                for hero in heroes],
+                    "target_index": (None if game.itemshop_target_hero is None
+                                     else heroes.index(game.itemshop_target_hero)),
+                })
+            rows.append({
+                "gold": case["gold"],
+                "saved": case["saved"],
+                "selected": case["selected"],
+                "heroes": [{"role": spec["role"], "range": spec["range"],
+                            "base_hp": spec["base_hp"], "level": spec["level"],
+                            "alive": spec["alive"]}
+                           for spec in case["heroes"]],
+                "steps": steps,
+            })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -1049,6 +1264,7 @@ def source_fixture():
         "auto_triggers": auto_triggers(env),
         "notify_damage": notify_damage(env),
         "miasma": miasma(env),
+        "forge": forge(env),
     }))
 
 
