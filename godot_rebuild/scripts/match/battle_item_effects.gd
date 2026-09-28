@@ -2,6 +2,7 @@ extends "res://scripts/match/item_effects.gd"
 ## Concrete bus bound to a prototype_battle world. Methods translate item
 ## effect calls into real _deliver_hit / debuff field mutations.
 
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 var world: Object = null
 var dealer_id: int = -1
 var dealer_team: int = -1
