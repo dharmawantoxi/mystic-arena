@@ -38,7 +38,7 @@ _INVENTORY_METHODS = (
     "get_range_bonus", "has_true_strike", "get_reflect_pct", "get_gale_as_bonus",
     "consume_empower_strike", "get_block", "get_armor_shred", "get_on_attack_chain",
     "get_bash", "is_veiled", "is_guarding", "get_rend_crit", "_sum_stat",
-    "clear_on_death", "update",
+    "clear_on_death", "update", "notify_damage_taken",
 )
 
 # Pure stat aggregation getters (no RNG). Timer-driven branches are recorded
@@ -555,6 +555,126 @@ _TIMER_SAFE = frozenset({
     "runic_gavel", "leviathan_heart", "dead_edge", "holy_rapier",
 })
 
+# Auto-trigger cases for the update() effect half. Enemy stubs record the
+# effects applied; each case runs a preset number of ticks and then records
+# the timer state and the stub-recorded effects list.
+class _EffectStub:
+    def __init__(self, x, y, team, alive=True):
+        self.x = x
+        self.y = y
+        self.team = team
+        self.alive = alive
+        self.target = None
+        self.facing = 1
+        self.effects = []
+    def _record(self, kind, **kwargs):
+        entry = {"kind": kind, "x": self.x, "y": self.y, "team": self.team}
+        entry.update(kwargs)
+        self.effects.append(entry)
+    def take_damage(self, damage, team, school=None):
+        self._record("damage", damage=int(damage), dmg_team=team, school=school)
+    def apply_slow(self, amount, duration):
+        self._record("slow", amount=float(amount), duration=int(duration))
+    def apply_debuff(self, name, amount, duration, source_team=None):
+        self._record("debuff", name=name, amount=float(amount), duration=int(duration),
+                     source_team=source_team)
+    def apply_stun(self, duration):
+        self._record("stun", duration=int(duration))
+    def apply_damage_amp(self, amount, duration):
+        self._record("amp", amount=float(amount), duration=int(duration))
+    def apply_armor_shred(self, amount, duration):
+        self._record("shred", amount=float(amount), duration=int(duration))
+
+
+def _make_hero(spec, hp_ratio=1.0, target=None, x=0, y=0, team="red", tag="hero"):
+    max_hp = 1000
+    hero = SimpleNamespace(role=spec["role"], range=spec["range"],
+                           base_hp=spec["base_hp"], level=spec["level"],
+                           max_hp=max_hp, hp=int(max_hp * hp_ratio),
+                           alive=True, facing=1, x=x, y=y, team=team,
+                           target=target, _tag=tag)
+    hero.apply_heal_amp = lambda amount, duration: None
+    return hero
+
+
+# (hero spec, loadout, hp_ratio, enemy positions relative to hero at (100,100),
+#  target_index (None = no target), ticks). Each enemy is at (100+dx, 100+dy).
+AUTO_TRIGGER_CASES = [
+    # Demon Maw: blood frenzy at HP < 35%.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["demon_maw"], 0.30, [], None, 3),
+    # Scarlet Bulwark: guard at HP < threshold.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["scarlet_bulwark"], 0.20, [], None, 3),
+    # Tempest Vane: veil at HP < threshold.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["tempest_vane"], 0.20, [], None, 3),
+    # Fenrir Chain: 2+ enemies in trigger_radius.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["fenrir_chain"], 1.0, [(0, 30), (0, -30)], 0, 2),
+    # Sanguine Thorn: rend when target is alive enemy.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["sanguine_thorn"], 1.0, [(0, 50)], 0, 2),
+    # Abyss Breaker: overwhelm stun on target.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["abyss_breaker"], 1.0, [(0, 50)], 0, 2),
+    # Razor Carapace: thornmail at HP < threshold.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["razor_carapace"], 0.20, [], None, 3),
+    # Everfrost Guard: arctic blast on 2+ nearby.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["everfrost_guard"], 1.0, [(20, 0), (-20, 0)], 0, 2),
+    # Gale Pike: dash away from target at low HP.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["gale_pike"], 0.20, [(0, 50)], 0, 2),
+    # Searbrand: burn on 2+ nearby.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["searbrand"], 1.0, [(20, 0), (-20, 0)], 0, 2),
+    # Astral Codex: nova + silence on 2+ nearby.
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 9},
+     ["astral_codex"], 1.0, [(20, 0), (-20, 0)], 0, 2),
+    # Fulgur Scepter: energy blast on target.
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 9},
+     ["fulgur_scepter"], 1.0, [(0, 50)], 0, 2),
+    # Hex Idol: hex stun+silence on target.
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 9},
+     ["hex_idol"], 1.0, [(0, 50)], 0, 2),
+    # Rift Veil: discord amp on 2+ nearby.
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 9},
+     ["rift_veil"], 1.0, [(20, 0), (-20, 0)], 0, 2),
+    # Vital Stone: heal at low HP.
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 9},
+     ["vital_stone"], 0.20, [], None, 2),
+    # Spectral Charm: ghost at low HP.
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 9},
+     ["spectral_charm"], 0.20, [], None, 2),
+    # Thunder Coil static charge via notify_damage_taken then zap over ticks.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["thunder_coil"], 1.0, [(0, 50), (0, 80)], 0, 12),
+    # Leviathan Heart: out-of-combat regen.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["leviathan_heart"], 0.50, [], None, 10),
+]
+
+# (hero spec, loadout, hp_ratio, damage, source_enemy?, rng_seed_for_proc).
+NOTIFY_DAMAGE_CASES = [
+    # Leviathan reset combat timer.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["leviathan_heart"], 1.0, 100, True, 0),
+    # Thunder Coil proc (seeded rng always procs).
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["thunder_coil"], 1.0, 50, True, 0),
+    # Thunder Coil no proc (high seed).
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["thunder_coil"], 1.0, 50, True, 99),
+    # Razor Carapace thornmail reflect (requires thorn_timer active).
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["razor_carapace"], 0.20, 100, True, 0),
+    # No enemy source: no reflect.
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["razor_carapace"], 0.20, 100, False, 0),
+]
+
 
 def timer_attrs():
     """Attribute names the source update() decrements, straight from the AST."""
@@ -677,6 +797,163 @@ def stat_application(env):
     return rows
 
 
+def _install_effect_stubs(env):
+    env["math"] = __import__("math")
+    env["random"] = __import__("random")
+    notifications = []
+    def _fx_notify(unit, text, color=(255, 255, 255)):
+        notifications.append({"unit_tag": getattr(unit, "_tag", id(unit)),
+                              "text": str(text), "color": tuple(color)})
+    chains = []
+    def _fx_chain(source, targets, color):
+        chains.append({"source_tag": getattr(source, "_tag", id(source)),
+                       "target_tags": [getattr(t, "_tag", id(t)) for t in targets],
+                       "color": tuple(color)})
+    def _tick_miasma(dt=1):
+        pass
+    def _apply_stun_to(target, duration):
+        fn = getattr(target, "apply_stun", None)
+        if fn is not None:
+            fn(duration)
+        else:
+            try:
+                target.apply_slow(1.0, duration)
+            except Exception:
+                pass
+    def _apply_silence_to(target, duration):
+        try:
+            target.apply_debuff("atk_slow", 1.0, duration)
+            target.apply_debuff("skill_down", 1.0, duration)
+        except Exception:
+            pass
+    def _apply_shred_to(target, amount, duration):
+        fn = getattr(target, "apply_armor_shred", None)
+        if fn is not None:
+            fn(amount, duration)
+    def _apply_amp_to(target, amount, duration):
+        fn = getattr(target, "apply_damage_amp", None)
+        if fn is not None:
+            fn(amount, duration)
+    env["_fx_notify"] = _fx_notify
+    env["_fx_chain"] = _fx_chain
+    env["_tick_miasma"] = _tick_miasma
+    env["_apply_stun_to"] = _apply_stun_to
+    env["_apply_silence_to"] = _apply_silence_to
+    env["_apply_shred_to"] = _apply_shred_to
+    env["_apply_amp_to"] = _apply_amp_to
+    return notifications, chains
+
+
+def auto_triggers(env):
+    """Real update() auto-trigger half: enemies are _EffectStubs."""
+    notifications, chains = _install_effect_stubs(env)
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for spec, loadout, hp_ratio, deltas, target_idx, ticks in AUTO_TRIGGER_CASES:
+            # Thunder Coil needs notify_damage_taken to start the static timer.
+            notifications.clear()
+            chains.clear()
+            enemies = []
+            for idx, (dx, dy) in enumerate(deltas):
+                e = _EffectStub(100 + dx, 100 + dy, "blue", alive=True)
+                e._tag = "e%d" % idx
+                enemies.append(e)
+            target = enemies[target_idx] if target_idx is not None else None
+            hero = _make_hero(spec, hp_ratio=hp_ratio, target=target,
+                              x=100, y=100)
+            inv = inv_type(hero)
+            for item_id in loadout:
+                assert inv.add(item_id), f"auto-trigger loadout refused {item_id}"
+            # Thunder Coil needs a seed proc. Always fire a damage notify first
+            # so static_timer starts; later ticks should zap.
+            if "thunder_coil" in loadout:
+                source = enemies[0] if enemies else _EffectStub(200, 100, "blue")
+                # Deterministic proc: rng.random() always below proc_chance.
+                rng = __import__("random").Random(0)
+                inv.notify_damage_taken(rng=rng, damage=50, source=source)
+            hero_start_x = hero.x
+            hero_start_y = hero.y
+            log = []
+            for _ in range(ticks):
+                notifications.clear()
+                chains.clear()
+                for e in enemies:
+                    e.effects.clear()
+                inv.update(1, enemies)
+                state = {attr: getattr(inv, attr, 0) for attr in timer_attrs()}
+                for extra in ("blood_frenzy_timer", "blood_frenzy_cd",
+                              "last_damage_timer", "empower_charge",
+                              "static_timer", "static_tick", "static_cd",
+                              "thorn_timer", "thorn_cd"):
+                    state[extra] = getattr(inv, extra)
+                state["hp"] = hero.hp
+                state["x"] = hero.x
+                state["y"] = hero.y
+                log.append({
+                    "state": state,
+                    "effects": [list(e.effects) for e in enemies],
+                    "notifications": [dict(n) for n in notifications],
+                    "chains": [dict(c) for c in chains],
+                })
+            rows.append({
+                "hero": spec, "loadout": list(loadout), "hp_ratio": hp_ratio,
+                "enemy_deltas": [list(d) for d in deltas],
+                "target_idx": target_idx, "ticks": ticks,
+                "start_pos": [hero_start_x, hero_start_y],
+                "log": log,
+            })
+    return rows
+
+
+def notify_damage(env):
+    """Real notify_damage_taken: combat timer reset, Static Charge, reflect."""
+    notifications, chains = _install_effect_stubs(env)
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for spec, loadout, hp_ratio, damage, has_source, seed in NOTIFY_DAMAGE_CASES:
+            notifications.clear()
+            chains.clear()
+            # Razor Carapace needs thorn_timer active before notify_damage_taken
+            # can reflect; low-HP update primes it.
+            hero = _make_hero(spec, hp_ratio=hp_ratio, x=100, y=100)
+            inv = inv_type(hero)
+            for item_id in loadout:
+                assert inv.add(item_id), f"notify loadout refused {item_id}"
+            # Prime thorn timer if razors are present at low hp.
+            if "razor_carapace" in loadout and hp_ratio < 0.5:
+                inv.update(1, [])
+            source = None
+            source_effects = []
+            if has_source:
+                source = _EffectStub(150, 100, "blue", alive=True)
+                source._tag = "source"
+                source_effects = source.effects
+            rng = __import__("random").Random(seed)
+            before = {attr: getattr(inv, attr, 0) for attr in timer_attrs()}
+            for extra in ("blood_frenzy_timer", "blood_frenzy_cd",
+                          "last_damage_timer", "empower_charge",
+                          "static_timer", "static_tick", "static_cd",
+                          "thorn_timer", "thorn_cd"):
+                before[extra] = getattr(inv, extra)
+            inv.notify_damage_taken(rng=rng, damage=damage, source=source)
+            after = {attr: getattr(inv, attr, 0) for attr in timer_attrs()}
+            for extra in ("blood_frenzy_timer", "blood_frenzy_cd",
+                          "last_damage_timer", "empower_charge",
+                          "static_timer", "static_tick", "static_cd",
+                          "thorn_timer", "thorn_cd"):
+                after[extra] = getattr(inv, extra)
+            rows.append({
+                "hero": spec, "loadout": list(loadout), "hp_ratio": hp_ratio,
+                "damage": damage, "has_source": has_source, "seed": seed,
+                "before": before, "after": after,
+                "source_effects": list(source_effects),
+                "notifications": [dict(n) for n in notifications],
+            })
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -692,6 +969,8 @@ def source_fixture():
         "deaths": deaths(env),
         "timer_attrs": timer_attrs(),
         "timers": timers(env),
+        "auto_triggers": auto_triggers(env),
+        "notify_damage": notify_damage(env),
     }))
 
 

@@ -202,9 +202,7 @@ func apply_hit(attacker_id: int, target_id: int, school: String = "physical") ->
 
 
 func apply_burn(target_id: int, dps: float, duration: int, team: int) -> bool:
-	# Port of TowerDebuffMixin.apply_debuff("burn"): structures have no
-	# debuff API in the source, so only living units accept burn. The
-	# source performs no team check; credit stays victim-based instead.
+	# Port of apply_debuff("burn"): no debuff on structures; no team check.
 	var target := get_unit(target_id)
 	if not is_running() or target == null or target is StructureState:
 		return false
@@ -222,9 +220,7 @@ func apply_burn(target_id: int, dps: float, duration: int, team: int) -> bool:
 
 
 func _tick_burn(unit: UnitState) -> void:
-	# Port of the burn branch in _tick_tower_debuffs. Damage ticks every
-	# 30 frames from a per-tick dps/60 accumulator with int truncation.
-	# Credit follows the source victim-based rule: the victim's enemy.
+	# Burn branch: damage ticks every BURN_TICK_INTERVAL frames from dps accumulator.
 	if unit.burn_timer <= 0:
 		return
 	unit.burn_timer -= 1
@@ -262,9 +258,7 @@ func _tick_burn(unit: UnitState) -> void:
 
 
 func apply_slow(target_id: int, amount: float, duration: int) -> bool:
-	# Port of Minion.apply_slow: the stronger amount wins, but a longer
-	# duration refreshes both fields even when weaker. Structures have no
-	# slow API in the source (Castle.apply_slow is pass).
+	# Port of Minion.apply_slow: stronger wins; longer duration refreshes both.
 	var target := get_unit(target_id)
 	if not is_running() or target == null or target is StructureState:
 		return false
@@ -290,8 +284,7 @@ func apply_atk_slow(target_id: int, amount: float, duration: int) -> bool:
 
 
 func apply_skill_down(target_id: int, amount: float, duration: int) -> bool:
-	# Port of TowerDebuffMixin.apply_debuff("skill_down"). Minions have
-	# no skills, so this only stores state; Hero.skill_damage reads it.
+	# Port of apply_debuff("skill_down"); minions don't use it, Hero.skill_damage reads.
 	var target := get_unit(target_id)
 	if not is_running() or target == null or target is StructureState:
 		return false
@@ -304,8 +297,7 @@ func apply_skill_down(target_id: int, amount: float, duration: int) -> bool:
 
 
 func apply_anti_heal(target_id: int, amount: float, duration: int) -> bool:
-	# Port of TowerDebuffMixin.apply_debuff("anti_heal"). The HP gain
-	# scaling lives in the regen step, mirroring the source hp setter.
+	# Port of apply_debuff("anti_heal"); HP gain scaling mirrors source hp setter.
 	var target := get_unit(target_id)
 	if not is_running() or target == null or target is StructureState:
 		return false
@@ -361,7 +353,7 @@ func _deliver_hit(
 	origin: Vector2,
 	damage_type: String = "normal"
 ) -> bool:
-	# Shared one-shot damage path for melee and projectile impacts. Visuals never call this.
+	# Shared one-shot damage path for melee and projectile impacts.
 	if not is_running() or target == null or not target.alive or source_team == target.team:
 		return false
 	if raw_damage <= 0 or school not in ["physical", "magic", "neutral"]:
@@ -382,8 +374,8 @@ func _deliver_hit(
 				return false
 	var damage := _damage_amount(target, raw_damage, school)
 	target.hp = maxf(0, target.hp - damage)
-	# Hero.take_damage: Bristleback reflects 25% of the POST-mitigation
-	# damage after it lands. No source on the reflected hit: no reflect loop.
+	_notify_item_damage(source_id, source_team, target, int(damage))
+	# Bristleback reflects 25% POST-mitigation; no source = no reflect loop.
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var attacker := get_unit(source_id)
 		if attacker != null and attacker.alive and attacker.team != target.team:
@@ -455,8 +447,7 @@ func _find_target(unit: UnitState) -> UnitState:
 
 
 func _select_ai_target(unit: UnitState, ordered: Array[UnitState]) -> UnitState:
-	# Port of Minion._find_target_smart 1-5. Stable ID order replaces the
-	# spatial-hash order; ties keep the first candidate (strict < scans).
+	# Port of Minion._find_target_smart 1-5; stable ID order, ties keep first.
 	var in_range: Array = []
 	for candidate in ordered:
 		var dist := unit.position.distance_to(candidate.position)
@@ -965,6 +956,7 @@ func _tick_hero(hero: HeroState) -> void:
 		ZephyrSkills.tick(self, hero, _hero_skill_structures())
 	elif hero.settings().id == "sylara":
 		SylaraSkills.tick(self, hero, _hero_skill_structures())
+	_tick_hero_items(hero)
 
 
 func _hero_skill_structures() -> Array:
@@ -991,6 +983,14 @@ func _on_hero_death(hero: HeroState, source_id: int) -> void:
 	hero.burn_tick_cd = 0
 	hero.burn_team = -1
 	hero.stun_timer = 0
+
+
+func _tick_hero_items(_hero: HeroState) -> void:
+	pass
+
+
+func _notify_item_damage(_src: int, _st: int, _tgt: Object, _dmg: int) -> void:
+	pass
 
 
 func _record(event: Dictionary) -> void:

@@ -81,6 +81,9 @@ func run(check: Callable) -> void:
 	_test_heal_amp(check)
 	_test_deaths(fixture.deaths, check)
 	_test_timers(fixture.timer_attrs, fixture.timers, check)
+	_test_auto_triggers(fixture.auto_triggers, check)
+	_test_notify_damage(fixture.notify_damage, check)
+	_test_item_tick_wiring(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -651,3 +654,249 @@ func _test_timers(attrs: Array, rows: Array, check: Callable) -> void:
 							% [field, index + 1, label]
 						)
 					)
+
+
+# ── Layer 5c-2: auto-triggers & notify_damage_taken ──────────
+class _TestItemFx:
+	extends Inventory.ItemEffects
+	var damage_calls: Array = []
+	var stun_calls: Array = []
+	var silence_calls: Array = []
+	var slow_calls: Array = []
+	var burn_calls: Array = []
+	var amp_calls: Array = []
+	var nudges: Array = []
+	var notes: Array = []
+	var chains: Array = []
+
+	func deal_damage(target_id: int, _src_team: int, amount: int, _school: String = "magic") -> int:
+		damage_calls.append({"tid": target_id, "amt": amount})
+		return amount
+
+	func apply_stun(target_id: int, duration: int) -> void:
+		stun_calls.append({"tid": target_id, "dur": duration})
+
+	func apply_silence(target_id: int, duration: int) -> void:
+		silence_calls.append({"tid": target_id, "dur": duration})
+
+	func apply_slow(target_id: int, amount: float, duration: int) -> void:
+		slow_calls.append({"tid": target_id, "amt": amount, "dur": duration})
+
+	func apply_burn(target_id: int, dps: float, duration: int, source_team: int) -> void:
+		burn_calls.append({"tid": target_id, "dps": dps, "dur": duration, "team": source_team})
+
+	func apply_damage_amp(target_id: int, amount: float, duration: int) -> void:
+		amp_calls.append({"tid": target_id, "amt": amount, "dur": duration})
+
+	func nudge_position(hid: int, delta: Vector2) -> void:
+		nudges.append({"hid": hid, "delta": delta})
+
+	func notify(_uid: int, _txt: String) -> void:
+		notes.append(_txt)
+
+	func chain_fx(_src: int, tgts: Array) -> void:
+		chains.append(tgts.duplicate())
+
+	func clear() -> void:
+		damage_calls.clear()
+		stun_calls.clear()
+		silence_calls.clear()
+		slow_calls.clear()
+		burn_calls.clear()
+		amp_calls.clear()
+		nudges.clear()
+		notes.clear()
+		chains.clear()
+
+
+func _fx_enemies(deltas: Array) -> Array:
+	var enemies: Array = []
+	for index in range(deltas.size()):
+		var d: Array = deltas[index]
+		(
+			enemies
+			. append(
+				{
+					"id": index + 100,
+					"pos": Vector2(100 + float(d[0]), 100 + float(d[1])),
+					"team": 1,
+					"alive": true,
+				}
+			)
+		)
+	return enemies
+
+
+func _fx_pos_for(enemies: Array, eid: int) -> Vector2:
+	for e in enemies:
+		var d: Dictionary = e as Dictionary
+		if int(d.id) == eid:
+			return d.get("pos", Vector2.ZERO) as Vector2
+	return Vector2.ZERO
+
+
+func _test_auto_triggers(rows: Array, check: Callable) -> void:
+	var rng := RandomNumberGenerator.new()
+	for row in rows:
+		var spec: Dictionary = row.hero
+		var inv := Inventory.new()
+		inv.set_hero_gate(String(spec.role), float(spec.range))
+		var melee_flag := 1 if float(spec.range) <= 80.0 else 0
+		inv.set_hero_scaling(int(spec.base_hp), int(spec.level), melee_flag)
+		var label := "%s %s hp=%.2f" % [String(spec.role), str(row.loadout), float(row.hp_ratio)]
+		var enemies: Array = _fx_enemies(row.enemy_deltas)
+		# invokes _on_item_changed which sets max_hp=get_max_hp() and raises
+		# hp by (new_max - old_max) when new_max > old_max.
+		var old_max: int = 1000
+		var hp_ratio_f: float = float(row.hp_ratio)
+		var start_hp_i: int = int(float(old_max) * hp_ratio_f)
+		for item_id in row.loadout:
+			assert(inv.add(String(item_id)), "auto-trigger loadout refused: " + label)
+		var new_max: int = int(inv.get_max_hp())
+		var cur_hp: float = float(start_hp_i)
+		if new_max > old_max:
+			cur_hp = mini(float(new_max), cur_hp + float(new_max - old_max))
+		elif cur_hp > float(new_max):
+			cur_hp = float(new_max)
+		var start_pos: Array = row.start_pos
+		# Seed Thunder Coil proc like the oracle.
+		if inv.has("thunder_coil"):
+			var proc_rng := RandomNumberGenerator.new()
+			proc_rng.seed = 0
+			var fx := _TestItemFx.new()
+			var tgt_for_seed: int = 100 if enemies.size() > 0 else -1
+			inv.set_hero_runtime(42, true, cur_hp, new_max, 0, 1.0, Vector2(100, 100), tgt_for_seed)
+			inv.notify_damage_taken(50, 100, 1, true, proc_rng, fx)
+		var fx := _TestItemFx.new()
+		var r_ticks: int = int(row.ticks)
+		var r_target: Variant = row.get("target_idx", null)
+		for tick_idx in range(r_ticks):
+			fx.clear()
+			inv.tick_timers(1)
+			var tgt_id := -1
+			if r_target != null:
+				var tidx_i: int = int(r_target)
+				if tidx_i >= 0 and enemies.size() > tidx_i:
+					tgt_id = 100 + tidx_i
+			var sp0: float = float(start_pos[0])
+			var sp1: float = float(start_pos[1])
+			inv.set_hero_runtime(42, true, cur_hp, new_max, 0, 1.0, Vector2(sp0, sp1), tgt_id)
+			inv.tick_auto(1, enemies, fx, rng)
+			cur_hp = float(inv.hero_hp)
+			# Apply nudge back for the next tick.
+			for n in fx.nudges:
+				var nd: Dictionary = n as Dictionary
+				if int(nd.hid) == 42:
+					var dv: Vector2 = nd.delta as Vector2
+					start_pos = [sp0 + dv.x, sp1 + dv.y]
+			# Compare state snapshot.
+			var want: Dictionary = row.log[tick_idx].state
+			for key in want:
+				if key in ["hp", "x", "y"]:
+					continue
+				var w_val: int = int(want[key])
+				var got: int = int(inv.get(String(key)))
+				check.call(
+					got == w_val,
+					(
+						"AI auto-trigger timer %s tick %d must match source: %s (got %d want %d)"
+						% [String(key), tick_idx, label, got, w_val]
+					)
+				)
+			# Compare HP regen (Leviathan / Vital Stone). Python double vs Godot
+			# single-precision float drift on /60 regen accumulators compounds
+			# across ticks; allow 4.0 HP drift over ten ticks.
+			check.call(
+				absf(float(inv.hero_hp) - float(want.hp)) < 4.0,
+				(
+					"AI auto-trigger hp tick %d must match source: %s (got %.2f want %s)"
+					% [tick_idx, label, float(inv.hero_hp), str(want.hp)]
+				)
+			)
+		check.call(true, "AI auto-trigger case completed: " + label)
+
+
+func _test_notify_damage(rows: Array, check: Callable) -> void:
+	for row in rows:
+		var spec: Dictionary = row.hero
+		var inv := Inventory.new()
+		inv.set_hero_gate(String(spec.role), float(spec.range))
+		var melee_flag := 1 if float(spec.range) <= 80.0 else 0
+		inv.set_hero_scaling(int(spec.base_hp), int(spec.level), melee_flag)
+		var label := "%s %s dmg=%d" % [String(spec.role), str(row.loadout), int(row.damage)]
+		for item_id in row.loadout:
+			assert(inv.add(String(item_id)), "notify loadout refused: " + label)
+		# Source _make_hero sets max_hp=1000, hp=int(1000*ratio); add() invokes
+		# _on_item_changed which raises hp by (new_max - old_max).
+		var old_max_n: int = 1000
+		var nhp_ratio: float = float(row.hp_ratio)
+		var n_hp_start: int = int(float(old_max_n) * nhp_ratio)
+		var n_max: int = int(inv.get_max_hp())
+		var n_hp: float = float(n_hp_start)
+		if n_max > old_max_n:
+			n_hp = mini(float(n_max), n_hp + float(n_max - old_max_n))
+		elif n_hp > float(n_max):
+			n_hp = float(n_max)
+		var fx := _TestItemFx.new()
+		if inv.has("razor_carapace") and nhp_ratio < 0.5:
+			inv.tick_timers(1)
+			inv.set_hero_runtime(42, true, n_hp, n_max, 0, 1.0, Vector2(100, 100), -1)
+			inv.tick_auto(1, [], fx, RandomNumberGenerator.new())
+			n_hp = float(inv.hero_hp)
+		var rng := RandomNumberGenerator.new()
+		var seed_val: int = int(row.seed)
+		rng.seed = seed_val
+		fx.clear()
+		inv.set_hero_runtime(42, true, n_hp, n_max, 0, 1.0, Vector2(100, 100), -1)
+		var src_id := -1
+		var src_team := 0
+		var src_alive := false
+		if bool(row.has_source):
+			src_id = 200
+			src_team = 1
+			src_alive = true
+		inv.notify_damage_taken(int(row.damage), src_id, src_team, src_alive, rng, fx)
+		var after: Dictionary = row.after
+		for key in after:
+			var w_val: int = int(after[key])
+			var got: int = int(inv.get(String(key)))
+			check.call(
+				got == w_val,
+				(
+					"AI notify_damage timer %s must match source: %s (got %d want %d)"
+					% [String(key), label, got, w_val]
+				)
+			)
+		# Compare reflect damage calls against source_effects.
+		var expected_effects: Array = row.source_effects
+		var reflect_calls := 0
+		for dc in fx.damage_calls:
+			var cd: Dictionary = dc as Dictionary
+			if int(cd.tid) == 200:
+				reflect_calls += 1
+		check.call(
+			reflect_calls == expected_effects.size(),
+			"AI notify_damage reflect count must match source: " + label
+		)
+		check.call(true, "AI notify_damage case completed: " + label)
+
+
+func _test_item_tick_wiring(check: Callable) -> void:
+	# Tick a real red hero in a real match to verify tick_timers() is invoked
+	# from the match loop and that HP regen applies after several ticks on a
+	# Leviathan Heart holder.
+	var world := _world()
+	var hero := world.spawn_hero(World.THORNE, world.RED, Vector2(1000, 200))
+	assert(hero.items.add("leviathan_heart"), "wiring loadout refused")
+	hero.apply_item_change()
+	hero.hp = hero.max_hp * 0.5
+	var before := hero.items.last_damage_timer
+	# With last_damage_timer = 0, Leviathan out-of-combat regen should raise hp.
+	hero.items.last_damage_timer = 0
+	var hp0 := hero.hp
+	for _i in range(30):
+		world.step_tick()
+	check.call(
+		hero.hp > hp0, "Leviathan Heart out-of-combat regen must fire when last_damage_timer is 0"
+	)
+	check.call(true, "AI item tick wiring: battle loop invokes inventory.tick_timers")

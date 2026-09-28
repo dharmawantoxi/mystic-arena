@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines,max-line-length,class-definitions-order,unused-argument
 extends "res://scripts/combat/siege_battle.gd"
 ## Playable normal/level-1 subset. Wave/ledger/build rules are separate from the old manual labs.
 
@@ -10,6 +11,9 @@ const Economy = preload("res://scripts/match/match_economy.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
+const ItemEffects = preload("res://scripts/match/item_effects.gd")
+const BattleItemEffects = preload("res://scripts/match/battle_item_effects.gd")
+const ReflectItemEffects = preload("res://scripts/match/reflect_item_effects.gd")
 const MINIONS := {
 	"goblin": preload("res://data/minions/goblin.tres"),
 	"orc": preload("res://data/minions/orc.tres"),
@@ -872,3 +876,89 @@ func _buy_item_for(team: int, hero_id: int, item_id: String, reserve: int = 0) -
 	economy.spend(team, cost)
 	_record({"kind": "hero_item", "target_id": hero.id, "item": item_id, "cost": cost})
 	return true
+
+
+# ── Item wiring (layer 5c-2): tick_timers + auto-triggers + damage notify ──
+# ── Item wiring (layer 5c-2): tick_timers + auto-triggers + damage notify ──
+var _item_rng := RandomNumberGenerator.new()
+
+
+func _hero_enemy_list() -> Array:
+	# Source _get_all_enemies returns alive enemies (units+towers+bases); this
+	# rebuild only tracks units so far (towers/bases are StructureState and
+	# included later by 5d auras).
+	var enemies: Array = []
+	for unit in units:
+		if not unit.alive:
+			continue
+		(
+			enemies
+			. append(
+				{
+					"id": unit.id,
+					"pos": unit.position,
+					"team": unit.team,
+					"alive": true,
+				}
+			)
+		)
+	return enemies
+
+
+func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:
+	var bus := BattleItemEffects.new()
+	bus.world = self
+	bus.dealer_id = source_hero.id
+	bus.dealer_team = source_hero.team
+	bus.dealer_pos = source_hero.position
+	return bus
+
+
+func _reflect_item_effects(_defender_team: int) -> ReflectItemEffects:
+	var bus := ReflectItemEffects.new()
+	bus.world = self
+	bus.defender_team = _defender_team
+	return bus
+
+
+func _tick_hero_items(hero: HeroState) -> void:
+	# Called every tick (dt=1) after skill ticks. First decrement timers
+	# (tick_timers ported in 5c-1), then run auto-triggers.
+	hero.items.tick_timers(1)
+	(
+		hero
+		. items
+		. set_hero_runtime(
+			hero.id,
+			hero.alive,
+			hero.hp,
+			int(hero.max_hp),
+			hero.team,
+			hero.facing,
+			hero.position,
+			hero.target_id,
+		)
+	)
+	hero.items.tick_auto(1, _hero_enemy_list(), _battle_item_effects(hero), _item_rng)
+	# Apply HP regen result back to hero.
+	hero.hp = hero.items.hero_hp
+
+
+func _notify_item_damage(source_id: int, source_team: int, target: Object, damage: int) -> void:
+	# Port of the post-mitigation notify hook in Hero.take_damage. Only hero
+	# targets carry an inventory.
+	if not (target is HeroState) or damage <= 0:
+		return
+	var src_alive := false
+	var src_team := source_team
+	if source_id >= 0:
+		var src: Object = get_unit(source_id)
+		if src != null:
+			src_alive = src.alive
+	var h: HeroState = target as HeroState
+	h.items.set_hero_runtime(
+		h.id, h.alive, h.hp, int(h.max_hp), h.team, h.facing, h.position, h.target_id
+	)
+	h.items.notify_damage_taken(
+		damage, source_id, src_team, src_alive, _item_rng, _reflect_item_effects(h.team)
+	)

@@ -189,8 +189,27 @@ check(len(ai_items_fixture["deaths"]) == 3,
       "Update the AI item suite when the death cases change")
 check("func tick_timers(" in inventory_gd,
       "The inventory must port the source update() timer state machine")
+check("func tick_auto(" in inventory_gd,
+      "The inventory must port the auto-trigger half of update() for layer 5c-2")
+check("func notify_damage_taken(" in inventory_gd,
+      "The inventory must port notify_damage_taken for layer 5c-2")
+check("func set_hero_runtime(" in inventory_gd,
+      "The inventory must accept runtime hero state via set_hero_runtime")
 check(all(('var %s ' % attr) in inventory_gd for attr in ai_items_fixture["timer_attrs"]),
       "Every source timer attribute needs a rebuild field")
+check(len(ai_items_fixture["auto_triggers"]) == 18,
+      "Update the AI item suite when the auto-trigger cases change")
+check(len(ai_items_fixture["notify_damage"]) == 5,
+      "Update the AI item suite when the notify_damage cases change")
+check("_tick_hero_items" in (ROOT / "scripts/match/prototype_battle.gd")
+      .read_text(encoding="utf-8"),
+      "The match step_tick must tick item timers and auto-triggers (5c-2)")
+check("_notify_item_damage" in (ROOT / "scripts/match/prototype_battle.gd")
+      .read_text(encoding="utf-8"),
+      "The battle damage path must invoke item notify_damage_taken (5c-2)")
+check("_tick_hero_items(hero)" in (ROOT / "scripts/combat/minion_battle.gd")
+      .read_text(encoding="utf-8"),
+      "minion_battle._tick_hero must call the item tick hook")
 
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.
