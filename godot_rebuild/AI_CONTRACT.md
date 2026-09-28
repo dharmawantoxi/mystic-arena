@@ -334,13 +334,34 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      sumber nyata (stub `_tick_miasma`/`_fx_notify`, `enemies=None`) untuk 4
      kasus dan merekam seluruh timer per tick; `validate_project.py`
      menuntut setiap atribut timer sumber punya field di rebuild.
-     **Batasan 5c-1:** tidak ada yang memanggil `tick_timers` per tick match
-     (loop tick ada di `minion_battle.gd`, batas 1000 baris); setengah efek
-     dari `update` (auto-trigger Blood Frenzy/Bulwark/Veil/Chains, Static
-     Charge, Arctic Blast, Miasma, aura) dan `notify_damage_taken` belum
-     diport - itu 5c-2/5d/5e.
-   - [ ] **5c-2.** Auto-trigger aktif + `notify_damage_taken` (Thunder Coil
-     proc, Thornmail reflect) + pemanggilan `tick_timers` dari loop match.
+   - [x] **5c-2.** Setengah auto-trigger `HeroItemInventory.update` +
+     `notify_damage_taken` + pemanggilan `tick_timers` dari loop match:
+     `hero_item_inventory.tick_auto(dt, enemies, effects, rng)` menjalankan
+     seluruh Tier II/III/paket-magic auto-trigger (Blood Frenzy, Bulwark,
+     Veil, Chains, Soul Rend, Overwhelm, Static Charge tick zap, Thornmail,
+     Arctic Blast, Gale Leap, Brand Burst, Arcane Nova, Energy Blast, Hex,
+     Discord Field, Vitality Pact, Spectral Form) dan HP regen (termasuk
+     Leviathan out-of-combat); efek didispatch lewat bus `ItemEffects` ke
+     `prototype_battle._battle_item_effects` (damage via `_deliver_hit`,
+     stun ke `HeroState.stun_timer`, silence/burn/slow ke field
+     `UnitState` yang sudah ada). `notify_damage_taken(damage, source_id,
+     ...)` me-reset `last_damage_timer` Leviathan, menggulir peluang proc
+     Static Charge dan memantulkan Thornmail lewat bus terpisah. Hook
+     `_tick_hero_items` dipanggil dari `minion_battle._tick_hero` (tanpa
+     menambah baris: satu komentar digabung); `_notify_item_damage`
+     dipanggil dari `_deliver_hit` (satu baris komentar diganti). Oracle
+     meng-exec `update` dan `notify_damage_taken` sumber nyata dengan
+     `_EffectStub` untuk 18 skenario auto-trigger dan 5 skenario notify;
+     native mereproduksi skenario yang sama lewat bus `_TestItemFx` dan
+     menguji tick Leviathan regen di world nyata. `minion_battle.gd`
+     tetap 1000 baris.
+     **Batasan 5c-2:** `damage_amp`/`armor_shred` dicatat di bus tetapi
+     field target belum ada (diperlukan 5e on-hit); miasma (`_tick_miasma`)
+     belum dipanggil; efek posisi Gale Pike menggeser `position` tanpa
+     collision; aura (5d) dan on-hit proc `on_basic_attack_hit`/
+     `_on_hit_common`/`on_ranged_attack_hit` (5e) belum port.
+   - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
+     Scorched Earth ke menara/boss).
    - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
      Scorched Earth ke menara/boss).
    - [ ] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
@@ -405,10 +426,11 @@ Selesai: port item AI lapisan 1-4, satu commit per lapisan, basis main f1d34ed.
 
 Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 22 urutan pool penuh, 7 skrip operasi inventori, 9 kasus `_try_buy_item` nyata,
-25 loadout stat). Native: `ai_item_checks.gd` terdaftar di `run_all.gd`.
-CI Godot 4.7.2 run 36372292468 hijau untuk lapisan 1-4 + 5a + 5b + 5b+ + 5c-1:
-**1.176.651 native checks**; static lokal 5662 PASS,
-`gdlint`/`gdformat`/`gdparse` bersih, `minion_battle.gd` tetap 1000 baris.
+25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
+5 notify_damage). Native: `ai_item_checks.gd` terdaftar di `run_all.gd`.
+CI Godot 4.7.2 — CI belum di-poll untuk lapisan 5c-2 (menunggu push).
+Static lokal 5677 PASS; `gdlint`/`gdformat`/`gdparse` bersih;
+`minion_battle.gd` tetap 1000 baris.
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
@@ -416,19 +438,19 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: **5b** - terapkan stat saat equip/level (`_on_item_changed`:
-`get_max_hp` + heal amp `apply_heal_amp`), masukkan bonus HP item ke
-`HeroState.apply_level_stats`, lalu konsumsi getter di jalur serangan/proyektil
-yang sudah ada. Setelah itu 5c timer pasif/aktif, 5d aura + `update_auras`,
-5e proc on-hit, 5f Forge UI. Kontrol hero per tick dan integrasi scene tetap
-menunggu setelah fase item.
+Berikutnya: **5d** aura + `update_auras` (armor/AS/guard block/armor reduction
+buff sekutu, Scorched Earth DoT ke menara/boss), lalu 5e proc on-hit
+(`roll_crit`, `on_basic_attack_hit`, `_on_hit_common`, `on_ranged_attack_hit`
++ chain/cleave/vine/miasma), terakhir 5f Forge UI + item drop
+(`drops_on_death`). Kontrol hero per tick dan integrasi scene tetap menunggu
+setelah fase item.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft
-> #294, basis main f1d34ed). Baca AI_CONTRACT.md bagian "Rencana port item AI"
-> langkah 5b: port `_on_item_changed` (max HP = `get_max_hp`, heal amp) dan
-> cabang item di `Hero._apply_level_stats`, lalu konsumsi getter stat 5a di
-> jalur serangan/proyektil yang sudah ada - satu commit per potong, oracle +
-> tes native tiap lapisan. Sumber read-only: hero_items.py dan _entity.py.
-> Hanya ubah godot_rebuild/; minion_battle.gd tetap 1000 baris; timer
-> pasif/aktif, aura, proc on-hit dan Forge UI adalah lapisan 5c-5f, jangan
-> digabung; jangan merge tanpa perintah pengguna.
+> #294, basis main f6c4342). Lapisan 5c-2 sudah di-commit: setengah auto-trigger
+> `update()` + `notify_damage_taken` + tick wiring. Berikutnya langkah 5d: port
+> `update_auras` (armor/AS/guard/armor reduction aura sekutu + Scorched Earth),
+> lalu 5e proc on-hit (crit/lifesteal/cleave/chain/bash/miasma/vine) dan 5f
+> Forge UI + `drops_on_death`. Satu commit per lapisan, oracle exec sumber
+> asli + fixture --write, tes native + validate_project.py. Sumber read-only:
+> hero_items.py dan _entity.py. Hanya ubah godot_rebuild/; minion_battle.gd
+> tetap 1000 baris; jangan merge tanpa perintah pengguna.

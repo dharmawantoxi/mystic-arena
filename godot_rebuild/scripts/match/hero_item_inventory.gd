@@ -1,25 +1,26 @@
 # gdlint:disable=max-public-methods
 extends RefCounted
 ## Port of HeroItemInventory: six slots, the melee_only/magic_only gates,
-## drop-on-death, and the PURE stat aggregation getters. The source instance
-## lives on the hero as `hero.items`; the rebuild keeps one per HeroState.
+## drop-on-death, the PURE stat aggregation getters, the timer state machine
+## (tick_timers), and the auto-trigger half of update() plus
+## notify_damage_taken() (layer 5c-2). The source instance lives on the hero
+## as `hero.items`; the rebuild keeps one per HeroState. Effects dispatch
+## through an ItemEffects callback bus so the inventory never references the
+## battle layer directly.
 ##
-## LIMITATION, NOT PARITY (layer 5a scope):
-## - `_on_item_changed` (source add/remove hook) is NOT ported: equipping does
-##   not recompute `hero.max_hp`/`hp` nor re-apply heal amp yet. `get_max_hp()`
-##   below reports what the source would compute, but nothing consumes it.
-## - The active/passive/aura timers the getters read (`blood_frenzy_timer`,
-##   `ghost_timer`, `thorn_timer`, `gale_timer`, `veil_timer`, `guard_timer`,
-##   `rend_timer`, `aura_*`) exist but nothing drives them, so every
-##   timer-gated branch stays closed in this layer.
-## - `update()`, `notify_damage_taken()`, `on_basic_attack_hit()`,
-##   `_on_hit_common()`, `on_ranged_attack_hit()` and `update_auras()` are not
-##   ported: no proc, no chain lightning, no miasma, no aura application.
+## LIMITATION, NOT PARITY (layer 5c-2 scope):
+## - `on_basic_attack_hit()`, `_on_hit_common()`, `on_ranged_attack_hit()`
+##   (on-hit procs, 5e) and `update_auras()` (5d) are NOT ported here.
+## - Hero runtime state (hp/pos/alive/facing/target_id) must be refreshed via
+##   set_hero_runtime() every tick before tick_auto(); the inventory keeps no
+##   hero reference.
 ## The source-side values are locked in `tests/fixtures/ai_items_source.json`
-## ("stats"), so this contract has to be updated when those phases land.
+## ("auto_triggers", "notify_damage"), so this contract updates as each layer
+## lands.
 
 const HeroItems = preload("res://scripts/match/hero_items.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
+const ItemEffects = preload("res://scripts/match/item_effects.gd")
 const RAPIER := "holy_rapier"
 # Source update() decrements exactly these, in this order.
 const TIMER_FIELDS := [
@@ -55,6 +56,7 @@ const TIMER_FIELDS := [
 # Plain copies of the owner role/attack range/base HP/level (refreshed by
 # HeroState). The source reads them from the hero on every call; copies keep
 # hero and inventory free of a RefCounted reference cycle.
+var hero_id := -1
 var hero_role := ""
 var hero_range := 0.0
 var hero_base_hp := 0
@@ -62,6 +64,15 @@ var hero_level := 1
 # -1 = unknown, so get_range_bonus falls back to the source `range < 110`
 # heuristic (Hero.is_melee_hero is that same rule, _entity.py:3303).
 var hero_melee_flag := -1
+# Hero runtime state is refreshed by the battle caller before tick_auto().
+# The inventory owns no hero reference.
+var hero_alive := true
+var hero_hp := 0.0
+var hero_max_hp := 0
+var hero_team := 0
+var hero_facing := 1.0
+var hero_position := Vector2.ZERO
+var hero_target_id := -1
 var catalog: Dictionary
 var slots: Array = []
 # Read by the getters below, never advanced in this layer (see header).
@@ -126,6 +137,26 @@ func set_hero_scaling(base_hp: int, level: int, melee_flag: int) -> void:
 	hero_base_hp = base_hp
 	hero_level = level
 	hero_melee_flag = melee_flag
+
+
+func set_hero_runtime(
+	p_id: int,
+	alive: bool,
+	hp: float,
+	max_hp: int,
+	team: int,
+	facing: float,
+	pos: Vector2,
+	target_id: int,
+) -> void:
+	hero_id = p_id
+	hero_alive = alive
+	hero_hp = hp
+	hero_max_hp = max_hp
+	hero_team = team
+	hero_facing = facing
+	hero_position = pos
+	hero_target_id = target_id
 
 
 func max_slots() -> int:
@@ -434,3 +465,317 @@ func tick_timers(dt: int) -> void:
 		rend_target = -1
 	if has("runic_gavel") and empower_charge > 0:
 		empower_charge = maxi(0, empower_charge - dt)
+
+
+# ── Auto-trigger half of update (layer 5c-2) ─────────────────
+func tick_auto(dt: int, enemies: Array, effects: ItemEffects, _rng: RandomNumberGenerator) -> void:
+	# Port of the auto-trigger/HP-regen half of HeroItemInventory.update.
+	# Caller must have invoked tick_timers(dt) AND refreshed hero runtime
+	# state (set_hero_runtime) BEFORE this call.
+	if not hero_alive or hero_max_hp <= 0:
+		return
+	var ratio := hero_hp / float(hero_max_hp)
+	# Demon Maw: Blood Frenzy at HP < 35% (no hp_threshold key; hardcoded).
+	if has("demon_maw") and blood_frenzy_cd <= 0 and ratio < 0.35:
+		var act: Dictionary = item("demon_maw").get("active", {})
+		blood_frenzy_timer = int(act.get("duration", 0))
+		blood_frenzy_cd = int(act.get("cooldown", 0))
+		effects.notify(hero_id, "BLOOD FRENZY!")
+	# Tier II auto-triggers.
+	# Scarlet Bulwark: Bulwark Guard at HP threshold.
+	if has("scarlet_bulwark") and guard_cd <= 0:
+		var act: Dictionary = item("scarlet_bulwark").get("active", {})
+		if ratio < float(act.get("hp_threshold", 0.0)):
+			guard_timer = int(act.get("duration", 0))
+			guard_cd = int(act.get("cooldown", 0))
+			effects.notify(hero_id, "BULWARK GUARD!")
+	# Tempest Vane: Veil at HP threshold.
+	if has("tempest_vane") and veil_cd <= 0:
+		var act: Dictionary = item("tempest_vane").get("active", {})
+		if ratio < float(act.get("hp_threshold", 0.0)):
+			veil_timer = int(act.get("duration", 0))
+			veil_cd = int(act.get("cooldown", 0))
+			effects.notify(hero_id, "TEMPEST VEIL!")
+	# Fenrir Chain: 2+ enemies in trigger_radius => root + damage.
+	if has("fenrir_chain") and chains_cd <= 0 and enemies.size() > 0:
+		var act: Dictionary = item("fenrir_chain").get("active", {})
+		var trig_r := float(act.get("trigger_radius", 0.0))
+		var root_r := float(act.get("root_radius", 0.0))
+		var near_ids: Array = _nearby_enemies(enemies, trig_r)
+		if near_ids.size() >= int(act.get("trigger_enemies", 99)):
+			chains_cd = int(act.get("cooldown", 0))
+			var root_dur := int(act.get("root_duration", 0))
+			var dmg := int(act.get("damage", 0))
+			var rooted: Array = []
+			for eid in near_ids:
+				var epos: Vector2 = _enemy_pos(enemies, eid)
+				if hero_position.distance_to(epos) <= root_r:
+					effects.apply_stun(eid, root_dur)
+				if dmg > 0:
+					effects.deal_damage(eid, hero_team, dmg, "magic")
+				rooted.append(eid)
+			effects.notify(hero_id, "BINDING CHAINS!")
+			effects.chain_fx(hero_id, rooted)
+	# Sanguine Thorn: Soul Rend on current target.
+	if has("sanguine_thorn") and rend_cd <= 0:
+		var tgt_id := hero_target_id
+		if tgt_id >= 0 and _enemy_alive(enemies, tgt_id):
+			var act: Dictionary = item("sanguine_thorn").get("active", {})
+			rend_timer = int(act.get("duration", 0))
+			rend_cd = int(act.get("cooldown", 0))
+			rend_target = tgt_id
+			effects.apply_silence(tgt_id, int(act.get("duration", 0)))
+			effects.apply_damage_amp(
+				tgt_id, float(act.get("damage_amp", 0.0)), int(act.get("duration", 0))
+			)
+			effects.notify(tgt_id, "SOUL REND!")
+	# Abyss Breaker: Overwhelm stun on target.
+	if has("abyss_breaker") and overwhelm_cd <= 0:
+		var tgt_id := hero_target_id
+		if tgt_id >= 0 and _enemy_alive(enemies, tgt_id):
+			var act: Dictionary = item("abyss_breaker").get("active", {})
+			overwhelm_cd = int(act.get("cooldown", 0))
+			effects.apply_stun(tgt_id, int(act.get("stun", 0)))
+			effects.notify(tgt_id, "OVERWHELM!")
+	# Thunder Coil: static zap tick.
+	if static_timer > 0 and has("thunder_coil") and enemies.size() > 0:
+		var act: Dictionary = item("thunder_coil").get("active", {})
+		static_tick -= dt
+		if static_tick <= 0:
+			static_tick = int(act.get("tick", 0))
+			var rad := float(act.get("radius", 0.0))
+			var tgt_count := int(act.get("targets", 0))
+			var dmg := int(act.get("damage", 0))
+			var near_ids: Array = _nearby_enemies_sorted(enemies, rad)
+			var zapped: Array = []
+			for i in range(mini(near_ids.size(), tgt_count)):
+				var eid: int = near_ids[i]
+				if dmg > 0:
+					effects.deal_damage(eid, hero_team, dmg, "magic")
+				zapped.append(eid)
+			if zapped.size() > 0:
+				effects.chain_fx(hero_id, zapped)
+	# Razor Carapace: Thornmail at HP threshold.
+	if has("razor_carapace") and thorn_cd <= 0:
+		var act: Dictionary = item("razor_carapace").get("active", {})
+		if ratio < float(act.get("hp_threshold", 0.0)):
+			thorn_timer = int(act.get("duration", 0))
+			thorn_cd = int(act.get("cooldown", 0))
+			effects.notify(hero_id, "THORNMAIL!")
+	# Everfrost Guard: Arctic Blast on 2+ nearby.
+	if has("everfrost_guard") and arctic_cd <= 0 and enemies.size() > 0:
+		var act: Dictionary = item("everfrost_guard").get("active", {})
+		var rad := float(act.get("radius", 0.0))
+		var near_ids: Array = _nearby_enemies(enemies, rad)
+		if near_ids.size() >= int(act.get("trigger_enemies", 99)):
+			arctic_cd = int(act.get("cooldown", 0))
+			var dmg := int(act.get("damage", 0))
+			var slow := float(act.get("slow", 0.0))
+			var slow_dur := int(act.get("slow_duration", 0))
+			var hit: Array = []
+			for eid in near_ids:
+				if dmg > 0:
+					effects.deal_damage(eid, hero_team, dmg, "magic")
+				effects.apply_slow(eid, slow, slow_dur)
+				hit.append(eid)
+			effects.notify(hero_id, "ARCTIC BLAST!")
+			effects.chain_fx(hero_id, hit)
+	# Gale Pike: retreat dash at low HP.
+	if has("gale_pike") and gale_cd <= 0:
+		var act: Dictionary = item("gale_pike").get("active", {})
+		if ratio < float(act.get("hp_threshold", 0.0)):
+			gale_timer = int(act.get("duration", 0))
+			gale_cd = int(act.get("cooldown", 0))
+			var dash := float(act.get("dash_distance", 0.0))
+			var delta := Vector2.ZERO
+			var tgt_id := hero_target_id
+			if tgt_id >= 0 and _enemy_alive(enemies, tgt_id):
+				var tpos: Vector2 = _enemy_pos(enemies, tgt_id)
+				var away := hero_position - tpos
+				if away.length() > 0.001:
+					delta = away.normalized() * dash
+				else:
+					delta = Vector2(-hero_facing, 0.0) * dash
+			else:
+				delta = Vector2(-hero_facing, 0.0) * dash
+			effects.nudge_position(hero_id, delta)
+			effects.notify(hero_id, "GALE LEAP!")
+	# Searbrand: Brand Burst burn on 2+ nearby.
+	if has("searbrand") and searbrand_cd <= 0 and enemies.size() > 0:
+		var act: Dictionary = item("searbrand").get("active", {})
+		var rad := float(act.get("radius", 0.0))
+		var near_ids: Array = _nearby_enemies(enemies, rad)
+		if near_ids.size() >= int(act.get("trigger_enemies", 99)):
+			searbrand_cd = int(act.get("cooldown", 0))
+			var dmg := int(act.get("damage", 0))
+			var burn_dps_v := float(act.get("burn_dps", 0.0))
+			var burn_dur := int(act.get("burn_duration", 0))
+			var hit: Array = []
+			for eid in near_ids:
+				if dmg > 0:
+					effects.deal_damage(eid, hero_team, dmg, "magic")
+				effects.apply_burn(eid, burn_dps_v, burn_dur, hero_team)
+				hit.append(eid)
+			effects.notify(hero_id, "BRAND BURST!")
+			effects.chain_fx(hero_id, hit)
+	# Astral Codex: Arcane Nova silence on 2+ nearby.
+	if has("astral_codex") and arcane_cd <= 0 and enemies.size() > 0:
+		var act: Dictionary = item("astral_codex").get("active", {})
+		var rad := float(act.get("radius", 0.0))
+		var near_ids: Array = _nearby_enemies(enemies, rad)
+		if near_ids.size() >= int(act.get("trigger_enemies", 99)):
+			arcane_cd = int(act.get("cooldown", 0))
+			var dmg := int(act.get("damage", 0))
+			var sil_dur := int(act.get("silence_duration", 0))
+			var hit: Array = []
+			for eid in near_ids:
+				if dmg > 0:
+					effects.deal_damage(eid, hero_team, dmg, "magic")
+				effects.apply_silence(eid, sil_dur)
+				hit.append(eid)
+			effects.notify(hero_id, "ARCANE NOVA!")
+			effects.chain_fx(hero_id, hit)
+	# Fulgur Scepter: Energy Blast on target.
+	if has("fulgur_scepter") and fulgur_cd <= 0:
+		var tgt_id := hero_target_id
+		if tgt_id >= 0 and _enemy_alive(enemies, tgt_id):
+			var act: Dictionary = item("fulgur_scepter").get("active", {})
+			fulgur_cd = int(act.get("cooldown", 0))
+			var dmg := int(act.get("damage", 0))
+			if dmg > 0:
+				effects.deal_damage(tgt_id, hero_team, dmg, "magic")
+			effects.notify(tgt_id, "ENERGY BLAST!")
+	# Hex Idol: Hex (stun + silence) on target.
+	if has("hex_idol") and hex_cd <= 0:
+		var tgt_id := hero_target_id
+		if tgt_id >= 0 and _enemy_alive(enemies, tgt_id):
+			var act: Dictionary = item("hex_idol").get("active", {})
+			hex_cd = int(act.get("cooldown", 0))
+			effects.apply_stun(tgt_id, int(act.get("stun", 0)))
+			effects.apply_silence(tgt_id, int(act.get("silence", 0)))
+			effects.notify(tgt_id, "HEX!")
+	# Rift Veil: Discord Field amp on 2+ nearby.
+	if has("rift_veil") and rift_cd <= 0 and enemies.size() > 0:
+		var act: Dictionary = item("rift_veil").get("active", {})
+		var rad := float(act.get("radius", 0.0))
+		var near_ids: Array = _nearby_enemies(enemies, rad)
+		if near_ids.size() >= int(act.get("trigger_enemies", 99)):
+			rift_cd = int(act.get("cooldown", 0))
+			var amp := float(act.get("damage_amp", 0.0))
+			var dur := int(act.get("duration", 0))
+			for eid in near_ids:
+				effects.apply_damage_amp(eid, amp, dur)
+			effects.notify(hero_id, "DISCORD FIELD!")
+			effects.chain_fx(hero_id, near_ids)
+	# Vital Stone: Vitality Pact heal at low HP.
+	if has("vital_stone") and pact_cd <= 0:
+		var act: Dictionary = item("vital_stone").get("active", {})
+		if ratio < float(act.get("hp_threshold", 0.0)):
+			pact_cd = int(act.get("cooldown", 0))
+			var heal_amt := int(float(hero_max_hp) * float(act.get("heal_pct", 0.0)))
+			if heal_amt > 0:
+				hero_hp = mini(float(hero_max_hp), hero_hp + float(heal_amt))
+			effects.notify(hero_id, "VITALITY PACT!")
+	# Spectral Charm: Spectral Form (evasion) at low HP.
+	if has("spectral_charm") and ghost_cd <= 0:
+		var act: Dictionary = item("spectral_charm").get("active", {})
+		if ratio < float(act.get("hp_threshold", 0.0)):
+			ghost_timer = int(act.get("duration", 0))
+			ghost_cd = int(act.get("cooldown", 0))
+			effects.notify(hero_id, "SPECTRAL FORM!")
+	# HP regen (base + Leviathan out-of-combat).
+	if hero_hp < float(hero_max_hp):
+		var regen := get_hp_regen()
+		if has("leviathan_heart"):
+			var p: Dictionary = item("leviathan_heart").get("passive", {})
+			if last_damage_timer <= 0:
+				regen += float(hero_max_hp) * float(p.get("out_of_combat_regen_pct", 0.0)) / 60.0
+		if regen > 0:
+			hero_hp = mini(float(hero_max_hp), hero_hp + regen)
+
+
+func notify_damage_taken(
+	damage: int,
+	source_id: int,
+	source_team: int,
+	source_alive: bool,
+	rng: RandomNumberGenerator,
+	effects: ItemEffects
+) -> void:
+	# Port of HeroItemInventory.notify_damage_taken: Leviathan combat timer,
+	# Thunder Coil static proc chance, Razor Carapace thornmail reflect.
+	# `damage` is post-mitigation (already subtracted hp by caller).
+	if has("leviathan_heart"):
+		var p: Dictionary = item("leviathan_heart").get("passive", {})
+		last_damage_timer = int(p.get("combat_timeout", 0))
+	if has("thunder_coil") and static_cd <= 0:
+		var act: Dictionary = item("thunder_coil").get("active", {})
+		if rng.randf() < float(act.get("proc_chance", 0.0)):
+			static_timer = int(act.get("duration", 0))
+			static_tick = int(act.get("tick", 0))
+			static_cd = int(act.get("cooldown", 0))
+			effects.notify(hero_id, "STATIC CHARGE!")
+	var refl := get_reflect_pct()
+	if refl > 0.0 and damage > 0 and source_id >= 0 and source_alive and source_team != hero_team:
+		var dmg := int(float(damage) * refl)
+		if dmg > 0:
+			effects.deal_damage(source_id, hero_team, dmg, "magic")
+			effects.notify(source_id, "-" + str(dmg))
+
+
+# ── Enemy list helpers (enemies is an Array of {id,pos,team,alive}) ─────────
+func _enemy_pos(enemies: Array, eid: int) -> Vector2:
+	for e in enemies:
+		var d: Dictionary = e as Dictionary
+		if int(d.get("id", -2)) == eid:
+			return d.get("pos", Vector2.ZERO) as Vector2
+	return Vector2.ZERO
+
+
+func _enemy_alive(enemies: Array, eid: int) -> bool:
+	for e in enemies:
+		var d: Dictionary = e as Dictionary
+		if int(d.get("id", -2)) == eid:
+			return bool(d.get("alive", false)) and int(d.get("team", -1)) != hero_team
+	return false
+
+
+func _nearby_enemies(enemies: Array, radius: float) -> Array:
+	var ids: Array = []
+	for e in enemies:
+		var d: Dictionary = e as Dictionary
+		if not bool(d.get("alive", false)):
+			continue
+		if int(d.get("team", -1)) == hero_team:
+			continue
+		var epos: Vector2 = d.get("pos", Vector2.ZERO) as Vector2
+		if hero_position.distance_to(epos) <= radius:
+			ids.append(int(d.get("id", -1)))
+	return ids
+
+
+func _nearby_enemies_sorted(enemies: Array, radius: float) -> Array:
+	# Source sorts nearby by distance ascending; tie-break by insertion order
+	# (sort_custom is not stable).
+	var entries: Array = []
+	for index in range(enemies.size()):
+		var d: Dictionary = enemies[index] as Dictionary
+		if not bool(d.get("alive", false)):
+			continue
+		if int(d.get("team", -1)) == hero_team:
+			continue
+		var epos: Vector2 = d.get("pos", Vector2.ZERO) as Vector2
+		var dist := hero_position.distance_to(epos)
+		if dist <= radius:
+			entries.append({"id": int(d.get("id", -1)), "dist": dist, "idx": index})
+	# Python sort is stable: we approximate with (dist, idx) tuple key.
+	entries.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			if absf(float(a.dist) - float(b.dist)) > 0.001:
+				return float(a.dist) < float(b.dist)
+			return int(a.idx) < int(b.idx)
+	)
+	var ids: Array = []
+	for entry in entries:
+		ids.append(int(entry.id))
+	return ids

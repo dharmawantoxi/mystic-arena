@@ -5938,5 +5938,3842 @@
         }
       ]
     }
+  ],
+  "auto_triggers": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "demon_maw"
+      ],
+      "hp_ratio": 0.3,
+      "enemy_deltas": [],
+      "target_idx": null,
+      "ticks": 3,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 300,
+            "blood_frenzy_cd": 1500,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 323,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 299,
+            "blood_frenzy_cd": 1499,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 323,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 298,
+            "blood_frenzy_cd": 1498,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 323,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "scarlet_bulwark"
+      ],
+      "hp_ratio": 0.2,
+      "enemy_deltas": [],
+      "target_idx": null,
+      "ticks": 3,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 420,
+            "guard_cd": 2400,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 481,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "BULWARK GUARD!",
+              "color": [
+                255,
+                110,
+                110
+              ]
+            }
+          ],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 419,
+            "guard_cd": 2399,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 489,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 418,
+            "guard_cd": 2398,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 497,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "tempest_vane"
+      ],
+      "hp_ratio": 0.2,
+      "enemy_deltas": [],
+      "target_idx": null,
+      "ticks": 3,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 150,
+            "veil_cd": 1800,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 477,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "TEMPEST VEIL!",
+              "color": [
+                180,
+                240,
+                255
+              ]
+            }
+          ],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 149,
+            "veil_cd": 1799,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 481,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 148,
+            "veil_cd": 1798,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 485,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "fenrir_chain"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          0,
+          30
+        ],
+        [
+          0,
+          -30
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 1080,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1273,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "stun",
+                "x": 100,
+                "y": 130,
+                "team": "blue",
+                "duration": 72
+              },
+              {
+                "kind": "damage",
+                "x": 100,
+                "y": 130,
+                "team": "blue",
+                "damage": 80,
+                "dmg_team": "red",
+                "school": "magic"
+              }
+            ],
+            [
+              {
+                "kind": "stun",
+                "x": 100,
+                "y": 70,
+                "team": "blue",
+                "duration": 72
+              },
+              {
+                "kind": "damage",
+                "x": 100,
+                "y": 70,
+                "team": "blue",
+                "damage": 80,
+                "dmg_team": "red",
+                "school": "magic"
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "BINDING CHAINS!",
+              "color": [
+                255,
+                230,
+                150
+              ]
+            }
+          ],
+          "chains": [
+            {
+              "source_tag": "hero",
+              "target_tags": [
+                "e0",
+                "e1"
+              ],
+              "color": [
+                240,
+                190,
+                90
+              ]
+            }
+          ]
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 1079,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1273,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "sanguine_thorn"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          0,
+          50
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 300,
+            "rend_cd": 1080,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "debuff",
+                "x": 100,
+                "y": 150,
+                "team": "blue",
+                "name": "atk_slow",
+                "amount": 1.0,
+                "duration": 300,
+                "source_team": null
+              },
+              {
+                "kind": "debuff",
+                "x": 100,
+                "y": 150,
+                "team": "blue",
+                "name": "skill_down",
+                "amount": 1.0,
+                "duration": 300,
+                "source_team": null
+              },
+              {
+                "kind": "amp",
+                "x": 100,
+                "y": 150,
+                "team": "blue",
+                "amount": 0.3,
+                "duration": 300
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "e0",
+              "text": "SOUL REND!",
+              "color": [
+                255,
+                120,
+                160
+              ]
+            }
+          ],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 299,
+            "rend_cd": 1079,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "abyss_breaker"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          0,
+          50
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 1500,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1323,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "stun",
+                "x": 100,
+                "y": 150,
+                "team": "blue",
+                "duration": 72
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "e0",
+              "text": "OVERWHELM!",
+              "color": [
+                140,
+                180,
+                255
+              ]
+            }
+          ],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 1499,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1323,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "razor_carapace"
+      ],
+      "hp_ratio": 0.2,
+      "enemy_deltas": [],
+      "target_idx": null,
+      "ticks": 3,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 270,
+            "thorn_cd": 1500,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 223,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "THORNMAIL!",
+              "color": [
+                230,
+                230,
+                255
+              ]
+            }
+          ],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 269,
+            "thorn_cd": 1499,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 223,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 268,
+            "thorn_cd": 1498,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 223,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "everfrost_guard"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          20,
+          0
+        ],
+        [
+          -20,
+          0
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 1440,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "damage",
+                "x": 120,
+                "y": 100,
+                "team": "blue",
+                "damage": 130,
+                "dmg_team": "red",
+                "school": "magic"
+              },
+              {
+                "kind": "slow",
+                "x": 120,
+                "y": 100,
+                "team": "blue",
+                "amount": 0.45,
+                "duration": 210
+              }
+            ],
+            [
+              {
+                "kind": "damage",
+                "x": 80,
+                "y": 100,
+                "team": "blue",
+                "damage": 130,
+                "dmg_team": "red",
+                "school": "magic"
+              },
+              {
+                "kind": "slow",
+                "x": 80,
+                "y": 100,
+                "team": "blue",
+                "amount": 0.45,
+                "duration": 210
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "ARCTIC BLAST!",
+              "color": [
+                180,
+                230,
+                255
+              ]
+            }
+          ],
+          "chains": [
+            {
+              "source_tag": "hero",
+              "target_tags": [
+                "e0",
+                "e1"
+              ],
+              "color": [
+                120,
+                190,
+                230
+              ]
+            }
+          ]
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 1439,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "gale_pike"
+      ],
+      "hp_ratio": 0.2,
+      "enemy_deltas": [
+        [
+          0,
+          50
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 180,
+            "gale_cd": 1500,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 426,
+            "x": 100.0,
+            "y": -30.0
+          },
+          "effects": [
+            []
+          ],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "GALE LEAP!",
+              "color": [
+                200,
+                255,
+                230
+              ]
+            }
+          ],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 179,
+            "gale_cd": 1499,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 429,
+            "x": 100.0,
+            "y": -30.0
+          },
+          "effects": [
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "searbrand"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          20,
+          0
+        ],
+        [
+          -20,
+          0
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 1080,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1343,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "damage",
+                "x": 120,
+                "y": 100,
+                "team": "blue",
+                "damage": 110,
+                "dmg_team": "red",
+                "school": "magic"
+              },
+              {
+                "kind": "debuff",
+                "x": 120,
+                "y": 100,
+                "team": "blue",
+                "name": "burn",
+                "amount": 22.0,
+                "duration": 180,
+                "source_team": "red"
+              }
+            ],
+            [
+              {
+                "kind": "damage",
+                "x": 80,
+                "y": 100,
+                "team": "blue",
+                "damage": 110,
+                "dmg_team": "red",
+                "school": "magic"
+              },
+              {
+                "kind": "debuff",
+                "x": 80,
+                "y": 100,
+                "team": "blue",
+                "name": "burn",
+                "amount": 22.0,
+                "duration": 180,
+                "source_team": "red"
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "BRAND BURST!",
+              "color": [
+                255,
+                150,
+                110
+              ]
+            }
+          ],
+          "chains": [
+            {
+              "source_tag": "hero",
+              "target_tags": [
+                "e0",
+                "e1"
+              ],
+              "color": [
+                235,
+                95,
+                60
+              ]
+            }
+          ]
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 1079,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1343,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "astral_codex"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          20,
+          0
+        ],
+        [
+          -20,
+          0
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 1440,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2968,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "damage",
+                "x": 120,
+                "y": 100,
+                "team": "blue",
+                "damage": 150,
+                "dmg_team": "red",
+                "school": "magic"
+              },
+              {
+                "kind": "debuff",
+                "x": 120,
+                "y": 100,
+                "team": "blue",
+                "name": "atk_slow",
+                "amount": 1.0,
+                "duration": 90,
+                "source_team": null
+              },
+              {
+                "kind": "debuff",
+                "x": 120,
+                "y": 100,
+                "team": "blue",
+                "name": "skill_down",
+                "amount": 1.0,
+                "duration": 90,
+                "source_team": null
+              }
+            ],
+            [
+              {
+                "kind": "damage",
+                "x": 80,
+                "y": 100,
+                "team": "blue",
+                "damage": 150,
+                "dmg_team": "red",
+                "school": "magic"
+              },
+              {
+                "kind": "debuff",
+                "x": 80,
+                "y": 100,
+                "team": "blue",
+                "name": "atk_slow",
+                "amount": 1.0,
+                "duration": 90,
+                "source_team": null
+              },
+              {
+                "kind": "debuff",
+                "x": 80,
+                "y": 100,
+                "team": "blue",
+                "name": "skill_down",
+                "amount": 1.0,
+                "duration": 90,
+                "source_team": null
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "ARCANE NOVA!",
+              "color": [
+                210,
+                155,
+                255
+              ]
+            }
+          ],
+          "chains": [
+            {
+              "source_tag": "hero",
+              "target_tags": [
+                "e0",
+                "e1"
+              ],
+              "color": [
+                155,
+                90,
+                235
+              ]
+            }
+          ]
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 1439,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2968,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "fulgur_scepter"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          0,
+          50
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 1080,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2888,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "damage",
+                "x": 100,
+                "y": 150,
+                "team": "blue",
+                "damage": 300,
+                "dmg_team": "red",
+                "school": "magic"
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "e0",
+              "text": "ENERGY BLAST!",
+              "color": [
+                255,
+                220,
+                120
+              ]
+            }
+          ],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 1079,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2888,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "hex_idol"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          0,
+          50
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 1800,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2938,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "stun",
+                "x": 100,
+                "y": 150,
+                "team": "blue",
+                "duration": 150
+              },
+              {
+                "kind": "debuff",
+                "x": 100,
+                "y": 150,
+                "team": "blue",
+                "name": "atk_slow",
+                "amount": 1.0,
+                "duration": 150,
+                "source_team": null
+              },
+              {
+                "kind": "debuff",
+                "x": 100,
+                "y": 150,
+                "team": "blue",
+                "name": "skill_down",
+                "amount": 1.0,
+                "duration": 150,
+                "source_team": null
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "e0",
+              "text": "HEX!",
+              "color": [
+                210,
+                255,
+                140
+              ]
+            }
+          ],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 1799,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2938,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "rift_veil"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          20,
+          0
+        ],
+        [
+          -20,
+          0
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 1200,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2948,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [
+              {
+                "kind": "amp",
+                "x": 120,
+                "y": 100,
+                "team": "blue",
+                "amount": 0.15,
+                "duration": 360
+              }
+            ],
+            [
+              {
+                "kind": "amp",
+                "x": 80,
+                "y": 100,
+                "team": "blue",
+                "amount": 0.15,
+                "duration": 360
+              }
+            ]
+          ],
+          "notifications": [
+            {
+              "unit_tag": "hero",
+              "text": "DISCORD FIELD!",
+              "color": [
+                180,
+                170,
+                255
+              ]
+            }
+          ],
+          "chains": [
+            {
+              "source_tag": "hero",
+              "target_tags": [
+                "e0",
+                "e1"
+              ],
+              "color": [
+                130,
+                120,
+                240
+              ]
+            }
+          ]
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 1199,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2948,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "vital_stone"
+      ],
+      "hp_ratio": 0.2,
+      "enemy_deltas": [],
+      "target_idx": null,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2214,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2220,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 9
+      },
+      "loadout": [
+        "spectral_charm"
+      ],
+      "hp_ratio": 0.2,
+      "enemy_deltas": [],
+      "target_idx": null,
+      "ticks": 2,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2121,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 2124,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "thunder_coil"
+      ],
+      "hp_ratio": 1.0,
+      "enemy_deltas": [
+        [
+          0,
+          50
+        ],
+        [
+          0,
+          80
+        ]
+      ],
+      "target_idx": 0,
+      "ticks": 12,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 1023,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [
+            [],
+            []
+          ],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "leviathan_heart"
+      ],
+      "hp_ratio": 0.5,
+      "enemy_deltas": [],
+      "target_idx": null,
+      "ticks": 10,
+      "start_pos": [
+        100,
+        100
+      ],
+      "log": [
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 887.34525,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 893.6904999999999,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 900.0357499999999,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 906.3809999999999,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 912.7262499999998,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 919.0714999999998,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 925.4167499999998,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 931.7619999999997,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 938.1072499999997,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        },
+        {
+          "state": {
+            "guard_timer": 0,
+            "guard_cd": 0,
+            "veil_timer": 0,
+            "veil_cd": 0,
+            "chains_cd": 0,
+            "rend_timer": 0,
+            "rend_cd": 0,
+            "bash_cd": 0,
+            "overwhelm_cd": 0,
+            "static_timer": 0,
+            "static_cd": 0,
+            "static_tick": 0,
+            "thorn_timer": 0,
+            "thorn_cd": 0,
+            "arctic_cd": 0,
+            "gale_timer": 0,
+            "gale_cd": 0,
+            "pierce_bash_cd": 0,
+            "searbrand_cd": 0,
+            "arcane_cd": 0,
+            "fulgur_cd": 0,
+            "hex_cd": 0,
+            "rift_cd": 0,
+            "pact_cd": 0,
+            "vine_cd": 0,
+            "ghost_timer": 0,
+            "ghost_cd": 0,
+            "blood_frenzy_timer": 0,
+            "blood_frenzy_cd": 0,
+            "last_damage_timer": 0,
+            "empower_charge": 540,
+            "hp": 944.4524999999996,
+            "x": 100,
+            "y": 100
+          },
+          "effects": [],
+          "notifications": [],
+          "chains": []
+        }
+      ]
+    }
+  ],
+  "notify_damage": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "leviathan_heart"
+      ],
+      "hp_ratio": 1.0,
+      "damage": 100,
+      "has_source": true,
+      "seed": 0,
+      "before": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 0,
+        "thorn_cd": 0,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "after": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 0,
+        "thorn_cd": 0,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 300,
+        "empower_charge": 540
+      },
+      "source_effects": [],
+      "notifications": []
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "thunder_coil"
+      ],
+      "hp_ratio": 1.0,
+      "damage": 50,
+      "has_source": true,
+      "seed": 0,
+      "before": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 0,
+        "thorn_cd": 0,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "after": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 0,
+        "thorn_cd": 0,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "source_effects": [],
+      "notifications": []
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "thunder_coil"
+      ],
+      "hp_ratio": 1.0,
+      "damage": 50,
+      "has_source": true,
+      "seed": 99,
+      "before": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 0,
+        "thorn_cd": 0,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "after": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 0,
+        "thorn_cd": 0,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "source_effects": [],
+      "notifications": []
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "razor_carapace"
+      ],
+      "hp_ratio": 0.2,
+      "damage": 100,
+      "has_source": true,
+      "seed": 0,
+      "before": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 270,
+        "thorn_cd": 1500,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "after": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 270,
+        "thorn_cd": 1500,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "source_effects": [
+        {
+          "kind": "damage",
+          "x": 150,
+          "y": 100,
+          "team": "blue",
+          "damage": 85,
+          "dmg_team": "red",
+          "school": "magic"
+        }
+      ],
+      "notifications": [
+        {
+          "unit_tag": "hero",
+          "text": "THORNMAIL!",
+          "color": [
+            230,
+            230,
+            255
+          ]
+        },
+        {
+          "unit_tag": "source",
+          "text": "-85",
+          "color": [
+            230,
+            230,
+            255
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "loadout": [
+        "razor_carapace"
+      ],
+      "hp_ratio": 0.2,
+      "damage": 100,
+      "has_source": false,
+      "seed": 0,
+      "before": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 270,
+        "thorn_cd": 1500,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "after": {
+        "guard_timer": 0,
+        "guard_cd": 0,
+        "veil_timer": 0,
+        "veil_cd": 0,
+        "chains_cd": 0,
+        "rend_timer": 0,
+        "rend_cd": 0,
+        "bash_cd": 0,
+        "overwhelm_cd": 0,
+        "static_timer": 0,
+        "static_cd": 0,
+        "static_tick": 0,
+        "thorn_timer": 270,
+        "thorn_cd": 1500,
+        "arctic_cd": 0,
+        "gale_timer": 0,
+        "gale_cd": 0,
+        "pierce_bash_cd": 0,
+        "searbrand_cd": 0,
+        "arcane_cd": 0,
+        "fulgur_cd": 0,
+        "hex_cd": 0,
+        "rift_cd": 0,
+        "pact_cd": 0,
+        "vine_cd": 0,
+        "ghost_timer": 0,
+        "ghost_cd": 0,
+        "blood_frenzy_timer": 0,
+        "blood_frenzy_cd": 0,
+        "last_damage_timer": 0,
+        "empower_charge": 540
+      },
+      "source_effects": [],
+      "notifications": [
+        {
+          "unit_tag": "hero",
+          "text": "THORNMAIL!",
+          "color": [
+            230,
+            230,
+            255
+          ]
+        }
+      ]
+    }
   ]
 }
