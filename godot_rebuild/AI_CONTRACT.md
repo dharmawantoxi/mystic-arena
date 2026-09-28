@@ -454,13 +454,16 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
 5 notify_damage, 6 miasma, 8 forge). Native: `ai_item_checks.gd` terdaftar di
 `run_all.gd`.
-CI Godot 4.7.2 run 36458720458 hijau untuk lapisan 5f-3 (commit `6eb7fc9`):
+CI Godot 4.7.2 run 36461967528 hijau untuk lapisan 5f-3 (commit `1a16c3a`):
 **1.179.086 native checks**, static lokal 5727 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
 (fixture 11.496 baris, masih di bawah 20k).
-Catatan panel: `refresh()` melepas node lama sebelum `queue_free()` supaya baris
-yang dibangun ulang langsung bisa dihitung tes; popup detail menelan klik lain
-(sesuai sumber), jadi tutup popup dulu sebelum menekan slot/kartu.
+Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
+`queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
+ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
+di dalam tree (membebaskan Button yang sedang mengirim sinyal = crash). Popup
+detail menelan klik lain (sesuai sumber), jadi tutup popup dulu sebelum menekan
+slot/kartu.
 
 Koreksi yang perlu diingat: metadata katalog awalnya memetakan NAMA konstanta
 `CATEGORY_*` -> id kategori, sehingga validasi kategori per item selalu gagal
