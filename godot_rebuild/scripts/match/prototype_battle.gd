@@ -134,6 +134,7 @@ func step_tick() -> void:
 		spawn_unit(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
 	if is_running():
+		_tick_auras_and_items()
 		_step_defender()
 		_step_hero_act()
 
@@ -962,3 +963,145 @@ func _notify_item_damage(source_id: int, source_team: int, target: Object, damag
 	h.items.notify_damage_taken(
 		damage, source_id, src_team, src_alive, _item_rng, _reflect_item_effects(h.team)
 	)
+
+
+# ── Layer 5d: aura + update_auras (hero_items.py ~2760) ──
+const AURA_DEBUFF_DURATION := 30
+
+
+func _tick_auras_and_items() -> void:
+	# Source calls update_auras() once per frame from Game.update, then each
+	# hero's tick timers/auto-triggers advance. Minions are exposed through
+	# the live unit list so Everfrost/Solar/Sear auras can reach them.
+	_update_auras()
+	for unit in units:
+		if (unit is HeroState) and unit.alive:
+			_tick_hero_items(unit as HeroState)
+
+
+func _collect_all_units() -> Array:
+	# Source _collect_all_units: all living heroes + minions + boss. This
+	# rebuild tracks no boss yet, so units alone is sufficient.
+	var out: Array = []
+	for unit in units:
+		if unit != null and unit.alive:
+			out.append(unit)
+	return out
+
+
+func _update_auras() -> void:
+	# Reset aura fields on every hero inventory first.
+	var all_heroes: Array = []
+	for unit in units:
+		if (unit is HeroState) and unit.alive:
+			var h: HeroState = unit as HeroState
+			all_heroes.append(h)
+			h.items.aura_armor = 0
+			h.items.aura_as = 0
+			h.items.aura_armor_reduction = 0
+			h.items.aura_guard_block = 0
+
+	# ── Scarlet Bulwark: Bulwark Guard ally aura (active-gated) ──
+	var guards: Array = []
+	var guard_active: Dictionary = _aura_catalog("scarlet_bulwark").get("active", {})
+	var g_radius := float(guard_active.get("ally_radius", 0))
+	var g_base := float(guard_active.get("base_block", 0))
+	var g_hp_pct := float(guard_active.get("max_hp_block_pct", 0.0))
+	for h in all_heroes:
+		if h.items.has("scarlet_bulwark") and h.items.guard_timer > 0:
+			guards.append(h)
+	for h in all_heroes:
+		for src in guards:
+			if src.team != h.team:
+				continue
+			if src.position.distance_to(h.position) <= g_radius:
+				var blk: int = int(g_base + int(src.max_hp) * g_hp_pct)
+				if blk > h.items.aura_guard_block:
+					h.items.aura_guard_block = blk
+
+	# ── Everfrost / Solar Brand / Searbrand enemy unit auras ──
+	var frost_src: Array = []
+	var solar_src: Array = []
+	var sear_src: Array = []
+	for h in all_heroes:
+		if h.items.has("everfrost_guard"):
+			frost_src.append(h)
+		if h.items.has("solar_brand"):
+			solar_src.append(h)
+		if h.items.has("searbrand"):
+			sear_src.append(h)
+	if not (frost_src.is_empty() and solar_src.is_empty() and sear_src.is_empty()):
+		var f_cat: Dictionary = _aura_catalog("everfrost_guard").get("aura", {})
+		var s_cat: Dictionary = _aura_catalog("solar_brand").get("aura", {})
+		var se_cat: Dictionary = _aura_catalog("searbrand").get("aura", {})
+		var f_r := float(f_cat.get("enemy_radius", 0))
+		var f_as := float(f_cat.get("enemy_atk_slow", 0.0))
+		var f_heal := float(f_cat.get("enemy_anti_heal", 0.0))
+		var s_r := float(s_cat.get("enemy_radius", 0))
+		var s_burn := float(s_cat.get("burn_dps", 0.0))
+		var se_r := float(se_cat.get("enemy_radius", 0))
+		var se_heal := float(se_cat.get("enemy_anti_heal", 0.0))
+		var se_burn := float(se_cat.get("burn_dps", 0.0))
+		for u in _collect_all_units():
+			if u is HeroState and (u as HeroState).shadow_realm_timer > 0:
+				continue
+			for src in frost_src:
+				if u.team == src.team:
+					continue
+				if src.position.distance_to(u.position) <= f_r:
+					apply_atk_slow(u.id, f_as, AURA_DEBUFF_DURATION)
+					apply_anti_heal(u.id, f_heal, AURA_DEBUFF_DURATION)
+					break
+			for src in solar_src:
+				if u.team == src.team:
+					continue
+				if src.position.distance_to(u.position) <= s_r:
+					apply_burn(u.id, s_burn, AURA_DEBUFF_DURATION, src.team)
+					break
+			for src in sear_src:
+				if u.team == src.team:
+					continue
+				if src.position.distance_to(u.position) <= se_r:
+					apply_anti_heal(u.id, se_heal, AURA_DEBUFF_DURATION)
+					apply_burn(u.id, se_burn, AURA_DEBUFF_DURATION, src.team)
+					break
+
+	_aura_steel_aegis(all_heroes)
+
+
+func _aura_steel_aegis(all_heroes: Array) -> void:
+	var sources: Array = []
+	for h in all_heroes:
+		if h.items.has("steel_aegis"):
+			sources.append(h)
+	if sources.is_empty():
+		return
+	var data: Dictionary = _aura_catalog("steel_aegis").get("aura", {})
+	var ally_r := float(data.get("ally_radius", 0))
+	var enemy_r := float(data.get("enemy_radius", 0))
+	var a_armor: int = int(data.get("ally_armor", 0))
+	var a_as: int = int(data.get("ally_attack_speed", 0))
+	var e_red: int = int(data.get("enemy_armor_reduction", 0))
+	for h in all_heroes:
+		for src in sources:
+			if src == h:
+				continue
+			var d := src.position.distance_to(h.position)
+			if h.team == src.team:
+				if d <= ally_r:
+					h.items.aura_armor += a_armor
+					h.items.aura_as += a_as
+			else:
+				if d <= enemy_r:
+					h.items.aura_armor_reduction += e_red
+
+
+func _aura_catalog(item_id: String) -> Dictionary:
+	# Aura/active sub-tables live on the shared catalog already loaded into
+	# each inventory; any alive hero's inventory returns the same dict.
+	if units.is_empty():
+		return {}
+	for unit in units:
+		if unit is HeroState:
+			return (unit as HeroState).items.item(item_id)
+	return {}
