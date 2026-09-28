@@ -401,6 +401,14 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      (tujuan manual tetap ditaati). Kontrol dijalankan di `step_tick` tetapi
      masih di balik flag `ai_hero_control_enabled` (default mati) sampai
      pengontrol AI tersambung ke scene.
+   - [x] **6b.** Pembungkus jadwal (`ai_controller.gd`): port `AIPlayer.update`
+     (kontrol hero setiap tick, berpikir hanya saat `think_timer` habis, aksi
+     `1 + round(2*elite)`, berhenti pada prioritas pertama yang gagal) plus
+     diagnostik per tick dan passthrough `_ai_reserve` dari draft. Disambungkan
+     ke `prototype_battle.step_tick` lewat flag `ai_enabled`; `_ai_perform_step`
+     adalah seam pemindaian prioritas dan untuk sementara melaporkan "tidak ada
+     aksi" sehingga belum ada transaksi ekonomi saat scene masih memakai
+     defender sementara.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -464,10 +472,10 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 25 loadout stat, 5 stat_application, 3 death, 4 timer-only, 18 auto-trigger,
 5 notify_damage, 6 miasma, 8 forge). Native: `ai_item_checks.gd` terdaftar di
 `run_all.gd`.
-CI Godot 4.7.2 run 36465518225 hijau untuk lapisan 6a (commit `517b36b`):
-**1.179.129 native checks**, static lokal 5737 PASS; `gdlint`/`gdformat`/`gdparse`
+CI Godot 4.7.2 run 36468688990 hijau untuk lapisan 6b (commit `987ff13`):
+**1.179.197 native checks**, static lokal 5747 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
-(fixture 11.506 baris, masih di bawah 20k).
+(fixture 11.615 baris, masih di bawah 20k).
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -481,8 +489,10 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: integrasi scene/session pengontrol AI (policy + adapter yang sudah ada
-belum dipanggil scene), termasuk jalur pause/reset dan seeded RNG. Catatan 6a:
+Berikutnya: mengisi `_ai_perform_step` dengan pemindaian prioritas nyata
+(build -> beli hero -> upgrade hero -> item -> upgrade tower -> shield ->
+nexus) memakai adapter yang sudah ada, lalu mengganti defender sementara dan
+menutup jalur pause/reset + seeded RNG. Catatan 6a:
 `towers` diteruskan eksplisit karena daftar struktur native juga memuat nexus,
 sedangkan sumber hanya menyusuri `all_towers`. Catatan alur sesi:
 repo pernah ter-clone ulang sehingga riwayat lokal tertinggal dari remote —
