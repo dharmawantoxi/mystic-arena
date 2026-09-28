@@ -74,7 +74,12 @@ func press(button_id: String, button: int = 1) -> bool:
 	if shop() == null:
 		return false
 	var handled := bool(shop().handle_click(world, forge(), button_id, button))
-	notify_redraw()
+	if is_inside_tree():
+		# Deferred: the redraw frees the very Button whose signal called us.
+		notify_redraw.call_deferred()
+	else:
+		# Detached (headless test): no signal frame is running, redraw now.
+		notify_redraw()
 	return handled
 
 
@@ -161,11 +166,11 @@ func _build_chrome() -> void:
 
 
 func _clear(container: Node) -> void:
-	# Detach before queue_free so the rebuilt rows are immediately countable
-	# (queue_free only removes the node at the end of the frame).
+	# Detach before freeing so the rebuilt rows are immediately countable and
+	# no orphan node survives the frame (headless tests never pump one).
 	for node in container.get_children():
 		container.remove_child(node)
-		node.queue_free()
+		node.free()
 
 
 func _row() -> HBoxContainer:

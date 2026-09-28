@@ -1481,6 +1481,7 @@ func _test_forge_panel(check: Callable) -> void:
 	panel.press("itemshop_hero_0")
 	panel.press("itemshop_buy_demon_maw")
 	check.call(alive.items.has("demon_maw"), "Buy press must equip the live buyer")
+	panel.refresh()
 	var slots := panel.find_child("ItemForgeSlots", true, false)
 	check.call(slots != null and slots.get_child_count() == 6, "Panel must draw the six slots")
 	check.call(
@@ -1488,6 +1489,7 @@ func _test_forge_panel(check: Callable) -> void:
 	)
 	panel.press("itemshop_slot_0", 3)
 	check.call(not alive.items.has("demon_maw"), "Slot right-click must drop the item")
+	panel.refresh()
 	panel.press("itemshop_card_demon_maw")
 	check.call(world.item_shop.inspect_item == "demon_maw", "Card press must inspect the item")
 	panel.refresh()
@@ -1508,3 +1510,5 @@ func _test_forge_panel(check: Callable) -> void:
 		panel.status_text("inventory_full") != "inventory_full",
 		"inventory_full must carry a translated text"
 	)
+	# Free the Control subtree: a headless test never pumps a frame.
+	panel.free()
