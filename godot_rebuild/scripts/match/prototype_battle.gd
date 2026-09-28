@@ -1086,7 +1086,7 @@ func _aura_steel_aegis(all_heroes: Array) -> void:
 		for src in sources:
 			if src == h:
 				continue
-			var d := src.position.distance_to(h.position)
+			var d: float = src.position.distance_to(h.position)
 			if h.team == src.team:
 				if d <= ally_r:
 					h.items.aura_armor += a_armor
