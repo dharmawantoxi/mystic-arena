@@ -748,28 +748,27 @@ func _test_auto_triggers(rows: Array, check: Callable) -> void:
 		# Equip.
 		for item_id in row.loadout:
 			assert(inv.add(String(item_id)), "auto-trigger loadout refused: " + label)
+		# Source add() calls _on_item_changed which recomputes max_hp via
+		# get_max_hp() and raises hp by (new_max - old_max). Mirror that here
+		# so hp/max_hp reflect the equipped loadout before ticks.
+		var new_max: int = int(inv.get_max_hp())
+		var hp_ratio_f: float = float(row.hp_ratio)
+		var cur_hp: float = float(new_max) * hp_ratio_f
 		var start_pos: Array = row.start_pos
 		# Seed Thunder Coil proc like the oracle.
 		if inv.has("thunder_coil"):
 			var proc_rng := RandomNumberGenerator.new()
 			proc_rng.seed = 0
 			var fx := _TestItemFx.new()
-			inv.set_hero_runtime(
-				42, true, 1000.0, 1000, 0, 1.0, Vector2(100, 100), 100 if enemies.size() > 0 else -1
-			)
+			var tgt_for_seed: int = 100 if enemies.size() > 0 else -1
+			inv.set_hero_runtime(42, true, cur_hp, new_max, 0, 1.0, Vector2(100, 100), tgt_for_seed)
 			inv.notify_damage_taken(50, 100, 1, true, proc_rng, fx)
 		var fx := _TestItemFx.new()
 		var r_ticks: int = int(row.ticks)
 		var r_target: Variant = row.get("target_idx", null)
 		for tick_idx in range(r_ticks):
 			fx.clear()
-			# The oracle runs inv.update(1, enemies) which ticks timers AND
-			# auto-triggers in one call; in the rebuild those are separate
-			# methods so call both in the same order as the source.
 			inv.tick_timers(1)
-			# Read HP from previous tick's hero_hp (or init).
-			var hp_ratio_f: float = float(row.hp_ratio)
-			var start_hp_i: int = int(1000.0 * hp_ratio_f)
 			var tgt_id := -1
 			if r_target != null:
 				var tidx_i: int = int(r_target)
@@ -777,11 +776,9 @@ func _test_auto_triggers(rows: Array, check: Callable) -> void:
 					tgt_id = 100 + tidx_i
 			var sp0: float = float(start_pos[0])
 			var sp1: float = float(start_pos[1])
-			inv.set_hero_runtime(
-				42, true, float(start_hp_i), 1000, 0, 1.0, Vector2(sp0, sp1), tgt_id
-			)
+			inv.set_hero_runtime(42, true, cur_hp, new_max, 0, 1.0, Vector2(sp0, sp1), tgt_id)
 			inv.tick_auto(1, enemies, fx, rng)
-			start_hp_i = int(inv.hero_hp)
+			cur_hp = float(inv.hero_hp)
 			# Apply nudge back for the next tick.
 			for n in fx.nudges:
 				var nd: Dictionary = n as Dictionary
@@ -823,20 +820,21 @@ func _test_notify_damage(rows: Array, check: Callable) -> void:
 		var label := "%s %s dmg=%d" % [String(spec.role), str(row.loadout), int(row.damage)]
 		for item_id in row.loadout:
 			assert(inv.add(String(item_id)), "notify loadout refused: " + label)
-		# Prime thornmail if hp_ratio < 0.5 like the oracle (single update tick).
-		var fx := _TestItemFx.new()
+		# Source add() recalculates max_hp via _on_item_changed.
+		var n_max: int = int(inv.get_max_hp())
 		var nhp_ratio: float = float(row.hp_ratio)
-		var hp_val: int = int(1000.0 * nhp_ratio)
+		var n_hp: float = float(n_max) * nhp_ratio
+		var fx := _TestItemFx.new()
 		if inv.has("razor_carapace") and nhp_ratio < 0.5:
 			inv.tick_timers(1)
-			inv.set_hero_runtime(42, true, float(hp_val), 1000, 0, 1.0, Vector2(100, 100), -1)
+			inv.set_hero_runtime(42, true, n_hp, n_max, 0, 1.0, Vector2(100, 100), -1)
 			inv.tick_auto(1, [], fx, RandomNumberGenerator.new())
-		# Seed RNG for deterministic proc.
+			n_hp = float(inv.hero_hp)
 		var rng := RandomNumberGenerator.new()
 		var seed_val: int = int(row.seed)
 		rng.seed = seed_val
 		fx.clear()
-		inv.set_hero_runtime(42, true, float(hp_val), 1000, 0, 1.0, Vector2(100, 100), -1)
+		inv.set_hero_runtime(42, true, n_hp, n_max, 0, 1.0, Vector2(100, 100), -1)
 		var src_id := -1
 		var src_team := 0
 		var src_alive := false
