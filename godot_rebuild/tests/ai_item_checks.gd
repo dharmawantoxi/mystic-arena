@@ -84,6 +84,7 @@ func run(check: Callable) -> void:
 	_test_auto_triggers(fixture.auto_triggers, check)
 	_test_notify_damage(fixture.notify_damage, check)
 	_test_item_tick_wiring(check)
+	_test_auras(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -900,3 +901,39 @@ func _test_item_tick_wiring(check: Callable) -> void:
 		hero.hp > hp0, "Leviathan Heart out-of-combat regen must fire when last_damage_timer is 0"
 	)
 	check.call(true, "AI item tick wiring: battle loop invokes inventory.tick_timers")
+
+
+func _test_auras(check: Callable) -> void:
+	# Layer 5d: verify update_auras resets fields and applies Steel Aegis
+	# ally/enemy modifiers, plus Scarlet Bulwark Guard block when active.
+	var world := _world()
+	# Place two blue allies close together and one red enemy within enemy
+	# radius. Source constants: Steel Aegis aura 320px ally/enemy radius.
+	var a1 := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	var a2 := world.spawn_hero(World.GRIMJAW, world.BLUE, Vector2(300, 200))
+	var e1 := world.spawn_hero(World.VEX, world.RED, Vector2(400, 200))
+	assert(a1.items.add("steel_aegis"), "steel_aegis refused")
+	a1.apply_item_change()
+	a2.apply_item_change()
+	e1.apply_item_change()
+	world.step_tick()
+	check.call(a2.items.aura_armor == 2, "Steel Aegis must grant +2 armor to ally in range")
+	check.call(a2.items.aura_as == 10, "Steel Aegis must grant +10 AS to ally in range")
+	check.call(
+		e1.items.aura_armor_reduction == 2, "Steel Aegis must apply -2 armor to enemy in range"
+	)
+	check.call(a1.items.aura_armor == 0, "Steel Aegis holder must not self-apply ally aura")
+	# Scarlet Bulwark guard: force guard_timer > 0 and verify block value.
+	assert(a1.items.add("scarlet_bulwark"), "scarlet_bulwark refused")
+	a1.apply_item_change()
+	# tick_timers decrements timers before auras read guard_timer, so seed
+	# a value >1 for it to remain positive through one step.
+	a1.items.guard_timer = 2
+	var armor_before := a2.items.aura_armor
+	world.step_tick()
+	check.call(
+		a2.items.aura_guard_block >= 35, "Bulwark Guard aura must set block on nearby allies"
+	)
+	check.call(
+		a2.items.aura_armor == armor_before, "aura_armor must reset and be recomputed each tick"
+	)

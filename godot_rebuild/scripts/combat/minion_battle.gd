@@ -1,7 +1,6 @@
 extends RefCounted
 ## Deterministic tier-1 minion combat lab. No Nodes, rendering, wall clock, or RNG.
 ## Sequential attacks resolve in stable spawn-ID order; a killed unit cannot act later that tick.
-
 const Definition = preload("res://scripts/data/minion_definition.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
@@ -373,14 +372,15 @@ func _deliver_hit(
 			if roll < 0.75:
 				return false
 	var damage := _damage_amount(target, raw_damage, school)
+	if target is HeroState:
+		damage = maxi(0, damage - int((target as HeroState).items.aura_guard_block))
 	target.hp = maxf(0, target.hp - damage)
 	_notify_item_damage(source_id, source_team, target, int(damage))
-	# Bristleback reflects 25% POST-mitigation; no source = no reflect loop.
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
-		var attacker := get_unit(source_id)
-		if attacker != null and attacker.alive and attacker.team != target.team:
+		var atk := get_unit(source_id)
+		if atk != null and atk.alive and atk.team != target.team:
 			_deliver_hit(
-				-1, target.team, attacker, maxi(1, int(damage * 0.25)), "physical", target.position
+				-1, target.team, atk, maxi(1, int(damage * 0.25)), "physical", target.position
 			)
 	_record(
 		{

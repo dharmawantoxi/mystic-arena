@@ -230,7 +230,7 @@ def catalog(env=None):
             # bash/active). Presentation keys (icon/color/glow/desc) stay out.
             "stats": dict(data.get("stats", {})),
         }
-        for key in ("passive", "block", "on_attack", "bash", "active"):
+        for key in ("passive", "block", "on_attack", "bash", "active", "aura"):
             if key in data:
                 entry[key] = data[key]
         items[item_id] = json.loads(json.dumps(entry))

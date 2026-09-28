@@ -117,6 +117,14 @@
       "stats": {
         "armor": 6,
         "attack_speed": 30
+      },
+      "aura": {
+        "name": "Steel Aura",
+        "ally_radius": 320,
+        "ally_armor": 2,
+        "ally_attack_speed": 10,
+        "enemy_radius": 320,
+        "enemy_armor_reduction": 2
       }
     },
     "moon_shard": {
@@ -363,6 +371,12 @@
         "slow": 0.45,
         "slow_duration": 210,
         "cooldown": 1440
+      },
+      "aura": {
+        "name": "Freezing Aura",
+        "enemy_radius": 300,
+        "enemy_atk_slow": 0.3,
+        "enemy_anti_heal": 0.4
       }
     },
     "sundering_cudgel": {
@@ -459,6 +473,12 @@
         "damage": 30,
         "hp": 280,
         "hp_regen": 5
+      },
+      "aura": {
+        "name": "Scorched Earth",
+        "enemy_radius": 280,
+        "burn_dps": 28,
+        "blind": 0.18
       }
     },
     "runic_gavel": {
@@ -501,6 +521,12 @@
         "burn_dps": 22,
         "burn_duration": 180,
         "cooldown": 1080
+      },
+      "aura": {
+        "name": "Cauterize",
+        "enemy_radius": 300,
+        "enemy_anti_heal": 0.5,
+        "burn_dps": 6
       }
     },
     "astral_codex": {
