@@ -863,6 +863,8 @@ func _buy_item_for(team: int, hero_id: int, item_id: String, reserve: int = 0) -
 	if not hero.items.add(item_id):
 		transaction_error = "gate"
 		return false
+	# Source HeroItemInventory.add recalculates max HP and heal amp inline.
+	hero.apply_item_change()
 	economy.spend(team, cost)
 	_record({"kind": "hero_item", "target_id": hero.id, "item": item_id, "cost": cost})
 	return true

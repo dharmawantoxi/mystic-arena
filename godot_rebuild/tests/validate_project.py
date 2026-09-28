@@ -170,7 +170,18 @@ missing_getters = [name for name in ai_items_fixture["stats"][0]["values"]
                    and ("func %s(" % name) not in inventory_gd]
 check(not missing_getters, f"AI item stat getters missing in the rebuild: {missing_getters}")
 check("func _on_item_changed(" not in inventory_gd,
-      "Item stat application on equip stays unported until the contract says so")
+      "HP recalc lives on HeroState, never inside the inventory")
+hero_state_gd = (ROOT / "scripts/combat/hero_state.gd").read_text(encoding="utf-8")
+unit_state_gd = (ROOT / "scripts/combat/unit_state.gd").read_text(encoding="utf-8")
+check("func recalc_item_stats(" in hero_state_gd
+      and "func apply_item_change(" in hero_state_gd,
+      "HeroState must port Hero._recalc_item_stats and the equip recalc")
+check("func apply_heal_amp(" in hero_state_gd and "heal_amp_timer" in unit_state_gd,
+      "Heal amp must live on the shared debuff fields like the source")
+check("apply_item_change()" in (ROOT / "scripts/match/prototype_battle.gd").read_text(
+      encoding="utf-8"), "The item transaction must apply the source HP recalc")
+check(len(ai_items_fixture["stat_application"]) == 5,
+      "Update the AI item suite when the stat application cases change")
 
 # CI already runs validate_project.py: execute the read-only build oracle here so
 # the new fixture is enforced without editing the workflow outside godot_rebuild/.

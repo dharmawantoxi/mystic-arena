@@ -4624,5 +4624,361 @@
         "empower_charge": 540
       }
     }
+  ],
+  "stat_application": [
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 1
+      },
+      "start": [
+        620,
+        620
+      ],
+      "log": [
+        {
+          "op": "add:leviathan_heart",
+          "max_hp": 837,
+          "hp": 837,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1088,
+          "hp": 1088,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1381,
+          "hp": 1381,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:octarine_core",
+          "max_hp": 1786,
+          "hp": 1786,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "leviathan_heart",
+            "octarine_core",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "remove:0",
+          "max_hp": 1323,
+          "hp": 1323,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            "octarine_core",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1602,
+          "hp": 1602,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            "octarine_core",
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 3
+      },
+      "start": [
+        1023,
+        1023
+      ],
+      "log": [
+        {
+          "op": "add:abyss_breaker",
+          "max_hp": 1323,
+          "hp": 1323,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "abyss_breaker",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:searbrand",
+          "max_hp": 1643,
+          "hp": 1643,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "abyss_breaker",
+            "searbrand",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1922,
+          "hp": 1922,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "abyss_breaker",
+            "searbrand",
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Mage",
+        "range": 130,
+        "base_hp": 480,
+        "level": 1
+      },
+      "start": [
+        480,
+        480
+      ],
+      "log": [
+        {
+          "op": "add:vital_stone",
+          "max_hp": 800,
+          "hp": 800,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "vital_stone",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:leviathan_heart",
+          "max_hp": 1080,
+          "hp": 1080,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:abyss_breaker",
+          "max_hp": 1485,
+          "hp": 1485,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            "abyss_breaker",
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "remove:2",
+          "max_hp": 1080,
+          "hp": 1080,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1274,
+          "hp": 1274,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 1501,
+          "hp": 1501,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999,
+          "slots": [
+            "vital_stone",
+            "leviathan_heart",
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 6
+      },
+      "start": [
+        2077,
+        2077
+      ],
+      "log": [
+        {
+          "op": "remove:0",
+          "max_hp": 2077,
+          "hp": 2077,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "add:holy_rapier",
+          "max_hp": 2077,
+          "hp": 2077,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            "holy_rapier",
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "clear_on_death",
+          "max_hp": 2077,
+          "hp": 2077,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        },
+        {
+          "op": "upgrade",
+          "max_hp": 2511,
+          "hp": 2077,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "slots": [
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "hero": {
+        "role": "Bruiser",
+        "range": 70,
+        "base_hp": 620,
+        "level": 1
+      },
+      "start": [
+        620,
+        620
+      ],
+      "log": []
+    }
   ]
 }

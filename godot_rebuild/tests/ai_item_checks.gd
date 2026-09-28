@@ -16,6 +16,7 @@ const MELEE_ONLY_COUNT := 1
 const MAGIC_ONLY_COUNT := 8
 const DROPS_ON_DEATH_COUNT := 1
 # Fixture hero specs are (role, attack range) pairs of the starter kits.
+const STAT_HEROES := {"Bruiser": "thorne", "Mage": "vex"}
 const ROLE_HEROES := {
 	"Assassin|70": "kaizen",
 	"Bruiser|70": "thorne",
@@ -76,6 +77,8 @@ func run(check: Callable) -> void:
 	_test_hero_inventory(check)
 	_test_purchases(fixture.purchases, check)
 	_test_stats(fixture.stats, check)
+	_test_stat_application(fixture.stat_application, check)
+	_test_heal_amp(check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -495,3 +498,71 @@ func _test_stats(rows: Array, check: Callable) -> void:
 			),
 			"AI item timers stay inert until the active/passive layer: " + label
 		)
+
+
+func _test_stat_application(rows: Array, check: Callable) -> void:
+	for row in rows:
+		var spec: Dictionary = row.hero
+		var world := _world()
+		var kit: String = STAT_HEROES[String(spec.role)]
+		var hero := world.spawn_hero(World.PLAYABLE_AI_HEROES[kit], 1, Vector2(1000, 200))
+		hero.base_hp = int(spec.base_hp)
+		hero.level = int(spec.level)
+		hero.apply_level_stats()
+		hero.hp = hero.max_hp
+		var label := "%s base %d lv %d" % [String(spec.role), int(spec.base_hp), int(spec.level)]
+		check.call(
+			int(hero.max_hp) == int(row.start[0]) and int(hero.hp) == int(row.start[1]),
+			"AI item hero starts full at the source max HP: " + label
+		)
+		for entry in row.log:
+			var op := String(entry.op)
+			var parts := op.split(":")
+			match parts[0]:
+				"add":
+					assert(hero.items.add(parts[1]), "stat application equip refused")
+					hero.apply_item_change()
+				"remove":
+					hero.items.remove(int(parts[1]))
+					hero.apply_item_change()
+				"clear_on_death":
+					hero.items.clear_on_death()
+					hero.apply_item_change()
+				_:
+					assert(hero.upgrade(), "stat application upgrade refused")
+			check.call(
+				int(hero.max_hp) == int(entry.max_hp),
+				"AI item max HP after %s must match source: %s" % [op, label]
+			)
+			check.call(
+				int(hero.hp) == int(entry.hp),
+				"AI item current HP after %s must match source: %s" % [op, label]
+			)
+			check.call(
+				hero.heal_amp_amount == float(entry.heal_amp_amount),
+				"AI item heal amp amount after %s must match source: %s" % [op, label]
+			)
+			check.call(
+				hero.heal_amp_timer == int(entry.heal_amp_timer),
+				"AI item heal amp timer after %s must match source: %s" % [op, label]
+			)
+			check.call(
+				hero.items.slots == _slot_values(entry.slots),
+				"AI item slots after %s must match source: %s" % [op, label]
+			)
+
+
+func _test_heal_amp(check: Callable) -> void:
+	# Source hp setter: the cap is applied by the caller, the amp afterwards.
+	var world := _world()
+	var hero := world.spawn_hero(World.VEX, 1, Vector2(1000, 200))
+	assert(hero.items.add("abyss_breaker"))
+	hero.apply_item_change()
+	check.call(is_equal_approx(hero.heal_amp_amount, 0.16), "Abyss Breaker grants 16% heal amp")
+	check.call(hero.heal_amp_timer == 999999, "Item heal amp uses the source duration")
+	hero.hp = hero.max_hp - 500.0
+	hero.heal_hp(100.0)
+	check.call(
+		is_equal_approx(hero.hp, hero.max_hp - 500.0 + 116.0),
+		"Heal amp must amplify incoming heals by 16%"
+	)

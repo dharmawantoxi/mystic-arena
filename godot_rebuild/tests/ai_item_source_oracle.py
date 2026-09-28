@@ -486,6 +486,90 @@ def stats(env):
     return rows
 
 
+# (hero spec, ops). hp always starts full for the level, like spawn_hero.
+STAT_APPLICATION_CASES = [
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 1}, [
+        "add:leviathan_heart", "upgrade", "upgrade", "add:octarine_core",
+        "remove:0", "upgrade"]),
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3}, [
+        "add:abyss_breaker", "add:searbrand", "upgrade"]),
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 1}, [
+        "add:vital_stone", "add:leviathan_heart", "add:abyss_breaker",
+        "remove:2", "upgrade", "upgrade"]),
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 6}, [
+        "remove:0", "add:holy_rapier", "clear_on_death", "upgrade"]),
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 1}, []),
+]
+
+
+def hero_stat_type(env):
+    """Real Hero HP recalc/level-up plus the _core heal-amp debuff setter."""
+    entity_tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
+    hero_node = next(n for n in entity_tree.body
+                     if isinstance(n, ast.ClassDef) and n.name == "Hero")
+    names = {"_recalc_item_stats", "_apply_level_stats", "upgrade"}
+    body = [n for n in hero_node.body
+            if isinstance(n, ast.FunctionDef) and n.name in names]
+    assert {n.name for n in body} == names, "hero stat methods missing"
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    for node in ast.walk(core_tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "apply_heal_amp":
+            body.append(node)
+    assert any(n.name == "apply_heal_amp" for n in body), "apply_heal_amp missing"
+    cls = ast.ClassDef(name="SourceHeroStats", bases=[], keywords=[],
+                       decorator_list=[], body=body)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source hero item stats>", "exec"), env)
+    return env["SourceHeroStats"]
+
+
+def stat_application(env):
+    """Equip/drop/level sequences with the real HP recalc and heal amp."""
+    from structure_source_oracle import namespace as core_namespace
+
+    core = core_namespace()
+    env["HERO_LEVELS"] = core["HERO_LEVELS"]
+    env["MAX_HERO_LEVEL"] = core["MAX_HERO_LEVEL"]
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        hero_type = hero_stat_type(env)
+        for spec, ops in STAT_APPLICATION_CASES:
+            start_max = int(spec["base_hp"] * core["HERO_LEVELS"][spec["level"]]["hp_mult"])
+            # A real SourceHeroStats instance: _recalc_item_stats,
+            # _apply_level_stats, upgrade and apply_heal_amp all run unchanged.
+            hero = hero_type()
+            for key, value in (("role", spec["role"]), ("range", spec["range"]),
+                               ("base_hp", spec["base_hp"]), ("level", spec["level"]),
+                               ("base_damage", 100), ("skill_damage_base", 50),
+                               ("alive", True), ("hp", start_max), ("max_hp", start_max),
+                               ("heal_amp_amount", 0.0), ("heal_amp_timer", 0)):
+                setattr(hero, key, value)
+            hero.items = inv_type(hero)
+            log = []
+            for op in ops:
+                kind, _, arg = op.partition(":")
+                if kind == "add":
+                    assert hero.items.add(arg), f"equip refused {arg}"
+                    hero.items._on_item_changed()
+                elif kind == "remove":
+                    hero.items.remove(int(arg))
+                    hero.items._on_item_changed()
+                elif kind == "clear_on_death":
+                    hero.items.clear_on_death()
+                    hero.items._on_item_changed()
+                else:
+                    assert hero.upgrade(), "upgrade refused"
+                log.append({
+                    "op": op, "max_hp": hero.max_hp, "hp": hero.hp,
+                    "heal_amp_amount": hero.heal_amp_amount,
+                    "heal_amp_timer": hero.heal_amp_timer,
+                    "slots": list(hero.items.slots),
+                })
+            rows.append({"hero": spec, "start": [start_max, start_max], "log": log})
+    return rows
+
+
 def source_fixture():
     env = source_namespace(with_functions=True, with_inventory=True)
     # Normalise through JSON so tuples/floats compare like the stored fixture.
@@ -497,6 +581,7 @@ def source_fixture():
         "inventory": inventory(env),
         "purchases": purchases(env),
         "stats": stats(env),
+        "stat_application": stat_application(env),
     }))
 
 

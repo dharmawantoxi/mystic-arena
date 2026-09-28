@@ -305,9 +305,20 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      bergantung timer selalu tertutup; `update()`,
      `notify_damage_taken()`, `on_basic_attack_hit()`, `_on_hit_common()`,
      `on_ranged_attack_hit()` dan `update_auras()` belum diport.
-   - [ ] **5b.** Terapkan stat saat equip/level (`_on_item_changed`,
-     `apply_heal_amp`, `Hero._apply_level_stats` cabang item) + konsumsi di
-     jalur serangan/proyektil yang sudah ada.
+   - [x] **5b.** Penerapan stat HP saat equip/level: `HeroState.recalc_item_stats`
+     (port `Hero._recalc_item_stats`), `apply_item_change` (port
+     `_on_item_changed`: recalc + `apply_heal_amp(amp, 999999)`),
+     `apply_heal_amp` + field `heal_amp_*` di `unit_state.gd` (sumber
+     `_core.py:900`), heal amp dikonsumsi `heal_hp` setelah anti-heal (urutan
+     setter sumber), dan `apply_level_stats` diakhiri recalc seperti sumber.
+     `_buy_item_for` memanggil `apply_item_change()` setelah equip sukses.
+     Oracle: 5 urutan equip/drop/level dengan `_recalc_item_stats`/
+     `_apply_level_stats`/`upgrade`/`apply_heal_amp` sumber nyata.
+     **Batasan 5b:** hanya HP/heal amp yang diterapkan. Damage/armor/crit/AS/
+     evasion/lifesteal dst. belum dikonsumsi jalur serangan karena
+     `minion_battle.gd` berada di batas 1000 baris (perlu bedah tanpa tambah
+     baris); `heal_amp_timer` belum dikurangi per tick; `clear_on_death` belum
+     dipanggil dari kematian hero.
    - [ ] **5c.** Timer pasif/aktif per item + `HeroItemInventory.update`.
    - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
      Scorched Earth ke menara/boss).

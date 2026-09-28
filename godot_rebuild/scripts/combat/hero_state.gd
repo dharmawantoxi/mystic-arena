@@ -142,6 +142,40 @@ func apply_level_stats() -> void:
 	# Source Hero.is_melee_hero is exactly `range < 110` (_entity.py:3303), and
 	# the item getters read base_hp/level for get_max_hp.
 	items.set_hero_scaling(base_hp, level, 1 if attack_range < 110.0 else 0)
+	# Source Hero._apply_level_stats ends with _recalc_item_stats(): the level
+	# sets the base max HP, the inventory adds its flat + percent bonus.
+	recalc_item_stats()
+
+
+func recalc_item_stats() -> void:
+	# Port of Hero._recalc_item_stats (_entity.py:3491): grow the current HP by
+	# the max HP gain, shrink it only when it exceeds the new maximum.
+	var new_max := float(items.get_max_hp())
+	var old_max := max_hp
+	max_hp = new_max
+	if new_max > old_max:
+		hp = minf(new_max, hp + (new_max - old_max))
+	elif hp > new_max:
+		hp = new_max
+
+
+func apply_item_change() -> void:
+	# Port of HeroItemInventory._on_item_changed. The inventory keeps no hero
+	# reference (no RefCounted cycle), so the match transaction calls this
+	# right after a successful equip or drop.
+	recalc_item_stats()
+	var amp := items.get_heal_amp()
+	if amp > 0.0:
+		apply_heal_amp(amp, 999999)
+
+
+func apply_heal_amp(amount: float, duration: int) -> void:
+	# Port of TowerDebuffMixin.apply_heal_amp (_core.py:900).
+	if not alive:
+		return
+	if amount > heal_amp_amount or heal_amp_timer < duration:
+		heal_amp_amount = amount
+		heal_amp_timer = duration
 
 
 func upgrade_cost() -> int:
@@ -185,4 +219,6 @@ func heal_hp(amount: float) -> void:
 	var desired := minf(max_hp, hp + amount)
 	if desired > hp and anti_heal_timer > 0:
 		desired = hp + (desired - hp) * (1.0 - anti_heal_amount)
+	if desired > hp and heal_amp_timer > 0:
+		desired = hp + (desired - hp) * (1.0 + heal_amp_amount)
 	hp = desired
