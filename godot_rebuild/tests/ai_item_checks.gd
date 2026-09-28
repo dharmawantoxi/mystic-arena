@@ -80,6 +80,7 @@ func run(check: Callable) -> void:
 	_test_stat_application(fixture.stat_application, check)
 	_test_heal_amp(check)
 	_test_deaths(fixture.deaths, check)
+	_test_timers(fixture.timer_attrs, fixture.timers, check)
 
 
 func _expected(row: Dictionary) -> String:
@@ -604,3 +605,49 @@ func _test_deaths(rows: Array, check: Callable) -> void:
 			int(row.max_hp) == int(row.max_hp_before), "Source death branch leaves max HP untouched"
 		)
 		check.call(killer.kills == 1, "Enemy hero last hit still credits one kill")
+
+
+func _timer_state(inventory: Inventory, attrs: Array) -> Dictionary:
+	var state := {}
+	for field in attrs:
+		state[String(field)] = int(inventory.get(String(field)))
+	for extra in ["blood_frenzy_timer", "blood_frenzy_cd", "last_damage_timer"]:
+		state[extra] = int(inventory.get(extra))
+	state["empower_charge"] = inventory.empower_charge
+	state["rend_target"] = inventory.rend_target
+	return state
+
+
+func _test_timers(attrs: Array, rows: Array, check: Callable) -> void:
+	check.call(
+		Inventory.TIMER_FIELDS == attrs,
+		"AI item timer list must equal the source update() decrements"
+	)
+	for row in rows:
+		var spec: Dictionary = row.hero
+		var inventory := Inventory.new()
+		inventory.set_hero_gate(String(spec.role), float(spec.range))
+		inventory.set_hero_scaling(int(spec.base_hp), int(spec.level), 1)
+		for item_id in row.loadout:
+			assert(inventory.add(String(item_id)), "timer loadout refused an item")
+		var preset: Dictionary = row.preset
+		for field in preset:
+			inventory.set(String(field), int(preset[field]))
+		var label := "%s %s" % [String(spec.role), str(row.loadout)]
+		for index in range(int(row.ticks)):
+			inventory.tick_timers(1)
+			var want: Dictionary = row.log[index]
+			var got := _timer_state(inventory, attrs)
+			for field in got:
+				var expected: Variant = want[field]
+				var actual: int = got[field]
+				if expected == null:
+					check.call(actual == -1, "AI item rend target must reset: " + label)
+				else:
+					check.call(
+						actual == int(expected),
+						(
+							"AI item timer %s after tick %d must match source: %s"
+							% [field, index + 1, label]
+						)
+					)

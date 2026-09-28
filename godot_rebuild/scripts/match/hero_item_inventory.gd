@@ -21,6 +21,36 @@ extends RefCounted
 const HeroItems = preload("res://scripts/match/hero_items.gd")
 const HeroDefinition = preload("res://scripts/data/hero_definition.gd")
 const RAPIER := "holy_rapier"
+# Source update() decrements exactly these, in this order.
+const TIMER_FIELDS := [
+	"guard_timer",
+	"guard_cd",
+	"veil_timer",
+	"veil_cd",
+	"chains_cd",
+	"rend_timer",
+	"rend_cd",
+	"bash_cd",
+	"overwhelm_cd",
+	"static_timer",
+	"static_cd",
+	"static_tick",
+	"thorn_timer",
+	"thorn_cd",
+	"arctic_cd",
+	"gale_timer",
+	"gale_cd",
+	"pierce_bash_cd",
+	"searbrand_cd",
+	"arcane_cd",
+	"fulgur_cd",
+	"hex_cd",
+	"rift_cd",
+	"pact_cd",
+	"vine_cd",
+	"ghost_timer",
+	"ghost_cd",
+]
 
 # Plain copies of the owner role/attack range/base HP/level (refreshed by
 # HeroState). The source reads them from the hero on every call; copies keep
@@ -44,9 +74,37 @@ var ghost_timer := 0
 var thorn_timer := 0
 var gale_timer := 0
 var veil_timer := 0
+var veil_cd := 0
 var guard_timer := 0
 var rend_timer := 0
 var empower_charge := 0
+# Remaining timers the source update() decrements. Nothing but tick_timers
+# moves them in this layer: the active/passive effects they gate (chain,
+# static charge, arctic blast, miasma, auras) are layers 5d/5e.
+var blood_frenzy_cd := 0
+var last_damage_timer := 0
+var guard_cd := 0
+var chains_cd := 0
+var rend_cd := 0
+var static_timer := 0
+var thorn_cd := 0
+var bash_cd := 0
+var overwhelm_cd := 0
+var static_tick := 0
+var static_cd := 0
+var arctic_cd := 0
+var gale_cd := 0
+var pierce_bash_cd := 0
+var searbrand_cd := 0
+var arcane_cd := 0
+var fulgur_cd := 0
+var hex_cd := 0
+var rift_cd := 0
+var pact_cd := 0
+var vine_cd := 0
+var ghost_cd := 0
+# Entity id of the Soul Rend target; -1 is the source None.
+var rend_target := -1
 
 
 func _init(metadata: Dictionary = {}) -> void:
@@ -355,3 +413,24 @@ func get_rend_crit() -> Variant:
 	if rend_timer > 0 and has("sanguine_thorn"):
 		return float(item("sanguine_thorn").get("active", {}).get("crit_mult", 0.0))
 	return null
+
+
+func tick_timers(dt: int) -> void:
+	# Port of the timer state machine at the top of HeroItemInventory.update:
+	# pure decrements, the Soul Rend target reset and the Runic Gavel charge.
+	# The effect half of update (auto-triggers, procs, miasma, auras) is not
+	# ported, so nothing here damages or buffs anyone.
+	if blood_frenzy_timer > 0:
+		blood_frenzy_timer -= dt
+	if blood_frenzy_cd > 0:
+		blood_frenzy_cd -= dt
+	if last_damage_timer > 0:
+		last_damage_timer -= dt
+	for field in TIMER_FIELDS:
+		var value: int = get(field)
+		if value > 0:
+			set(field, value - dt)
+	if rend_timer <= 0:
+		rend_target = -1
+	if has("runic_gavel") and empower_charge > 0:
+		empower_charge = maxi(0, empower_charge - dt)

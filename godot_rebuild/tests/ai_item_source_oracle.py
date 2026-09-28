@@ -38,7 +38,7 @@ _INVENTORY_METHODS = (
     "get_range_bonus", "has_true_strike", "get_reflect_pct", "get_gale_as_bonus",
     "consume_empower_strike", "get_block", "get_armor_shred", "get_on_attack_chain",
     "get_bash", "is_veiled", "is_guarding", "get_rend_crit", "_sum_stat",
-    "clear_on_death",
+    "clear_on_death", "update",
 )
 
 # Pure stat aggregation getters (no RNG). Timer-driven branches are recorded
@@ -536,6 +536,79 @@ def deaths(env):
     return rows
 
 
+# (hero spec, loadout, preset timers, ticks). Loadouts stay away from the
+# auto-trigger/damage half of update: only the timer state machine is ported.
+TIMER_CASES = [
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3}, [],
+     {"blood_frenzy_timer": 120, "guard_cd": 40, "static_tick": 7}, 3),
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 3},
+     ["runic_gavel"], {"empower_charge": 300, "thorn_timer": 5}, 10),
+    ({"role": "Mage", "range": 130, "base_hp": 480, "level": 2},
+     ["leviathan_heart", "dead_edge"],
+     {"rend_timer": 4, "veil_cd": 2, "ghost_timer": 1, "gale_cd": 9}, 5),
+    ({"role": "Bruiser", "range": 70, "base_hp": 620, "level": 1},
+     ["runic_gavel", "holy_rapier"], {"empower_charge": 2}, 5),
+]
+
+# Loadouts that must never auto-trigger inside the ported timer half.
+_TIMER_SAFE = frozenset({
+    "runic_gavel", "leviathan_heart", "dead_edge", "holy_rapier",
+})
+
+
+def timer_attrs():
+    """Attribute names the source update() decrements, straight from the AST."""
+    tree = ast.parse(SOURCE.read_text(encoding="utf-8"))
+    cls = next(n for n in tree.body
+               if isinstance(n, ast.ClassDef) and n.name == "HeroItemInventory")
+    update = next(n for n in cls.body
+                  if isinstance(n, ast.FunctionDef) and n.name == "update")
+    names = []
+    for node in ast.walk(update):
+        if isinstance(node, ast.Tuple):
+            for elt in node.elts:
+                if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                    names.append(elt.value)
+    assert "guard_timer" in names and "ghost_cd" in names, "timer list not found"
+    return names
+
+
+def timers(env):
+    """Real HeroItemInventory.update timer state machine, dt ticks per case."""
+    env.setdefault("_tick_miasma", lambda dt=1: None)
+    env.setdefault("_fx_notify", lambda *args, **kwargs: None)
+    env.setdefault("math", __import__("math"))
+    env.setdefault("random", __import__("random"))
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        attrs = timer_attrs()
+        for spec, loadout, preset, ticks in TIMER_CASES:
+            assert set(loadout) <= _TIMER_SAFE, "unsafe loadout for the timer half"
+            hero = SimpleNamespace(role=spec["role"], range=spec["range"],
+                                   base_hp=spec["base_hp"], level=spec["level"],
+                                   alive=True, hp=1000, max_hp=1000, x=0, y=0,
+                                   team="red")
+            hero.apply_heal_amp = lambda amount, duration: None
+            inv = inv_type(hero)
+            for item_id in loadout:
+                assert inv.add(item_id), f"timer loadout refused {item_id}"
+            for attr, value in preset.items():
+                setattr(inv, attr, value)
+            log = []
+            for _ in range(ticks):
+                inv.update(1, None)
+                state = {attr: getattr(inv, attr, 0) for attr in attrs}
+                for extra in ("blood_frenzy_timer", "blood_frenzy_cd",
+                              "last_damage_timer", "empower_charge"):
+                    state[extra] = getattr(inv, extra)
+                state["rend_target"] = inv.rend_target
+                log.append(state)
+            rows.append({"hero": spec, "loadout": list(loadout),
+                         "preset": preset, "ticks": ticks, "log": log})
+    return rows
+
+
 def hero_stat_type(env):
     """Real Hero HP recalc/level-up plus the _core heal-amp debuff setter."""
     entity_tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
@@ -617,6 +690,8 @@ def source_fixture():
         "stats": stats(env),
         "stat_application": stat_application(env),
         "deaths": deaths(env),
+        "timer_attrs": timer_attrs(),
+        "timers": timers(env),
     }))
 
 

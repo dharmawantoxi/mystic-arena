@@ -326,7 +326,21 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      mengunci 3 kasus (slot sesudah mati, flag `dropped`, max HP sebelum =
      sesudah) dan native membunuh hero nyata lewat hook match (atribusi kill
      tetap 1, item lain tetap di slot).
-   - [ ] **5c.** Timer pasif/aktif per item + `HeroItemInventory.update`.
+   - [x] **5c-1.** Mesin waktu timer: `hero_item_inventory.tick_timers(dt)`
+     memindah bagian timer murni dari `HeroItemInventory.update` (27 atribut
+     yang di-decrement sumber, `blood_frenzy_timer`/`blood_frenzy_cd`/
+     `last_damage_timer`, reset `rend_target` saat `rend_timer <= 0`, dan
+     pengisian `empower_charge` Runic Gavel). Oracle mengeksekusi `update`
+     sumber nyata (stub `_tick_miasma`/`_fx_notify`, `enemies=None`) untuk 4
+     kasus dan merekam seluruh timer per tick; `validate_project.py`
+     menuntut setiap atribut timer sumber punya field di rebuild.
+     **Batasan 5c-1:** tidak ada yang memanggil `tick_timers` per tick match
+     (loop tick ada di `minion_battle.gd`, batas 1000 baris); setengah efek
+     dari `update` (auto-trigger Blood Frenzy/Bulwark/Veil/Chains, Static
+     Charge, Arctic Blast, Miasma, aura) dan `notify_damage_taken` belum
+     diport - itu 5c-2/5d/5e.
+   - [ ] **5c-2.** Auto-trigger aktif + `notify_damage_taken` (Thunder Coil
+     proc, Thornmail reflect) + pemanggilan `tick_timers` dari loop match.
    - [ ] **5d.** Aura & `update_auras` (armor/AS/guard block/armor reduction,
      Scorched Earth ke menara/boss).
    - [ ] **5e.** Proc on-hit/chain/miasma (`_on_hit_common`, ranged variant).
