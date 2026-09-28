@@ -590,8 +590,11 @@ func _test_deaths(rows: Array, check: Callable) -> void:
 			"Rapier presence must match the source drop flag"
 		)
 		var max_hp := hero.max_hp
+		# The damage path sets hp/alive first and then calls the hook
+		# (minion_battle.gd:408), so reproduce that state here.
+		hero.hp = 0.0
+		hero.alive = false
 		world._on_hero_death(hero, killer.id)
-		check.call(not hero.alive, "AI item hero dies from the match death hook")
 		check.call(
 			hero.items.slots == _slot_values(row.slots),
 			"Death must destroy Holy Rapier and keep every other item"
