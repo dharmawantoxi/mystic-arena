@@ -19,8 +19,10 @@ const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
+const BOSS_DATA := "res://data/bosses/boss_stats.json"
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
@@ -90,6 +92,25 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
+# Layer 8b: match conditions and unlock ledger for mini/true bosses. Boss
+# behavior is intentionally not part of this layer; the live boss stays out of
+# the ordinary minion loop until the next behavior layer wires its AI.
+var boss_table: Dictionary = {}
+var boss_rng := RandomNumberGenerator.new()
+var active_boss: BossState = null
+var pending_mini_bosses: Array[Dictionary] = []
+var true_boss_spawned := false
+var red_towers_destroyed := 0
+var _pending_red_tower_deaths := 0
+var _mini_boss_schedule: Dictionary = {}
+var bosses_defeated_this_run := 0
+var bosses_defeated_this_match: Array[String] = []
+var unlocked_bosses: Array[String] = []
+var purchased_heroes: Array[String] = []
+var heroes_unlocked_this_match: Array[String] = []
+var boss_rewards: Array[Dictionary] = []
+var score := 0
+var _victory_unlocks_granted := false
 
 
 func _init() -> void:
@@ -97,6 +118,10 @@ func _init() -> void:
 	spawn_rng.seed = SPAWN_SEED
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_DATA))
 	level_config = parsed if parsed is Dictionary else {}
+	var boss_parsed = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
+	boss_table = boss_parsed if boss_parsed is Dictionary else {}
+	boss_rng.randomize()
+	_mini_boss_schedule = _roll_mini_boss_schedule()
 	_apply_difficulty()
 
 
@@ -158,6 +183,9 @@ func set_difficulty(value: String) -> void:
 	# (including an unknown one) leaves every multiplier at 1.0.
 	difficulty = value
 	_apply_difficulty()
+	# A new source run rolls its schedule after difficulty is fixed. Re-roll
+	# here too for callers that configure the rebuild before setup_arena().
+	_mini_boss_schedule = _roll_mini_boss_schedule()
 
 
 func _apply_difficulty() -> void:
@@ -248,11 +276,24 @@ func step_tick() -> void:
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
+		# Source update_waves queues the scheduled boss before it fills the
+		# ordinary minion queues. A live boss does not block later waves.
+		_queue_scheduled_mini_boss(wave_count)
+		_try_spawn_pending_mini_boss()
 		# Source update_waves: the AI castle auto-levels while the wave starts.
 		_auto_scale_ai_castle()
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
+	# The Python true-boss check runs before the death-reward pass. Keep tower
+	# deaths in a pending counter so a sixth tower triggers on the next tick,
+	# exactly after the source reward loop has committed the event.
+	_spawn_true_boss_if_ready()
+	_process_boss_result()
+	_flush_red_tower_deaths()
+	if winner == BLUE and not _victory_unlocks_granted:
+		_auto_unlock_defeated_boss_heroes()
+		_victory_unlocks_granted = true
 	if is_running():
 		_tick_auras_and_items()
 		_tick_item_debuffs()
@@ -396,8 +437,142 @@ func _on_death(source_team: int, target: UnitState) -> void:
 	var before := credited_gold[source_team]
 	super._on_death(source_team, target)
 	economy.credit_kill(source_team, credited_gold[source_team] - before)
+	# The source increments red_towers_destroyed in its later reward loop,
+	# not inside Tower.take_damage. Defer the counter until after the true-boss
+	# check in this tick.
+	if target is StructureState and target.team == RED:
+		var structure := target as StructureState
+		if structure.settings().structure_kind == "tower":
+			_pending_red_tower_deaths += 1
 	if not is_running():
 		scheduler.cancel()
+
+
+func _mini_boss_entries() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var source: Dictionary = level_config.get("mini_bosses", {})
+	# Dictionary iteration preserves the source level literal order; the
+	# source rolls waves independently, then zips them to these values.
+	for raw_key in source.keys():
+		result.append({"wave": int(raw_key), "boss_type": String(source[raw_key])})
+	return result
+
+
+func _roll_mini_boss_schedule() -> Dictionary:
+	# Port of Game._roll_mini_boss_schedule: sample unique wave numbers, sort
+	# them, then zip them to the source dictionary's boss order.
+	var entries: Array[Dictionary] = _mini_boss_entries()
+	if entries.is_empty():
+		return {}
+	var boss_count: int = entries.size()
+	var low: int = 20 if difficulty == "easy" else 11
+	var high: int = 40 if difficulty == "easy" else 30
+	if high - low + 1 < boss_count:
+		high = low + boss_count * 5
+	var candidates: Array[int] = []
+	for wave in range(low, high + 1):
+		candidates.append(wave)
+	var picked: Array[int] = []
+	for index in range(boss_count):
+		var selected_index: int = boss_rng.randi_range(index, candidates.size() - 1)
+		var selected_wave: int = candidates[selected_index]
+		candidates[selected_index] = candidates[index]
+		candidates[index] = selected_wave
+		picked.append(selected_wave)
+	picked.sort()
+	var schedule: Dictionary = {}
+	for index in range(boss_count):
+		schedule[picked[index]] = String(entries[index]["boss_type"])
+	return schedule
+
+
+func _queue_scheduled_mini_boss(wave: int) -> void:
+	var boss_value: Variant = _mini_boss_schedule.get(wave, null)
+	if boss_value == null:
+		return
+	pending_mini_bosses.append({"wave": wave, "boss_type": String(boss_value)})
+
+
+func _spawn_boss(boss_type: String) -> BossState:
+	if active_boss != null or boss_type.is_empty():
+		return null
+	var boss := BossState.new()
+	if not boss.setup(boss_type, paths[1], boss_table):
+		return null
+	if enemy_scaling_enabled:
+		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
+	active_boss = boss
+	return boss
+
+
+func _try_spawn_pending_mini_boss() -> bool:
+	# Port of Game._try_spawn_pending_mini_boss: an active living boss holds
+	# the queue; a dead one is cleared before the oldest pending wave is used.
+	if active_boss != null:
+		if active_boss.alive:
+			return false
+		active_boss = null
+	if pending_mini_bosses.is_empty():
+		return false
+	var entry: Dictionary = pending_mini_bosses.pop_front()
+	var spawned := _spawn_boss(String(entry["boss_type"]))
+	return spawned != null
+
+
+func _spawn_true_boss_if_ready() -> bool:
+	# Port of the true-boss condition in Game.update. The source threshold is
+	# an event count, not the current number of missing red towers.
+	if true_boss_spawned or red_towers_destroyed < 6 or active_boss != null:
+		return false
+	var boss_type := String(level_config.get("true_boss", ""))
+	if boss_type.is_empty():
+		return false
+	var spawned := _spawn_boss(boss_type)
+	if spawned == null:
+		return false
+	true_boss_spawned = true
+	return true
+
+
+func _process_boss_result() -> void:
+	# Port of the source defeated-boss reward/unlock pass. Presentation and
+	# achievement widgets are deliberately deferred to the presentation layer.
+	if active_boss == null or active_boss.alive or not active_boss.defeated:
+		return
+	var boss := active_boss
+	var boss_type := boss.boss_type
+	economy.credit_kill(BLUE, boss.gold_reward)
+	score += boss.gold_reward
+	boss_rewards.append({"boss_type": boss_type, "gold": boss.gold_reward})
+	bosses_defeated_this_run += 1
+	if not bosses_defeated_this_match.has(boss_type):
+		bosses_defeated_this_match.append(boss_type)
+	if not unlocked_bosses.has(boss_type):
+		unlocked_bosses.append(boss_type)
+	active_boss = null
+	_try_spawn_pending_mini_boss()
+
+
+func _flush_red_tower_deaths() -> void:
+	if _pending_red_tower_deaths <= 0:
+		return
+	red_towers_destroyed += _pending_red_tower_deaths
+	_pending_red_tower_deaths = 0
+
+
+func _auto_unlock_defeated_boss_heroes() -> Array[String]:
+	# Source _auto_unlock_defeated_boss_heroes: victory makes every boss
+	# defeated during this match a free permanent hero unlock. This rebuild has
+	# no save backend yet, so the match-local purchased list is the persistence
+	# boundary exposed to the next layer.
+	for boss_type in bosses_defeated_this_match:
+		if not unlocked_bosses.has(boss_type):
+			unlocked_bosses.append(boss_type)
+		if purchased_heroes.has(boss_type):
+			continue
+		purchased_heroes.append(boss_type)
+		heroes_unlocked_this_match.append(boss_type)
+	return heroes_unlocked_this_match
 
 
 func _on_hero_death(hero: HeroState, source_id: int) -> void:
