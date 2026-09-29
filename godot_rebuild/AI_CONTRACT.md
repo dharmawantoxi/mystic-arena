@@ -767,20 +767,43 @@ audio/credit damage. Fixture: 216 baris stats, 18 scaling, 54 snapshot debuff,
 192 damage, 48 blind, 6 defeat; `tests/boss_core_checks.gd` dijalankan
 `run_all.gd` dan `validate_project.py` menuntut fixture + data tidak drift.
 
-**Batasan lapisan ini:** belum ada boss yang spawn, jadi pertandingan berjalan
-sama seperti sebelumnya. Belum diport: `_roll_mini_boss_schedule`, pending queue
-+ `_try_spawn_pending_mini_boss`, trigger true boss (`red_towers_destroyed >= 6`),
-counter di cabang reward tower merah, hadiah/unlock, pergerakan/serangan/cleave,
-ability + smart AI, clock entrance/enrage, serta presentasi intro/death.
+**Batasan layer 8a saat itu:** boss belum spawn; batasan tersebut ditutup oleh
+layer 8b di bawah. Pergerakan/serangan/cleave, ability + smart AI, clock
+entrance/enrage, serta presentasi intro/death masih belum diport.
 CI Godot 4.7.2 hijau pada `d50c86c`
 ([run 36555837398](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36555837398)):
 **1.185.192 native checks**; `validate_project.py` 5834 static.
 
+## Kondisi boss, level, reward dan unlock (layer 8b)
+
+Layer **8b** (`282da4e`) memasang inti 8a ke pertandingan melalui
+`scripts/match/boss_match_state.gd` dan `prototype_battle.gd`: jadwal mini boss
+acak unik (Easy 20..40; mode lain 11..30), antrean pending FIFO yang tidak
+membuang boss saat slot aktif terisi, spawn mini/true boss di lane tengah,
+hard-mode scaling, counter event tower merah, dan trigger true boss tepat pada
+`red_towers_destroyed >= 6`. Satu `active_boss` tetap berada di luar daftar
+minion seperti sumber.
+
+Boss yang kalah langsung memberi match gold/score ledger dan masuk daftar
+`unlocked_bosses`/`bosses_defeated_this_match`; pembelian hero boss gratis baru
+difinalkan saat castle merah dihancurkan. Kebijakan meta reward juga sama:
+3000 kemenangan pertama, 1500 replay pertama, 200 replay berikutnya, 0 kalah,
+dan idempotent satu grant per match. `match_source_oracle.py` kini benar-benar
+mengeksekusi AST metode sumber `_roll_mini_boss_schedule`,
+`_try_spawn_pending_mini_boss`, `_auto_unlock_defeated_boss_heroes`, serta
+cabang trigger true boss; fixture tidak lagi mengosongkan `mini_bosses` atau
+men-stub pending spawn.
+
+CI Godot 4.7.2 hijau pada `282da4e`
+([run 36565938630](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36565938630)):
+**1.185.242 native checks**; `validate_project.py` 5859 static. Berikutnya:
+pergerakan/serangan/cleave boss.
+
 > Pesan siap-salin: Lanjutkan di branch arena/01a0ec75-mystic-arena (PR draft
-> #301, basis main dde0656). Lapisan **8a** (`d50c86c`, run 36555837398) sudah
-> hijau di CI: inti entity boss + data 216 tipe. Berikutnya di daftar boss:
-> jadwal & spawn mini/true boss + counter `red_towers_destroyed` + unlock,
-> baru pergerakan/serangan/ability, lalu sistem produksi yang belum ada dan
+> #302, basis main 630f31a). Lapisan **8b** (`282da4e`, run 36565938630) sudah
+> hijau di CI: jadwal/pending spawn mini/true boss, counter tower, reward dan
+> unlock. Berikutnya di daftar boss: pergerakan/serangan/cleave, lalu ability +
+> smart AI, clock/presentasi, sistem produksi yang belum ada dan
 > sisi AI panel Forge. Kalau ada tugas baru: satu commit per sub-layer,
 > pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
 > commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber
