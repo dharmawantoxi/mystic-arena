@@ -35,7 +35,7 @@ Wave memanggil aturan shield nexus sumber: gratis sampai wave 10. Paid shield be
 ## Ekonomi lokal pertandingan
 
 - Blue **1000 G**, red **350 G** saat reset. Tidak ada currency permanen, unlock, save atau koneksi layanan.
-- Rumus awal sumber: `int((base + (max(1, level) - 1) × 100) × multiplier)`. Easy 1,25; normal 1; hard 0,75; nilai lain 1. Fungsi formula diuji, tetapi selector level/difficulty **belum tersedia**.
+- Rumus awal sumber: `int((base + (max(1, level) - 1) × 100) × multiplier)`. Easy 1,25; normal 1; hard 0,75; nilai lain 1. Fungsi formula diuji, dan aturan difficulty sumber sudah tersambung ke world: `set_difficulty()` menyalakan enemy scaling hanya untuk `hard` (level config × 1.15/1.10/1.0), minion merah memakai potongan `int()` itu di atas tier nexus, dan castle-start level biru/merah mengikuti config. Selector level/difficulty di UI **belum tersedia** (sumber memilihnya di settings screen).
 - Blue menerima `(3 + (max(1, level) - 1) × 0,3) × multiplier` G per detik. Tiap 60 tick, `round(rate × 1000)` dengan ties-to-even Python ditambahkan ke carry milli-gold, kemudian quotient menjadi gold integer dan remainder disimpan.
 - Red menerima `3 + max(0, wave)` G tiap 60 tick. Income aktif saat persiapan, berhenti saat pause/hasil.
 - Kill minion/tower masuk ke wallet tepat satu kali melalui selisih kredit authoritative death path. Nexus tidak memberi hadiah kill tower.
@@ -55,10 +55,10 @@ Wave memanggil aturan shield nexus sumber: gratis sampai wave 10. Paid shield be
 
 ## Lawan sementara dan perbedaan disengaja
 
-- **Bukan port `AIPlayer`.** Lawan membeli tiga Archer berbayar pada tick 300/600/900, slot red 11/14/17 (paling depan tiap lane). Tidak ada RNG, hero, upgrade, reserve budget, jual atau rebuild loop. Pembelian melewati validasi/debit yang sama, bukan tower gratis.
+- **Lawan sudah `AIPlayer`.** Defender sementara (tiga Archer terjadwal) dibuang di lapisan 6e; sisi merah sekarang memakai port `AIPlayer` penuh (jadwal, draft, build, upgrade, item, shield) dengan ledger yang sama dan RNG ter-seed. Sakelar satu-satunya adalah `set_ai_enabled()`/`ai_enabled`; detail layer dan run ada di [AI_CONTRACT.md](AI_CONTRACT.md).
 - **Slot hancur dibebaskan.** Sumber terlihat membersihkan `taken` ketika sale, tetapi tidak pada destruction; port sengaja memperbaikinya.
 - **Backpressure:** cap 120 minion menahan entri antrean yang belum terkirim, bukan menghilangkannya. Dua nexus + 18 slot memerlukan cap 20 struktur dalam mode ini; cap 16 laboratorium siege tidak berubah. Cap projectile 256 dan event 64 diwarisi.
-- Jitter spawn/separation, castle scaling lawan dan sebagian besar sistem produksi belum ada. Jangan menyebut replay ini parity seluruh pertandingan Python.
+- Jitter spawn wave sudah diport (layer 7b): `uniform(-8, 8)` pada x/y lalu offset lane `-20/0/20`, dengan stream ter-seed supaya replay identik (aliran `random` Python tidak direproduksi). Castle scaling lawan juga sudah diport (layer 7a). Sumber tidak punya rutin separation terpisah — spread-nya hanya offset lane + jitter ini. Yang masih belum: sebagian besar sistem produksi dan kondisi boss/level/unlock. Jangan menyebut replay ini parity seluruh pertandingan Python.
 - Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Kondisi boss/level/unlock asli belum dipindahkan.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
 

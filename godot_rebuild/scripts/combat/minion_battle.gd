@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends RefCounted
 ## Deterministic tier-1 minion combat lab. No Nodes, rendering, wall clock, or RNG.
 ## Sequential attacks resolve in stable spawn-ID order; a killed unit cannot act later that tick.
@@ -328,11 +329,11 @@ func _tick_debuffs(unit: UnitState) -> void:
 
 
 func _eff_speed(unit: UnitState) -> float:
+	if unit is HeroState:  # source _eff_speed: slow + item move speed + stun
+		return (unit as HeroState).eff_speed()
 	var speed: float = (
-		(unit as HeroState).speed if unit is HeroState else unit.definition.speed_px_per_tick
+		unit.definition.speed_px_per_tick * (1.0 - unit.slow_amount if unit.slow_timer > 0 else 1.0)
 	)
-	if unit.slow_timer > 0:
-		speed *= 1.0 - unit.slow_amount
 	return speed
 
 
@@ -409,9 +410,9 @@ func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float
 	var damage := (
 		raw_damage
 		if school == "neutral"
-		else DamageRules.resolve(
-			raw_damage, target.definition.armor, target.definition.magic_resist, school
-		)
+		# Layer 5b-3: item armor/shred and the Soul Rend amp live in the
+		# DamageRules helper (hero item stats).
+		else DamageRules.item_aware_amount(target, raw_damage, school)
 	)
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var keep := 0.85 if school == "magic" else 0.70
@@ -707,7 +708,7 @@ func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 	if not _has_q_target(hero, structures):
 		return false
 	_deal_hero_aoe(hero, hero.position, 100.0, hero.skill_damage(), structures)
-	hero.e_cooldown = hero.e_cooldown_max
+	hero.e_cooldown = hero.cdr_cooldown(hero.e_cooldown_max)
 	hero.active_skill = "e"
 	hero.active_skill_timer = 60
 	return true
@@ -738,7 +739,7 @@ func _cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 	_deal_hero_aoe(hero, hero.position, 150.0, hero.skill_damage() * 2, structures)
 	hero.ulti_active = true
 	hero.ulti_timer = 90
-	hero.r_cooldown = hero.r_cooldown_max
+	hero.r_cooldown = hero.cdr_cooldown(hero.r_cooldown_max)
 	hero.active_skill = "r"
 	hero.active_skill_timer = 100
 	return true
@@ -761,7 +762,7 @@ func cast_hero_w(hero_id: int) -> bool:
 	if hero.settings().id != "kaizen":
 		return _cast_extended_hero_skill(hero, "w", _hero_skill_structures())
 	hero.wind_wall_timer = 180
-	hero.w_cooldown = hero.w_cooldown_max
+	hero.w_cooldown = hero.cdr_cooldown(hero.w_cooldown_max)
 	hero.active_skill = "w"
 	hero.active_skill_timer = 90
 	return true
@@ -799,7 +800,7 @@ func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 		hero.q_stack = 0
 	var data := hero.settings()
 	hero.q_reset_timer = data.q_reset_ticks
-	hero.skill_timer = hero.skill_cd_max
+	hero.skill_timer = hero.cdr_cooldown(hero.skill_cd_max)
 	hero.active_skill = "q"
 	hero.active_skill_timer = data.q_visual_ticks
 	return true

@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends RefCounted
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -6,6 +7,7 @@ const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
+const Nexus = preload("res://scripts/match/nexus_upgrades.gd")
 
 
 func run(check: Callable) -> void:
@@ -19,7 +21,12 @@ func run(check: Callable) -> void:
 	_hero_respawn(check)
 	_hero_loop(check)
 	_hero_foe(check)
+	_hero_red_retreat(check)
+	_hero_out_of_lane(check)
 	_hero_auto(check)
+	_castle_auto_scale(check)
+	_spawn_jitter(check)
+	_enemy_scaling(check)
 	_replay(check)
 
 
@@ -316,8 +323,8 @@ func _replay(check: Callable) -> void:
 			check.call(_snapshot(first) == _snapshot(second), "match replay deterministic")
 			check.call(first.economy.is_balanced(), "replay budget reconciles")
 	check.call(
-		first._defender_built == 3 and first.economy.spent[1] == 300,
-		"temporary defender pays for exactly three towers"
+		first.ai_build.total_built == 0 and first.economy.spent[1] == 0,
+		"manual red side never spends without the AI switch"
 	)
 	check.call(
 		first.wave_count > 0 and first._next_projectile_id > 1, "scheduled waves lead to combat"
@@ -540,6 +547,373 @@ func _hero_foe(check: Callable) -> void:
 	)
 
 
+func _hero_red_retreat(check: Callable) -> void:
+	# Source Hero.update state 1 for the red team: retreat walks to the red
+	# nexus, heals 3.0/tick inside the 100 px base radius (on top of the 0.15
+	# passive trickle), still swings at anything in melee, and only leaves
+	# retreat once the HP ratio is back at 0.80.
+	var resting := _world()
+	var patient: HeroState = _foe_hero(resting)
+	patient.hp = patient.max_hp * 0.5
+	patient.is_retreating = true
+	var hp_before: float = patient.hp
+	resting.step_tick()
+	check.call(
+		(
+			patient.is_retreating
+			and resting._hero_near_own_base(patient)
+			and patient.hp - hp_before >= resting.HERO_BASE_HEAL
+		),
+		"a retreating red hero heals at its own nexus"
+	)
+	var march := _world()
+	var wanderer: HeroState = _foe_hero(march)
+	wanderer.position = Vector2(600, 380)
+	wanderer.hp = wanderer.max_hp * 0.5
+	wanderer.is_retreating = true
+	var foe: UnitState = march.spawn_unit(GOBLIN, march.BLUE, 1)
+	foe.position = Vector2(660, 380)
+	var foe_hp: float = foe.hp
+	var marched: float = wanderer.hp
+	march.step_tick()
+	check.call(
+		(
+			wanderer.is_retreating
+			and not march._hero_near_own_base(wanderer)
+			and wanderer.hp - marched < march.HERO_BASE_HEAL
+			and foe.hp < foe_hp
+		),
+		"away from base a retreating hero only trickles HP, yet still swings"
+	)
+	var healed := _world()
+	var runner: HeroState = _foe_hero(healed)
+	runner.hp = runner.max_hp * 0.1
+	healed.step_tick()
+	check.call(runner.is_retreating, "low HP starts the red retreat")
+	runner.hp = runner.max_hp * 0.79
+	var guard := 0
+	while runner.is_retreating and guard < 200:
+		healed.step_tick()
+		guard += 1
+	check.call(
+		(
+			not runner.is_retreating
+			and runner.hp / runner.max_hp >= healed.HERO_HEAL_RATIO
+			and guard < 200
+		),
+		"the red retreat ends once the HP ratio is back at 0.80"
+	)
+	var ordered := _world()
+	var commanded: HeroState = _foe_hero(ordered)
+	# The lane threat stays outside the hero's 100 px skill range: an enemy
+	# inside it would be targeted by the shared auto-cast path (source
+	# _try_auto_cast sets hero.target), which keeps the AI from reassigning.
+	commanded.position = Vector2(700, 380)
+	var threat: UnitState = ordered.spawn_unit(GOBLIN, ordered.BLUE, 1)
+	threat.position = Vector2(1100, 380)
+	commanded.hp = commanded.max_hp * 0.1
+	ordered.step_tick()
+	check.call(commanded.is_retreating, "the red hero retreats on its own first")
+	ordered.ai_hero_control_enabled = true
+	ordered.step_tick()
+	check.call(
+		not commanded.is_retreating and commanded.has_destination and commanded.destination_auto,
+		"the AI lane order overrides the retreat (source move_to clears it)"
+	)
+
+
+func _hero_out_of_lane(check: Callable) -> void:
+	# Source Hero.update state 5: the hunt search is map-wide, so an enemy in
+	# another lane (inside aggro range) pulls the hero off its lane order, and
+	# the hunt then takes the nearest enemy by distance, lane or not.
+	var hunting := _world()
+	var chaser: HeroState = _foe_hero(hunting)
+	chaser.position = Vector2(600, 380)
+	hunting.move_to(chaser, Vector2(900, 380), true)
+	var prey: UnitState = hunting.spawn_unit(GOBLIN, hunting.BLUE, 0)
+	prey.position = Vector2(620, 200)
+	var y_before: float = chaser.position.y
+	hunting.step_tick()
+	check.call(
+		not chaser.has_destination and chaser.position.y < y_before,
+		"an enemy in another lane inside aggro range pulls the hero off its lane order"
+	)
+	var blind := _world()
+	var chooser: HeroState = _foe_hero(blind)
+	chooser.position = Vector2(600, 380)
+	var lane_foe: UnitState = blind.spawn_unit(GOBLIN, blind.BLUE, 1)
+	lane_foe.position = Vector2(1000, 380)
+	var side_foe: UnitState = blind.spawn_unit(GOBLIN, blind.BLUE, 0)
+	side_foe.position = Vector2(620, 200)
+	var lane_gap: float = chooser.position.distance_to(lane_foe.position)
+	var side_gap: float = chooser.position.distance_to(side_foe.position)
+	var chase_from: float = chooser.position.y
+	blind.step_tick()
+	check.call(
+		(
+			side_gap < lane_gap
+			and side_gap < blind.HERO_HUNT_RANGE
+			and chooser.position.y < chase_from
+		),
+		"the hunt takes the nearest enemy by distance, lane or not"
+	)
+
+
+func _castle_auto_scale(check: Callable) -> void:
+	# Layer 7a: the AI castle auto-levels with the wave number
+	# (source Game._auto_scale_ai_castle, thresholds 4/7/10/13). The upgrade is
+	# free — Castle.upgrade() never touches gold — and the player castle is
+	# never scaled.
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(data is Dictionary, "match fixture parses for the castle schedule")
+	var rows: Array = data.castle_auto_scale
+	for row in rows:
+		if row.has("shield"):
+			continue
+		var world := _world()
+		world.wave_count = int(row.wave)
+		world._auto_scale_ai_castle()
+		var red = world.nexuses[Prototype.RED]
+		check.call(
+			red.settings().level == int(row.level), "castle auto level at wave %d" % int(row.wave)
+		)
+		check.call(
+			(
+				red.definition.max_hp == int(row.max_hp)
+				and red.definition.damage == int(row.damage)
+				and is_equal_approx(red.definition.attack_range_px, float(row.range))
+			),
+			"castle auto stats at wave %d" % int(row.wave)
+		)
+		check.call(
+			world.nexuses[Prototype.BLUE].settings().level == 1,
+			"the player castle is never auto-scaled (wave %d)" % int(row.wave)
+		)
+		check.call(
+			(
+				world.economy.spent[Prototype.RED] == 0
+				and world.economy.is_balanced()
+				and red.hp > 0.0
+			),
+			"the AI castle levels for free with HP kept (wave %d)" % int(row.wave)
+		)
+	# A castle that already bought its shield keeps the remaining percentage.
+	var shield_row: Dictionary = rows[rows.size() - 1]
+	var shielded := _world()
+	var nexus = shielded.nexuses[Prototype.RED]
+	shielded.wave_count = 4
+	shielded._auto_scale_ai_castle()
+	nexus.castle_shield_purchased = true
+	nexus.shield_max = float(nexus.definition.shield_capacity)
+	nexus.shield = nexus.shield_max * 0.5
+	shielded.wave_count = int(shield_row.wave)
+	shielded._auto_scale_ai_castle()
+	check.call(
+		(
+			nexus.settings().level == int(shield_row.level)
+			and is_equal_approx(nexus.shield_max, float(shield_row.shield_max))
+			and int(nexus.shield) == int(shield_row.shield)
+		),
+		"castle auto-scale keeps the purchased shield percentage"
+	)
+	# Wiring: the level-up happens when a wave actually starts.
+	var wired := _world()
+	wired.scheduler.wave = 3
+	wired.scheduler.remaining_ticks = 1
+	wired.step_tick()
+	check.call(wired.wave_count == 3, "wave 3 still running before the forced start")
+	wired.step_tick()
+	check.call(
+		wired.wave_count == 4 and wired.nexuses[Prototype.RED].settings().level == 2,
+		"starting a wave triggers the AI castle auto-scale"
+	)
+
+
+func _spawn_jitter(check: Callable) -> void:
+	# Layer 7b: the source Minion.__init__ spread is ported for wave spawns:
+	# uniform(-8, 8) on both axes, then the per-lane Y offset (already applied
+	# by spawn_unit). The match seeds the draws, so a restarted run replays even
+	# though the Python stream itself is not reproduced.
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(data is Dictionary and data.has("minion_spawn_offsets"), "spawn offset fixture")
+	if not data is Dictionary:
+		return
+	var contract: Dictionary = data.minion_spawn_offsets
+	var jitter := float(contract.jitter)
+	var lane_offsets: Array = contract.lane_offsets
+	check.call(is_equal_approx(jitter, 8.0), "source spawn jitter radius")
+	# JSON numbers are floats; nested Array equality compares types strictly.
+	check.call(
+		(
+			lane_offsets.size() == 3
+			and float(lane_offsets[0]) == -20.0
+			and float(lane_offsets[1]) == 0.0
+			and float(lane_offsets[2]) == 20.0
+		),
+		"source lane spread offsets"
+	)
+	for row in contract.rows:
+		check.call(
+			(
+				absf(float(row.offset_x)) <= jitter + 0.0001
+				and absf(float(row.offset_y)) <= jitter + 0.0001
+			),
+			"recorded source offsets stay inside the jitter radius"
+		)
+		check.call(
+			(
+				is_equal_approx(
+					float(row.final_y),
+					float(row.base[1]) + float(row.offset_y) + float(row.lane_offset)
+				)
+				and is_equal_approx(float(row.lane_offset), float(lane_offsets[int(row.lane)]))
+			),
+			"source lane offset applies after the jitter"
+		)
+	var world := _world()
+	var hero_position: Vector2 = world.blue_hero().position
+	var xs: Array[float] = []
+	for lane in range(3):
+		for team in range(2):
+			for index in range(10):
+				var unit := world._spawn_match_minion(GOBLIN, team, lane)
+				check.call(unit != null, "jitter spawn succeeds")
+				if unit == null:
+					continue
+				var base: Vector2 = world.paths[lane][
+					0 if team == world.BLUE else world.paths[lane].size() - 1
+				]
+				var offset := float(lane_offsets[lane])
+				var dx: float = unit.position.x - base.x
+				var dy: float = unit.position.y - base.y - offset
+				check.call(
+					absf(dx) <= jitter and absf(dy) <= jitter, "native wave minion spawn bounds"
+				)
+				check.call(
+					(
+						unit.position.y - base.y >= offset - jitter
+						and unit.position.y - base.y <= offset + jitter
+					),
+					"native lane spread offset"
+				)
+				xs.append(dx)
+	check.call(xs.size() == 60, "jitter sample size")
+	check.call(world.blue_hero().position == hero_position, "heroes skip the minion jitter")
+	var varies := false
+	for value in xs:
+		if absf(value - xs[0]) > 0.000001:
+			varies = true
+			break
+	check.call(varies, "jitter draws actually vary")
+	# Two fresh worlds consume the same seeded sequence.
+	var first := _world()
+	var second := _world()
+	var same := true
+	for lane in range(3):
+		for index in range(4):
+			var a := first._spawn_match_minion(GOBLIN, world.BLUE, lane)
+			var b := second._spawn_match_minion(GOBLIN, world.BLUE, lane)
+			if a == null or b == null or a.position != b.position:
+				same = false
+	check.call(same, "seeded spawn jitter replays")
+
+
+func _enemy_scaling(check: Callable) -> void:
+	# Layer 7c: hard mode scales the red minions (source Game.reset +
+	# Game.update_waves) and may raise both castles to their configured start
+	# levels; the player castle always uses starting_castle_level.
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(data is Dictionary and data.has("enemy_scaling"), "enemy scaling fixture")
+	if not data is Dictionary:
+		return
+	var stored = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/level_1.json"))
+	check.call(
+		stored is Dictionary and JSON.stringify(stored) == JSON.stringify(data.level_one),
+		"level 1 data matches its source fixture"
+	)
+	var defaults := _world()
+	check.call(
+		(
+			not defaults.enemy_scaling_enabled
+			and is_equal_approx(defaults.enemy_hp_mult, 1.0)
+			and is_equal_approx(defaults.enemy_damage_mult, 1.0)
+			and is_equal_approx(defaults.enemy_speed_mult, 1.0)
+		),
+		"normal mode starts with the source multipliers off"
+	)
+	var sample: Dictionary = data.enemy_scaling
+	# Nexus-tier-1 rows carry the unscaled source minion (the blue reference).
+	var base_stats: Dictionary = {}
+	for row in sample.rows:
+		if int(row.nexus) == 1:
+			base_stats = row.before
+			break
+	check.call(not base_stats.is_empty(), "unscaled source minion baseline")
+	for row in sample.rows:
+		var world := _world()
+		world.set_difficulty(String(row.difficulty))
+		check.call(
+			world.enemy_scaling_enabled == bool(row.enabled),
+			"enemy scaling switch (%s)" % String(row.difficulty)
+		)
+		check.call(
+			(
+				is_equal_approx(world.enemy_hp_mult, float(row.hp_mult))
+				and is_equal_approx(world.enemy_damage_mult, float(row.damage_mult))
+				and is_equal_approx(world.enemy_speed_mult, float(row.speed_mult))
+			),
+			"enemy multipliers (%s)" % String(row.difficulty)
+		)
+		if int(row.nexus) > 1:
+			world._apply_nexus_stats(world.nexuses[Prototype.RED], Nexus.LEVELS[int(row.nexus) - 1])
+		var foe := world.spawn_unit(GOBLIN, Prototype.RED, 1)
+		var ally := world.spawn_unit(GOBLIN, Prototype.BLUE, 1)
+		check.call(
+			(
+				foe != null
+				and foe.definition.max_hp == int(row.max_hp)
+				and int(foe.hp) == int(row.hp)
+				and foe.definition.damage == int(row.damage)
+				and is_equal_approx(foe.definition.speed_px_per_tick, float(row.speed))
+			),
+			"scaled red minion (%s, nexus %d)" % [String(row.difficulty), int(row.nexus)]
+		)
+		check.call(
+			(
+				ally != null
+				and ally.definition.max_hp == int(base_stats.max_hp)
+				and ally.definition.damage == int(base_stats.damage)
+				and is_equal_approx(ally.definition.speed_px_per_tick, float(base_stats.speed))
+			),
+			"player minions never scale (%s)" % String(row.difficulty)
+		)
+	for row in sample.castles:
+		var world := Prototype.new()
+		world.level_config = {
+			"starting_castle_level": int(row.starting_castle_level),
+			"castle_start_level": int(row.castle_start_level),
+		}
+		world.set_difficulty("hard" if bool(row.scaling) else "normal")
+		world.setup_arena()
+		check.call(
+			(
+				world.nexuses[Prototype.BLUE].settings().level == int(row.blue_level)
+				and world.nexuses[Prototype.RED].settings().level == int(row.red_level)
+			),
+			"castle start levels (scaling %s)" % str(bool(row.scaling))
+		)
+		check.call(
+			world.economy.spent[Prototype.BLUE] == 0 and world.economy.spent[Prototype.RED] == 0,
+			"configured start levels are free"
+		)
+
+
 func _hero_auto(check: Callable) -> void:
 	var idle := _world()
 	var quiet: HeroState = _foe_hero(idle)
@@ -671,7 +1045,6 @@ func _foe_hero(world: Prototype) -> HeroState:
 
 func _world() -> Prototype:
 	var world := Prototype.new()
-	world.defender_enabled = false
 	world.setup_arena()
 	return world
 

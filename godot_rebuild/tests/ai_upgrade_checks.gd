@@ -22,7 +22,6 @@ func run(check: Callable) -> void:
 
 func _world() -> World:
 	var world := World.new()
-	world.defender_enabled = false
 	world.setup_arena()
 	world.economy.credit_kill(1, 1000000)
 	return world

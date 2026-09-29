@@ -249,7 +249,6 @@ func _guards(check: Callable) -> void:
 	nexus.alive = false
 	check.call(not world.upgrade_nexus(nexus.id, 2), "dead nexus rejected")
 	var poor := Prototype.new()
-	poor.defender_enabled = false
 	poor.setup_arena()
 	poor.economy.gold[0] = 100
 	poor.economy.opening[0] = 100
@@ -289,7 +288,6 @@ func _guards(check: Callable) -> void:
 
 func _rich_world() -> Prototype:
 	var world := Prototype.new()
-	world.defender_enabled = false
 	world.economy.gold[0] = 20000
 	world.economy.opening[0] = 20000
 	world.setup_arena()

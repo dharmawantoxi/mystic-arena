@@ -10,7 +10,6 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var session = screen.simulation
 	var world = session.world
 	session.set_physics_process(false)
-	world.defender_enabled = false
 	var hero = world.blue_hero()
 	check.call(hero != null and hero.alive and hero.level == 1, "prototype spawns Kaizen")
 	var rival = null

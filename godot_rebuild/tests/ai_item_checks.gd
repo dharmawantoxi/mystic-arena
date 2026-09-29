@@ -4,6 +4,7 @@ extends RefCounted
 ## Metadata only: no stat effects, passives or Forge UI are ported here.
 
 const World = preload("res://scripts/match/prototype_battle.gd")
+const DamageRules = preload("res://scripts/combat/damage_rules.gd")
 const HeroItems = preload("res://scripts/match/hero_items.gd")
 const Inventory = preload("res://scripts/match/hero_item_inventory.gd")
 const AIItems = preload("res://scripts/match/ai_items.gd")
@@ -96,6 +97,7 @@ func run(check: Callable) -> void:
 	_test_miasma(fixture.miasma, check)
 	_test_multishot(check)
 	_test_miasma_wiring(check)
+	_test_miasma_on_minions(check)
 	_test_forge(fixture.forge, check)
 	_test_forge_wiring(check)
 	_test_shop_pages(fixture.shop_pages, check)
@@ -106,7 +108,12 @@ func run(check: Callable) -> void:
 	_test_ai_schedule(fixture.schedule, check)
 	_test_ai_controller_wiring(check)
 	_test_ai_actions(check)
-	_test_ai_defender_swap(check)
+	_test_miss_chance(fixture.miss_chance, check)
+	_test_spell_power(fixture.spell_power, check)
+	_test_evasion(fixture.evasion, check)
+	_test_item_debuffs(fixture.item_debuffs, check)
+	_test_stat_consumption(fixture.stat_consumption, check)
+	_test_ai_switch(check)
 	_test_ai_shield_nexus(check)
 	_test_ai_restart(check)
 
@@ -281,7 +288,6 @@ func _test_hero_inventory(check: Callable) -> void:
 	# Real domain: HeroState owns the inventory and refreshes the role/range
 	# gate from its definition at spawn.
 	var world := World.new()
-	world.defender_enabled = false
 	world.setup_arena()
 	var melee := world.spawn_hero(World.KAIZEN, world.RED, Vector2(1000, 200))
 	var mage := world.spawn_hero(World.VEX, world.RED, Vector2(1040, 240))
@@ -344,7 +350,6 @@ func _test_hero_inventory(check: Callable) -> void:
 
 func _world() -> World:
 	var world := World.new()
-	world.defender_enabled = false
 	world.setup_arena()
 	return world
 
@@ -1139,6 +1144,31 @@ func _test_multishot(check: Callable) -> void:
 	)
 
 
+func _test_miasma_on_minions(check: Callable) -> void:
+	# Layer 5e-3: a big minion takes % Max HP poison, not the 6-damage floor.
+	var world := _world()
+	_clear_heroes(world)
+	var poisoner := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	assert(poisoner.items.add("basilisk_breath"), "basilisk_breath refused (minions)")
+	var minion := world.spawn_unit(GOBLIN, world.RED, 0)
+	var beef = GOBLIN.duplicate()
+	beef.max_hp = 1000
+	minion.definition = beef
+	minion.hp = 1000.0
+	var data := _miasma_data()
+	poisoner.items.apply_miasma(minion.id, true, 1000, data)
+	check.call(
+		int(poisoner.items.miasma[minion.id].damage) > 6,
+		"Miasma on a minion uses % Max HP damage, not the 6-damage floor"
+	)
+	for _index in range(90):
+		# The real bus (bound to this world) delivers the poison ticks.
+		poisoner.items.tick_miasma(
+			1, world._hero_enemy_list(), world._battle_item_effects(poisoner)
+		)
+	check.call(minion.hp < 1000.0, "Miasma actually poisons the minion")
+
+
 func _test_miasma_wiring(check: Callable) -> void:
 	# The battle tick loop must advance the Miasma timers like update() does.
 	var tick_world := _world()
@@ -1739,7 +1769,7 @@ func _test_ai_schedule(rows: Array, check: Callable) -> void:
 
 func _test_ai_controller_wiring(check: Callable) -> void:
 	# With the controller enabled the red hero is controlled every tick, the
-	# blue side stays manual, and the temporary defender keeps its schedule.
+	# blue side stays manual, and the AI switch stays the only red-side owner.
 	var world := _world()
 	_clear_heroes(world)
 	var red := world.spawn_hero(World.THORNE, world.RED, Vector2(200, 380))
@@ -1778,7 +1808,6 @@ func _ai_world(gold: int) -> World:
 	var world := _world()
 	_clear_heroes(world)
 	_fund(world, gold)
-	world.defender_enabled = true
 	world.ai_enabled = true
 	world.ai_controller.rng.seed = 7
 	world.ai_build.rng.seed = 7
@@ -1888,28 +1917,334 @@ func _ai_sequence(seed_value: int) -> Array:
 	return rows
 
 
-func _test_ai_defender_swap(check: Callable) -> void:
-	# The temporary defender and the real AI never run together.
+func _test_miss_chance(rows: Array, check: Callable) -> void:
+	# Layer 5b-6: Solar Brand blind shares one roll with evasion, lives on the
+	# attacker, and true strike still bypasses both.
+	for row in rows:
+		var world := _world()
+		_clear_heroes(world)
+		var attacker := world.spawn_hero(World.KAIZEN, world.BLUE, Vector2(600, 380))
+		var defender := world.spawn_hero(World.KAIZEN, world.RED, Vector2(640, 390))
+		for op in row.ops:
+			var parts: PackedStringArray = String(op).split(":")
+			attacker.apply_miss_chance(float(parts[0]), int(parts[1]))
+		if float(row.evasion) > 0.0:
+			check.call(defender.items.add("monarch_wings"), "Monarch Wings equips (blind case)")
+		check.call(
+			(
+				attacker.blind_amount == float(row.blind_amount)
+				and attacker.blind_timer == int(row.blind_timer)
+				and is_equal_approx(
+					blind_miss_chance(attacker, defender, float(row.evasion)),
+					float(row.miss_chance)
+				)
+			),
+			"blind stacking and miss chance parity: %s evasion=%s" % [str(row.ops), row.evasion]
+		)
+		if float(row.miss_chance) > 0.0:
+			world._item_rng.seed = 99
+			var misses := 0
+			for _index in range(200):
+				defender.hp = defender.max_hp
+				if not world._deliver_hit(
+					attacker.id, attacker.team, defender, 10, "physical", attacker.position
+				):
+					misses += 1
+			check.call(
+				misses > 0 and misses < 200,
+				"blind makes some hits miss: %s evasion=%s" % [str(row.ops), row.evasion]
+			)
+	# True strike beats blind too.
+	var piercing := _world()
+	_clear_heroes(piercing)
+	var striker := piercing.spawn_hero(World.KAIZEN, piercing.BLUE, Vector2(600, 380))
+	var victim := piercing.spawn_hero(World.KAIZEN, piercing.RED, Vector2(640, 390))
+	check.call(striker.items.add("sundering_cudgel"), "Sundering Cudgel equips for the blind probe")
+	striker.apply_miss_chance(0.9, 60)
+	piercing._item_rng.seed = 5
+	var hits := 0
+	for _index in range(50):
+		victim.hp = victim.max_hp
+		if piercing._deliver_hit(
+			striker.id, striker.team, victim, 10, "physical", striker.position
+		):
+			hits += 1
+	check.call(hits == 50, "true strike ignores blind as well as evasion")
+	# Blind decays with the other target-side item debuffs.
+	var decaying := _world()
+	_clear_heroes(decaying)
+	var patient := decaying.spawn_hero(World.KAIZEN, decaying.RED, Vector2(600, 380))
+	patient.apply_miss_chance(0.18, 2)
+	patient.tick_item_debuffs()
+	patient.tick_item_debuffs()
+	check.call(
+		patient.blind_amount == 0.0 and patient.blind_timer == 0,
+		"blind decays and clears on its last tick"
+	)
+
+
+func blind_miss_chance(
+	attacker: Object, defender: World.HeroState, fallback_evasion: float
+) -> float:
+	# Mirrors prototype_battle._evaded's chance for the fixture comparison.
+	var evasion := defender.items.get_evasion()
+	if is_equal_approx(evasion, 0.0):
+		evasion = fallback_evasion
+	if attacker != null and attacker.blind_timer > 0:
+		evasion = maxf(evasion, attacker.blind_amount)
+	return evasion
+
+
+func _test_spell_power(rows: Array, check: Callable) -> void:
+	# Layer 5b-5: skill amp, cooldown reduction and spell vamp read the real
+	# item stats on a spawned hero (Astral Codex, Octarine Core).
+	for row in rows:
+		var case: Dictionary = row.case
+		var world := _world()
+		_clear_heroes(world)
+		var caster := world.spawn_hero(World.VEX, world.RED, Vector2(600, 380))
+		for item_id in case.items:
+			check.call(caster.items.add(String(item_id)), "spell case equips %s" % item_id)
+		caster.skill_value = int(case.base)
+		caster.skill_down_timer = int(case.skill_down[0])
+		caster.skill_down_amount = float(case.skill_down[1])
+		var label := "%s down=%s" % [str(case.items), str(case.skill_down)]
+		check.call(caster.skill_damage() == int(row.damage), "skill amp damage parity: %s" % label)
+		check.call(
+			caster.cdr_cooldown(120) == int(row.cooldown), "cooldown reduction parity: %s" % label
+		)
+		caster.hp = 100.0
+		check.call(
+			caster.spell_vamp_heal() == int(row.vamp_heal), "spell vamp heal parity: %s" % label
+		)
+		check.call(
+			is_equal_approx(caster.hp, minf(caster.max_hp, 100.0 + float(row.vamp_heal))),
+			"spell vamp heal lands on the hero: %s" % label
+		)
+	var capped := _world()
+	_clear_heroes(capped)
+	var healer := capped.spawn_hero(World.VEX, capped.RED, Vector2(600, 380))
+	check.call(healer.items.add("octarine_core"), "Octarine Core equips for the cap probe")
+	healer.skill_value = 10000
+	healer.hp = healer.max_hp
+	check.call(
+		healer.spell_vamp_heal() >= 0 and healer.hp == healer.max_hp, "spell vamp respects max HP"
+	)
+
+
+func _test_evasion(rows: Array, check: Callable) -> void:
+	# Layer 5b-4: real world, seeded RNG. A physical non-magic hit misses with
+	# the defender's evasion unless the attacker carries true strike.
+	for row in rows:
+		var case: Dictionary = row.case
+		var world := _world()
+		_clear_heroes(world)
+		var attacker := world.spawn_hero(World.KAIZEN, world.BLUE, Vector2(600, 380))
+		var defender := world.spawn_hero(World.KAIZEN, world.RED, Vector2(640, 390))
+		for item_id in case.defender_items:
+			check.call(
+				defender.items.add(String(item_id)),
+				"evasion case equips %s on the defender" % item_id
+			)
+		for item_id in case.attacker_items:
+			check.call(
+				attacker.items.add(String(item_id)),
+				"evasion case equips %s on the attacker" % item_id
+			)
+		world._item_rng.seed = 4242
+		var misses := 0
+		for _index in range(200):
+			defender.hp = defender.max_hp
+			if not world._deliver_hit(
+				attacker.id,
+				attacker.team,
+				defender,
+				10,
+				String(case.school),
+				attacker.position,
+				String(case.damage_type)
+			):
+				misses += 1
+		var label := (
+			"%s/%s d=%s a=%s"
+			% [case.damage_type, case.school, str(case.defender_items), str(case.attacker_items)]
+		)
+		if not bool(row.physical) or bool(row.true_strike) or float(row.evasion) <= 0.0:
+			check.call(misses == 0, "no evasion applies for %s" % label)
+		else:
+			check.call(misses > 0 and misses < 200, "evasion misses some hits for %s" % label)
+	var melee := _world()
+	_clear_heroes(melee)
+	var striker := melee.spawn_hero(World.KAIZEN, melee.BLUE, Vector2(600, 380))
+	var victim := melee.spawn_hero(World.KAIZEN, melee.RED, Vector2(620, 380))
+	check.call(victim.items.add("monarch_wings"), "Monarch Wings equips on the victim")
+	melee._item_rng.seed = 7
+	var procs := 0
+	var landed := 0
+	for _index in range(400):
+		striker.attack_timer = 0
+		victim.hp = victim.max_hp
+		var hp_before: float = victim.hp
+		if melee.hero_basic_attack(striker.id, victim.id):
+			if victim.hp < hp_before:
+				landed += 1
+			else:
+				procs += 1
+	check.call(
+		landed > 0 and procs > 0, "a missed melee hit leaves the victim untouched (no on-hit proc)"
+	)
+
+
+func _test_item_debuffs(rows: Array, check: Callable) -> void:
+	# Layer 5b-3: target-side item debuffs (Corroder shred, Soul Rend amp,
+	# Abyss Breaker heal amp) follow the source setters, decay per tick, and
+	# the shred/amp actually reach the mitigation path.
+	for row in rows:
+		var world := _world()
+		_clear_heroes(world)
+		var hero := world.spawn_hero(World.KAIZEN, world.RED, Vector2(600, 380))
+		for entry in row.log:
+			var parts: PackedStringArray = String(entry.op).split(":")
+			if parts[0] == "armor_shred":
+				hero.apply_armor_shred(float(parts[1]), int(parts[2]))
+			elif parts[0] == "damage_amp":
+				hero.apply_damage_amp(float(parts[1]), int(parts[2]))
+			else:
+				hero.apply_heal_amp(float(parts[1]), int(parts[2]))
+			check.call(
+				(
+					is_equal_approx(hero.armor_shred_amount, float(entry.armor_shred_amount))
+					and hero.armor_shred_timer == int(entry.armor_shred_timer)
+					and is_equal_approx(hero.dmg_amp_amount, float(entry.dmg_amp_amount))
+					and hero.dmg_amp_timer == int(entry.dmg_amp_timer)
+					and is_equal_approx(hero.heal_amp_amount, float(entry.heal_amp_amount))
+					and hero.heal_amp_timer == int(entry.heal_amp_timer)
+				),
+				"target item debuff parity: %s after %s" % [str(row.ops), entry.op]
+			)
+	var decay := _world()
+	_clear_heroes(decay)
+	var patient := decay.spawn_hero(World.KAIZEN, decay.RED, Vector2(600, 380))
+	patient.apply_armor_shred(6.0, 2)
+	patient.apply_damage_amp(0.35, 2)
+	patient.apply_heal_amp(0.16, 2)
+	patient.tick_item_debuffs()
+	var held := (
+		is_equal_approx(patient.armor_shred_amount, 6.0)
+		and patient.armor_shred_timer == 1
+		and is_equal_approx(patient.dmg_amp_amount, 0.35)
+		and is_equal_approx(patient.heal_amp_amount, 0.16)
+	)
+	patient.tick_item_debuffs()
+	check.call(
+		(
+			held
+			and patient.armor_shred_amount == 0.0
+			and patient.armor_shred_timer == 0
+			and patient.dmg_amp_amount == 0.0
+			and patient.dmg_amp_timer == 0
+			and patient.heal_amp_amount == 0.0
+			and patient.heal_amp_timer == 0
+		),
+		"target item debuffs decay and clear on their last tick"
+	)
+	var armored := decay.spawn_hero(World.KAIZEN, decay.RED, Vector2(700, 380))
+	check.call(armored.items.add("steel_aegis"), "steel aegis equips for the armor probe")
+	check.call(
+		is_equal_approx(DamageRules.effective_armor(armored), 6.0),
+		"item armor lands in the mitigation armor value"
+	)
+	var plain: int = decay._damage_amount(armored, 100, "physical")
+	armored.apply_armor_shred(6.0, 60)
+	check.call(
+		(
+			is_equal_approx(DamageRules.effective_armor(armored), 0.0)
+			and decay._damage_amount(armored, 100, "physical") > plain
+		),
+		"armor shred feeds the mitigation path"
+	)
+	armored.apply_damage_amp(0.35, 60)
+	check.call(
+		decay._damage_amount(armored, 100, "physical") > 100,
+		"Soul Rend damage amp raises the physical damage taken"
+	)
+
+
+func _test_stat_consumption(rows: Array, check: Callable) -> void:
+	# Layer 5b-2: the attack/movement consumers read the real item stats via the
+	# source functions (Hero._eff_attack_cd/_eff_attack_range,
+	# TowerDebuffMixin._eff_speed/apply_slow).
+	var definitions := {"kaizen": World.KAIZEN, "sylara": World.SYLARA}
+	for row in rows:
+		var case: Dictionary = row.case
+		var world := _world()
+		_clear_heroes(world)
+		var hero := world.spawn_hero(definitions[String(case.hero)], world.RED, Vector2(600, 380))
+		var label := "%s %s" % [case.hero, str(case.items)]
+		for item_id in case.items:
+			check.call(hero.items.add(String(item_id)), "stat case equips %s" % item_id)
+		hero.stun_timer = int(case.stun)
+		hero.atk_slow_timer = int(case.atk_slow[0])
+		hero.atk_slow_amount = float(case.atk_slow[1])
+		world.apply_slow(hero.id, float(case.slow[0]), int(case.slow[1]))
+		check.call(
+			hero.eff_attack_cd(int(case.base_cd)) == int(row.attack_cd),
+			"item attack cooldown parity: %s" % label
+		)
+		check.call(
+			is_equal_approx(hero.eff_attack_range(), float(row.attack_range)),
+			"item attack range parity: %s" % label
+		)
+		check.call(
+			is_equal_approx(hero.eff_speed(), float(row.eff_speed)),
+			"item movement speed parity: %s" % label
+		)
+		check.call(
+			(
+				is_equal_approx(hero.slow_amount, float(row.slow_amount))
+				and hero.slow_timer == int(row.slow_timer)
+			),
+			"item slow resist parity: %s" % label
+		)
+
+
+func _test_ai_switch(check: Callable) -> void:
+	# Layer 6e: set_ai_enabled() is the only switch left. With it off the red
+	# side never transacts; with it on the real AI owns the side and the heroes.
 	var world := _world()
 	_clear_heroes(world)
-	_fund(world, 0)
+	_fund(world, 30000)
+	for _tick in range(300):
+		world.step_tick()
+	check.call(
+		(
+			not world.ai_enabled
+			and not world.ai_hero_control_enabled
+			and _red_towers(world) == 0
+			and world.economy.spent[world.RED] == 0
+		),
+		"Without the AI switch the red side stays idle"
+	)
 	world.set_ai_enabled(true)
 	check.call(
-		world.ai_enabled and world.ai_hero_control_enabled and not world.defender_enabled,
-		"Enabling the AI must park the temporary defender and own the heroes"
+		world.ai_enabled and world.ai_hero_control_enabled,
+		"Enabling the AI must own the red side and the heroes"
 	)
+	world.ai_controller.rng.seed = 7
+	world.ai_build.rng.seed = 7
+	world.ai_draft.rng.seed = 7
+	world.ai_controller.policy.think_timer = 1
 	for _tick in range(300):
 		world.step_tick()
-	check.call(world._defender_built == 0, "Temporary defender must stand down while the AI runs")
-	_fund(world, 30000)
+	check.call(
+		world.ai_build.total_built > 0 and _red_towers(world) > 0,
+		"Enabling the AI must build red towers on schedule"
+	)
 	world.set_ai_enabled(false)
 	check.call(
-		not world.ai_enabled and world.defender_enabled,
-		"Disabling the AI must restore the defender"
+		not world.ai_enabled and not world.ai_hero_control_enabled,
+		"Disabling the AI must leave the red side manual"
 	)
-	for _tick in range(300):
-		world.step_tick()
-	check.call(world._defender_built == 1, "Defender resumes once the AI is disabled")
 
 
 func _test_ai_restart(check: Callable) -> void:

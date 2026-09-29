@@ -407,17 +407,21 @@ func _guards(check: Callable) -> void:
 		),
 		"burn rejects empty payloads and stale IDs"
 	)
-	check.call(world.defender_enabled == false, "cannon domain tests keep the defender parked")
+	check.call(not world.ai_enabled, "cannon domain tests keep the red side switched off")
 	var skirmish := _world()
-	skirmish.defender_enabled = true
+	skirmish.economy.gold[1] = 10000
+	skirmish.economy.opening[1] = 10000
+	skirmish.set_ai_enabled(true)
+	skirmish.ai_controller.rng.seed = 7
+	skirmish.ai_build.rng.seed = 7
+	skirmish.ai_draft.rng.seed = 7
+	skirmish.ai_controller.policy.think_timer = 1
 	for _index in range(301):
 		skirmish.step_tick()
-	var built = skirmish.get_unit(skirmish.slots[11].structure_id)
 	check.call(
-		built != null and built.settings().tower_path == "archer",
-		"scheduled defender still builds archers"
+		skirmish.ai_build.total_built > 0, "the switched-on AI builds red towers on schedule"
 	)
-	check.call(skirmish.economy.is_balanced(), "defender ledger stays balanced")
+	check.call(skirmish.economy.is_balanced(), "AI build ledger stays balanced")
 
 
 func _fly_to_impact(world: World, tower) -> void:
@@ -433,7 +437,6 @@ func _fly_to_impact(world: World, tower) -> void:
 
 func _world() -> World:
 	var world := World.new()
-	world.defender_enabled = false
 	world.economy.gold[0] = 10000
 	world.economy.opening[0] = 10000
 	world.setup_arena()

@@ -842,6 +842,287 @@ def stat_application(env):
     return rows
 
 
+STAT_CONSUMPTION_CASES = [
+    # Kaizen-like melee (range 70 < 110) and Sylara-like ranged (130):
+    # the source range gate reads `is_melee_hero` first.
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": []},
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": ["moon_shard"]},
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": ["tempest_vane"]},
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": ["abyss_breaker"]},
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90],
+     "items": ["moon_shard", "tempest_vane", "abyss_breaker"]},
+    # Ice attack-slow stacks on top of the item attack speed.
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [90, 0.4], "stun": 0, "slow": [0.5, 90], "items": ["moon_shard"]},
+    # A stun zeroes the movement and freezes the attack cooldown.
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 5, "slow": [0.5, 90], "items": []},
+    # Gale Pike reach only reaches a ranged owner.
+    {"hero": "sylara", "range": 130.0, "melee": False, "speed": 1.5, "base_cd": 30,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": ["gale_pike"]},
+    {"hero": "sylara", "range": 130.0, "melee": False, "speed": 1.5, "base_cd": 30,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": []},
+]
+
+
+def _stat_methods(env):
+    """Real item-stat consumers: hero attack cd/range + core movement/slow."""
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    body = [n for n in ast.walk(core_tree)
+            if isinstance(n, ast.FunctionDef)
+            and n.name in ("_eff_speed", "apply_slow")]
+    entity_tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+    hero_node = next(n for n in entity_tree.body
+                     if isinstance(n, ast.ClassDef) and n.name == "Hero")
+    body.extend(n for n in hero_node.body
+                if isinstance(n, ast.FunctionDef)
+                and n.name in ("_eff_attack_cd", "_eff_attack_range"))
+    names = {"_eff_speed", "apply_slow", "_eff_attack_cd", "_eff_attack_range"}
+    assert {n.name for n in body} == names, "item stat consumers missing"
+    cls = ast.ClassDef(name="SourceStatConsumption", bases=[], keywords=[],
+                       decorator_list=[], body=body)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source item stat consumption>", "exec"), env)
+    return env["SourceStatConsumption"]
+
+
+def stat_consumption(env):
+    """Attack cd/range, movement speed and incoming slow with real items."""
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        stat_type = _stat_methods(env)
+        for case in STAT_CONSUMPTION_CASES:
+            hero = stat_type()
+            hero.role = "Ranged" if not case["melee"] else "Assassin"
+            hero.range = case["range"]
+            hero.is_melee_hero = case["melee"]
+            hero.speed = case["speed"]
+            hero.alive = True
+            hero.hp = 1000
+            hero.max_hp = 1000
+            hero.stun_timer = case["stun"]
+            hero.atk_slow_timer = case["atk_slow"][0]
+            hero.atk_slow_amount = case["atk_slow"][1]
+            hero.slow_timer = 0
+            hero.slow_amount = 0.0
+            hero.items = inv_type(hero)
+            for item_id in case["items"]:
+                assert hero.items.add(item_id), f"equip refused {item_id}"
+            hero.apply_slow(case["slow"][0], case["slow"][1])
+            rows.append({
+                "case": dict(case),
+                "attack_cd": hero._eff_attack_cd(case["base_cd"]),
+                "attack_range": hero._eff_attack_range(),
+                "eff_speed": hero._eff_speed(),
+                "slow_amount": hero.slow_amount,
+                "slow_timer": hero.slow_timer,
+            })
+    return rows
+
+
+# Source TowerDebuffMixin item debuffs that land on a TARGET (Corroder armor
+# shred, Soul Rend damage amp, Abyss Breaker heal amp), applied in sequence.
+ITEM_DEBUFF_CASES = [
+    ["armor_shred:6:360"],
+    ["armor_shred:6:360", "armor_shred:4:120"],
+    ["armor_shred:6:360", "armor_shred:8:60"],
+    ["armor_shred:6:100", "armor_shred:4:200"],
+    ["armor_shred:6:360", "armor_shred:0:0"],
+    ["damage_amp:0.35:300"],
+    ["damage_amp:0.35:300", "damage_amp:0.2:500"],
+    ["heal_amp:0.16:999999"],
+    ["heal_amp:0.16:999999", "heal_amp:0.1:400"],
+    ["armor_shred:6:360", "damage_amp:0.35:300", "heal_amp:0.16:120"],
+]
+
+
+def item_debuffs(env):
+    """Real apply_armor_shred / apply_damage_amp / apply_heal_amp sequences."""
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    names = {"apply_armor_shred", "apply_damage_amp", "apply_heal_amp"}
+    body = [n for n in ast.walk(core_tree)
+            if isinstance(n, ast.FunctionDef) and n.name in names]
+    assert {n.name for n in body} == names, "target item debuff setters missing"
+    cls = ast.ClassDef(name="SourceItemDebuffs", bases=[], keywords=[],
+                       decorator_list=[], body=body)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source item debuffs>", "exec"), env)
+    debuff_type = env["SourceItemDebuffs"]
+    rows = []
+    for ops in ITEM_DEBUFF_CASES:
+        target = debuff_type()
+        target.alive = True
+        target.armor_shred_amount = 0.0
+        target.armor_shred_timer = 0
+        target.dmg_amp_amount = 0.0
+        target.dmg_amp_timer = 0
+        target.heal_amp_amount = 0.0
+        target.heal_amp_timer = 0
+        log = []
+        for op in ops:
+            kind, amount, duration = op.split(":")
+            getattr(target, "apply_" + kind)(float(amount), int(duration))
+            log.append({
+                "op": op,
+                "armor_shred_amount": target.armor_shred_amount,
+                "armor_shred_timer": target.armor_shred_timer,
+                "dmg_amp_amount": target.dmg_amp_amount,
+                "dmg_amp_timer": target.dmg_amp_timer,
+                "heal_amp_amount": target.heal_amp_amount,
+                "heal_amp_timer": target.heal_amp_timer,
+            })
+        rows.append({"ops": ops, "log": log})
+    return rows
+
+
+EVASION_CASES = [
+    # Evasion is the defender's item stat, true strike the attacker's.
+    {"damage_type": "normal", "school": "physical", "defender_items": [],
+     "attacker_items": []},
+    {"damage_type": "normal", "school": "physical",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+    {"damage_type": "normal", "school": "physical",
+     "defender_items": ["monarch_wings"], "attacker_items": ["sundering_cudgel"]},
+    {"damage_type": "projectile", "school": "physical",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+    {"damage_type": "projectile", "school": "magic",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+    {"damage_type": "normal", "school": "magic",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+    {"damage_type": "skill", "school": "physical",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+]
+
+
+def evasion(env):
+    """Real `_is_physical_hit` plus both real inventories (defender/attacker)."""
+    entity_tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+    hit_fn = next(n for n in entity_tree.body
+                  if isinstance(n, ast.FunctionDef) and n.name == "_is_physical_hit")
+    stub = ast.parse("class SourcePhysicalHit:\n    pass").body[0]
+    stub.body = [hit_fn]
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[stub], type_ignores=[])),
+                 "<source _is_physical_hit>", "exec"), env)
+    hit_type = env["SourcePhysicalHit"]
+    hit = hit_type.__dict__["_is_physical_hit"]
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        spec = {"role": "Assassin", "range": 70.0, "base_hp": 1000, "level": 1}
+        for case in EVASION_CASES:
+            defender_inv = inv_type(_make_hero(spec))
+            attacker_inv = inv_type(_make_hero(spec))
+            for item_id in case["defender_items"]:
+                assert defender_inv.add(item_id), f"defender refused {item_id}"
+            for item_id in case["attacker_items"]:
+                assert attacker_inv.add(item_id), f"attacker refused {item_id}"
+            rows.append({
+                "case": dict(case),
+                "physical": bool(hit(case["damage_type"], case["school"])),
+                "evasion": defender_inv.get_evasion(),
+                "true_strike": attacker_inv.has_true_strike(),
+            })
+    return rows
+
+
+SPELL_POWER_CASES = [
+    {"base": 200, "skill_down": [0, 0.0], "items": []},
+    {"base": 200, "skill_down": [0, 0.0], "items": ["astral_codex"]},
+    {"base": 200, "skill_down": [0, 0.0], "items": ["octarine_core"]},
+    {"base": 200, "skill_down": [90, 0.4], "items": ["astral_codex"]},
+    {"base": 200, "skill_down": [90, 0.4], "items": []},
+    {"base": 200, "skill_down": [0, 0.0], "items": ["astral_codex", "octarine_core"]},
+]
+
+
+def spell_power(env):
+    """Real Hero.skill_damage getter plus the caster stat getters."""
+    entity_tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+    hero_node = next(n for n in entity_tree.body
+                     if isinstance(n, ast.ClassDef) and n.name == "Hero")
+    getter = next(n for n in hero_node.body
+                  if isinstance(n, ast.FunctionDef) and n.name == "skill_damage")
+    cls = ast.ClassDef(name="SourceSpellPower", bases=[], keywords=[],
+                       decorator_list=[], body=[getter])
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source skill_damage>", "exec"), env)
+    spell_type = env["SourceSpellPower"]
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for case in SPELL_POWER_CASES:
+            hero = spell_type()
+            hero._skill_damage_value = case["base"]
+            hero.skill_down_timer = case["skill_down"][0]
+            hero.skill_down_amount = case["skill_down"][1]
+            hero.items = inv_type(_make_hero({"role": "Mage", "range": 130.0,
+                                              "base_hp": 1000, "level": 1}))
+            for item_id in case["items"]:
+                assert hero.items.add(item_id), f"equip refused {item_id}"
+            damage = hero.skill_damage
+            cdr = hero.items.get_cooldown_reduction()
+            # cast_skill records `before` while the gates still hold cd <= 0,
+            # so `max(0, after - added * cdr)` folds to `cd_max * (1 - cdr)`.
+            cooldown_max = 120
+            rows.append({
+                "case": dict(case),
+                "damage": int(damage),
+                "cooldown": int(round(cooldown_max - cooldown_max * cdr)),
+                "spell_vamp": hero.items.get_spell_vamp(),
+                "vamp_heal": int(damage * hero.items.get_spell_vamp()),
+            })
+    return rows
+
+
+BLIND_CASES = [
+    ["0.18:30"],
+    ["0.18:30", "0.10:90"],
+    ["0.18:30", "0.40:10"],
+    ["0.18:60", "0.10:20"],
+    ["0.0:0"],
+]
+
+
+def miss_chance(env):
+    """Real TowerDebuffMixin.apply_miss_chance plus the shared max() rule."""
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    setter = next(n for n in ast.walk(core_tree)
+                  if isinstance(n, ast.FunctionDef) and n.name == "apply_miss_chance")
+    cls = ast.ClassDef(name="SourceMissChance", bases=[], keywords=[],
+                       decorator_list=[], body=[setter])
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source apply_miss_chance>", "exec"), env)
+    blind_type = env["SourceMissChance"]
+    rows = []
+    for ops in BLIND_CASES:
+        unit = blind_type()
+        unit.alive = True
+        unit.blind_amount = 0.0
+        unit.blind_timer = 0
+        for op in ops:
+            amount, duration = op.split(":")
+            unit.apply_miss_chance(float(amount), int(duration))
+        # Source Hero.take_damage: `miss_chance = max(ev, blind)` with the
+        # attacker blind; a true-strike attacker skips the gate entirely.
+        for evasion in (0.0, 0.28):
+            rows.append({
+                "ops": ops,
+                "evasion": evasion,
+                "blind_active": unit.blind_timer > 0,
+                "blind_amount": unit.blind_amount,
+                "blind_timer": unit.blind_timer,
+                "miss_chance": max(evasion, unit.blind_amount
+                                   if unit.blind_timer > 0 else 0.0),
+            })
+    return rows
+
+
 def _install_effect_stubs(env):
     env["math"] = __import__("math")
     env["random"] = __import__("random")
@@ -1538,6 +1819,11 @@ def source_fixture():
         "purchases": purchases(env),
         "stats": stats(env),
         "stat_application": stat_application(env),
+        "stat_consumption": stat_consumption(env),
+        "item_debuffs": item_debuffs(env),
+        "evasion": evasion(env),
+        "spell_power": spell_power(env),
+        "miss_chance": miss_chance(env),
         "deaths": deaths(env),
         "timer_attrs": timer_attrs(),
         "timers": timers(env),

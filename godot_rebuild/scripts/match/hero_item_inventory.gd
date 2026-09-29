@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines, max-public-methods
 # gdlint:disable=max-public-methods
 extends RefCounted
 ## Port of HeroItemInventory: six slots, the melee_only/magic_only gates,

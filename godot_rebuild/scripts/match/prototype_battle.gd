@@ -19,6 +19,8 @@ const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
+# Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
+const LEVEL_DATA := "res://data/levels/level_1.json"
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
@@ -47,6 +49,12 @@ const HERO_HEAL_RATIO := 0.8
 const HERO_BASE_HEAL := 3.0
 const HERO_PASSIVE_HEAL := 0.15
 const HERO_BASE_NEAR := 100.0
+# Source Minion.__init__: every fresh minion gets a small random offset on both
+# axes (random.uniform(-8, 8)) before the per-lane Y spread, so wave units do
+# not stack on one pixel. The match seeds the draws so a restarted run replays;
+# the Python stream itself is not reproduced.
+const SPAWN_JITTER := 8.0
+const SPAWN_SEED := 20260929
 
 var economy := Economy.new()
 # Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
@@ -56,8 +64,8 @@ var item_shop := ItemShopUI.new()
 # Layer 6a: per-tick AI hero control. The AI controller is not wired into the
 # playable scene yet, so this stays off unless a caller asks for it.
 var ai_heroes := AiHeroControl.new()
-# Layer 6b: scheduling wrapper (source AIPlayer.update). The scene still runs
-# the temporary defender; setting both flags hands the red side to the AI.
+# Layer 6b: scheduling wrapper (source AIPlayer.update). Layer 6e: set_ai_enabled()
+# is the only switch; with it off the red side stays idle.
 var ai_controller := AiController.new()
 var ai_enabled := false
 var ai_hero_control_enabled := false
@@ -73,12 +81,23 @@ const HERO_AGGRO_RANGE := 250.0
 var scheduler := Scheduler.new()
 var slots: Array[Slot] = []
 var transaction_error := ""
-var defender_enabled := true
-var _defender_built := 0
+# Layer 7b: seeded stream for the source spawn jitter (match-reproducible).
+var spawn_rng := RandomNumberGenerator.new()
+# Layer 7c: level-1 config and the source difficulty rule (Game.reset).
+var level_config: Dictionary = {}
+var difficulty := "normal"
+var enemy_scaling_enabled := false
+var enemy_hp_mult := 1.0
+var enemy_damage_mult := 1.0
+var enemy_speed_mult := 1.0
 
 
 func _init() -> void:
 	slots = SlotLayout.create(paths)
+	spawn_rng.seed = SPAWN_SEED
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_DATA))
+	level_config = parsed if parsed is Dictionary else {}
+	_apply_difficulty()
 
 
 func structure_limit() -> int:
@@ -91,6 +110,7 @@ func setup_arena() -> bool:
 	_arena_initialized = true
 	spawn_structure(NEXUS, BLUE, LaneLayout.BLUE_BASE)
 	spawn_structure(NEXUS, RED, LaneLayout.RED_BASE)
+	_apply_castle_start_levels()
 	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
 	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
 	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
@@ -109,18 +129,71 @@ func spawn_unit(definition: Definition, team: int, lane: int) -> UnitState:
 	if team not in [BLUE, RED]:
 		return super.spawn_unit(definition, team, lane)
 	var current := nexus_level(team)
-	if current <= 1:
-		var plain := super.spawn_unit(definition, team, lane)
-		if plain != null:
-			plain.ai_level = 1
-		return plain
-	var scaled := scaled_minion_definition(definition, current)
-	if scaled == null:
-		return null
-	var unit := super.spawn_unit(scaled, team, lane)
+	var target: Definition = definition
+	if current > 1:
+		target = scaled_minion_definition(definition, current)
+		if target == null:
+			return null
+	# Source update_waves: hard mode scales the red minions on top of the
+	# nexus tier (hp/damage truncate, speed keeps its fraction).
+	if team == RED and enemy_scaling_enabled:
+		target = _enemy_scaled_definition(target)
+	var unit := super.spawn_unit(target, team, lane)
 	if unit != null:
-		unit.ai_level = NexusUpgrades.MINION_AI[current - 1]
+		unit.ai_level = 1 if current <= 1 else NexusUpgrades.MINION_AI[current - 1]
 	return unit
+
+
+func _enemy_scaled_definition(base: Definition) -> Definition:
+	# Port of the red-minion block in Game.update_waves.
+	var copy := base.duplicate() as Definition
+	copy.max_hp = int(copy.max_hp * enemy_hp_mult)
+	copy.damage = int(copy.damage * enemy_damage_mult)
+	copy.speed_px_per_tick = copy.speed_px_per_tick * enemy_speed_mult
+	return copy
+
+
+func set_difficulty(value: String) -> void:
+	# Source Game.reset: only "hard" turns enemy scaling on; any other value
+	# (including an unknown one) leaves every multiplier at 1.0.
+	difficulty = value
+	_apply_difficulty()
+
+
+func _apply_difficulty() -> void:
+	enemy_scaling_enabled = difficulty == "hard"
+	if enemy_scaling_enabled:
+		enemy_hp_mult = float(level_config.get("enemy_hp_mult", 1.0)) * 1.15
+		enemy_damage_mult = float(level_config.get("enemy_damage_mult", 1.0)) * 1.10
+		enemy_speed_mult = float(level_config.get("enemy_speed_mult", 1.0))
+	else:
+		enemy_hp_mult = 1.0
+		enemy_damage_mult = 1.0
+		enemy_speed_mult = 1.0
+
+
+func _apply_castle_start_levels() -> void:
+	# Source Game.reset: the player castle climbs to cfg["starting_castle_level"]
+	# for free while the red castle only climbs to cfg["castle_start_level"] when
+	# hard-mode enemy scaling is on (otherwise it stays at level 1).
+	var blue_target := int(level_config.get("starting_castle_level", 1))
+	while nexuses[BLUE] != null and nexuses[BLUE].settings().level < blue_target:
+		_raise_nexus_level(BLUE)
+	var red_target := 1
+	if enemy_scaling_enabled:
+		red_target = int(level_config.get("castle_start_level", 1))
+	while nexuses[RED] != null and nexuses[RED].settings().level < red_target:
+		_raise_nexus_level(RED)
+
+
+func _raise_nexus_level(team: int) -> void:
+	# Castle.upgrade() is free and reuses _apply_level_stats through the shared
+	# helper, so a configured start level never touches the ledger.
+	var nexus := nexuses[team]
+	if nexus == null or nexus.settings().level >= NexusUpgrades.LEVELS.size():
+		return
+	# The catalog index is the current level: entry i holds the stats of i + 1.
+	_apply_nexus_stats(nexus, NexusUpgrades.LEVELS[nexus.settings().level])
 
 
 func scaled_minion_definition(base: Definition, nexus_level: int) -> Definition:
@@ -138,6 +211,20 @@ func scaled_minion_definition(base: Definition, nexus_level: int) -> Definition:
 	copy.gold_reward = int(base.gold_reward * scale)
 	copy.regen_per_tick = base.regen_per_tick * scale
 	return copy
+
+
+func _spawn_match_minion(definition: Definition, team: int, lane: int) -> UnitState:
+	# Port of the Minion.__init__ spread statements: uniform(-8, 8) on x and y
+	# after the waypoint placement, then the lane Y offset (already applied by
+	# spawn_unit). Wave construction only; the lab entry stays exact so the
+	# existing contract tests can place units on demand.
+	var unit := spawn_unit(definition, team, lane)
+	if unit != null:
+		unit.position += Vector2(
+			spawn_rng.randf_range(-SPAWN_JITTER, SPAWN_JITTER),
+			spawn_rng.randf_range(-SPAWN_JITTER, SPAWN_JITTER)
+		)
+	return unit
 
 
 func nexus_level(team: int) -> int:
@@ -161,12 +248,14 @@ func step_tick() -> void:
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
+		# Source update_waves: the AI castle auto-levels while the wave starts.
+		_auto_scale_ai_castle()
 	for spawn in batch.spawns:
-		spawn_unit(MINIONS[spawn.kind], spawn.team, spawn.lane)
+		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
 	if is_running():
 		_tick_auras_and_items()
-		_step_defender()
+		_tick_item_debuffs()
 		_step_hero_act()
 		# Source Game.update runs the AI right after the entity loop.
 		_step_ai_heroes()
@@ -189,7 +278,7 @@ func slot_at(point: Vector2) -> int:
 
 
 func build_tower(team: int, slot_id: int) -> bool:
-	# Existing player command and temporary defender remain plain Archer, no draft reserve.
+	# Existing player command remains plain Archer, no draft reserve.
 	return _build_tower_for(team, slot_id, "archer")
 
 
@@ -332,15 +421,6 @@ func _retire_dead() -> void:
 		var tower := get_unit(slot.structure_id)
 		if tower == null or not tower.alive:
 			slot.structure_id = -1
-
-
-func _step_defender() -> void:
-	# Explicit temporary opponent, NOT a port of AIPlayer: three paid Archer
-	# purchases. The real AI controller replaces it as soon as ai_enabled is set.
-	if ai_enabled or not defender_enabled or _defender_built >= 3 or tick_count % 300 != 0:
-		return
-	if build_tower(RED, [11, 14, 17][_defender_built]):
-		_defender_built += 1
 
 
 func set_hero_destination(hero_id: int, point: Vector2) -> bool:
@@ -506,7 +586,9 @@ func try_auto_cast(hero: HeroState) -> void:
 	if not used and hero.w_cooldown <= 0 and hero.hp / maxf(1.0, hero.max_hp) < 0.4:
 		used = cast_hero_w(hero.id)
 	if not used and hero.skill_timer <= 0:
-		cast_hero_q(hero.id, structures)
+		used = cast_hero_q(hero.id, structures)
+	if used:
+		hero.spell_vamp_heal()
 
 
 func _step_hero_auto_cast(hero: HeroState) -> void:
@@ -542,13 +624,30 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 	return best
 
 
+func _tick_item_debuffs() -> void:
+	# Layer 5b-3: every unit decays its target-side item debuffs once per tick
+	# (source TowerDebuffMixin._tick_tower_debuffs).
+	for unit in units:
+		unit.tick_item_debuffs()
+
+
+func apply_slow(target_id: int, amount: float, duration: int) -> bool:
+	# Layer 5b-2: port of TowerDebuffMixin.apply_slow's item gate — slow resist
+	# (Abyss Breaker) scales the incoming slow before the strongest-wins store.
+	var target := get_unit(target_id)
+	if target is HeroState:
+		var resist := (target as HeroState).items.get_slow_resist()
+		if resist > 0.0:
+			amount *= 1.0 - resist
+	return super.apply_slow(target_id, amount, duration)
+
+
 func set_ai_enabled(enabled: bool) -> void:
-	# Single switch for the match: the real AI owns the red side, so the
-	# temporary defender (a stand-in from before layer 6c) parks while it runs
-	# and takes over again when the AI is switched off for a test.
+	# Layer 6e: single switch for the match. The real AI owns the red side and
+	# the red heroes; with the switch off (a test or scene that wants a manual
+	# red side) no red transaction ever happens.
 	ai_enabled = enabled
 	ai_hero_control_enabled = enabled
-	defender_enabled = not enabled
 
 
 func reset_ai(seed_value: int = -1) -> void:
@@ -681,6 +780,47 @@ func _hero_skill_nearby(hero: HeroState) -> int:
 		if hero.position.distance_to(structure.position) <= reach:
 			count += 1
 	return count
+
+
+func _deliver_hit(
+	source_id: int,
+	source_team: int,
+	target: UnitState,
+	raw_damage: int,
+	school: String,
+	origin: Vector2,
+	damage_type: String = "normal"
+) -> bool:
+	# Layer 5b-4: port of the evasion/true-strike gate of Hero.take_damage.
+	# Source `_school` is `resolve_damage_school`, which reads the attacker's
+	# `dmg_school` first, so the incoming school is the right handle here.
+	if (
+		target is HeroState
+		and _evaded(source_id, target as HeroState, raw_damage, school, damage_type)
+	):
+		return false
+	return super._deliver_hit(
+		source_id, source_team, target, raw_damage, school, origin, damage_type
+	)
+
+
+func _evaded(
+	source_id: int, defender: HeroState, raw_damage: int, school: String, damage_type: String
+) -> bool:
+	# Source `_is_physical_hit`: only normal/projectile hits that are not magic
+	# can miss. Blind (Solar Brand aura) has no setter in the source either, so
+	# only evasion and true strike are live here.
+	var physical := damage_type in ["normal", "projectile"] and school != "magic"
+	if not physical or raw_damage <= 0:
+		return false
+	var attacker := get_unit(source_id)
+	if attacker is HeroState and (attacker as HeroState).items.has_true_strike():
+		return false
+	var chance := defender.items.get_evasion()
+	# Source: blind lives on the ATTACKER and shares one roll with evasion.
+	if attacker != null and attacker.blind_timer > 0:
+		chance = maxf(chance, attacker.blind_amount)
+	return chance > 0.0 and _item_rng.randf() < chance
 
 
 func _hero_passive_heal(hero: HeroState) -> void:
@@ -861,21 +1001,50 @@ func _upgrade_nexus_for(team: int, entity_id: int, expected_level: int, reserve:
 	if not transaction_error.is_empty():
 		return false
 	economy.spend(team, cost)
+	_apply_nexus_stats(nexus, NexusUpgrades.LEVELS[expected_level])
+	_record({"kind": "nexus_upgrade", "target_id": nexus.id, "level": nexus.settings().level})
+	return true
+
+
+func _apply_nexus_stats(nexus: StructureState, target: StructureDefinition) -> void:
+	# Port of Castle._apply_level_stats (and the tail of the paid upgrade):
+	# the new HP keeps the old ratio plus the flat margin, and a purchased
+	# castle shield keeps its percentage while the capacity follows the HP.
 	var old_max: int = nexus.definition.max_hp
 	var old_hp: float = nexus.hp
-	var target = NexusUpgrades.LEVELS[expected_level]
 	var new_max: int = target.max_hp
-	var ratio := old_hp / float(old_max)
-	var healed := int(new_max * ratio) + (new_max - old_max)
+	var ratio := old_hp / float(maxi(1, old_max))
 	nexus.definition = target
-	nexus.hp = mini(new_max, healed + 500)
+	nexus.hp = mini(new_max, int(new_max * ratio) + (new_max - old_max) + 500)
 	if nexus.castle_shield_purchased:
 		var old_shield_max := maxf(1.0, nexus.shield_max)
 		var shield_ratio := clampf(nexus.shield / old_shield_max, 0.0, 1.0)
 		nexus.shield_max = target.shield_capacity
 		nexus.shield = int(nexus.shield_max * shield_ratio)
-	_record({"kind": "nexus_upgrade", "target_id": nexus.id, "level": nexus.settings().level})
-	return true
+
+
+func _auto_scale_ai_castle() -> void:
+	# Port of Game._auto_scale_ai_castle: with every new wave the AI castle
+	# levels on the source schedule (4/7/10/13 -> 2/3/4/5). The upgrade is
+	# free — the source only calls Castle.upgrade(), which never touches gold;
+	# the player still pays for its own nexus upgrades.
+	var target_level := 1
+	if wave_count >= 4:
+		target_level = 2
+	if wave_count >= 7:
+		target_level = 3
+	if wave_count >= 10:
+		target_level = 4
+	if wave_count >= 13:
+		target_level = 5
+	var nexus := nexuses[RED]
+	while (
+		nexus != null
+		and nexus.alive
+		and nexus.settings().level < target_level
+		and nexus.settings().level < NexusUpgrades.LEVELS.size()
+	):
+		_apply_nexus_stats(nexus, NexusUpgrades.LEVELS[nexus.settings().level])
 
 
 func _owned_nexus(entity_id: int, team: int = BLUE) -> StructureState:
@@ -929,6 +1098,7 @@ func cast_blue_q(hero_id: int) -> bool:
 	if not cast_hero_q(hero.id, structures):
 		transaction_error = "skill"
 		return false
+	hero.spell_vamp_heal()
 	_record({"kind": "skill_q", "target_id": hero.id})
 	return true
 
@@ -945,6 +1115,7 @@ func _cast_blue_w(hero_id: int) -> bool:
 	if not cast_hero_w(hero.id):
 		transaction_error = "skill"
 		return false
+	hero.spell_vamp_heal()
 	_record({"kind": "skill_w", "target_id": hero.id})
 	return true
 
@@ -961,6 +1132,7 @@ func _cast_blue_e(hero_id: int) -> bool:
 	if not cast_hero_e(hero.id, structures):
 		transaction_error = "skill"
 		return false
+	hero.spell_vamp_heal()
 	_record({"kind": "skill_e", "target_id": hero.id})
 	return true
 
@@ -977,6 +1149,7 @@ func _cast_blue_r(hero_id: int) -> bool:
 	if not _cast_hero_r(hero.id, structures):
 		transaction_error = "skill"
 		return false
+	hero.spell_vamp_heal()
 	_record({"kind": "skill_r", "target_id": hero.id})
 	return true
 
@@ -1093,9 +1266,12 @@ func _hero_enemy_list() -> Array:
 	for unit in units:
 		if not unit.alive:
 			continue
-		# Only HeroState carries max_hp so far; minions/structure units fall
-		# back to 0, which leaves Miasma on them at its 6-damage floor.
+		# Layer 5e-3: heroes carry their scaled max_hp, minions their
+		# definition max_hp (source minion.max_hp), so Miasma uses the real
+		# % Max HP damage instead of falling to its 6-damage floor.
 		var raw_max: Variant = unit.get("max_hp")
+		if raw_max == null:
+			raw_max = unit.definition.max_hp
 		(
 			enemies
 			. append(
@@ -1246,6 +1422,7 @@ func _update_auras() -> void:
 		var f_heal := float(f_cat.get("enemy_anti_heal", 0.0))
 		var s_r := float(s_cat.get("enemy_radius", 0))
 		var s_burn := float(s_cat.get("burn_dps", 0.0))
+		var s_blind := float(s_cat.get("blind", 0.0))
 		var se_r := float(se_cat.get("enemy_radius", 0))
 		var se_heal := float(se_cat.get("enemy_anti_heal", 0.0))
 		var se_burn := float(se_cat.get("burn_dps", 0.0))
@@ -1264,6 +1441,9 @@ func _update_auras() -> void:
 					continue
 				if src.position.distance_to(u.position) <= s_r:
 					apply_burn(u.id, s_burn, AURA_DEBUFF_DURATION, src.team)
+					# Source Scorched Earth also blinds: incoming physical
+					# hits of the unit inside the aura can miss.
+					u.apply_miss_chance(s_blind, AURA_DEBUFF_DURATION)
 					break
 			for src in sear_src:
 				if u.team == src.team:
@@ -1370,8 +1550,8 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 			hero.hp = minf(hero.max_hp, hero.hp + float(raw) * ls)
 		hero.items.on_ranged_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
 	else:
-		_deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
-		if target.alive:
+		var landed := _deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
+		if landed and target.alive:
 			hero.items.on_basic_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
 	hero.hp = hero.items.hero_hp
 	return true

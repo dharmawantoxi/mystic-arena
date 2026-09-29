@@ -124,7 +124,7 @@ world atau saat gagal. Tidak ada controller otomatis baru.
 `prototype_battle.gd::_build_tower_for` memvalidasi team, slot canonical/owner,
 lane, posisi, okupansi, jenis, saldo/reserve, kapasitas, ID registry dan hasil
 match sebelum spawn lalu debit sekali via ledger yang sama. Wrapper build lama
-tetap Archer tanpa reserve (UI blue dan defender sementara red tidak diubah).
+tetap Archer tanpa reserve (UI blue tidak diubah; sisi merah milik AIPlayer).
 Lv1 non-Archer **bukan** resource Lv2: sumber membuat Archer Lv1 lalu mengubah
 `tower_type` dan memanggil `_apply_level_stats`; tabel jenis lain tidak punya
 Lv1 sehingga HP 2000, shield 800, damage 20, range 180, CD 35 dan efek 0
@@ -314,11 +314,70 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      `_buy_item_for` memanggil `apply_item_change()` setelah equip sukses.
      Oracle: 5 urutan equip/drop/level dengan `_recalc_item_stats`/
      `_apply_level_stats`/`upgrade`/`apply_heal_amp` sumber nyata.
-     **Batasan 5b:** hanya HP/heal amp yang diterapkan. Damage/armor/crit/AS/
-     evasion/lifesteal dst. belum dikonsumsi jalur serangan karena
-     `minion_battle.gd` berada di batas 1000 baris (perlu bedah tanpa tambah
-     baris); `heal_amp_timer` belum dikurangi per tick; `clear_on_death` sudah dipanggil dari hook
-     kematian match (lihat 5b+).
+     **Batasan 5b ditutup oleh 5b-2/5b-3/5b-4/5b-5.** Semua getter stat item
+     (HP/heal amp, attack speed, range bonus, move speed, slow resist, armor,
+     shred, damage amp, evasion, true strike, skill amp, CDR, spell vamp) kini
+     dikonsumsi jalur combat nyata; konsumennya hidup di `DamageRules`/`HeroState`/`prototype_battle`.
+     Catatan deviasi yang tersisa: blind (aura Solar Brand) belum punya setter
+     di sumber, jadi sengaja tidak diport.
+   - [x] **5b-2.** Stat serangan/gerak dikonsumsi: `HeroState.eff_attack_cd`
+     membagi `base_cd` dengan `items.get_attack_speed_mult()` sebelum pembagi
+     attack-slow Ice, `HeroState.eff_attack_range` menambah bonus reach
+     (gerbang ranged tetap di inventaris), `HeroState.eff_speed` mem-port
+     `TowerDebuffMixin._eff_speed` (slow gerak + `move_speed_pct` Tempest Vane
+     + stun), dan `prototype_battle.apply_slow` menerapkan `slow_resist` Abyss
+     Breaker sebelum penyimpanan strongest-wins. Oracle `stat_consumption`
+     mengeksekusi `Hero._eff_attack_cd`/`_eff_attack_range`,
+     `TowerDebuffMixin._eff_speed`/`apply_slow` nyata untuk 9 kasus item.
+   - [x] **5b-4.** Evasion + true strike di jalur hit nyata:
+     `prototype_battle._deliver_hit` meng-override jalur damage dengan gerbang
+     `Hero.take_damage` (`_is_physical_hit`: hanya `normal`/`projectile` dan
+     bukan magic; `_school` sumber = `resolve_damage_school`, yang membaca
+     `dmg_school` penyerang lebih dulu, jadi sekolah masuk yang dipakai).
+     Evasion (Monarch Wings) milik DEFENDER, true strike (Sundering Cudgel)
+     milik PENYERANG. Hit melee yang miss tidak lagi menjalankan
+     `on_basic_attack_hit`, sesuai urutan sumber (proc mengikuti hit yang
+     mendarat). Blind (aura Solar Brand) tidak punya setter di sumber mana pun,
+     jadi di luar scope. Oracle `evasion` mengeksekusi `_is_physical_hit`
+     sumber + `get_evasion`/`has_true_strike` inventaris nyata untuk 7 kasus;
+     tes native memutar ulang tiap kasus lewat `_deliver_hit` nyata dengan RNG
+     item ter-seed. Jebakan yang sempat merah di CI: item evasion harus
+     dipasang di defender, bukan penyerang.
+   - [x] **5b-6.** Blind Scorched Earth: `UnitState.apply_miss_chance`
+     (sumber `TowerDebuffMixin.apply_miss_chance`, terkuat menang, durasi
+     melebar me-refresh keduanya) + `blind_amount`/`blind_timer` yang ikut
+     `tick_item_debuffs()`; aura Solar Brand kini membaca nilai `blind` katalog
+     dan memanggilnya untuk unit di dalam radius; gerbang evasion memakai
+     aturan sumber `miss_chance = max(evasion, blind penyerang)` pada satu
+     undian, dan true strike menembus keduanya. Oracle `miss_chance`
+     mengeksekusi setter sumber untuk 5 urutan x 2 nilai evasion; tes native
+     memutar ulang stacking, laju miss empiris, true strike, dan decay.
+   - [x] **5b-5.** Skill amp/CDR/spell vamp: `HeroState.skill_damage` menerapkan
+     amp Astral Codex sebelum faktor skill-down menara Mage;
+     `HeroState.cdr_cooldown` mem-port potongan Octarine Core dari `cast_skill`
+     (karena semua gerbang skill mensyaratkan `cd <= 0`, `max(0, after -
+     added * cdr)` sumber menyusut jadi `cd_max * (1 - cdr)`) dan dipakai di
+     empat titik penetapan cooldown Q/W/E/R sehingga jalur pemain dan AI
+     keduanya kena; `spell_vamp_heal` menyetel `hp` langsung (tanpa `heal_hp`,
+     jadi heal amp tidak ikut) dan dipanggil sekali per cast sukses dari
+     auto-cast AI serta empat wrapper blue. Oracle `spell_power`
+     mengeksekusi getter `Hero.skill_damage` sumber untuk 6 kasus.
+   - [x] **5e-3.** Miasma pada minion memakai `definition.max_hp` (sumber
+     `minion.max_hp`) sehingga racun memakai damage % Max HP, bukan lantai 6;
+     `_hero_enemy_list()` tetap null-safe untuk unit tanpa `max_hp`.
+   - [x] **5b-3.** Debuff item di sisi TARGET: `UnitState.apply_armor_shred`
+     (Corroder) + `apply_damage_amp` (Soul Rend) mengikuti setter sumber
+     (terkuat menang, durasi lebih panjang me-refresh keduanya, target mati
+     diabaikan) dan `tick_item_debuffs()` mem-port potongan item dari
+     `_tick_tower_debuffs` (decrement per tick, amount dibersihkan di tick
+     terakhir); `prototype_battle` men-decay seluruh unit sekali per tick.
+     `DamageRules.effective_armor` = armor definisi + armor item hero - shred,
+     `DamageRules.item_aware_amount` = mitigasi sekolah lalu damage amp Soul
+     Rend, dipakai `_damage_amount`. Bus `battle_item_effects` mendaratkan
+     keduanya ke unit nyata. Oracle `item_debuffs` mengeksekusi tiga setter
+     sumber untuk 10 urutan; tes native memutar ulang setiap op, menguji decay
+     dan membuktikan armor Steel Aegis menurunkan hit fisik sementara
+     shred/amp menaikkannya lagi.
    - [x] **5b+.** Kematian hero: `prototype_battle._on_hero_death` memanggil
      `items.clear_on_death()` seperti cabang mati `Hero.take_damage`
      (`_entity.py:4742`). Sumber TIDAK menghitung ulang max HP di cabang itu
@@ -427,6 +486,83 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      (PROCESS_MODE_PAUSABLE): uji scene memastikan jam, jadwal dan dompet AI
      tidak bergerak saat pause, dan setiap layar hasil restart memakai AI baru
      dengan seed yang sama.
+   - [x] **6e.** Defender sementara dibuang: `_step_defender()` (tiga pembelian
+     Archer terjadwal) beserta `defender_enabled`/`_defender_built`, call-site
+     di `step_tick()` dan baris `defender_enabled = not enabled` dihapus, jadi
+     `set_ai_enabled()`/`ai_enabled` adalah satu-satunya sakelar sisi merah:
+     dengan sakelar mati tidak ada transaksi merah sama sekali (uji menuntut
+     `spent[1] == 0` dan `ai_build.total_built == 0`). Uji domain/layar (cannon,
+     ice, mage, nexus, prototype, scene checks, run_all) tidak lagi menparkir
+     defender; blok skirmish `cannon_checks` sekarang membuktikan AI nyata
+     membangun tower merah di atas ledger yang sama.
+   - [x] **6f.** Skenario AI yang menggantung ditutup di `prototype_checks.gd`:
+     `_hero_red_retreat` (retreat hero merah + heal 3.0/tick di radius 100 px
+     nexus sendiri, hanya 0.15/tick di luar base walau tetap menyerang, keluar
+     retreat di rasio 0.80, dan lane order AI membatalkannya seperti `move_to`
+     sumber) serta `_hero_out_of_lane` (hunt map-wide 900 px: musuh lane lain di
+     dalam aggro 250 menarik hero keluar dari lane order, dan hunt memilih musuh
+     terdekat lintas-lane). Catatan penting: `_try_auto_cast` sumber mengisi
+     `hero.target` (port: `hero.target_id` lewat gate skill), sehingga uji
+     lane-order wajib menaruh ancaman di luar `skill_range` 100 px.
+   - [x] **7a.** Castle AI naik level otomatis mengikuti wave: port
+     `Game._auto_scale_ai_castle` (`_core.py:1856`, dipanggil dari
+     `update_waves`) — wave ≥4/7/10/13 menaikkan nexus merah ke level 2/3/4/5
+     **gratis** (sumber `Castle.upgrade` tidak menyentuh gold; pemain tetap
+     membayar nexus-nya sendiri). Dipanggil di cabang `batch.started` `step_tick`
+     persis sebelum spawn batch, memakai `NexusUpgrades.LEVELS`. Helper baru
+     `_apply_nexus_stats(nexus, target)` juga menggantikan jalur upgrade berbayar,
+     jadi HP baru = `int(new_max*ratio) + (new_max-old_max) + 500` di-cap
+     `new_max`, damage/range/cooldown ikut level, dan rasio shield terjaga.
+     Oracle sebelumnya men-stub fungsi ini — sekarang `castle_auto_scale`
+     meng-exec `Castle.upgrade`/`_apply_level_stats` dan
+     `Game._auto_scale_ai_castle` asli untuk wave 1-30 + kasus shield 50%
+     (fixture `match_source.json` diregenerasi lewat `--write`, +222 baris).
+
+   - [x] **7b.** Jitter spawn minion: port empat statement
+     `Minion.__init__` (`_entity.py`): offset acak `random.uniform(-8, 8)`
+     pada x dan y setelah penempatan waypoint, lalu offset lane Y
+     `-20/0/20` yang sudah diterapkan `spawn_unit`. Diterapkan di jalur
+     spawn wave (`_spawn_match_minion`) dengan stream ter-seed
+     (`SPAWN_SEED`) supaya pertandingan yang di-restart replay — aliran
+     Python tidak direproduksi; `spawn_unit` laboratorium tetap eksak
+     untuk tes kontrak yang menaruh unit manual. Dua situs `Minion(...)`
+     lain (`_core.py:8814`/`:8822`) adalah summon yang menyusul bersama
+     layer boss. Oracle `minion_spawn_offsets` meng-exec slice asli lima
+     statement; native `_spawn_jitter` memutar ulang baris fixture,
+     60 spawn dua tim/tiga lane, hero bebas jitter, dan replay dua world.
+
+   - [x] **7c.** Difficulty lawan + level config: `LEVEL_1` dari
+     `levels/level_data.py` kini data nyata (`data/levels/level_1.json`,
+     ditulis oracle; `validate_project.py` menuntut file itu sama dengan
+     section `level_one` fixture). Aturan `Game.reset` diport apa adanya:
+     hanya `"hard"` yang menyalakan enemy scaling dan mengalikan
+     `enemy_hp_mult/damage/speed` level dengan 1.15/1.10/1.0 (nilai lain,
+     termasuk yang tak dikenal, tetap 1.0). Blok minion merah
+     `Game.update_waves` menjadi `_enemy_scaled_definition`: `int()`
+     memotong hp/damage di atas tier nexus, speed dikali float, hp ikut
+     max baru; sisi biru tidak pernah terskala. Tiga statement
+     castle-start `Game.reset` juga diport (`_apply_castle_start_levels`):
+     biru naik ke `starting_castle_level`, merah hanya ke
+     `castle_start_level` saat scaling aktif, gratis lewat jalur
+     `Castle.upgrade` yang tidak menyentuh ledger. Selector difficulty di
+     UI masih belum ada (sumber pun memilihnya di settings screen).
+     Oracle `enemy_scaling` menjalankan `Minion.__init__` asli (MINION_TYPES
+     asli + stub mixin) untuk easy/normal/hard/unknown di tier nexus 1 dan
+     4, plus baris castle-start (config asli + sintetis 3/2); native
+     `_enemy_scaling` memutar ulang semuanya termasuk ledger nol.
+
+## Batas baris file GDScript: dicabut (paritas lebih penting)
+
+`gdlint` bawaan membatasi 1000 baris per file (`max-file-lines`). Mulai sesi ini
+batas itu **dicabut** untuk file yang menampung logika paritas:
+`scripts/combat/minion_battle.gd` dan `scripts/match/hero_item_inventory.gd`
+memakai direktif `# gdlint:disable=max-file-lines` (dan
+`max-public-methods` untuk inventaris), seperti yang sudah dipakai
+`tests/ai_item_checks.gd`. Alasan: batas itu sempat memaksa logika combat
+disembunyikan ke file lain dan membuat edit harus "line-neutral"; port paritas
+Pygame → Godot tidak boleh dikorbankan demi batas lint. Yang tetap dijaga:
+`gdformat`/`gdlint`/`gdparse` bersih, fixture oracle tetap diregenerasi lewat
+oracle (bukan edit tangan) dan tetap di bawah 20k baris.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -446,23 +582,35 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 - [x] Transaksi upgrade tower/nexus/hero red per kandidat dengan live reserve;
   hero mati tetap eligible, batas level sumber, ledger dan counter nyata.
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
-- [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
+- [x] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-  Lapisan 1-4 + 5a selesai (metadata katalog 33 item termasuk `stats` numerik,
-  `suggest_item_for_hero`/`is_magic_hero`, slot `HeroItemInventory`, adapter
-  `ai_items.gd::try_buy` + transaksi ledger, agregasi stat murni); sisa 5b-5f
-  (penerapan stat, timer pasif/aktif, aura, proc on-hit, Forge UI).
+  Lapisan 1-4 + 5a + 5b/5b+/5b-2/5b-3 + 5c-1/5c-2 + 5d + 5e/5e-2 + 5f/5f-2/5f-3
+  selesai: katalog 33 item, saran role+range, inventaris 6 slot, adaptor beli
+  AI di ledger, SELURUH penerapan stat item (HP/heal amp, attack speed, range
+  bonus, move speed, slow resist, armor, armor shred, damage amp, evasion,
+  true strike, skill amp, CDR, spell vamp), timer pasif/aktif, aura, proc
+  on-hit, Miasma/Polycephaly (termasuk pada minion), dan Forge shop + panel UI.
+  Tidak ada sub-layer item yang tersisa. Dua catatan yang dulu ditulis sebagai
+  "deviasi" sudah dikoreksi lewat pembacaan sumber: kandidat item AI yang
+  hidup-saja MEMANG perilaku sumber (`_entity.py:6488` menyaring `alive`), dan
+  blind sudah diport di 5b-6 (`apply_miss_chance` + aura Scorched Earth).
+  Sisa catatan jujur: panel Forge adalah UI sisi pemain di sumber juga (tidak
+  ada panel untuk hero AI), dan efek posisi Gale Pike menggeser `position`
+  tanpa collision, sama seperti sumber.
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.
-- [ ] Kontrol hero setiap tick: jalur auto-cast bersama pemain, skill counter
+- [x] Kontrol hero setiap tick: jalur auto-cast bersama pemain, skill counter
   berdasarkan perubahan active timer; lane ancaman maksimum (tie top/mid/bot),
   minion terdekat secara Euclidean, destination auto; fallback tower terdekat
-  dengan offset 60. Jangan mengganti prioritas target dengan urutan x.
-- [ ] Integrasi scene/session setelah entity loop tanpa double auto-cast,
+  dengan offset 60. Jangan mengganti prioritas target dengan urutan x. (6a +
+  fixture `hero_control`; hunt lintas-lane dan retreat hero merah diuji di 6f.)
+- [x] Integrasi scene/session setelah entity loop tanpa double auto-cast,
   seeded RNG yang bisa diuji (bukan klaim stream identik Python), pause/reset/hasil.
-- [ ] Ganti assertion defender lama hanya setelah perilakunya benar-benar diganti;
-  pertahankan suite dan invariant wallet/slot/replay.
+  (6d; `prototype_session` memakai `set_ai_enabled(true)` + `AI_MATCH_SEED`.)
+- [x] Ganti assertion defender lama hanya setelah perilakunya benar-benar diganti;
+  pertahankan suite dan invariant wallet/slot/replay. (6e; skenario merah tanpa
+  sakelar AI kini dituntut tetap tanpa transaksi.)
 - [ ] Runtime CI hijau untuk setiap tahap dan uji integrasi penuh sebelum ready PR.
 
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
@@ -492,7 +640,7 @@ Oracle: `ai_item_source_oracle.py` (katalog + stats, 29 role magic, 26 saran,
 `run_all.gd`.
 CI Godot 4.7.2 run 36468688990 hijau untuk lapisan 6b (commit `987ff13`):
 **1.179.197 native checks**, static lokal 5747 PASS; `gdlint`/`gdformat`/`gdparse`
-bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris
+bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tepat 1000 baris (batas lama)
 (fixture 11.615 baris, masih di bawah 20k).
 CI Godot 4.7.2 run 36477994234 hijau untuk lapisan 6c (commit `efd3129`):
 **1.179.226 native checks**, static lokal 5765 PASS; `gdlint`/`gdformat`/`gdparse`
@@ -502,6 +650,51 @@ CI Godot 4.7.2 run 36482247766 hijau untuk lapisan 6d (commit `6d9a49f`):
 **1.179.241 native checks**, static lokal 5768 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tetap tepat 1000 baris
 dan fixture tidak berubah (lapisan ini tidak menyentuh oracle).
+CI Godot 4.7.2 run 36508998487 hijau untuk lapisan 6e (commit `5e98734`, push):
+**1.179.249 native checks**, static lokal 5768 PASS; fixture 11.959 baris dan tidak berubah.
+CI Godot 4.7.2 run 36520788435 hijau untuk lapisan 5b-6 (commit `4345115`, push,
+setelah dua run merah: 36519780447 gagal karena `blind_miss_chance` mengetik
+`HeroState` yang tidak dideklarasikan di `ai_item_checks.gd` — sekarang
+`World.HeroState`; lint 1917c9a gagal karena direktif `max-public-methods`
+tertimpa saat mencabut batas baris): **1.179.392 native checks**, static lokal
+5771 PASS.
+CI Godot 4.7.2 run 36516328470 hijau untuk lapisan 5b-4 (commit `a8c39c0`, push,
+setelah run 36515759673 merah karena uji menaruh item evasion di penyerang):
+**1.179.332 native checks**, static lokal 5771 PASS.
+CI Godot 4.7.2 run 36516994267 hijau untuk lapisan 5b-5 (commit `ccf8a74`, push):
+**1.179.363 native checks**, static lokal 5771 PASS.
+CI Godot 4.7.2 run 36518120579 hijau untuk lapisan 5e-3 (commit `91b7bf0`, push,
+setelah run 36517663936 merah karena uji memakai stub fx yang tidak mengirim
+damage): **1.179.365 native checks**.
+CI Godot 4.7.2 run 36512974862 hijau untuk lapisan 5b-2 (commit `10db2c7`, push):
+**1.179.293 native checks**, static lokal 5768 PASS; `minion_battle.gd` tetap
+1000 baris, fixture 12.191 baris (regenerasi lewat oracle, bukan edit tangan).
+CI Godot 4.7.2 run 36513763224 hijau untuk lapisan 5b-3 (commit `39c7d60`, push):
+**1.179.316 native checks**, static lokal 5771 PASS; `minion_battle.gd` tetap
+1000 baris dan fixture di bawah 20k.
+CI Godot 4.7.2 run 36510010594 hijau untuk lapisan 6f (commit `81e4faa`, push):
+**1.179.249 native checks**, static lokal 5768 PASS. Uji 6f sempat merah di run
+36509433010 (`FAIL: the AI lane order overrides the retreat`): ancaman uji berada
+di dalam `skill_range` 100 px sehingga auto-cast bersama mengisi `hero.target`
+(perilaku sumber `_try_auto_cast`), jadi lane order memang tidak jalan — setup
+uji diperbaiki (ancaman di 400 px), commit di-amend, lalu hijau.
+CI Godot 4.7.2 run 36527889355 hijau untuk lapisan 7a (commit `d43a92a`, push):
+**1.179.516 native checks**, static lokal 5774 PASS; `gdformat`/`gdlint`/`gdparse`
+bersih; fixture `match_source.json` 1.871 baris (+222 dari section
+`castle_auto_scale`, diregenerasi lewat `match_source_oracle.py --write`;
+angka 12.345 yang sempat ditulis di sini adalah salah hitung).
+CI Godot 4.7.2 run 36530426529 hijau untuk lapisan 7b (commit `39b92ab`, push,
+setelah run 36529605635 merah karena `lane_offsets == [-20, 0, 20]`
+membandingkan array JSON float dengan int secara ketat — sekarang elemen
+dibandingkan satu per satu): **1.179.721 native checks**, static lokal 5777
+PASS; fixture `match_source.json` 1.980 baris (+109 dari section
+`minion_spawn_offsets`).
+CI Godot 4.7.2 run 36533751518 hijau untuk lapisan 7c (commit `3554c56`, push,
+setelah run 36532872047 merah karena baris nexus 4 membandingkan minion biru
+tier-1 dengan baseline sebelum tier nexus — sekarang baseline diambil dari
+baris nexus 1): **1.179.765 native checks**, static lokal 5792 PASS; fixture
+`match_source.json` 2.181 baris (+201 dari section `enemy_scaling`/`level_one`),
+data baru `data/levels/level_1.json`.
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -515,28 +708,50 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: membuang sisa kode defender sementara (`_step_defender`,
-`defender_enabled`, `_defender_built`) beserta uji domainnya, lalu menutup
-skenario AI yang masih menggantung (retreat/heal hero merah dan pencarian
-target di luar lane). Undian 6c/6d memakai `ai_controller.draw()`; adapter
-build/draft memakai RNG ter-seed dari seed pertandingan yang sama. Catatan 6a:
-`towers` diteruskan eksplisit karena daftar struktur native juga memuat nexus,
-sedangkan sumber hanya menyusuri `all_towers`. Catatan alur sesi:
-repo pernah ter-clone ulang sehingga riwayat lokal tertinggal dari remote —
-selalu `git fetch origin arena/01a0e891-mystic-arena` dan reset ke FETCH_HEAD
-sebelum commit baru. Catatan 5f: `forge.gd` hanya
+Status sesi `arena/01a0eacd-mystic-arena` (PR draft #300, basis main `5e5f32a`):
+6e (`5e98734`) membuang defender sementara dan 6f (`81e4faa`) menutup skenario
+retreat/heal hero merah + hunt lintas-lane; keduanya hijau di CI (lihat run di
+atas). Tidak ada sisa kode defender di `godot_rebuild/` — satu-satunya sakelar
+sisi merah adalah `set_ai_enabled()`/`ai_enabled`.
+Lapisan **7a** (`d43a92a`) menutup satu celah paritas nyata di sisi scene: castle
+AI dulu tidak pernah naik level sendiri karena oracle men-stub
+`_auto_scale_ai_castle`; sekarang jadwal sumber wave ≥4/7/10/13 → level 2/3/4/5
+gratis dijalankan di `step_tick` dan diuji ulang per baris fixture. Kandidat
+lanjutan yang belum dikerjakan (dipilih sesuai kedekatan ke sumber): boss hero AI
+yang tampil di pertandingan, sisi AI dari panel Forge, dan sisa perilaku scene
+Python yang belum diport — PR tetap draft sampai ada perintah pemilik repo.
+Lapisan **7b** (`39b92ab`) memindahkan jitter spawn wave (uniform ±8 px lalu
+offset lane) dengan stream ter-seed, jadi replay pertandingan tetap identik;
+klaim lama "jitter spawn belum ada" di `MATCH_CONTRACT.md` sudah dikoreksi.
+Lapisan **7c** (`3554c56`) memindahkan level-1 config ke data nyata dan
+menjalankan aturan difficulty sumber (hard = 1.15/1.10/1.0), enemy scaling
+minion merah, serta castle-start level biru/merah dari config.
+Celah berikutnya yang tersisa di dokumen itu: kondisi boss/level/unlock asli
+dan sebagian besar sistem produksi.
+Status akhir sesi ini: **tidak ada sisa sub-layer item**. 5b-2/5b-3/5b-4/5b-5
+dan 5e-3 semuanya hijau di CI. Berikutnya hanya kalau pemilik repo memerintahkan
+pekerjaan baru (mis. panel Forge untuk sisi AI atau kandidat item AI yang mati),
+dan PR tetap draft sampai ada perintah merge. Undian 6c/6d memakai
+`ai_controller.draw()`; adapter build/draft memakai RNG ter-seed dari seed
+pertandingan yang sama. Catatan 6a: `towers` diteruskan eksplisit karena daftar
+struktur native juga memuat nexus, sedangkan sumber hanya menyusuri `all_towers`.
+Catatan alur sesi: repo pernah ter-clone ulang sehingga riwayat lokal tertinggal
+dari remote — selalu `git fetch origin arena/01a0eacd-mystic-arena` dan reset ke
+FETCH_HEAD sebelum commit baru; amend + push ulang hanya untuk memperbaiki CI
+merah pada lapisan yang sama. Catatan 5f: `forge.gd` hanya
 menganggap roster tim pemain (BLUE), dan kandidat AI tetap hidup-saja lewat
 `_buy_item_for`.
 Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-> Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft
-> #294, basis main f6c4342). Lapisan 5c-2 sudah di-commit: setengah auto-trigger
-> `update()` + `notify_damage_taken` + tick wiring. Berikutnya langkah 5d: port
-> `update_auras` (armor/AS/guard/armor reduction aura sekutu + Scorched Earth),
-> lalu 5e proc on-hit (crit/lifesteal/cleave/chain/bash/miasma/vine) dan 5f
-> Forge UI + `drops_on_death`. Satu commit per lapisan, oracle exec sumber
-> asli + fixture --write, tes native + validate_project.py. Sumber read-only:
-> hero_items.py dan _entity.py. Hanya ubah godot_rebuild/; minion_battle.gd
-> tetap 1000 baris; jangan merge tanpa perintah pengguna.
+> Pesan siap-salin: Lanjutkan di branch arena/01a0eacd-mystic-arena (PR draft
+> #300, basis main 5e5f32a). 6e (`5e98734`), 6f (`81e4faa`), 7a (`d43a92a`),
+> 7b (`39b92ab`) dan 7c (`3554c56`) sudah hijau di CI (run 36508998487,
+> 36510010594, 36527889355, 36530426529, 36533751518). Kandidat
+> lanjutan: boss hero AI yang tampil di pertandingan, sisi AI panel Forge, sisa
+> perilaku scene Python. Kalau ada tugas baru: satu commit per sub-layer,
+> pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
+> commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber
+> read-only: hero_items.py dan _entity.py. Hanya ubah godot_rebuild/;
+> minion_battle.gd boleh melewati 1000 baris (direktif gdlint:disable=max-file-lines); jangan merge tanpa perintah pengguna.

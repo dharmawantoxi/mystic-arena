@@ -10,6 +10,29 @@ static func rounded_like_python(value: float) -> int:
 	return lower + 1 if fraction > 0.5 else lower
 
 
+## Layer 5b-3: armor actually used for a hit: definition armor, plus the
+## owner's item armor (heroes), minus any Corroder armor shred on the target.
+static func effective_armor(unit: Object) -> float:
+	var armor: float = float(unit.definition.armor) - float(unit.armor_shred_amount)
+	var inventory: Variant = unit.get("items")
+	if inventory != null:
+		armor += float(inventory.get_armor())
+	return armor
+
+
+## Layer 5b-3: one damage amount for a unit target: school mitigation with the
+## effective armor, then the Soul Rend damage amp (source take_damage order).
+static func item_aware_amount(unit: Object, raw_damage: int, school: String) -> int:
+	if school == "neutral":
+		return raw_damage
+	var damage: int = resolve(
+		raw_damage, effective_armor(unit), float(unit.definition.magic_resist), school
+	)
+	if unit.dmg_amp_timer > 0 and damage > 0:
+		damage = rounded_like_python(float(damage) * (1.0 + unit.dmg_amp_amount))
+	return damage
+
+
 static func resolve(raw_damage: int, armor: float, resist: float, school: String) -> int:
 	if raw_damage <= 0 or school not in ["physical", "magic"]:
 		return 0

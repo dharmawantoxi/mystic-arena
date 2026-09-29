@@ -503,13 +503,12 @@ func _test_prototype_scene(app: Node) -> void:
 			screen.name == "PrototypeMatch" and app.screen_root.get_child_count() == 1,
 			"prototype has its own guarded menu route"
 		)
-		# Layer 6d: the real AI owns the red side from the first tick, the
-		# temporary defender stays parked and every battle tick reaches it.
+		# Layer 6d: the real AI owns the red side from the first tick (layer 6e
+		# dropped the temporary defender) and every battle tick reaches it.
 		_check(
 			(
 				world.ai_enabled
 				and world.ai_hero_control_enabled
-				and not world.defender_enabled
 				and world.ai_controller.ticks == world.tick_count
 				and world.ai_controller.match_seed == session.AI_MATCH_SEED
 			),
