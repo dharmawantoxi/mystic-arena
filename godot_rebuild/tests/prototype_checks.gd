@@ -8,6 +8,7 @@ const HeroState = preload("res://scripts/combat/hero_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
 const Nexus = preload("res://scripts/match/nexus_upgrades.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
 
 
 func run(check: Callable) -> void:
@@ -27,6 +28,7 @@ func run(check: Callable) -> void:
 	_castle_auto_scale(check)
 	_spawn_jitter(check)
 	_enemy_scaling(check)
+	_boss_spawn_and_schedule(check)
 	_replay(check)
 
 
@@ -1034,6 +1036,221 @@ func _hero_auto(check: Callable) -> void:
 	check.call(not muted._set_hero_autocast(quiet2.id), "autocast refuses a dead hero")
 	muted.winner = 1
 	check.call(not muted._set_hero_autocast(rival.id), "autocast refuses a finished match")
+
+
+func _boss_spawn_and_schedule(check: Callable) -> void:
+	# Layer 7d: mini-boss wave schedule, pending mini-boss queue, red tower
+	# destruction counter, true boss spawn gate, and BossState initialization /
+	# hard-mode scaling / tenacity debuffs.
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(data is Dictionary and data.has("boss_spawn"), "boss spawn fixture")
+	if not data is Dictionary:
+		return
+	var section: Dictionary = data.boss_spawn
+	var stored_bosses = JSON.parse_string(
+		FileAccess.get_file_as_string("res://data/levels/level_1_bosses.json")
+	)
+	check.call(
+		(
+			stored_bosses is Dictionary
+			and JSON.stringify(stored_bosses) == JSON.stringify(section.catalog)
+		),
+		"level 1 boss catalog matches its source fixture"
+	)
+	var ref_world := _world()
+	for row in section.boss_rows:
+		var btype := String(row.boss_type)
+		var stats: Dictionary = section.catalog[btype]
+		var boss := BossState.new(btype, ref_world.paths[1], stats)
+		if bool(row.scaled):
+			var mults: Array = row.mults
+			boss.apply_scaling(float(mults[0]), float(mults[1]), float(mults[2]))
+		var pos: Array = row.position
+		check.call(
+			(
+				boss.name == String(row.name)
+				and boss.title == String(row.title)
+				and boss.boss_class == String(row.boss_class)
+				and boss.max_hp == int(row.max_hp)
+				and int(boss.hp) == int(row.hp)
+				and boss.damage == int(row.damage)
+				and boss.base_damage == int(row.base_damage)
+				and is_equal_approx(boss.speed, float(row.speed))
+				and is_equal_approx(boss.base_speed, float(row.base_speed))
+				and boss.range_px == int(row.range)
+				and boss.attack_cooldown == int(row.attack_cooldown)
+				and boss.radius == int(row.radius)
+				and boss.gold_reward == int(row.gold_reward)
+				and boss.ability_cooldown_max == int(row.ability_cooldown_max)
+				and boss.ability_damage == int(row.ability_damage)
+				and boss.ability_range == int(row.ability_range)
+				and boss.ability2_cooldown_max == int(row.ability2_cooldown_max)
+				and is_equal_approx(boss.ability2_heal_pct, float(row.ability2_heal_pct))
+				and is_equal_approx(boss.position.x, float(pos[0]))
+				and is_equal_approx(boss.position.y, float(pos[1]))
+				and boss.waypoint_index == int(row.waypoint_index)
+				and boss.direction == int(row.direction)
+				and is_equal_approx(boss.damage_reduction, float(row.damage_reduction))
+				and is_equal_approx(boss.tenacity, float(row.tenacity))
+				and boss.max_damage_per_hit == int(row.max_damage_per_hit)
+				and boss.armor == int(row.armor)
+				and is_equal_approx(boss.magic_resist, float(row.magic_resist))
+				and boss.resist_profile == String(row.resist_profile)
+				and boss.entrance_timer == int(row.entrance_timer)
+			),
+			"source boss init/scaling (%s, scaled=%s)" % [btype, str(bool(row.scaled))]
+		)
+	var dchk: Dictionary = section.debuff_check
+	var fb_pos: Array = dchk.fallback_pos
+	var fb_boss := BossState.new("gornak", [], section.catalog["gornak"])
+	check.call(
+		(
+			is_equal_approx(fb_boss.position.x, float(fb_pos[0]))
+			and is_equal_approx(fb_boss.position.y, float(fb_pos[1]))
+		),
+		"boss fallback spawn position without a lane path"
+	)
+	var deb_boss := BossState.new("abaddon", ref_world.paths[1], section.catalog["abaddon"])
+	deb_boss.apply_debuff("slow", 0.80, 90)
+	deb_boss.apply_debuff("atk_slow", 0.60, 80)
+	deb_boss.apply_debuff("skill_down", 0.25, 60)
+	deb_boss.apply_stun(60)
+	check.call(
+		(
+			is_equal_approx(deb_boss.slow_amount, float(dchk.slow_amount))
+			and deb_boss.slow_timer == int(dchk.slow_timer)
+			and is_equal_approx(deb_boss.speed, float(dchk.slowed_speed))
+			and is_equal_approx(deb_boss.atk_slow_amount, float(dchk.atk_slow_amount))
+			and deb_boss.atk_slow_timer == int(dchk.atk_slow_timer)
+			and is_equal_approx(deb_boss.skill_down_amount, float(dchk.skill_down_amount))
+			and deb_boss.skill_down_timer == int(dchk.skill_down_timer)
+			and deb_boss.ability_damage == int(dchk.reduced_ability_damage)
+			and deb_boss.stun_timer == int(dchk.stun_timer)
+		),
+		"boss tenacity slow/atk_slow/skill_down/stun match source"
+	)
+	for srow in section.schedules:
+		var sched_world := _world()
+		sched_world.set_difficulty(String(srow.difficulty))
+		var sched: Dictionary = sched_world.mini_boss_schedule
+		var waves: Array = sched.keys()
+		var expected_bosses: Array = srow.bosses
+		var low := int(srow.low)
+		var high := int(srow.high)
+		var sorted_unique := waves.size() == expected_bosses.size()
+		for i in range(waves.size()):
+			var w := int(waves[i])
+			if w < low or w > high:
+				sorted_unique = false
+			if i > 0 and w <= int(waves[i - 1]):
+				sorted_unique = false
+			if String(sched[w]) != String(expected_bosses[i]):
+				sorted_unique = false
+		check.call(
+			sorted_unique, "mini-boss schedule bounds and order (%s)" % String(srow.difficulty)
+		)
+	var empty_world := Prototype.new()
+	empty_world.level_config = {"mini_bosses": {}}
+	check.call(
+		empty_world._roll_mini_boss_schedule().is_empty(),
+		"empty mini_bosses config rolls an empty schedule"
+	)
+	var dense: Dictionary = {}
+	for i in range(1, 26):
+		dense[i] = "gornak"
+	empty_world.level_config = {"mini_bosses": dense}
+	empty_world.set_difficulty("normal")
+	check.call(
+		empty_world.mini_boss_schedule.size() == 25,
+		"oversized mini_bosses config expands wave pool without failing"
+	)
+	var trace_world := _world()
+	trace_world.set_difficulty("hard")
+	trace_world.mini_boss_schedule = {12: "gornak", 16: "morgath", 24: "drakar"}
+	var events: Array = section.events
+	trace_world.wave_count = 12
+	trace_world._wave_boss_check()
+	_check_boss_event(check, trace_world, events[0])
+	trace_world.wave_count = 16
+	trace_world._wave_boss_check()
+	_check_boss_event(check, trace_world, events[1])
+	# Destroy 5 red towers and 2 blue towers + 1 sold blue tower: only red tower
+	# deaths count toward red_towers_destroyed.
+	trace_world.build_tower(0, 0)
+	var sold_id: int = trace_world.slots[0].structure_id
+	trace_world.sell_tower(0, sold_id)
+	for slot_idx in [1, 2]:
+		trace_world.build_tower(0, slot_idx)
+		var blue_tower = trace_world.get_unit(trace_world.slots[slot_idx].structure_id)
+		blue_tower.hp = 1
+		blue_tower.shield = 0
+		var red_hitter = trace_world.spawn_unit(GOBLIN, 1, 1)
+		red_hitter.position = blue_tower.position + Vector2(10, 0)
+		trace_world.apply_hit(red_hitter.id, blue_tower.id)
+	for slot_idx in range(9, 14):
+		trace_world.economy.credit_kill(1, 100)
+		trace_world.build_tower(1, slot_idx)
+		var red_tower = trace_world.get_unit(trace_world.slots[slot_idx].structure_id)
+		red_tower.hp = 1
+		red_tower.shield = 0
+		var blue_hitter = trace_world.spawn_unit(GOBLIN, 0, 1)
+		blue_hitter.position = red_tower.position + Vector2(10, 0)
+		trace_world.apply_hit(blue_hitter.id, red_tower.id)
+	trace_world._try_spawn_true_boss()
+	_check_boss_event(check, trace_world, events[2])
+	trace_world.economy.credit_kill(1, 100)
+	trace_world.build_tower(1, 14)
+	var sixth_tower = trace_world.get_unit(trace_world.slots[14].structure_id)
+	sixth_tower.hp = 1
+	sixth_tower.shield = 0
+	var sixth_hitter = trace_world.spawn_unit(GOBLIN, 0, 1)
+	sixth_hitter.position = sixth_tower.position + Vector2(10, 0)
+	trace_world.apply_hit(sixth_hitter.id, sixth_tower.id)
+	trace_world._try_spawn_true_boss()
+	_check_boss_event(check, trace_world, events[3])
+	trace_world.active_boss = null
+	trace_world._try_spawn_true_boss()
+	_check_boss_event(check, trace_world, events[4])
+	trace_world.wave_count = 24
+	trace_world._wave_boss_check()
+	_check_boss_event(check, trace_world, events[5])
+	trace_world.active_boss.alive = false
+	trace_world._try_spawn_pending_mini_boss()
+	trace_world._try_spawn_true_boss()
+	_check_boss_event(check, trace_world, events[6])
+	trace_world.active_boss.alive = false
+	trace_world._try_spawn_pending_mini_boss()
+	_check_boss_event(check, trace_world, events[7])
+
+
+func _check_boss_event(check: Callable, world: Prototype, ev: Dictionary) -> void:
+	var active_type: String = world.active_boss.boss_type if world.active_boss != null else ""
+	var exp_active: String = "" if ev.active == null else String(ev.active)
+	var active_hp: int = world.active_boss.max_hp if world.active_boss != null else 0
+	var exp_pending: Array = ev.pending
+	var pending_ok := world.pending_mini_bosses.size() == exp_pending.size()
+	if pending_ok:
+		for i in range(exp_pending.size()):
+			var actual_pair: Array = world.pending_mini_bosses[i]
+			var expected_pair: Array = exp_pending[i]
+			if (
+				int(actual_pair[0]) != int(expected_pair[0])
+				or String(actual_pair[1]) != String(expected_pair[1])
+			):
+				pending_ok = false
+	check.call(
+		(
+			world.wave_count == int(ev.wave)
+			and active_type == exp_active
+			and active_hp == int(ev.active_max_hp)
+			and pending_ok
+			and world.red_towers_destroyed == int(ev.red_towers_destroyed)
+			and world.true_boss_spawned == bool(ev.true_boss_spawned)
+		),
+		"boss spawn trace step: %s" % String(ev.tag)
+	)
 
 
 func _foe_hero(world: Prototype) -> HeroState:

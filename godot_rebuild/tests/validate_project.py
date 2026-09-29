@@ -359,12 +359,18 @@ check(boss_level_twenty_fixture() == json.loads((ROOT / "tests/fixtures/boss_lev
 check("BossLevelTwentyChecks.new().run(_check)" in ai_tests, "Boss level twenty native suite must run")
 
 check((ROOT / "data/levels/level_1.json").is_file(), "Level 1 config needs source data")
+check((ROOT / "data/levels/level_1_bosses.json").is_file(), "Level 1 boss catalog needs source data")
 if (ROOT / "data/levels/level_1.json").is_file() and (ROOT / "tests/fixtures/match_source.json").is_file():
     _match_fixture = json.loads((ROOT / "tests/fixtures/match_source.json").read_text(encoding="utf-8"))
     check(
         json.loads((ROOT / "data/levels/level_1.json").read_text(encoding="utf-8"))
         == _match_fixture["level_one"],
         "Level 1 config drifted from its source fixture",
+    )
+    check(
+        json.loads((ROOT / "data/levels/level_1_bosses.json").read_text(encoding="utf-8"))
+        == _match_fixture["boss_spawn"]["catalog"],
+        "Level 1 boss catalog drifted from its source fixture",
     )
 check("PrototypeChecks.new().run(_check)" in ai_tests, "Match prototype suite must run")
 

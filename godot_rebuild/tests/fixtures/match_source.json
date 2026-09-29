@@ -2177,5 +2177,792 @@
     "meta_gold_reward_replay": 1500,
     "meta_gold_reward_lose": 0,
     "unlock_after_level": null
+  },
+  "boss_spawn": {
+    "catalog": {
+      "gornak": {
+        "name": "Gornak",
+        "title": "The Warrior Against Magic",
+        "boss_class": "mini",
+        "hp": 7500,
+        "damage": 85,
+        "speed": 1.2,
+        "range": 50,
+        "attack_cooldown": 38,
+        "radius": 30,
+        "gold_reward": 350,
+        "color": [
+          170,
+          80,
+          210
+        ],
+        "color_dark": [
+          90,
+          40,
+          130
+        ],
+        "ability_cooldown": 240,
+        "ability_damage": 125,
+        "ability_range": 150,
+        "entrance_text": "GORNAK THE ANTI-MAGE APPROACHES!",
+        "entrance_color": [
+          170,
+          80,
+          210
+        ],
+        "ability2_cooldown": 0,
+        "ability2_heal_pct": 0.0,
+        "armor": 8,
+        "magic_resist": 0.187,
+        "resist_profile": "magic"
+      },
+      "morgath": {
+        "name": "Morgath",
+        "title": "The Temporal Protector",
+        "boss_class": "mini",
+        "hp": 11000,
+        "damage": 85,
+        "speed": 0.7,
+        "range": 180,
+        "attack_cooldown": 42,
+        "radius": 30,
+        "gold_reward": 500,
+        "color": [
+          140,
+          100,
+          220
+        ],
+        "color_dark": [
+          65,
+          40,
+          130
+        ],
+        "ability_cooldown": 240,
+        "ability_damage": 150,
+        "ability_range": 200,
+        "entrance_text": "MORGATH THE TEMPORAL PROTECTOR EMERGES!",
+        "entrance_color": [
+          140,
+          100,
+          220
+        ],
+        "ability2_cooldown": 0,
+        "ability2_heal_pct": 0.0,
+        "armor": 8,
+        "magic_resist": 0.187,
+        "resist_profile": "magic"
+      },
+      "drakar": {
+        "name": "Drakar",
+        "title": "The Might of the Red Mist",
+        "boss_class": "mini",
+        "hp": 17600,
+        "damage": 112,
+        "speed": 1.0,
+        "range": 55,
+        "attack_cooldown": 46,
+        "radius": 32,
+        "gold_reward": 700,
+        "color": [
+          220,
+          60,
+          60
+        ],
+        "color_dark": [
+          130,
+          25,
+          25
+        ],
+        "ability_cooldown": 240,
+        "ability_damage": 187,
+        "ability_range": 120,
+        "entrance_text": "DRAKAR THE RED MIST APPROACHES!",
+        "entrance_color": [
+          220,
+          60,
+          60
+        ],
+        "ability2_cooldown": 0,
+        "ability2_heal_pct": 0.0,
+        "armor": 13,
+        "magic_resist": 0.079,
+        "resist_profile": "balanced"
+      },
+      "abaddon": {
+        "name": "Abaddon",
+        "title": "Lord of Avernus",
+        "boss_class": "true",
+        "hp": 36000,
+        "damage": 150,
+        "speed": 0.85,
+        "range": 50,
+        "attack_cooldown": 43,
+        "radius": 42,
+        "gold_reward": 1500,
+        "color": [
+          100,
+          220,
+          240
+        ],
+        "color_dark": [
+          30,
+          60,
+          100
+        ],
+        "ability_cooldown": 180,
+        "ability_damage": 270,
+        "ability_range": 200,
+        "entrance_text": "ABADDON, LORD OF AVERNUS RIDES FORTH!",
+        "entrance_color": [
+          100,
+          220,
+          240
+        ],
+        "ability2_cooldown": 600,
+        "ability2_heal_pct": 0.3,
+        "armor": 32,
+        "magic_resist": 0.095,
+        "resist_profile": "armored"
+      }
+    },
+    "boss_rows": [
+      {
+        "boss_type": "gornak",
+        "scaled": false,
+        "mults": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "name": "Gornak",
+        "title": "The Warrior Against Magic",
+        "boss_class": "mini",
+        "max_hp": 7500,
+        "hp": 7500,
+        "damage": 85,
+        "base_damage": 85,
+        "speed": 1.2,
+        "base_speed": 1.2,
+        "range": 50,
+        "attack_cooldown": 38,
+        "radius": 30,
+        "gold_reward": 350,
+        "ability_cooldown_max": 240,
+        "ability_damage": 125,
+        "ability_range": 150,
+        "ability2_cooldown_max": 0,
+        "ability2_heal_pct": 0,
+        "position": [
+          1110.0,
+          170.0
+        ],
+        "waypoint_index": 64,
+        "direction": -1,
+        "damage_reduction": 0.2,
+        "tenacity": 0.5,
+        "max_damage_per_hit": 900,
+        "armor": 8,
+        "magic_resist": 0.187,
+        "resist_profile": "magic",
+        "entrance_timer": 120
+      },
+      {
+        "boss_type": "gornak",
+        "scaled": true,
+        "mults": [
+          1.15,
+          1.1,
+          1.0
+        ],
+        "name": "Gornak",
+        "title": "The Warrior Against Magic",
+        "boss_class": "mini",
+        "max_hp": 8625,
+        "hp": 8625,
+        "damage": 93,
+        "base_damage": 93,
+        "speed": 1.2,
+        "base_speed": 1.2,
+        "range": 50,
+        "attack_cooldown": 38,
+        "radius": 30,
+        "gold_reward": 350,
+        "ability_cooldown_max": 240,
+        "ability_damage": 137,
+        "ability_range": 150,
+        "ability2_cooldown_max": 0,
+        "ability2_heal_pct": 0,
+        "position": [
+          1110.0,
+          170.0
+        ],
+        "waypoint_index": 64,
+        "direction": -1,
+        "damage_reduction": 0.2,
+        "tenacity": 0.5,
+        "max_damage_per_hit": 1035,
+        "armor": 8,
+        "magic_resist": 0.187,
+        "resist_profile": "magic",
+        "entrance_timer": 120
+      },
+      {
+        "boss_type": "morgath",
+        "scaled": false,
+        "mults": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "name": "Morgath",
+        "title": "The Temporal Protector",
+        "boss_class": "mini",
+        "max_hp": 11000,
+        "hp": 11000,
+        "damage": 85,
+        "base_damage": 85,
+        "speed": 0.7,
+        "base_speed": 0.7,
+        "range": 180,
+        "attack_cooldown": 42,
+        "radius": 30,
+        "gold_reward": 500,
+        "ability_cooldown_max": 240,
+        "ability_damage": 150,
+        "ability_range": 200,
+        "ability2_cooldown_max": 0,
+        "ability2_heal_pct": 0,
+        "position": [
+          1110.0,
+          170.0
+        ],
+        "waypoint_index": 64,
+        "direction": -1,
+        "damage_reduction": 0.2,
+        "tenacity": 0.5,
+        "max_damage_per_hit": 1320,
+        "armor": 8,
+        "magic_resist": 0.187,
+        "resist_profile": "magic",
+        "entrance_timer": 120
+      },
+      {
+        "boss_type": "morgath",
+        "scaled": true,
+        "mults": [
+          1.15,
+          1.1,
+          1.0
+        ],
+        "name": "Morgath",
+        "title": "The Temporal Protector",
+        "boss_class": "mini",
+        "max_hp": 12649,
+        "hp": 12649,
+        "damage": 93,
+        "base_damage": 93,
+        "speed": 0.7,
+        "base_speed": 0.7,
+        "range": 180,
+        "attack_cooldown": 42,
+        "radius": 30,
+        "gold_reward": 500,
+        "ability_cooldown_max": 240,
+        "ability_damage": 165,
+        "ability_range": 200,
+        "ability2_cooldown_max": 0,
+        "ability2_heal_pct": 0,
+        "position": [
+          1110.0,
+          170.0
+        ],
+        "waypoint_index": 64,
+        "direction": -1,
+        "damage_reduction": 0.2,
+        "tenacity": 0.5,
+        "max_damage_per_hit": 1517,
+        "armor": 8,
+        "magic_resist": 0.187,
+        "resist_profile": "magic",
+        "entrance_timer": 120
+      },
+      {
+        "boss_type": "drakar",
+        "scaled": false,
+        "mults": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "name": "Drakar",
+        "title": "The Might of the Red Mist",
+        "boss_class": "mini",
+        "max_hp": 17600,
+        "hp": 17600,
+        "damage": 112,
+        "base_damage": 112,
+        "speed": 1.0,
+        "base_speed": 1.0,
+        "range": 55,
+        "attack_cooldown": 46,
+        "radius": 32,
+        "gold_reward": 700,
+        "ability_cooldown_max": 240,
+        "ability_damage": 187,
+        "ability_range": 120,
+        "ability2_cooldown_max": 0,
+        "ability2_heal_pct": 0,
+        "position": [
+          1110.0,
+          170.0
+        ],
+        "waypoint_index": 64,
+        "direction": -1,
+        "damage_reduction": 0.2,
+        "tenacity": 0.5,
+        "max_damage_per_hit": 2112,
+        "armor": 13,
+        "magic_resist": 0.079,
+        "resist_profile": "balanced",
+        "entrance_timer": 120
+      },
+      {
+        "boss_type": "drakar",
+        "scaled": true,
+        "mults": [
+          1.15,
+          1.1,
+          1.0
+        ],
+        "name": "Drakar",
+        "title": "The Might of the Red Mist",
+        "boss_class": "mini",
+        "max_hp": 20240,
+        "hp": 20240,
+        "damage": 123,
+        "base_damage": 123,
+        "speed": 1.0,
+        "base_speed": 1.0,
+        "range": 55,
+        "attack_cooldown": 46,
+        "radius": 32,
+        "gold_reward": 700,
+        "ability_cooldown_max": 240,
+        "ability_damage": 205,
+        "ability_range": 120,
+        "ability2_cooldown_max": 0,
+        "ability2_heal_pct": 0,
+        "position": [
+          1110.0,
+          170.0
+        ],
+        "waypoint_index": 64,
+        "direction": -1,
+        "damage_reduction": 0.2,
+        "tenacity": 0.5,
+        "max_damage_per_hit": 2428,
+        "armor": 13,
+        "magic_resist": 0.079,
+        "resist_profile": "balanced",
+        "entrance_timer": 120
+      },
+      {
+        "boss_type": "abaddon",
+        "scaled": false,
+        "mults": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "name": "Abaddon",
+        "title": "Lord of Avernus",
+        "boss_class": "true",
+        "max_hp": 36000,
+        "hp": 36000,
+        "damage": 150,
+        "base_damage": 150,
+        "speed": 0.85,
+        "base_speed": 0.85,
+        "range": 50,
+        "attack_cooldown": 43,
+        "radius": 42,
+        "gold_reward": 1500,
+        "ability_cooldown_max": 180,
+        "ability_damage": 270,
+        "ability_range": 200,
+        "ability2_cooldown_max": 600,
+        "ability2_heal_pct": 0.3,
+        "position": [
+          1110.0,
+          170.0
+        ],
+        "waypoint_index": 64,
+        "direction": -1,
+        "damage_reduction": 0.3,
+        "tenacity": 0.5,
+        "max_damage_per_hit": 2880,
+        "armor": 32,
+        "magic_resist": 0.095,
+        "resist_profile": "armored",
+        "entrance_timer": 180
+      },
+      {
+        "boss_type": "abaddon",
+        "scaled": true,
+        "mults": [
+          1.15,
+          1.1,
+          1.0
+        ],
+        "name": "Abaddon",
+        "title": "Lord of Avernus",
+        "boss_class": "true",
+        "max_hp": 41400,
+        "hp": 41400,
+        "damage": 165,
+        "base_damage": 165,
+        "speed": 0.85,
+        "base_speed": 0.85,
+        "range": 50,
+        "attack_cooldown": 43,
+        "radius": 42,
+        "gold_reward": 1500,
+        "ability_cooldown_max": 180,
+        "ability_damage": 297,
+        "ability_range": 200,
+        "ability2_cooldown_max": 600,
+        "ability2_heal_pct": 0.3,
+        "position": [
+          1110.0,
+          170.0
+        ],
+        "waypoint_index": 64,
+        "direction": -1,
+        "damage_reduction": 0.3,
+        "tenacity": 0.5,
+        "max_damage_per_hit": 3312,
+        "armor": 32,
+        "magic_resist": 0.095,
+        "resist_profile": "armored",
+        "entrance_timer": 180
+      }
+    ],
+    "debuff_check": {
+      "fallback_pos": [
+        1130.0,
+        100.0
+      ],
+      "slow_amount": 0.35,
+      "slow_timer": 45,
+      "slowed_speed": 0.5525,
+      "atk_slow_amount": 0.3,
+      "atk_slow_timer": 40,
+      "skill_down_amount": 0.25,
+      "skill_down_timer": 60,
+      "reduced_ability_damage": 202,
+      "stun_timer": 27
+    },
+    "schedules": [
+      {
+        "difficulty": "easy",
+        "seed": 101,
+        "low": 20,
+        "high": 40,
+        "waves": [
+          26,
+          37,
+          38
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "easy",
+        "seed": 202,
+        "low": 20,
+        "high": 40,
+        "waves": [
+          32,
+          33,
+          35
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "easy",
+        "seed": 303,
+        "low": 20,
+        "high": 40,
+        "waves": [
+          21,
+          26,
+          27
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "normal",
+        "seed": 101,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          17,
+          28,
+          29
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "normal",
+        "seed": 202,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          23,
+          24,
+          26
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "normal",
+        "seed": 303,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          12,
+          17,
+          18
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "hard",
+        "seed": 101,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          17,
+          28,
+          29
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "hard",
+        "seed": 202,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          23,
+          24,
+          26
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "hard",
+        "seed": 303,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          12,
+          17,
+          18
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "unknown",
+        "seed": 101,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          17,
+          28,
+          29
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "unknown",
+        "seed": 202,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          23,
+          24,
+          26
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      },
+      {
+        "difficulty": "unknown",
+        "seed": 303,
+        "low": 11,
+        "high": 30,
+        "waves": [
+          12,
+          17,
+          18
+        ],
+        "bosses": [
+          "gornak",
+          "morgath",
+          "drakar"
+        ]
+      }
+    ],
+    "events": [
+      {
+        "tag": "wave_12_spawn",
+        "wave": 12,
+        "active": "gornak",
+        "active_max_hp": 8625,
+        "pending": [],
+        "red_towers_destroyed": 0,
+        "true_boss_spawned": false
+      },
+      {
+        "tag": "wave_16_queued",
+        "wave": 16,
+        "active": "gornak",
+        "active_max_hp": 8625,
+        "pending": [
+          [
+            16,
+            "morgath"
+          ]
+        ],
+        "red_towers_destroyed": 0,
+        "true_boss_spawned": false
+      },
+      {
+        "tag": "five_red_towers",
+        "wave": 16,
+        "active": "gornak",
+        "active_max_hp": 8625,
+        "pending": [
+          [
+            16,
+            "morgath"
+          ]
+        ],
+        "red_towers_destroyed": 5,
+        "true_boss_spawned": false
+      },
+      {
+        "tag": "six_red_towers_blocked",
+        "wave": 16,
+        "active": "gornak",
+        "active_max_hp": 8625,
+        "pending": [
+          [
+            16,
+            "morgath"
+          ]
+        ],
+        "red_towers_destroyed": 6,
+        "true_boss_spawned": false
+      },
+      {
+        "tag": "true_boss_spawned",
+        "wave": 16,
+        "active": "abaddon",
+        "active_max_hp": 41400,
+        "pending": [
+          [
+            16,
+            "morgath"
+          ]
+        ],
+        "red_towers_destroyed": 6,
+        "true_boss_spawned": true
+      },
+      {
+        "tag": "wave_24_queued_behind_true_boss",
+        "wave": 24,
+        "active": "abaddon",
+        "active_max_hp": 41400,
+        "pending": [
+          [
+            16,
+            "morgath"
+          ],
+          [
+            24,
+            "drakar"
+          ]
+        ],
+        "red_towers_destroyed": 6,
+        "true_boss_spawned": true
+      },
+      {
+        "tag": "morgath_popped_after_true_boss",
+        "wave": 24,
+        "active": "morgath",
+        "active_max_hp": 12649,
+        "pending": [
+          [
+            24,
+            "drakar"
+          ]
+        ],
+        "red_towers_destroyed": 6,
+        "true_boss_spawned": true
+      },
+      {
+        "tag": "drakar_popped_last",
+        "wave": 24,
+        "active": "drakar",
+        "active_max_hp": 20240,
+        "pending": [],
+        "red_towers_destroyed": 6,
+        "true_boss_spawned": true
+      }
+    ]
   }
 }

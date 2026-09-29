@@ -21,6 +21,8 @@ const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
+const BOSS_DATA := "res://data/levels/level_1_bosses.json"
+const BossState = preload("res://scripts/match/boss_state.gd")
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
@@ -90,6 +92,14 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
+# Layer 7d: mini/true boss schedule & spawn state + red tower destruction counter.
+var boss_catalog: Dictionary = {}
+var boss_rng := RandomNumberGenerator.new()
+var mini_boss_schedule: Dictionary = {}
+var pending_mini_bosses: Array = []
+var active_boss: BossState = null
+var true_boss_spawned := false
+var red_towers_destroyed := 0
 
 
 func _init() -> void:
@@ -97,6 +107,8 @@ func _init() -> void:
 	spawn_rng.seed = SPAWN_SEED
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_DATA))
 	level_config = parsed if parsed is Dictionary else {}
+	var parsed_bosses = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
+	boss_catalog = parsed_bosses if parsed_bosses is Dictionary else {}
 	_apply_difficulty()
 
 
@@ -170,6 +182,90 @@ func _apply_difficulty() -> void:
 		enemy_hp_mult = 1.0
 		enemy_damage_mult = 1.0
 		enemy_speed_mult = 1.0
+	boss_rng.seed = SPAWN_SEED
+	mini_boss_schedule = _roll_mini_boss_schedule()
+
+
+func _roll_mini_boss_schedule() -> Dictionary:
+	# Port of Game._roll_mini_boss_schedule (_core.py:1830): easy rolls unique
+	# waves in 20..40, other modes use 11..30, keeping the boss order from
+	# level_config["mini_bosses"].
+	var src: Variant = level_config.get("mini_bosses", {})
+	if not (src is Dictionary) or (src as Dictionary).is_empty():
+		return {}
+	var raw_keys: Array = (src as Dictionary).keys()
+	var numeric_keys: Array[int] = []
+	for key in raw_keys:
+		numeric_keys.append(int(key))
+	numeric_keys.sort()
+	var bosses: Array[String] = []
+	for wave_key in numeric_keys:
+		var entry: Variant = (src as Dictionary).get(
+			wave_key, (src as Dictionary).get(str(wave_key), "")
+		)
+		bosses.append(String(entry))
+	var boss_count := bosses.size()
+	var low := 20 if difficulty == "easy" else 11
+	var high := 40 if difficulty == "easy" else 30
+	if high - low + 1 < boss_count:
+		high = low + boss_count * 5
+	var pool: Array[int] = []
+	for candidate in range(low, high + 1):
+		pool.append(candidate)
+	var waves: Array[int] = []
+	for _idx in range(boss_count):
+		var pick := boss_rng.randi_range(0, pool.size() - 1)
+		waves.append(pool[pick])
+		pool.remove_at(pick)
+	waves.sort()
+	var result: Dictionary = {}
+	for i in range(boss_count):
+		result[waves[i]] = bosses[i]
+	return result
+
+
+func _try_spawn_pending_mini_boss() -> void:
+	# Port of Game._try_spawn_pending_mini_boss (_core.py:1804).
+	if active_boss != null:
+		if active_boss.alive:
+			return
+		active_boss = null
+	if pending_mini_bosses.is_empty():
+		return
+	var entry: Array = pending_mini_bosses.pop_front()
+	active_boss = _spawn_boss(String(entry[1]))
+
+
+func _try_spawn_true_boss() -> void:
+	# Port of the true boss spawn gate in Game.update (_core.py:2089).
+	if not true_boss_spawned and red_towers_destroyed >= 6 and active_boss == null:
+		var true_boss_type := String(level_config.get("true_boss", ""))
+		if not true_boss_type.is_empty():
+			active_boss = _spawn_boss(true_boss_type)
+			true_boss_spawned = true
+
+
+func _spawn_boss(boss_type: String) -> BossState:
+	var stats: Dictionary = boss_catalog.get(boss_type, {})
+	var mid_path := paths[1] if paths.size() > 1 else PackedVector2Array()
+	var boss := BossState.new(boss_type, mid_path, stats)
+	if enemy_scaling_enabled:
+		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
+	return boss
+
+
+func _wave_boss_check() -> void:
+	# Port of the mini-boss wave slice in Game.update_waves (_core.py:1745).
+	var schedule: Dictionary = (
+		mini_boss_schedule
+		if not mini_boss_schedule.is_empty()
+		else level_config.get("mini_bosses", {})
+	)
+	if schedule.has(wave_count):
+		pending_mini_bosses.append([wave_count, String(schedule[wave_count])])
+	elif schedule.has(str(wave_count)):
+		pending_mini_bosses.append([wave_count, String(schedule[str(wave_count)])])
+	_try_spawn_pending_mini_boss()
 
 
 func _apply_castle_start_levels() -> void:
@@ -248,6 +344,7 @@ func step_tick() -> void:
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
+		_wave_boss_check()
 		# Source update_waves: the AI castle auto-levels while the wave starts.
 		_auto_scale_ai_castle()
 	for spawn in batch.spawns:
@@ -255,6 +352,7 @@ func step_tick() -> void:
 	super.step_tick()
 	if is_running():
 		_tick_auras_and_items()
+		_try_spawn_true_boss()
 		_tick_item_debuffs()
 		_step_hero_act()
 		# Source Game.update runs the AI right after the entity loop.
@@ -396,6 +494,12 @@ func _on_death(source_team: int, target: UnitState) -> void:
 	var before := credited_gold[source_team]
 	super._on_death(source_team, target)
 	economy.credit_kill(source_team, credited_gold[source_team] - before)
+	if (
+		target is StructureState
+		and (target as StructureState).settings().structure_kind == "tower"
+		and target.team == RED
+	):
+		red_towers_destroyed += 1
 	if not is_running():
 		scheduler.cancel()
 

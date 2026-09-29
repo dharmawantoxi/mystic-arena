@@ -14,6 +14,7 @@ from structure_source_oracle import namespace, source_classes
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE = Path(__file__).parent / "fixtures/match_source.json"
 LEVEL_DATA = ROOT / "godot_rebuild/data/levels/level_1.json"
+BOSS_DATA = ROOT / "godot_rebuild/data/levels/level_1_bosses.json"
 
 
 def compile_method(node, env):
@@ -122,6 +123,7 @@ def source_fixture():
     result["minion_spawn_offsets"] = minion_spawn_offsets(env)
     result["enemy_scaling"] = enemy_scaling(env)
     result["level_one"] = level_config("LEVEL_1")
+    result["boss_spawn"] = boss_spawn(env)
     return result
 
 
@@ -404,19 +406,329 @@ def enemy_scaling(env):
     return {"rows": rows, "castles": castle_rows}
 
 
+
+
+def source_boss(env):
+    """Real Boss.__init__, apply_scaling, apply_slow, apply_debuff, speed and
+    ability_damage from bosses/base_boss.py + TowerDebuffMixin from _core.py +
+    bosses/boss_data.py + hero_archetypes.py, without importing pygame.
+    """
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    import hero_archetypes
+
+    boss_data_ns = {}
+    exec((ROOT / "bosses/boss_data.py").read_text(encoding="utf-8"), boss_data_ns)
+    env["get_all_boss_types"] = boss_data_ns["get_all_boss_types"]
+
+    core = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    debuff_mixin = next(n for n in core.body if isinstance(n, ast.ClassDef) and n.name == "TowerDebuffMixin")
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[debuff_mixin], type_ignores=[])),
+                 "<source tower debuff mixin>", "exec"), env)
+
+    boss_tree = ast.parse((ROOT / "bosses/base_boss.py").read_text(encoding="utf-8"))
+    boss_cls = next(n for n in boss_tree.body if isinstance(n, ast.ClassDef) and n.name == "Boss")
+    keep_names = ("speed", "ability_damage", "__init__", "apply_scaling", "apply_slow", "apply_debuff")
+    keep = [n for n in boss_cls.body if isinstance(n, ast.FunctionDef) and n.name in keep_names]
+    cls = ast.ClassDef(
+        name="SourceBoss",
+        bases=[ast.Name(id="TowerDebuffMixin", ctx=ast.Load())],
+        keywords=[],
+        body=keep,
+        decorator_list=[],
+    )
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source boss>", "exec"), env)
+    return env["SourceBoss"], env["get_all_boss_types"](), hero_archetypes
+
+
+def boss_spawn(env):
+    """Real mini-boss schedule, pending spawn queue, red_towers_destroyed counter,
+    true-boss spawn gate, and Boss.__init__ / apply_scaling / tenacity debuffs.
+    """
+    import random as _random
+    import types as _types
+
+    boss_cls, all_bosses, archetypes = source_boss(env)
+    core = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    game = next(n for n in core.body if isinstance(n, ast.ClassDef) and n.name == "Game")
+    methods = {n.name: n for n in game.body if isinstance(n, ast.FunctionDef)}
+
+    env["print"] = lambda *args, **kwargs: None
+    boss_mod = _types.ModuleType("bosses.base_boss")
+    boss_mod.Boss = boss_cls
+    sys.modules["bosses.base_boss"] = boss_mod
+    render_mod = _types.ModuleType("_render")
+    render_mod.BossIntroCinematic = lambda *args, **kwargs: SimpleNamespace(boss=args[0] if args else None)
+    sys.modules["_render"] = render_mod
+
+    roll_fn = compile_method(methods["_roll_mini_boss_schedule"], env)
+    try_spawn_fn = compile_method(methods["_try_spawn_pending_mini_boss"], env)
+
+    field_clear_if = next(
+        n for n in ast.walk(methods["update_waves"])
+        if isinstance(n, ast.If) and isinstance(n.test, ast.Name) and n.test.id == "field_clear"
+    )
+    mb_start = next(
+        i for i, s in enumerate(field_clear_if.body)
+        if isinstance(s, ast.Assign) and isinstance(s.targets[0], ast.Name)
+        and s.targets[0].id == "mini_bosses"
+    )
+    mb_slice = field_clear_if.body[mb_start:mb_start + 4]
+    assert [type(s).__name__ for s in mb_slice] == ["Assign", "If", "If", "Expr"],         "mini boss wave slice drifted"
+    wave_push_fn = compile_method(ast.fix_missing_locations(ast.FunctionDef(
+        name="_wave_boss_step",
+        args=ast.arguments(posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=mb_slice,
+        decorator_list=[],
+    )), env)
+
+    update_body = methods["update"].body
+    true_boss_if = next(
+        s for s in update_body
+        if isinstance(s, ast.If) and "red_towers_destroyed" in ast.unparse(s.test)
+    )
+    true_boss_fn = compile_method(ast.fix_missing_locations(ast.FunctionDef(
+        name="_true_boss_step",
+        args=ast.arguments(posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=[true_boss_if],
+        decorator_list=[],
+    )), env)
+
+    tower_for = next(
+        s for s in update_body
+        if isinstance(s, ast.For) and isinstance(s.iter, ast.Attribute) and s.iter.attr == "towers"
+        and "red_towers_destroyed" in ast.unparse(s)
+    )
+    tower_death_fn = compile_method(ast.fix_missing_locations(ast.FunctionDef(
+        name="_tower_death_step",
+        args=ast.arguments(posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=[tower_for],
+        decorator_list=[],
+    )), env)
+
+    one = level_config("LEVEL_1")
+    mid_path = source_lanes()["mid"]
+    level_one_ids = list(one["mini_bosses"].values()) + [one["true_boss"]]
+    catalog = {}
+    boss_rows = []
+    for boss_type in level_one_ids:
+        raw = all_bosses[boss_type]
+        boss_class = raw.get("boss_class", "mini")
+        armor, mr = archetypes.get_boss_resistances(boss_type, boss_class)
+        profile = raw.get("resist_profile") or archetypes.BOSS_RESISTANCES.get(boss_type, {}).get("profile", "balanced")
+        catalog[boss_type] = {
+            "name": raw["name"],
+            "title": raw["title"],
+            "boss_class": boss_class,
+            "hp": int(raw["hp"]),
+            "damage": int(raw["damage"]),
+            "speed": float(raw["speed"]),
+            "range": int(raw["range"]),
+            "attack_cooldown": int(raw["attack_cooldown"]),
+            "radius": int(raw["radius"]),
+            "gold_reward": int(raw["gold_reward"]),
+            "color": list(raw["color"]),
+            "color_dark": list(raw["color_dark"]),
+            "ability_cooldown": int(raw["ability_cooldown"]),
+            "ability_damage": int(raw["ability_damage"]),
+            "ability_range": int(raw["ability_range"]),
+            "entrance_text": raw["entrance_text"],
+            "entrance_color": list(raw["entrance_color"]),
+            "ability2_cooldown": int(raw.get("ability2_cooldown", 0)),
+            "ability2_heal_pct": float(raw.get("ability2_heal_pct", 0.0)),
+            "armor": int(raw.get("armor", armor)),
+            "magic_resist": float(raw.get("magic_resist", mr)),
+            "resist_profile": profile,
+        }
+        for scaled, mults in ((False, (1.0, 1.0, 1.0)), (True, (1.15, 1.10, 1.0))):
+            inst = boss_cls(boss_type, mid_path)
+            if scaled:
+                inst.apply_scaling(*mults)
+            boss_rows.append({
+                "boss_type": boss_type,
+                "scaled": scaled,
+                "mults": list(mults),
+                "name": inst.name,
+                "title": inst.title,
+                "boss_class": inst.boss_class,
+                "max_hp": inst.max_hp,
+                "hp": inst.hp,
+                "damage": inst.damage,
+                "base_damage": inst.base_damage,
+                "speed": inst.speed,
+                "base_speed": getattr(inst, "base_speed", inst.speed),
+                "range": inst.range,
+                "attack_cooldown": inst.attack_cooldown,
+                "radius": inst.radius,
+                "gold_reward": inst.gold_reward,
+                "ability_cooldown_max": inst.ability_cooldown_max,
+                "ability_damage": inst.ability_damage,
+                "ability_range": inst.ability_range,
+                "ability2_cooldown_max": inst.ability2_cooldown_max,
+                "ability2_heal_pct": inst.ability2_heal_pct,
+                "position": [inst.x, inst.y],
+                "waypoint_index": inst.waypoint_index,
+                "direction": inst.direction,
+                "damage_reduction": inst.damage_reduction,
+                "tenacity": inst.tenacity,
+                "max_damage_per_hit": inst.max_damage_per_hit,
+                "armor": inst.armor,
+                "magic_resist": inst.magic_resist,
+                "resist_profile": inst.resist_profile,
+                "entrance_timer": inst.entrance_timer,
+            })
+
+    fallback_inst = boss_cls("gornak", [])
+    debuff_inst = boss_cls("abaddon", mid_path)
+    debuff_inst.apply_debuff("slow", 0.80, 90)
+    debuff_inst.apply_debuff("atk_slow", 0.60, 80)
+    debuff_inst.apply_debuff("skill_down", 0.25, 60)
+    debuff_inst.apply_stun(60)
+    debuff_check = {
+        "fallback_pos": [fallback_inst.x, fallback_inst.y],
+        "slow_amount": debuff_inst.slow_amount,
+        "slow_timer": debuff_inst.slow_timer,
+        "slowed_speed": debuff_inst.speed,
+        "atk_slow_amount": debuff_inst.atk_slow_amount,
+        "atk_slow_timer": debuff_inst.atk_slow_timer,
+        "skill_down_amount": debuff_inst.skill_down_amount,
+        "skill_down_timer": debuff_inst.skill_down_timer,
+        "reduced_ability_damage": debuff_inst.ability_damage,
+        "stun_timer": debuff_inst.stun_timer,
+    }
+
+    schedules = []
+    for difficulty in ("easy", "normal", "hard", "unknown"):
+        for seed in (101, 202, 303):
+            _random.seed(seed)
+            stub = SimpleNamespace(level_config=one, difficulty=difficulty)
+            rolled = roll_fn(stub)
+            waves = list(rolled.keys())
+            values = list(rolled.values())
+            low, high = (20, 40) if difficulty == "easy" else (11, 30)
+            assert waves == sorted(waves) and len(set(waves)) == len(waves)
+            assert all(low <= w <= high for w in waves)
+            assert values == list(one["mini_bosses"].values())
+            schedules.append({
+                "difficulty": difficulty,
+                "seed": seed,
+                "low": low,
+                "high": high,
+                "waves": waves,
+                "bosses": values,
+            })
+
+    empty_roll = roll_fn(SimpleNamespace(level_config={"mini_bosses": {}}, difficulty="normal"))
+    assert empty_roll == {}
+
+    # Spawn & queue trace executing the real wave push, _try_spawn_pending_mini_boss,
+    # tower death loop, and true boss check.
+    state = SimpleNamespace(
+        level_number=1,
+        level_config=one,
+        _mini_boss_schedule={12: "gornak", 16: "morgath", 24: "drakar"},
+        pending_mini_bosses=[],
+        active_boss=None,
+        true_boss_spawned=False,
+        red_towers_destroyed=0,
+        enemy_scaling_enabled=True,
+        enemy_hp_mult=1.15,
+        enemy_damage_mult=1.10,
+        enemy_speed_mult=1.0,
+        map_renderer=SimpleNamespace(get_lane_path=lambda lane: mid_path),
+        gold=1000,
+        score=0,
+        ai=SimpleNamespace(gold=350),
+        towers=[],
+        wave_number=0,
+    )
+    state._try_spawn_pending_mini_boss = lambda: try_spawn_fn(state)
+
+    events = []
+
+    def snap(tag):
+        events.append({
+            "tag": tag,
+            "wave": state.wave_number,
+            "active": state.active_boss.boss_type if state.active_boss else None,
+            "active_max_hp": state.active_boss.max_hp if state.active_boss else 0,
+            "pending": [list(item) for item in state.pending_mini_bosses],
+            "red_towers_destroyed": state.red_towers_destroyed,
+            "true_boss_spawned": state.true_boss_spawned,
+        })
+
+    # Wave 12 starts -> gornak spawns immediately.
+    state.wave_number = 12
+    wave_push_fn(state)
+    snap("wave_12_spawn")
+
+    # Wave 16 starts while gornak is still alive -> morgath stays pending.
+    state.wave_number = 16
+    wave_push_fn(state)
+    snap("wave_16_queued")
+
+    # 5 red towers + 2 blue towers die -> red_towers_destroyed == 5, no true boss yet.
+    state.towers = [
+        SimpleNamespace(alive=False, team="red", gold_reward=100) for _ in range(5)
+    ] + [
+        SimpleNamespace(alive=False, team="blue", gold_reward=100) for _ in range(2)
+    ]
+    tower_death_fn(state)
+    true_boss_fn(state)
+    snap("five_red_towers")
+
+    # 6th red tower dies while gornak is still alive -> true boss blocked by active_boss.
+    state.towers.append(SimpleNamespace(alive=False, team="red", gold_reward=100))
+    tower_death_fn(state)
+    true_boss_fn(state)
+    snap("six_red_towers_blocked")
+
+    # Active boss cleared -> true boss spawns when active_boss is None.
+    state.active_boss = None
+    true_boss_fn(state)
+    snap("true_boss_spawned")
+
+    # Wave 24 starts while true boss is alive -> drakar queues behind morgath.
+    state.wave_number = 24
+    wave_push_fn(state)
+    snap("wave_24_queued_behind_true_boss")
+
+    # True boss dies -> _try_spawn_pending_mini_boss pops morgath, then drakar.
+    state.active_boss.alive = False
+    state._try_spawn_pending_mini_boss()
+    true_boss_fn(state)
+    snap("morgath_popped_after_true_boss")
+
+    state.active_boss.alive = False
+    state._try_spawn_pending_mini_boss()
+    snap("drakar_popped_last")
+
+    return {
+        "catalog": catalog,
+        "boss_rows": boss_rows,
+        "debuff_check": debuff_check,
+        "schedules": schedules,
+        "events": events,
+    }
+
+
 def main():
     if "--write" in sys.argv:
         data = source_fixture()
         FIXTURE.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
         LEVEL_DATA.parent.mkdir(parents=True, exist_ok=True)
         LEVEL_DATA.write_text(json.dumps(data["level_one"], indent=2) + "\n", encoding="utf-8")
-        print("wrote %s and %s" % (FIXTURE, LEVEL_DATA))
+        BOSS_DATA.write_text(json.dumps(data["boss_spawn"]["catalog"], indent=2) + "\n", encoding="utf-8")
+        print("wrote %s, %s and %s" % (FIXTURE, LEVEL_DATA, BOSS_DATA))
         return
     # Round-trip through JSON so int-keyed source dicts (mini_bosses) compare
     # against their serialized form.
     data = json.loads(json.dumps(source_fixture()))
     assert data["level_one"] == json.loads(LEVEL_DATA.read_text(encoding="utf-8")), \
         "level 1 data drifted from source"
+    assert data["boss_spawn"]["catalog"] == json.loads(BOSS_DATA.read_text(encoding="utf-8")), \
+        "level 1 boss catalog drifted from source"
     assert data == json.loads(FIXTURE.read_text(encoding="utf-8")), "Match source contract drift"
     print("PASS: original wave traces, composition, 18 slots, income ledger and build/sell prices.")
 

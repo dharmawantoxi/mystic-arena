@@ -1,0 +1,146 @@
+{
+  "gornak": {
+    "name": "Gornak",
+    "title": "The Warrior Against Magic",
+    "boss_class": "mini",
+    "hp": 7500,
+    "damage": 85,
+    "speed": 1.2,
+    "range": 50,
+    "attack_cooldown": 38,
+    "radius": 30,
+    "gold_reward": 350,
+    "color": [
+      170,
+      80,
+      210
+    ],
+    "color_dark": [
+      90,
+      40,
+      130
+    ],
+    "ability_cooldown": 240,
+    "ability_damage": 125,
+    "ability_range": 150,
+    "entrance_text": "GORNAK THE ANTI-MAGE APPROACHES!",
+    "entrance_color": [
+      170,
+      80,
+      210
+    ],
+    "ability2_cooldown": 0,
+    "ability2_heal_pct": 0.0,
+    "armor": 8,
+    "magic_resist": 0.187,
+    "resist_profile": "magic"
+  },
+  "morgath": {
+    "name": "Morgath",
+    "title": "The Temporal Protector",
+    "boss_class": "mini",
+    "hp": 11000,
+    "damage": 85,
+    "speed": 0.7,
+    "range": 180,
+    "attack_cooldown": 42,
+    "radius": 30,
+    "gold_reward": 500,
+    "color": [
+      140,
+      100,
+      220
+    ],
+    "color_dark": [
+      65,
+      40,
+      130
+    ],
+    "ability_cooldown": 240,
+    "ability_damage": 150,
+    "ability_range": 200,
+    "entrance_text": "MORGATH THE TEMPORAL PROTECTOR EMERGES!",
+    "entrance_color": [
+      140,
+      100,
+      220
+    ],
+    "ability2_cooldown": 0,
+    "ability2_heal_pct": 0.0,
+    "armor": 8,
+    "magic_resist": 0.187,
+    "resist_profile": "magic"
+  },
+  "drakar": {
+    "name": "Drakar",
+    "title": "The Might of the Red Mist",
+    "boss_class": "mini",
+    "hp": 17600,
+    "damage": 112,
+    "speed": 1.0,
+    "range": 55,
+    "attack_cooldown": 46,
+    "radius": 32,
+    "gold_reward": 700,
+    "color": [
+      220,
+      60,
+      60
+    ],
+    "color_dark": [
+      130,
+      25,
+      25
+    ],
+    "ability_cooldown": 240,
+    "ability_damage": 187,
+    "ability_range": 120,
+    "entrance_text": "DRAKAR THE RED MIST APPROACHES!",
+    "entrance_color": [
+      220,
+      60,
+      60
+    ],
+    "ability2_cooldown": 0,
+    "ability2_heal_pct": 0.0,
+    "armor": 13,
+    "magic_resist": 0.079,
+    "resist_profile": "balanced"
+  },
+  "abaddon": {
+    "name": "Abaddon",
+    "title": "Lord of Avernus",
+    "boss_class": "true",
+    "hp": 36000,
+    "damage": 150,
+    "speed": 0.85,
+    "range": 50,
+    "attack_cooldown": 43,
+    "radius": 42,
+    "gold_reward": 1500,
+    "color": [
+      100,
+      220,
+      240
+    ],
+    "color_dark": [
+      30,
+      60,
+      100
+    ],
+    "ability_cooldown": 180,
+    "ability_damage": 270,
+    "ability_range": 200,
+    "entrance_text": "ABADDON, LORD OF AVERNUS RIDES FORTH!",
+    "entrance_color": [
+      100,
+      220,
+      240
+    ],
+    "ability2_cooldown": 600,
+    "ability2_heal_pct": 0.3,
+    "armor": 32,
+    "magic_resist": 0.095,
+    "resist_profile": "armored"
+  }
+}
