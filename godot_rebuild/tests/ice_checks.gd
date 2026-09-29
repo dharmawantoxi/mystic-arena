@@ -411,7 +411,7 @@ func _guards(check: Callable) -> void:
 		),
 		"slow rejects empty payloads and stale IDs"
 	)
-	check.call(world.defender_enabled == false, "ice domain tests keep the defender parked")
+	check.call(not world.ai_enabled, "these domain tests keep the red side switched off")
 
 
 func _fly_to_impact(world: World, tower) -> void:
@@ -433,7 +433,6 @@ func _fly_again(world: World, tower, main) -> void:
 
 func _world() -> World:
 	var world := World.new()
-	world.defender_enabled = false
 	world.economy.gold[0] = 10000
 	world.economy.opening[0] = 10000
 	world.setup_arena()

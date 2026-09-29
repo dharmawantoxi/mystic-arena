@@ -19,8 +19,9 @@ func _ready() -> void:
 	super._ready()
 	var match_world := world as Prototype
 	match_world.setup_arena()
-	# Layer 6d: the real AI replaces the temporary defender in the scene and
-	# every AI stream is seeded, so the match is reproducible.
+	# Layer 6d: the real AI owns the red side in the scene (layer 6e removed the
+	# temporary defender) and every AI stream is seeded, so the match is
+	# reproducible.
 	match_world.reset_ai(AI_MATCH_SEED)
 	match_world.set_ai_enabled(true)
 

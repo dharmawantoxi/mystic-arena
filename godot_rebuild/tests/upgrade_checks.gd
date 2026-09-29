@@ -242,7 +242,6 @@ func _guards(check: Callable) -> void:
 
 func _world() -> World:
 	var world := World.new()
-	world.defender_enabled = false
 	world.economy.gold[0] = 10000
 	world.economy.opening[0] = 10000
 	world.setup_arena()

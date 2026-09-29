@@ -10,7 +10,6 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var session = screen.simulation
 	var world = session.world
 	session.set_physics_process(false)
-	world.defender_enabled = false
 	world.build_tower(0, 2)
 	world.build_tower(0, 5)
 	var tower = world.get_unit(world.slots[2].structure_id)

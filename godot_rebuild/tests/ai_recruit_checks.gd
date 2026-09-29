@@ -27,7 +27,6 @@ func run(check: Callable) -> void:
 
 func _world() -> World:
 	var world := World.new()
-	world.defender_enabled = false
 	return world
 
 

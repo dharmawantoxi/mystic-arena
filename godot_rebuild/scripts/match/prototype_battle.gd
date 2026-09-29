@@ -56,8 +56,8 @@ var item_shop := ItemShopUI.new()
 # Layer 6a: per-tick AI hero control. The AI controller is not wired into the
 # playable scene yet, so this stays off unless a caller asks for it.
 var ai_heroes := AiHeroControl.new()
-# Layer 6b: scheduling wrapper (source AIPlayer.update). The scene still runs
-# the temporary defender; setting both flags hands the red side to the AI.
+# Layer 6b: scheduling wrapper (source AIPlayer.update). Layer 6e: set_ai_enabled()
+# is the only switch; with it off the red side stays idle.
 var ai_controller := AiController.new()
 var ai_enabled := false
 var ai_hero_control_enabled := false
@@ -73,8 +73,6 @@ const HERO_AGGRO_RANGE := 250.0
 var scheduler := Scheduler.new()
 var slots: Array[Slot] = []
 var transaction_error := ""
-var defender_enabled := true
-var _defender_built := 0
 
 
 func _init() -> void:
@@ -166,7 +164,6 @@ func step_tick() -> void:
 	super.step_tick()
 	if is_running():
 		_tick_auras_and_items()
-		_step_defender()
 		_step_hero_act()
 		# Source Game.update runs the AI right after the entity loop.
 		_step_ai_heroes()
@@ -189,7 +186,7 @@ func slot_at(point: Vector2) -> int:
 
 
 func build_tower(team: int, slot_id: int) -> bool:
-	# Existing player command and temporary defender remain plain Archer, no draft reserve.
+	# Existing player command remains plain Archer, no draft reserve.
 	return _build_tower_for(team, slot_id, "archer")
 
 
@@ -332,15 +329,6 @@ func _retire_dead() -> void:
 		var tower := get_unit(slot.structure_id)
 		if tower == null or not tower.alive:
 			slot.structure_id = -1
-
-
-func _step_defender() -> void:
-	# Explicit temporary opponent, NOT a port of AIPlayer: three paid Archer
-	# purchases. The real AI controller replaces it as soon as ai_enabled is set.
-	if ai_enabled or not defender_enabled or _defender_built >= 3 or tick_count % 300 != 0:
-		return
-	if build_tower(RED, [11, 14, 17][_defender_built]):
-		_defender_built += 1
 
 
 func set_hero_destination(hero_id: int, point: Vector2) -> bool:
@@ -543,12 +531,11 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 
 
 func set_ai_enabled(enabled: bool) -> void:
-	# Single switch for the match: the real AI owns the red side, so the
-	# temporary defender (a stand-in from before layer 6c) parks while it runs
-	# and takes over again when the AI is switched off for a test.
+	# Layer 6e: single switch for the match. The real AI owns the red side and
+	# the red heroes; with the switch off (a test or scene that wants a manual
+	# red side) no red transaction ever happens.
 	ai_enabled = enabled
 	ai_hero_control_enabled = enabled
-	defender_enabled = not enabled
 
 
 func reset_ai(seed_value: int = -1) -> void:

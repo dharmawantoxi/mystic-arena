@@ -106,7 +106,7 @@ func run(check: Callable) -> void:
 	_test_ai_schedule(fixture.schedule, check)
 	_test_ai_controller_wiring(check)
 	_test_ai_actions(check)
-	_test_ai_defender_swap(check)
+	_test_ai_switch(check)
 	_test_ai_shield_nexus(check)
 	_test_ai_restart(check)
 
@@ -281,7 +281,6 @@ func _test_hero_inventory(check: Callable) -> void:
 	# Real domain: HeroState owns the inventory and refreshes the role/range
 	# gate from its definition at spawn.
 	var world := World.new()
-	world.defender_enabled = false
 	world.setup_arena()
 	var melee := world.spawn_hero(World.KAIZEN, world.RED, Vector2(1000, 200))
 	var mage := world.spawn_hero(World.VEX, world.RED, Vector2(1040, 240))
@@ -344,7 +343,6 @@ func _test_hero_inventory(check: Callable) -> void:
 
 func _world() -> World:
 	var world := World.new()
-	world.defender_enabled = false
 	world.setup_arena()
 	return world
 
@@ -1739,7 +1737,7 @@ func _test_ai_schedule(rows: Array, check: Callable) -> void:
 
 func _test_ai_controller_wiring(check: Callable) -> void:
 	# With the controller enabled the red hero is controlled every tick, the
-	# blue side stays manual, and the temporary defender keeps its schedule.
+	# blue side stays manual, and the AI switch stays the only red-side owner.
 	var world := _world()
 	_clear_heroes(world)
 	var red := world.spawn_hero(World.THORNE, world.RED, Vector2(200, 380))
@@ -1778,7 +1776,6 @@ func _ai_world(gold: int) -> World:
 	var world := _world()
 	_clear_heroes(world)
 	_fund(world, gold)
-	world.defender_enabled = true
 	world.ai_enabled = true
 	world.ai_controller.rng.seed = 7
 	world.ai_build.rng.seed = 7
@@ -1888,28 +1885,43 @@ func _ai_sequence(seed_value: int) -> Array:
 	return rows
 
 
-func _test_ai_defender_swap(check: Callable) -> void:
-	# The temporary defender and the real AI never run together.
+func _test_ai_switch(check: Callable) -> void:
+	# Layer 6e: set_ai_enabled() is the only switch left. With it off the red
+	# side never transacts; with it on the real AI owns the side and the heroes.
 	var world := _world()
 	_clear_heroes(world)
-	_fund(world, 0)
+	_fund(world, 30000)
+	for _tick in range(300):
+		world.step_tick()
+	check.call(
+		(
+			not world.ai_enabled
+			and not world.ai_hero_control_enabled
+			and _red_towers(world) == 0
+			and world.economy.spent[world.RED] == 0
+		),
+		"Without the AI switch the red side stays idle"
+	)
 	world.set_ai_enabled(true)
 	check.call(
-		world.ai_enabled and world.ai_hero_control_enabled and not world.defender_enabled,
-		"Enabling the AI must park the temporary defender and own the heroes"
+		world.ai_enabled and world.ai_hero_control_enabled,
+		"Enabling the AI must own the red side and the heroes"
 	)
+	world.ai_controller.rng.seed = 7
+	world.ai_build.rng.seed = 7
+	world.ai_draft.rng.seed = 7
+	world.ai_controller.policy.think_timer = 1
 	for _tick in range(300):
 		world.step_tick()
-	check.call(world._defender_built == 0, "Temporary defender must stand down while the AI runs")
-	_fund(world, 30000)
+	check.call(
+		world.ai_build.total_built > 0 and _red_towers(world) > 0,
+		"Enabling the AI must build red towers on schedule"
+	)
 	world.set_ai_enabled(false)
 	check.call(
-		not world.ai_enabled and world.defender_enabled,
-		"Disabling the AI must restore the defender"
+		not world.ai_enabled and not world.ai_hero_control_enabled,
+		"Disabling the AI must leave the red side manual"
 	)
-	for _tick in range(300):
-		world.step_tick()
-	check.call(world._defender_built == 1, "Defender resumes once the AI is disabled")
 
 
 func _test_ai_restart(check: Callable) -> void:

@@ -10,7 +10,6 @@ func run(tree: SceneTree, app: Node, check: Callable) -> void:
 	var session = screen.simulation
 	var world = session.world
 	session.set_physics_process(false)
-	world.defender_enabled = false
 	var nexus = world.nexuses[0]
 	session.selected_id = nexus.id
 	session.selected_slot_id = -1

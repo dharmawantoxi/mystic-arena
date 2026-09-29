@@ -316,8 +316,8 @@ func _replay(check: Callable) -> void:
 			check.call(_snapshot(first) == _snapshot(second), "match replay deterministic")
 			check.call(first.economy.is_balanced(), "replay budget reconciles")
 	check.call(
-		first._defender_built == 3 and first.economy.spent[1] == 300,
-		"temporary defender pays for exactly three towers"
+		first.ai_build.total_built == 0 and first.economy.spent[1] == 0,
+		"manual red side never spends without the AI switch"
 	)
 	check.call(
 		first.wave_count > 0 and first._next_projectile_id > 1, "scheduled waves lead to combat"
@@ -671,7 +671,6 @@ func _foe_hero(world: Prototype) -> HeroState:
 
 func _world() -> Prototype:
 	var world := Prototype.new()
-	world.defender_enabled = false
 	world.setup_arena()
 	return world
 
