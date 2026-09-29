@@ -366,6 +366,13 @@ if (ROOT / "data/levels/level_1.json").is_file() and (ROOT / "tests/fixtures/mat
         == _match_fixture["level_one"],
         "Level 1 config drifted from its source fixture",
     )
+from match_source_oracle import source_fixture as match_source_fixture
+check("BossMatchChecks.new().run(_check)" in ai_tests, "Boss match suite must run")
+if (ROOT / "tests/fixtures/match_source.json").is_file():
+    check(json.loads(json.dumps(match_source_fixture())) == json.loads(
+        (ROOT / "tests/fixtures/match_source.json").read_text(encoding="utf-8")),
+        "Match fixture must include source-executed boss conditions")
+
 from boss_core_source_oracle import source_fixture as boss_core_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
 check((ROOT / "tests/fixtures/boss_core_source.json").is_file(), "Boss core requires source fixture")

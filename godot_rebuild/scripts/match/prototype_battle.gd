@@ -19,8 +19,11 @@ const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
+const BossMatchState = preload("res://scripts/match/boss_match_state.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
+const BOSS_DATA := "res://data/bosses/boss_stats.json"
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
@@ -90,6 +93,12 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
+# Layer 8b: source owns one active boss outside the normal minion list.
+var boss_match := BossMatchState.new()
+var boss_table: Dictionary = {}
+var active_boss: BossState = null
+var level_number := 1
+var is_replay := false
 
 
 func _init() -> void:
@@ -97,6 +106,10 @@ func _init() -> void:
 	spawn_rng.seed = SPAWN_SEED
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_DATA))
 	level_config = parsed if parsed is Dictionary else {}
+	var parsed_bosses = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
+	boss_table = parsed_bosses if parsed_bosses is Dictionary else {}
+	boss_match.rng.randomize()
+	boss_match.roll_schedule(level_config.get("mini_bosses", {}), difficulty)
 	_apply_difficulty()
 
 
@@ -157,6 +170,7 @@ func set_difficulty(value: String) -> void:
 	# Source Game.reset: only "hard" turns enemy scaling on; any other value
 	# (including an unknown one) leaves every multiplier at 1.0.
 	difficulty = value
+	boss_match.roll_schedule(level_config.get("mini_bosses", {}), difficulty)
 	_apply_difficulty()
 
 
@@ -245,6 +259,8 @@ func step_tick() -> void:
 	)
 	wave_count = scheduler.wave
 	if batch.started:
+		boss_match.queue_wave(wave_count)
+		_try_spawn_pending_mini_boss()
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
@@ -252,7 +268,9 @@ func step_tick() -> void:
 		_auto_scale_ai_castle()
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
+	_try_spawn_true_boss()
 	super.step_tick()
+	_process_defeated_boss()
 	if is_running():
 		_tick_auras_and_items()
 		_tick_item_debuffs()
@@ -393,11 +411,66 @@ func sell_tower(team: int, entity_id: int) -> bool:
 
 
 func _on_death(source_team: int, target: UnitState) -> void:
+	var was_red_tower := (
+		target is StructureState
+		and target.team == RED
+		and (target as StructureState).settings().structure_kind == "tower"
+	)
+	var was_red_nexus := (
+		target is StructureState
+		and target.team == RED
+		and (target as StructureState).settings().structure_kind == "nexus"
+	)
 	var before := credited_gold[source_team]
 	super._on_death(source_team, target)
 	economy.credit_kill(source_team, credited_gold[source_team] - before)
+	if was_red_tower:
+		boss_match.note_red_tower_destroyed()
 	if not is_running():
 		scheduler.cancel()
+		boss_match.grant_meta_reward(was_red_nexus, level_number, level_config, is_replay)
+
+
+func _spawn_boss(boss_type: String, true_boss: bool) -> bool:
+	if active_boss != null or boss_type.is_empty():
+		return false
+	var boss := BossState.new()
+	if not boss.setup(boss_type, paths[1], boss_table):
+		return false
+	if enemy_scaling_enabled:
+		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
+	active_boss = boss
+	if true_boss:
+		boss_match.note_spawned_true_boss()
+	_record({"kind": "boss_spawn", "boss_type": boss_type, "true_boss": true_boss})
+	return true
+
+
+func _try_spawn_pending_mini_boss() -> bool:
+	if active_boss != null and not active_boss.alive:
+		active_boss = null
+	var boss_type := boss_match.pop_pending(active_boss != null and active_boss.alive)
+	return not boss_type.is_empty() and _spawn_boss(boss_type, false)
+
+
+func _try_spawn_true_boss() -> bool:
+	var boss_type := String(level_config.get("true_boss", ""))
+	if not boss_match.true_boss_ready(active_boss != null and active_boss.alive, boss_type):
+		return false
+	return _spawn_boss(boss_type, true)
+
+
+func _process_defeated_boss() -> void:
+	if active_boss == null or active_boss.alive or not active_boss.defeated:
+		return
+	var reward := active_boss.gold_reward
+	var boss_type := active_boss.boss_type
+	economy.credit_kill(BLUE, reward)
+	credited_gold[BLUE] += reward
+	boss_match.note_boss_defeated(boss_type)
+	_record({"kind": "boss_defeated", "boss_type": boss_type, "reward": reward})
+	active_boss = null
+	_try_spawn_pending_mini_boss()
 
 
 func _on_hero_death(hero: HeroState, source_id: int) -> void:
