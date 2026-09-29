@@ -796,14 +796,35 @@ men-stub pending spawn.
 
 CI Godot 4.7.2 hijau pada `282da4e`
 ([run 36565938630](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36565938630)):
-**1.185.242 native checks**; `validate_project.py` 5859 static. Berikutnya:
-pergerakan/serangan/cleave boss.
+**1.185.242 native checks**; `validate_project.py` 5859 static.
+
+## Pergerakan, serangan dasar dan cleave boss (layer 8c)
+
+Layer **8c** (`0bd27ab`) menjalankan boss aktif sebagai peserta combat nyata.
+`BossState` sekarang mem-port pencarian target radius `range + 100`, tie pertama,
+movement budget yang terus menyeberangi waypoint tanpa stall, chase yang di-clamp,
+12 tipe ranged dengan kiting hysteresis `min/prefer ± 12`, facing vertikal,
+dan lock arah swing 6–15 tick. Basic hit memakai sekolah physical; splash cleave
+40% dalam radius 80 memakai jalur neutral seperti argumen default sumber.
+Attack slow Ice membagi cooldown dengan pembulatan sumber.
+
+Boss mendapat ID registry tanpa masuk loop minion, sehingga minion/hero/tower
+biru dapat memilih dan menyerangnya; incoming hit melewati `BossState.take_damage`
+tepat sekali (mitigasi/resilience/cap layer 8a), lalu death reward layer 8b.
+`boss_movement_source_oracle.py` mengeksekusi AST asli `Boss.update`, `_face`,
+`_lane_target`, `_advance_waypoint`, `_move_forward`, dan `_get_boss_stats`.
+Data 216 boss kini juga membawa `min_distance`/`prefer_distance` hasil oracle.
+
+CI Godot 4.7.2 hijau pada `0bd27ab`
+([run 36577153110](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36577153110)):
+**1.185.260 native checks**; `validate_project.py` 5886 static. Berikutnya:
+ability boss + smart AI.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0ec75-mystic-arena (PR draft
 > #302, basis main 630f31a). Lapisan **8b** (`282da4e`, run 36565938630) sudah
-> hijau di CI: jadwal/pending spawn mini/true boss, counter tower, reward dan
-> unlock. Berikutnya di daftar boss: pergerakan/serangan/cleave, lalu ability +
-> smart AI, clock/presentasi, sistem produksi yang belum ada dan
+> hijau di CI sampai layer **8c** (`0bd27ab`, run 36577153110): spawn,
+> reward/unlock, pergerakan, basic attack dan cleave boss. Berikutnya: ability +
+> smart AI, lalu clock/presentasi, sistem produksi yang belum ada dan
 > sisi AI panel Forge. Kalau ada tugas baru: satu commit per sub-layer,
 > pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
 > commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber

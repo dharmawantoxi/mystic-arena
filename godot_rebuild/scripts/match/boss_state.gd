@@ -9,10 +9,9 @@ extends "res://scripts/combat/unit_state.gd"
 ## `data/bosses/boss_stats.json`, rendered from the source tables by
 ## `tests/boss_core_source_oracle.py`.
 ##
-## Not ported here (next layers): movement/attack/cleave, abilities and smart
-## AI, entrance/enrage animation clocks, intro/defeat presentation, and the
-## match wiring that rolls the schedule, spawns the boss, counts destroyed red
-## towers and unlocks the defeated boss.
+## Layers 8b–8c add match spawn/reward/unlock plus movement, targetability,
+## basic attack and cleave. Still deferred: abilities + smart AI,
+## entrance/enrage clocks, and intro/defeat presentation.
 
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
