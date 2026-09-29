@@ -314,11 +314,34 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      `_buy_item_for` memanggil `apply_item_change()` setelah equip sukses.
      Oracle: 5 urutan equip/drop/level dengan `_recalc_item_stats`/
      `_apply_level_stats`/`upgrade`/`apply_heal_amp` sumber nyata.
-     **Batasan 5b:** hanya HP/heal amp yang diterapkan. Damage/armor/crit/AS/
-     evasion/lifesteal dst. belum dikonsumsi jalur serangan karena
-     `minion_battle.gd` berada di batas 1000 baris (perlu bedah tanpa tambah
-     baris); `heal_amp_timer` belum dikurangi per tick; `clear_on_death` sudah dipanggil dari hook
-     kematian match (lihat 5b+).
+     **Batasan 5b (sebagian ditutup 5b-2/5b-3):** `unit_state.gd` kini juga
+     menyimpan/men-decrement `armor_shred_*` dan `dmg_amp_*` (5b-3) sehingga
+     `heal_amp_timer` ikut turun per tick lewat `tick_item_debuffs()`. Sisa
+     yang belum dikonsumsi jalur combat: evasion/true strike (5b-4) dan
+     skill amp/CDR/spell vamp (5b-5); `minion_battle.gd` tetap 1000 baris
+     karena konsumennya hidup di `DamageRules`/`HeroState`.
+   - [x] **5b-2.** Stat serangan/gerak dikonsumsi: `HeroState.eff_attack_cd`
+     membagi `base_cd` dengan `items.get_attack_speed_mult()` sebelum pembagi
+     attack-slow Ice, `HeroState.eff_attack_range` menambah bonus reach
+     (gerbang ranged tetap di inventaris), `HeroState.eff_speed` mem-port
+     `TowerDebuffMixin._eff_speed` (slow gerak + `move_speed_pct` Tempest Vane
+     + stun), dan `prototype_battle.apply_slow` menerapkan `slow_resist` Abyss
+     Breaker sebelum penyimpanan strongest-wins. Oracle `stat_consumption`
+     mengeksekusi `Hero._eff_attack_cd`/`_eff_attack_range`,
+     `TowerDebuffMixin._eff_speed`/`apply_slow` nyata untuk 9 kasus item.
+   - [x] **5b-3.** Debuff item di sisi TARGET: `UnitState.apply_armor_shred`
+     (Corroder) + `apply_damage_amp` (Soul Rend) mengikuti setter sumber
+     (terkuat menang, durasi lebih panjang me-refresh keduanya, target mati
+     diabaikan) dan `tick_item_debuffs()` mem-port potongan item dari
+     `_tick_tower_debuffs` (decrement per tick, amount dibersihkan di tick
+     terakhir); `prototype_battle` men-decay seluruh unit sekali per tick.
+     `DamageRules.effective_armor` = armor definisi + armor item hero - shred,
+     `DamageRules.item_aware_amount` = mitigasi sekolah lalu damage amp Soul
+     Rend, dipakai `_damage_amount`. Bus `battle_item_effects` mendaratkan
+     keduanya ke unit nyata. Oracle `item_debuffs` mengeksekusi tiga setter
+     sumber untuk 10 urutan; tes native memutar ulang setiap op, menguji decay
+     dan membuktikan armor Steel Aegis menurunkan hit fisik sementara
+     shred/amp menaikkannya lagi.
    - [x] **5b+.** Kematian hero: `prototype_battle._on_hero_death` memanggil
      `items.clear_on_death()` seperti cabang mati `Hero.take_damage`
      (`_entity.py:4742`). Sumber TIDAK menghitung ulang max HP di cabang itu
@@ -464,12 +487,14 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 - [x] Transaksi upgrade tower/nexus/hero red per kandidat dengan live reserve;
   hero mati tetap eligible, batas level sumber, ledger dan counter nyata.
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
-- [ ] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
+- [x] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-  Lapisan 1-4 + 5a selesai (metadata katalog 33 item termasuk `stats` numerik,
-  `suggest_item_for_hero`/`is_magic_hero`, slot `HeroItemInventory`, adapter
-  `ai_items.gd::try_buy` + transaksi ledger, agregasi stat murni); sisa 5b-5f
-  (penerapan stat, timer pasif/aktif, aura, proc on-hit, Forge UI).
+  Lapisan 1-4 + 5a + 5b/5b+/5b-2/5b-3 + 5c-1/5c-2 + 5d + 5e/5e-2 + 5f/5f-2/5f-3
+  selesai: katalog 33 item, saran role+range, inventaris 6 slot, adaptor beli
+  AI di ledger, penerapan stat (HP/heal amp + attack speed/range/move speed/
+  slow resist + armor/shred/damage amp), timer pasif/aktif, aura, proc on-hit,
+  Miasma/Polycephaly, dan Forge shop + panel UI. Sisa: evasion/true strike
+  (5b-4) dan skill amp/CDR/spell vamp (5b-5).
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.
@@ -526,6 +551,12 @@ dan fixture tidak berubah (lapisan ini tidak menyentuh oracle).
 CI Godot 4.7.2 run 36508998487 hijau untuk lapisan 6e (commit `5e98734`, push):
 **1.179.249 native checks**, static lokal 5768 PASS; `minion_battle.gd` tetap
 1000 baris, fixture 11.959 baris dan tidak berubah.
+CI Godot 4.7.2 run 36512974862 hijau untuk lapisan 5b-2 (commit `10db2c7`, push):
+**1.179.293 native checks**, static lokal 5768 PASS; `minion_battle.gd` tetap
+1000 baris, fixture 12.191 baris (regenerasi lewat oracle, bukan edit tangan).
+CI Godot 4.7.2 run 36513763224 hijau untuk lapisan 5b-3 (commit `39c7d60`, push):
+**1.179.316 native checks**, static lokal 5771 PASS; `minion_battle.gd` tetap
+1000 baris dan fixture di bawah 20k.
 CI Godot 4.7.2 run 36510010594 hijau untuk lapisan 6f (commit `81e4faa`, push):
 **1.179.249 native checks**, static lokal 5768 PASS. Uji 6f sempat merah di run
 36509433010 (`FAIL: the AI lane order overrides the retreat`): ancaman uji berada
@@ -550,8 +581,9 @@ Status sesi `arena/01a0eacd-mystic-arena` (PR draft #300, basis main `5e5f32a`):
 retreat/heal hero merah + hunt lintas-lane; keduanya hijau di CI (lihat run di
 atas). Tidak ada sisa kode defender di `godot_rebuild/` — satu-satunya sakelar
 sisi merah adalah `set_ai_enabled()`/`ai_enabled`.
-Berikutnya: pekerjaan lanjutan hanya setelah diperintahkan pemilik repo (PR
-masih draft, jangan merge tanpa perintah). Undian 6c/6d memakai
+Berikutnya (perintah pemilik repo, PR masih draft, jangan merge tanpa perintah):
+sisa konsumen stat item — **5b-4** evasion/true strike (+ blind aura) di jalur
+`_deliver_hit`, lalu **5b-5** skill amp/CDR/spell vamp di jalur skill hero. Undian 6c/6d memakai
 `ai_controller.draw()`; adapter build/draft memakai RNG ter-seed dari seed
 pertandingan yang sama. Catatan 6a: `towers` diteruskan eksplisit karena daftar
 struktur native juga memuat nexus, sedangkan sumber hanya menyusuri `all_towers`.
