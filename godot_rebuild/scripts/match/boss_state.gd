@@ -36,6 +36,7 @@ var display_name := ""
 var title := ""
 var boss_class := "mini"
 var rules: Dictionary = {}
+var skills: Dictionary = {}
 
 var max_hp := 0
 var damage := 0
@@ -69,6 +70,18 @@ var entrance_color := Color.BLACK
 var timer := 0
 var ability_timer := 0
 var ability2_timer := 0
+var q_timer := 0
+var w_timer := 0
+var e_timer := 0
+var r_timer := 0
+var active_skill := ""
+var active_skill_timer := 0
+var flux_target_id := -1
+var flux_active_timer := 0
+var clones_active_timer := 0
+var rage_active := false
+var rage_timer := 0
+var defense_timer := 0
 var ability_active := false
 var ability_active_timer := 0
 var hurt_flash_timer := 0
@@ -101,6 +114,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 		return false
 	boss_type = boss_type_value
 	rules = table.get("rules", {})
+	skills = stats.get("skills", {})
 	boss_class = String(stats["boss_class"])
 	display_name = String(stats["name"])
 	title = String(stats["title"])
@@ -332,6 +346,26 @@ func move_forward() -> void:
 		position += offset / distance * budget
 		face_vector(offset)
 		budget = 0.0
+
+
+func smart_skill_damage(key: String, fallback: int) -> int:
+	# _get_boss_stats scales every numeric *damage* key by Mage skill-down and
+	# hard-mode damage scaling. Enrage scaling joins in the later clock layer.
+	var value := float(skills.get(key, fallback)) * dmg_scaling_mult
+	if skill_down_timer > 0:
+		value *= maxf(0.0, 1.0 - skill_down_amount)
+	return Damage.rounded_like_python(value)
+
+
+func tick_ability_clocks() -> void:
+	if ability_timer > 0:
+		ability_timer -= 1
+	if ability2_timer > 0:
+		ability2_timer -= 1
+	if ability_active_timer > 0:
+		ability_active_timer -= 1
+		if ability_active_timer <= 0:
+			ability_active = false
 
 
 func apply_scaling(hp_mult: float = 1.0, dmg_mult: float = 1.0, spd_mult: float = 1.0) -> void:

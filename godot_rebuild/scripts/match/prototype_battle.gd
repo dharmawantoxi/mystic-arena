@@ -21,6 +21,7 @@ const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const BossMatchState = preload("res://scripts/match/boss_match_state.gd")
+const BossLevelOneAI = preload("res://scripts/match/boss_level_one_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
@@ -519,6 +520,13 @@ func _step_boss_combat() -> void:
 		active_boss.stun_timer -= 1
 		return
 	active_boss.tick_basic_attack()
+	active_boss.tick_ability_clocks()
+	if (
+		active_boss.boss_class == "true"
+		and active_boss.ability2_timer == 0
+		and active_boss.hp < float(active_boss.max_hp) * 0.3
+	):
+		BossLevelOneAI.heal_ability(active_boss)
 	var enemies := _boss_enemies()
 	var target := active_boss.pick_target(enemies)
 	active_boss.target_id = target.id if target != null else -1
@@ -529,17 +537,22 @@ func _step_boss_combat() -> void:
 		active_boss.move_for_target(target)
 		return
 	active_boss.face_vector(target.position - active_boss.position)
-	if not active_boss.begin_basic_attack(target):
-		return
-	_deliver_hit(-1, RED, target, active_boss.damage, "physical", active_boss.position)
-	var cleave_damage := int(float(active_boss.damage) * active_boss.cleave_ratio)
-	if cleave_damage <= 0:
-		return
-	for nearby in enemies:
-		if nearby == target or not nearby.alive:
-			continue
-		if active_boss.position.distance_to(nearby.position) <= active_boss.cleave_radius:
-			_deliver_hit(-1, RED, nearby, cleave_damage, "neutral", active_boss.position)
+	if active_boss.begin_basic_attack(target):
+		_deliver_hit(-1, RED, target, active_boss.damage, "physical", active_boss.position)
+		var cleave_damage := int(float(active_boss.damage) * active_boss.cleave_ratio)
+		if cleave_damage > 0:
+			for nearby in enemies:
+				if nearby == target or not nearby.alive:
+					continue
+				if active_boss.position.distance_to(nearby.position) <= active_boss.cleave_radius:
+					_deliver_hit(-1, RED, nearby, cleave_damage, "neutral", active_boss.position)
+	if active_boss.boss_type in BossLevelOneAI.IDS:
+		BossLevelOneAI.step(self, active_boss, enemies, target)
+	elif (
+		active_boss.boss_type not in active_boss.rules.get("smart_ai_types", [])
+		and active_boss.ability_timer == 0
+	):
+		BossLevelOneAI.generic_ability(self, active_boss, enemies)
 
 
 func _process_defeated_boss() -> void:

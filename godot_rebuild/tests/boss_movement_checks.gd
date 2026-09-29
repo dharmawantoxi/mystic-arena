@@ -115,6 +115,10 @@ func _world_attack_and_cleave(check: Callable) -> void:
 	var world := Prototype.new()
 	check.call(world._spawn_boss("gornak", false), "movement fixture spawns boss")
 	world.active_boss.position = Vector2(500, 500)
+	world.active_boss.q_timer = 999
+	world.active_boss.w_timer = 999
+	world.active_boss.e_timer = 999
+	world.active_boss.r_timer = 999
 	var main := world.spawn_unit(GOBLIN, 0, 1)
 	var splash := world.spawn_unit(GOBLIN, 0, 1)
 	var far := world.spawn_unit(GOBLIN, 0, 1)

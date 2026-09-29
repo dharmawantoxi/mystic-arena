@@ -149,6 +149,8 @@ def row_of(boss):
         "ability_range": int(boss.ability_range),
         "ability2_cooldown": int(boss.ability2_cooldown_max),
         "ability2_heal_pct": float(boss.ability2_heal_pct),
+        "skills": {key: value for key, value in get_all_boss_types()[boss.boss_type].items()
+                   if key.startswith("skill_") and isinstance(value, (int, float))},
         "armor": int(boss.armor),
         "magic_resist": float(boss.magic_resist),
         "resist_profile": str(boss.resist_profile),
@@ -200,6 +202,13 @@ def data_of(env, boss_cls, lane_path):
         "damage_reduction": dict(RESILIENCE),
         "max_damage_per_hit_pct": dict(CAP_PCT),
         "entrance_ticks": dict(ENTRANCE_TICKS),
+        "smart_ai_types": sorted(
+            node.name.removeprefix("_smart_ai_")
+            for node in next(item for item in ast.parse(
+                (ROOT / "bosses/base_boss.py").read_text(encoding="utf-8")
+            ).body if isinstance(item, ast.ClassDef) and item.name == "Boss").body
+            if isinstance(node, ast.FunctionDef) and node.name.startswith("_smart_ai_")
+        ),
     }
     bosses = {}
     for kind in get_all_boss_types():
