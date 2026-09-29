@@ -817,14 +817,36 @@ Data 216 boss kini juga membawa `min_distance`/`prefer_distance` hasil oracle.
 
 CI Godot 4.7.2 hijau pada `0bd27ab`
 ([run 36577153110](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36577153110)):
-**1.185.260 native checks**; `validate_project.py` 5886 static. Berikutnya:
-ability boss + smart AI.
+**1.185.260 native checks**; `validate_project.py` 5886 static.
 
-> Pesan siap-salin: Lanjutkan di branch arena/01a0ec75-mystic-arena (PR draft
-> #302, basis main 630f31a). Lapisan **8b** (`282da4e`, run 36565938630) sudah
-> hijau di CI sampai layer **8c** (`0bd27ab`, run 36577153110): spawn,
-> reward/unlock, pergerakan, basic attack dan cleave boss. Berikutnya: ability +
-> smart AI, lalu clock/presentasi, sistem produksi yang belum ada dan
+## Ability generik + smart AI boss level 1 (layer 8d-1)
+
+Layer **8d-1** (`9857607`) mem-port ability AOE generik untuk boss tanpa smart
+handler, heal true boss saat HP <30%, serta priority tree live untuk Gornak,
+Morgath, Drakar, dan Abaddon. Termasuk cooldown Q/W/E/R, skill-down + hard-mode
+scaling pada seluruh `skill_*_damage`, Blink/Gale movement, Counterspell/
+Magnetic Field/Berserker attack hold, Mana Void/Death Sever/Helix AOE, Flux DOT
++ slow, Tempest Double clone strikes, Battle Hunger rage, defense boost,
+Culling Blade execute/reset, heal dan shield.
+
+`boss_core_source_oracle.py` kini merender seluruh skalar `skill_*` dan daftar
+79 owner smart-AI dari AST sumber ke `boss_stats.json`; ini mencegah boss smart
+yang belum diport jatuh diam-diam ke ability generik. Oracle baru
+`boss_level_one_ai_source_oracle.py` mengeksekusi 29 definisi metode AST asli
+(generic/heal + empat smart AI/cast family) untuk priority, damage, timer, buff,
+DOT, slow, movement dan execute. **Batas jujur:** smart AI 75 tipe selain empat
+boss level 1 masih belum live dan harus dipindahkan per kelompok berikutnya.
+
+CI Godot 4.7.2 hijau pada `9857607`
+([run 36582093837](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36582093837)):
+**1.185.351 native checks**; `validate_project.py` 5920 static. Berikutnya:
+smart AI boss level berikutnya, tetap satu kelompok per sub-layer.
+
+> Pesan siap-salin: Lanjutkan di branch arena/01a0ecfe-mystic-arena (PR draft
+> #302, basis main 630f31a). Hijau sampai layer **8d-1** (`9857607`, run
+> 36582093837): spawn/reward/unlock, movement/basic/cleave, ability generik,
+> heal true boss dan smart AI empat boss level 1. Berikutnya: smart AI 75 boss
+> tersisa per kelompok, lalu clock/presentasi, sistem produksi yang belum ada dan
 > sisi AI panel Forge. Kalau ada tugas baru: satu commit per sub-layer,
 > pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
 > commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber

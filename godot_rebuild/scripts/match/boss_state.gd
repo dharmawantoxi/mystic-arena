@@ -10,8 +10,9 @@ extends "res://scripts/combat/unit_state.gd"
 ## `tests/boss_core_source_oracle.py`.
 ##
 ## Layers 8b–8c add match spawn/reward/unlock plus movement, targetability,
-## basic attack and cleave. Still deferred: abilities + smart AI,
-## entrance/enrage clocks, and intro/defeat presentation.
+## basic attack and cleave. Layer 8d-1 adds generic ability/heal and the four
+## level-1 smart trees. Still deferred: 75 smart trees, entrance/enrage clocks,
+## and intro/defeat presentation.
 
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
