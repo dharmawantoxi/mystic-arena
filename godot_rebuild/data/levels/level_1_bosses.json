@@ -33,7 +33,9 @@
     "ability2_heal_pct": 0.0,
     "armor": 8,
     "magic_resist": 0.187,
-    "resist_profile": "magic"
+    "resist_profile": "magic",
+    "min_distance": 200,
+    "prefer_distance": 280
   },
   "morgath": {
     "name": "Morgath",
@@ -69,7 +71,9 @@
     "ability2_heal_pct": 0.0,
     "armor": 8,
     "magic_resist": 0.187,
-    "resist_profile": "magic"
+    "resist_profile": "magic",
+    "min_distance": 100,
+    "prefer_distance": 150
   },
   "drakar": {
     "name": "Drakar",
@@ -105,7 +109,9 @@
     "ability2_heal_pct": 0.0,
     "armor": 13,
     "magic_resist": 0.079,
-    "resist_profile": "balanced"
+    "resist_profile": "balanced",
+    "min_distance": 200,
+    "prefer_distance": 280
   },
   "abaddon": {
     "name": "Abaddon",
@@ -141,6 +147,8 @@
     "ability2_heal_pct": 0.3,
     "armor": 32,
     "magic_resist": 0.095,
-    "resist_profile": "armored"
+    "resist_profile": "armored",
+    "min_distance": 200,
+    "prefer_distance": 280
   }
 }

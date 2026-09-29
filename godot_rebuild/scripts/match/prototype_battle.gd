@@ -276,6 +276,36 @@ func _process_boss_kill(boss: BossState) -> void:
 		miniboss_kill_count += 1
 
 
+func _boss_enemies() -> Array:
+	# Port of the enemy list construction in Boss.update (bosses/base_boss.py:701):
+	# all_units, then all_towers, then all_bases of opposing teams.
+	var out: Array = []
+	for unit in units:
+		if unit != null and unit.alive and unit.team != RED:
+			out.append(unit)
+	for struct in structures:
+		if struct != null and struct.alive and struct.team != RED:
+			if struct.settings().structure_kind == "tower":
+				out.append(struct)
+	for struct in structures:
+		if struct != null and struct.alive and struct.team != RED:
+			if struct.settings().structure_kind != "tower":
+				out.append(struct)
+	return out
+
+
+func _step_boss() -> void:
+	# Port of the BOSS UPDATE block in Game.update (_core.py:2107).
+	if active_boss == null or not active_boss.alive:
+		return
+	var enemies := _boss_enemies()
+	active_boss.step_update(
+		enemies,
+		func(target: UnitState, raw_dmg: int, school: String) -> void:
+			_deliver_hit(-1, RED, target, raw_dmg, school, active_boss.position, "normal")
+	)
+
+
 func _check_boss_defeated() -> void:
 	# Port of the BOSS DEFEATED -> UNLOCK HERO block in Game.update (_core.py:2111).
 	if active_boss == null or active_boss.alive or not active_boss.defeated:
@@ -392,6 +422,7 @@ func step_tick() -> void:
 	if is_running():
 		_tick_auras_and_items()
 		_try_spawn_true_boss()
+		_step_boss()
 		_check_boss_defeated()
 		_tick_item_debuffs()
 		_step_hero_act()

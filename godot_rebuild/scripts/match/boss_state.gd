@@ -6,6 +6,102 @@ extends "res://scripts/combat/unit_state.gd"
 
 const Rounding = preload("res://scripts/combat/damage_rules.gd")
 const FALLBACK_SPAWN := Vector2(1130.0, 100.0)
+const BLUE_BASE_POS := Vector2(100.0, 620.0)
+const RANGED_KITE_BOSSES := [
+	"ancient_apparition",
+	"morgath",
+	"razak",
+	"varkul",
+	"xerathis",
+	"nyzrak",
+	"syrentha",
+	"thalgryn",
+	"nyxarath",
+	"malzareth",
+	"akashari",
+	"vorenmarr"
+]
+const SMART_AI_BOSSES := [
+	"abaddon",
+	"alchemist",
+	"ancient_apparition",
+	"ignis_drachorn",
+	"gornak",
+	"morgath",
+	"drakar",
+	"razak",
+	"khalros",
+	"gorath",
+	"varkul",
+	"xerathis",
+	"nyzrak",
+	"zharok",
+	"pyrenth",
+	"vokrahn",
+	"nyxara",
+	"gravefang",
+	"vhalzun",
+	"kunkka",
+	"gravewake",
+	"syrentha",
+	"thalgryn",
+	"nyxarath",
+	"vhorethzir",
+	"vaerith",
+	"xirthalis",
+	"vhyssarion",
+	"kenshiro",
+	"khazan",
+	"wiro",
+	"naraka",
+	"krognarr",
+	"raz",
+	"vraskhan",
+	"aurethzar",
+	"aeralith",
+	"aurex",
+	"nyxareva",
+	"thalakryon",
+	"aurelix",
+	"aurelyssa",
+	"vargrath",
+	"nazulmor",
+	"kaeldris",
+	"pyraklos",
+	"velmyrth",
+	"solvarin",
+	"malzareth",
+	"akashari",
+	"vorenmarr",
+	"azureth",
+	"luminar",
+	"solara",
+	"pyraethis",
+	"auroth",
+	"morvein",
+	"thorvak",
+	"yamako",
+	"ignirus",
+	"leoric",
+	"shirotaka",
+	"seiryukong",
+	"kaelthorn",
+	"solvanth",
+	"xyrael",
+	"nyxareth",
+	"cryssalia",
+	"kaelthar",
+	"morkhaera",
+	"aurelion",
+	"akahime",
+	"nyxthrael",
+	"sylvantheros",
+	"vaelindra",
+	"astraelion",
+	"morvaenthir",
+	"thornvaegrim",
+	"morthraxis"
+]
 
 var boss_type := ""
 var name := ""
@@ -77,6 +173,15 @@ var kite_mode := "hold"
 var stun_timer := 0
 var defense_boost := false
 var killed_by_source: Object = null
+var pos_x := 0.0
+var pos_y := 0.0
+var prev_x := 0.0
+var prev_y := 0.0
+var attack_facing := 0
+var basic_attack_seq := 0
+var min_distance := 200
+var prefer_distance := 280
+var target_ref: Object = null
 
 
 func _init(kind: String = "", path: Variant = PackedVector2Array(), stats: Dictionary = {}) -> void:
@@ -119,6 +224,8 @@ func _init(kind: String = "", path: Variant = PackedVector2Array(), stats: Dicti
 		position = lane_path[lane_path.size() - 1]
 	else:
 		position = FALLBACK_SPAWN
+	pos_x = float(position.x)
+	pos_y = float(position.y)
 	waypoint_index = lane_path.size() - 1
 	direction = -1
 	alive = true
@@ -151,8 +258,15 @@ func _init(kind: String = "", path: Variant = PackedVector2Array(), stats: Dicti
 	ability_active_timer = 0
 	is_moving = false
 	prev_position = position
+	prev_x = pos_x
+	prev_y = pos_y
+	attack_facing = 0
+	basic_attack_seq = 0
 	attack_lock_timer = 0
 	kite_mode = "hold"
+	min_distance = int(stats.get("min_distance", 200))
+	prefer_distance = int(stats.get("prefer_distance", 280))
+	target_ref = null
 	burn_tick_cd = 30
 	stun_timer = 0
 	defense_boost = false
@@ -316,3 +430,279 @@ func take_damage(
 		killed_by_source = source
 		clear_tower_debuffs()
 	return effective_damage
+
+
+func set_pos(nx: float, ny: float) -> void:
+	pos_x = nx
+	pos_y = ny
+	position = Vector2(nx, ny)
+
+
+func set_hp_with_modifiers(value: float) -> void:
+	# Port of TowerDebuffMixin.hp setter (_core.py:861): anti-heal and heal-amp
+	# scale positive HP gains in that exact order.
+	var next_val := value
+	if next_val > hp and anti_heal_timer > 0:
+		next_val = hp + (next_val - hp) * (1.0 - anti_heal_amount)
+	if next_val > hp and heal_amp_timer > 0:
+		next_val = hp + (next_val - hp) * (1.0 + heal_amp_amount)
+	hp = next_val
+
+
+func eff_attack_cd(base_cd: int) -> int:
+	# Port of TowerDebuffMixin._eff_attack_cd (_core.py:974).
+	if stun_timer > 0:
+		return 9999
+	if atk_slow_timer > 0:
+		var factor := maxf(0.05, 1.0 - atk_slow_amount)
+		return maxi(1, Rounding.rounded_like_python(float(base_cd) / factor))
+	return base_cd
+
+
+func tick_tower_debuffs() -> void:
+	# Port of TowerDebuffMixin._tick_tower_debuffs (_core.py:983).
+	if slow_timer > 0:
+		slow_timer -= 1
+		if slow_timer <= 0:
+			slow_amount = 0.0
+	if atk_slow_timer > 0:
+		atk_slow_timer -= 1
+		if atk_slow_timer <= 0:
+			atk_slow_amount = 0.0
+	if skill_down_timer > 0:
+		skill_down_timer -= 1
+		if skill_down_timer <= 0:
+			skill_down_amount = 0.0
+	if anti_heal_timer > 0:
+		anti_heal_timer -= 1
+		if anti_heal_timer <= 0:
+			anti_heal_amount = 0.0
+	if stun_timer > 0:
+		stun_timer -= 1
+	tick_item_debuffs()
+	if burn_timer > 0:
+		burn_timer -= 1
+		burn_accum += burn_dps / 60.0
+		burn_tick_cd -= 1
+		if burn_tick_cd <= 0:
+			burn_tick_cd = 30
+			var dmg := int(burn_accum)
+			if dmg > 0 and alive:
+				burn_accum -= float(dmg)
+				take_damage(dmg, burn_team if burn_team >= 0 else team, "fire")
+		if burn_timer <= 0:
+			burn_dps = 0.0
+			burn_accum = 0.0
+
+
+func _use_heal_ability() -> void:
+	# Port of Boss._use_heal_ability (bosses/base_boss.py:5955).
+	if ability2_cooldown_max <= 0:
+		return
+	ability2_timer = ability2_cooldown_max
+	var heal_amount := int(max_hp * ability2_heal_pct)
+	set_hp_with_modifiers(minf(float(max_hp), hp + float(heal_amount)))
+
+
+func _face(dx: float, dy: float) -> void:
+	# Port of Boss._face (bosses/base_boss.py:988).
+	if attack_lock_timer > 0:
+		if attack_facing != 0:
+			direction = attack_facing
+		return
+	if absf(dx) < 0.35 * maxf(1e-6, absf(dy)):
+		return
+	direction = 1 if dx > 0.0 else -1
+
+
+func _lane_target() -> Vector2:
+	if not lane_path.is_empty() and waypoint_index >= 0 and waypoint_index < lane_path.size():
+		return lane_path[waypoint_index]
+	return BLUE_BASE_POS
+
+
+func _advance_waypoint() -> bool:
+	if lane_path.is_empty():
+		return false
+	waypoint_index -= 1
+	return waypoint_index >= 0
+
+
+func _move_forward() -> void:
+	# Port of Boss._move_forward (bosses/base_boss.py:1015).
+	var budget := float(speed)
+	if budget <= 0.0:
+		return
+	var guard := 0
+	while budget > 1e-3 and guard < 16:
+		guard += 1
+		var target_pt := _lane_target()
+		var tx := float(target_pt.x)
+		var ty := float(target_pt.y)
+		var dx := tx - pos_x
+		var dy := ty - pos_y
+		var d := sqrt(dx * dx + dy * dy)
+		var has_next := (not lane_path.is_empty()) and waypoint_index >= 0
+		if d <= 1e-6:
+			if not has_next:
+				break
+			_advance_waypoint()
+			continue
+		if d <= budget:
+			set_pos(tx, ty)
+			budget -= d
+			_face(dx, dy)
+			if has_next:
+				_advance_waypoint()
+			continue
+		set_pos(pos_x + budget * dx / d, pos_y + budget * dy / d)
+		_face(dx, dy)
+		budget = 0.0
+
+
+func _use_ability(enemies: Array, hit_cb: Callable) -> void:
+	# Port of Boss._use_ability (bosses/base_boss.py:1073).
+	ability_timer = ability_cooldown_max
+	ability_active = true
+	ability_active_timer = 60
+	for enemy in enemies:
+		var ex := float(enemy.position.x)
+		var ey := float(enemy.position.y)
+		var dist := sqrt((ex - pos_x) * (ex - pos_x) + (ey - pos_y) * (ey - pos_y))
+		if dist <= float(ability_range):
+			if hit_cb.is_valid():
+				hit_cb.call(enemy, ability_damage, "neutral")
+			if enemy.get("attack_timer") != null:
+				enemy.attack_timer = maxi(int(enemy.attack_timer), 60)
+
+
+func step_update(enemies: Array, hit_cb: Callable = Callable()) -> void:
+	# Port of Boss.update (bosses/base_boss.py:567).
+	if not alive:
+		return
+	anim_time += 1
+	pulse += 0.1
+	var moved := sqrt((pos_x - prev_x) * (pos_x - prev_x) + (pos_y - prev_y) * (pos_y - prev_y))
+	prev_x = pos_x
+	prev_y = pos_y
+	prev_position = position
+	is_moving = moved > 0.05
+	if attack_lock_timer > 0:
+		attack_lock_timer -= 1
+		if attack_lock_timer <= 0:
+			attack_facing = 0
+	tick_tower_debuffs()
+	if not alive:
+		return
+	if stun_timer > 0:
+		return
+	if hurt_flash_timer > 0:
+		hurt_flash_timer -= 1
+	if entrance_timer > 0:
+		entrance_timer -= 1
+		return
+	if not enrage_triggered:
+		if boss_class == "true" and hp <= float(max_hp) * 0.50:
+			enrage_triggered = true
+			is_enraged = true
+			speed = speed * 1.25
+			damage = int(damage * 1.25)
+			attack_cooldown = maxi(18, int(attack_cooldown * 0.75))
+		elif boss_class == "mini" and hp <= float(max_hp) * 0.40:
+			enrage_triggered = true
+			is_enraged = true
+			speed = speed * 1.15
+			damage = int(damage * 1.20)
+			attack_cooldown = maxi(20, int(attack_cooldown * 0.80))
+	if is_enraged:
+		enrage_pulse += 0.08
+		if anim_time % 2 == 0:
+			if timer > 0:
+				timer -= 1
+			if ability_timer > 0:
+				ability_timer -= 1
+	if timer > 0:
+		timer -= 1
+	if ability_timer > 0:
+		ability_timer -= 1
+	if ability2_timer > 0:
+		ability2_timer -= 1
+	if ability_active_timer > 0:
+		ability_active_timer -= 1
+		if ability_active_timer <= 0:
+			ability_active = false
+	if boss_class == "true" and ability2_timer == 0:
+		if hp < float(max_hp) * 0.30:
+			_use_heal_ability()
+	target_ref = null
+	target_id = -1
+	var best_dist := float(range_px + 100)
+	for enemy in enemies:
+		if enemy == null or not enemy.alive or enemy.team == team:
+			continue
+		var ex := float(enemy.position.x)
+		var ey := float(enemy.position.y)
+		var dist := sqrt((ex - pos_x) * (ex - pos_x) + (ey - pos_y) * (ey - pos_y))
+		if dist < best_dist:
+			best_dist = dist
+			target_ref = enemy
+			target_id = int(enemy.id)
+	if target_ref != null:
+		var tx := float(target_ref.position.x)
+		var ty := float(target_ref.position.y)
+		var dx := tx - pos_x
+		var dy := ty - pos_y
+		var dist := sqrt(dx * dx + dy * dy)
+		if dist <= float(range_px):
+			_face(dx, dy)
+			if timer == 0:
+				if hit_cb.is_valid():
+					hit_cb.call(target_ref, damage, "physical")
+				var cleave_dmg := int(damage * cleave_ratio)
+				if cleave_dmg > 0:
+					for near_e in enemies:
+						if near_e == null or near_e == target_ref or not near_e.alive:
+							continue
+						var nx := float(near_e.position.x)
+						var ny := float(near_e.position.y)
+						var nd := sqrt((nx - pos_x) * (nx - pos_x) + (ny - pos_y) * (ny - pos_y))
+						if nd <= float(cleave_radius) and hit_cb.is_valid():
+							hit_cb.call(near_e, cleave_dmg, "neutral")
+				timer = eff_attack_cd(attack_cooldown)
+				attack_facing = direction
+				basic_attack_seq += 1
+				attack_lock_timer = mini(15, maxi(6, int(attack_cooldown / 3.0)))
+			if boss_type not in SMART_AI_BOSSES and ability_timer == 0:
+				_use_ability(enemies, hit_cb)
+		else:
+			var sp := float(speed)
+			if boss_type in RANGED_KITE_BOSSES:
+				var band := 12.0
+				if dist > 0.0:
+					if dist < float(min_distance):
+						kite_mode = "back"
+					elif dist > float(prefer_distance):
+						kite_mode = "in"
+					elif kite_mode == "back" and dist < float(min_distance) + band:
+						pass
+					elif kite_mode == "in" and dist > float(prefer_distance) - band:
+						pass
+					else:
+						kite_mode = "hold"
+				if dist > 0.0 and sp > 0.0 and kite_mode == "back":
+					var step_back := minf(sp, maxf(0.0, (float(min_distance) + band) - dist))
+					if step_back > 0.0:
+						set_pos(pos_x - step_back * dx / dist, pos_y - step_back * dy / dist)
+						_face(-dx, -dy)
+				elif dist > 0.0 and sp > 0.0 and kite_mode == "in":
+					var step_in := minf(sp, maxf(0.0, dist - (float(prefer_distance) - band)))
+					if step_in > 0.0:
+						set_pos(pos_x + step_in * dx / dist, pos_y + step_in * dy / dist)
+						_face(dx, dy)
+			else:
+				if dist > 0.0 and sp > 0.0:
+					var step_chase := minf(sp, dist)
+					set_pos(pos_x + step_chase * dx / dist, pos_y + step_chase * dy / dist)
+					_face(dx, dy)
+	else:
+		_move_forward()

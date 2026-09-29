@@ -30,6 +30,7 @@ func run(check: Callable) -> void:
 	_enemy_scaling(check)
 	_boss_spawn_and_schedule(check)
 	_boss_damage_and_defeat(check)
+	_boss_update_core(check)
 	_replay(check)
 
 
@@ -1431,6 +1432,246 @@ func _check_defeat_event(
 			and next_active == String(ev.next_active)
 		),
 		"boss defeat step (%s)" % String(ev.tag)
+	)
+
+
+func _boss_update_core(check: Callable) -> void:
+	# Layer 7f: Boss.update core loop (stun/entrance/burn tick, multi-waypoint
+	# lane march without waypoint stall, true-boss Enrage + heal ability2 with
+	# anti-heal, mini-boss Frenzy, melee chase + basic attack + cleave +
+	# atk_slow cooldown, ranged kiting hysteresis, generic _use_ability, and
+	# live world.step_tick() wiring).
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(data is Dictionary and data.has("boss_update_core"), "boss update core fixture")
+	if not data is Dictionary:
+		return
+	var section: Dictionary = data.boss_update_core
+	var catalog: Dictionary = data.boss_spawn.catalog
+	var ref_world := _world()
+	var mid_path := ref_world.paths[1]
+
+	# 1) Stun, entrance timer, and burn tick (35 ticks)
+	var b_burn := BossState.new("gornak", mid_path, catalog["gornak"])
+	b_burn.entrance_timer = 3
+	b_burn.apply_stun(5)
+	b_burn.apply_debuff("burn", 120.0, 35, 0)
+	var b_idx := 0
+	var burn_rows: Array = section.burn_trace
+	for tick in range(1, 36):
+		b_burn.step_update([])
+		if b_idx < burn_rows.size() and tick == int(burn_rows[b_idx].tick):
+			var brow: Dictionary = burn_rows[b_idx]
+			var bpos: Array = brow.pos
+			check.call(
+				(
+					b_burn.stun_timer == int(brow.stun_timer)
+					and b_burn.entrance_timer == int(brow.entrance_timer)
+					and int(b_burn.hp) == int(brow.hp)
+					and b_burn.burn_timer == int(brow.burn_timer)
+					and is_equal_approx(b_burn.pos_x, float(bpos[0]))
+					and is_equal_approx(b_burn.pos_y, float(bpos[1]))
+					and b_burn.is_moving == bool(brow.is_moving)
+				),
+				"boss stun/entrance/burn tick %d" % tick
+			)
+			b_idx += 1
+
+	# 2) Multi-waypoint lane march
+	var b_march := BossState.new("gornak", mid_path, catalog["gornak"])
+	b_march.entrance_timer = 0
+	b_march.speed = 25.0
+	for mrow in section.march_trace:
+		b_march.step_update([])
+		var mpos: Array = mrow.pos
+		check.call(
+			(
+				is_equal_approx(b_march.pos_x, float(mpos[0]))
+				and is_equal_approx(b_march.pos_y, float(mpos[1]))
+				and b_march.waypoint_index == int(mrow.waypoint_index)
+				and b_march.direction == int(mrow.direction)
+				and b_march.is_moving == bool(mrow.is_moving)
+			),
+			"boss multi-waypoint march tick %d" % int(mrow.tick)
+		)
+
+	# 3) True-boss Enrage + even-tick double cooldown recovery + Heal ability2 + Mini Frenzy
+	var b_true := BossState.new("abaddon", mid_path, catalog["abaddon"])
+	b_true.entrance_timer = 0
+	b_true.hp = float(int(b_true.max_hp * 0.50))
+	b_true.timer = 10
+	b_true.ability_timer = 10
+	b_true.step_update([])
+	var etrue: Dictionary = section.enrage_true
+	check.call(
+		(
+			b_true.is_enraged == bool(etrue.is_enraged)
+			and is_equal_approx(b_true.speed, float(etrue.speed))
+			and b_true.damage == int(etrue.damage)
+			and b_true.attack_cooldown == int(etrue.attack_cooldown)
+			and b_true.timer == int(etrue.timer)
+			and b_true.ability_timer == int(etrue.ability_timer)
+		),
+		"true boss enrage at 50% HP scales speed, damage, and attack cooldown"
+	)
+	b_true.step_update([])
+	check.call(
+		(
+			b_true.timer == int(etrue.timer_even_tick)
+			and b_true.ability_timer == int(etrue.ability_timer_even_tick)
+		),
+		"enraged boss recovers attack and ability timers twice on even anim_time"
+	)
+
+	var b_heal := BossState.new("abaddon", mid_path, catalog["abaddon"])
+	b_heal.entrance_timer = 0
+	b_heal.hp = float(int(b_heal.max_hp * 0.25))
+	b_heal.apply_debuff("anti_heal", 0.25, 30)
+	b_heal.step_update([])
+	var htrue: Dictionary = section.heal_true
+	check.call(
+		(
+			is_equal_approx(b_heal.hp, float(htrue.hp_after))
+			and b_heal.ability2_timer == int(htrue.ability2_timer)
+		),
+		"true boss heal ability2 respects anti-heal modifier"
+	)
+
+	var b_mini := BossState.new("gornak", mid_path, catalog["gornak"])
+	b_mini.entrance_timer = 0
+	b_mini.hp = float(int(b_mini.max_hp * 0.40))
+	b_mini.step_update([])
+	var fmini: Dictionary = section.frenzy_mini
+	check.call(
+		(
+			b_mini.is_enraged == bool(fmini.is_enraged)
+			and is_equal_approx(b_mini.speed, float(fmini.speed))
+			and b_mini.damage == int(fmini.damage)
+			and b_mini.attack_cooldown == int(fmini.attack_cooldown)
+		),
+		"mini boss frenzy at 40% HP scales speed, damage, and attack cooldown"
+	)
+
+	# 4) Melee chase + basic attack + cleave + atk_slow cooldown + attack_lock_timer
+	var combat_world := _world()
+	var b_combat := BossState.new("gornak", mid_path, catalog["gornak"])
+	b_combat.entrance_timer = 0
+	b_combat.apply_debuff("atk_slow", 0.40, 60)
+	var primary := combat_world.spawn_unit(GOBLIN, 0, 1)
+	var secondary := combat_world.spawn_unit(GOBLIN, 0, 1)
+	var far_enemy := combat_world.spawn_unit(GOBLIN, 0, 1)
+	_beef(primary)
+	_beef(secondary)
+	_beef(far_enemy)
+	primary.position = Vector2(b_combat.pos_x - 52.0, b_combat.pos_y)
+	secondary.position = Vector2(b_combat.pos_x - 65.0, b_combat.pos_y + 10.0)
+	far_enemy.position = Vector2(b_combat.pos_x - 200.0, b_combat.pos_y)
+	var foe_list: Array = [primary, secondary, far_enemy]
+	var recorded_hits: Dictionary = {
+		primary.id: [],
+		secondary.id: [],
+		far_enemy.id: [],
+	}
+	var record_cb := func(target: UnitState, raw_dmg: int, school: String) -> void:
+		recorded_hits[target.id].append({"dmg": raw_dmg, "school": school})
+	b_combat.step_update(foe_list, record_cb)
+	var cstep: Dictionary = section.chase_step
+	var cpos: Array = cstep.pos
+	check.call(
+		(
+			is_equal_approx(b_combat.pos_x, float(cpos[0]))
+			and is_equal_approx(b_combat.pos_y, float(cpos[1]))
+			and (recorded_hits[primary.id] as Array).size() == int(cstep.hits)
+		),
+		"boss chases target outside melee range without swinging"
+	)
+	b_combat.step_update(foe_list, record_cb)
+	b_combat.step_update(foe_list, record_cb)
+	var sstep: Dictionary = section.swing_step
+	var spos: Array = sstep.pos
+	var p_hits: Array = recorded_hits[primary.id]
+	var s_hits: Array = recorded_hits[secondary.id]
+	var f_hits: Array = recorded_hits[far_enemy.id]
+	var exp_p: Array = sstep.primary_hits
+	var exp_s: Array = sstep.secondary_hits
+	check.call(
+		(
+			is_equal_approx(b_combat.pos_x, float(spos[0]))
+			and is_equal_approx(b_combat.pos_y, float(spos[1]))
+			and b_combat.timer == int(sstep.timer)
+			and b_combat.attack_lock_timer == int(sstep.attack_lock_timer)
+			and b_combat.basic_attack_seq == int(sstep.basic_attack_seq)
+			and p_hits.size() == 1
+			and int(p_hits[0].dmg) == int(exp_p[0].dmg)
+			and String(p_hits[0].school) == String(exp_p[0].school)
+			and s_hits.size() == 1
+			and int(s_hits[0].dmg) == int(exp_s[0].dmg)
+			and String(s_hits[0].school) == String(exp_s[0].school)
+			and f_hits.is_empty()
+		),
+		"boss melee swing hits primary, cleaves nearby, and applies atk_slow cooldown"
+	)
+
+	# 5) Ranged kiting hysteresis (morgath)
+	var b_kite := BossState.new("morgath", mid_path, catalog["morgath"])
+	b_kite.entrance_timer = 0
+	b_kite.range_px = 80
+	for krow in section.kite_rows:
+		b_kite.set_pos(500.0, 300.0)
+		primary.position = Vector2(500.0 - float(krow.dist), 300.0)
+		b_kite.step_update([primary])
+		var kpos: Array = krow.pos
+		check.call(
+			(
+				b_kite.kite_mode == String(krow.kite_mode)
+				and is_equal_approx(b_kite.pos_x, float(kpos[0]))
+				and is_equal_approx(b_kite.pos_y, float(kpos[1]))
+				and b_kite.direction == int(krow.direction)
+			),
+			"ranged boss kite hysteresis at dist %d" % int(krow.dist)
+		)
+
+	# 6) Generic _use_ability for a boss outside SMART_AI_BOSSES
+	var b_gen := BossState.new("gornak", mid_path, catalog["gornak"])
+	b_gen.boss_type = "generic_boss"
+	b_gen.entrance_timer = 0
+	b_gen.timer = 10
+	var hero_foe := combat_world.blue_hero()
+	hero_foe.position = Vector2(b_gen.pos_x - 30.0, b_gen.pos_y)
+	hero_foe.attack_timer = 10
+	var gen_hits: Array = []
+	b_gen.step_update(
+		[hero_foe],
+		func(_t: UnitState, raw_dmg: int, school: String) -> void:
+			gen_hits.append({"dmg": raw_dmg, "school": school})
+	)
+	var gen_exp: Dictionary = section.generic_ability
+	var gen_exp_hits: Array = gen_exp.foe_hits
+	check.call(
+		(
+			b_gen.ability_timer == int(gen_exp.ability_timer)
+			and b_gen.ability_active == bool(gen_exp.ability_active)
+			and b_gen.ability_active_timer == int(gen_exp.ability_active_timer)
+			and gen_hits.size() == 1
+			and int(gen_hits[0].dmg) == int(gen_exp_hits[0].dmg)
+			and hero_foe.attack_timer == int(gen_exp.foe_attack_timer)
+		),
+		"generic boss ability damages enemies in range and raises attack_timer to 60"
+	)
+
+	# 7) End-to-end step_tick() wiring with active_boss in Prototype world
+	var live_world := _world()
+	live_world.active_boss = BossState.new("gornak", live_world.paths[1], catalog["gornak"])
+	live_world.active_boss.entrance_timer = 0
+	var victim := live_world.spawn_unit(GOBLIN, 0, 1)
+	_beef(victim)
+	victim.position = live_world.active_boss.position - Vector2(30.0, 0.0)
+	var before_hp := victim.hp
+	live_world.step_tick()
+	check.call(
+		victim.hp < before_hp and live_world.active_boss.basic_attack_seq == 1,
+		"step_tick ticks active_boss and delivers basic attack through _deliver_hit"
 	)
 
 

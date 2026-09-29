@@ -125,6 +125,7 @@ def source_fixture():
     result["level_one"] = level_config("LEVEL_1")
     result["boss_spawn"] = boss_spawn(env)
     result["boss_damage_and_defeat"] = boss_damage_and_defeat(env)
+    result["boss_update_core"] = boss_update_core(env)
     return result
 
 
@@ -416,8 +417,10 @@ def source_boss(env):
     """
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
+    import math
     import random
     import hero_archetypes
+    env['math'] = math
     env['random'] = random
 
     boss_data_ns = {}
@@ -431,7 +434,7 @@ def source_boss(env):
 
     boss_tree = ast.parse((ROOT / "bosses/base_boss.py").read_text(encoding="utf-8"))
     boss_cls = next(n for n in boss_tree.body if isinstance(n, ast.ClassDef) and n.name == "Boss")
-    keep_names = ("speed", "ability_damage", "__init__", "apply_scaling", "apply_slow", "apply_debuff", "take_damage")
+    keep_names = ("speed", "ability_damage", "__init__", "apply_scaling", "apply_slow", "apply_debuff", "take_damage", "update", "_face", "_lane_target", "_advance_waypoint", "_move_forward", "_use_ability", "_use_heal_ability", "_get_boss_stats", "_shake_screen")
     keep = [n for n in boss_cls.body if isinstance(n, ast.FunctionDef) and n.name in keep_names]
     cls = ast.ClassDef(
         name="SourceBoss",
@@ -543,6 +546,8 @@ def boss_spawn(env):
             "armor": int(raw.get("armor", armor)),
             "magic_resist": float(raw.get("magic_resist", mr)),
             "resist_profile": profile,
+            "min_distance": int(raw.get("min_distance", 200)),
+            "prefer_distance": int(raw.get("prefer_distance", 280)),
         }
         for scaled, mults in ((False, (1.0, 1.0, 1.0)), (True, (1.15, 1.10, 1.0))):
             inst = boss_cls(boss_type, mid_path)
@@ -920,6 +925,185 @@ def boss_damage_and_defeat(env):
         "blind_rows": blind_rows,
         "lethal": lethal_summary,
         "defeat_events": defeat_events,
+    }
+
+
+
+
+def boss_update_core(env):
+    """Real Boss.update, _move_forward, _face, _use_heal_ability, _use_ability,
+    and TowerDebuffMixin._tick_tower_debuffs / _eff_attack_cd.
+    """
+    import types as _types
+
+    boss_cls, _, _ = source_boss(env)
+    noop = lambda *args, **kwargs: None
+    for smart_name in ("_smart_ai_gornak", "_smart_ai_morgath", "_smart_ai_drakar", "_smart_ai_abaddon"):
+        setattr(boss_cls, smart_name, noop)
+
+    boss_data_mod = _types.ModuleType("bosses.boss_data")
+    boss_data_mod.get_all_boss_types = env["get_all_boss_types"]
+    sys.modules["bosses.boss_data"] = boss_data_mod
+
+    mid_path = source_lanes()["mid"]
+
+    class DummyEnemy:
+        def __init__(self, x, y, hp=5000, team="blue", attack_timer=0):
+            self.x = float(x)
+            self.y = float(y)
+            self.hp = hp
+            self.team = team
+            self.alive = True
+            self.attack_timer = attack_timer
+            self.hits = []
+
+        def take_damage(self, dmg, from_team, school=None, source=None):
+            self.hp -= dmg
+            self.hits.append({"dmg": int(dmg), "school": school or "neutral"})
+            if self.hp <= 0:
+                self.alive = False
+
+    # 1) Stun, entrance timer, and burn tick (35 ticks)
+    b_burn = boss_cls("gornak", mid_path)
+    b_burn.entrance_timer = 3
+    b_burn.apply_stun(5)  # 5 * 0.45 -> 2 ticks
+    b_burn.apply_debuff("burn", 120.0, 35, source_team="blue")
+    burn_trace = []
+    for tick in range(1, 36):
+        b_burn.update([], [], [])
+        if tick in (1, 2, 3, 5, 6, 30, 35):
+            burn_trace.append({
+                "tick": tick,
+                "stun_timer": b_burn.stun_timer,
+                "entrance_timer": b_burn.entrance_timer,
+                "hp": int(b_burn.hp),
+                "burn_timer": b_burn.burn_timer,
+                "pos": [b_burn.x, b_burn.y],
+                "is_moving": b_burn.is_moving,
+            })
+
+    # 2) Multi-waypoint lane march (budget crossing waypoints in one frame)
+    b_march = boss_cls("gornak", mid_path)
+    b_march.entrance_timer = 0
+    b_march.speed = 25.0
+    march_trace = []
+    for tick in range(1, 11):
+        b_march.update([], [], [])
+        march_trace.append({
+            "tick": tick,
+            "pos": [b_march.x, b_march.y],
+            "waypoint_index": b_march.waypoint_index,
+            "direction": b_march.direction,
+            "is_moving": b_march.is_moving,
+        })
+
+    # 3) True-boss Enrage (50% HP) + Heal ability2 (<30% HP with anti_heal) + Mini-boss Frenzy (40% HP)
+    b_true = boss_cls("abaddon", mid_path)
+    b_true.entrance_timer = 0
+    b_true.hp = int(b_true.max_hp * 0.50)
+    b_true.timer = 10
+    b_true.ability_timer = 10
+    b_true.update([], [], [])
+    enrage_true = {
+        "is_enraged": b_true.is_enraged,
+        "speed": b_true.speed,
+        "damage": b_true.damage,
+        "attack_cooldown": b_true.attack_cooldown,
+        "timer": b_true.timer,
+        "ability_timer": b_true.ability_timer,
+    }
+    # Next tick has anim_time == 2 (even), so timers decrement twice!
+    b_true.update([], [], [])
+    enrage_true["timer_even_tick"] = b_true.timer
+    enrage_true["ability_timer_even_tick"] = b_true.ability_timer
+
+    b_heal = boss_cls("abaddon", mid_path)
+    b_heal.entrance_timer = 0
+    b_heal.hp = int(b_heal.max_hp * 0.25)
+    b_heal.apply_debuff("anti_heal", 0.25, 30)
+    b_heal.update([], [], [])
+    heal_true = {
+        "hp_after": b_heal.hp,
+        "ability2_timer": b_heal.ability2_timer,
+    }
+
+    b_mini = boss_cls("gornak", mid_path)
+    b_mini.entrance_timer = 0
+    b_mini.hp = int(b_mini.max_hp * 0.40)
+    b_mini.update([], [], [])
+    frenzy_mini = {
+        "is_enraged": b_mini.is_enraged,
+        "speed": b_mini.speed,
+        "damage": b_mini.damage,
+        "attack_cooldown": b_mini.attack_cooldown,
+    }
+
+    # 4) Melee chase + basic attack + cleave + atk_slow cooldown + attack_lock_timer
+    b_combat = boss_cls("gornak", mid_path)
+    b_combat.entrance_timer = 0
+    b_combat.apply_debuff("atk_slow", 0.40, 60)  # tenacity -> 0.20
+    primary = DummyEnemy(b_combat.x - 52.0, b_combat.y)
+    secondary = DummyEnemy(b_combat.x - 65.0, b_combat.y + 10.0)
+    far_enemy = DummyEnemy(b_combat.x - 200.0, b_combat.y)
+    # Tick 1: dist is 52 > range 50, so boss chases 1.2 px to dist 50.8
+    b_combat.update([primary, secondary, far_enemy], [], [])
+    chase_step = {"pos": [b_combat.x, b_combat.y], "hits": len(primary.hits)}
+    # Tick 2: chases to dist 49.6 <= 50
+    b_combat.update([primary, secondary, far_enemy], [], [])
+    # Tick 3: inside range 50 -> swings at primary and cleaves secondary (not far_enemy)
+    b_combat.update([primary, secondary, far_enemy], [], [])
+    swing_step = {
+        "pos": [b_combat.x, b_combat.y],
+        "timer": b_combat.timer,
+        "attack_lock_timer": b_combat._attack_lock_timer,
+        "basic_attack_seq": getattr(b_combat, "_basic_attack_seq", 0),
+        "primary_hits": primary.hits,
+        "secondary_hits": secondary.hits,
+        "far_hits": far_enemy.hits,
+    }
+
+    # 5) Ranged kiting hysteresis (morgath with range lowered to 80 so dist > range exercises kiting)
+    b_kite = boss_cls("morgath", mid_path)
+    b_kite.entrance_timer = 0
+    b_kite.range = 80
+    kite_rows = []
+    for dist_val in (95.0, 108.0, 115.0, 160.0, 142.0, 130.0):
+        b_kite.x = 500.0
+        b_kite.y = 300.0
+        foe = DummyEnemy(500.0 - dist_val, 300.0)
+        b_kite.update([foe], [], [])
+        kite_rows.append({
+            "dist": dist_val,
+            "kite_mode": b_kite._kite_mode,
+            "pos": [b_kite.x, b_kite.y],
+            "direction": b_kite.direction,
+        })
+
+    # 6) Generic _use_ability for a boss type outside the smart-AI table
+    b_gen = boss_cls("gornak", mid_path)
+    b_gen.boss_type = "generic_boss"
+    b_gen.entrance_timer = 0
+    b_gen.timer = 10
+    gen_foe = DummyEnemy(b_gen.x - 30.0, b_gen.y, attack_timer=10)
+    b_gen.update([gen_foe], [], [])
+    generic_ability = {
+        "ability_timer": b_gen.ability_timer,
+        "ability_active": b_gen.ability_active,
+        "ability_active_timer": b_gen.ability_active_timer,
+        "foe_hits": gen_foe.hits,
+        "foe_attack_timer": gen_foe.attack_timer,
+    }
+
+    return {
+        "burn_trace": burn_trace,
+        "march_trace": march_trace,
+        "enrage_true": enrage_true,
+        "heal_true": heal_true,
+        "frenzy_mini": frenzy_mini,
+        "chase_step": chase_step,
+        "swing_step": swing_step,
+        "kite_rows": kite_rows,
+        "generic_ability": generic_ability,
     }
 
 
