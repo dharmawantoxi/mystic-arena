@@ -2964,5 +2964,316 @@
         "true_boss_spawned": true
       }
     ]
+  },
+  "boss_damage_and_defeat": {
+    "hits": [
+      {
+        "tag": "neutral_mini",
+        "boss": "gornak",
+        "raw": 200,
+        "dtype": "normal",
+        "src_school": null,
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 160,
+        "hp_after": 7340,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "neutral_true",
+        "boss": "abaddon",
+        "raw": 200,
+        "dtype": "normal",
+        "src_school": null,
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 140,
+        "hp_after": 35860,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "phys_hero_mini",
+        "boss": "gornak",
+        "raw": 250,
+        "dtype": "normal",
+        "src_school": "physical",
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 135,
+        "hp_after": 7365,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "phys_hero_true",
+        "boss": "abaddon",
+        "raw": 250,
+        "dtype": "normal",
+        "src_school": "physical",
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 70,
+        "hp_after": 35930,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "magic_hero_mini",
+        "boss": "gornak",
+        "raw": 250,
+        "dtype": "skill",
+        "src_school": "magic",
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 162,
+        "hp_after": 7338,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "magic_hero_true",
+        "boss": "abaddon",
+        "raw": 250,
+        "dtype": "skill",
+        "src_school": "magic",
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 158,
+        "hp_after": 35842,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "explicit_school_override",
+        "boss": "abaddon",
+        "raw": 300,
+        "dtype": "normal",
+        "src_school": "physical",
+        "school": "magic",
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 190,
+        "hp_after": 35810,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "shred_and_amp_normal",
+        "boss": "abaddon",
+        "raw": 300,
+        "dtype": "normal",
+        "src_school": "physical",
+        "school": null,
+        "shred": 5.0,
+        "amp": 0.2,
+        "def_boost": false,
+        "dealt": 210,
+        "hp_after": 35790,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "fire_skips_shred_and_school",
+        "boss": "abaddon",
+        "raw": 300,
+        "dtype": "fire",
+        "src_school": "physical",
+        "school": null,
+        "shred": 5.0,
+        "amp": 0.2,
+        "def_boost": false,
+        "dealt": 251,
+        "hp_after": 35749,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "defense_boost_active",
+        "boss": "gornak",
+        "raw": 400,
+        "dtype": "normal",
+        "src_school": "physical",
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": true,
+        "dealt": 148,
+        "hp_after": 7352,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "burst_cap_mini",
+        "boss": "gornak",
+        "raw": 50000,
+        "dtype": "skill",
+        "src_school": "magic",
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 900,
+        "hp_after": 6600,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "burst_cap_true",
+        "boss": "abaddon",
+        "raw": 50000,
+        "dtype": "skill",
+        "src_school": "magic",
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": false,
+        "dealt": 2880,
+        "hp_after": 33120,
+        "hurt_flash_timer": 8
+      },
+      {
+        "tag": "min_one_floor",
+        "boss": "abaddon",
+        "raw": 1,
+        "dtype": "normal",
+        "src_school": "physical",
+        "school": null,
+        "shred": 0.0,
+        "amp": 0.0,
+        "def_boost": true,
+        "dealt": 1,
+        "hp_after": 35999,
+        "hurt_flash_timer": 8
+      }
+    ],
+    "blind_rows": [
+      {
+        "true_strike": false,
+        "dtype": "normal",
+        "dealt": 0
+      },
+      {
+        "true_strike": false,
+        "dtype": "skill",
+        "dealt": 108
+      },
+      {
+        "true_strike": true,
+        "dtype": "normal",
+        "dealt": 108
+      },
+      {
+        "true_strike": true,
+        "dtype": "skill",
+        "dealt": 108
+      }
+    ],
+    "lethal": {
+      "hp": 0,
+      "alive": false,
+      "defeated": true,
+      "killed_by_hero": true,
+      "slow_timer": 0,
+      "burn_timer": 0,
+      "armor_shred_timer": 0
+    },
+    "defeat_events": [
+      {
+        "tag": "gornak_by_blue_hero",
+        "gold": 1350,
+        "run_count": 1,
+        "match_list": [
+          "gornak"
+        ],
+        "unlocked": [
+          "gornak"
+        ],
+        "blue_kills": 1,
+        "red_kills": 0,
+        "miniboss_kills": 1,
+        "trueboss_kills": 0,
+        "next_active": "morgath"
+      },
+      {
+        "tag": "morgath_by_tower",
+        "gold": 1850,
+        "run_count": 2,
+        "match_list": [
+          "gornak",
+          "morgath"
+        ],
+        "unlocked": [
+          "gornak",
+          "morgath"
+        ],
+        "blue_kills": 1,
+        "red_kills": 0,
+        "miniboss_kills": 1,
+        "trueboss_kills": 0,
+        "next_active": ""
+      },
+      {
+        "tag": "gornak_duplicate",
+        "gold": 2200,
+        "run_count": 3,
+        "match_list": [
+          "gornak",
+          "morgath"
+        ],
+        "unlocked": [
+          "gornak",
+          "morgath"
+        ],
+        "blue_kills": 2,
+        "red_kills": 0,
+        "miniboss_kills": 2,
+        "trueboss_kills": 0,
+        "next_active": ""
+      },
+      {
+        "tag": "abaddon_by_non_blue_hero",
+        "gold": 3700,
+        "run_count": 4,
+        "match_list": [
+          "gornak",
+          "morgath",
+          "abaddon"
+        ],
+        "unlocked": [
+          "gornak",
+          "morgath",
+          "abaddon"
+        ],
+        "blue_kills": 2,
+        "red_kills": 1,
+        "miniboss_kills": 2,
+        "trueboss_kills": 0,
+        "next_active": ""
+      },
+      {
+        "tag": "abaddon_by_blue_hero",
+        "gold": 5200,
+        "run_count": 5,
+        "match_list": [
+          "gornak",
+          "morgath",
+          "abaddon"
+        ],
+        "unlocked": [
+          "gornak",
+          "morgath",
+          "abaddon"
+        ],
+        "blue_kills": 3,
+        "red_kills": 1,
+        "miniboss_kills": 2,
+        "trueboss_kills": 1,
+        "next_active": ""
+      }
+    ]
   }
 }

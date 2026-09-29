@@ -75,6 +75,8 @@ var prev_position := Vector2.ZERO
 var attack_lock_timer := 0
 var kite_mode := "hold"
 var stun_timer := 0
+var defense_boost := false
+var killed_by_source: Object = null
 
 
 func _init(kind: String = "", path: Variant = PackedVector2Array(), stats: Dictionary = {}) -> void:
@@ -153,6 +155,8 @@ func _init(kind: String = "", path: Variant = PackedVector2Array(), stats: Dicti
 	kite_mode = "hold"
 	burn_tick_cd = 30
 	stun_timer = 0
+	defense_boost = false
+	killed_by_source = null
 
 
 func apply_scaling(hp_mult: float = 1.0, dmg_mult: float = 1.0, spd_mult: float = 1.0) -> void:
@@ -223,3 +227,92 @@ func apply_stun(duration: int) -> void:
 		return
 	if reduced > stun_timer:
 		stun_timer = reduced
+
+
+func clear_tower_debuffs() -> void:
+	# Port of TowerDebuffMixin.clear_tower_debuffs (_core.py:942).
+	slow_amount = 0.0
+	slow_timer = 0
+	atk_slow_amount = 0.0
+	atk_slow_timer = 0
+	skill_down_amount = 0.0
+	skill_down_timer = 0
+	anti_heal_amount = 0.0
+	anti_heal_timer = 0
+	burn_dps = 0.0
+	burn_timer = 0
+	burn_accum = 0.0
+	burn_tick_cd = 30
+	burn_team = -1
+	stun_timer = 0
+	armor_shred_amount = 0.0
+	armor_shred_timer = 0
+	dmg_amp_amount = 0.0
+	dmg_amp_timer = 0
+	heal_amp_amount = 0.0
+	heal_amp_timer = 0
+	blind_amount = 0.0
+	blind_timer = 0
+
+
+func take_damage(
+	raw_damage: int,
+	_from_team: int = 0,
+	damage_type: String = "normal",
+	source: Object = null,
+	school: String = "",
+	rng: RandomNumberGenerator = null
+) -> int:
+	# Port of Boss.take_damage (bosses/base_boss.py:5978).
+	if damage_type == "normal" and raw_damage > 0 and source != null:
+		var true_strike := false
+		var inv: Variant = source.get("items")
+		if inv != null and inv.has_method("has_true_strike"):
+			true_strike = bool(inv.has_true_strike())
+		var b_timer := int(source.get("blind_timer") if source.get("blind_timer") != null else 0)
+		var b_amount := float(
+			source.get("blind_amount") if source.get("blind_amount") != null else 0.0
+		)
+		if not true_strike and b_timer > 0:
+			var roll := rng.randf() if rng != null else randf()
+			if roll < b_amount:
+				return 0
+	var dmg := raw_damage
+	if dmg > 0:
+		if dmg_amp_timer > 0:
+			dmg = Rounding.rounded_like_python(float(dmg) * (1.0 + dmg_amp_amount))
+		if damage_type != "fire" and armor_shred_amount > 0.0:
+			dmg = Rounding.rounded_like_python(
+				float(dmg) * (1.0 + minf(1.0, armor_shred_amount * 0.06))
+			)
+	var resolved_school := ""
+	if not school.is_empty():
+		if school in ["physical", "magic"]:
+			resolved_school = school
+	elif damage_type not in ["fire", "ice", "heal", "crit"] and source != null:
+		var src_school: Variant = source.get("dmg_school")
+		if src_school in ["physical", "magic"]:
+			resolved_school = String(src_school)
+	if dmg > 0 and resolved_school == "physical" and armor > 0:
+		var red := float(armor) * 0.06 / (1.0 + float(armor) * 0.06)
+		red = minf(0.60, maxf(0.0, red - armor_shred_amount * 0.06))
+		dmg = maxi(1, Rounding.rounded_like_python(float(dmg) * (1.0 - red)))
+	elif dmg > 0 and resolved_school == "magic" and magic_resist > 0.0:
+		dmg = maxi(1, Rounding.rounded_like_python(float(dmg) * (1.0 - magic_resist)))
+	var resilience := damage_reduction
+	if defense_boost:
+		resilience = maxf(resilience, 0.45)
+	var effective_damage := int(float(dmg) * (1.0 - resilience))
+	var cap := max_damage_per_hit if max_damage_per_hit > 0 else int(max_hp * 0.10)
+	if effective_damage > cap:
+		effective_damage = cap
+	effective_damage = maxi(1, effective_damage)
+	hp -= float(effective_damage)
+	hurt_flash_timer = 8
+	if hp <= 0.0:
+		hp = 0.0
+		alive = false
+		defeated = true
+		killed_by_source = source
+		clear_tower_debuffs()
+	return effective_damage

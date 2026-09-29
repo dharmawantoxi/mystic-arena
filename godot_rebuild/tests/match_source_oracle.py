@@ -124,6 +124,7 @@ def source_fixture():
     result["enemy_scaling"] = enemy_scaling(env)
     result["level_one"] = level_config("LEVEL_1")
     result["boss_spawn"] = boss_spawn(env)
+    result["boss_damage_and_defeat"] = boss_damage_and_defeat(env)
     return result
 
 
@@ -415,7 +416,9 @@ def source_boss(env):
     """
     if str(ROOT) not in sys.path:
         sys.path.insert(0, str(ROOT))
+    import random
     import hero_archetypes
+    env['random'] = random
 
     boss_data_ns = {}
     exec((ROOT / "bosses/boss_data.py").read_text(encoding="utf-8"), boss_data_ns)
@@ -428,7 +431,7 @@ def source_boss(env):
 
     boss_tree = ast.parse((ROOT / "bosses/base_boss.py").read_text(encoding="utf-8"))
     boss_cls = next(n for n in boss_tree.body if isinstance(n, ast.ClassDef) and n.name == "Boss")
-    keep_names = ("speed", "ability_damage", "__init__", "apply_scaling", "apply_slow", "apply_debuff")
+    keep_names = ("speed", "ability_damage", "__init__", "apply_scaling", "apply_slow", "apply_debuff", "take_damage")
     keep = [n for n in boss_cls.body if isinstance(n, ast.FunctionDef) and n.name in keep_names]
     cls = ast.ClassDef(
         name="SourceBoss",
@@ -710,6 +713,213 @@ def boss_spawn(env):
         "debuff_check": debuff_check,
         "schedules": schedules,
         "events": events,
+    }
+
+
+
+
+def boss_damage_and_defeat(env):
+    """Real Boss.take_damage (bosses/base_boss.py:5978), resolve_damage_school
+    (_entity.py:106), Game._killer_is_hero / Game._process_boss_kill
+    (_core.py:2487-2546), and the BOSS DEFEATED -> UNLOCK HERO block in
+    Game.update (_core.py:2111-2161).
+    """
+    import random as _random
+    import types as _types
+
+    boss_cls, _, _ = source_boss(env)
+    entity_tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
+    resolve_ast = next(
+        n for n in entity_tree.body
+        if isinstance(n, ast.FunctionDef) and n.name == "resolve_damage_school"
+    )
+    env["_ACTIVE_HERO"] = [None]
+    resolve_fn = compile_method(resolve_ast, env)
+
+    entity_mod = _types.ModuleType("_entity")
+    entity_mod.resolve_damage_school = resolve_fn
+    entity_mod.credit_hero_damage = lambda *args, **kwargs: None
+    sys.modules["_entity"] = entity_mod
+
+    system_mod = _types.ModuleType("_system")
+    system_mod.SaveManager = SimpleNamespace(save=lambda *args, **kwargs: None)
+    sys.modules["_system"] = system_mod
+
+    render_mod = sys.modules.get("_render") or _types.ModuleType("_render")
+    render_mod.BossDeathAnimation = lambda *args, **kwargs: SimpleNamespace(boss=args[0] if args else None)
+    sys.modules["_render"] = render_mod
+
+    core = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    game = next(n for n in core.body if isinstance(n, ast.ClassDef) and n.name == "Game")
+    methods = {n.name: n for n in game.body if isinstance(n, ast.FunctionDef)}
+    killer_is_hero_fn = compile_method(methods["_killer_is_hero"], env)
+    process_boss_kill_fn = compile_method(methods["_process_boss_kill"], env)
+    try_spawn_fn = compile_method(methods["_try_spawn_pending_mini_boss"], env)
+
+    update_body = methods["update"].body
+    defeated_if = next(
+        s for s in update_body
+        if isinstance(s, ast.If) and "self.active_boss.defeated" in ast.unparse(s.test)
+    )
+    defeated_step_fn = compile_method(ast.fix_missing_locations(ast.FunctionDef(
+        name="_boss_defeated_step",
+        args=ast.arguments(posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=[defeated_if],
+        decorator_list=[],
+    )), env)
+
+    mid_path = source_lanes()["mid"]
+    hit_cases = [
+        {"tag": "neutral_mini", "boss": "gornak", "raw": 200, "dtype": "normal", "src_school": None, "school": None, "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "neutral_true", "boss": "abaddon", "raw": 200, "dtype": "normal", "src_school": None, "school": None, "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "phys_hero_mini", "boss": "gornak", "raw": 250, "dtype": "normal", "src_school": "physical", "school": None, "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "phys_hero_true", "boss": "abaddon", "raw": 250, "dtype": "normal", "src_school": "physical", "school": None, "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "magic_hero_mini", "boss": "gornak", "raw": 250, "dtype": "skill", "src_school": "magic", "school": None, "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "magic_hero_true", "boss": "abaddon", "raw": 250, "dtype": "skill", "src_school": "magic", "school": None, "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "explicit_school_override", "boss": "abaddon", "raw": 300, "dtype": "normal", "src_school": "physical", "school": "magic", "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "shred_and_amp_normal", "boss": "abaddon", "raw": 300, "dtype": "normal", "src_school": "physical", "school": None, "shred": 5.0, "amp": 0.20, "def_boost": False},
+        {"tag": "fire_skips_shred_and_school", "boss": "abaddon", "raw": 300, "dtype": "fire", "src_school": "physical", "school": None, "shred": 5.0, "amp": 0.20, "def_boost": False},
+        {"tag": "defense_boost_active", "boss": "gornak", "raw": 400, "dtype": "normal", "src_school": "physical", "school": None, "shred": 0.0, "amp": 0.0, "def_boost": True},
+        {"tag": "burst_cap_mini", "boss": "gornak", "raw": 50000, "dtype": "skill", "src_school": "magic", "school": None, "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "burst_cap_true", "boss": "abaddon", "raw": 50000, "dtype": "skill", "src_school": "magic", "school": None, "shred": 0.0, "amp": 0.0, "def_boost": False},
+        {"tag": "min_one_floor", "boss": "abaddon", "raw": 1, "dtype": "normal", "src_school": "physical", "school": None, "shred": 0.0, "amp": 0.0, "def_boost": True},
+    ]
+
+    hits = []
+    for case in hit_cases:
+        inst = boss_cls(case["boss"], mid_path)
+        if case["shred"] > 0.0:
+            inst.apply_armor_shred(case["shred"], 60)
+        if case["amp"] > 0.0:
+            inst.apply_damage_amp(case["amp"], 60)
+        inst.defense_boost = case["def_boost"]
+        src = SimpleNamespace(dmg_school=case["src_school"], blind_timer=0, blind_amount=0.0, items=None) if case["src_school"] else None
+        before = inst.hp
+        inst.take_damage(case["raw"], "blue", damage_type=case["dtype"], source=src, school=case["school"])
+        hits.append({
+            **case,
+            "dealt": int(before - inst.hp),
+            "hp_after": int(inst.hp),
+            "hurt_flash_timer": inst.hurt_flash_timer,
+        })
+
+    # Blind + true_strike checks
+    blind_rows = []
+    for true_strike in (False, True):
+        for dtype in ("normal", "skill"):
+            inst = boss_cls("gornak", mid_path)
+            inv = SimpleNamespace(has_true_strike=lambda ts=true_strike: ts)
+            src = SimpleNamespace(dmg_school="physical", blind_timer=30, blind_amount=1.0, items=inv)
+            _random.seed(7)
+            before = inst.hp
+            inst.take_damage(200, "blue", damage_type=dtype, source=src)
+            blind_rows.append({
+                "true_strike": true_strike,
+                "dtype": dtype,
+                "dealt": int(before - inst.hp),
+            })
+
+    # Lethal hit + clear_tower_debuffs check
+    lethal_boss = boss_cls("gornak", mid_path)
+    lethal_boss.hp = 50
+    lethal_boss.apply_debuff("slow", 0.50, 60)
+    lethal_boss.apply_debuff("burn", 20.0, 90, source_team="blue")
+    lethal_boss.apply_armor_shred(4.0, 60)
+    blue_hero = SimpleNamespace(name="Kaizen", team="blue", hero_type="kaizen", skills=True, kills=0, dmg_school="physical", blind_timer=0, blind_amount=0.0, items=None)
+    lethal_boss.take_damage(500, "blue", damage_type="normal", source=blue_hero)
+    lethal_summary = {
+        "hp": int(lethal_boss.hp),
+        "alive": lethal_boss.alive,
+        "defeated": lethal_boss.defeated,
+        "killed_by_hero": lethal_boss._killed_by is blue_hero,
+        "slow_timer": lethal_boss.slow_timer,
+        "burn_timer": lethal_boss.burn_timer,
+        "armor_shred_timer": lethal_boss.armor_shred_timer,
+    }
+
+    # Multi-step BOSS DEFEATED -> UNLOCK HERO & _process_boss_kill trace
+    noop = lambda *args, **kwargs: None
+    match = SimpleNamespace(
+        active_boss=lethal_boss,
+        pending_mini_bosses=[(15, "morgath")],
+        enemy_scaling_enabled=False,
+        enemy_hp_mult=1.0,
+        enemy_damage_mult=1.0,
+        enemy_speed_mult=1.0,
+        map_renderer=SimpleNamespace(get_lane_path=lambda lane: mid_path),
+        gold=1000,
+        score=0,
+        bosses_defeated_this_run=0,
+        bosses_defeated_this_match=[],
+        unlocked_bosses=[],
+        purchased_heroes=[],
+        save_data={},
+        miniboss_kill_count=0,
+        trueboss_kill_count=0,
+        effects=SimpleNamespace(add_gold_popup=noop, unlock_achievement=noop, register_kill=noop),
+    )
+    match._killer_is_hero = killer_is_hero_fn
+    match._process_boss_kill = lambda b: process_boss_kill_fn(match, b)
+    match._unlock_achievement = noop
+    match._try_spawn_pending_mini_boss = lambda: try_spawn_fn(match)
+
+    defeat_events = []
+
+    def snap_defeat(tag, red_kills):
+        defeat_events.append({
+            "tag": tag,
+            "gold": match.gold,
+            "run_count": match.bosses_defeated_this_run,
+            "match_list": list(match.bosses_defeated_this_match),
+            "unlocked": list(match.unlocked_bosses),
+            "blue_kills": blue_hero.kills,
+            "red_kills": red_kills,
+            "miniboss_kills": match.miniboss_kill_count,
+            "trueboss_kills": match.trueboss_kill_count,
+            "next_active": match.active_boss.boss_type if match.active_boss else "",
+        })
+
+    # 1) Gornak defeated by blue hero -> rewards 350G, unlocks gornak, pops pending morgath.
+    defeated_step_fn(match)
+    snap_defeat("gornak_by_blue_hero", 0)
+
+    # 2) Morgath defeated by non-hero (tower) -> rewards 500G, unlocks morgath, no hero kill increment.
+    tower_src = SimpleNamespace(team="blue")
+    match.active_boss.hp = 10
+    match.active_boss.take_damage(500, "blue", damage_type="normal", source=tower_src)
+    defeated_step_fn(match)
+    snap_defeat("morgath_by_tower", 0)
+
+    # 3) Duplicate gornak defeat -> run_count increments, lists do not duplicate.
+    dup = boss_cls("gornak", mid_path)
+    dup.hp = 10
+    dup.take_damage(500, "blue", damage_type="normal", source=blue_hero)
+    match.active_boss = dup
+    defeated_step_fn(match)
+    snap_defeat("gornak_duplicate", 0)
+
+    # 4) Abaddon (true boss) defeated by enemy red hero (hypothetical non-blue hero killer) -> killer.kills increments, trueboss_kill_count stays 0.
+    red_hero = SimpleNamespace(name="Vex", team="other", hero_type="vex", skills=True, kills=0, dmg_school="magic", blind_timer=0, blind_amount=0.0, items=None)
+    ab1 = boss_cls("abaddon", mid_path)
+    ab1.hp = 10
+    ab1.take_damage(500, "blue", damage_type="skill", source=red_hero)
+    match.active_boss = ab1
+    defeated_step_fn(match)
+    snap_defeat("abaddon_by_non_blue_hero", red_hero.kills)
+
+    # 5) Abaddon defeated by blue hero -> blue_hero.kills and trueboss_kill_count increment.
+    ab2 = boss_cls("abaddon", mid_path)
+    ab2.hp = 10
+    ab2.take_damage(500, "blue", damage_type="skill", source=blue_hero)
+    match.active_boss = ab2
+    defeated_step_fn(match)
+    snap_defeat("abaddon_by_blue_hero", red_hero.kills)
+
+    return {
+        "hits": hits,
+        "blind_rows": blind_rows,
+        "lethal": lethal_summary,
+        "defeat_events": defeat_events,
     }
 
 

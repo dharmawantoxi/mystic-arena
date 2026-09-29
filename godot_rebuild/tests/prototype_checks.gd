@@ -29,6 +29,7 @@ func run(check: Callable) -> void:
 	_spawn_jitter(check)
 	_enemy_scaling(check)
 	_boss_spawn_and_schedule(check)
+	_boss_damage_and_defeat(check)
 	_replay(check)
 
 
@@ -1250,6 +1251,186 @@ func _check_boss_event(check: Callable, world: Prototype, ev: Dictionary) -> voi
 			and world.true_boss_spawned == bool(ev.true_boss_spawned)
 		),
 		"boss spawn trace step: %s" % String(ev.tag)
+	)
+
+
+func _boss_damage_and_defeat(check: Callable) -> void:
+	# Layer 7e: Boss.take_damage (school mitigation, resilience, defense_boost,
+	# anti-burst cap, blind + true_strike gate, lethal clear_tower_debuffs) and
+	# the match BOSS DEFEATED -> UNLOCK HERO + _process_boss_kill path.
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(
+		data is Dictionary and data.has("boss_damage_and_defeat"), "boss damage and defeat fixture"
+	)
+	if not data is Dictionary:
+		return
+	var section: Dictionary = data.boss_damage_and_defeat
+	var catalog: Dictionary = data.boss_spawn.catalog
+	var ref_world := _world()
+	for row in section.hits:
+		var btype := String(row.boss)
+		var boss := BossState.new(btype, ref_world.paths[1], catalog[btype])
+		if float(row.shred) > 0.0:
+			boss.apply_armor_shred(float(row.shred), 60)
+		if float(row.amp) > 0.0:
+			boss.apply_damage_amp(float(row.amp), 60)
+		boss.defense_boost = bool(row.def_boost)
+		var src: Object = null
+		if row.src_school != null:
+			var hero := ref_world.blue_hero()
+			hero.dmg_school = String(row.src_school)
+			hero.blind_timer = 0
+			hero.blind_amount = 0.0
+			src = hero
+		var school_override := "" if row.school == null else String(row.school)
+		var dealt := boss.take_damage(int(row.raw), 0, String(row.dtype), src, school_override)
+		check.call(
+			(
+				dealt == int(row.dealt)
+				and int(boss.hp) == int(row.hp_after)
+				and boss.hurt_flash_timer == int(row.hurt_flash_timer)
+			),
+			"boss take_damage case (%s)" % String(row.tag)
+		)
+	ref_world.blue_hero().dmg_school = "physical"
+	for brow in section.blind_rows:
+		var boss := BossState.new("gornak", ref_world.paths[1], catalog["gornak"])
+		var hero := ref_world.blue_hero()
+		hero.dmg_school = "physical"
+		hero.blind_timer = 30
+		hero.blind_amount = 1.0
+		if bool(brow.true_strike):
+			hero.items.add("sundering_cudgel")
+		else:
+			hero.items.slots.fill(null)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 7
+		var dealt := boss.take_damage(200, 0, String(brow.dtype), hero, "", rng)
+		check.call(
+			dealt == int(brow.dealt),
+			(
+				"boss blind/true_strike gate (ts=%s, dtype=%s)"
+				% [str(bool(brow.true_strike)), String(brow.dtype)]
+			)
+		)
+	ref_world.blue_hero().items.slots.fill(null)
+	ref_world.blue_hero().blind_timer = 30
+	ref_world.blue_hero().blind_amount = 0.50
+	var sample_rng := RandomNumberGenerator.new()
+	sample_rng.seed = 20260929
+	var misses := 0
+	var hits_landed := 0
+	for _draw in range(40):
+		var sample_boss := BossState.new("gornak", ref_world.paths[1], catalog["gornak"])
+		if sample_boss.take_damage(200, 0, "normal", ref_world.blue_hero(), "", sample_rng) == 0:
+			misses += 1
+		else:
+			hits_landed += 1
+	check.call(
+		misses > 0 and hits_landed > 0, "boss blind 50% produces both misses and landed hits"
+	)
+	ref_world.blue_hero().blind_timer = 0
+	ref_world.blue_hero().blind_amount = 0.0
+	var lchk: Dictionary = section.lethal
+	var lethal_boss := BossState.new("gornak", ref_world.paths[1], catalog["gornak"])
+	lethal_boss.hp = 50.0
+	lethal_boss.apply_debuff("slow", 0.50, 60)
+	lethal_boss.apply_debuff("burn", 20.0, 90, 0)
+	lethal_boss.apply_armor_shred(4.0, 60)
+	var blue_hero := ref_world.blue_hero()
+	blue_hero.kills = 0
+	lethal_boss.take_damage(500, 0, "normal", blue_hero)
+	check.call(
+		(
+			int(lethal_boss.hp) == int(lchk.hp)
+			and lethal_boss.alive == bool(lchk.alive)
+			and lethal_boss.defeated == bool(lchk.defeated)
+			and (lethal_boss.killed_by_source == blue_hero) == bool(lchk.killed_by_hero)
+			and lethal_boss.slow_timer == int(lchk.slow_timer)
+			and lethal_boss.burn_timer == int(lchk.burn_timer)
+			and lethal_boss.armor_shred_timer == int(lchk.armor_shred_timer)
+		),
+		"lethal boss hit sets defeated, records killer, and clears debuffs"
+	)
+	var match_world := _world()
+	var player_hero := match_world.blue_hero()
+	player_hero.kills = 0
+	var other_hero := _foe_hero(match_world)
+	other_hero.team = 2
+	other_hero.kills = 0
+	match_world.active_boss = lethal_boss
+	lethal_boss.killed_by_source = player_hero
+	match_world.pending_mini_bosses = [[15, "morgath"]]
+	var devents: Array = section.defeat_events
+	# 1) Gornak defeated by blue hero -> rewards 350G, unlocks gornak, pops morgath.
+	match_world._check_boss_defeated()
+	_check_defeat_event(check, match_world, player_hero, other_hero, devents[0])
+	# 2) Morgath defeated by tower -> rewards 500G, unlocks morgath, no hero kill.
+	match_world.build_tower(0, 0)
+	var tower := match_world.get_unit(match_world.slots[0].structure_id)
+	match_world.economy.gold[0] += 100
+	match_world.economy.opening[0] += 100
+	match_world.active_boss.hp = 10.0
+	match_world.active_boss.take_damage(500, 0, "normal", tower)
+	match_world._check_boss_defeated()
+	_check_defeat_event(check, match_world, player_hero, other_hero, devents[1])
+	# 3) Duplicate gornak defeat -> run_count increments, lists do not duplicate.
+	var dup := BossState.new("gornak", match_world.paths[1], catalog["gornak"])
+	dup.hp = 10.0
+	dup.take_damage(500, 0, "normal", player_hero)
+	match_world.active_boss = dup
+	match_world._check_boss_defeated()
+	_check_defeat_event(check, match_world, player_hero, other_hero, devents[2])
+	# 4) Abaddon defeated by non-blue hero -> killer.kills increments, trueboss_kill_count stays 0.
+	var ab1 := BossState.new("abaddon", match_world.paths[1], catalog["abaddon"])
+	ab1.hp = 10.0
+	ab1.take_damage(500, 0, "skill", other_hero)
+	match_world.active_boss = ab1
+	match_world._check_boss_defeated()
+	_check_defeat_event(check, match_world, player_hero, other_hero, devents[3])
+	# 5) Abaddon defeated by blue hero -> player_hero.kills and trueboss_kill_count increment.
+	var ab2 := BossState.new("abaddon", match_world.paths[1], catalog["abaddon"])
+	ab2.hp = 10.0
+	ab2.take_damage(500, 0, "skill", player_hero)
+	match_world.active_boss = ab2
+	match_world._check_boss_defeated()
+	_check_defeat_event(check, match_world, player_hero, other_hero, devents[4])
+	check.call(
+		match_world.economy.is_balanced(), "boss reward credits keep the match ledger balanced"
+	)
+
+
+func _check_defeat_event(
+	check: Callable, world: Prototype, blue_hero: HeroState, other_hero: HeroState, ev: Dictionary
+) -> void:
+	var exp_match: Array = ev.match_list
+	var exp_unlocked: Array = ev.unlocked
+	var lists_ok := (
+		world.bosses_defeated_this_match.size() == exp_match.size()
+		and world.unlocked_bosses.size() == exp_unlocked.size()
+	)
+	if lists_ok:
+		for i in range(exp_match.size()):
+			if String(world.bosses_defeated_this_match[i]) != String(exp_match[i]):
+				lists_ok = false
+		for i in range(exp_unlocked.size()):
+			if String(world.unlocked_bosses[i]) != String(exp_unlocked[i]):
+				lists_ok = false
+	var next_active: String = world.active_boss.boss_type if world.active_boss != null else ""
+	check.call(
+		(
+			world.economy.gold[0] == int(ev.gold)
+			and world.bosses_defeated_this_run == int(ev.run_count)
+			and lists_ok
+			and blue_hero.kills == int(ev.blue_kills)
+			and other_hero.kills == int(ev.red_kills)
+			and world.miniboss_kill_count == int(ev.miniboss_kills)
+			and world.trueboss_kill_count == int(ev.trueboss_kills)
+			and next_active == String(ev.next_active)
+		),
+		"boss defeat step (%s)" % String(ev.tag)
 	)
 
 

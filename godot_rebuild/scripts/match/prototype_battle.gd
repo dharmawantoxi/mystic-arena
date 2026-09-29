@@ -100,6 +100,12 @@ var pending_mini_bosses: Array = []
 var active_boss: BossState = null
 var true_boss_spawned := false
 var red_towers_destroyed := 0
+# Layer 7e: boss defeat reward, kill attribution and unlock tracking.
+var bosses_defeated_this_run := 0
+var bosses_defeated_this_match: Array[String] = []
+var unlocked_bosses: Array[String] = []
+var miniboss_kill_count := 0
+var trueboss_kill_count := 0
 
 
 func _init() -> void:
@@ -254,6 +260,39 @@ func _spawn_boss(boss_type: String) -> BossState:
 	return boss
 
 
+func _process_boss_kill(boss: BossState) -> void:
+	# Port of Game._process_boss_kill (_core.py:2516): only a real enemy hero
+	# landing the killing blow increments killer.kills, and only a blue hero
+	# increments miniboss_kill_count / trueboss_kill_count.
+	var killer := boss.killed_by_source as HeroState
+	if killer == null or killer.team == boss.team:
+		return
+	killer.kills += 1
+	if killer.team != BLUE:
+		return
+	if boss.boss_class == "true":
+		trueboss_kill_count += 1
+	else:
+		miniboss_kill_count += 1
+
+
+func _check_boss_defeated() -> void:
+	# Port of the BOSS DEFEATED -> UNLOCK HERO block in Game.update (_core.py:2111).
+	if active_boss == null or active_boss.alive or not active_boss.defeated:
+		return
+	var boss := active_boss
+	var btype := boss.boss_type
+	_process_boss_kill(boss)
+	economy.credit_kill(BLUE, boss.gold_reward)
+	bosses_defeated_this_run += 1
+	if btype not in bosses_defeated_this_match:
+		bosses_defeated_this_match.append(btype)
+	if btype not in unlocked_bosses:
+		unlocked_bosses.append(btype)
+	active_boss = null
+	_try_spawn_pending_mini_boss()
+
+
 func _wave_boss_check() -> void:
 	# Port of the mini-boss wave slice in Game.update_waves (_core.py:1745).
 	var schedule: Dictionary = (
@@ -353,6 +392,7 @@ func step_tick() -> void:
 	if is_running():
 		_tick_auras_and_items()
 		_try_spawn_true_boss()
+		_check_boss_defeated()
 		_tick_item_debuffs()
 		_step_hero_act()
 		# Source Game.update runs the AI right after the entity loop.
