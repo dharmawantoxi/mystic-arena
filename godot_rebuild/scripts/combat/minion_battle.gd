@@ -409,9 +409,9 @@ func _damage_amount(target: UnitState, raw_damage: int, school: String) -> float
 	var damage := (
 		raw_damage
 		if school == "neutral"
-		else DamageRules.resolve(
-			raw_damage, target.definition.armor, target.definition.magic_resist, school
-		)
+		# Layer 5b-3: item armor/shred and the Soul Rend amp live in the
+		# DamageRules helper (hero item stats).
+		else DamageRules.item_aware_amount(target, raw_damage, school)
 	)
 	if target is HeroState and (target as HeroState).bristleback_timer > 0 and damage > 0:
 		var keep := 0.85 if school == "magic" else 0.70

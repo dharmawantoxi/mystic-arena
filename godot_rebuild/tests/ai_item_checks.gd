@@ -4,6 +4,7 @@ extends RefCounted
 ## Metadata only: no stat effects, passives or Forge UI are ported here.
 
 const World = preload("res://scripts/match/prototype_battle.gd")
+const DamageRules = preload("res://scripts/combat/damage_rules.gd")
 const HeroItems = preload("res://scripts/match/hero_items.gd")
 const Inventory = preload("res://scripts/match/hero_item_inventory.gd")
 const AIItems = preload("res://scripts/match/ai_items.gd")
@@ -106,6 +107,7 @@ func run(check: Callable) -> void:
 	_test_ai_schedule(fixture.schedule, check)
 	_test_ai_controller_wiring(check)
 	_test_ai_actions(check)
+	_test_item_debuffs(fixture.item_debuffs, check)
 	_test_stat_consumption(fixture.stat_consumption, check)
 	_test_ai_switch(check)
 	_test_ai_shield_nexus(check)
@@ -1884,6 +1886,81 @@ func _ai_sequence(seed_value: int) -> Array:
 			)
 		)
 	return rows
+
+
+func _test_item_debuffs(rows: Array, check: Callable) -> void:
+	# Layer 5b-3: target-side item debuffs (Corroder shred, Soul Rend amp,
+	# Abyss Breaker heal amp) follow the source setters, decay per tick, and
+	# the shred/amp actually reach the mitigation path.
+	for row in rows:
+		var world := _world()
+		_clear_heroes(world)
+		var hero := world.spawn_hero(World.KAIZEN, world.RED, Vector2(600, 380))
+		for entry in row.log:
+			var parts: PackedStringArray = String(entry.op).split(":")
+			if parts[0] == "armor_shred":
+				hero.apply_armor_shred(float(parts[1]), int(parts[2]))
+			elif parts[0] == "damage_amp":
+				hero.apply_damage_amp(float(parts[1]), int(parts[2]))
+			else:
+				hero.apply_heal_amp(float(parts[1]), int(parts[2]))
+			check.call(
+				(
+					is_equal_approx(hero.armor_shred_amount, float(entry.armor_shred_amount))
+					and hero.armor_shred_timer == int(entry.armor_shred_timer)
+					and is_equal_approx(hero.dmg_amp_amount, float(entry.dmg_amp_amount))
+					and hero.dmg_amp_timer == int(entry.dmg_amp_timer)
+					and is_equal_approx(hero.heal_amp_amount, float(entry.heal_amp_amount))
+					and hero.heal_amp_timer == int(entry.heal_amp_timer)
+				),
+				"target item debuff parity: %s after %s" % [str(row.ops), entry.op]
+			)
+	var decay := _world()
+	_clear_heroes(decay)
+	var patient := decay.spawn_hero(World.KAIZEN, decay.RED, Vector2(600, 380))
+	patient.apply_armor_shred(6.0, 2)
+	patient.apply_damage_amp(0.35, 2)
+	patient.apply_heal_amp(0.16, 2)
+	patient.tick_item_debuffs()
+	var held := (
+		is_equal_approx(patient.armor_shred_amount, 6.0)
+		and patient.armor_shred_timer == 1
+		and is_equal_approx(patient.dmg_amp_amount, 0.35)
+		and is_equal_approx(patient.heal_amp_amount, 0.16)
+	)
+	patient.tick_item_debuffs()
+	check.call(
+		(
+			held
+			and patient.armor_shred_amount == 0.0
+			and patient.armor_shred_timer == 0
+			and patient.dmg_amp_amount == 0.0
+			and patient.dmg_amp_timer == 0
+			and patient.heal_amp_amount == 0.0
+			and patient.heal_amp_timer == 0
+		),
+		"target item debuffs decay and clear on their last tick"
+	)
+	var armored := decay.spawn_hero(World.KAIZEN, decay.RED, Vector2(700, 380))
+	check.call(armored.items.add("steel_aegis"), "steel aegis equips for the armor probe")
+	check.call(
+		is_equal_approx(DamageRules.effective_armor(armored), 6.0),
+		"item armor lands in the mitigation armor value"
+	)
+	var plain: int = decay._damage_amount(armored, 100, "physical")
+	armored.apply_armor_shred(6.0, 60)
+	check.call(
+		(
+			is_equal_approx(DamageRules.effective_armor(armored), 0.0)
+			and decay._damage_amount(armored, 100, "physical") > plain
+		),
+		"armor shred feeds the mitigation path"
+	)
+	armored.apply_damage_amp(0.35, 60)
+	check.call(
+		decay._damage_amount(armored, 100, "physical") > 100,
+		"Soul Rend damage amp raises the physical damage taken"
+	)
 
 
 func _test_stat_consumption(rows: Array, check: Callable) -> void:

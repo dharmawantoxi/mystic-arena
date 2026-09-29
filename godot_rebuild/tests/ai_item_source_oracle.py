@@ -926,6 +926,61 @@ def stat_consumption(env):
     return rows
 
 
+# Source TowerDebuffMixin item debuffs that land on a TARGET (Corroder armor
+# shred, Soul Rend damage amp, Abyss Breaker heal amp), applied in sequence.
+ITEM_DEBUFF_CASES = [
+    ["armor_shred:6:360"],
+    ["armor_shred:6:360", "armor_shred:4:120"],
+    ["armor_shred:6:360", "armor_shred:8:60"],
+    ["armor_shred:6:100", "armor_shred:4:200"],
+    ["armor_shred:6:360", "armor_shred:0:0"],
+    ["damage_amp:0.35:300"],
+    ["damage_amp:0.35:300", "damage_amp:0.2:500"],
+    ["heal_amp:0.16:999999"],
+    ["heal_amp:0.16:999999", "heal_amp:0.1:400"],
+    ["armor_shred:6:360", "damage_amp:0.35:300", "heal_amp:0.16:120"],
+]
+
+
+def item_debuffs(env):
+    """Real apply_armor_shred / apply_damage_amp / apply_heal_amp sequences."""
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    names = {"apply_armor_shred", "apply_damage_amp", "apply_heal_amp"}
+    body = [n for n in ast.walk(core_tree)
+            if isinstance(n, ast.FunctionDef) and n.name in names]
+    assert {n.name for n in body} == names, "target item debuff setters missing"
+    cls = ast.ClassDef(name="SourceItemDebuffs", bases=[], keywords=[],
+                       decorator_list=[], body=body)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source item debuffs>", "exec"), env)
+    debuff_type = env["SourceItemDebuffs"]
+    rows = []
+    for ops in ITEM_DEBUFF_CASES:
+        target = debuff_type()
+        target.alive = True
+        target.armor_shred_amount = 0.0
+        target.armor_shred_timer = 0
+        target.dmg_amp_amount = 0.0
+        target.dmg_amp_timer = 0
+        target.heal_amp_amount = 0.0
+        target.heal_amp_timer = 0
+        log = []
+        for op in ops:
+            kind, amount, duration = op.split(":")
+            getattr(target, "apply_" + kind)(float(amount), int(duration))
+            log.append({
+                "op": op,
+                "armor_shred_amount": target.armor_shred_amount,
+                "armor_shred_timer": target.armor_shred_timer,
+                "dmg_amp_amount": target.dmg_amp_amount,
+                "dmg_amp_timer": target.dmg_amp_timer,
+                "heal_amp_amount": target.heal_amp_amount,
+                "heal_amp_timer": target.heal_amp_timer,
+            })
+        rows.append({"ops": ops, "log": log})
+    return rows
+
+
 def _install_effect_stubs(env):
     env["math"] = __import__("math")
     env["random"] = __import__("random")
@@ -1623,6 +1678,7 @@ def source_fixture():
         "stats": stats(env),
         "stat_application": stat_application(env),
         "stat_consumption": stat_consumption(env),
+        "item_debuffs": item_debuffs(env),
         "deaths": deaths(env),
         "timer_attrs": timer_attrs(),
         "timers": timers(env),

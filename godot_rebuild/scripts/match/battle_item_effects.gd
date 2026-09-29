@@ -51,10 +51,18 @@ func apply_burn(target_id: int, dps: float, duration: int, source_team: int) -> 
 	t.burn_team = source_team
 
 
-func apply_armor_shred(_target_id: int, _amount: float, _duration: int) -> void:
-	# Armor shred is a tracked debuff; the rebuild damage calc does not yet
-	# carry per-target shred state so this is a silent landing for parity.
-	pass
+func apply_armor_shred(target_id: int, amount: float, duration: int) -> void:
+	var t: Object = world.get_unit(target_id)
+	if t == null:
+		return
+	t.apply_armor_shred(amount, duration)
+
+
+func apply_damage_amp(target_id: int, amount: float, duration: int) -> void:
+	var t: Object = world.get_unit(target_id)
+	if t == null:
+		return
+	t.apply_damage_amp(amount, duration)
 
 
 func apply_atk_slow(target_id: int, amount: float, duration: int) -> void:

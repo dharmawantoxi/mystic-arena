@@ -5246,6 +5246,248 @@
       "slow_timer": 90
     }
   ],
+  "item_debuffs": [
+    {
+      "ops": [
+        "armor_shred:6:360"
+      ],
+      "log": [
+        {
+          "op": "armor_shred:6:360",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        }
+      ]
+    },
+    {
+      "ops": [
+        "armor_shred:6:360",
+        "armor_shred:4:120"
+      ],
+      "log": [
+        {
+          "op": "armor_shred:6:360",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        },
+        {
+          "op": "armor_shred:4:120",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        }
+      ]
+    },
+    {
+      "ops": [
+        "armor_shred:6:360",
+        "armor_shred:8:60"
+      ],
+      "log": [
+        {
+          "op": "armor_shred:6:360",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        },
+        {
+          "op": "armor_shred:8:60",
+          "armor_shred_amount": 8.0,
+          "armor_shred_timer": 60,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        }
+      ]
+    },
+    {
+      "ops": [
+        "armor_shred:6:100",
+        "armor_shred:4:200"
+      ],
+      "log": [
+        {
+          "op": "armor_shred:6:100",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 100,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        },
+        {
+          "op": "armor_shred:4:200",
+          "armor_shred_amount": 4.0,
+          "armor_shred_timer": 200,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        }
+      ]
+    },
+    {
+      "ops": [
+        "armor_shred:6:360",
+        "armor_shred:0:0"
+      ],
+      "log": [
+        {
+          "op": "armor_shred:6:360",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        },
+        {
+          "op": "armor_shred:0:0",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        }
+      ]
+    },
+    {
+      "ops": [
+        "damage_amp:0.35:300"
+      ],
+      "log": [
+        {
+          "op": "damage_amp:0.35:300",
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.35,
+          "dmg_amp_timer": 300,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        }
+      ]
+    },
+    {
+      "ops": [
+        "damage_amp:0.35:300",
+        "damage_amp:0.2:500"
+      ],
+      "log": [
+        {
+          "op": "damage_amp:0.35:300",
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.35,
+          "dmg_amp_timer": 300,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        },
+        {
+          "op": "damage_amp:0.2:500",
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.2,
+          "dmg_amp_timer": 500,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        }
+      ]
+    },
+    {
+      "ops": [
+        "heal_amp:0.16:999999"
+      ],
+      "log": [
+        {
+          "op": "heal_amp:0.16:999999",
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999
+        }
+      ]
+    },
+    {
+      "ops": [
+        "heal_amp:0.16:999999",
+        "heal_amp:0.1:400"
+      ],
+      "log": [
+        {
+          "op": "heal_amp:0.16:999999",
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999
+        },
+        {
+          "op": "heal_amp:0.1:400",
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 999999
+        }
+      ]
+    },
+    {
+      "ops": [
+        "armor_shred:6:360",
+        "damage_amp:0.35:300",
+        "heal_amp:0.16:120"
+      ],
+      "log": [
+        {
+          "op": "armor_shred:6:360",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        },
+        {
+          "op": "damage_amp:0.35:300",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.35,
+          "dmg_amp_timer": 300,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0
+        },
+        {
+          "op": "heal_amp:0.16:120",
+          "armor_shred_amount": 6.0,
+          "armor_shred_timer": 360,
+          "dmg_amp_amount": 0.35,
+          "dmg_amp_timer": 300,
+          "heal_amp_amount": 0.16,
+          "heal_amp_timer": 120
+        }
+      ]
+    }
+  ],
   "deaths": [
     {
       "hero": {

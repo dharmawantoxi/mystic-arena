@@ -164,6 +164,7 @@ func step_tick() -> void:
 	super.step_tick()
 	if is_running():
 		_tick_auras_and_items()
+		_tick_item_debuffs()
 		_step_hero_act()
 		# Source Game.update runs the AI right after the entity loop.
 		_step_ai_heroes()
@@ -528,6 +529,13 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 			best_dist = dist
 			best = unit
 	return best
+
+
+func _tick_item_debuffs() -> void:
+	# Layer 5b-3: every unit decays its target-side item debuffs once per tick
+	# (source TowerDebuffMixin._tick_tower_debuffs).
+	for unit in units:
+		unit.tick_item_debuffs()
 
 
 func apply_slow(target_id: int, amount: float, duration: int) -> bool:
