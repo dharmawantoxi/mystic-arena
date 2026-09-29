@@ -373,6 +373,12 @@ if (ROOT / "tests/fixtures/match_source.json").is_file():
         (ROOT / "tests/fixtures/match_source.json").read_text(encoding="utf-8")),
         "Match fixture must include source-executed boss conditions")
 
+from boss_movement_source_oracle import source_fixture as boss_movement_fixture
+check("BossMovementChecks.new().run(_check)" in ai_tests, "Boss movement suite must run")
+check(boss_movement_fixture() == json.loads(
+    (ROOT / "tests/fixtures/boss_movement_source.json").read_text(encoding="utf-8")),
+    "Boss movement source behavior drift")
+
 from boss_core_source_oracle import source_fixture as boss_core_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
 check((ROOT / "tests/fixtures/boss_core_source.json").is_file(), "Boss core requires source fixture")

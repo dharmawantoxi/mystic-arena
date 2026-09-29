@@ -270,6 +270,7 @@ func step_tick() -> void:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	_try_spawn_true_boss()
 	super.step_tick()
+	_step_boss_combat()
 	_process_defeated_boss()
 	if is_running():
 		_tick_auras_and_items()
@@ -439,6 +440,9 @@ func _spawn_boss(boss_type: String, true_boss: bool) -> bool:
 		return false
 	if enemy_scaling_enabled:
 		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
+	boss.id = _next_id
+	_next_id += 1
+	_by_id[boss.id] = boss
 	active_boss = boss
 	if true_boss:
 		boss_match.note_spawned_true_boss()
@@ -448,6 +452,7 @@ func _spawn_boss(boss_type: String, true_boss: bool) -> bool:
 
 func _try_spawn_pending_mini_boss() -> bool:
 	if active_boss != null and not active_boss.alive:
+		_by_id.erase(active_boss.id)
 		active_boss = null
 	var boss_type := boss_match.pop_pending(active_boss != null and active_boss.alive)
 	return not boss_type.is_empty() and _spawn_boss(boss_type, false)
@@ -460,6 +465,83 @@ func _try_spawn_true_boss() -> bool:
 	return _spawn_boss(boss_type, true)
 
 
+func _find_target(unit: UnitState) -> UnitState:
+	var ordered: Array[UnitState] = []
+	for candidate in units:
+		if candidate.alive and candidate.team != unit.team:
+			ordered.append(candidate)
+	if active_boss != null and active_boss.alive and active_boss.team != unit.team:
+		ordered.append(active_boss)
+	for structure in structures:
+		if structure.alive and structure.team != unit.team:
+			ordered.append(structure)
+	return _select_ai_target(unit, ordered)
+
+
+func _structure_target(structure: StructureState) -> UnitState:
+	var target := super._structure_target(structure)
+	var best := (
+		structure.position.distance_to(target.position)
+		if target != null
+		else structure.definition.attack_range_px
+	)
+	if active_boss != null and active_boss.alive and active_boss.team != structure.team:
+		var distance := structure.position.distance_to(active_boss.position)
+		if distance <= best:
+			target = active_boss
+	return target
+
+
+func _boss_enemies() -> Array[UnitState]:
+	# Source order is units, towers, then bases; ties keep the first candidate.
+	var enemies: Array[UnitState] = []
+	for unit in units:
+		if unit.alive and unit.team == BLUE:
+			enemies.append(unit)
+	for structure in structures:
+		if (
+			structure.alive
+			and structure.team == BLUE
+			and structure.settings().structure_kind == "tower"
+		):
+			enemies.append(structure)
+	if nexuses[BLUE] != null and nexuses[BLUE].alive:
+		enemies.append(nexuses[BLUE])
+	return enemies
+
+
+func _step_boss_combat() -> void:
+	if active_boss == null or not active_boss.alive:
+		return
+	# The full shared-debuff/entrance/enrage clocks are the next boss layer.
+	# Stun still gates this movement/attack layer exactly like source update.
+	if active_boss.stun_timer > 0:
+		active_boss.stun_timer -= 1
+		return
+	active_boss.tick_basic_attack()
+	var enemies := _boss_enemies()
+	var target := active_boss.pick_target(enemies)
+	active_boss.target_id = target.id if target != null else -1
+	if target == null:
+		active_boss.move_forward()
+		return
+	if active_boss.position.distance_to(target.position) > active_boss.attack_range:
+		active_boss.move_for_target(target)
+		return
+	active_boss.face_vector(target.position - active_boss.position)
+	if not active_boss.begin_basic_attack(target):
+		return
+	_deliver_hit(-1, RED, target, active_boss.damage, "physical", active_boss.position)
+	var cleave_damage := int(float(active_boss.damage) * active_boss.cleave_ratio)
+	if cleave_damage <= 0:
+		return
+	for nearby in enemies:
+		if nearby == target or not nearby.alive:
+			continue
+		if active_boss.position.distance_to(nearby.position) <= active_boss.cleave_radius:
+			_deliver_hit(-1, RED, nearby, cleave_damage, "neutral", active_boss.position)
+
+
 func _process_defeated_boss() -> void:
 	if active_boss == null or active_boss.alive or not active_boss.defeated:
 		return
@@ -469,6 +551,7 @@ func _process_defeated_boss() -> void:
 	credited_gold[BLUE] += reward
 	boss_match.note_boss_defeated(boss_type)
 	_record({"kind": "boss_defeated", "boss_type": boss_type, "reward": reward})
+	_by_id.erase(active_boss.id)
 	active_boss = null
 	_try_spawn_pending_mini_boss()
 
@@ -864,6 +947,27 @@ func _deliver_hit(
 	origin: Vector2,
 	damage_type: String = "normal"
 ) -> bool:
+	if target == active_boss:
+		if not is_running() or not target.alive or source_team == target.team:
+			return false
+		var source := get_unit(source_id)
+		var applied := active_boss.take_damage(source, raw_damage, damage_type, school)
+		if applied < 0:
+			return false
+		_notify_item_damage(source_id, source_team, active_boss, applied)
+		_record(
+			{
+				"kind": "hit",
+				"source_id": source_id,
+				"target_id": active_boss.id,
+				"from": origin,
+				"to": active_boss.position,
+				"damage": applied
+			}
+		)
+		if not active_boss.alive:
+			_record({"kind": "death", "source_id": source_id, "target_id": active_boss.id})
+		return true
 	# Layer 5b-4: port of the evasion/true-strike gate of Hero.take_damage.
 	# Source `_school` is `resolve_damage_school`, which reads the attacker's
 	# `dmg_school` first, so the incoming school is the right handle here.
@@ -968,6 +1072,11 @@ func _hero_pick_target(hero: HeroState, reach: float, inclusive: bool) -> UnitSt
 		if (distance <= best_dist) if inclusive else (distance < best_dist):
 			best = unit
 			best_dist = distance
+	if active_boss != null and active_boss.alive and active_boss.team != hero.team:
+		var boss_distance := hero.position.distance_to(active_boss.position)
+		if (boss_distance <= best_dist) if inclusive else (boss_distance < best_dist):
+			best = active_boss
+			best_dist = boss_distance
 	for structure in structures:
 		if not structure.alive or structure.team == hero.team:
 			continue

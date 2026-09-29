@@ -1,3 +1,4 @@
+# gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
 ## Layer 8a: source Boss entity core.
 ##
@@ -13,8 +14,23 @@ extends "res://scripts/combat/unit_state.gd"
 ## match wiring that rolls the schedule, spawns the boss, counts destroyed red
 ## towers and unlocks the defeated boss.
 
+const UnitState = preload("res://scripts/combat/unit_state.gd")
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
 const Damage = preload("res://scripts/combat/damage_rules.gd")
+const RANGED_KITERS := [
+	"ancient_apparition",
+	"morgath",
+	"razak",
+	"varkul",
+	"xerathis",
+	"nyzrak",
+	"syrentha",
+	"thalgryn",
+	"nyxarath",
+	"malzareth",
+	"akashari",
+	"vorenmarr"
+]
 
 var boss_type := ""
 var display_name := ""
@@ -29,6 +45,8 @@ var speed_px_per_tick := 0.0
 var base_speed := 0.0
 var attack_range := 0.0
 var attack_cooldown := 0
+var min_distance := 200.0
+var prefer_distance := 280.0
 var radius := 0.0
 var gold_reward := 0
 var armor := 0
@@ -65,6 +83,11 @@ var hp_scaling_mult := 1.0
 var dmg_scaling_mult := 1.0
 var spd_scaling_mult := 1.0
 var direction := -1
+var lane_path := PackedVector2Array()
+var attack_facing := 0
+var attack_lock_timer := 0
+var basic_attack_seq := 0
+var kite_mode := "hold"
 # Source Boss.speed property reads `tenacity` (0.50 for every boss).
 var tenacity := 0.50
 # Injectable draw so tests can replay the recorded source roll.
@@ -90,6 +113,8 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	base_speed = speed_px_per_tick
 	attack_range = float(stats["attack_range"])
 	attack_cooldown = int(stats["attack_cooldown"])
+	min_distance = float(stats.get("min_distance", 200))
+	prefer_distance = float(stats.get("prefer_distance", 280))
 	radius = float(stats["radius"])
 	gold_reward = int(stats["gold_reward"])
 	ability_cooldown = int(stats["ability_cooldown"])
@@ -115,6 +140,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	rebuild_definition()
 	direction = -1
 	facing = -1.0
+	self.lane_path = lane_path
 	# Source position: the last waypoint of the (mid) lane path, else
 	# (RED_BASE_X - 50, RED_BASE_Y) = (1130, 100) with waypoint_index -1.
 	if lane_path.size() > 0:
@@ -176,6 +202,137 @@ func eff_ability_damage() -> int:
 		var factor := maxf(0.0, 1.0 - skill_down_amount)
 		return Damage.rounded_like_python(float(ability_damage_value) * factor)
 	return ability_damage_value
+
+
+func eff_attack_cooldown() -> int:
+	# TowerDebuffMixin._eff_attack_cd: Ice attack slow divides cooldown.
+	if stun_timer > 0:
+		return 9999
+	if atk_slow_timer <= 0:
+		return attack_cooldown
+	var factor := maxf(0.05, 1.0 - atk_slow_amount)
+	return maxi(1, Damage.rounded_like_python(float(attack_cooldown) / factor))
+
+
+func tick_basic_attack() -> void:
+	if attack_lock_timer > 0:
+		attack_lock_timer -= 1
+		if attack_lock_timer <= 0:
+			attack_facing = 0
+	if timer > 0:
+		timer -= 1
+
+
+func pick_target(enemies: Array[UnitState]) -> UnitState:
+	# Boss.update only notices enemies within attack range + 100 and keeps the
+	# first candidate on equal distance (`<`, not `<=`).
+	var target: UnitState = null
+	var best := attack_range + 100.0
+	for enemy in enemies:
+		if enemy == null or not enemy.alive or enemy.team == team:
+			continue
+		var distance := position.distance_to(enemy.position)
+		if distance < best:
+			best = distance
+			target = enemy
+	return target
+
+
+func begin_basic_attack(target: UnitState) -> bool:
+	if target == null or not target.alive or timer != 0:
+		return false
+	if position.distance_to(target.position) > attack_range:
+		return false
+	face_vector(target.position - position)
+	timer = eff_attack_cooldown()
+	attack_facing = direction
+	basic_attack_seq += 1
+	attack_lock_timer = mini(15, maxi(6, int(attack_cooldown / 3.0)))
+	return true
+
+
+func move_for_target(target: UnitState) -> void:
+	if target == null:
+		move_forward()
+		return
+	var offset := target.position - position
+	var distance := offset.length()
+	if distance <= attack_range or distance <= 0.0:
+		return
+	var speed := eff_speed()
+	if speed <= 0.0:
+		return
+	if boss_type in RANGED_KITERS:
+		var band := 12.0
+		if distance < min_distance:
+			kite_mode = "back"
+		elif distance > prefer_distance:
+			kite_mode = "in"
+		elif kite_mode == "back" and distance < min_distance + band:
+			pass
+		elif kite_mode == "in" and distance > prefer_distance - band:
+			pass
+		else:
+			kite_mode = "hold"
+		if kite_mode == "back":
+			var back_step := minf(speed, maxf(0.0, min_distance + band - distance))
+			position -= offset / distance * back_step
+			face_vector(-offset)
+		elif kite_mode == "in":
+			var in_step := minf(speed, maxf(0.0, distance - (prefer_distance - band)))
+			position += offset / distance * in_step
+			face_vector(offset)
+	else:
+		var step := minf(speed, distance)
+		position += offset / distance * step
+		face_vector(offset)
+
+
+func face_vector(offset: Vector2) -> void:
+	if attack_lock_timer > 0:
+		if attack_facing != 0:
+			direction = attack_facing
+			facing = float(direction)
+		return
+	if absf(offset.x) < 0.35 * maxf(0.000001, absf(offset.y)):
+		return
+	direction = 1 if offset.x > 0.0 else -1
+	facing = float(direction)
+
+
+func lane_target() -> Vector2:
+	if waypoint_index >= 0 and waypoint_index < lane_path.size():
+		return lane_path[waypoint_index]
+	var fallback: Array = rules.get("blue_base_position", [100.0, 620.0])
+	return Vector2(float(fallback[0]), float(fallback[1]))
+
+
+func move_forward() -> void:
+	# Consume the whole movement budget across waypoints in one tick. This is
+	# the source fix that removes one-frame stalls at every lane node.
+	var budget := eff_speed()
+	var guard := 0
+	while budget > 0.001 and guard < 16:
+		guard += 1
+		var destination := lane_target()
+		var offset := destination - position
+		var distance := offset.length()
+		var has_next := not lane_path.is_empty() and waypoint_index >= 0
+		if distance <= 0.000001:
+			if not has_next:
+				break
+			waypoint_index -= 1
+			continue
+		if distance <= budget:
+			position = destination
+			budget -= distance
+			face_vector(offset)
+			if has_next:
+				waypoint_index -= 1
+			continue
+		position += offset / distance * budget
+		face_vector(offset)
+		budget = 0.0
 
 
 func apply_scaling(hp_mult: float = 1.0, dmg_mult: float = 1.0, spd_mult: float = 1.0) -> void:

@@ -1,0 +1,122 @@
+{
+  "walk": [
+    {
+      "position": [
+        18.8,
+        0.0
+      ],
+      "waypoint": 1,
+      "direction": -1,
+      "timer": 0,
+      "attack_seq": 0,
+      "lock": 0,
+      "kite": "hold"
+    },
+    {
+      "position": [
+        17.6,
+        0.0
+      ],
+      "waypoint": 1,
+      "direction": -1,
+      "timer": 0,
+      "attack_seq": 0,
+      "lock": 0,
+      "kite": "hold"
+    },
+    {
+      "position": [
+        16.400000000000002,
+        0.0
+      ],
+      "waypoint": 1,
+      "direction": -1,
+      "timer": 0,
+      "attack_seq": 0,
+      "lock": 0,
+      "kite": "hold"
+    },
+    {
+      "position": [
+        15.200000000000003,
+        0.0
+      ],
+      "waypoint": 1,
+      "direction": -1,
+      "timer": 0,
+      "attack_seq": 0,
+      "lock": 0,
+      "kite": "hold"
+    }
+  ],
+  "chase": {
+    "position": [
+      18.8,
+      0.0
+    ],
+    "waypoint": 2,
+    "direction": -1,
+    "timer": 0,
+    "attack_seq": 0,
+    "lock": 0,
+    "kite": "hold"
+  },
+  "attack": {
+    "boss": {
+      "position": [
+        20.0,
+        0.0
+      ],
+      "waypoint": 2,
+      "direction": -1,
+      "timer": 38,
+      "attack_seq": 1,
+      "lock": 12,
+      "kite": "hold"
+    },
+    "main": [
+      {
+        "damage": 85,
+        "team": "red",
+        "school": "physical"
+      }
+    ],
+    "splash": [
+      {
+        "damage": 34,
+        "team": "red",
+        "school": "neutral"
+      }
+    ],
+    "far": []
+  },
+  "attack_slow_timer": 51,
+  "kite": {
+    "position": [
+      19.3,
+      0.0
+    ],
+    "waypoint": 2,
+    "direction": -1,
+    "timer": 0,
+    "attack_seq": 0,
+    "lock": 0,
+    "kite": "in"
+  },
+  "tie": {
+    "first": [
+      {
+        "damage": 85,
+        "team": "red",
+        "school": "physical"
+      }
+    ],
+    "second": [
+      {
+        "damage": 34,
+        "team": "red",
+        "school": "neutral"
+      }
+    ]
+  }
+}
