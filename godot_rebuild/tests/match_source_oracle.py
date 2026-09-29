@@ -1,5 +1,5 @@
 """Oracle for the level-1 subset: original source scheduler, economy, slot, build/sell methods.
-Only presentation, bosses, random spawn jitter and AI auto-upgrades are stubbed.
+Only presentation, random spawn jitter and AI auto-upgrades are stubbed; boss condition methods execute from source AST.
 No pygame/game import and no previous migration converter is used.
 """
 import ast
@@ -26,7 +26,7 @@ def source_fixture():
     tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
     game_class = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Game")
     methods = {n.name: n for n in game_class.body if isinstance(n, ast.FunctionDef)}
-    selected = [methods[n] for n in ("update_waves", "_get_wave_composition", "_generate_build_slots_from_lanes", "try_build_tower")]
+    selected = [methods[n] for n in ("update_waves", "_get_wave_composition", "_generate_build_slots_from_lanes", "try_build_tower", "_roll_mini_boss_schedule", "_try_spawn_pending_mini_boss", "_auto_unlock_defeated_boss_heroes")]
     cls = ast.ClassDef(name="SourceGame", bases=[], keywords=[], body=selected, decorator_list=[])
     exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])), "<source match subset>", "exec"), env)
     for name in ("compute_starting_gold", "compute_gold_per_second"):
@@ -45,9 +45,12 @@ def source_fixture():
         g.red_base = SimpleNamespace(level=1, set_wave=noop)
         g.minions = []
         g.map_renderer = SimpleNamespace(get_lane_path=lambda lane: path_data[lane])
-        g.level_config = {"mini_bosses": {}}
+        g.level_config = level_config("LEVEL_1")
         g.effects = SimpleNamespace(announce_wave=noop, show_path_preview=noop)
-        g._try_spawn_pending_mini_boss = noop
+        g.active_boss = None
+        g.pending_mini_bosses = []
+        g.difficulty = "normal"
+        g._mini_boss_schedule = g._roll_mini_boss_schedule()
         g._auto_scale_ai_castle = noop
         return g
 
@@ -122,8 +125,99 @@ def source_fixture():
     result["minion_spawn_offsets"] = minion_spawn_offsets(env)
     result["enemy_scaling"] = enemy_scaling(env)
     result["level_one"] = level_config("LEVEL_1")
+    result["boss_conditions"] = boss_conditions(env, methods, result["level_one"], path_data)
     return result
 
+
+
+def boss_conditions(env, methods, config, path_data):
+    """Execute source boss schedule/queue/unlock methods and true-boss AST branch."""
+    import random
+    import types
+
+    class StubBoss:
+        def __init__(self, boss_type, lane_path):
+            self.boss_type = boss_type
+            self.name = boss_type.title()
+            self.boss_class = "true" if boss_type == config["true_boss"] else "mini"
+            self.alive = True
+            self.scaling = None
+            self.lane_path = lane_path
+
+        def apply_scaling(self, hp, damage, speed):
+            self.scaling = [hp, damage, speed]
+
+    old_bosses = sys.modules.get("bosses")
+    old_base = sys.modules.get("bosses.base_boss")
+    old_render = sys.modules.get("_render")
+    bosses_module = types.ModuleType("bosses")
+    base_module = types.ModuleType("bosses.base_boss")
+    base_module.Boss = StubBoss
+    render_module = types.ModuleType("_render")
+    render_module.BossIntroCinematic = lambda boss, width, height: [boss.boss_type, width, height]
+    sys.modules["bosses"] = bosses_module
+    sys.modules["bosses.base_boss"] = base_module
+    sys.modules["_render"] = render_module
+    env["SCREEN_WIDTH"], env["SCREEN_HEIGHT"] = 1280, 720
+    try:
+        schedules = []
+        for difficulty in ("easy", "normal", "hard", "unknown"):
+            for seed in (7, 29):
+                random.seed(seed)
+                game = env["SourceGame"]()
+                game.level_config = config
+                game.difficulty = difficulty
+                rolled = game._roll_mini_boss_schedule()
+                schedules.append({"difficulty": difficulty, "seed": seed,
+                                  "entries": [[wave, boss] for wave, boss in rolled.items()]})
+
+        queue_game = env["SourceGame"]()
+        queue_game.level_config = config
+        queue_game.map_renderer = SimpleNamespace(get_lane_path=lambda lane: path_data[lane])
+        queue_game.active_boss = StubBoss("blocking", path_data["mid"])
+        queue_game.pending_mini_bosses = [(11, "gornak"), (12, "morgath")]
+        queue_game.enemy_scaling_enabled = True
+        queue_game.enemy_hp_mult, queue_game.enemy_damage_mult, queue_game.enemy_speed_mult = 1.15, 1.1, 1.0
+        queue_game._try_spawn_pending_mini_boss()
+        blocked = len(queue_game.pending_mini_bosses)
+        queue_game.active_boss.alive = False
+        queue_game._try_spawn_pending_mini_boss()
+        first = [queue_game.active_boss.boss_type, queue_game.active_boss.scaling,
+                 len(queue_game.pending_mini_bosses)]
+
+        unlock_game = env["SourceGame"]()
+        unlock_game.save_data = {"purchased_heroes": ["gornak"], "unlocked_bosses": []}
+        unlock_game.purchased_heroes = unlock_game.save_data["purchased_heroes"]
+        unlock_game.bosses_defeated_this_match = ["gornak", "morgath", "morgath", "drakar"]
+        unlock_game.effects = SimpleNamespace(unlock_achievement=lambda *args: None)
+        unlocked = unlock_game._auto_unlock_defeated_boss_heroes()
+
+        update = methods["update"]
+        true_if = next(node for node in ast.walk(update)
+                       if isinstance(node, ast.If)
+                       and "red_towers_destroyed >= 6" in ast.unparse(node.test)
+                       and "true_boss_spawned" in ast.unparse(node.test))
+        trigger = ast.FunctionDef(name="trigger_true", args=ast.arguments(
+            posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+            body=[true_if], decorator_list=[])
+        trigger_true = compile_method(ast.fix_missing_locations(trigger), env)
+        true_game = SimpleNamespace(true_boss_spawned=False, red_towers_destroyed=6,
+            active_boss=None, level_config=config,
+            map_renderer=SimpleNamespace(get_lane_path=lambda lane: path_data[lane]),
+            enemy_scaling_enabled=False, level_number=1)
+        trigger_true(true_game)
+        true_spawn = [true_game.true_boss_spawned, true_game.active_boss.boss_type]
+    finally:
+        for name, previous in (("bosses", old_bosses), ("bosses.base_boss", old_base), ("_render", old_render)):
+            if previous is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = previous
+    return {"schedules": schedules, "pending": {"blocked": blocked, "first": first},
+            "true_spawn": true_spawn, "newly_purchased": unlocked,
+            "purchased": unlock_game.purchased_heroes,
+            "rewards": {"win": config["meta_gold_reward_win"],
+                        "replay": config["meta_gold_reward_replay"], "repeat": 200}}
 
 def minion_spawn_offsets(env):
     """Real Minion.__init__ spread statements, exec'd verbatim.
@@ -418,7 +512,7 @@ def main():
     assert data["level_one"] == json.loads(LEVEL_DATA.read_text(encoding="utf-8")), \
         "level 1 data drifted from source"
     assert data == json.loads(FIXTURE.read_text(encoding="utf-8")), "Match source contract drift"
-    print("PASS: original wave traces, composition, 18 slots, income ledger and build/sell prices.")
+    print("PASS: original waves, economy, boss schedule/queue/trigger and unlock conditions.")
 
 
 if __name__ == "__main__":

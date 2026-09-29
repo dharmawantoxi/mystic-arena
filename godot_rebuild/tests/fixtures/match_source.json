@@ -2177,5 +2177,183 @@
     "meta_gold_reward_replay": 1500,
     "meta_gold_reward_lose": 0,
     "unlock_after_level": null
+  },
+  "boss_conditions": {
+    "schedules": [
+      {
+        "difficulty": "easy",
+        "seed": 7,
+        "entries": [
+          [
+            24,
+            "gornak"
+          ],
+          [
+            30,
+            "morgath"
+          ],
+          [
+            32,
+            "drakar"
+          ]
+        ]
+      },
+      {
+        "difficulty": "easy",
+        "seed": 29,
+        "entries": [
+          [
+            22,
+            "gornak"
+          ],
+          [
+            31,
+            "morgath"
+          ],
+          [
+            37,
+            "drakar"
+          ]
+        ]
+      },
+      {
+        "difficulty": "normal",
+        "seed": 7,
+        "entries": [
+          [
+            15,
+            "gornak"
+          ],
+          [
+            21,
+            "morgath"
+          ],
+          [
+            23,
+            "drakar"
+          ]
+        ]
+      },
+      {
+        "difficulty": "normal",
+        "seed": 29,
+        "entries": [
+          [
+            13,
+            "gornak"
+          ],
+          [
+            22,
+            "morgath"
+          ],
+          [
+            28,
+            "drakar"
+          ]
+        ]
+      },
+      {
+        "difficulty": "hard",
+        "seed": 7,
+        "entries": [
+          [
+            15,
+            "gornak"
+          ],
+          [
+            21,
+            "morgath"
+          ],
+          [
+            23,
+            "drakar"
+          ]
+        ]
+      },
+      {
+        "difficulty": "hard",
+        "seed": 29,
+        "entries": [
+          [
+            13,
+            "gornak"
+          ],
+          [
+            22,
+            "morgath"
+          ],
+          [
+            28,
+            "drakar"
+          ]
+        ]
+      },
+      {
+        "difficulty": "unknown",
+        "seed": 7,
+        "entries": [
+          [
+            15,
+            "gornak"
+          ],
+          [
+            21,
+            "morgath"
+          ],
+          [
+            23,
+            "drakar"
+          ]
+        ]
+      },
+      {
+        "difficulty": "unknown",
+        "seed": 29,
+        "entries": [
+          [
+            13,
+            "gornak"
+          ],
+          [
+            22,
+            "morgath"
+          ],
+          [
+            28,
+            "drakar"
+          ]
+        ]
+      }
+    ],
+    "pending": {
+      "blocked": 2,
+      "first": [
+        "gornak",
+        [
+          1.15,
+          1.1,
+          1.0
+        ],
+        1
+      ]
+    },
+    "true_spawn": [
+      true,
+      "abaddon"
+    ],
+    "newly_purchased": [
+      "morgath",
+      "drakar"
+    ],
+    "purchased": [
+      "gornak",
+      "morgath",
+      "drakar"
+    ],
+    "rewards": {
+      "win": 3000,
+      "replay": 1500,
+      "repeat": 200
+    }
   }
 }

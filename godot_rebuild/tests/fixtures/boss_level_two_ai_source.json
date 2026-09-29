@@ -1,0 +1,654 @@
+{
+  "cases": {
+    "razak:cluster": {
+      "skill": "r",
+      "timers": [
+        0,
+        0,
+        0,
+        520
+      ],
+      "active_timer": 90,
+      "hp": 13640,
+      "damage": 95,
+      "speed": 0.95,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            425
+          ],
+          "hp": 1575,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        },
+        {
+          "hits": [
+            425
+          ],
+          "hp": 1575,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        },
+        {
+          "hits": [
+            425
+          ],
+          "hp": 1575,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "razak:far": {
+      "skill": "e",
+      "timers": [
+        0,
+        0,
+        280,
+        0
+      ],
+      "active_timer": 35,
+      "hp": 13640,
+      "damage": 95,
+      "speed": 0.95,
+      "position": [
+        80.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            225
+          ],
+          "hp": 1775,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "razak:normal": {
+      "skill": "w",
+      "timers": [
+        0,
+        260,
+        0,
+        0
+      ],
+      "active_timer": 50,
+      "hp": 13640,
+      "damage": 95,
+      "speed": 0.95,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            275
+          ],
+          "hp": 1725,
+          "attack_timer": 45,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "razak:q_only": {
+      "skill": "q",
+      "timers": [
+        220,
+        1,
+        1,
+        1
+      ],
+      "active_timer": 40,
+      "hp": 13640,
+      "damage": 95,
+      "speed": 0.95,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            200
+          ],
+          "hp": 1800,
+          "attack_timer": 0,
+          "slow": [
+            0.35,
+            120
+          ]
+        }
+      ]
+    },
+    "khalros:cluster": {
+      "skill": "r",
+      "timers": [
+        0,
+        0,
+        0,
+        560
+      ],
+      "active_timer": 70,
+      "hp": 17160,
+      "damage": 114,
+      "speed": 1.0,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            475
+          ],
+          "hp": 1525,
+          "attack_timer": 30,
+          "slow": [
+            0.0,
+            0
+          ]
+        },
+        {
+          "hits": [
+            475
+          ],
+          "hp": 1525,
+          "attack_timer": 30,
+          "slow": [
+            0.0,
+            0
+          ]
+        },
+        {
+          "hits": [
+            475
+          ],
+          "hp": 1525,
+          "attack_timer": 30,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "khalros:low": {
+      "skill": "w",
+      "timers": [
+        0,
+        300,
+        0,
+        0
+      ],
+      "active_timer": 60,
+      "hp": 9952,
+      "damage": 114,
+      "speed": 1.0,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            200
+          ],
+          "hp": 1800,
+          "attack_timer": 0,
+          "slow": [
+            0.5,
+            90
+          ]
+        }
+      ]
+    },
+    "khalros:far": {
+      "skill": "e",
+      "timers": [
+        0,
+        0,
+        280,
+        0
+      ],
+      "active_timer": 45,
+      "hp": 17160,
+      "damage": 114,
+      "speed": 1.0,
+      "position": [
+        85.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            275
+          ],
+          "hp": 1725,
+          "attack_timer": 40,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "khalros:normal": {
+      "skill": "q",
+      "timers": [
+        220,
+        0,
+        0,
+        0
+      ],
+      "active_timer": 50,
+      "hp": 17160,
+      "damage": 114,
+      "speed": 1.0,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            262
+          ],
+          "hp": 1738,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "gorath:execute": {
+      "skill": "r",
+      "timers": [
+        0,
+        0,
+        0,
+        560
+      ],
+      "active_timer": 90,
+      "hp": 20460,
+      "damage": 131,
+      "speed": 1.18,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            525
+          ],
+          "hp": 0,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "gorath:low": {
+      "skill": "q",
+      "timers": [
+        420,
+        0,
+        0,
+        0
+      ],
+      "active_timer": 90,
+      "hp": 11866,
+      "damage": 183,
+      "speed": 1.416,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        true,
+        300
+      ],
+      "targets": [
+        {
+          "hits": [],
+          "hp": 2000,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "gorath:cluster": {
+      "skill": "w",
+      "timers": [
+        0,
+        240,
+        0,
+        0
+      ],
+      "active_timer": 60,
+      "hp": 20460,
+      "damage": 131,
+      "speed": 1.18,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            262
+          ],
+          "hp": 1738,
+          "attack_timer": 50,
+          "slow": [
+            0.0,
+            0
+          ]
+        },
+        {
+          "hits": [
+            262
+          ],
+          "hp": 1738,
+          "attack_timer": 50,
+          "slow": [
+            0.0,
+            0
+          ]
+        },
+        {
+          "hits": [
+            262
+          ],
+          "hp": 1738,
+          "attack_timer": 50,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "gorath:far": {
+      "skill": "e",
+      "timers": [
+        0,
+        0,
+        260,
+        0
+      ],
+      "active_timer": 35,
+      "hp": 20460,
+      "damage": 131,
+      "speed": 1.18,
+      "position": [
+        95.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            237
+          ],
+          "hp": 1763,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "alchemist:critical_cluster": {
+      "skill": "r",
+      "timers": [
+        0,
+        0,
+        0,
+        720
+      ],
+      "active_timer": 90,
+      "hp": 10200,
+      "damage": 150,
+      "speed": 0.75,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            742
+          ],
+          "hp": 1258,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        },
+        {
+          "hits": [
+            742
+          ],
+          "hp": 0,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        },
+        {
+          "hits": [
+            742
+          ],
+          "hp": 0,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "alchemist:low": {
+      "skill": "e",
+      "timers": [
+        0,
+        0,
+        480,
+        0
+      ],
+      "active_timer": 60,
+      "hp": 26000,
+      "damage": 225,
+      "speed": 0.75,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        true,
+        360
+      ],
+      "targets": [
+        {
+          "hits": [],
+          "hp": 2000,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    },
+    "alchemist:cluster": {
+      "skill": "w",
+      "timers": [
+        0,
+        300,
+        0,
+        0
+      ],
+      "active_timer": 60,
+      "hp": 40000,
+      "damage": 150,
+      "speed": 0.75,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            432
+          ],
+          "hp": 1568,
+          "attack_timer": 0,
+          "slow": [
+            0.5,
+            180
+          ]
+        },
+        {
+          "hits": [
+            432
+          ],
+          "hp": 1568,
+          "attack_timer": 0,
+          "slow": [
+            0.5,
+            180
+          ]
+        },
+        {
+          "hits": [
+            432
+          ],
+          "hp": 1568,
+          "attack_timer": 0,
+          "slow": [
+            0.5,
+            180
+          ]
+        }
+      ]
+    },
+    "alchemist:normal": {
+      "skill": "q",
+      "timers": [
+        210,
+        0,
+        0,
+        0
+      ],
+      "active_timer": 40,
+      "hp": 40000,
+      "damage": 150,
+      "speed": 0.75,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "rage": [
+        false,
+        0
+      ],
+      "targets": [
+        {
+          "hits": [
+            297
+          ],
+          "hp": 1703,
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ]
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,665 @@
+{
+  "cases": {
+    "gornak:normal": {
+      "skill": "q",
+      "timers": [
+        180,
+        0,
+        0,
+        0
+      ],
+      "active_timer": 40,
+      "hp": 7500,
+      "damage": 85,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            225
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1775
+        }
+      ]
+    },
+    "gornak:low": {
+      "skill": "r",
+      "timers": [
+        0,
+        0,
+        0,
+        540
+      ],
+      "active_timer": 90,
+      "hp": 1875,
+      "damage": 85,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            475
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1525
+        }
+      ]
+    },
+    "gornak:cluster": {
+      "skill": "e",
+      "timers": [
+        0,
+        0,
+        300,
+        0
+      ],
+      "active_timer": 60,
+      "hp": 7500,
+      "damage": 85,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            187
+          ],
+          "attack_timer": 60,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1813
+        },
+        {
+          "hits": [
+            187
+          ],
+          "attack_timer": 60,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1813
+        },
+        {
+          "hits": [
+            187
+          ],
+          "attack_timer": 60,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1813
+        }
+      ]
+    },
+    "gornak:far": {
+      "skill": "w",
+      "timers": [
+        0,
+        240,
+        0,
+        0
+      ],
+      "active_timer": 25,
+      "hp": 7500,
+      "damage": 85,
+      "position": [
+        70.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 2000
+        }
+      ]
+    },
+    "morgath:normal": {
+      "skill": "w",
+      "timers": [
+        0,
+        300,
+        0,
+        0
+      ],
+      "active_timer": 40,
+      "hp": 11000,
+      "damage": 85,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 240,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            93
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.5,
+            240
+          ],
+          "hp": 1907
+        }
+      ]
+    },
+    "morgath:low": {
+      "skill": "r",
+      "timers": [
+        0,
+        0,
+        0,
+        720
+      ],
+      "active_timer": 60,
+      "hp": 4400,
+      "damage": 85,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 480,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 2000
+        }
+      ]
+    },
+    "morgath:cluster": {
+      "skill": "e",
+      "timers": [
+        0,
+        0,
+        360,
+        0
+      ],
+      "active_timer": 90,
+      "hp": 11000,
+      "damage": 85,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            125
+          ],
+          "attack_timer": 45,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1875
+        },
+        {
+          "hits": [
+            125
+          ],
+          "attack_timer": 45,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1875
+        },
+        {
+          "hits": [
+            125
+          ],
+          "attack_timer": 45,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1875
+        }
+      ]
+    },
+    "morgath:q_only": {
+      "skill": "q",
+      "timers": [
+        200,
+        1,
+        1,
+        1
+      ],
+      "active_timer": 50,
+      "hp": 11000,
+      "damage": 85,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            250
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1750
+        }
+      ]
+    },
+    "drakar:cluster": {
+      "skill": "w",
+      "timers": [
+        0,
+        240,
+        0,
+        0
+      ],
+      "active_timer": 45,
+      "hp": 17600,
+      "damage": 112,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            275
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1725
+        },
+        {
+          "hits": [
+            275
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1725
+        },
+        {
+          "hits": [
+            275
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1725
+        }
+      ]
+    },
+    "drakar:low": {
+      "skill": "q",
+      "timers": [
+        420,
+        0,
+        0,
+        0
+      ],
+      "active_timer": 90,
+      "hp": 6160,
+      "damage": 168,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 300,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 2000
+        }
+      ]
+    },
+    "drakar:execute": {
+      "skill": "r",
+      "timers": [
+        0,
+        0,
+        0,
+        120
+      ],
+      "active_timer": 60,
+      "hp": 17600,
+      "damage": 112,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            1124
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 0
+        }
+      ]
+    },
+    "drakar:mid_hp": {
+      "skill": "e",
+      "timers": [
+        0,
+        0,
+        360,
+        0
+      ],
+      "active_timer": 60,
+      "hp": 8800,
+      "damage": 112,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 180,
+      "targets": [
+        {
+          "hits": [
+            187
+          ],
+          "attack_timer": 30,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1813
+        }
+      ]
+    },
+    "abaddon:normal": {
+      "skill": "q",
+      "timers": [
+        240,
+        0,
+        0,
+        0
+      ],
+      "active_timer": 30,
+      "hp": 36000,
+      "damage": 150,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            337
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1663
+        }
+      ]
+    },
+    "abaddon:low": {
+      "skill": "w",
+      "timers": [
+        0,
+        360,
+        0,
+        0
+      ],
+      "active_timer": 90,
+      "hp": 9500,
+      "damage": 150,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            405
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1595
+        }
+      ]
+    },
+    "abaddon:cluster": {
+      "skill": "r",
+      "timers": [
+        0,
+        0,
+        0,
+        600
+      ],
+      "active_timer": 60,
+      "hp": 36000,
+      "damage": 150,
+      "position": [
+        0.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            675
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1325
+        },
+        {
+          "hits": [
+            675
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1325
+        },
+        {
+          "hits": [
+            675
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1325
+        }
+      ]
+    },
+    "abaddon:far": {
+      "skill": "e",
+      "timers": [
+        0,
+        0,
+        300,
+        0
+      ],
+      "active_timer": 40,
+      "hp": 36000,
+      "damage": 150,
+      "position": [
+        80.0,
+        0.0
+      ],
+      "flux_timer": 0,
+      "clones_timer": 0,
+      "rage_timer": 0,
+      "defense_timer": 0,
+      "targets": [
+        {
+          "hits": [
+            270
+          ],
+          "attack_timer": 0,
+          "slow": [
+            0.0,
+            0
+          ],
+          "hp": 1730
+        }
+      ]
+    }
+  },
+  "generic": {
+    "skill": null,
+    "timers": [
+      0,
+      0,
+      0,
+      0
+    ],
+    "active_timer": 0,
+    "hp": 52000,
+    "damage": 172,
+    "position": [
+      0.0,
+      0.0
+    ],
+    "flux_timer": 0,
+    "clones_timer": 0,
+    "rage_timer": 0,
+    "defense_timer": 0,
+    "targets": [
+      {
+        "hits": [
+          441
+        ],
+        "attack_timer": 60,
+        "slow": [
+          0.0,
+          0
+        ],
+        "hp": 1559
+      },
+      {
+        "hits": [],
+        "attack_timer": 0,
+        "slow": [
+          0.0,
+          0
+        ],
+        "hp": 2000
+      }
+    ],
+    "ability": [
+      180,
+      true,
+      60
+    ]
+  },
+  "heal": {
+    "hp": 18000,
+    "timer": 600
+  }
+}
