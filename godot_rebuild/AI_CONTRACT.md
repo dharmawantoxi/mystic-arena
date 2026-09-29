@@ -124,7 +124,7 @@ world atau saat gagal. Tidak ada controller otomatis baru.
 `prototype_battle.gd::_build_tower_for` memvalidasi team, slot canonical/owner,
 lane, posisi, okupansi, jenis, saldo/reserve, kapasitas, ID registry dan hasil
 match sebelum spawn lalu debit sekali via ledger yang sama. Wrapper build lama
-tetap Archer tanpa reserve (UI blue dan defender sementara red tidak diubah).
+tetap Archer tanpa reserve (UI blue tidak diubah; sisi merah milik AIPlayer).
 Lv1 non-Archer **bukan** resource Lv2: sumber membuat Archer Lv1 lalu mengubah
 `tower_type` dan memanggil `_apply_level_stats`; tabel jenis lain tidak punya
 Lv1 sehingga HP 2000, shield 800, damage 20, range 180, CD 35 dan efek 0
@@ -427,6 +427,24 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      (PROCESS_MODE_PAUSABLE): uji scene memastikan jam, jadwal dan dompet AI
      tidak bergerak saat pause, dan setiap layar hasil restart memakai AI baru
      dengan seed yang sama.
+   - [x] **6e.** Defender sementara dibuang: `_step_defender()` (tiga pembelian
+     Archer terjadwal) beserta `defender_enabled`/`_defender_built`, call-site
+     di `step_tick()` dan baris `defender_enabled = not enabled` dihapus, jadi
+     `set_ai_enabled()`/`ai_enabled` adalah satu-satunya sakelar sisi merah:
+     dengan sakelar mati tidak ada transaksi merah sama sekali (uji menuntut
+     `spent[1] == 0` dan `ai_build.total_built == 0`). Uji domain/layar (cannon,
+     ice, mage, nexus, prototype, scene checks, run_all) tidak lagi menparkir
+     defender; blok skirmish `cannon_checks` sekarang membuktikan AI nyata
+     membangun tower merah di atas ledger yang sama.
+   - [x] **6f.** Skenario AI yang menggantung ditutup di `prototype_checks.gd`:
+     `_hero_red_retreat` (retreat hero merah + heal 3.0/tick di radius 100 px
+     nexus sendiri, hanya 0.15/tick di luar base walau tetap menyerang, keluar
+     retreat di rasio 0.80, dan lane order AI membatalkannya seperti `move_to`
+     sumber) serta `_hero_out_of_lane` (hunt map-wide 900 px: musuh lane lain di
+     dalam aggro 250 menarik hero keluar dari lane order, dan hunt memilih musuh
+     terdekat lintas-lane). Catatan penting: `_try_auto_cast` sumber mengisi
+     `hero.target` (port: `hero.target_id` lewat gate skill), sehingga uji
+     lane-order wajib menaruh ancaman di luar `skill_range` 100 px.
 
 ## Dependensi yang wajib selesai sebelum integrasi penuh
 
@@ -455,14 +473,17 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.
-- [ ] Kontrol hero setiap tick: jalur auto-cast bersama pemain, skill counter
+- [x] Kontrol hero setiap tick: jalur auto-cast bersama pemain, skill counter
   berdasarkan perubahan active timer; lane ancaman maksimum (tie top/mid/bot),
   minion terdekat secara Euclidean, destination auto; fallback tower terdekat
-  dengan offset 60. Jangan mengganti prioritas target dengan urutan x.
-- [ ] Integrasi scene/session setelah entity loop tanpa double auto-cast,
+  dengan offset 60. Jangan mengganti prioritas target dengan urutan x. (6a +
+  fixture `hero_control`; hunt lintas-lane dan retreat hero merah diuji di 6f.)
+- [x] Integrasi scene/session setelah entity loop tanpa double auto-cast,
   seeded RNG yang bisa diuji (bukan klaim stream identik Python), pause/reset/hasil.
-- [ ] Ganti assertion defender lama hanya setelah perilakunya benar-benar diganti;
-  pertahankan suite dan invariant wallet/slot/replay.
+  (6d; `prototype_session` memakai `set_ai_enabled(true)` + `AI_MATCH_SEED`.)
+- [x] Ganti assertion defender lama hanya setelah perilakunya benar-benar diganti;
+  pertahankan suite dan invariant wallet/slot/replay. (6e; skenario merah tanpa
+  sakelar AI kini dituntut tetap tanpa transaksi.)
 - [ ] Runtime CI hijau untuk setiap tahap dan uji integrasi penuh sebelum ready PR.
 
 Tidak mengklaim parity item, roster, AI lawan playable, balance, visual atau
@@ -502,6 +523,15 @@ CI Godot 4.7.2 run 36482247766 hijau untuk lapisan 6d (commit `6d9a49f`):
 **1.179.241 native checks**, static lokal 5768 PASS; `gdlint`/`gdformat`/`gdparse`
 bersih; `minion_battle.gd` dan `hero_item_inventory.gd` tetap tepat 1000 baris
 dan fixture tidak berubah (lapisan ini tidak menyentuh oracle).
+CI Godot 4.7.2 run 36508998487 hijau untuk lapisan 6e (commit `5e98734`, push):
+**1.179.249 native checks**, static lokal 5768 PASS; `minion_battle.gd` tetap
+1000 baris, fixture 11.959 baris dan tidak berubah.
+CI Godot 4.7.2 run 36510010594 hijau untuk lapisan 6f (commit `81e4faa`, push):
+**1.179.249 native checks**, static lokal 5768 PASS. Uji 6f sempat merah di run
+36509433010 (`FAIL: the AI lane order overrides the retreat`): ancaman uji berada
+di dalam `skill_range` 100 px sehingga auto-cast bersama mengisi `hero.target`
+(perilaku sumber `_try_auto_cast`), jadi lane order memang tidak jalan — setup
+uji diperbaiki (ancaman di 400 px), commit di-amend, lalu hijau.
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -515,28 +545,31 @@ di native (33 FAIL). Sekarang `categories` di-key oleh id kategori dengan nilai
 nama konstanta sumber, dan `validate_project.py` menuntut kunci itu sama dengan
 himpunan kategori yang benar-benar dipakai.
 
-Berikutnya: membuang sisa kode defender sementara (`_step_defender`,
-`defender_enabled`, `_defender_built`) beserta uji domainnya, lalu menutup
-skenario AI yang masih menggantung (retreat/heal hero merah dan pencarian
-target di luar lane). Undian 6c/6d memakai `ai_controller.draw()`; adapter
-build/draft memakai RNG ter-seed dari seed pertandingan yang sama. Catatan 6a:
-`towers` diteruskan eksplisit karena daftar struktur native juga memuat nexus,
-sedangkan sumber hanya menyusuri `all_towers`. Catatan alur sesi:
-repo pernah ter-clone ulang sehingga riwayat lokal tertinggal dari remote —
-selalu `git fetch origin arena/01a0e891-mystic-arena` dan reset ke FETCH_HEAD
-sebelum commit baru. Catatan 5f: `forge.gd` hanya
+Status sesi `arena/01a0eacd-mystic-arena` (PR draft #300, basis main `5e5f32a`):
+6e (`5e98734`) membuang defender sementara dan 6f (`81e4faa`) menutup skenario
+retreat/heal hero merah + hunt lintas-lane; keduanya hijau di CI (lihat run di
+atas). Tidak ada sisa kode defender di `godot_rebuild/` — satu-satunya sakelar
+sisi merah adalah `set_ai_enabled()`/`ai_enabled`.
+Berikutnya: pekerjaan lanjutan hanya setelah diperintahkan pemilik repo (PR
+masih draft, jangan merge tanpa perintah). Undian 6c/6d memakai
+`ai_controller.draw()`; adapter build/draft memakai RNG ter-seed dari seed
+pertandingan yang sama. Catatan 6a: `towers` diteruskan eksplisit karena daftar
+struktur native juga memuat nexus, sedangkan sumber hanya menyusuri `all_towers`.
+Catatan alur sesi: repo pernah ter-clone ulang sehingga riwayat lokal tertinggal
+dari remote — selalu `git fetch origin arena/01a0eacd-mystic-arena` dan reset ke
+FETCH_HEAD sebelum commit baru; amend + push ulang hanya untuk memperbaiki CI
+merah pada lapisan yang sama. Catatan 5f: `forge.gd` hanya
 menganggap roster tim pemain (BLUE), dan kandidat AI tetap hidup-saja lewat
 `_buy_item_for`.
 Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-> Pesan siap-salin: Lanjutkan di branch arena/01a0e3e4-mystic-arena (PR draft
-> #294, basis main f6c4342). Lapisan 5c-2 sudah di-commit: setengah auto-trigger
-> `update()` + `notify_damage_taken` + tick wiring. Berikutnya langkah 5d: port
-> `update_auras` (armor/AS/guard/armor reduction aura sekutu + Scorched Earth),
-> lalu 5e proc on-hit (crit/lifesteal/cleave/chain/bash/miasma/vine) dan 5f
-> Forge UI + `drops_on_death`. Satu commit per lapisan, oracle exec sumber
-> asli + fixture --write, tes native + validate_project.py. Sumber read-only:
-> hero_items.py dan _entity.py. Hanya ubah godot_rebuild/; minion_battle.gd
-> tetap 1000 baris; jangan merge tanpa perintah pengguna.
+> Pesan siap-salin: Lanjutkan di branch arena/01a0eacd-mystic-arena (PR draft
+> #300, basis main 5e5f32a). 6e (`5e98734`) dan 6f (`81e4faa`) sudah hijau di
+> CI (run 36508998487 dan 36510010594). Tidak ada pekerjaan lanjutan yang
+> dibuka: tunggu perintah pemilik repo. Kalau ada tugas baru: satu commit per
+> sub-layer, pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
+> commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber
+> read-only: hero_items.py dan _entity.py. Hanya ubah godot_rebuild/;
+> minion_battle.gd tetap 1000 baris; jangan merge tanpa perintah pengguna.
