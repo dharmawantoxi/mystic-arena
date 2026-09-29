@@ -1976,5 +1976,206 @@
         "final_y": 226.83158073630568
       }
     ]
+  },
+  "enemy_scaling": {
+    "rows": [
+      {
+        "difficulty": "easy",
+        "enabled": false,
+        "hp_mult": 1.0,
+        "damage_mult": 1.0,
+        "speed_mult": 1.0,
+        "nexus": 1,
+        "before": {
+          "max_hp": 45,
+          "damage": 5,
+          "speed": 1.5
+        },
+        "max_hp": 45,
+        "hp": 45,
+        "damage": 5,
+        "speed": 1.5,
+        "base_speed": 1.5
+      },
+      {
+        "difficulty": "easy",
+        "enabled": false,
+        "hp_mult": 1.0,
+        "damage_mult": 1.0,
+        "speed_mult": 1.0,
+        "nexus": 4,
+        "before": {
+          "max_hp": 76,
+          "damage": 8,
+          "speed": 1.815
+        },
+        "max_hp": 76,
+        "hp": 76,
+        "damage": 8,
+        "speed": 1.815,
+        "base_speed": 1.815
+      },
+      {
+        "difficulty": "normal",
+        "enabled": false,
+        "hp_mult": 1.0,
+        "damage_mult": 1.0,
+        "speed_mult": 1.0,
+        "nexus": 1,
+        "before": {
+          "max_hp": 45,
+          "damage": 5,
+          "speed": 1.5
+        },
+        "max_hp": 45,
+        "hp": 45,
+        "damage": 5,
+        "speed": 1.5,
+        "base_speed": 1.5
+      },
+      {
+        "difficulty": "normal",
+        "enabled": false,
+        "hp_mult": 1.0,
+        "damage_mult": 1.0,
+        "speed_mult": 1.0,
+        "nexus": 4,
+        "before": {
+          "max_hp": 76,
+          "damage": 8,
+          "speed": 1.815
+        },
+        "max_hp": 76,
+        "hp": 76,
+        "damage": 8,
+        "speed": 1.815,
+        "base_speed": 1.815
+      },
+      {
+        "difficulty": "hard",
+        "enabled": true,
+        "hp_mult": 1.15,
+        "damage_mult": 1.1,
+        "speed_mult": 1.0,
+        "nexus": 1,
+        "before": {
+          "max_hp": 45,
+          "damage": 5,
+          "speed": 1.5
+        },
+        "max_hp": 51,
+        "hp": 51,
+        "damage": 5,
+        "speed": 1.5,
+        "base_speed": 1.5
+      },
+      {
+        "difficulty": "hard",
+        "enabled": true,
+        "hp_mult": 1.15,
+        "damage_mult": 1.1,
+        "speed_mult": 1.0,
+        "nexus": 4,
+        "before": {
+          "max_hp": 76,
+          "damage": 8,
+          "speed": 1.815
+        },
+        "max_hp": 87,
+        "hp": 87,
+        "damage": 8,
+        "speed": 1.815,
+        "base_speed": 1.815
+      },
+      {
+        "difficulty": "unknown",
+        "enabled": false,
+        "hp_mult": 1.0,
+        "damage_mult": 1.0,
+        "speed_mult": 1.0,
+        "nexus": 1,
+        "before": {
+          "max_hp": 45,
+          "damage": 5,
+          "speed": 1.5
+        },
+        "max_hp": 45,
+        "hp": 45,
+        "damage": 5,
+        "speed": 1.5,
+        "base_speed": 1.5
+      },
+      {
+        "difficulty": "unknown",
+        "enabled": false,
+        "hp_mult": 1.0,
+        "damage_mult": 1.0,
+        "speed_mult": 1.0,
+        "nexus": 4,
+        "before": {
+          "max_hp": 76,
+          "damage": 8,
+          "speed": 1.815
+        },
+        "max_hp": 76,
+        "hp": 76,
+        "damage": 8,
+        "speed": 1.815,
+        "base_speed": 1.815
+      }
+    ],
+    "castles": [
+      {
+        "scaling": false,
+        "starting_castle_level": 1,
+        "castle_start_level": 1,
+        "blue_level": 1,
+        "red_level": 1
+      },
+      {
+        "scaling": false,
+        "starting_castle_level": 3,
+        "castle_start_level": 2,
+        "blue_level": 3,
+        "red_level": 1
+      },
+      {
+        "scaling": true,
+        "starting_castle_level": 1,
+        "castle_start_level": 1,
+        "blue_level": 1,
+        "red_level": 1
+      },
+      {
+        "scaling": true,
+        "starting_castle_level": 3,
+        "castle_start_level": 2,
+        "blue_level": 3,
+        "red_level": 2
+      }
+    ]
+  },
+  "level_one": {
+    "level_number": 1,
+    "name": "The Fallen Realm",
+    "description": "Face Abaddon, the Lord of Avernus",
+    "enemy_hp_mult": 1.0,
+    "enemy_damage_mult": 1.0,
+    "enemy_speed_mult": 1.0,
+    "castle_start_level": 1,
+    "starting_gold": 1000,
+    "starting_castle_level": 1,
+    "map_theme": "forest",
+    "bgm_track": "bgm_battle.wav",
+    "mini_bosses": {
+      "10": "gornak",
+      "15": "morgath",
+      "25": "drakar"
+    },
+    "true_boss": "abaddon",
+    "meta_gold_reward_win": 3000,
+    "meta_gold_reward_replay": 1500,
+    "meta_gold_reward_lose": 0,
+    "unlock_after_level": null
   }
 }

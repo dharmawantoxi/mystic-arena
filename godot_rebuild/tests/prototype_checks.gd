@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends RefCounted
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
@@ -6,6 +7,7 @@ const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const GOBLIN = preload("res://data/minions/goblin.tres")
+const Nexus = preload("res://scripts/match/nexus_upgrades.gd")
 
 
 func run(check: Callable) -> void:
@@ -24,6 +26,7 @@ func run(check: Callable) -> void:
 	_hero_auto(check)
 	_castle_auto_scale(check)
 	_spawn_jitter(check)
+	_enemy_scaling(check)
 	_replay(check)
 
 
@@ -817,6 +820,98 @@ func _spawn_jitter(check: Callable) -> void:
 			if a == null or b == null or a.position != b.position:
 				same = false
 	check.call(same, "seeded spawn jitter replays")
+
+
+func _enemy_scaling(check: Callable) -> void:
+	# Layer 7c: hard mode scales the red minions (source Game.reset +
+	# Game.update_waves) and may raise both castles to their configured start
+	# levels; the player castle always uses starting_castle_level.
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(data is Dictionary and data.has("enemy_scaling"), "enemy scaling fixture")
+	if not data is Dictionary:
+		return
+	var stored = JSON.parse_string(FileAccess.get_file_as_string("res://data/levels/level_1.json"))
+	check.call(
+		stored is Dictionary and JSON.stringify(stored) == JSON.stringify(data.level_one),
+		"level 1 data matches its source fixture"
+	)
+	var defaults := _world()
+	check.call(
+		(
+			not defaults.enemy_scaling_enabled
+			and is_equal_approx(defaults.enemy_hp_mult, 1.0)
+			and is_equal_approx(defaults.enemy_damage_mult, 1.0)
+			and is_equal_approx(defaults.enemy_speed_mult, 1.0)
+		),
+		"normal mode starts with the source multipliers off"
+	)
+	var sample: Dictionary = data.enemy_scaling
+	# Nexus-tier-1 rows carry the unscaled source minion (the blue reference).
+	var base_stats: Dictionary = {}
+	for row in sample.rows:
+		if int(row.nexus) == 1:
+			base_stats = row.before
+			break
+	check.call(not base_stats.is_empty(), "unscaled source minion baseline")
+	for row in sample.rows:
+		var world := _world()
+		world.set_difficulty(String(row.difficulty))
+		check.call(
+			world.enemy_scaling_enabled == bool(row.enabled),
+			"enemy scaling switch (%s)" % String(row.difficulty)
+		)
+		check.call(
+			(
+				is_equal_approx(world.enemy_hp_mult, float(row.hp_mult))
+				and is_equal_approx(world.enemy_damage_mult, float(row.damage_mult))
+				and is_equal_approx(world.enemy_speed_mult, float(row.speed_mult))
+			),
+			"enemy multipliers (%s)" % String(row.difficulty)
+		)
+		if int(row.nexus) > 1:
+			world._apply_nexus_stats(world.nexuses[Prototype.RED], Nexus.LEVELS[int(row.nexus) - 1])
+		var foe := world.spawn_unit(GOBLIN, Prototype.RED, 1)
+		var ally := world.spawn_unit(GOBLIN, Prototype.BLUE, 1)
+		check.call(
+			(
+				foe != null
+				and foe.definition.max_hp == int(row.max_hp)
+				and int(foe.hp) == int(row.hp)
+				and foe.definition.damage == int(row.damage)
+				and is_equal_approx(foe.definition.speed_px_per_tick, float(row.speed))
+			),
+			"scaled red minion (%s, nexus %d)" % [String(row.difficulty), int(row.nexus)]
+		)
+		check.call(
+			(
+				ally != null
+				and ally.definition.max_hp == int(base_stats.max_hp)
+				and ally.definition.damage == int(base_stats.damage)
+				and is_equal_approx(ally.definition.speed_px_per_tick, float(base_stats.speed))
+			),
+			"player minions never scale (%s)" % String(row.difficulty)
+		)
+	for row in sample.castles:
+		var world := Prototype.new()
+		world.level_config = {
+			"starting_castle_level": int(row.starting_castle_level),
+			"castle_start_level": int(row.castle_start_level),
+		}
+		world.set_difficulty("hard" if bool(row.scaling) else "normal")
+		world.setup_arena()
+		check.call(
+			(
+				world.nexuses[Prototype.BLUE].settings().level == int(row.blue_level)
+				and world.nexuses[Prototype.RED].settings().level == int(row.red_level)
+			),
+			"castle start levels (scaling %s)" % str(bool(row.scaling))
+		)
+		check.call(
+			world.economy.spent[Prototype.BLUE] == 0 and world.economy.spent[Prototype.RED] == 0,
+			"configured start levels are free"
+		)
 
 
 func _hero_auto(check: Callable) -> void:

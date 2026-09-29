@@ -19,6 +19,8 @@ const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
+# Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
+const LEVEL_DATA := "res://data/levels/level_1.json"
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
@@ -81,11 +83,21 @@ var slots: Array[Slot] = []
 var transaction_error := ""
 # Layer 7b: seeded stream for the source spawn jitter (match-reproducible).
 var spawn_rng := RandomNumberGenerator.new()
+# Layer 7c: level-1 config and the source difficulty rule (Game.reset).
+var level_config: Dictionary = {}
+var difficulty := "normal"
+var enemy_scaling_enabled := false
+var enemy_hp_mult := 1.0
+var enemy_damage_mult := 1.0
+var enemy_speed_mult := 1.0
 
 
 func _init() -> void:
 	slots = SlotLayout.create(paths)
 	spawn_rng.seed = SPAWN_SEED
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_DATA))
+	level_config = parsed if parsed is Dictionary else {}
+	_apply_difficulty()
 
 
 func structure_limit() -> int:
@@ -98,6 +110,7 @@ func setup_arena() -> bool:
 	_arena_initialized = true
 	spawn_structure(NEXUS, BLUE, LaneLayout.BLUE_BASE)
 	spawn_structure(NEXUS, RED, LaneLayout.RED_BASE)
+	_apply_castle_start_levels()
 	# Free mirrored Kaizen pair. Not a catalog purchase, not AIPlayer.
 	spawn_hero(KAIZEN, BLUE, HERO_SPAWN)
 	spawn_hero(KAIZEN, RED, RED_HERO_SPAWN)
@@ -116,18 +129,71 @@ func spawn_unit(definition: Definition, team: int, lane: int) -> UnitState:
 	if team not in [BLUE, RED]:
 		return super.spawn_unit(definition, team, lane)
 	var current := nexus_level(team)
-	if current <= 1:
-		var plain := super.spawn_unit(definition, team, lane)
-		if plain != null:
-			plain.ai_level = 1
-		return plain
-	var scaled := scaled_minion_definition(definition, current)
-	if scaled == null:
-		return null
-	var unit := super.spawn_unit(scaled, team, lane)
+	var target: Definition = definition
+	if current > 1:
+		target = scaled_minion_definition(definition, current)
+		if target == null:
+			return null
+	# Source update_waves: hard mode scales the red minions on top of the
+	# nexus tier (hp/damage truncate, speed keeps its fraction).
+	if team == RED and enemy_scaling_enabled:
+		target = _enemy_scaled_definition(target)
+	var unit := super.spawn_unit(target, team, lane)
 	if unit != null:
-		unit.ai_level = NexusUpgrades.MINION_AI[current - 1]
+		unit.ai_level = 1 if current <= 1 else NexusUpgrades.MINION_AI[current - 1]
 	return unit
+
+
+func _enemy_scaled_definition(base: Definition) -> Definition:
+	# Port of the red-minion block in Game.update_waves.
+	var copy := base.duplicate() as Definition
+	copy.max_hp = int(copy.max_hp * enemy_hp_mult)
+	copy.damage = int(copy.damage * enemy_damage_mult)
+	copy.speed_px_per_tick = copy.speed_px_per_tick * enemy_speed_mult
+	return copy
+
+
+func set_difficulty(value: String) -> void:
+	# Source Game.reset: only "hard" turns enemy scaling on; any other value
+	# (including an unknown one) leaves every multiplier at 1.0.
+	difficulty = value
+	_apply_difficulty()
+
+
+func _apply_difficulty() -> void:
+	enemy_scaling_enabled = difficulty == "hard"
+	if enemy_scaling_enabled:
+		enemy_hp_mult = float(level_config.get("enemy_hp_mult", 1.0)) * 1.15
+		enemy_damage_mult = float(level_config.get("enemy_damage_mult", 1.0)) * 1.10
+		enemy_speed_mult = float(level_config.get("enemy_speed_mult", 1.0))
+	else:
+		enemy_hp_mult = 1.0
+		enemy_damage_mult = 1.0
+		enemy_speed_mult = 1.0
+
+
+func _apply_castle_start_levels() -> void:
+	# Source Game.reset: the player castle climbs to cfg["starting_castle_level"]
+	# for free while the red castle only climbs to cfg["castle_start_level"] when
+	# hard-mode enemy scaling is on (otherwise it stays at level 1).
+	var blue_target := int(level_config.get("starting_castle_level", 1))
+	while nexuses[BLUE] != null and nexuses[BLUE].settings().level < blue_target:
+		_raise_nexus_level(BLUE)
+	var red_target := 1
+	if enemy_scaling_enabled:
+		red_target = int(level_config.get("castle_start_level", 1))
+	while nexuses[RED] != null and nexuses[RED].settings().level < red_target:
+		_raise_nexus_level(RED)
+
+
+func _raise_nexus_level(team: int) -> void:
+	# Castle.upgrade() is free and reuses _apply_level_stats through the shared
+	# helper, so a configured start level never touches the ledger.
+	var nexus := nexuses[team]
+	if nexus == null or nexus.settings().level >= NexusUpgrades.LEVELS.size():
+		return
+	# The catalog index is the current level: entry i holds the stats of i + 1.
+	_apply_nexus_stats(nexus, NexusUpgrades.LEVELS[nexus.settings().level])
 
 
 func scaled_minion_definition(base: Definition, nexus_level: int) -> Definition:
@@ -935,13 +1001,7 @@ func _upgrade_nexus_for(team: int, entity_id: int, expected_level: int, reserve:
 	if not transaction_error.is_empty():
 		return false
 	economy.spend(team, cost)
-	var old_max: int = nexus.definition.max_hp
-	var old_hp: float = nexus.hp
-	var target = NexusUpgrades.LEVELS[expected_level]
-	var new_max: int = target.max_hp
-	var ratio := old_hp / float(old_max)
-	var healed := int(new_max * ratio) + (new_max - old_max)
-	_apply_nexus_stats(nexus, target)
+	_apply_nexus_stats(nexus, NexusUpgrades.LEVELS[expected_level])
 	_record({"kind": "nexus_upgrade", "target_id": nexus.id, "level": nexus.settings().level})
 	return true
 
