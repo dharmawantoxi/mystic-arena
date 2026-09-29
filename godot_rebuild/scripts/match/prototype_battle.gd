@@ -22,6 +22,7 @@ const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const BossMatchState = preload("res://scripts/match/boss_match_state.gd")
 const BossLevelOneAI = preload("res://scripts/match/boss_level_one_ai.gd")
+const BossLevelTwoAI = preload("res://scripts/match/boss_level_two_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
@@ -548,6 +549,8 @@ func _step_boss_combat() -> void:
 					_deliver_hit(-1, RED, nearby, cleave_damage, "neutral", active_boss.position)
 	if active_boss.boss_type in BossLevelOneAI.IDS:
 		BossLevelOneAI.step(self, active_boss, enemies, target)
+	elif active_boss.boss_type in BossLevelTwoAI.IDS:
+		BossLevelTwoAI.step(self, active_boss, enemies, target)
 	elif (
 		active_boss.boss_type not in active_boss.rules.get("smart_ai_types", [])
 		and active_boss.ability_timer == 0

@@ -373,6 +373,12 @@ if (ROOT / "tests/fixtures/match_source.json").is_file():
         (ROOT / "tests/fixtures/match_source.json").read_text(encoding="utf-8")),
         "Match fixture must include source-executed boss conditions")
 
+from boss_level_two_ai_source_oracle import source_fixture as boss_level_two_ai_fixture
+check("BossLevelTwoAIChecks.new().run(_check)" in ai_tests, "Boss level-two live AI suite must run")
+check(boss_level_two_ai_fixture() == json.loads(
+    (ROOT / "tests/fixtures/boss_level_two_ai_source.json").read_text(encoding="utf-8")),
+    "Boss level-two live AI source behavior drift")
+
 from boss_level_one_ai_source_oracle import source_fixture as boss_level_one_ai_fixture
 check("BossLevelOneAIChecks.new().run(_check)" in ai_tests, "Boss level-one live AI suite must run")
 check(boss_level_one_ai_fixture() == json.loads(
