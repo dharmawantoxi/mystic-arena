@@ -504,6 +504,19 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      terdekat lintas-lane). Catatan penting: `_try_auto_cast` sumber mengisi
      `hero.target` (port: `hero.target_id` lewat gate skill), sehingga uji
      lane-order wajib menaruh ancaman di luar `skill_range` 100 px.
+   - [x] **7a.** Castle AI naik level otomatis mengikuti wave: port
+     `Game._auto_scale_ai_castle` (`_core.py:1856`, dipanggil dari
+     `update_waves`) — wave ≥4/7/10/13 menaikkan nexus merah ke level 2/3/4/5
+     **gratis** (sumber `Castle.upgrade` tidak menyentuh gold; pemain tetap
+     membayar nexus-nya sendiri). Dipanggil di cabang `batch.started` `step_tick`
+     persis sebelum spawn batch, memakai `NexusUpgrades.LEVELS`. Helper baru
+     `_apply_nexus_stats(nexus, target)` juga menggantikan jalur upgrade berbayar,
+     jadi HP baru = `int(new_max*ratio) + (new_max-old_max) + 500` di-cap
+     `new_max`, damage/range/cooldown ikut level, dan rasio shield terjaga.
+     Oracle sebelumnya men-stub fungsi ini — sekarang `castle_auto_scale`
+     meng-exec `Castle.upgrade`/`_apply_level_stats` dan
+     `Game._auto_scale_ai_castle` asli untuk wave 1-30 + kasus shield 50%
+     (fixture `match_source.json` diregenerasi lewat `--write`, +222 baris).
 
 ## Batas baris file GDScript: dicabut (paritas lebih penting)
 
@@ -632,6 +645,10 @@ CI Godot 4.7.2 run 36510010594 hijau untuk lapisan 6f (commit `81e4faa`, push):
 di dalam `skill_range` 100 px sehingga auto-cast bersama mengisi `hero.target`
 (perilaku sumber `_try_auto_cast`), jadi lane order memang tidak jalan — setup
 uji diperbaiki (ancaman di 400 px), commit di-amend, lalu hijau.
+CI Godot 4.7.2 run 36527889355 hijau untuk lapisan 7a (commit `d43a92a`, push):
+**1.179.516 native checks**, static lokal 5774 PASS; `gdformat`/`gdlint`/`gdparse`
+bersih; fixture `match_source.json` 12.345 baris (+222 dari section
+`castle_auto_scale`, diregenerasi lewat `match_source_oracle.py --write`).
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -650,6 +667,13 @@ Status sesi `arena/01a0eacd-mystic-arena` (PR draft #300, basis main `5e5f32a`):
 retreat/heal hero merah + hunt lintas-lane; keduanya hijau di CI (lihat run di
 atas). Tidak ada sisa kode defender di `godot_rebuild/` — satu-satunya sakelar
 sisi merah adalah `set_ai_enabled()`/`ai_enabled`.
+Lapisan **7a** (`d43a92a`) menutup satu celah paritas nyata di sisi scene: castle
+AI dulu tidak pernah naik level sendiri karena oracle men-stub
+`_auto_scale_ai_castle`; sekarang jadwal sumber wave ≥4/7/10/13 → level 2/3/4/5
+gratis dijalankan di `step_tick` dan diuji ulang per baris fixture. Kandidat
+lanjutan yang belum dikerjakan (dipilih sesuai kedekatan ke sumber): boss hero AI
+yang tampil di pertandingan, sisi AI dari panel Forge, dan sisa perilaku scene
+Python yang belum diport — PR tetap draft sampai ada perintah pemilik repo.
 Status akhir sesi ini: **tidak ada sisa sub-layer item**. 5b-2/5b-3/5b-4/5b-5
 dan 5e-3 semuanya hijau di CI. Berikutnya hanya kalau pemilik repo memerintahkan
 pekerjaan baru (mis. panel Forge untuk sisi AI atau kandidat item AI yang mati),
@@ -668,10 +692,11 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 `unit.max_hp` mematikan seluruh scene battle.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0eacd-mystic-arena (PR draft
-> #300, basis main 5e5f32a). 6e (`5e98734`) dan 6f (`81e4faa`) sudah hijau di
-> CI (run 36508998487 dan 36510010594). Tidak ada pekerjaan lanjutan yang
-> dibuka: tunggu perintah pemilik repo. Kalau ada tugas baru: satu commit per
-> sub-layer, pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
+> #300, basis main 5e5f32a). 6e (`5e98734`), 6f (`81e4faa`) dan 7a (`d43a92a`)
+> sudah hijau di CI (run 36508998487, 36510010594, 36527889355). Kandidat
+> lanjutan: boss hero AI yang tampil di pertandingan, sisi AI panel Forge, sisa
+> perilaku scene Python. Kalau ada tugas baru: satu commit per sub-layer,
+> pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
 > commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber
 > read-only: hero_items.py dan _entity.py. Hanya ubah godot_rebuild/;
 > minion_battle.gd boleh melewati 1000 baris (direktif gdlint:disable=max-file-lines); jangan merge tanpa perintah pengguna.
