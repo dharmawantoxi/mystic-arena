@@ -1,3 +1,4 @@
+# gdlint:disable=max-file-lines
 extends RefCounted
 ## Deterministic tier-1 minion combat lab. No Nodes, rendering, wall clock, or RNG.
 ## Sequential attacks resolve in stable spawn-ID order; a killed unit cannot act later that tick.

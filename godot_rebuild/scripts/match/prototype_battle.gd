@@ -726,6 +726,9 @@ func _evaded(
 	if attacker is HeroState and (attacker as HeroState).items.has_true_strike():
 		return false
 	var chance := defender.items.get_evasion()
+	# Source: blind lives on the ATTACKER and shares one roll with evasion.
+	if attacker != null and attacker.blind_timer > 0:
+		chance = maxf(chance, attacker.blind_amount)
 	return chance > 0.0 and _item_rng.randf() < chance
 
 
@@ -1299,6 +1302,7 @@ func _update_auras() -> void:
 		var f_heal := float(f_cat.get("enemy_anti_heal", 0.0))
 		var s_r := float(s_cat.get("enemy_radius", 0))
 		var s_burn := float(s_cat.get("burn_dps", 0.0))
+		var s_blind := float(s_cat.get("blind", 0.0))
 		var se_r := float(se_cat.get("enemy_radius", 0))
 		var se_heal := float(se_cat.get("enemy_anti_heal", 0.0))
 		var se_burn := float(se_cat.get("burn_dps", 0.0))
@@ -1317,6 +1321,9 @@ func _update_auras() -> void:
 					continue
 				if src.position.distance_to(u.position) <= s_r:
 					apply_burn(u.id, s_burn, AURA_DEBUFF_DURATION, src.team)
+					# Source Scorched Earth also blinds: incoming physical
+					# hits of the unit inside the aura can miss.
+					u.apply_miss_chance(s_blind, AURA_DEBUFF_DURATION)
 					break
 			for src in sear_src:
 				if u.team == src.team:

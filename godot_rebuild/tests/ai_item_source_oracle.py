@@ -1080,6 +1080,49 @@ def spell_power(env):
     return rows
 
 
+BLIND_CASES = [
+    ["0.18:30"],
+    ["0.18:30", "0.10:90"],
+    ["0.18:30", "0.40:10"],
+    ["0.18:60", "0.10:20"],
+    ["0.0:0"],
+]
+
+
+def miss_chance(env):
+    """Real TowerDebuffMixin.apply_miss_chance plus the shared max() rule."""
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    setter = next(n for n in ast.walk(core_tree)
+                  if isinstance(n, ast.FunctionDef) and n.name == "apply_miss_chance")
+    cls = ast.ClassDef(name="SourceMissChance", bases=[], keywords=[],
+                       decorator_list=[], body=[setter])
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source apply_miss_chance>", "exec"), env)
+    blind_type = env["SourceMissChance"]
+    rows = []
+    for ops in BLIND_CASES:
+        unit = blind_type()
+        unit.alive = True
+        unit.blind_amount = 0.0
+        unit.blind_timer = 0
+        for op in ops:
+            amount, duration = op.split(":")
+            unit.apply_miss_chance(float(amount), int(duration))
+        # Source Hero.take_damage: `miss_chance = max(ev, blind)` with the
+        # attacker blind; a true-strike attacker skips the gate entirely.
+        for evasion in (0.0, 0.28):
+            rows.append({
+                "ops": ops,
+                "evasion": evasion,
+                "blind_active": unit.blind_timer > 0,
+                "blind_amount": unit.blind_amount,
+                "blind_timer": unit.blind_timer,
+                "miss_chance": max(evasion, unit.blind_amount
+                                   if unit.blind_timer > 0 else 0.0),
+            })
+    return rows
+
+
 def _install_effect_stubs(env):
     env["math"] = __import__("math")
     env["random"] = __import__("random")
@@ -1780,6 +1823,7 @@ def source_fixture():
         "item_debuffs": item_debuffs(env),
         "evasion": evasion(env),
         "spell_power": spell_power(env),
+        "miss_chance": miss_chance(env),
         "deaths": deaths(env),
         "timer_attrs": timer_attrs(),
         "timers": timers(env),

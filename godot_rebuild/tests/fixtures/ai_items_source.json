@@ -5676,6 +5676,114 @@
       "vamp_heal": 55
     }
   ],
+  "miss_chance": [
+    {
+      "ops": [
+        "0.18:30"
+      ],
+      "evasion": 0.0,
+      "blind_active": true,
+      "blind_amount": 0.18,
+      "blind_timer": 30,
+      "miss_chance": 0.18
+    },
+    {
+      "ops": [
+        "0.18:30"
+      ],
+      "evasion": 0.28,
+      "blind_active": true,
+      "blind_amount": 0.18,
+      "blind_timer": 30,
+      "miss_chance": 0.28
+    },
+    {
+      "ops": [
+        "0.18:30",
+        "0.10:90"
+      ],
+      "evasion": 0.0,
+      "blind_active": true,
+      "blind_amount": 0.1,
+      "blind_timer": 90,
+      "miss_chance": 0.1
+    },
+    {
+      "ops": [
+        "0.18:30",
+        "0.10:90"
+      ],
+      "evasion": 0.28,
+      "blind_active": true,
+      "blind_amount": 0.1,
+      "blind_timer": 90,
+      "miss_chance": 0.28
+    },
+    {
+      "ops": [
+        "0.18:30",
+        "0.40:10"
+      ],
+      "evasion": 0.0,
+      "blind_active": true,
+      "blind_amount": 0.4,
+      "blind_timer": 10,
+      "miss_chance": 0.4
+    },
+    {
+      "ops": [
+        "0.18:30",
+        "0.40:10"
+      ],
+      "evasion": 0.28,
+      "blind_active": true,
+      "blind_amount": 0.4,
+      "blind_timer": 10,
+      "miss_chance": 0.4
+    },
+    {
+      "ops": [
+        "0.18:60",
+        "0.10:20"
+      ],
+      "evasion": 0.0,
+      "blind_active": true,
+      "blind_amount": 0.18,
+      "blind_timer": 60,
+      "miss_chance": 0.18
+    },
+    {
+      "ops": [
+        "0.18:60",
+        "0.10:20"
+      ],
+      "evasion": 0.28,
+      "blind_active": true,
+      "blind_amount": 0.18,
+      "blind_timer": 60,
+      "miss_chance": 0.28
+    },
+    {
+      "ops": [
+        "0.0:0"
+      ],
+      "evasion": 0.0,
+      "blind_active": false,
+      "blind_amount": 0.0,
+      "blind_timer": 0,
+      "miss_chance": 0.0
+    },
+    {
+      "ops": [
+        "0.0:0"
+      ],
+      "evasion": 0.28,
+      "blind_active": false,
+      "blind_amount": 0.0,
+      "blind_timer": 0,
+      "miss_chance": 0.28
+    }
+  ],
   "deaths": [
     {
       "hero": {

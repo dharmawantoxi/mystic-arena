@@ -36,6 +36,10 @@ var armor_shred_amount := 0.0
 var armor_shred_timer := 0
 var dmg_amp_amount := 0.0
 var dmg_amp_timer := 0
+# Source TowerDebuffMixin: blind (Scorched Earth aura) = chance an INCOMING
+# physical hit misses; read from the ATTACKER in the evasion gate.
+var blind_amount := 0.0
+var blind_timer := 0
 
 
 func apply_armor_shred(amount: float, duration: int) -> void:
@@ -57,6 +61,16 @@ func apply_damage_amp(amount: float, duration: int) -> void:
 		dmg_amp_timer = duration
 
 
+func apply_miss_chance(amount: float, duration: int) -> void:
+	# Port of TowerDebuffMixin.apply_miss_chance (Solar Brand aura): strongest
+	# wins, a longer duration refreshes both fields, a dead target is ignored.
+	if not alive:
+		return
+	if amount > blind_amount or blind_timer < duration:
+		blind_amount = amount
+		blind_timer = duration
+
+
 func tick_item_debuffs() -> void:
 	# Port of the item slice of TowerDebuffMixin._tick_tower_debuffs: each
 	# timer decays by one tick and clears its amount on the last tick.
@@ -72,3 +86,7 @@ func tick_item_debuffs() -> void:
 		heal_amp_timer -= 1
 		if heal_amp_timer <= 0:
 			heal_amp_amount = 0.0
+	if blind_timer > 0:
+		blind_timer -= 1
+		if blind_timer <= 0:
+			blind_amount = 0.0

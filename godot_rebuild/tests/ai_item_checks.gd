@@ -108,6 +108,7 @@ func run(check: Callable) -> void:
 	_test_ai_schedule(fixture.schedule, check)
 	_test_ai_controller_wiring(check)
 	_test_ai_actions(check)
+	_test_miss_chance(fixture.miss_chance, check)
 	_test_spell_power(fixture.spell_power, check)
 	_test_evasion(fixture.evasion, check)
 	_test_item_debuffs(fixture.item_debuffs, check)
@@ -1914,6 +1915,84 @@ func _ai_sequence(seed_value: int) -> Array:
 			)
 		)
 	return rows
+
+
+func _test_miss_chance(rows: Array, check: Callable) -> void:
+	# Layer 5b-6: Solar Brand blind shares one roll with evasion, lives on the
+	# attacker, and true strike still bypasses both.
+	for row in rows:
+		var world := _world()
+		_clear_heroes(world)
+		var attacker := world.spawn_hero(World.KAIZEN, world.BLUE, Vector2(600, 380))
+		var defender := world.spawn_hero(World.KAIZEN, world.RED, Vector2(640, 390))
+		for op in row.ops:
+			var parts: PackedStringArray = String(op).split(":")
+			attacker.apply_miss_chance(float(parts[0]), int(parts[1]))
+		if float(row.evasion) > 0.0:
+			check.call(defender.items.add("monarch_wings"), "Monarch Wings equips (blind case)")
+		check.call(
+			(
+				attacker.blind_amount == float(row.blind_amount)
+				and attacker.blind_timer == int(row.blind_timer)
+				and is_equal_approx(
+					blind_miss_chance(attacker, defender, float(row.evasion)),
+					float(row.miss_chance)
+				)
+			),
+			"blind stacking and miss chance parity: %s evasion=%s" % [str(row.ops), row.evasion]
+		)
+		if float(row.miss_chance) > 0.0:
+			world._item_rng.seed = 99
+			var misses := 0
+			for _index in range(200):
+				defender.hp = defender.max_hp
+				if not world._deliver_hit(
+					attacker.id, attacker.team, defender, 10, "physical", attacker.position
+				):
+					misses += 1
+			check.call(
+				misses > 0 and misses < 200,
+				"blind makes some hits miss: %s evasion=%s" % [str(row.ops), row.evasion]
+			)
+	# True strike beats blind too.
+	var piercing := _world()
+	_clear_heroes(piercing)
+	var striker := piercing.spawn_hero(World.KAIZEN, piercing.BLUE, Vector2(600, 380))
+	var victim := piercing.spawn_hero(World.KAIZEN, piercing.RED, Vector2(640, 390))
+	check.call(striker.items.add("sundering_cudgel"), "Sundering Cudgel equips for the blind probe")
+	striker.apply_miss_chance(0.9, 60)
+	piercing._item_rng.seed = 5
+	var hits := 0
+	for _index in range(50):
+		victim.hp = victim.max_hp
+		if piercing._deliver_hit(
+			striker.id, striker.team, victim, 10, "physical", striker.position
+		):
+			hits += 1
+	check.call(hits == 50, "true strike ignores blind as well as evasion")
+	# Blind decays with the other target-side item debuffs.
+	var decaying := _world()
+	_clear_heroes(decaying)
+	var patient := decaying.spawn_hero(World.KAIZEN, decaying.RED, Vector2(600, 380))
+	patient.apply_miss_chance(0.18, 2)
+	patient.tick_item_debuffs()
+	patient.tick_item_debuffs()
+	check.call(
+		patient.blind_amount == 0.0 and patient.blind_timer == 0,
+		"blind decays and clears on its last tick"
+	)
+
+
+func blind_miss_chance(
+	attacker: Object, defender: World.HeroState, fallback_evasion: float
+) -> float:
+	# Mirrors prototype_battle._evaded's chance for the fixture comparison.
+	var evasion := defender.items.get_evasion()
+	if is_equal_approx(evasion, 0.0):
+		evasion = fallback_evasion
+	if attacker != null and attacker.blind_timer > 0:
+		evasion = maxf(evasion, attacker.blind_amount)
+	return evasion
 
 
 func _test_spell_power(rows: Array, check: Callable) -> void:
