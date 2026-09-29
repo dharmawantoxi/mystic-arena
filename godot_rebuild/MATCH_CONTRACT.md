@@ -35,7 +35,7 @@ Wave memanggil aturan shield nexus sumber: gratis sampai wave 10. Paid shield be
 ## Ekonomi lokal pertandingan
 
 - Blue **1000 G**, red **350 G** saat reset. Tidak ada currency permanen, unlock, save atau koneksi layanan.
-- Rumus awal sumber: `int((base + (max(1, level) - 1) × 100) × multiplier)`. Easy 1,25; normal 1; hard 0,75; nilai lain 1. Fungsi formula diuji, tetapi selector level/difficulty **belum tersedia**.
+- Rumus awal sumber: `int((base + (max(1, level) - 1) × 100) × multiplier)`. Easy 1,25; normal 1; hard 0,75; nilai lain 1. Fungsi formula diuji, dan aturan difficulty sumber sudah tersambung ke world: `set_difficulty()` menyalakan enemy scaling hanya untuk `hard` (level config × 1.15/1.10/1.0), minion merah memakai potongan `int()` itu di atas tier nexus, dan castle-start level biru/merah mengikuti config. Selector level/difficulty di UI **belum tersedia** (sumber memilihnya di settings screen).
 - Blue menerima `(3 + (max(1, level) - 1) × 0,3) × multiplier` G per detik. Tiap 60 tick, `round(rate × 1000)` dengan ties-to-even Python ditambahkan ke carry milli-gold, kemudian quotient menjadi gold integer dan remainder disimpan.
 - Red menerima `3 + max(0, wave)` G tiap 60 tick. Income aktif saat persiapan, berhenti saat pause/hasil.
 - Kill minion/tower masuk ke wallet tepat satu kali melalui selisih kredit authoritative death path. Nexus tidak memberi hadiah kill tower.

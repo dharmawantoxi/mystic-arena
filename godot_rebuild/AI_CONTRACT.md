@@ -531,6 +531,26 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      statement; native `_spawn_jitter` memutar ulang baris fixture,
      60 spawn dua tim/tiga lane, hero bebas jitter, dan replay dua world.
 
+   - [x] **7c.** Difficulty lawan + level config: `LEVEL_1` dari
+     `levels/level_data.py` kini data nyata (`data/levels/level_1.json`,
+     ditulis oracle; `validate_project.py` menuntut file itu sama dengan
+     section `level_one` fixture). Aturan `Game.reset` diport apa adanya:
+     hanya `"hard"` yang menyalakan enemy scaling dan mengalikan
+     `enemy_hp_mult/damage/speed` level dengan 1.15/1.10/1.0 (nilai lain,
+     termasuk yang tak dikenal, tetap 1.0). Blok minion merah
+     `Game.update_waves` menjadi `_enemy_scaled_definition`: `int()`
+     memotong hp/damage di atas tier nexus, speed dikali float, hp ikut
+     max baru; sisi biru tidak pernah terskala. Tiga statement
+     castle-start `Game.reset` juga diport (`_apply_castle_start_levels`):
+     biru naik ke `starting_castle_level`, merah hanya ke
+     `castle_start_level` saat scaling aktif, gratis lewat jalur
+     `Castle.upgrade` yang tidak menyentuh ledger. Selector difficulty di
+     UI masih belum ada (sumber pun memilihnya di settings screen).
+     Oracle `enemy_scaling` menjalankan `Minion.__init__` asli (MINION_TYPES
+     asli + stub mixin) untuk easy/normal/hard/unknown di tier nexus 1 dan
+     4, plus baris castle-start (config asli + sintetis 3/2); native
+     `_enemy_scaling` memutar ulang semuanya termasuk ledger nol.
+
 ## Batas baris file GDScript: dicabut (paritas lebih penting)
 
 `gdlint` bawaan membatasi 1000 baris per file (`max-file-lines`). Mulai sesi ini
@@ -669,6 +689,12 @@ membandingkan array JSON float dengan int secara ketat — sekarang elemen
 dibandingkan satu per satu): **1.179.721 native checks**, static lokal 5777
 PASS; fixture `match_source.json` 1.980 baris (+109 dari section
 `minion_spawn_offsets`).
+CI Godot 4.7.2 run 36533751518 hijau untuk lapisan 7c (commit `3554c56`, push,
+setelah run 36532872047 merah karena baris nexus 4 membandingkan minion biru
+tier-1 dengan baseline sebelum tier nexus — sekarang baseline diambil dari
+baris nexus 1): **1.179.765 native checks**, static lokal 5792 PASS; fixture
+`match_source.json` 2.181 baris (+201 dari section `enemy_scaling`/`level_one`),
+data baru `data/levels/level_1.json`.
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -697,6 +723,9 @@ Python yang belum diport — PR tetap draft sampai ada perintah pemilik repo.
 Lapisan **7b** (`39b92ab`) memindahkan jitter spawn wave (uniform ±8 px lalu
 offset lane) dengan stream ter-seed, jadi replay pertandingan tetap identik;
 klaim lama "jitter spawn belum ada" di `MATCH_CONTRACT.md` sudah dikoreksi.
+Lapisan **7c** (`3554c56`) memindahkan level-1 config ke data nyata dan
+menjalankan aturan difficulty sumber (hard = 1.15/1.10/1.0), enemy scaling
+minion merah, serta castle-start level biru/merah dari config.
 Celah berikutnya yang tersisa di dokumen itu: kondisi boss/level/unlock asli
 dan sebagian besar sistem produksi.
 Status akhir sesi ini: **tidak ada sisa sub-layer item**. 5b-2/5b-3/5b-4/5b-5
@@ -717,9 +746,9 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 `unit.max_hp` mematikan seluruh scene battle.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0eacd-mystic-arena (PR draft
-> #300, basis main 5e5f32a). 6e (`5e98734`), 6f (`81e4faa`), 7a (`d43a92a`) dan
-> 7b (`39b92ab`) sudah hijau di CI (run 36508998487, 36510010594, 36527889355,
-> 36530426529). Kandidat
+> #300, basis main 5e5f32a). 6e (`5e98734`), 6f (`81e4faa`), 7a (`d43a92a`),
+> 7b (`39b92ab`) dan 7c (`3554c56`) sudah hijau di CI (run 36508998487,
+> 36510010594, 36527889355, 36530426529, 36533751518). Kandidat
 > lanjutan: boss hero AI yang tampil di pertandingan, sisi AI panel Forge, sisa
 > perilaku scene Python. Kalau ada tugas baru: satu commit per sub-layer,
 > pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
