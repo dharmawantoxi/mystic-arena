@@ -47,7 +47,7 @@ Queue sumber menyimpan `kind/lane`; tier dibaca saat spawn. Upgrade di tengah an
 - Urutan Godot: ID spawn stabil (merge units+structures), bukan urutan spatial-hash Python. Skenario uji dipilih agar hasil sama untuk kedua urutan pada kasus yang diuji; perbedaan urutan hash vs ID adalah deviasi terdokumentasi.
 - Quirk sumber: `Tower` menyimpan `tower_type`, bukan `tower_kind`, sehingga cabang `hasattr(tower_kind)` tidak pernah cocok. Karena semua tower/nexus saat ini `max_hp ≥ 1500`, cabang base sudah menangkapnya; Godot memeriksa `structure_kind == "tower"` setelah base dengan hasil observasi identik untuk stat saat ini.
 
-Hero/boss belum dipindahkan; tidak ada klaim parity daftar target hero/boss.
+Hero dan perilaku/target AI boss belum dipindahkan; kondisi spawn boss layer 8b sudah ada, tetapi belum ada klaim parity daftar target combat hero/boss.
 
 ## Komposisi wave per-tier
 

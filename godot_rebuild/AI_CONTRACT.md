@@ -745,7 +745,7 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-## Entity boss mini/true (layer 8a, paritas kondisi boss dimulai)
+## Entity boss mini/true (layer 8a–8b, paritas kondisi match)
 
 Port `bosses/base_boss.py` (±8 ribu baris) dimulai dengan memecahnya per lapisan.
 Lapisan **8a** (`d50c86c`) memindahkan **inti entity tanpa spawn**:
@@ -767,23 +767,33 @@ audio/credit damage. Fixture: 216 baris stats, 18 scaling, 54 snapshot debuff,
 192 damage, 48 blind, 6 defeat; `tests/boss_core_checks.gd` dijalankan
 `run_all.gd` dan `validate_project.py` menuntut fixture + data tidak drift.
 
-**Batasan lapisan ini:** belum ada boss yang spawn, jadi pertandingan berjalan
-sama seperti sebelumnya. Belum diport: `_roll_mini_boss_schedule`, pending queue
-+ `_try_spawn_pending_mini_boss`, trigger true boss (`red_towers_destroyed >= 6`),
-counter di cabang reward tower merah, hadiah/unlock, pergerakan/serangan/cleave,
-ability + smart AI, clock entrance/enrage, serta presentasi intro/death.
-CI Godot 4.7.2 hijau pada `d50c86c`
-([run 36555837398](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36555837398)):
-**1.185.192 native checks**; `validate_project.py` 5834 static.
+Lapisan **8b** (`fed2c6a`) memindahkan kondisi match boss yang sebelumnya
+masih kosong: `_roll_mini_boss_schedule` (sample wave unik; Easy 20–40,
+Normal/Hard 11–30), pending FIFO dan `_try_spawn_pending_mini_boss`, spawn
+mini/true lewat `BossState` + scaling hard, trigger true boss saat event
+`red_towers_destroyed >= 6`, serta counter tower merah yang baru di-commit
+setelah pemeriksaan trigger pada tick yang sama. Reward gold/score boss,
+daftar `bosses_defeated_this_match`, `unlocked_bosses`, dan free hero list saat
+menang juga sudah ada di `prototype_battle.gd`. `match_source_oracle.py`
+sekarang mengeksekusi metode/blok sumber asli untuk jadwal, queue, trigger,
+reward dan unlock; `boss_match_checks.gd` menjalankan kontrak native.
 
-> Pesan siap-salin: Lanjutkan di branch arena/01a0ec75-mystic-arena (PR draft
-> #301, basis main dde0656). Lapisan **8a** (`d50c86c`, run 36555837398) sudah
-> hijau di CI: inti entity boss + data 216 tipe. Berikutnya di daftar boss:
-> jadwal & spawn mini/true boss + counter `red_towers_destroyed` + unlock,
-> baru pergerakan/serangan/ability, lalu sistem produksi yang belum ada dan
-> sisi AI panel Forge. Kalau ada tugas baru: satu commit per sub-layer,
-> pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
-> commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber
-> read-only: _core.py, _entity.py, bosses/, levels/, hero_items.py, minions/.
-> Hanya ubah godot_rebuild/; minion_battle.gd boleh melewati 1000 baris
-> (direktif gdlint:disable=max-file-lines); jangan merge tanpa perintah "merge now".
+**Batasan yang masih sengaja tersisa:** boss sekarang dapat di-spawn dan
+mencatat reward, tetapi belum bergerak/menyerang/cleave, belum memakai ability
+atau smart AI, belum menjalankan clock entrance/enrage, dan belum punya
+presentasi intro/death. Sistem produksi serta sisi AI panel Forge juga belum
+dikerjakan. Jangan mengklaim parity seluruh pertandingan Python.
+CI Godot 4.7.2 hijau pada `fed2c6a`
+([run 36569775154](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36569775154)):
+**1.185.229 native checks**; `validate_project.py` 5850 static.
+
+> Pesan siap-salin: lanjutkan di branch `arena/01a0ed0e-mystic-arena` (PR
+> selalu draft; jangan merge tanpa perintah "merge now"). Layer **8a**
+> (`d50c86c`) memindahkan inti entity + data 216 boss; layer **8b**
+> (`fed2c6a`, run 36569775154) memindahkan jadwal/spawn mini–true boss,
+> counter tower merah, reward dan daftar unlock. Berikutnya hanya perilaku
+> boss, lalu sistem produksi, lalu sisi AI panel Forge/sisa perilaku scene.
+> Satu sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
+> validate_project.py -> commit -> push -> gh run watch. Sumber read-only:
+> _core.py, _entity.py, bosses/, levels/, hero_items.py, minions/. Hanya ubah
+> godot_rebuild/.
