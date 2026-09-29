@@ -495,7 +495,9 @@ func try_auto_cast(hero: HeroState) -> void:
 	if not used and hero.w_cooldown <= 0 and hero.hp / maxf(1.0, hero.max_hp) < 0.4:
 		used = cast_hero_w(hero.id)
 	if not used and hero.skill_timer <= 0:
-		cast_hero_q(hero.id, structures)
+		used = cast_hero_q(hero.id, structures)
+	if used:
+		hero.spell_vamp_heal()
 
 
 func _step_hero_auto_cast(hero: HeroState) -> void:
@@ -973,6 +975,7 @@ func cast_blue_q(hero_id: int) -> bool:
 	if not cast_hero_q(hero.id, structures):
 		transaction_error = "skill"
 		return false
+	hero.spell_vamp_heal()
 	_record({"kind": "skill_q", "target_id": hero.id})
 	return true
 
@@ -989,6 +992,7 @@ func _cast_blue_w(hero_id: int) -> bool:
 	if not cast_hero_w(hero.id):
 		transaction_error = "skill"
 		return false
+	hero.spell_vamp_heal()
 	_record({"kind": "skill_w", "target_id": hero.id})
 	return true
 
@@ -1005,6 +1009,7 @@ func _cast_blue_e(hero_id: int) -> bool:
 	if not cast_hero_e(hero.id, structures):
 		transaction_error = "skill"
 		return false
+	hero.spell_vamp_heal()
 	_record({"kind": "skill_e", "target_id": hero.id})
 	return true
 
@@ -1021,6 +1026,7 @@ func _cast_blue_r(hero_id: int) -> bool:
 	if not _cast_hero_r(hero.id, structures):
 		transaction_error = "skill"
 		return false
+	hero.spell_vamp_heal()
 	_record({"kind": "skill_r", "target_id": hero.id})
 	return true
 

@@ -707,7 +707,7 @@ func cast_hero_e(hero_id: int, structures: Array = []) -> bool:
 	if not _has_q_target(hero, structures):
 		return false
 	_deal_hero_aoe(hero, hero.position, 100.0, hero.skill_damage(), structures)
-	hero.e_cooldown = hero.e_cooldown_max
+	hero.e_cooldown = hero.cdr_cooldown(hero.e_cooldown_max)
 	hero.active_skill = "e"
 	hero.active_skill_timer = 60
 	return true
@@ -738,7 +738,7 @@ func _cast_hero_r(hero_id: int, structures: Array = []) -> bool:
 	_deal_hero_aoe(hero, hero.position, 150.0, hero.skill_damage() * 2, structures)
 	hero.ulti_active = true
 	hero.ulti_timer = 90
-	hero.r_cooldown = hero.r_cooldown_max
+	hero.r_cooldown = hero.cdr_cooldown(hero.r_cooldown_max)
 	hero.active_skill = "r"
 	hero.active_skill_timer = 100
 	return true
@@ -761,7 +761,7 @@ func cast_hero_w(hero_id: int) -> bool:
 	if hero.settings().id != "kaizen":
 		return _cast_extended_hero_skill(hero, "w", _hero_skill_structures())
 	hero.wind_wall_timer = 180
-	hero.w_cooldown = hero.w_cooldown_max
+	hero.w_cooldown = hero.cdr_cooldown(hero.w_cooldown_max)
 	hero.active_skill = "w"
 	hero.active_skill_timer = 90
 	return true
@@ -799,7 +799,7 @@ func cast_hero_q(hero_id: int, structures: Array = []) -> bool:
 		hero.q_stack = 0
 	var data := hero.settings()
 	hero.q_reset_timer = data.q_reset_ticks
-	hero.skill_timer = hero.skill_cd_max
+	hero.skill_timer = hero.cdr_cooldown(hero.skill_cd_max)
 	hero.active_skill = "q"
 	hero.active_skill_timer = data.q_visual_ticks
 	return true

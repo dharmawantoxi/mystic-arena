@@ -5581,6 +5581,101 @@
       "true_strike": false
     }
   ],
+  "spell_power": [
+    {
+      "case": {
+        "base": 200,
+        "skill_down": [
+          0,
+          0.0
+        ],
+        "items": []
+      },
+      "damage": 200,
+      "cooldown": 120,
+      "spell_vamp": 0,
+      "vamp_heal": 0
+    },
+    {
+      "case": {
+        "base": 200,
+        "skill_down": [
+          0,
+          0.0
+        ],
+        "items": [
+          "astral_codex"
+        ]
+      },
+      "damage": 250,
+      "cooldown": 98,
+      "spell_vamp": 0.12,
+      "vamp_heal": 30
+    },
+    {
+      "case": {
+        "base": 200,
+        "skill_down": [
+          0,
+          0.0
+        ],
+        "items": [
+          "octarine_core"
+        ]
+      },
+      "damage": 200,
+      "cooldown": 102,
+      "spell_vamp": 0.1,
+      "vamp_heal": 20
+    },
+    {
+      "case": {
+        "base": 200,
+        "skill_down": [
+          90,
+          0.4
+        ],
+        "items": [
+          "astral_codex"
+        ]
+      },
+      "damage": 150,
+      "cooldown": 98,
+      "spell_vamp": 0.12,
+      "vamp_heal": 18
+    },
+    {
+      "case": {
+        "base": 200,
+        "skill_down": [
+          90,
+          0.4
+        ],
+        "items": []
+      },
+      "damage": 120,
+      "cooldown": 120,
+      "spell_vamp": 0,
+      "vamp_heal": 0
+    },
+    {
+      "case": {
+        "base": 200,
+        "skill_down": [
+          0,
+          0.0
+        ],
+        "items": [
+          "astral_codex",
+          "octarine_core"
+        ]
+      },
+      "damage": 250,
+      "cooldown": 80,
+      "spell_vamp": 0.22,
+      "vamp_heal": 55
+    }
+  ],
   "deaths": [
     {
       "hero": {

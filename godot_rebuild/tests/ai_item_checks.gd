@@ -107,6 +107,7 @@ func run(check: Callable) -> void:
 	_test_ai_schedule(fixture.schedule, check)
 	_test_ai_controller_wiring(check)
 	_test_ai_actions(check)
+	_test_spell_power(fixture.spell_power, check)
 	_test_evasion(fixture.evasion, check)
 	_test_item_debuffs(fixture.item_debuffs, check)
 	_test_stat_consumption(fixture.stat_consumption, check)
@@ -1887,6 +1888,43 @@ func _ai_sequence(seed_value: int) -> Array:
 			)
 		)
 	return rows
+
+
+func _test_spell_power(rows: Array, check: Callable) -> void:
+	# Layer 5b-5: skill amp, cooldown reduction and spell vamp read the real
+	# item stats on a spawned hero (Astral Codex, Octarine Core).
+	for row in rows:
+		var case: Dictionary = row.case
+		var world := _world()
+		_clear_heroes(world)
+		var caster := world.spawn_hero(World.VEX, world.RED, Vector2(600, 380))
+		for item_id in case.items:
+			check.call(caster.items.add(String(item_id)), "spell case equips %s" % item_id)
+		caster.skill_value = int(case.base)
+		caster.skill_down_timer = int(case.skill_down[0])
+		caster.skill_down_amount = float(case.skill_down[1])
+		var label := "%s down=%s" % [str(case.items), str(case.skill_down)]
+		check.call(caster.skill_damage() == int(row.damage), "skill amp damage parity: %s" % label)
+		check.call(
+			caster.cdr_cooldown(120) == int(row.cooldown), "cooldown reduction parity: %s" % label
+		)
+		caster.hp = 100.0
+		check.call(
+			caster.spell_vamp_heal() == int(row.vamp_heal), "spell vamp heal parity: %s" % label
+		)
+		check.call(
+			is_equal_approx(caster.hp, minf(caster.max_hp, 100.0 + float(row.vamp_heal))),
+			"spell vamp heal lands on the hero: %s" % label
+		)
+	var capped := _world()
+	_clear_heroes(capped)
+	var healer := capped.spawn_hero(World.VEX, capped.RED, Vector2(600, 380))
+	check.call(healer.items.add("octarine_core"), "Octarine Core equips for the cap probe")
+	healer.skill_value = 10000
+	healer.hp = healer.max_hp
+	check.call(
+		healer.spell_vamp_heal() >= 0 and healer.hp == healer.max_hp, "spell vamp respects max HP"
+	)
 
 
 func _test_evasion(rows: Array, check: Callable) -> void:

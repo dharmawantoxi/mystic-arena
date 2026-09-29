@@ -1031,6 +1031,55 @@ def evasion(env):
     return rows
 
 
+SPELL_POWER_CASES = [
+    {"base": 200, "skill_down": [0, 0.0], "items": []},
+    {"base": 200, "skill_down": [0, 0.0], "items": ["astral_codex"]},
+    {"base": 200, "skill_down": [0, 0.0], "items": ["octarine_core"]},
+    {"base": 200, "skill_down": [90, 0.4], "items": ["astral_codex"]},
+    {"base": 200, "skill_down": [90, 0.4], "items": []},
+    {"base": 200, "skill_down": [0, 0.0], "items": ["astral_codex", "octarine_core"]},
+]
+
+
+def spell_power(env):
+    """Real Hero.skill_damage getter plus the caster stat getters."""
+    entity_tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+    hero_node = next(n for n in entity_tree.body
+                     if isinstance(n, ast.ClassDef) and n.name == "Hero")
+    getter = next(n for n in hero_node.body
+                  if isinstance(n, ast.FunctionDef) and n.name == "skill_damage")
+    cls = ast.ClassDef(name="SourceSpellPower", bases=[], keywords=[],
+                       decorator_list=[], body=[getter])
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source skill_damage>", "exec"), env)
+    spell_type = env["SourceSpellPower"]
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        for case in SPELL_POWER_CASES:
+            hero = spell_type()
+            hero._skill_damage_value = case["base"]
+            hero.skill_down_timer = case["skill_down"][0]
+            hero.skill_down_amount = case["skill_down"][1]
+            hero.items = inv_type(_make_hero({"role": "Mage", "range": 130.0,
+                                              "base_hp": 1000, "level": 1}))
+            for item_id in case["items"]:
+                assert hero.items.add(item_id), f"equip refused {item_id}"
+            damage = hero.skill_damage
+            cdr = hero.items.get_cooldown_reduction()
+            # cast_skill records `before` while the gates still hold cd <= 0,
+            # so `max(0, after - added * cdr)` folds to `cd_max * (1 - cdr)`.
+            cooldown_max = 120
+            rows.append({
+                "case": dict(case),
+                "damage": int(damage),
+                "cooldown": int(round(cooldown_max - cooldown_max * cdr)),
+                "spell_vamp": hero.items.get_spell_vamp(),
+                "vamp_heal": int(damage * hero.items.get_spell_vamp()),
+            })
+    return rows
+
+
 def _install_effect_stubs(env):
     env["math"] = __import__("math")
     env["random"] = __import__("random")
@@ -1730,6 +1779,7 @@ def source_fixture():
         "stat_consumption": stat_consumption(env),
         "item_debuffs": item_debuffs(env),
         "evasion": evasion(env),
+        "spell_power": spell_power(env),
         "deaths": deaths(env),
         "timer_attrs": timer_attrs(),
         "timers": timers(env),

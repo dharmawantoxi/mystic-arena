@@ -200,11 +200,40 @@ func upgrade() -> bool:
 
 
 func skill_damage() -> int:
-	# Port of the Hero.skill_damage getter (no-item amp in Kaizen-1).
+	# Port of the Hero.skill_damage getter (layer 5b-5): the Astral Codex skill
+	# amp is applied first, the Mage Tower skill-down factor after it.
+	var base := float(skill_value)
+	var amp := items.get_skill_amp()
+	if amp > 0.0:
+		base = float(Damage.rounded_like_python(base * (1.0 + amp)))
 	if skill_down_timer > 0:
 		var factor := maxf(0.0, 1.0 - skill_down_amount)
-		return Damage.rounded_like_python(skill_value * factor)
-	return skill_value
+		return Damage.rounded_like_python(base * factor)
+	return int(base)
+
+
+func cdr_cooldown(cooldown_max: int) -> int:
+	# Port of the Octarine Core slice of Hero.cast_skill: cooldowns are only
+	# refreshed by the skill gates (cd <= 0), so the source's
+	# `max(0, after - added * cdr)` with `before == 0` is `cd_max * (1 - cdr)`.
+	var cdr := items.get_cooldown_reduction()
+	if cdr <= 0.0:
+		return cooldown_max
+	return maxi(0, Damage.rounded_like_python(float(cooldown_max) * (1.0 - cdr)))
+
+
+func spell_vamp_heal() -> int:
+	# Port of the Octarine Core / Astral Codex spell vamp: an instant heal from
+	# the hero's own skill damage, capped at max HP and NOT routed through
+	# heal_hp (source sets `self.hp` directly, so heal amp does not apply).
+	var vamp := items.get_spell_vamp()
+	if vamp <= 0.0:
+		return 0
+	var heal := int(float(skill_damage()) * vamp)
+	if heal <= 0:
+		return 0
+	hp = minf(max_hp, hp + float(heal))
+	return heal
 
 
 func eff_attack_cd(base_cd: int) -> int:
