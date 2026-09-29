@@ -745,13 +745,45 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-> Pesan siap-salin: Lanjutkan di branch arena/01a0eacd-mystic-arena (PR draft
-> #300, basis main 5e5f32a). 6e (`5e98734`), 6f (`81e4faa`), 7a (`d43a92a`),
-> 7b (`39b92ab`) dan 7c (`3554c56`) sudah hijau di CI (run 36508998487,
-> 36510010594, 36527889355, 36530426529, 36533751518). Kandidat
-> lanjutan: boss hero AI yang tampil di pertandingan, sisi AI panel Forge, sisa
-> perilaku scene Python. Kalau ada tugas baru: satu commit per sub-layer,
+## Entity boss mini/true (layer 8a, paritas kondisi boss dimulai)
+
+Port `bosses/base_boss.py` (±8 ribu baris) dimulai dengan memecahnya per lapisan.
+Lapisan **8a** (`d50c86c`) memindahkan **inti entity tanpa spawn**:
+`scripts/match/boss_state.gd` (subclass `UnitState`) memuat seluruh skalar
+`Boss.__init__` (name/title/class, hp/damage/speed/range/attack cooldown/radius/
+gold, ability + ability2 true boss, armor/MR/`resist_profile`, `damage_reduction`,
+`max_damage_per_hit`, entrance timer, warna), `apply_scaling`, aturan tenacity
+slow/atk_slow, store debuff `TowerDebuffMixin`, potongan stun 45%,
+`eff_speed`/`eff_ability_damage`, dan ekor numerik `take_damage` (blind +
+true strike, amp/shred item, mitigasi sekolah, resilience, cap anti-burst, flag
+`defeated`, clear debuff). Nilai `-1` dari `take_damage` = early return sumber
+(blind miss), bukan damage.
+
+Stat **216 tipe boss** dirender `tests/boss_core_source_oracle.py` ke
+`data/bosses/boss_stats.json` dari `bosses/boss_data.py` + `hero_archetypes`;
+oracle mengeksekusi AST metode Boss nyata (termasuk property `speed`/
+`ability_damage` dan kelas `TowerDebuffMixin`), dengan stub hanya untuk
+audio/credit damage. Fixture: 216 baris stats, 18 scaling, 54 snapshot debuff,
+192 damage, 48 blind, 6 defeat; `tests/boss_core_checks.gd` dijalankan
+`run_all.gd` dan `validate_project.py` menuntut fixture + data tidak drift.
+
+**Batasan lapisan ini:** belum ada boss yang spawn, jadi pertandingan berjalan
+sama seperti sebelumnya. Belum diport: `_roll_mini_boss_schedule`, pending queue
++ `_try_spawn_pending_mini_boss`, trigger true boss (`red_towers_destroyed >= 6`),
+counter di cabang reward tower merah, hadiah/unlock, pergerakan/serangan/cleave,
+ability + smart AI, clock entrance/enrage, serta presentasi intro/death.
+CI Godot 4.7.2 hijau pada `d50c86c`
+([run 36555837398](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36555837398)):
+**1.185.192 native checks**; `validate_project.py` 5834 static.
+
+> Pesan siap-salin: Lanjutkan di branch arena/01a0ec75-mystic-arena (PR draft
+> #301, basis main dde0656). Lapisan **8a** (`d50c86c`, run 36555837398) sudah
+> hijau di CI: inti entity boss + data 216 tipe. Berikutnya di daftar boss:
+> jadwal & spawn mini/true boss + counter `red_towers_destroyed` + unlock,
+> baru pergerakan/serangan/ability, lalu sistem produksi yang belum ada dan
+> sisi AI panel Forge. Kalau ada tugas baru: satu commit per sub-layer,
 > pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
 > commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber
-> read-only: hero_items.py dan _entity.py. Hanya ubah godot_rebuild/;
-> minion_battle.gd boleh melewati 1000 baris (direktif gdlint:disable=max-file-lines); jangan merge tanpa perintah pengguna.
+> read-only: _core.py, _entity.py, bosses/, levels/, hero_items.py, minions/.
+> Hanya ubah godot_rebuild/; minion_battle.gd boleh melewati 1000 baris
+> (direktif gdlint:disable=max-file-lines); jangan merge tanpa perintah "merge now".
