@@ -366,6 +366,25 @@ if (ROOT / "data/levels/level_1.json").is_file() and (ROOT / "tests/fixtures/mat
         == _match_fixture["level_one"],
         "Level 1 config drifted from its source fixture",
     )
+from boss_core_source_oracle import source_fixture as boss_core_fixture
+check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
+check((ROOT / "tests/fixtures/boss_core_source.json").is_file(), "Boss core requires source fixture")
+check((ROOT / "data/bosses/boss_stats.json").is_file(), "Boss stats need source data")
+if (ROOT / "tests/fixtures/boss_core_source.json").is_file():
+    _boss_core = boss_core_fixture()
+    check(_boss_core == json.loads(
+        (ROOT / "tests/fixtures/boss_core_source.json").read_text(encoding="utf-8")),
+        "Boss core source behavior drift")
+    check(_boss_core["data"] == json.loads(
+        (ROOT / "data/bosses/boss_stats.json").read_text(encoding="utf-8")),
+        "Boss stats data drifted from source boss tables")
+    check(len(_boss_core["data"]["bosses"]) == 216,
+          "Update the boss core suite when the source boss tables change")
+boss_state = (ROOT / "scripts/match/boss_state.gd").read_text(encoding="utf-8")
+for _method in ("apply_scaling", "apply_slow", "apply_debuff", "apply_stun",
+                "clear_tower_debuffs", "take_damage", "eff_speed", "eff_ability_damage",
+                "blind_live", "true_strike_of"):
+    check("func %s(" % _method in boss_state, "Boss entity core must port %s" % _method)
 check("PrototypeChecks.new().run(_check)" in ai_tests, "Match prototype suite must run")
 
 from hero_manifest_checks import validate_manifest
