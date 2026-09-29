@@ -530,6 +530,17 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 	return best
 
 
+func apply_slow(target_id: int, amount: float, duration: int) -> bool:
+	# Layer 5b-2: port of TowerDebuffMixin.apply_slow's item gate — slow resist
+	# (Abyss Breaker) scales the incoming slow before the strongest-wins store.
+	var target := get_unit(target_id)
+	if target is HeroState:
+		var resist := (target as HeroState).items.get_slow_resist()
+		if resist > 0.0:
+			amount *= 1.0 - resist
+	return super.apply_slow(target_id, amount, duration)
+
+
 func set_ai_enabled(enabled: bool) -> void:
 	# Layer 6e: single switch for the match. The real AI owns the red side and
 	# the red heroes; with the switch off (a test or scene that wants a manual

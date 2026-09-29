@@ -328,11 +328,11 @@ func _tick_debuffs(unit: UnitState) -> void:
 
 
 func _eff_speed(unit: UnitState) -> float:
+	if unit is HeroState:  # source _eff_speed: slow + item move speed + stun
+		return (unit as HeroState).eff_speed()
 	var speed: float = (
-		(unit as HeroState).speed if unit is HeroState else unit.definition.speed_px_per_tick
+		unit.definition.speed_px_per_tick * (1.0 - unit.slow_amount if unit.slow_timer > 0 else 1.0)
 	)
-	if unit.slow_timer > 0:
-		speed *= 1.0 - unit.slow_amount
 	return speed
 
 

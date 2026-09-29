@@ -208,10 +208,14 @@ func skill_damage() -> int:
 
 
 func eff_attack_cd(base_cd: int) -> int:
-	# Port of Hero._eff_attack_cd with an empty inventory (AS mult 1.0).
+	# Port of Hero._eff_attack_cd: item attack speed first (Moon Shard,
+	# Gale Pike active), then the Ice attack-slow divisor.
 	if stun_timer > 0:
 		return 9999
-	var value := float(base_cd) / 1.0
+	var value := float(base_cd)
+	var mult := items.get_attack_speed_mult()
+	if mult > 0.0:
+		value = value / mult
 	if atk_slow_timer > 0:
 		var factor := maxf(0.05, 1.0 - atk_slow_amount)
 		value = value / factor
@@ -219,7 +223,21 @@ func eff_attack_cd(base_cd: int) -> int:
 
 
 func eff_attack_range() -> float:
-	return attack_range
+	# Port of Hero._eff_attack_range: the item reach bonus only applies to a
+	# ranged owner (inventory gate), so melee heroes stay at their base range.
+	return attack_range + items.get_range_bonus()
+
+
+func eff_speed() -> float:
+	# Port of TowerDebuffMixin._eff_speed: movement slow, then the item move
+	# speed bonus (Tempest Vane), then a stun pinning the hero in place.
+	var value := speed
+	if slow_timer > 0:
+		value *= 1.0 - slow_amount
+	value *= 1.0 + items.get_move_speed_pct()
+	if stun_timer > 0:
+		value = 0.0
+	return value
 
 
 func heal_hp(amount: float) -> void:

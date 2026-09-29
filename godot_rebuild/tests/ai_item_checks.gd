@@ -106,6 +106,7 @@ func run(check: Callable) -> void:
 	_test_ai_schedule(fixture.schedule, check)
 	_test_ai_controller_wiring(check)
 	_test_ai_actions(check)
+	_test_stat_consumption(fixture.stat_consumption, check)
 	_test_ai_switch(check)
 	_test_ai_shield_nexus(check)
 	_test_ai_restart(check)
@@ -1883,6 +1884,44 @@ func _ai_sequence(seed_value: int) -> Array:
 			)
 		)
 	return rows
+
+
+func _test_stat_consumption(rows: Array, check: Callable) -> void:
+	# Layer 5b-2: the attack/movement consumers read the real item stats via the
+	# source functions (Hero._eff_attack_cd/_eff_attack_range,
+	# TowerDebuffMixin._eff_speed/apply_slow).
+	var definitions := {"kaizen": World.KAIZEN, "sylara": World.SYLARA}
+	for row in rows:
+		var case: Dictionary = row.case
+		var world := _world()
+		_clear_heroes(world)
+		var hero := world.spawn_hero(definitions[String(case.hero)], world.RED, Vector2(600, 380))
+		var label := "%s %s" % [case.hero, str(case.items)]
+		for item_id in case.items:
+			check.call(hero.items.add(String(item_id)), "stat case equips %s" % item_id)
+		hero.stun_timer = int(case.stun)
+		hero.atk_slow_timer = int(case.atk_slow[0])
+		hero.atk_slow_amount = float(case.atk_slow[1])
+		world.apply_slow(hero.id, float(case.slow[0]), int(case.slow[1]))
+		check.call(
+			hero.eff_attack_cd(int(case.base_cd)) == int(row.attack_cd),
+			"item attack cooldown parity: %s" % label
+		)
+		check.call(
+			is_equal_approx(hero.eff_attack_range(), float(row.attack_range)),
+			"item attack range parity: %s" % label
+		)
+		check.call(
+			is_equal_approx(hero.eff_speed(), float(row.eff_speed)),
+			"item movement speed parity: %s" % label
+		)
+		check.call(
+			(
+				is_equal_approx(hero.slow_amount, float(row.slow_amount))
+				and hero.slow_timer == int(row.slow_timer)
+			),
+			"item slow resist parity: %s" % label
+		)
 
 
 func _test_ai_switch(check: Callable) -> void:

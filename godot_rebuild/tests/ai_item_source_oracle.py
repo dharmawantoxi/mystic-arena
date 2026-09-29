@@ -842,6 +842,90 @@ def stat_application(env):
     return rows
 
 
+STAT_CONSUMPTION_CASES = [
+    # Kaizen-like melee (range 70 < 110) and Sylara-like ranged (130):
+    # the source range gate reads `is_melee_hero` first.
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": []},
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": ["moon_shard"]},
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": ["tempest_vane"]},
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": ["abyss_breaker"]},
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90],
+     "items": ["moon_shard", "tempest_vane", "abyss_breaker"]},
+    # Ice attack-slow stacks on top of the item attack speed.
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [90, 0.4], "stun": 0, "slow": [0.5, 90], "items": ["moon_shard"]},
+    # A stun zeroes the movement and freezes the attack cooldown.
+    {"hero": "kaizen", "range": 70.0, "melee": True, "speed": 2.6, "base_cd": 28,
+     "atk_slow": [0, 0.0], "stun": 5, "slow": [0.5, 90], "items": []},
+    # Gale Pike reach only reaches a ranged owner.
+    {"hero": "sylara", "range": 130.0, "melee": False, "speed": 1.5, "base_cd": 30,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": ["gale_pike"]},
+    {"hero": "sylara", "range": 130.0, "melee": False, "speed": 1.5, "base_cd": 30,
+     "atk_slow": [0, 0.0], "stun": 0, "slow": [0.5, 90], "items": []},
+]
+
+
+def _stat_methods(env):
+    """Real item-stat consumers: hero attack cd/range + core movement/slow."""
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    body = [n for n in ast.walk(core_tree)
+            if isinstance(n, ast.FunctionDef)
+            and n.name in ("_eff_speed", "apply_slow")]
+    entity_tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+    hero_node = next(n for n in entity_tree.body
+                     if isinstance(n, ast.ClassDef) and n.name == "Hero")
+    body.extend(n for n in hero_node.body
+                if isinstance(n, ast.FunctionDef)
+                and n.name in ("_eff_attack_cd", "_eff_attack_range"))
+    names = {"_eff_speed", "apply_slow", "_eff_attack_cd", "_eff_attack_range"}
+    assert {n.name for n in body} == names, "item stat consumers missing"
+    cls = ast.ClassDef(name="SourceStatConsumption", bases=[], keywords=[],
+                       decorator_list=[], body=body)
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])),
+                 "<source item stat consumption>", "exec"), env)
+    return env["SourceStatConsumption"]
+
+
+def stat_consumption(env):
+    """Attack cd/range, movement speed and incoming slow with real items."""
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        stat_type = _stat_methods(env)
+        for case in STAT_CONSUMPTION_CASES:
+            hero = stat_type()
+            hero.role = "Ranged" if not case["melee"] else "Assassin"
+            hero.range = case["range"]
+            hero.is_melee_hero = case["melee"]
+            hero.speed = case["speed"]
+            hero.alive = True
+            hero.hp = 1000
+            hero.max_hp = 1000
+            hero.stun_timer = case["stun"]
+            hero.atk_slow_timer = case["atk_slow"][0]
+            hero.atk_slow_amount = case["atk_slow"][1]
+            hero.slow_timer = 0
+            hero.slow_amount = 0.0
+            hero.items = inv_type(hero)
+            for item_id in case["items"]:
+                assert hero.items.add(item_id), f"equip refused {item_id}"
+            hero.apply_slow(case["slow"][0], case["slow"][1])
+            rows.append({
+                "case": dict(case),
+                "attack_cd": hero._eff_attack_cd(case["base_cd"]),
+                "attack_range": hero._eff_attack_range(),
+                "eff_speed": hero._eff_speed(),
+                "slow_amount": hero.slow_amount,
+                "slow_timer": hero.slow_timer,
+            })
+    return rows
+
+
 def _install_effect_stubs(env):
     env["math"] = __import__("math")
     env["random"] = __import__("random")
@@ -1538,6 +1622,7 @@ def source_fixture():
         "purchases": purchases(env),
         "stats": stats(env),
         "stat_application": stat_application(env),
+        "stat_consumption": stat_consumption(env),
         "deaths": deaths(env),
         "timer_attrs": timer_attrs(),
         "timers": timers(env),
