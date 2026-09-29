@@ -11,7 +11,8 @@ extends "res://scripts/combat/unit_state.gd"
 ##
 ## Layers 8b–8c add match spawn/reward/unlock plus movement, targetability,
 ## basic attack and cleave. Layer 8d-1 adds generic ability/heal and the four
-## level-1 smart trees. Still deferred: 75 smart trees, entrance/enrage clocks,
+## level-1 smart trees; layer 8d-2 adds level 2. Still deferred: 71 smart
+## trees, entrance/enrage clocks,
 ## and intro/defeat presentation.
 
 const UnitState = preload("res://scripts/combat/unit_state.gd")

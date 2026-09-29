@@ -839,14 +839,32 @@ boss level 1 masih belum live dan harus dipindahkan per kelompok berikutnya.
 
 CI Godot 4.7.2 hijau pada `9857607`
 ([run 36582093837](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36582093837)):
-**1.185.351 native checks**; `validate_project.py` 5920 static. Berikutnya:
-smart AI boss level berikutnya, tetap satu kelompok per sub-layer.
+**1.185.351 native checks**; `validate_project.py` 5920 static.
+
+## Smart AI boss level 2 (layer 8d-2)
+
+Layer **8d-2** (`5f61205`) menambah priority tree live Razak, Khalros, Gorath,
+dan Alchemist: target-centered/caster-centered AOE, slow, attack hold, dash/leap,
+heal, rage damage+speed, execute/double-hit, Chemical Rage, serta Greevil's
+Greed yang menghitung kill lalu heal 100 per korban. Cooldown dan damage tetap
+berasal dari `boss_stats.json`; cabang AI hanya dipanggil pada posisi yang sama
+dengan dispatch `Boss.update` sumber.
+
+`boss_level_two_ai_source_oracle.py` mengeksekusi 27 definisi AST asli dan
+merekam 16 skenario prioritas beserta timer, posisi, buff, HP, damage/speed,
+slow, attack hold, dan damage tiap korban. Smart AI live kini **8 dari 79**;
+71 tipe lain tetap sengaja tidak memakai fallback generik.
+
+CI Godot 4.7.2 hijau pada `5f61205`
+([run 36585890639](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36585890639)):
+**1.185.425 native checks**; `validate_project.py` 5954 static. Berikutnya:
+smart AI boss level 3, tetap satu kelompok per sub-layer.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0ecfe-mystic-arena (PR draft
-> #302, basis main 630f31a). Hijau sampai layer **8d-1** (`9857607`, run
-> 36582093837): spawn/reward/unlock, movement/basic/cleave, ability generik,
-> heal true boss dan smart AI empat boss level 1. Berikutnya: smart AI 75 boss
-> tersisa per kelompok, lalu clock/presentasi, sistem produksi yang belum ada dan
+> #302, basis main 630f31a). Hijau sampai layer **8d-2** (`5f61205`, run
+> 36585890639): spawn/reward/unlock, movement/basic/cleave, ability generik,
+> heal true boss dan smart AI boss level 1–2 (8/79). Berikutnya: smart AI 71
+> boss tersisa per kelompok, lalu clock/presentasi, sistem produksi yang belum ada dan
 > sisi AI panel Forge. Kalau ada tugas baru: satu commit per sub-layer,
 > pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
 > commit -> push -> PR draft, amend + push ulang kalau CI merah. Sumber
