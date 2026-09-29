@@ -518,6 +518,19 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      `Game._auto_scale_ai_castle` asli untuk wave 1-30 + kasus shield 50%
      (fixture `match_source.json` diregenerasi lewat `--write`, +222 baris).
 
+   - [x] **7b.** Jitter spawn minion: port empat statement
+     `Minion.__init__` (`_entity.py`): offset acak `random.uniform(-8, 8)`
+     pada x dan y setelah penempatan waypoint, lalu offset lane Y
+     `-20/0/20` yang sudah diterapkan `spawn_unit`. Diterapkan di jalur
+     spawn wave (`_spawn_match_minion`) dengan stream ter-seed
+     (`SPAWN_SEED`) supaya pertandingan yang di-restart replay — aliran
+     Python tidak direproduksi; `spawn_unit` laboratorium tetap eksak
+     untuk tes kontrak yang menaruh unit manual. Dua situs `Minion(...)`
+     lain (`_core.py:8814`/`:8822`) adalah summon yang menyusul bersama
+     layer boss. Oracle `minion_spawn_offsets` meng-exec slice asli lima
+     statement; native `_spawn_jitter` memutar ulang baris fixture,
+     60 spawn dua tim/tiga lane, hero bebas jitter, dan replay dua world.
+
 ## Batas baris file GDScript: dicabut (paritas lebih penting)
 
 `gdlint` bawaan membatasi 1000 baris per file (`max-file-lines`). Mulai sesi ini
@@ -647,8 +660,15 @@ di dalam `skill_range` 100 px sehingga auto-cast bersama mengisi `hero.target`
 uji diperbaiki (ancaman di 400 px), commit di-amend, lalu hijau.
 CI Godot 4.7.2 run 36527889355 hijau untuk lapisan 7a (commit `d43a92a`, push):
 **1.179.516 native checks**, static lokal 5774 PASS; `gdformat`/`gdlint`/`gdparse`
-bersih; fixture `match_source.json` 12.345 baris (+222 dari section
-`castle_auto_scale`, diregenerasi lewat `match_source_oracle.py --write`).
+bersih; fixture `match_source.json` 1.871 baris (+222 dari section
+`castle_auto_scale`, diregenerasi lewat `match_source_oracle.py --write`;
+angka 12.345 yang sempat ditulis di sini adalah salah hitung).
+CI Godot 4.7.2 run 36530426529 hijau untuk lapisan 7b (commit `39b92ab`, push,
+setelah run 36529605635 merah karena `lane_offsets == [-20, 0, 20]`
+membandingkan array JSON float dengan int secara ketat — sekarang elemen
+dibandingkan satu per satu): **1.179.721 native checks**, static lokal 5777
+PASS; fixture `match_source.json` 1.980 baris (+109 dari section
+`minion_spawn_offsets`).
 Catatan panel: `_clear()` melepas lalu membebaskan node lama segera (tanpa
 `queue_free`) supaya baris yang dibangun ulang langsung bisa dihitung dan tidak
 ada node yatim saat proses keluar; `press()` menunda redraw hanya saat panel ada
@@ -674,6 +694,11 @@ gratis dijalankan di `step_tick` dan diuji ulang per baris fixture. Kandidat
 lanjutan yang belum dikerjakan (dipilih sesuai kedekatan ke sumber): boss hero AI
 yang tampil di pertandingan, sisi AI dari panel Forge, dan sisa perilaku scene
 Python yang belum diport — PR tetap draft sampai ada perintah pemilik repo.
+Lapisan **7b** (`39b92ab`) memindahkan jitter spawn wave (uniform ±8 px lalu
+offset lane) dengan stream ter-seed, jadi replay pertandingan tetap identik;
+klaim lama "jitter spawn belum ada" di `MATCH_CONTRACT.md` sudah dikoreksi.
+Celah berikutnya yang tersisa di dokumen itu: kondisi boss/level/unlock asli
+dan sebagian besar sistem produksi.
 Status akhir sesi ini: **tidak ada sisa sub-layer item**. 5b-2/5b-3/5b-4/5b-5
 dan 5e-3 semuanya hijau di CI. Berikutnya hanya kalau pemilik repo memerintahkan
 pekerjaan baru (mis. panel Forge untuk sisi AI atau kandidat item AI yang mati),
@@ -692,8 +717,9 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 `unit.max_hp` mematikan seluruh scene battle.
 
 > Pesan siap-salin: Lanjutkan di branch arena/01a0eacd-mystic-arena (PR draft
-> #300, basis main 5e5f32a). 6e (`5e98734`), 6f (`81e4faa`) dan 7a (`d43a92a`)
-> sudah hijau di CI (run 36508998487, 36510010594, 36527889355). Kandidat
+> #300, basis main 5e5f32a). 6e (`5e98734`), 6f (`81e4faa`), 7a (`d43a92a`) dan
+> 7b (`39b92ab`) sudah hijau di CI (run 36508998487, 36510010594, 36527889355,
+> 36530426529). Kandidat
 > lanjutan: boss hero AI yang tampil di pertandingan, sisi AI panel Forge, sisa
 > perilaku scene Python. Kalau ada tugas baru: satu commit per sub-layer,
 > pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
