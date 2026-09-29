@@ -314,12 +314,13 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      `_buy_item_for` memanggil `apply_item_change()` setelah equip sukses.
      Oracle: 5 urutan equip/drop/level dengan `_recalc_item_stats`/
      `_apply_level_stats`/`upgrade`/`apply_heal_amp` sumber nyata.
-     **Batasan 5b (sebagian ditutup 5b-2/5b-3):** `unit_state.gd` kini juga
-     menyimpan/men-decrement `armor_shred_*` dan `dmg_amp_*` (5b-3) sehingga
-     `heal_amp_timer` ikut turun per tick lewat `tick_item_debuffs()`. Sisa
-     yang belum dikonsumsi jalur combat: evasion/true strike (5b-4) dan
-     skill amp/CDR/spell vamp (5b-5); `minion_battle.gd` tetap 1000 baris
-     karena konsumennya hidup di `DamageRules`/`HeroState`.
+     **Batasan 5b ditutup oleh 5b-2/5b-3/5b-4/5b-5.** Semua getter stat item
+     (HP/heal amp, attack speed, range bonus, move speed, slow resist, armor,
+     shred, damage amp, evasion, true strike, skill amp, CDR, spell vamp) kini
+     dikonsumsi jalur combat nyata; `minion_battle.gd` tetap 1000 baris karena
+     konsumennya hidup di `DamageRules`/`HeroState`/`prototype_battle`.
+     Catatan deviasi yang tersisa: blind (aura Solar Brand) belum punya setter
+     di sumber, jadi sengaja tidak diport.
    - [x] **5b-2.** Stat serangan/gerak dikonsumsi: `HeroState.eff_attack_cd`
      membagi `base_cd` dengan `items.get_attack_speed_mult()` sebelum pembagi
      attack-slow Ice, `HeroState.eff_attack_range` menambah bonus reach
@@ -329,6 +330,33 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      Breaker sebelum penyimpanan strongest-wins. Oracle `stat_consumption`
      mengeksekusi `Hero._eff_attack_cd`/`_eff_attack_range`,
      `TowerDebuffMixin._eff_speed`/`apply_slow` nyata untuk 9 kasus item.
+   - [x] **5b-4.** Evasion + true strike di jalur hit nyata:
+     `prototype_battle._deliver_hit` meng-override jalur damage dengan gerbang
+     `Hero.take_damage` (`_is_physical_hit`: hanya `normal`/`projectile` dan
+     bukan magic; `_school` sumber = `resolve_damage_school`, yang membaca
+     `dmg_school` penyerang lebih dulu, jadi sekolah masuk yang dipakai).
+     Evasion (Monarch Wings) milik DEFENDER, true strike (Sundering Cudgel)
+     milik PENYERANG. Hit melee yang miss tidak lagi menjalankan
+     `on_basic_attack_hit`, sesuai urutan sumber (proc mengikuti hit yang
+     mendarat). Blind (aura Solar Brand) tidak punya setter di sumber mana pun,
+     jadi di luar scope. Oracle `evasion` mengeksekusi `_is_physical_hit`
+     sumber + `get_evasion`/`has_true_strike` inventaris nyata untuk 7 kasus;
+     tes native memutar ulang tiap kasus lewat `_deliver_hit` nyata dengan RNG
+     item ter-seed. Jebakan yang sempat merah di CI: item evasion harus
+     dipasang di defender, bukan penyerang.
+   - [x] **5b-5.** Skill amp/CDR/spell vamp: `HeroState.skill_damage` menerapkan
+     amp Astral Codex sebelum faktor skill-down menara Mage;
+     `HeroState.cdr_cooldown` mem-port potongan Octarine Core dari `cast_skill`
+     (karena semua gerbang skill mensyaratkan `cd <= 0`, `max(0, after -
+     added * cdr)` sumber menyusut jadi `cd_max * (1 - cdr)`) dan dipakai di
+     empat titik penetapan cooldown Q/W/E/R sehingga jalur pemain dan AI
+     keduanya kena; `spell_vamp_heal` menyetel `hp` langsung (tanpa `heal_hp`,
+     jadi heal amp tidak ikut) dan dipanggil sekali per cast sukses dari
+     auto-cast AI serta empat wrapper blue. Oracle `spell_power`
+     mengeksekusi getter `Hero.skill_damage` sumber untuk 6 kasus.
+   - [x] **5e-3.** Miasma pada minion memakai `definition.max_hp` (sumber
+     `minion.max_hp`) sehingga racun memakai damage % Max HP, bukan lantai 6;
+     `_hero_enemy_list()` tetap null-safe untuk unit tanpa `max_hp`.
    - [x] **5b-3.** Debuff item di sisi TARGET: `UnitState.apply_armor_shred`
      (Corroder) + `apply_damage_amp` (Soul Rend) mengikuti setter sumber
      (terkuat menang, durasi lebih panjang me-refresh keduanya, target mati
@@ -491,10 +519,13 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
   Lapisan 1-4 + 5a + 5b/5b+/5b-2/5b-3 + 5c-1/5c-2 + 5d + 5e/5e-2 + 5f/5f-2/5f-3
   selesai: katalog 33 item, saran role+range, inventaris 6 slot, adaptor beli
-  AI di ledger, penerapan stat (HP/heal amp + attack speed/range/move speed/
-  slow resist + armor/shred/damage amp), timer pasif/aktif, aura, proc on-hit,
-  Miasma/Polycephaly, dan Forge shop + panel UI. Sisa: evasion/true strike
-  (5b-4) dan skill amp/CDR/spell vamp (5b-5).
+  AI di ledger, SELURUH penerapan stat item (HP/heal amp, attack speed, range
+  bonus, move speed, slow resist, armor, armor shred, damage amp, evasion,
+  true strike, skill amp, CDR, spell vamp), timer pasif/aktif, aura, proc
+  on-hit, Miasma/Polycephaly (termasuk pada minion), dan Forge shop + panel UI.
+  Tidak ada sub-layer item yang tersisa; deviasi yang masih dicatat: blind
+  belum punya setter di sumber, panel Forge hanya roster pemain (BLUE), dan
+  kandidat item AI tetap hidup-saja lewat `_buy_item_for`.
 - [x] Regen shield Lv4+ termasuk tower Lv6 dan castle shield per kandidat:
   eligibility/cost/debit, live reserve, regen/damage, upgrade dan refund sumber.
 - [x] Prioritas kandidat Regen Shield kills descending stabil.
@@ -551,6 +582,14 @@ dan fixture tidak berubah (lapisan ini tidak menyentuh oracle).
 CI Godot 4.7.2 run 36508998487 hijau untuk lapisan 6e (commit `5e98734`, push):
 **1.179.249 native checks**, static lokal 5768 PASS; `minion_battle.gd` tetap
 1000 baris, fixture 11.959 baris dan tidak berubah.
+CI Godot 4.7.2 run 36516328470 hijau untuk lapisan 5b-4 (commit `a8c39c0`, push,
+setelah run 36515759673 merah karena uji menaruh item evasion di penyerang):
+**1.179.332 native checks**, static lokal 5771 PASS.
+CI Godot 4.7.2 run 36516994267 hijau untuk lapisan 5b-5 (commit `ccf8a74`, push):
+**1.179.363 native checks**, static lokal 5771 PASS.
+CI Godot 4.7.2 run 36518120579 hijau untuk lapisan 5e-3 (commit `91b7bf0`, push,
+setelah run 36517663936 merah karena uji memakai stub fx yang tidak mengirim
+damage): **1.179.365 native checks**.
 CI Godot 4.7.2 run 36512974862 hijau untuk lapisan 5b-2 (commit `10db2c7`, push):
 **1.179.293 native checks**, static lokal 5768 PASS; `minion_battle.gd` tetap
 1000 baris, fixture 12.191 baris (regenerasi lewat oracle, bukan edit tangan).
@@ -581,9 +620,10 @@ Status sesi `arena/01a0eacd-mystic-arena` (PR draft #300, basis main `5e5f32a`):
 retreat/heal hero merah + hunt lintas-lane; keduanya hijau di CI (lihat run di
 atas). Tidak ada sisa kode defender di `godot_rebuild/` — satu-satunya sakelar
 sisi merah adalah `set_ai_enabled()`/`ai_enabled`.
-Berikutnya (perintah pemilik repo, PR masih draft, jangan merge tanpa perintah):
-sisa konsumen stat item — **5b-4** evasion/true strike (+ blind aura) di jalur
-`_deliver_hit`, lalu **5b-5** skill amp/CDR/spell vamp di jalur skill hero. Undian 6c/6d memakai
+Status akhir sesi ini: **tidak ada sisa sub-layer item**. 5b-2/5b-3/5b-4/5b-5
+dan 5e-3 semuanya hijau di CI. Berikutnya hanya kalau pemilik repo memerintahkan
+pekerjaan baru (mis. panel Forge untuk sisi AI atau kandidat item AI yang mati),
+dan PR tetap draft sampai ada perintah merge. Undian 6c/6d memakai
 `ai_controller.draw()`; adapter build/draft memakai RNG ter-seed dari seed
 pertandingan yang sama. Catatan 6a: `towers` diteruskan eksplisit karena daftar
 struktur native juga memuat nexus, sedangkan sumber hanya menyusuri `all_towers`.
