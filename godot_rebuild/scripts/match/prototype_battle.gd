@@ -1143,9 +1143,12 @@ func _hero_enemy_list() -> Array:
 	for unit in units:
 		if not unit.alive:
 			continue
-		# Only HeroState carries max_hp so far; minions/structure units fall
-		# back to 0, which leaves Miasma on them at its 6-damage floor.
+		# Layer 5e-3: heroes carry their scaled max_hp, minions their
+		# definition max_hp (source minion.max_hp), so Miasma uses the real
+		# % Max HP damage instead of falling to its 6-damage floor.
 		var raw_max: Variant = unit.get("max_hp")
+		if raw_max == null:
+			raw_max = unit.definition.max_hp
 		(
 			enemies
 			. append(

@@ -97,6 +97,7 @@ func run(check: Callable) -> void:
 	_test_miasma(fixture.miasma, check)
 	_test_multishot(check)
 	_test_miasma_wiring(check)
+	_test_miasma_on_minions(check)
 	_test_forge(fixture.forge, check)
 	_test_forge_wiring(check)
 	_test_shop_pages(fixture.shop_pages, check)
@@ -1140,6 +1141,31 @@ func _test_multishot(check: Callable) -> void:
 	check.call(
 		m.items.miasma.has(m_target.id), "Melee Basilisk Breath must still poison its target"
 	)
+
+
+func _test_miasma_on_minions(check: Callable) -> void:
+	# Layer 5e-3: a big minion takes % Max HP poison, not the 6-damage floor.
+	var world := _world()
+	_clear_heroes(world)
+	var poisoner := world.spawn_hero(World.THORNE, world.BLUE, Vector2(200, 200))
+	assert(poisoner.items.add("basilisk_breath"), "basilisk_breath refused (minions)")
+	var minion := world.spawn_unit(GOBLIN, world.RED, 0)
+	var beef = GOBLIN.duplicate()
+	beef.max_hp = 1000
+	minion.definition = beef
+	minion.hp = 1000.0
+	var data := _miasma_data()
+	poisoner.items.apply_miasma(minion.id, true, 1000, data)
+	check.call(
+		int(poisoner.items.miasma[minion.id].damage) > 6,
+		"Miasma on a minion uses % Max HP damage, not the 6-damage floor"
+	)
+	for _index in range(90):
+		# The real bus (bound to this world) delivers the poison ticks.
+		poisoner.items.tick_miasma(
+			1, world._hero_enemy_list(), world._battle_item_effects(poisoner)
+		)
+	check.call(minion.hp < 1000.0, "Miasma actually poisons the minion")
 
 
 func _test_miasma_wiring(check: Callable) -> void:
