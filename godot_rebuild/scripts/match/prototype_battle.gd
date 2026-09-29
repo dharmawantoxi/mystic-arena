@@ -159,6 +159,8 @@ func step_tick() -> void:
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
+		# Source update_waves: the AI castle auto-levels while the wave starts.
+		_auto_scale_ai_castle()
 	for spawn in batch.spawns:
 		spawn_unit(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
@@ -916,15 +918,50 @@ func _upgrade_nexus_for(team: int, entity_id: int, expected_level: int, reserve:
 	var new_max: int = target.max_hp
 	var ratio := old_hp / float(old_max)
 	var healed := int(new_max * ratio) + (new_max - old_max)
+	_apply_nexus_stats(nexus, target)
+	_record({"kind": "nexus_upgrade", "target_id": nexus.id, "level": nexus.settings().level})
+	return true
+
+
+func _apply_nexus_stats(nexus: StructureState, target: StructureDefinition) -> void:
+	# Port of Castle._apply_level_stats (and the tail of the paid upgrade):
+	# the new HP keeps the old ratio plus the flat margin, and a purchased
+	# castle shield keeps its percentage while the capacity follows the HP.
+	var old_max: int = nexus.definition.max_hp
+	var old_hp: float = nexus.hp
+	var new_max: int = target.max_hp
+	var ratio := old_hp / float(maxi(1, old_max))
 	nexus.definition = target
-	nexus.hp = mini(new_max, healed + 500)
+	nexus.hp = mini(new_max, int(new_max * ratio) + (new_max - old_max) + 500)
 	if nexus.castle_shield_purchased:
 		var old_shield_max := maxf(1.0, nexus.shield_max)
 		var shield_ratio := clampf(nexus.shield / old_shield_max, 0.0, 1.0)
 		nexus.shield_max = target.shield_capacity
 		nexus.shield = int(nexus.shield_max * shield_ratio)
-	_record({"kind": "nexus_upgrade", "target_id": nexus.id, "level": nexus.settings().level})
-	return true
+
+
+func _auto_scale_ai_castle() -> void:
+	# Port of Game._auto_scale_ai_castle: with every new wave the AI castle
+	# levels on the source schedule (4/7/10/13 -> 2/3/4/5). The upgrade is
+	# free — the source only calls Castle.upgrade(), which never touches gold;
+	# the player still pays for its own nexus upgrades.
+	var target_level := 1
+	if wave_count >= 4:
+		target_level = 2
+	if wave_count >= 7:
+		target_level = 3
+	if wave_count >= 10:
+		target_level = 4
+	if wave_count >= 13:
+		target_level = 5
+	var nexus := nexuses[RED]
+	while (
+		nexus != null
+		and nexus.alive
+		and nexus.settings().level < target_level
+		and nexus.settings().level < NexusUpgrades.LEVELS.size()
+	):
+		_apply_nexus_stats(nexus, NexusUpgrades.LEVELS[nexus.settings().level])
 
 
 func _owned_nexus(entity_id: int, team: int = BLUE) -> StructureState:

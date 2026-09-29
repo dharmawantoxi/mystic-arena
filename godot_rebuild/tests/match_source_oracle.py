@@ -4,6 +4,7 @@ No pygame/game import and no previous migration converter is used.
 """
 import ast
 import json
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -118,10 +119,95 @@ def source_fixture():
     sell_ui = next(n for n in input_class.body if isinstance(n, ast.FunctionDef) and n.name == "_try_sell_tower")
     compile_method(sell_ui, env)(SimpleNamespace(game=g))
     result["sell_refund"] = g.gold - before
+    result["castle_auto_scale"] = castle_auto_scale(env)
     return result
 
 
+def castle_auto_scale(env):
+    """Real Game._auto_scale_ai_castle against the real Castle level methods.
+
+    The castle class is exec'd straight from `_entity.py` (upgrade +
+    _apply_level_stats), so the recorded level/HP/damage/range come from the
+    source, not from a hand-written stub.
+    """
+    tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
+    castle = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Castle")
+    body = [n for n in castle.body
+            if isinstance(n, ast.FunctionDef)
+            and n.name in ("upgrade", "_apply_level_stats")]
+    assert {n.name for n in body} == {"upgrade", "_apply_level_stats"}, "castle methods missing"
+    stub = ast.parse("class SourceCastle:\n    pass").body[0]
+    stub.body = body
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[stub], type_ignores=[])),
+                 "<source castle levels>", "exec"), env)
+    castle_type = env["SourceCastle"]
+
+    core_tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
+    game_class = next(n for n in core_tree.body
+                      if isinstance(n, ast.ClassDef) and n.name == "Game")
+    scale_fn = next(n for n in game_class.body
+                    if isinstance(n, ast.FunctionDef) and n.name == "_auto_scale_ai_castle")
+    game_stub = ast.parse("class SourceCastleScale:\n    pass").body[0]
+    game_stub.body = [scale_fn]
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[game_stub], type_ignores=[])),
+                 "<source castle auto scale>", "exec"), env)
+    scale_type = env["SourceCastleScale"]
+
+    rows = []
+    for wave in range(1, 31):
+        game = scale_type()
+        game.wave_number = wave
+        base = castle_type()
+        opening = env["NEXUS_LEVELS"][1]
+        base.level = 1
+        base.max_hp = opening["hp"]
+        base.hp = base.max_hp
+        base.damage = opening["damage"]
+        base.range = opening["range"]
+        base.attack_cooldown = opening["attack_cooldown"]
+        base.castle_shield_purchased = False
+        game.red_base = base
+        game._auto_scale_ai_castle()
+        rows.append({
+            "wave": wave,
+            "level": base.level,
+            "max_hp": base.max_hp,
+            "damage": base.damage,
+            "range": base.range,
+        })
+    # A castle whose shield was already bought keeps its shield percentage.
+    game = scale_type()
+    game.wave_number = 30
+    shielded = castle_type()
+    opened = env["NEXUS_LEVELS"][2]
+    shielded.level = 2
+    shielded.max_hp = opened["hp"]
+    shielded.hp = shielded.max_hp
+    shielded.damage = opened["damage"]
+    shielded.range = opened["range"]
+    shielded.attack_cooldown = opened["attack_cooldown"]
+    shielded.castle_shield_purchased = True
+    shielded.shield_max = int(shielded.max_hp * env["CASTLE_SHIELD_HP_RATIO"])
+    shielded.shield = int(shielded.shield_max * 0.5)
+    game.red_base = shielded
+    game._auto_scale_ai_castle()
+    rows.append({
+        "wave": 30,
+        "level": shielded.level,
+        "max_hp": shielded.max_hp,
+        "damage": shielded.damage,
+        "range": shielded.range,
+        "shield_max": shielded.shield_max,
+        "shield": shielded.shield,
+    })
+    return rows
+
+
 def main():
+    if "--write" in sys.argv:
+        FIXTURE.write_text(json.dumps(source_fixture(), indent=2) + "\n", encoding="utf-8")
+        print("wrote %s" % FIXTURE)
+        return
     assert source_fixture() == json.loads(FIXTURE.read_text(encoding="utf-8")), "Match source contract drift"
     print("PASS: original wave traces, composition, 18 slots, income ledger and build/sell prices.")
 

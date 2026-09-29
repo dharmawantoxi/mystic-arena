@@ -1646,5 +1646,226 @@
   "normal_start": 1000,
   "ai_start": 350,
   "build_cost": 100,
-  "sell_refund": 50
+  "sell_refund": 50,
+  "castle_auto_scale": [
+    {
+      "wave": 1,
+      "level": 1,
+      "max_hp": 4000,
+      "damage": 35,
+      "range": 150
+    },
+    {
+      "wave": 2,
+      "level": 1,
+      "max_hp": 4000,
+      "damage": 35,
+      "range": 150
+    },
+    {
+      "wave": 3,
+      "level": 1,
+      "max_hp": 4000,
+      "damage": 35,
+      "range": 150
+    },
+    {
+      "wave": 4,
+      "level": 2,
+      "max_hp": 6000,
+      "damage": 55,
+      "range": 165
+    },
+    {
+      "wave": 5,
+      "level": 2,
+      "max_hp": 6000,
+      "damage": 55,
+      "range": 165
+    },
+    {
+      "wave": 6,
+      "level": 2,
+      "max_hp": 6000,
+      "damage": 55,
+      "range": 165
+    },
+    {
+      "wave": 7,
+      "level": 3,
+      "max_hp": 8500,
+      "damage": 80,
+      "range": 180
+    },
+    {
+      "wave": 8,
+      "level": 3,
+      "max_hp": 8500,
+      "damage": 80,
+      "range": 180
+    },
+    {
+      "wave": 9,
+      "level": 3,
+      "max_hp": 8500,
+      "damage": 80,
+      "range": 180
+    },
+    {
+      "wave": 10,
+      "level": 4,
+      "max_hp": 11500,
+      "damage": 115,
+      "range": 195
+    },
+    {
+      "wave": 11,
+      "level": 4,
+      "max_hp": 11500,
+      "damage": 115,
+      "range": 195
+    },
+    {
+      "wave": 12,
+      "level": 4,
+      "max_hp": 11500,
+      "damage": 115,
+      "range": 195
+    },
+    {
+      "wave": 13,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 14,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 15,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 16,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 17,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 18,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 19,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 20,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 21,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 22,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 23,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 24,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 25,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 26,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 27,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 28,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 29,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 30,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210
+    },
+    {
+      "wave": 30,
+      "level": 5,
+      "max_hp": 15000,
+      "damage": 160,
+      "range": 210,
+      "shield_max": 15000,
+      "shield": 7500
+    }
+  ]
 }

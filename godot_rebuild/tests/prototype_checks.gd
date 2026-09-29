@@ -22,6 +22,7 @@ func run(check: Callable) -> void:
 	_hero_red_retreat(check)
 	_hero_out_of_lane(check)
 	_hero_auto(check)
+	_castle_auto_scale(check)
 	_replay(check)
 
 
@@ -651,6 +652,78 @@ func _hero_out_of_lane(check: Callable) -> void:
 			and chooser.position.y < chase_from
 		),
 		"the hunt takes the nearest enemy by distance, lane or not"
+	)
+
+
+func _castle_auto_scale(check: Callable) -> void:
+	# Layer 7a: the AI castle auto-levels with the wave number
+	# (source Game._auto_scale_ai_castle, thresholds 4/7/10/13). The upgrade is
+	# free — Castle.upgrade() never touches gold — and the player castle is
+	# never scaled.
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(data is Dictionary, "match fixture parses for the castle schedule")
+	var rows: Array = data.castle_auto_scale
+	for row in rows:
+		if row.has("shield"):
+			continue
+		var world := _world()
+		world.wave_count = int(row.wave)
+		world._auto_scale_ai_castle()
+		var red = world.nexuses[Prototype.RED]
+		check.call(
+			red.settings().level == int(row.level), "castle auto level at wave %d" % int(row.wave)
+		)
+		check.call(
+			(
+				red.definition.max_hp == int(row.max_hp)
+				and red.definition.damage == int(row.damage)
+				and is_equal_approx(red.definition.attack_range_px, float(row.range))
+			),
+			"castle auto stats at wave %d" % int(row.wave)
+		)
+		check.call(
+			world.nexuses[Prototype.BLUE].settings().level == 1,
+			"the player castle is never auto-scaled (wave %d)" % int(row.wave)
+		)
+		check.call(
+			(
+				world.economy.spent[Prototype.RED] == 0
+				and world.economy.is_balanced()
+				and red.hp > 0.0
+			),
+			"the AI castle levels for free with HP kept (wave %d)" % int(row.wave)
+		)
+	# A castle that already bought its shield keeps the remaining percentage.
+	var shield_row: Dictionary = rows[rows.size() - 1]
+	var shielded := _world()
+	var nexus = shielded.nexuses[Prototype.RED]
+	shielded.wave_count = 4
+	shielded._auto_scale_ai_castle()
+	nexus.castle_shield_purchased = true
+	nexus.shield_max = float(nexus.definition.shield_capacity)
+	nexus.shield = nexus.shield_max * 0.5
+	shielded.wave_count = int(shield_row.wave)
+	shielded._auto_scale_ai_castle()
+	check.call(
+		(
+			nexus.settings().level == int(shield_row.level)
+			and is_equal_approx(nexus.shield_max, float(shield_row.shield_max))
+			and int(nexus.shield) == int(shield_row.shield)
+		),
+		"castle auto-scale keeps the purchased shield percentage"
+	)
+	# Wiring: the level-up happens when a wave actually starts.
+	var wired := _world()
+	wired.scheduler.wave = 3
+	wired.scheduler.remaining_ticks = 1
+	wired.step_tick()
+	check.call(wired.wave_count == 3, "wave 3 still running before the forced start")
+	wired.step_tick()
+	check.call(
+		wired.wave_count == 4 and wired.nexuses[Prototype.RED].settings().level == 2,
+		"starting a wave triggers the AI castle auto-scale"
 	)
 
 
