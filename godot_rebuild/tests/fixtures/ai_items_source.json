@@ -5488,6 +5488,99 @@
       ]
     }
   ],
+  "evasion": [
+    {
+      "case": {
+        "damage_type": "normal",
+        "school": "physical",
+        "defender_items": [],
+        "attacker_items": []
+      },
+      "physical": true,
+      "evasion": 0,
+      "true_strike": false
+    },
+    {
+      "case": {
+        "damage_type": "normal",
+        "school": "physical",
+        "defender_items": [
+          "monarch_wings"
+        ],
+        "attacker_items": []
+      },
+      "physical": true,
+      "evasion": 0.28,
+      "true_strike": false
+    },
+    {
+      "case": {
+        "damage_type": "normal",
+        "school": "physical",
+        "defender_items": [
+          "monarch_wings"
+        ],
+        "attacker_items": [
+          "sundering_cudgel"
+        ]
+      },
+      "physical": true,
+      "evasion": 0.28,
+      "true_strike": true
+    },
+    {
+      "case": {
+        "damage_type": "projectile",
+        "school": "physical",
+        "defender_items": [
+          "monarch_wings"
+        ],
+        "attacker_items": []
+      },
+      "physical": true,
+      "evasion": 0.28,
+      "true_strike": false
+    },
+    {
+      "case": {
+        "damage_type": "projectile",
+        "school": "magic",
+        "defender_items": [
+          "monarch_wings"
+        ],
+        "attacker_items": []
+      },
+      "physical": false,
+      "evasion": 0.28,
+      "true_strike": false
+    },
+    {
+      "case": {
+        "damage_type": "normal",
+        "school": "magic",
+        "defender_items": [
+          "monarch_wings"
+        ],
+        "attacker_items": []
+      },
+      "physical": false,
+      "evasion": 0.28,
+      "true_strike": false
+    },
+    {
+      "case": {
+        "damage_type": "skill",
+        "school": "physical",
+        "defender_items": [
+          "monarch_wings"
+        ],
+        "attacker_items": []
+      },
+      "physical": false,
+      "evasion": 0.28,
+      "true_strike": false
+    }
+  ],
   "deaths": [
     {
       "hero": {

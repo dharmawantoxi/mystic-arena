@@ -981,6 +981,56 @@ def item_debuffs(env):
     return rows
 
 
+EVASION_CASES = [
+    # Evasion is the defender's item stat, true strike the attacker's.
+    {"damage_type": "normal", "school": "physical", "defender_items": [],
+     "attacker_items": []},
+    {"damage_type": "normal", "school": "physical",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+    {"damage_type": "normal", "school": "physical",
+     "defender_items": ["monarch_wings"], "attacker_items": ["sundering_cudgel"]},
+    {"damage_type": "projectile", "school": "physical",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+    {"damage_type": "projectile", "school": "magic",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+    {"damage_type": "normal", "school": "magic",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+    {"damage_type": "skill", "school": "physical",
+     "defender_items": ["monarch_wings"], "attacker_items": []},
+]
+
+
+def evasion(env):
+    """Real `_is_physical_hit` plus both real inventories (defender/attacker)."""
+    entity_tree = ast.parse(ENTITY.read_text(encoding="utf-8"))
+    hit_fn = next(n for n in entity_tree.body
+                  if isinstance(n, ast.FunctionDef) and n.name == "_is_physical_hit")
+    stub = ast.parse("class SourcePhysicalHit:\n    pass").body[0]
+    stub.body = [hit_fn]
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[stub], type_ignores=[])),
+                 "<source _is_physical_hit>", "exec"), env)
+    hit_type = env["SourcePhysicalHit"]
+    hit = hit_type.__dict__["_is_physical_hit"]
+    rows = []
+    with _core_module():
+        inv_type = inventory_type(env)
+        spec = {"role": "Assassin", "range": 70.0, "base_hp": 1000, "level": 1}
+        for case in EVASION_CASES:
+            defender_inv = inv_type(_make_hero(spec))
+            attacker_inv = inv_type(_make_hero(spec))
+            for item_id in case["defender_items"]:
+                assert defender_inv.add(item_id), f"defender refused {item_id}"
+            for item_id in case["attacker_items"]:
+                assert attacker_inv.add(item_id), f"attacker refused {item_id}"
+            rows.append({
+                "case": dict(case),
+                "physical": bool(hit(case["damage_type"], case["school"])),
+                "evasion": defender_inv.get_evasion(),
+                "true_strike": attacker_inv.has_true_strike(),
+            })
+    return rows
+
+
 def _install_effect_stubs(env):
     env["math"] = __import__("math")
     env["random"] = __import__("random")
@@ -1679,6 +1729,7 @@ def source_fixture():
         "stat_application": stat_application(env),
         "stat_consumption": stat_consumption(env),
         "item_debuffs": item_debuffs(env),
+        "evasion": evasion(env),
         "deaths": deaths(env),
         "timer_attrs": timer_attrs(),
         "timers": timers(env),

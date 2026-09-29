@@ -689,6 +689,44 @@ func _hero_skill_nearby(hero: HeroState) -> int:
 	return count
 
 
+func _deliver_hit(
+	source_id: int,
+	source_team: int,
+	target: UnitState,
+	raw_damage: int,
+	school: String,
+	origin: Vector2,
+	damage_type: String = "normal"
+) -> bool:
+	# Layer 5b-4: port of the evasion/true-strike gate of Hero.take_damage.
+	# Source `_school` is `resolve_damage_school`, which reads the attacker's
+	# `dmg_school` first, so the incoming school is the right handle here.
+	if (
+		target is HeroState
+		and _evaded(source_id, target as HeroState, raw_damage, school, damage_type)
+	):
+		return false
+	return super._deliver_hit(
+		source_id, source_team, target, raw_damage, school, origin, damage_type
+	)
+
+
+func _evaded(
+	source_id: int, defender: HeroState, raw_damage: int, school: String, damage_type: String
+) -> bool:
+	# Source `_is_physical_hit`: only normal/projectile hits that are not magic
+	# can miss. Blind (Solar Brand aura) has no setter in the source either, so
+	# only evasion and true strike are live here.
+	var physical := damage_type in ["normal", "projectile"] and school != "magic"
+	if not physical or raw_damage <= 0:
+		return false
+	var attacker := get_unit(source_id)
+	if attacker is HeroState and (attacker as HeroState).items.has_true_strike():
+		return false
+	var chance := defender.items.get_evasion()
+	return chance > 0.0 and _item_rng.randf() < chance
+
+
 func _hero_passive_heal(hero: HeroState) -> void:
 	if hero.hp < hero.max_hp:
 		hero.heal_hp(HERO_PASSIVE_HEAL)
@@ -1376,8 +1414,8 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 			hero.hp = minf(hero.max_hp, hero.hp + float(raw) * ls)
 		hero.items.on_ranged_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
 	else:
-		_deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
-		if target.alive:
+		var landed := _deliver_hit(hero.id, hero.team, target, raw, hero.dmg_school, hero.position)
+		if landed and target.alive:
 			hero.items.on_basic_attack_hit(target.id, raw, _hero_enemy_list(), _item_rng, bus)
 	hero.hp = hero.items.hero_hp
 	return true

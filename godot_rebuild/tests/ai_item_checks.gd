@@ -107,6 +107,7 @@ func run(check: Callable) -> void:
 	_test_ai_schedule(fixture.schedule, check)
 	_test_ai_controller_wiring(check)
 	_test_ai_actions(check)
+	_test_evasion(fixture.evasion, check)
 	_test_item_debuffs(fixture.item_debuffs, check)
 	_test_stat_consumption(fixture.stat_consumption, check)
 	_test_ai_switch(check)
@@ -1886,6 +1887,69 @@ func _ai_sequence(seed_value: int) -> Array:
 			)
 		)
 	return rows
+
+
+func _test_evasion(rows: Array, check: Callable) -> void:
+	# Layer 5b-4: real world, seeded RNG. A physical non-magic hit misses with
+	# the defender's evasion unless the attacker carries true strike.
+	for row in rows:
+		var case: Dictionary = row.case
+		var world := _world()
+		_clear_heroes(world)
+		var attacker := world.spawn_hero(World.KAIZEN, world.BLUE, Vector2(600, 380))
+		var defender := world.spawn_hero(World.KAIZEN, world.RED, Vector2(640, 390))
+		for item_id in case.defender_items:
+			check.call(
+				defender.items.add(String(item_id)),
+				"evasion case equips %s on the defender" % item_id
+			)
+		for item_id in case.attacker_items:
+			check.call(
+				attacker.items.add(String(item_id)),
+				"evasion case equips %s on the attacker" % item_id
+			)
+		world._item_rng.seed = 4242
+		var misses := 0
+		for _index in range(200):
+			defender.hp = defender.max_hp
+			if not world._deliver_hit(
+				attacker.id,
+				attacker.team,
+				defender,
+				10,
+				String(case.school),
+				attacker.position,
+				String(case.damage_type)
+			):
+				misses += 1
+		var label := (
+			"%s/%s d=%s a=%s"
+			% [case.damage_type, case.school, str(case.defender_items), str(case.attacker_items)]
+		)
+		if not bool(row.physical) or bool(row.true_strike) or float(row.evasion) <= 0.0:
+			check.call(misses == 0, "no evasion applies for %s" % label)
+		else:
+			check.call(misses > 0 and misses < 200, "evasion misses some hits for %s" % label)
+	var melee := _world()
+	_clear_heroes(melee)
+	var striker := melee.spawn_hero(World.KAIZEN, melee.BLUE, Vector2(600, 380))
+	var victim := melee.spawn_hero(World.KAIZEN, melee.RED, Vector2(620, 380))
+	check.call(victim.items.add("monarch_wings"), "Monarch Wings equips on the victim")
+	melee._item_rng.seed = 7
+	var procs := 0
+	var landed := 0
+	for _index in range(400):
+		striker.attack_timer = 0
+		victim.hp = victim.max_hp
+		var hp_before: float = victim.hp
+		if melee.hero_basic_attack(striker.id, victim.id):
+			if victim.hp < hp_before:
+				landed += 1
+			else:
+				procs += 1
+	check.call(
+		landed > 0 and procs > 0, "a missed melee hit leaves the victim untouched (no on-hit proc)"
+	)
 
 
 func _test_item_debuffs(rows: Array, check: Callable) -> void:
