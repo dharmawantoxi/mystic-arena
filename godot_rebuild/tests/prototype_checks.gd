@@ -23,6 +23,7 @@ func run(check: Callable) -> void:
 	_hero_out_of_lane(check)
 	_hero_auto(check)
 	_castle_auto_scale(check)
+	_spawn_jitter(check)
 	_replay(check)
 
 
@@ -725,6 +726,97 @@ func _castle_auto_scale(check: Callable) -> void:
 		wired.wave_count == 4 and wired.nexuses[Prototype.RED].settings().level == 2,
 		"starting a wave triggers the AI castle auto-scale"
 	)
+
+
+func _spawn_jitter(check: Callable) -> void:
+	# Layer 7b: the source Minion.__init__ spread is ported for wave spawns:
+	# uniform(-8, 8) on both axes, then the per-lane Y offset (already applied
+	# by spawn_unit). The match seeds the draws, so a restarted run replays even
+	# though the Python stream itself is not reproduced.
+	var data = JSON.parse_string(
+		FileAccess.get_file_as_string("res://tests/fixtures/match_source.json")
+	)
+	check.call(data is Dictionary and data.has("minion_spawn_offsets"), "spawn offset fixture")
+	if not data is Dictionary:
+		return
+	var contract: Dictionary = data.minion_spawn_offsets
+	var jitter := float(contract.jitter)
+	var lane_offsets: Array = contract.lane_offsets
+	check.call(is_equal_approx(jitter, 8.0), "source spawn jitter radius")
+	# JSON numbers are floats; nested Array equality compares types strictly.
+	check.call(
+		(
+			lane_offsets.size() == 3
+			and float(lane_offsets[0]) == -20.0
+			and float(lane_offsets[1]) == 0.0
+			and float(lane_offsets[2]) == 20.0
+		),
+		"source lane spread offsets"
+	)
+	for row in contract.rows:
+		check.call(
+			(
+				absf(float(row.offset_x)) <= jitter + 0.0001
+				and absf(float(row.offset_y)) <= jitter + 0.0001
+			),
+			"recorded source offsets stay inside the jitter radius"
+		)
+		check.call(
+			(
+				is_equal_approx(
+					float(row.final_y),
+					float(row.base[1]) + float(row.offset_y) + float(row.lane_offset)
+				)
+				and is_equal_approx(float(row.lane_offset), float(lane_offsets[int(row.lane)]))
+			),
+			"source lane offset applies after the jitter"
+		)
+	var world := _world()
+	var hero_position: Vector2 = world.blue_hero().position
+	var xs: Array[float] = []
+	for lane in range(3):
+		for team in range(2):
+			for index in range(10):
+				var unit := world._spawn_match_minion(GOBLIN, team, lane)
+				check.call(unit != null, "jitter spawn succeeds")
+				if unit == null:
+					continue
+				var base: Vector2 = world.paths[lane][
+					0 if team == world.BLUE else world.paths[lane].size() - 1
+				]
+				var offset := float(lane_offsets[lane])
+				var dx: float = unit.position.x - base.x
+				var dy: float = unit.position.y - base.y - offset
+				check.call(
+					absf(dx) <= jitter and absf(dy) <= jitter, "native wave minion spawn bounds"
+				)
+				check.call(
+					(
+						unit.position.y - base.y >= offset - jitter
+						and unit.position.y - base.y <= offset + jitter
+					),
+					"native lane spread offset"
+				)
+				xs.append(dx)
+	check.call(xs.size() == 60, "jitter sample size")
+	check.call(world.blue_hero().position == hero_position, "heroes skip the minion jitter")
+	var varies := false
+	for value in xs:
+		if absf(value - xs[0]) > 0.000001:
+			varies = true
+			break
+	check.call(varies, "jitter draws actually vary")
+	# Two fresh worlds consume the same seeded sequence.
+	var first := _world()
+	var second := _world()
+	var same := true
+	for lane in range(3):
+		for index in range(4):
+			var a := first._spawn_match_minion(GOBLIN, world.BLUE, lane)
+			var b := second._spawn_match_minion(GOBLIN, world.BLUE, lane)
+			if a == null or b == null or a.position != b.position:
+				same = false
+	check.call(same, "seeded spawn jitter replays")
 
 
 func _hero_auto(check: Callable) -> void:

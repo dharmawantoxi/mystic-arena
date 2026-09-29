@@ -120,7 +120,64 @@ def source_fixture():
     compile_method(sell_ui, env)(SimpleNamespace(game=g))
     result["sell_refund"] = g.gold - before
     result["castle_auto_scale"] = castle_auto_scale(env)
+    result["minion_spawn_offsets"] = minion_spawn_offsets(env)
     return result
+
+
+def minion_spawn_offsets(env):
+    """Real Minion.__init__ spread statements, exec'd verbatim.
+
+    `_entity.py` places a new minion on its lane path, adds uniform(-8, 8) to
+    both axes, then adds the per-lane Y offset. The extracted slice is the
+    source's own AST, so the constants and the order of operations are taken
+    from the game, not from a hand-written copy. Rows are recorded twice with
+    the same seed (mid lane = jitter only, the row's lane = jitter + spread) so
+    the fixture proves the lane offset is applied after the jitter without
+    changing it.
+    """
+    import random as _random
+
+    tree = ast.parse((ROOT / "_entity.py").read_text(encoding="utf-8"))
+    minion = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Minion")
+    init = next(n for n in minion.body if isinstance(n, ast.FunctionDef) and n.name == "__init__")
+    start = next(i for i, n in enumerate(init.body)
+                 if isinstance(n, ast.Import) and any(a.name == "random" for a in n.names))
+    body = init.body[start:start + 5]
+    assert [type(n).__name__ for n in body] == ["Import", "AugAssign", "AugAssign", "Assign", "AugAssign"], \
+        "minion spawn offset slice drifted"
+    lane_names = {0: "top", 1: "mid", 2: "bot"}
+    fn = ast.fix_missing_locations(ast.FunctionDef(
+        name="spawn_offset", args=ast.arguments(
+            posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=body, decorator_list=[]))
+    exec(compile(ast.Module(body=[fn], type_ignores=[]), "<source minion spawn offset>", "exec"), env)
+    spawn_offset = env["spawn_offset"]
+
+    def place(lane, seed):
+        node = SimpleNamespace(x=1000.0, y=200.0, lane=lane_names[lane])
+        _random.seed(seed)
+        spawn_offset(node)
+        return node
+
+    rows = []
+    for lane in (0, 1, 2):
+        for step in range(3):
+            seed = 900 + lane * 10 + step
+            mid = place(1, seed)
+            placed = place(lane, seed)
+            offset_x = mid.x - 1000.0
+            offset_y = mid.y - 200.0
+            assert -8.0 <= offset_x <= 8.0 and -8.0 <= offset_y <= 8.0, "jitter out of source range"
+            assert abs(placed.x - mid.x) < 1e-9, "lane offset must not change x"
+            rows.append({
+                "base": [1000.0, 200.0],
+                "lane": lane,
+                "offset_x": offset_x,
+                "offset_y": offset_y,
+                "lane_offset": placed.y - mid.y,
+                "final_y": placed.y,
+            })
+    return {"jitter": 8.0, "lane_offsets": [-20, 0, 20], "rows": rows}
 
 
 def castle_auto_scale(env):

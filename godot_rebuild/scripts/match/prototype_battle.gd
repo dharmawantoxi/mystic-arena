@@ -47,6 +47,12 @@ const HERO_HEAL_RATIO := 0.8
 const HERO_BASE_HEAL := 3.0
 const HERO_PASSIVE_HEAL := 0.15
 const HERO_BASE_NEAR := 100.0
+# Source Minion.__init__: every fresh minion gets a small random offset on both
+# axes (random.uniform(-8, 8)) before the per-lane Y spread, so wave units do
+# not stack on one pixel. The match seeds the draws so a restarted run replays;
+# the Python stream itself is not reproduced.
+const SPAWN_JITTER := 8.0
+const SPAWN_SEED := 20260929
 
 var economy := Economy.new()
 # Layer 5f: Forge shop transactions (buy for a dead hero queues the order).
@@ -73,10 +79,13 @@ const HERO_AGGRO_RANGE := 250.0
 var scheduler := Scheduler.new()
 var slots: Array[Slot] = []
 var transaction_error := ""
+# Layer 7b: seeded stream for the source spawn jitter (match-reproducible).
+var spawn_rng := RandomNumberGenerator.new()
 
 
 func _init() -> void:
 	slots = SlotLayout.create(paths)
+	spawn_rng.seed = SPAWN_SEED
 
 
 func structure_limit() -> int:
@@ -138,6 +147,20 @@ func scaled_minion_definition(base: Definition, nexus_level: int) -> Definition:
 	return copy
 
 
+func _spawn_match_minion(definition: Definition, team: int, lane: int) -> UnitState:
+	# Port of the Minion.__init__ spread statements: uniform(-8, 8) on x and y
+	# after the waypoint placement, then the lane Y offset (already applied by
+	# spawn_unit). Wave construction only; the lab entry stays exact so the
+	# existing contract tests can place units on demand.
+	var unit := spawn_unit(definition, team, lane)
+	if unit != null:
+		unit.position += Vector2(
+			spawn_rng.randf_range(-SPAWN_JITTER, SPAWN_JITTER),
+			spawn_rng.randf_range(-SPAWN_JITTER, SPAWN_JITTER)
+		)
+	return unit
+
+
 func nexus_level(team: int) -> int:
 	if team not in [BLUE, RED] or nexuses[team] == null:
 		return 1
@@ -162,7 +185,7 @@ func step_tick() -> void:
 		# Source update_waves: the AI castle auto-levels while the wave starts.
 		_auto_scale_ai_castle()
 	for spawn in batch.spawns:
-		spawn_unit(MINIONS[spawn.kind], spawn.team, spawn.lane)
+		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
 	if is_running():
 		_tick_auras_and_items()
