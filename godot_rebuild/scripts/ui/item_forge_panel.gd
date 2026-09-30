@@ -34,6 +34,8 @@ const DETAIL_SECTIONS := ["stats", "passive", "on_attack", "multishot", "bash", 
 
 var world: Object = null
 var _chrome: VBoxContainer
+var _dim: ColorRect
+var _card: PanelContainer
 var _chips: HBoxContainer
 var _tabs: HBoxContainer
 var _grid: GridContainer
@@ -46,6 +48,7 @@ var _detail_item := ""
 
 func bind(battle: Object) -> void:
 	world = battle
+	set_process_input(true)
 
 
 func shop() -> Object:
@@ -114,21 +117,95 @@ func refresh() -> void:
 	_refresh_detail(shop_ui)
 
 
+func _input(event: InputEvent) -> void:
+	# The overlay covers the full viewport, but headless/native input can
+	# deliver a click straight to the scene root instead of a dimmer child.
+	# Keep this fallback limited to the area outside the card so buttons and
+	# slot right-clicks still use the normal Control routing above.
+	if not visible or _card == null or not event is InputEventMouseButton:
+		return
+	var mouse := event as InputEventMouseButton
+	if not mouse.pressed or mouse.button_index not in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+		return
+	var shop_ui: Object = shop()
+	if shop_ui == null or not bool(shop_ui.is_open):
+		return
+	var point := mouse.position
+	if String(shop_ui.inspect_item) != "":
+		if _detail != null and _detail.visible and _detail.get_global_rect().has_point(point):
+			return
+		shop_ui.inspect_item = ""
+		refresh()
+		get_viewport().set_input_as_handled()
+		return
+	if _forge_card_rect().has_point(point):
+		return
+	if mouse.button_index == MOUSE_BUTTON_LEFT:
+		shop_ui.click_outside_panel()
+	else:
+		shop_ui.is_open = false
+	refresh()
+	get_viewport().set_input_as_handled()
+
+
+func _on_background_input(event: InputEvent) -> void:
+	if not event is InputEventMouseButton:
+		return
+	var mouse := event as InputEventMouseButton
+	if not mouse.pressed or mouse.button_index not in [MOUSE_BUTTON_LEFT, MOUSE_BUTTON_RIGHT]:
+		return
+	var shop_ui: Object = shop()
+	if shop_ui == null or not bool(shop_ui.is_open):
+		return
+	var point := get_global_mouse_position()
+	if String(shop_ui.inspect_item) != "":
+		# The source detail popup is modal: an empty click outside its box
+		# closes only the detail, while a click inside is consumed.
+		if _detail != null and _detail.visible and _detail.get_global_rect().has_point(point):
+			get_viewport().set_input_as_handled()
+			return
+		shop_ui.inspect_item = ""
+		refresh()
+		get_viewport().set_input_as_handled()
+		return
+	if mouse.button_index == MOUSE_BUTTON_RIGHT:
+		# Source right-click anywhere outside an action button closes the shop.
+		shop_ui.is_open = false
+	else:
+		# Source left-click outside the logical panel closes it. Use the
+		# fixed viewport rect as well as the Control signal because a
+		# CanvasLayer child can report an unreliable global card rect.
+		if not _forge_card_rect().has_point(point):
+			shop_ui.click_outside_panel()
+	refresh()
+	get_viewport().set_input_as_handled()
+
+
+func _forge_card_rect() -> Rect2:
+	var card_size := Vector2(940, 620)
+	var viewport_size := get_viewport_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
+		viewport_size = Vector2(1280, 720)
+	return Rect2((viewport_size - card_size) * 0.5, card_size)
+
+
 func _build_chrome() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var dim := ColorRect.new()
-	dim.color = Color(0.015, 0.03, 0.04, 0.72)
-	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(dim)
-	var card := PanelContainer.new()
-	card.set_anchors_preset(Control.PRESET_CENTER)
-	card.custom_minimum_size = Vector2(940, 620)
-	card.position = Vector2(-470, -310)
-	add_child(card)
+	_dim = ColorRect.new()
+	_dim.color = Color(0.015, 0.03, 0.04, 0.72)
+	_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_dim.gui_input.connect(_on_background_input)
+	add_child(_dim)
+	_card = PanelContainer.new()
+	_card.set_anchors_preset(Control.PRESET_CENTER)
+	_card.custom_minimum_size = Vector2(940, 620)
+	_card.position = Vector2(-470, -310)
+	_card.gui_input.connect(_on_background_input)
+	add_child(_card)
 	_chrome = VBoxContainer.new()
 	_chrome.add_theme_constant_override("separation", 10)
-	card.add_child(_chrome)
+	_card.add_child(_chrome)
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 12)
 	_chrome.add_child(header)
@@ -248,6 +325,7 @@ func _build_slots(_shop_ui: Object) -> void:
 					var mouse := event as InputEventMouseButton
 					if mouse.pressed and mouse.button_index == MOUSE_BUTTON_RIGHT:
 						press(slot_id, 3)
+						get_viewport().set_input_as_handled()
 		)
 		_slots.add_child(button)
 
