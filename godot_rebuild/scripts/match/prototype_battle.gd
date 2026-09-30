@@ -93,8 +93,8 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
-# Layer 8b/8c: match conditions, unlock ledger and live boss motion/basic
-# attack. Boss abilities, smart AI and presentation remain deferred.
+# Layer 8b/8c/8d/8e/8f: match conditions, live boss combat, clocks and
+# presentation payloads. Rendering remains in prototype_view.gd.
 var boss_table: Dictionary = {}
 var boss_rng := RandomNumberGenerator.new()
 var active_boss: BossState = null
@@ -109,6 +109,10 @@ var unlocked_bosses: Array[String] = []
 var purchased_heroes: Array[String] = []
 var heroes_unlocked_this_match: Array[String] = []
 var boss_rewards: Array[Dictionary] = []
+# Layer 8f: death FX survives registry retirement, like source EffectManager.
+var boss_death_presentations: Array[Dictionary] = []
+var boss_screen_shake_intensity := 0.0
+var boss_screen_shake_timer := 0
 var score := 0
 var _victory_unlocks_granted := false
 
@@ -264,6 +268,7 @@ func nexus_level(team: int) -> int:
 func step_tick() -> void:
 	if not is_running():
 		return
+	_tick_boss_death_presentations()
 	# Input transactions are handled by the session before this method.
 	economy.step_tick(wave_count)
 	# Source wave gate ignores heroes; only living minions hold the field.
@@ -570,7 +575,7 @@ func _boss_basic_attack(target: UnitState, enemies: Array[UnitState]) -> void:
 
 func _step_active_boss() -> void:
 	# Layer 8e owns the source entrance gate and one-shot enrage transition;
-	# presentation still consumes the stored text/color/pulse state later.
+	# Layer 8f view code consumes the stored intro/death presentation state.
 	if active_boss == null or not active_boss.alive:
 		return
 	var boss := active_boss
@@ -637,9 +642,44 @@ func _spawn_true_boss_if_ready() -> bool:
 	return true
 
 
+func _queue_boss_death_presentation(boss: BossState) -> void:
+	var snapshot := boss.death_presentation()
+	if not snapshot.is_empty():
+		boss_death_presentations.append(snapshot)
+		boss_screen_shake_intensity = maxf(
+			boss_screen_shake_intensity, float(snapshot.get("shake_intensity", 0))
+		)
+		boss_screen_shake_timer = maxi(boss_screen_shake_timer, 8)
+
+
+func boss_presentation_offset() -> Vector2:
+	if boss_screen_shake_timer <= 0 or boss_screen_shake_intensity <= 0.0:
+		return Vector2.ZERO
+	var phase := float(tick_count) * 1.7
+	return Vector2(cos(phase), sin(phase * 1.23)) * boss_screen_shake_intensity
+
+
+func _tick_boss_death_presentations() -> void:
+	# DeathExplosion owns 20–35 tick sparks and an 8 tick central flash in the
+	# source. Keep the payload independent from active_boss retirement.
+	boss_screen_shake_timer = maxi(0, boss_screen_shake_timer - 1)
+	boss_screen_shake_intensity *= 0.85
+	if boss_screen_shake_intensity < 0.5:
+		boss_screen_shake_intensity = 0.0
+	var standing: Array[Dictionary] = []
+	for snapshot in boss_death_presentations:
+		var timer := int(snapshot.get("timer", 0))
+		var flash := int(snapshot.get("flash_timer", 0))
+		snapshot["timer"] = maxi(0, timer - 1)
+		snapshot["flash_timer"] = maxi(0, flash - 1)
+		if int(snapshot.get("timer", 0)) > 0 or int(snapshot.get("flash_timer", 0)) > 0:
+			standing.append(snapshot)
+	boss_death_presentations = standing
+
+
 func _process_boss_result() -> void:
-	# Port of the source defeated-boss reward/unlock pass. Presentation and
-	# achievement widgets are deliberately deferred to the presentation layer.
+	# Port of the source defeated-boss reward/unlock pass. The death
+	# presentation payload has already been copied before registry retirement.
 	if active_boss == null or active_boss.alive or not active_boss.defeated:
 		return
 	var boss := active_boss
@@ -1108,6 +1148,7 @@ func _deliver_hit(
 			}
 		)
 		if not boss.alive:
+			_queue_boss_death_presentation(boss)
 			_record({"kind": "death", "source_id": source_id, "target_id": boss.id})
 		return true
 	return super._deliver_hit(

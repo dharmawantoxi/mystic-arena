@@ -1,6 +1,6 @@
 # gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
-## Layer 8a/8c/8e: source Boss entity core, lane combat and entrance/enrage clocks.
+## Layer 8a/8c/8e/8f: Boss entity core, lane combat, clocks and presentation.
 ##
 ## Ports the scalar identity/stats of `Boss.__init__`, `apply_scaling`, the
 ## tenacity slow/atk_slow rule, the `TowerDebuffMixin` stun cut and the numeric
@@ -9,8 +9,8 @@ extends "res://scripts/combat/unit_state.gd"
 ## `data/bosses/boss_stats.json`, rendered from the source tables by
 ## `tests/boss_core_source_oracle.py`.
 ##
-## Not ported here (next layer): intro/defeat presentation and the remaining
-## match UI wiring.
+## Not ported here (next layer): the remaining match UI wiring and production
+## effects outside the boss intro/death presentation contract.
 
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
 const Damage = preload("res://scripts/combat/damage_rules.gd")
@@ -70,6 +70,18 @@ var pulse := 0.0
 var enrage_triggered := false
 var enrage_pulse := 0.0
 var defeated := false
+# Layer 8f presentation-only death effect snapshot. Gameplay removes the boss
+# from the registry immediately; PrototypeBattle retains this immutable payload
+# until the source large explosion's particle lifetime has elapsed.
+var death_fx_active := false
+var death_fx_timer := 0
+var death_fx_max_timer := 35
+var death_fx_flash_timer := 0
+var death_fx_flash_max := 8
+var death_fx_particle_count := 25
+var death_fx_particle_min := 4
+var death_fx_particle_max := 6
+var death_fx_shake_intensity := 0
 var defense_boost := false
 var stun_timer := 0
 var cleave_radius := 0.0
@@ -217,9 +229,24 @@ func rebuild_definition() -> void:
 
 func advance_animation_clock() -> void:
 	# Source Boss.update advances these renderer-facing clocks before stun and
-	# entrance gating. Presentation consumes them in the following layer.
+	# entrance gating. The prototype view consumes them immediately.
 	anim_time += 1
 	pulse += 0.1
+
+
+func entrance_presentation_state() -> Dictionary:
+	# Exact scalar decisions from Boss._draw_entrance; the view turns these
+	# values into Godot draw calls without changing gameplay state.
+	var maximum := maxf(1.0, float(entrance_ticks))
+	var progress := 1.0 - float(entrance_timer) / maximum
+	var pulse_alpha := clampf(sin(float(anim_time) * 0.2) * 0.3 + 0.7, 0.0, 1.0)
+	return {
+		"progress": progress,
+		"aura_radius": int(radius * progress * 2.0),
+		"aura_alpha": clampi(int(200.0 * (1.0 - progress)), 0, 255),
+		"text_visible": entrance_timer > int(maximum * 0.5),
+		"text_alpha": clampi(int(255.0 * pulse_alpha), 0, 255)
+	}
 
 
 func advance_combat_clock() -> bool:
@@ -518,8 +545,8 @@ func take_damage(
 ) -> int:
 	# Port of the numeric tail of Boss.take_damage. Returns the damage applied,
 	# or -1 when the source would return before touching hp (blind miss).
-	# Presentation hooks (damage numbers, particles, shake, death FX) and the
-	# kill attribution helper are out of scope for this layer.
+	# Damage numbers and hit particles remain outside the prototype view, but
+	# the source death explosion/shake snapshot is retained for Layer 8f.
 	if source != null and raw_damage > 0 and blind_live(source, damage_type):
 		if blind_roll() < float(source.get("blind_amount")):
 			return -1
@@ -550,5 +577,32 @@ func take_damage(
 		hp = 0.0
 		alive = false
 		defeated = true
+		death_fx_active = true
+		death_fx_timer = death_fx_max_timer
+		death_fx_flash_timer = death_fx_flash_max
+		death_fx_shake_intensity = 28 if boss_class == "true" else 20
 		clear_tower_debuffs()
 	return effective
+
+
+func death_presentation() -> Dictionary:
+	# Source EffectManager.add_death_explosion(..., size="large") plus the
+	# boss-class shake values. This is a copy so retiring the BossState cannot
+	# invalidate the renderer's pending effect.
+	return {
+		"boss_type": boss_type,
+		"boss_class": boss_class,
+		"position": position,
+		"color": color,
+		"color_dark": color_dark,
+		"entrance_color": entrance_color,
+		"radius": radius,
+		"timer": death_fx_timer,
+		"max_timer": death_fx_max_timer,
+		"flash_timer": death_fx_flash_timer,
+		"flash_max": death_fx_flash_max,
+		"particle_count": death_fx_particle_count,
+		"particle_min": death_fx_particle_min,
+		"particle_max": death_fx_particle_max,
+		"shake_intensity": death_fx_shake_intensity
+	}

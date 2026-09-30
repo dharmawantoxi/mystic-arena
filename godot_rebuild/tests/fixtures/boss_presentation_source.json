@@ -1,0 +1,210 @@
+{
+  "entrance": [
+    {
+      "label": "mini_full",
+      "commands": [
+        {
+          "op": "text",
+          "text": "Gornak awakens",
+          "color": [
+            0,
+            0,
+            0
+          ],
+          "alpha": 199,
+          "x": 558,
+          "y": 71
+        },
+        {
+          "op": "text",
+          "text": "Gornak awakens",
+          "color": [
+            120,
+            210,
+            190
+          ],
+          "alpha": 253,
+          "x": 556,
+          "y": 69
+        }
+      ]
+    },
+    {
+      "label": "mini_mid",
+      "commands": [
+        {
+          "op": "circle",
+          "color": [
+            120,
+            210,
+            190,
+            100
+          ],
+          "radius": 40
+        },
+        {
+          "op": "surface",
+          "size": [
+            120,
+            120
+          ]
+        }
+      ]
+    },
+    {
+      "label": "true_full",
+      "commands": [
+        {
+          "op": "text",
+          "text": "Abaddon descends",
+          "color": [
+            0,
+            0,
+            0
+          ],
+          "alpha": 199,
+          "x": 546,
+          "y": 71
+        },
+        {
+          "op": "text",
+          "text": "Abaddon descends",
+          "color": [
+            120,
+            210,
+            190
+          ],
+          "alpha": 253,
+          "x": 544,
+          "y": 69
+        }
+      ]
+    },
+    {
+      "label": "true_early",
+      "commands": [
+        {
+          "op": "circle",
+          "color": [
+            120,
+            210,
+            190,
+            50
+          ],
+          "radius": 90
+        },
+        {
+          "op": "surface",
+          "size": [
+            270,
+            270
+          ]
+        }
+      ]
+    }
+  ],
+  "death": [
+    {
+      "label": "mini_death",
+      "alive": false,
+      "defeated": true,
+      "hp": 0,
+      "hurt_flash_timer": 8,
+      "clear_calls": 1,
+      "effects": [
+        {
+          "name": "damage_number",
+          "args": [
+            100.0,
+            150.0,
+            1200
+          ],
+          "kwargs": {
+            "is_critical": true,
+            "damage_type": "normal"
+          }
+        },
+        {
+          "name": "hit_particles",
+          "args": [
+            100.0,
+            200.0
+          ],
+          "kwargs": {
+            "team": "red",
+            "count": 6
+          }
+        },
+        {
+          "name": "death_explosion",
+          "args": [
+            100.0,
+            200.0
+          ],
+          "kwargs": {
+            "team": "red",
+            "size": "large"
+          }
+        },
+        {
+          "name": "shake_screen",
+          "args": [
+            20
+          ],
+          "kwargs": {}
+        }
+      ]
+    },
+    {
+      "label": "true_death",
+      "alive": false,
+      "defeated": true,
+      "hp": 0,
+      "hurt_flash_timer": 8,
+      "clear_calls": 1,
+      "effects": [
+        {
+          "name": "damage_number",
+          "args": [
+            100.0,
+            150.0,
+            800
+          ],
+          "kwargs": {
+            "is_critical": true,
+            "damage_type": "normal"
+          }
+        },
+        {
+          "name": "hit_particles",
+          "args": [
+            100.0,
+            200.0
+          ],
+          "kwargs": {
+            "team": "red",
+            "count": 6
+          }
+        },
+        {
+          "name": "death_explosion",
+          "args": [
+            100.0,
+            200.0
+          ],
+          "kwargs": {
+            "team": "red",
+            "size": "large"
+          }
+        },
+        {
+          "name": "shake_screen",
+          "args": [
+            28
+          ],
+          "kwargs": {}
+        }
+      ]
+    }
+  ]
+}
