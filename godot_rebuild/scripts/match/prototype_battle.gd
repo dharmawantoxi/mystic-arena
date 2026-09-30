@@ -92,9 +92,8 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
-# Layer 8b: match conditions and unlock ledger for mini/true bosses. Boss
-# behavior is intentionally not part of this layer; the live boss stays out of
-# the ordinary minion loop until the next behavior layer wires its AI.
+# Layer 8b/8c: match conditions, unlock ledger and live boss motion/basic
+# attack. Boss abilities, smart AI and presentation remain deferred.
 var boss_table: Dictionary = {}
 var boss_rng := RandomNumberGenerator.new()
 var active_boss: BossState = null
@@ -289,6 +288,7 @@ func step_tick() -> void:
 	# deaths in a pending counter so a sixth tower triggers on the next tick,
 	# exactly after the source reward loop has committed the event.
 	_spawn_true_boss_if_ready()
+	_step_active_boss()
 	_process_boss_result()
 	_flush_red_tower_deaths()
 	if winner == BLUE and not _victory_unlocks_granted:
@@ -499,10 +499,99 @@ func _spawn_boss(boss_type: String) -> BossState:
 	var boss := BossState.new()
 	if not boss.setup(boss_type, paths[1], boss_table):
 		return null
+	boss.id = _next_id
+	_next_id += 1
+	_by_id[boss.id] = boss
 	if enemy_scaling_enabled:
 		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
 	active_boss = boss
 	return boss
+
+
+func _boss_enemies() -> Array[UnitState]:
+	# Source Boss.update order: living units, then enemy towers, then enemy
+	# bases. Nexuses are kept separate because `structures` stores them first.
+	var enemies: Array[UnitState] = []
+	if active_boss == null:
+		return enemies
+	for unit in units:
+		if unit.alive and unit.team != active_boss.team:
+			enemies.append(unit)
+	for structure in structures:
+		if (
+			structure.alive
+			and structure.team != active_boss.team
+			and structure.settings().structure_kind == "tower"
+		):
+			enemies.append(structure)
+	for nexus in nexuses:
+		if nexus != null and nexus.alive and nexus.team != active_boss.team:
+			enemies.append(nexus)
+	return enemies
+
+
+func _boss_target(enemies: Array[UnitState]) -> UnitState:
+	if active_boss == null:
+		return null
+	var target: UnitState = null
+	var best_distance := active_boss.attack_range + 100.0
+	for enemy in enemies:
+		var distance := active_boss.position.distance_to(enemy.position)
+		if distance < best_distance:
+			best_distance = distance
+			target = enemy
+	return target
+
+
+func _boss_basic_attack(target: UnitState, enemies: Array[UnitState]) -> void:
+	if active_boss == null:
+		return
+	var boss := active_boss
+	boss.basic_attack_seq += 1
+	boss.attack_facing = boss.facing
+	boss.attack_lock_timer = mini(15, maxi(6, int(boss.attack_cooldown / 3)))
+	_deliver_hit(-1, boss.team, target, boss.damage, "physical", boss.position)
+	var cleave_damage := int(boss.damage * boss.cleave_ratio)
+	if cleave_damage > 0:
+		for enemy in enemies:
+			if (
+				enemy != target
+				and enemy.alive
+				and boss.position.distance_to(enemy.position) <= boss.cleave_radius
+			):
+				# The source omits a school on cleave. Heroes still resolve that
+				# normal hit through their physical armor/evasion path; the
+				# generic unit path remains neutral when no school exists.
+				var cleave_school := "physical" if enemy is HeroState else "neutral"
+				_deliver_hit(-1, boss.team, enemy, cleave_damage, cleave_school, boss.position)
+	boss.timer = boss.effective_attack_cooldown()
+
+
+func _step_active_boss() -> void:
+	# Layer 8c owns lane movement and basic attacks only. Entrance/enrage
+	# clocks and their presentation remain the next sub-layer, so this
+	# gameplay pass does not consume the stored entrance timer.
+	if active_boss == null or not active_boss.alive:
+		return
+	var boss := active_boss
+	boss.begin_motion_tick()
+	if boss.stun_timer > 0:
+		return
+	boss.timer = maxi(0, boss.timer - 1)
+	var enemies := _boss_enemies()
+	var target := _boss_target(enemies)
+	if target == null:
+		boss.target_id = -1
+		boss.move_forward()
+		return
+	boss.target_id = target.id
+	var distance := boss.position.distance_to(target.position)
+	if distance <= boss.attack_range:
+		boss.face_motion(target.position.x - boss.position.x, target.position.y - boss.position.y)
+		if boss.timer == 0:
+			_boss_basic_attack(target, enemies)
+	else:
+		boss.move_toward(target.position)
 
 
 func _try_spawn_pending_mini_boss() -> bool:
@@ -511,6 +600,7 @@ func _try_spawn_pending_mini_boss() -> bool:
 	if active_boss != null:
 		if active_boss.alive:
 			return false
+		_by_id.erase(active_boss.id)
 		active_boss = null
 	if pending_mini_bosses.is_empty():
 		return false
@@ -549,6 +639,7 @@ func _process_boss_result() -> void:
 		bosses_defeated_this_match.append(boss_type)
 	if not unlocked_bosses.has(boss_type):
 		unlocked_bosses.append(boss_type)
+	_by_id.erase(boss.id)
 	active_boss = null
 	_try_spawn_pending_mini_boss()
 
@@ -796,6 +887,11 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 		if dist <= best_dist:
 			best_dist = dist
 			best = unit
+	if active_boss != null and active_boss.alive and active_boss.team != hero.team:
+		var boss_dist := hero.position.distance_to(active_boss.position)
+		if boss_dist <= best_dist:
+			best_dist = boss_dist
+			best = active_boss
 	return best
 
 
@@ -804,6 +900,8 @@ func _tick_item_debuffs() -> void:
 	# (source TowerDebuffMixin._tick_tower_debuffs).
 	for unit in units:
 		unit.tick_item_debuffs()
+	if active_boss != null and active_boss.alive:
+		active_boss.tick_item_debuffs()
 
 
 func apply_slow(target_id: int, amount: float, duration: int) -> bool:
@@ -954,6 +1052,9 @@ func _hero_skill_nearby(hero: HeroState) -> int:
 			continue
 		if hero.position.distance_to(structure.position) <= reach:
 			count += 1
+	if active_boss != null and active_boss.alive and active_boss.team != hero.team:
+		if hero.position.distance_to(active_boss.position) <= reach:
+			count += 1
 	return count
 
 
@@ -974,6 +1075,28 @@ func _deliver_hit(
 		and _evaded(source_id, target as HeroState, raw_damage, school, damage_type)
 	):
 		return false
+	if target is BossState:
+		var boss := target as BossState
+		if not is_running() or not boss.alive or source_team == boss.team:
+			return false
+		var attacker: Object = get_unit(source_id)
+		var dealt := boss.take_damage(attacker, raw_damage, damage_type, school)
+		if dealt < 0:
+			return false
+		boss.last_hit_source_id = source_id
+		_record(
+			{
+				"kind": "hit",
+				"source_id": source_id,
+				"target_id": boss.id,
+				"from": origin,
+				"to": boss.position,
+				"damage": dealt,
+			}
+		)
+		if not boss.alive:
+			_record({"kind": "death", "source_id": source_id, "target_id": boss.id})
+		return true
 	return super._deliver_hit(
 		source_id, source_team, target, raw_damage, school, origin, damage_type
 	)
@@ -1077,6 +1200,11 @@ func _hero_pick_target(hero: HeroState, reach: float, inclusive: bool) -> UnitSt
 		if (distance <= best_dist) if inclusive else (distance < best_dist):
 			best = structure
 			best_dist = distance
+	if active_boss != null and active_boss.alive and active_boss.team != hero.team:
+		var boss_distance := hero.position.distance_to(active_boss.position)
+		if (boss_distance <= best_dist) if inclusive else (boss_distance < best_dist):
+			best = active_boss
+			best_dist = boss_distance
 	return best
 
 
@@ -1459,6 +1587,19 @@ func _hero_enemy_list() -> Array:
 				}
 			)
 		)
+	if active_boss != null and active_boss.alive:
+		(
+			enemies
+			. append(
+				{
+					"id": active_boss.id,
+					"pos": active_boss.position,
+					"team": active_boss.team,
+					"alive": true,
+					"max_hp": active_boss.max_hp,
+				}
+			)
+		)
 	return enemies
 
 
@@ -1538,12 +1679,13 @@ func _tick_auras_and_items() -> void:
 
 
 func _collect_all_units() -> Array:
-	# Source _collect_all_units: all living heroes + minions + boss. This
-	# rebuild tracks no boss yet, so units alone is sufficient.
+	# Source _collect_all_units: all living heroes + minions + active boss.
 	var out: Array = []
 	for unit in units:
 		if unit != null and unit.alive:
 			out.append(unit)
+	if active_boss != null and active_boss.alive:
+		out.append(active_boss)
 	return out
 
 

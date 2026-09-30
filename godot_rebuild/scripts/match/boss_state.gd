@@ -1,5 +1,6 @@
+# gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
-## Layer 8a: source Boss entity core.
+## Layer 8a/8c: source Boss entity core plus lane motion/basic attack.
 ##
 ## Ports the scalar identity/stats of `Boss.__init__`, `apply_scaling`, the
 ## tenacity slow/atk_slow rule, the `TowerDebuffMixin` stun cut and the numeric
@@ -8,13 +9,12 @@ extends "res://scripts/combat/unit_state.gd"
 ## `data/bosses/boss_stats.json`, rendered from the source tables by
 ## `tests/boss_core_source_oracle.py`.
 ##
-## Not ported here (next layers): movement/attack/cleave, abilities and smart
-## AI, entrance/enrage animation clocks, intro/defeat presentation, and the
-## match wiring that rolls the schedule, spawns the boss, counts destroyed red
-## towers and unlocks the defeated boss.
+## Not ported here (next layers): ability/smart AI, entrance/enrage animation
+## clocks, intro/defeat presentation, and the remaining match UI wiring.
 
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
 const Damage = preload("res://scripts/combat/damage_rules.gd")
+const LaneLayout = preload("res://scripts/data/lane_layout.gd")
 
 var boss_type := ""
 var display_name := ""
@@ -65,6 +65,16 @@ var hp_scaling_mult := 1.0
 var dmg_scaling_mult := 1.0
 var spd_scaling_mult := 1.0
 var direction := -1
+var lane_path := PackedVector2Array()
+# Layer 8c motion/attack state. The source renderer consumes the movement
+# cache and the attack edge; presentation itself remains a later layer.
+var is_moving := false
+var moving_cached := false
+var previous_position := Vector2.ZERO
+var attack_facing := 0.0
+var attack_lock_timer := 0
+var basic_attack_seq := 0
+var last_hit_source_id := -1
 # Source Boss.speed property reads `tenacity` (0.50 for every boss).
 var tenacity := 0.50
 # Injectable draw so tests can replay the recorded source roll.
@@ -115,6 +125,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	rebuild_definition()
 	direction = -1
 	facing = -1.0
+	self.lane_path = lane_path.duplicate()
 	# Source position: the last waypoint of the (mid) lane path, else
 	# (RED_BASE_X - 50, RED_BASE_Y) = (1130, 100) with waypoint_index -1.
 	if lane_path.size() > 0:
@@ -124,6 +135,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 		var fallback: Array = rules.get("fallback_position", [1130.0, 100.0])
 		position = Vector2(float(fallback[0]), float(fallback[1]))
 		waypoint_index = -1
+	previous_position = position
 	# Source Boss.__init__ ends with _init_tower_debuffs(), which is also what
 	# clear_tower_debuffs() re-runs (burn_tick_cd starts at the burn interval).
 	clear_tower_debuffs()
@@ -160,6 +172,100 @@ func _definition_for() -> MinionDefinition:
 
 func rebuild_definition() -> void:
 	definition = _definition_for()
+
+
+func begin_motion_tick() -> void:
+	# Source Boss.update measures real displacement before this frame's move;
+	# the cached flag is what the later renderer will read for WALK/IDLE.
+	var moved := position.distance_to(previous_position)
+	previous_position = position
+	is_moving = moved > 0.05
+	moving_cached = is_moving
+	if attack_lock_timer > 0:
+		attack_lock_timer -= 1
+		if attack_lock_timer <= 0:
+			attack_facing = 0.0
+
+
+func face_motion(dx: float, dy: float) -> void:
+	# Port of Boss._face: an attack lock wins, and near-vertical travel does
+	# not flap the horizontal sprite direction.
+	if attack_lock_timer > 0:
+		if absf(attack_facing) > 0.5:
+			direction = int(attack_facing)
+			facing = attack_facing
+		return
+	if absf(dx) < 0.35 * maxf(0.000001, absf(dy)):
+		return
+	direction = 1 if dx > 0.0 else -1
+	facing = float(direction)
+
+
+func lane_target() -> Vector2:
+	# Port of Boss._lane_target: red starts at the last point and walks the
+	# path backwards toward the blue base.
+	if lane_path.size() > 0 and waypoint_index >= 0 and waypoint_index < lane_path.size():
+		return lane_path[waypoint_index]
+	return LaneLayout.BLUE_BASE
+
+
+func advance_waypoint() -> bool:
+	if lane_path.is_empty():
+		return false
+	waypoint_index -= 1
+	return waypoint_index >= 0
+
+
+func move_forward() -> void:
+	# Port of the source budgeted waypoint walk: leftover speed crosses more
+	# than one waypoint in a single tick, with no artificial stall frame.
+	var budget := eff_speed()
+	if budget <= 0.0:
+		return
+	var guard := 0
+	while budget > 0.001 and guard < 16:
+		guard += 1
+		var target := lane_target()
+		var offset := target - position
+		var distance := offset.length()
+		var has_next := not lane_path.is_empty() and waypoint_index >= 0
+		if distance <= 0.000001:
+			if not has_next:
+				break
+			advance_waypoint()
+			continue
+		if distance <= budget:
+			position = target
+			budget -= distance
+			face_motion(offset.x, offset.y)
+			if has_next:
+				advance_waypoint()
+			continue
+		position += offset / distance * budget
+		face_motion(offset.x, offset.y)
+		budget = 0.0
+
+
+func move_toward(target: Vector2) -> void:
+	# Source chase branch clamps speed to the remaining distance.
+	var offset := target - position
+	var distance := offset.length()
+	var speed := eff_speed()
+	if distance <= 0.0 or speed <= 0.0:
+		return
+	var step := minf(speed, distance)
+	position += offset / distance * step
+	face_motion(offset.x, offset.y)
+
+
+func effective_attack_cooldown() -> int:
+	# Port of TowerDebuffMixin._eff_attack_cd used by Boss.update.
+	if stun_timer > 0:
+		return 9999
+	if atk_slow_timer <= 0:
+		return attack_cooldown
+	var factor := maxf(0.05, 1.0 - atk_slow_amount)
+	return maxi(1, Damage.rounded_like_python(float(attack_cooldown) / factor))
 
 
 func eff_speed() -> float:
