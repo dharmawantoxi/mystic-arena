@@ -797,7 +797,7 @@ facing, chase dan cleave; fixture JSON dibuat dengan `--write`, lalu
 `boss_motion_checks.gd` menguji gerak, cooldown, target, damage, cleave,
 registry, death dan reward-once.
 
-Lapisan **8d** (`61184e0`) memindahkan ability/smart AI level 1: `BossState`
+Lapisan **8d** (`61184e0`) memindahkan ability/smart AI slice awal: `BossState`
 menyimpan timer Q/W/E/R, active skill, rage/defense, Morgath Flux/clones,
 blink/Mana Void, true-boss heal, serta damage/shield/cooldown dari source data.
 `boss_ai.gd` menjalankan generic ability dan recipe Gornak, Morgath, Drakar,
@@ -806,6 +806,16 @@ memanggil dispatcher pada active boss. `boss_ability_source_oracle.py`
 mengeksekusi AST cast/smart-AI asli untuk 18 kasus; fixture dibuat dengan
 `--write`, `boss_ability_checks.gd` menguji parity native, dan
 `validate_project.py` menuntut fixture tidak drift.
+
+Sub-layer **8d-1** (`6ac3bc5`, run
+[36742827535](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36742827535))
+menambah dispatch smart AI Alchemist yang dipakai match, dengan prioritas
+R/E/W/Q, timer dan active-skill window, Chemical Rage (rage/damage/heal),
+Greevil's Greed AOE/kill-heal, Unstable Concoction AOE/slow, dan Acid Spray.
+Oracle AST mengeksekusi metode Python asli untuk empat skenario Alchemist;
+fixture menjadi 22 kasus dan native replay mengunci parity tanpa mengklaim
+roster boss lengkap. CI push Godot 4.7.2 hijau dengan **1.185.887 native
+checks**; `validate_project.py` **5968 static checks**.
 
 Lapisan **8e** (`c635a06`) memindahkan clock gameplay entrance/enrage:
 `BossState` memajukan `anim_time`/`pulse`, menahan seluruh gerak/serangan/heal/
@@ -831,9 +841,9 @@ Sistem produksi serta sisa perilaku scene/AI yang belum dipindahkan masih
 belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 hijau pada `8c8787f`
-([run 36725358545](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36725358545)):
-**1.185.764 native checks**; `validate_project.py` 5964 static;
+CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
+([run 36742827535](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36742827535)):
+**1.185.887 native checks**; `validate_project.py` 5968 static;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ed0e-mystic-arena` (PR
@@ -843,13 +853,14 @@ CI Godot 4.7.2 hijau pada `8c8787f`
 > counter tower merah, reward dan daftar unlock; layer **8c** (`67d83e6`,
 > run 36705062244) memindahkan movement, target, basic physical attack,
 > cooldown/facing, cleave dan death registry tanpa reward ganda; layer **8d**
-> (`61184e0`, run 36710717265) memindahkan ability/smart AI, generic ability,
-> active-skill/cooldown clocks, dan true-boss heal; layer **8e** (`c635a06`,
-> run 36716265830) memindahkan entrance/enrage clock dan gate gameplay; layer
-> **8f** (`8c8787f`, run 36725358545) memindahkan presentasi intro/death boss
-> saja, termasuk entrance aura/text, death flash/sparks dan screen shake.
-> Berikutnya sistem produksi, lalu sisa perilaku scene/AI. Satu sub-layer per
-> commit; pipeline gdformat -> gdlint -> gdparse ->
+> (`61184e0`, run 36710717265) memindahkan ability/smart AI slice awal,
+> generic ability, active-skill/cooldown clocks, dan true-boss heal; sub-layer
+> **8d-1** (`6ac3bc5`, run 36742827535) menambah smart AI Alchemist saja;
+> layer **8e** (`c635a06`, run 36716265830) memindahkan entrance/enrage clock
+> dan gate gameplay; layer **8f** (`8c8787f`, run 36725358545) memindahkan
+> presentasi intro/death boss saja, termasuk entrance aura/text, death
+> flash/sparks dan screen shake. Berikutnya sistem produksi, lalu sisa
+> perilaku scene/AI. Satu sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
 > validate_project.py -> commit -> push -> gh run watch.
 > Sumber read-only: _core.py, _entity.py, bosses/, levels/, hero_items.py,
 > minions/. Hanya ubah godot_rebuild.
