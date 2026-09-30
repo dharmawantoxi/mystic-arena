@@ -745,7 +745,7 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-## Entity boss mini/true (layer 8a–8e, paritas kondisi match)
+## Entity boss mini/true (layer 8a–8f, paritas kondisi match)
 
 Port `bosses/base_boss.py` (±8 ribu baris) dimulai dengan memecahnya per lapisan.
 Lapisan **8a** (`d50c86c`) memindahkan **inti entity tanpa spawn**:
@@ -809,12 +809,21 @@ dan percepatan timer pada tick animasi genap juga dipertahankan. Oracle AST
 `boss_clock_checks.gd` menguji entrance, mini/true threshold, slow interaction,
 one-shot transition dan gate pada match prototype.
 
-**Batasan yang masih sengaja tersisa:** presentasi intro/death belum dipindahkan.
+Lapisan **8f** (`8c8787f`) memindahkan **presentasi intro/death boss saja**.
+`BossState` menyediakan `entrance_presentation_state()` untuk parity aura dan
+announcement; `prototype_battle.gd` menahan snapshot death FX setelah
+`active_boss` dihapus, men-tick-nya secara independen sebelum cleanup registry,
+dan menghitung screen shake deterministik. `prototype_view.gd` merender body,
+HUD/health, entrance aura/text, enrage/true-boss aura, death flash/sparks dan
+shake. `boss_presentation_source_oracle.py` mengeksekusi metode Python asli dan
+menulis fixture; `boss_presentation_checks.gd` menguji entrance parity, payload
+death, retirement registry dan tick FX independen.
+
 Sistem produksi serta sisi AI panel Forge juga belum dikerjakan. Jangan
 mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 hijau pada `c635a06`
-([run 36716265830](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36716265830)):
-**1.185.737 native checks**; `validate_project.py` 5935 static;
+CI Godot 4.7.2 hijau pada `8c8787f`
+([run 36725358545](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36725358545)):
+**1.185.764 native checks**; `validate_project.py` 5964 static;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ed0e-mystic-arena` (PR
@@ -826,9 +835,11 @@ CI Godot 4.7.2 hijau pada `c635a06`
 > cooldown/facing, cleave dan death registry tanpa reward ganda; layer **8d**
 > (`61184e0`, run 36710717265) memindahkan ability/smart AI, generic ability,
 > active-skill/cooldown clocks, dan true-boss heal; layer **8e** (`c635a06`,
-> run 36716265830) memindahkan entrance/enrage clock dan gate gameplay.
-> Berikutnya presentasi intro/death boss, lalu sistem produksi, lalu sisi AI panel
-> Forge/sisa perilaku scene. Satu sub-layer per commit; pipeline gdformat ->
-> gdlint -> gdparse -> validate_project.py -> commit -> push -> gh run watch.
+> run 36716265830) memindahkan entrance/enrage clock dan gate gameplay; layer
+> **8f** (`8c8787f`, run 36725358545) memindahkan presentasi intro/death boss
+> saja, termasuk entrance aura/text, death flash/sparks dan screen shake.
+> Berikutnya sistem produksi, lalu sisi AI panel Forge/sisa perilaku scene. Satu
+> sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
+> validate_project.py -> commit -> push -> gh run watch.
 > Sumber read-only: _core.py, _entity.py, bosses/, levels/, hero_items.py,
 > minions/. Hanya ubah godot_rebuild.
