@@ -745,7 +745,7 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-## Entity boss mini/true (layer 8a–8b, paritas kondisi match)
+## Entity boss mini/true (layer 8a–8c, paritas kondisi match)
 
 Port `bosses/base_boss.py` (±8 ribu baris) dimulai dengan memecahnya per lapisan.
 Lapisan **8a** (`d50c86c`) memindahkan **inti entity tanpa spawn**:
@@ -778,22 +778,34 @@ menang juga sudah ada di `prototype_battle.gd`. `match_source_oracle.py`
 sekarang mengeksekusi metode/blok sumber asli untuk jadwal, queue, trigger,
 reward dan unlock; `boss_match_checks.gd` menjalankan kontrak native.
 
-**Batasan yang masih sengaja tersisa:** boss sekarang dapat di-spawn dan
-mencatat reward, tetapi belum bergerak/menyerang/cleave, belum memakai ability
-atau smart AI, belum menjalankan clock entrance/enrage, dan belum punya
-presentasi intro/death. Sistem produksi serta sisi AI panel Forge juga belum
-dikerjakan. Jangan mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 hijau pada `fed2c6a`
-([run 36569775154](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36569775154)):
-**1.185.229 native checks**; `validate_project.py` 5850 static.
+Lapisan **8c** (`67d83e6`) memindahkan perilaku gameplay dasar boss:
+`BossState` menyimpan path/waypoint, target/facing, movement cache, attack lock
+serta sequence/cooldown; `prototype_battle.gd` menjalankan susur lane/chase,
+target terdekat, basic hit physical dan cleave pada tick match. Boss mendapat ID
+unik di registry sehingga hero, daftar aggro/skill/item dan `_deliver_hit` dapat
+menargetnya tanpa memasukkannya ke jalur minion atau memberi reward dua kali.
+`boss_motion_source_oracle.py` mengeksekusi AST metode `Boss` asli untuk waypoint,
+facing, chase dan cleave; fixture JSON dibuat dengan `--write`, lalu
+`boss_motion_checks.gd` menguji gerak, cooldown, target, damage, cleave,
+registry, death dan reward-once.
+
+**Batasan yang masih sengaja tersisa:** ability/smart AI, clock entrance/enrage,
+dan presentasi intro/death belum dipindahkan. Sistem produksi serta sisi AI
+panel Forge juga belum dikerjakan. Jangan mengklaim parity seluruh pertandingan
+Python.
+CI Godot 4.7.2 hijau pada `67d83e6`
+([run 36705062244](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36705062244)):
+**1.185.255 native checks**; `validate_project.py` 5872 static.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ed0e-mystic-arena` (PR
 > selalu draft; jangan merge tanpa perintah "merge now"). Layer **8a**
 > (`d50c86c`) memindahkan inti entity + data 216 boss; layer **8b**
 > (`fed2c6a`, run 36569775154) memindahkan jadwal/spawn mini–true boss,
-> counter tower merah, reward dan daftar unlock. Berikutnya hanya perilaku
-> boss, lalu sistem produksi, lalu sisi AI panel Forge/sisa perilaku scene.
-> Satu sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
-> validate_project.py -> commit -> push -> gh run watch. Sumber read-only:
-> _core.py, _entity.py, bosses/, levels/, hero_items.py, minions/. Hanya ubah
-> godot_rebuild/.
+> counter tower merah, reward dan daftar unlock; layer **8c** (`67d83e6`,
+> run 36705062244) memindahkan movement, target, basic physical attack,
+> cooldown/facing, cleave dan death registry tanpa reward ganda. Berikutnya
+> ability/smart AI dan clock/presentasi boss yang ditunda, lalu sistem produksi,
+> lalu sisi AI panel Forge/sisa perilaku scene. Satu sub-layer per commit;
+> pipeline gdformat -> gdlint -> gdparse -> validate_project.py -> commit ->
+> push -> gh run watch. Sumber read-only: _core.py, _entity.py, bosses/,
+> levels/, hero_items.py, minions/. Hanya ubah godot_rebuild/.

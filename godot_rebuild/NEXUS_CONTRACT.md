@@ -47,7 +47,7 @@ Queue sumber menyimpan `kind/lane`; tier dibaca saat spawn. Upgrade di tengah an
 - Urutan Godot: ID spawn stabil (merge units+structures), bukan urutan spatial-hash Python. Skenario uji dipilih agar hasil sama untuk kedua urutan pada kasus yang diuji; perbedaan urutan hash vs ID adalah deviasi terdokumentasi.
 - Quirk sumber: `Tower` menyimpan `tower_type`, bukan `tower_kind`, sehingga cabang `hasattr(tower_kind)` tidak pernah cocok. Karena semua tower/nexus saat ini `max_hp ≥ 1500`, cabang base sudah menangkapnya; Godot memeriksa `structure_kind == "tower"` setelah base dengan hasil observasi identik untuk stat saat ini.
 
-Hero dan perilaku/target AI boss belum dipindahkan; kondisi spawn boss layer 8b sudah ada, tetapi belum ada klaim parity daftar target combat hero/boss.
+Hero behavior belum dipindahkan. Boss match layer 8b dan perilaku dasar layer 8c sudah ada: active boss punya registry/target hero, movement, basic physical attack, cooldown dan cleave; ability/smart AI serta clock/presentasi boss masih ditunda.
 
 ## Komposisi wave per-tier
 
@@ -74,7 +74,7 @@ Komposisi dibaca **saat wave start** per tim (bisa beda bila tier beda). Antrean
 
 - Fixture `nexus_source.json`: 5 tier, 120 kasus HP/shield, 36 kasus `set_wave`, 25 scaling (5 kind × 5 tier), komposisi 5 tier × 10 wave, 20 kasus AI.
 - Tes native `nexus_checks.gd` + `nexus_scene_checks.gd` terintegrasi di `run_all.gd`, seluruh suite lama tetap berjalan.
-- Belum diuji: Windows fisik/GPU, Android, balance pertandingan panjang, paid shield melalui tombol UI/AI otomatis, auto-scaling AI, hero/boss.
+- Belum diuji: Windows fisik/GPU, Android, balance pertandingan panjang, paid shield melalui tombol UI/AI otomatis, auto-scaling AI, hero behavior, serta ability/smart AI dan presentasi boss.
 
 ## Adapter upgrade red (WIP AIPlayer)
 
