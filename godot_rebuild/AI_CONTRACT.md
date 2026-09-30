@@ -107,7 +107,9 @@ CI Godot 4.7.2 hijau pada main `8119e31`
 semua suite lama tetap. Target 222 tercapai (PR #292 sudah merge).
 Catatan batch dan pesan
 kelanjutan: [HERO_MIGRATION_PROGRESS.md](HERO_MIGRATION_PROGRESS.md).
-Tidak ada item/forge, AIPlayer penuh, rebalance atau art final.
+Item/Forge player-side sudah dipindahkan bertahap di layer 5f–5f-4; belum
+ada panel Forge terpisah untuk hero AI di sumber. AIPlayer penuh, rebalance dan
+art final tetap belum selesai.
 
 ## Build tower lawan: transaksi domain nyata, belum dijadwalkan scene
 
@@ -298,13 +300,12 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      `active` (kunci presentasi tetap di luar). Oracle merekam 25 loadout ×
      28 getter + empower/charge; `validate_project.py` menuntut setiap nama
      getter sumber ada di rebuild.
-     **Batasan 5a:** tidak ada yang mengonsumsi getter ini di combat;
-     `_on_item_changed` belum diport sehingga beli item tetap tidak mengubah
-     `max_hp`/`hp`; seluruh timer (`blood_frenzy`/`ghost`/`thorn`/`gale`/
-     `veil`/`guard`/`rend`/`aura_*`) ada tapi inert, jadi cabang yang
-     bergantung timer selalu tertutup; `update()`,
-     `notify_damage_taken()`, `on_basic_attack_hit()`, `_on_hit_common()`,
-     `on_ranged_attack_hit()` dan `update_auras()` belum diport.
+     **Batasan historis 5a (ditutup oleh 5b–5e):** getter belum dikonsumsi
+     combat saat agregasi murni; `_on_item_changed` dan penerapan HP/heal amp
+     belum ada pada tahap 5a, sehingga beli item belum mengubah `max_hp`/`hp`.
+     Timer (`blood_frenzy`/`ghost`/`thorn`/`gale`/`veil`/`guard`/`rend`/
+     `aura_*`) dan callback combat juga baru diaktifkan pada sub-layer berikutnya;
+     status finalnya dicatat pada 5b–5e di bawah.
    - [x] **5b.** Penerapan stat HP saat equip/level: `HeroState.recalc_item_stats`
      (port `Hero._recalc_item_stats`), `apply_item_change` (port
      `_on_item_changed`: recalc + `apply_heal_amp(amp, 999999)`),
@@ -450,6 +451,13 @@ Survei `hero_items.py` (4.133 baris, read-only) untuk `_try_buy_item`
      `handle_click` yang sama. Layout memakai container Godot, bukan rect
      pygame; string Indonesia di `SHOP_TEXT` menggantikan `tr()` sumber.
      Terpasang di HUD PrototypeMatch dengan toggle "Item Forge [I]".
+   - [x] **5f-4.** Wiring input overlay Forge di scene: klik kiri di luar
+     kartu menutup toko, klik kanan di background menutup toko, klik di luar
+     popup detail hanya menutup popup, dan klik kosong di kartu tetap tertahan
+     agar tidak memilih arena. Right-click slot tetap drop tanpa bubbling ke
+     overlay. `forge_scene_checks.gd` menguji perilaku ini lewat scene nyata;
+     CI Godot 4.7.2 hijau pada **run 36734583489** dengan **1.185.776 native
+     checks**, `validate_project.py` **5968 static checks**.
    - [x] **6a.** Kontrol hero AI setiap tick (`ai_hero_control.gd`): port
      `_control_heroes` (auto-cast lewat `try_auto_cast` yang sama dengan pemain,
      penanda `skill_timer == 0`, counter `total_skills_cast` dari kenaikan
@@ -584,7 +592,7 @@ oracle (bukan edit tangan) dan tetap di bawah 20k baris.
 - [x] Urutan kandidat upgrade hero/tower kills descending dan atribusi kills sumber.
 - [x] Item/inventory/stat effects/forge dan suggestion role+range; kandidat hidup
   dengan slot kosong, kills lalu level descending; reserve dipatuhi.
-  Lapisan 1-4 + 5a + 5b/5b+/5b-2/5b-3 + 5c-1/5c-2 + 5d + 5e/5e-2 + 5f/5f-2/5f-3
+  Lapisan 1-4 + 5a + 5b/5b+/5b-2/5b-3 + 5c-1/5c-2 + 5d + 5e/5e-2 + 5f/5f-2/5f-3/5f-4
   selesai: katalog 33 item, saran role+range, inventaris 6 slot, adaptor beli
   AI di ledger, SELURUH penerapan stat item (HP/heal amp, attack speed, range
   bonus, move speed, slow resist, armor, armor shred, damage amp, evasion,
@@ -718,8 +726,8 @@ AI dulu tidak pernah naik level sendiri karena oracle men-stub
 `_auto_scale_ai_castle`; sekarang jadwal sumber wave ≥4/7/10/13 → level 2/3/4/5
 gratis dijalankan di `step_tick` dan diuji ulang per baris fixture. Kandidat
 lanjutan yang belum dikerjakan (dipilih sesuai kedekatan ke sumber): boss hero AI
-yang tampil di pertandingan, sisi AI dari panel Forge, dan sisa perilaku scene
-Python yang belum diport — PR tetap draft sampai ada perintah pemilik repo.
+yang tampil di pertandingan dan sisa perilaku scene Python yang belum diport —
+PR tetap draft sampai ada perintah pemilik repo.
 Lapisan **7b** (`39b92ab`) memindahkan jitter spawn wave (uniform ±8 px lalu
 offset lane) dengan stream ter-seed, jadi replay pertandingan tetap identik;
 klaim lama "jitter spawn belum ada" di `MATCH_CONTRACT.md` sudah dikoreksi.
@@ -730,8 +738,8 @@ Celah berikutnya yang tersisa di dokumen itu: kondisi boss/level/unlock asli
 dan sebagian besar sistem produksi.
 Status akhir sesi ini: **tidak ada sisa sub-layer item**. 5b-2/5b-3/5b-4/5b-5
 dan 5e-3 semuanya hijau di CI. Berikutnya hanya kalau pemilik repo memerintahkan
-pekerjaan baru (mis. panel Forge untuk sisi AI atau kandidat item AI yang mati),
-dan PR tetap draft sampai ada perintah merge. Undian 6c/6d memakai
+pekerjaan baru (mis. boss hero AI atau kandidat item AI yang mati), dan PR tetap
+draft sampai ada perintah merge. Undian 6c/6d memakai
 `ai_controller.draw()`; adapter build/draft memakai RNG ter-seed dari seed
 pertandingan yang sama. Catatan 6a: `towers` diteruskan eksplisit karena daftar
 struktur native juga memuat nexus, sedangkan sumber hanya menyusuri `all_towers`.
@@ -819,8 +827,10 @@ shake. `boss_presentation_source_oracle.py` mengeksekusi metode Python asli dan
 menulis fixture; `boss_presentation_checks.gd` menguji entrance parity, payload
 death, retirement registry dan tick FX independen.
 
-Sistem produksi serta sisi AI panel Forge juga belum dikerjakan. Jangan
-mengklaim parity seluruh pertandingan Python.
+Sistem produksi serta sisa perilaku scene/AI yang belum dipindahkan masih
+belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
+background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
+Jangan mengklaim parity seluruh pertandingan Python.
 CI Godot 4.7.2 hijau pada `8c8787f`
 ([run 36725358545](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36725358545)):
 **1.185.764 native checks**; `validate_project.py` 5964 static;
@@ -838,8 +848,8 @@ CI Godot 4.7.2 hijau pada `8c8787f`
 > run 36716265830) memindahkan entrance/enrage clock dan gate gameplay; layer
 > **8f** (`8c8787f`, run 36725358545) memindahkan presentasi intro/death boss
 > saja, termasuk entrance aura/text, death flash/sparks dan screen shake.
-> Berikutnya sistem produksi, lalu sisi AI panel Forge/sisa perilaku scene. Satu
-> sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
+> Berikutnya sistem produksi, lalu sisa perilaku scene/AI. Satu sub-layer per
+> commit; pipeline gdformat -> gdlint -> gdparse ->
 > validate_project.py -> commit -> push -> gh run watch.
 > Sumber read-only: _core.py, _entity.py, bosses/, levels/, hero_items.py,
 > minions/. Hanya ubah godot_rebuild.
