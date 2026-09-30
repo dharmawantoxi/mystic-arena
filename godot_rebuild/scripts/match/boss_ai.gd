@@ -1,8 +1,8 @@
 # gdlint:disable=max-file-lines
 extends RefCounted
-## Layer 8d: source Boss smart ability dispatch for the level-1 boss roster.
+## Layer 8d: source Boss smart ability dispatch for the first active slice.
 ## The generic Boss ability path is also retained for boss IDs without a native
-## recipe in this active level. Entrance/enrage clocks and presentation stay in
+## recipe in this active match. Entrance/enrage clocks and presentation stay in
 ## later layers.
 
 const BossState = preload("res://scripts/match/boss_state.gd")
@@ -31,6 +31,8 @@ static func tick(
 			_drakar(world, boss, enemies, target, target_distance)
 		"abaddon":
 			_abaddon(world, boss, enemies, target, target_distance)
+		"alchemist":
+			_alchemist(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -249,6 +251,47 @@ static func _abaddon(
 		if length > 0.0:
 			boss.position += delta / length * 80.0
 		_hit(world, boss, target, _skill_damage(boss, boss.skill_e_damage))
+
+
+static func _alchemist(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 180.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 3 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		var kills_count := 0
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				var was_alive := enemy.alive
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				if was_alive and not enemy.alive:
+					kills_count += 1
+		if kills_count > 0:
+			boss.hp = minf(float(boss.max_hp), boss.hp + kills_count * 100.0)
+		return
+	if hp_ratio < 0.6 and not boss.rage_active and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		boss.rage_active = true
+		boss.rage_timer = 360
+		boss.damage = int(float(boss.damage) * 1.5)
+		_heal(boss, 0.15)
+		return
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 60)
+		var target_position := target.position if target != null and target.alive else boss.position
+		for enemy in enemies:
+			if enemy.position.distance_to(target_position) <= 100.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+				_slow(enemy, 0.5, 180)
+		return
+	if distance < 200.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
 
 
 static func _set_skill(boss: BossState, key: String, duration: int) -> void:

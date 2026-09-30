@@ -1,10 +1,10 @@
 """AST oracle for the active level-1 Boss smart abilities.
 
 The fixture executes the original Boss smart-AI and cast methods from
-bosses/base_boss.py. It intentionally covers the four boss types that
-level_1.json can spawn (Gornak, Morgath, Drakar and Abaddon), plus the source
-generic _use_ability fallback. It does not execute entrance/enrage or render
-hooks; those are separate deferred sub-layers.
+bosses/base_boss.py. It covers the first smart-AI slice (Gornak, Morgath,
+Drakar, Abaddon and Alchemist), plus the source generic _use_ability fallback.
+It does not execute entrance/enrage or render hooks; those are separate
+sub-layers.
 """
 import ast
 import json
@@ -67,6 +67,11 @@ def source_class():
         "_cast_r_culling_blade",
         "_smart_ai_abaddon",
         "_cast_q_mist_coil",
+        "_smart_ai_alchemist",
+        "_cast_q_acid_spray",
+        "_cast_w_unstable_concoction",
+        "_cast_e_chemical_rage",
+        "_cast_r_greevils_greed",
         "_cast_w_aphotic_shield",
         "_cast_e_darkness_gale",
         "_cast_r_death_sever",
@@ -235,6 +240,42 @@ def source_fixture():
             [(20, 0, 10000, "a"), (30, 0, 10000, "b"), (40, 0, 10000, "c")],
             20,
             "_smart_ai_abaddon",
+        ),
+        smart_case(
+            cls,
+            "alchemist",
+            "alchemist_greevils_greed",
+            0.3,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b"), (60, 0, 10000, "c")],
+            20,
+            "_smart_ai_alchemist",
+        ),
+        smart_case(
+            cls,
+            "alchemist",
+            "alchemist_chemical_rage",
+            0.5,
+            [(300, 0, 10000, "target")],
+            300,
+            "_smart_ai_alchemist",
+        ),
+        smart_case(
+            cls,
+            "alchemist",
+            "alchemist_unstable_concoction",
+            1.0,
+            [(100, 0, 10000, "a"), (150, 0, 10000, "b")],
+            100,
+            "_smart_ai_alchemist",
+        ),
+        smart_case(
+            cls,
+            "alchemist",
+            "alchemist_acid_spray",
+            1.0,
+            [(100, 0, 10000, "target")],
+            100,
+            "_smart_ai_alchemist",
         ),
         generic_case(cls),
     ]

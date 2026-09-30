@@ -18,7 +18,7 @@ func run(check: Callable) -> void:
 	if not fixture is Dictionary or not fixture.has("cases"):
 		return
 	var cases: Array = fixture["cases"]
-	check.call(cases.size() == 18, "boss ability fixture has all level-1 cases")
+	check.call(cases.size() == 22, "boss ability fixture has all first-slice cases")
 	_case(check, cases, "gornak_q", "gornak", 1.0, [[80, 0, 10000, "target"]], 80.0)
 	_case(check, cases, "gornak_blink", "gornak", 1.0, [[200, 0, 10000, "target"]], 200.0)
 	_case(
@@ -69,6 +69,36 @@ func run(check: Callable) -> void:
 		1.0,
 		[[20, 0, 10000, "a"], [30, 0, 10000, "b"], [40, 0, 10000, "c"]],
 		20.0
+	)
+	_case(
+		check,
+		cases,
+		"alchemist_greevils_greed",
+		"alchemist",
+		0.3,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"alchemist_chemical_rage",
+		"alchemist",
+		0.5,
+		[[300, 0, 10000, "target"]],
+		300.0
+	)
+	_case(
+		check,
+		cases,
+		"alchemist_unstable_concoction",
+		"alchemist",
+		1.0,
+		[[100, 0, 10000, "a"], [150, 0, 10000, "b"]],
+		100.0
+	)
+	_case(
+		check, cases, "alchemist_acid_spray", "alchemist", 1.0, [[100, 0, 10000, "target"]], 100.0
 	)
 	_generic(check, cases)
 	_true_boss_heal(check)

@@ -675,6 +675,188 @@
       }
     },
     {
+      "label": "alchemist_greevils_greed",
+      "result": {
+        "type": "alchemist",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 720,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 12000,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9258,
+            "alive": true,
+            "hits": [
+              742
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9258,
+            "alive": true,
+            "hits": [
+              742
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9258,
+            "alive": true,
+            "hits": [
+              742
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "alchemist_chemical_rage",
+      "result": {
+        "type": "alchemist",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 480,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 26000,
+        "damage": 225,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": true,
+        "rage_timer": 360,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "alchemist_unstable_concoction",
+      "result": {
+        "type": "alchemist",
+        "skill": "w",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 40000,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9568,
+            "alive": true,
+            "hits": [
+              432
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9568,
+            "alive": true,
+            "hits": [
+              432
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "alchemist_acid_spray",
+      "result": {
+        "type": "alchemist",
+        "skill": "q",
+        "active_skill_timer": 40,
+        "q_timer": 210,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 40000,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9703,
+            "alive": true,
+            "hits": [
+              297
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",
