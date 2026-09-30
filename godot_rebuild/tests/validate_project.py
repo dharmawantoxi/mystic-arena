@@ -367,7 +367,14 @@ if (ROOT / "data/levels/level_1.json").is_file() and (ROOT / "tests/fixtures/mat
         "Level 1 config drifted from its source fixture",
     )
 from boss_core_source_oracle import source_fixture as boss_core_fixture
+from boss_ability_source_oracle import source_fixture as boss_ability_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
+check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite must run")
+check((ROOT / "tests/fixtures/boss_ability_source.json").is_file(), "Boss abilities require source fixture")
+if (ROOT / "tests/fixtures/boss_ability_source.json").is_file():
+    check(boss_ability_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_ability_source.json").read_text(encoding="utf-8")),
+        "Boss ability source behavior drift")
 check((ROOT / "tests/fixtures/boss_core_source.json").is_file(), "Boss core requires source fixture")
 check((ROOT / "data/bosses/boss_stats.json").is_file(), "Boss stats need source data")
 if (ROOT / "tests/fixtures/boss_core_source.json").is_file():

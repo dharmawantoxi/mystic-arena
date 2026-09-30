@@ -1,0 +1,722 @@
+{
+  "cases": [
+    {
+      "label": "gornak_q",
+      "result": {
+        "type": "gornak",
+        "skill": "q",
+        "active_skill_timer": 40,
+        "q_timer": 180,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 7500,
+        "damage": 85,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9775,
+            "alive": true,
+            "hits": [
+              225
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gornak_blink",
+      "result": {
+        "type": "gornak",
+        "skill": "w",
+        "active_skill_timer": 25,
+        "q_timer": 0,
+        "w_timer": 240,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 7500,
+        "damage": 85,
+        "x": 140.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gornak_counterspell",
+      "result": {
+        "type": "gornak",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 300,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 7500,
+        "damage": 85,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9813,
+            "alive": true,
+            "hits": [
+              187
+            ],
+            "attack_timer": 60,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9813,
+            "alive": true,
+            "hits": [
+              187
+            ],
+            "attack_timer": 60,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9813,
+            "alive": true,
+            "hits": [
+              187
+            ],
+            "attack_timer": 60,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gornak_mana_void",
+      "result": {
+        "type": "gornak",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 540,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 2250,
+        "damage": 85,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "morgath_spark",
+      "result": {
+        "type": "morgath",
+        "skill": "q",
+        "active_skill_timer": 50,
+        "q_timer": 200,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 11000,
+        "damage": 85,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9750,
+            "alive": true,
+            "hits": [
+              250
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "morgath_flux",
+      "result": {
+        "type": "morgath",
+        "skill": "w",
+        "active_skill_timer": 40,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 11000,
+        "damage": 85,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 240,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9907,
+            "alive": true,
+            "hits": [
+              93
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "morgath_field",
+      "result": {
+        "type": "morgath",
+        "skill": "e",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 360,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 11000,
+        "damage": 85,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9875,
+            "alive": true,
+            "hits": [
+              125
+            ],
+            "attack_timer": 45,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9875,
+            "alive": true,
+            "hits": [
+              125
+            ],
+            "attack_timer": 45,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "morgath_clones",
+      "result": {
+        "type": "morgath",
+        "skill": "r",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 720,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 6050,
+        "damage": 85,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 480,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "morgath_flux_tick",
+      "result": {
+        "type": "morgath",
+        "skill": null,
+        "active_skill_timer": 0,
+        "q_timer": 998,
+        "w_timer": 998,
+        "e_timer": 998,
+        "r_timer": 998,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 11000,
+        "damage": 85,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 30,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "flux",
+            "hp": 9954,
+            "alive": true,
+            "hits": [
+              46
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.4,
+                60
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "drakar_rage",
+      "result": {
+        "type": "drakar",
+        "skill": "q",
+        "active_skill_timer": 90,
+        "q_timer": 420,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 7040,
+        "damage": 168,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": true,
+        "rage_timer": 300,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "drakar_counter_helix",
+      "result": {
+        "type": "drakar",
+        "skill": "w",
+        "active_skill_timer": 45,
+        "q_timer": 0,
+        "w_timer": 240,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17600,
+        "damage": 112,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "drakar_call",
+      "result": {
+        "type": "drakar",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 360,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 8800,
+        "damage": 112,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": true,
+        "defense_timer": 180,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "drakar_culling",
+      "result": {
+        "type": "drakar",
+        "skill": "r",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 120,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17600,
+        "damage": 112,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 0,
+            "alive": false,
+            "hits": [
+              1124
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "abaddon_coil",
+      "result": {
+        "type": "abaddon",
+        "skill": "q",
+        "active_skill_timer": 30,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 36000,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9663,
+            "alive": true,
+            "hits": [
+              337
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "abaddon_shield",
+      "result": {
+        "type": "abaddon",
+        "skill": "w",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 360,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 7700,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9595,
+            "alive": true,
+            "hits": [
+              405
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "abaddon_gale",
+      "result": {
+        "type": "abaddon",
+        "skill": "e",
+        "active_skill_timer": 40,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 300,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 36000,
+        "damage": 150,
+        "x": 80.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9730,
+            "alive": true,
+            "hits": [
+              270
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "abaddon_death_sever",
+      "result": {
+        "type": "abaddon",
+        "skill": "r",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 36000,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9325,
+            "alive": true,
+            "hits": [
+              675
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9325,
+            "alive": true,
+            "hits": [
+              675
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9325,
+            "alive": true,
+            "hits": [
+              675
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "generic_ability",
+      "result": {
+        "type": "abaddon",
+        "skill": null,
+        "active_skill_timer": 0,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 180,
+        "ability_active": true,
+        "hp": 36000,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "near",
+            "hp": 9730,
+            "alive": true,
+            "hits": [
+              270
+            ],
+            "attack_timer": 60,
+            "slows": []
+          },
+          {
+            "name": "far",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    }
+  ]
+}

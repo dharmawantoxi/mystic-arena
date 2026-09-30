@@ -20,6 +20,7 @@ const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
+const BossAI = preload("res://scripts/match/boss_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
@@ -578,11 +579,20 @@ func _step_active_boss() -> void:
 	if boss.stun_timer > 0:
 		return
 	boss.timer = maxi(0, boss.timer - 1)
+	if boss.ability_timer > 0:
+		boss.ability_timer -= 1
+	if boss.ability2_timer > 0:
+		boss.ability2_timer -= 1
+	if boss.ability_active_timer > 0:
+		boss.ability_active_timer -= 1
+		if boss.ability_active_timer <= 0:
+			boss.ability_active = false
 	var enemies := _boss_enemies()
 	var target := _boss_target(enemies)
 	if target == null:
 		boss.target_id = -1
 		boss.move_forward()
+		BossAI.tick(self, boss, enemies, null, INF)
 		return
 	boss.target_id = target.id
 	var distance := boss.position.distance_to(target.position)
@@ -592,6 +602,7 @@ func _step_active_boss() -> void:
 			_boss_basic_attack(target, enemies)
 	else:
 		boss.move_toward(target.position)
+	BossAI.tick(self, boss, enemies, target, distance)
 
 
 func _try_spawn_pending_mini_boss() -> bool:

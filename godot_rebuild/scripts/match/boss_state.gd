@@ -44,6 +44,15 @@ var ability_damage_value := 0
 var ability_range := 0.0
 var ability2_cooldown := 0
 var ability2_heal_pct := 0.0
+var skill_q_damage := 0
+var skill_w_damage := 0
+var skill_e_damage := 0
+var skill_r_damage := 0
+var skill_w_shield := 0
+var skill_q_cooldown := 0
+var skill_w_cooldown := 0
+var skill_e_cooldown := 0
+var skill_r_cooldown := 0
 var color := Color.BLACK
 var color_dark := Color.BLACK
 var entrance_color := Color.BLACK
@@ -75,6 +84,25 @@ var attack_facing := 0.0
 var attack_lock_timer := 0
 var basic_attack_seq := 0
 var last_hit_source_id := -1
+# Layer 8d source smart-ability state. These fields are gameplay state; the
+# renderer may consume active_skill later, but presentation is not here.
+var q_timer := 0
+var w_timer := 0
+var e_timer := 0
+var r_timer := 0
+var active_skill := ""
+var active_skill_timer := 0
+var rage_active := false
+var rage_timer := 0
+var is_enraged := false
+var defense_timer := 0
+var flux_target_id := -1
+var flux_active_timer := 0
+var clones_active_timer := 0
+var clones_positions: Array[Vector2] = []
+var blink_from := Vector2.ZERO
+var blink_to := Vector2.ZERO
+var mana_void_origin := Vector2.ZERO
 # Source Boss.speed property reads `tenacity` (0.50 for every boss).
 var tenacity := 0.50
 # Injectable draw so tests can replay the recorded source roll.
@@ -107,6 +135,15 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	ability_range = float(stats["ability_range"])
 	ability2_cooldown = int(stats["ability2_cooldown"])
 	ability2_heal_pct = float(stats["ability2_heal_pct"])
+	skill_q_damage = int(stats.get("skill_q_damage", 0))
+	skill_w_damage = int(stats.get("skill_w_damage", 0))
+	skill_e_damage = int(stats.get("skill_e_damage", 0))
+	skill_r_damage = int(stats.get("skill_r_damage", 0))
+	skill_w_shield = int(stats.get("skill_w_shield", 0))
+	skill_q_cooldown = int(stats.get("skill_q_cooldown", 0))
+	skill_w_cooldown = int(stats.get("skill_w_cooldown", 0))
+	skill_e_cooldown = int(stats.get("skill_e_cooldown", 0))
+	skill_r_cooldown = int(stats.get("skill_r_cooldown", 0))
 	armor = int(stats["armor"])
 	magic_resist = float(stats["magic_resist"])
 	resist_profile = String(stats["resist_profile"])
