@@ -1,6 +1,6 @@
 # gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
-## Layer 8a/8c: source Boss entity core plus lane motion/basic attack.
+## Layer 8a/8c/8e: source Boss entity core, lane combat and entrance/enrage clocks.
 ##
 ## Ports the scalar identity/stats of `Boss.__init__`, `apply_scaling`, the
 ## tenacity slow/atk_slow rule, the `TowerDebuffMixin` stun cut and the numeric
@@ -9,8 +9,8 @@ extends "res://scripts/combat/unit_state.gd"
 ## `data/bosses/boss_stats.json`, rendered from the source tables by
 ## `tests/boss_core_source_oracle.py`.
 ##
-## Not ported here (next layers): ability/smart AI, entrance/enrage animation
-## clocks, intro/defeat presentation, and the remaining match UI wiring.
+## Not ported here (next layer): intro/defeat presentation and the remaining
+## match UI wiring.
 
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
 const Damage = preload("res://scripts/combat/damage_rules.gd")
@@ -65,6 +65,10 @@ var ability_active := false
 var ability_active_timer := 0
 var hurt_flash_timer := 0
 var entrance_timer := 0
+var anim_time := 0
+var pulse := 0.0
+var enrage_triggered := false
+var enrage_pulse := 0.0
 var defeated := false
 var defense_boost := false
 var stun_timer := 0
@@ -209,6 +213,51 @@ func _definition_for() -> MinionDefinition:
 
 func rebuild_definition() -> void:
 	definition = _definition_for()
+
+
+func advance_animation_clock() -> void:
+	# Source Boss.update advances these renderer-facing clocks before stun and
+	# entrance gating. Presentation consumes them in the following layer.
+	anim_time += 1
+	pulse += 0.1
+
+
+func advance_combat_clock() -> bool:
+	# Port of the source entrance gate and one-shot enrage/frenzy transition.
+	# Return false while the boss is entering, so no movement, attack, heal or
+	# smart ability is consumed on those ticks.
+	if hurt_flash_timer > 0:
+		hurt_flash_timer -= 1
+	if entrance_timer > 0:
+		entrance_timer -= 1
+		return false
+	if not enrage_triggered:
+		if boss_class == "true" and hp <= float(max_hp) * 0.50:
+			enrage_triggered = true
+			is_enraged = true
+			# Source writes through the speed property, so an active slow is
+			# included once before the new base speed is stored.
+			speed_px_per_tick = eff_speed() * 1.25
+			damage = int(float(damage) * 1.25)
+			attack_cooldown = maxi(18, int(float(attack_cooldown) * 0.75))
+		elif boss_class == "mini" and hp <= float(max_hp) * 0.40:
+			enrage_triggered = true
+			is_enraged = true
+			# Match the source speed property's getter/setter path under slow.
+			speed_px_per_tick = eff_speed() * 1.15
+			damage = int(float(damage) * 1.20)
+			attack_cooldown = maxi(20, int(float(attack_cooldown) * 0.80))
+		if enrage_triggered:
+			rebuild_definition()
+	if is_enraged:
+		enrage_pulse += 0.08
+		# Source enrage recovers the ordinary and generic ability clocks twice
+		# on even animation ticks; the regular match tick performs the second
+		# decrement after this method returns.
+		if anim_time % 2 == 0:
+			timer = maxi(0, timer - 1)
+			ability_timer = maxi(0, ability_timer - 1)
+	return true
 
 
 func begin_motion_tick() -> void:

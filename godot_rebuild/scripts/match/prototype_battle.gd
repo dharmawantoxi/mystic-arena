@@ -569,14 +569,16 @@ func _boss_basic_attack(target: UnitState, enemies: Array[UnitState]) -> void:
 
 
 func _step_active_boss() -> void:
-	# Layer 8c owns lane movement and basic attacks only. Entrance/enrage
-	# clocks and their presentation remain the next sub-layer, so this
-	# gameplay pass does not consume the stored entrance timer.
+	# Layer 8e owns the source entrance gate and one-shot enrage transition;
+	# presentation still consumes the stored text/color/pulse state later.
 	if active_boss == null or not active_boss.alive:
 		return
 	var boss := active_boss
+	boss.advance_animation_clock()
 	boss.begin_motion_tick()
 	if boss.stun_timer > 0:
+		return
+	if not boss.advance_combat_clock():
 		return
 	boss.timer = maxi(0, boss.timer - 1)
 	if boss.ability_timer > 0:

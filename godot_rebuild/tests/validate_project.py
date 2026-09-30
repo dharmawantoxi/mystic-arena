@@ -368,8 +368,15 @@ if (ROOT / "data/levels/level_1.json").is_file() and (ROOT / "tests/fixtures/mat
     )
 from boss_core_source_oracle import source_fixture as boss_core_fixture
 from boss_ability_source_oracle import source_fixture as boss_ability_fixture
+from boss_clock_source_oracle import source_fixture as boss_clock_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
 check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite must run")
+check("BossClockChecks.new().run(_check)" in ai_tests, "Boss clock suite must run")
+check((ROOT / "tests/fixtures/boss_clock_source.json").is_file(), "Boss clock requires source fixture")
+if (ROOT / "tests/fixtures/boss_clock_source.json").is_file():
+    check(boss_clock_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_clock_source.json").read_text(encoding="utf-8")),
+        "Boss clock source behavior drift")
 check((ROOT / "tests/fixtures/boss_ability_source.json").is_file(), "Boss abilities require source fixture")
 if (ROOT / "tests/fixtures/boss_ability_source.json").is_file():
     check(boss_ability_fixture() == json.loads(
@@ -390,8 +397,13 @@ if (ROOT / "tests/fixtures/boss_core_source.json").is_file():
 boss_state = (ROOT / "scripts/match/boss_state.gd").read_text(encoding="utf-8")
 for _method in ("apply_scaling", "apply_slow", "apply_debuff", "apply_stun",
                 "clear_tower_debuffs", "take_damage", "eff_speed", "eff_ability_damage",
-                "blind_live", "true_strike_of"):
+                "blind_live", "true_strike_of", "advance_animation_clock",
+                "advance_combat_clock"):
     check("func %s(" % _method in boss_state, "Boss entity core must port %s" % _method)
+prototype_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check("advance_animation_clock()" in prototype_battle
+      and "advance_combat_clock()" in prototype_battle,
+      "Boss match step must consume entrance and enrage clocks")
 check("PrototypeChecks.new().run(_check)" in ai_tests, "Match prototype suite must run")
 
 from hero_manifest_checks import validate_manifest
