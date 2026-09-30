@@ -857,6 +857,175 @@
       }
     },
     {
+      "label": "malzareth_death_pulse",
+      "result": {
+        "type": "malzareth",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 8064,
+        "damage": 140,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9500,
+            "alive": true,
+            "hits": [
+              500
+            ],
+            "attack_timer": 90,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9500,
+            "alive": true,
+            "hits": [
+              500
+            ],
+            "attack_timer": 90,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "malzareth_shadow_word",
+      "result": {
+        "type": "malzareth",
+        "skill": "w",
+        "active_skill_timer": 50,
+        "q_timer": 0,
+        "w_timer": 280,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 19200,
+        "damage": 140,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "splash",
+            "hp": 9825,
+            "alive": true,
+            "hits": [
+              175
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "malzareth_nether_blast",
+      "result": {
+        "type": "malzareth",
+        "skill": "e",
+        "active_skill_timer": 45,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 260,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 19200,
+        "damage": 140,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "malzareth_void",
+      "result": {
+        "type": "malzareth",
+        "skill": "q",
+        "active_skill_timer": 60,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 19200,
+        "damage": 140,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9625,
+            "alive": true,
+            "hits": [
+              375
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",

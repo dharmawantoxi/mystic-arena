@@ -2,7 +2,8 @@
 
 The fixture executes the original Boss smart-AI and cast methods from
 bosses/base_boss.py. It covers the first smart-AI slice (Gornak, Morgath,
-Drakar, Abaddon and Alchemist), plus the source generic _use_ability fallback.
+Drakar, Abaddon, Alchemist and Malzareth), plus the source generic
+_use_ability fallback.
 It does not execute entrance/enrage or render hooks; those are separate
 sub-layers.
 """
@@ -72,6 +73,11 @@ def source_class():
         "_cast_w_unstable_concoction",
         "_cast_e_chemical_rage",
         "_cast_r_greevils_greed",
+        "_smart_ai_malzareth",
+        "_malzareth_q",
+        "_malzareth_w",
+        "_malzareth_e",
+        "_malzareth_r",
         "_cast_w_aphotic_shield",
         "_cast_e_darkness_gale",
         "_cast_r_death_sever",
@@ -276,6 +282,42 @@ def source_fixture():
             [(100, 0, 10000, "target")],
             100,
             "_smart_ai_alchemist",
+        ),
+        smart_case(
+            cls,
+            "malzareth",
+            "malzareth_death_pulse",
+            0.3,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_malzareth",
+        ),
+        smart_case(
+            cls,
+            "malzareth",
+            "malzareth_shadow_word",
+            1.0,
+            [(100, 0, 10000, "target"), (140, 0, 10000, "splash")],
+            100,
+            "_smart_ai_malzareth",
+        ),
+        smart_case(
+            cls,
+            "malzareth",
+            "malzareth_nether_blast",
+            1.0,
+            [(100, 0, 10000, "target")],
+            100,
+            "_smart_ai_malzareth",
+        ),
+        smart_case(
+            cls,
+            "malzareth",
+            "malzareth_void",
+            1.0,
+            [(270, 0, 10000, "target")],
+            270,
+            "_smart_ai_malzareth",
         ),
         generic_case(cls),
     ]
