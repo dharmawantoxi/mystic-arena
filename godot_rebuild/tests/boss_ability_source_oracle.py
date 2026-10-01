@@ -2,8 +2,8 @@
 
 The fixture executes the original Boss smart-AI and cast methods from
 bosses/base_boss.py. It covers the first smart-AI slice (Gornak, Morgath,
-Drakar, Abaddon, Alchemist, Malzareth and Akashari), plus the source
-generic _use_ability fallback.
+Drakar, Abaddon, Alchemist, Malzareth, Akashari and Vorenmarr), plus the
+source generic _use_ability fallback.
 It does not execute entrance/enrage or render hooks; those are separate
 sub-layers.
 """
@@ -83,6 +83,11 @@ def source_class():
         "_akashari_w",
         "_akashari_e",
         "_akashari_r",
+        "_smart_ai_vorenmarr",
+        "_vorenmarr_q",
+        "_vorenmarr_w",
+        "_vorenmarr_e",
+        "_vorenmarr_r",
         "_cast_w_aphotic_shield",
         "_cast_e_darkness_gale",
         "_cast_r_death_sever",
@@ -359,6 +364,42 @@ def source_fixture():
             [(270, 0, 10000, "target")],
             270,
             "_smart_ai_akashari",
+        ),
+        smart_case(
+            cls,
+            "vorenmarr",
+            "vorenmarr_chaos_storm",
+            0.3,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_vorenmarr",
+        ),
+        smart_case(
+            cls,
+            "vorenmarr",
+            "vorenmarr_shadow_word",
+            0.5,
+            [(300, 0, 10000, "target")],
+            300,
+            "_smart_ai_vorenmarr",
+        ),
+        smart_case(
+            cls,
+            "vorenmarr",
+            "vorenmarr_rain_of_fire",
+            1.0,
+            [(100, 0, 10000, "target"), (150, 0, 10000, "near")],
+            100,
+            "_smart_ai_vorenmarr",
+        ),
+        smart_case(
+            cls,
+            "vorenmarr",
+            "vorenmarr_chaos_bolt",
+            1.0,
+            [(270, 0, 10000, "target")],
+            270,
+            "_smart_ai_vorenmarr",
         ),
         generic_case(cls),
     ]

@@ -37,6 +37,8 @@ static func tick(
 			_malzareth(world, boss, enemies, target, target_distance)
 		"akashari":
 			_akashari(world, boss, enemies, target, target_distance)
+		"vorenmarr":
+			_vorenmarr(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -382,6 +384,41 @@ static func _akashari(
 		_set_skill(boss, "q", 50)
 		_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
 		_slow(target, 0.4, 120)
+
+
+static func _vorenmarr(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 100)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_attack_lock(enemy, 90)
+		_heal(boss, 0.12)
+		return
+	if hp_ratio < 0.6 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 70)
+		_heal(boss, 0.14)
+		return
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 80)
+		if target != null and target.alive:
+			for enemy in enemies:
+				if target.position.distance_to(enemy.position) <= 120.0:
+					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+					_attack_lock(enemy, 60)
+		return
+	if distance < 280.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 70)
+		if target != null and target.alive:
+			_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
 
 
 static func _set_skill(boss: BossState, key: String, duration: int) -> void:

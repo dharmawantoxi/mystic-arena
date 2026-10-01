@@ -1225,6 +1225,168 @@
       }
     },
     {
+      "label": "vorenmarr_chaos_storm",
+      "result": {
+        "type": "vorenmarr",
+        "skill": "r",
+        "active_skill_timer": 100,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 9408,
+        "damage": 133,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9475,
+            "alive": true,
+            "hits": [
+              525
+            ],
+            "attack_timer": 90,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9475,
+            "alive": true,
+            "hits": [
+              525
+            ],
+            "attack_timer": 90,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vorenmarr_shadow_word",
+      "result": {
+        "type": "vorenmarr",
+        "skill": "w",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 14336,
+        "damage": 133,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vorenmarr_rain_of_fire",
+      "result": {
+        "type": "vorenmarr",
+        "skill": "e",
+        "active_skill_timer": 80,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 280,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 22400,
+        "damage": 133,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9563,
+            "alive": true,
+            "hits": [
+              437
+            ],
+            "attack_timer": 60,
+            "slows": []
+          },
+          {
+            "name": "near",
+            "hp": 9563,
+            "alive": true,
+            "hits": [
+              437
+            ],
+            "attack_timer": 60,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vorenmarr_chaos_bolt",
+      "result": {
+        "type": "vorenmarr",
+        "skill": "q",
+        "active_skill_timer": 70,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 22400,
+        "damage": 133,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9675,
+            "alive": true,
+            "hits": [
+              325
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",
