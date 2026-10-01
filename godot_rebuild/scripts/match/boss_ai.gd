@@ -47,6 +47,8 @@ static func tick(
 			_syrentha(world, boss, enemies, target, target_distance)
 		"gravewake":
 			_gravewake(world, boss, enemies, target, target_distance)
+		"kunkka":
+			_kunkka(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -684,6 +686,98 @@ static func _gravewake(
 			if projection > 0.0 and projection < 200.0 and perpendicular < 60.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
 				_slow(enemy, 0.5, 180)
+
+
+static func _kunkka(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_kunkka: rum buff clock, X Marks the Spot delayed burst,
+	# then R/E/W/Q priority over the 180px nearby radius. The Q/W/E/R cooldowns
+	# are the literals this boss hardcodes, not the stats table values.
+	if boss.rum_buff_active:
+		boss.rum_buff_timer -= 1
+		if boss.rum_buff_timer <= 0:
+			boss.rum_buff_active = false
+			boss.damage = boss.base_damage
+	if boss.x_mark_timer > 0:
+		boss.x_mark_timer -= 1
+		if boss.x_mark_timer <= 0 and boss.x_mark_target_id != -1:
+			var marked: UnitState = world.get_unit(boss.x_mark_target_id)
+			if marked != null and marked.alive:
+				for enemy in enemies:
+					if marked.position.distance_to(enemy.position) <= 120.0:
+						_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+						_attack_lock(enemy, 60)
+			boss.x_mark_target_id = -1
+	var nearby_count := _count_near(boss, enemies, 180.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = 720
+		_set_skill(boss, "r", 100)
+		var torrent_center := boss.position
+		if target != null and target.alive:
+			torrent_center = target.position
+		for enemy in enemies:
+			if torrent_center.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_attack_lock(enemy, 120)
+				# Source pushes every unit that owns `.speed`; natively that is a hero.
+				if enemy is HeroState:
+					var push := enemy.position - torrent_center
+					var push_length := push.length()
+					if push_length > 0.0:
+						enemy.position += push / push_length * 20.0
+		_heal(boss, 0.2)
+		return
+	if hp_ratio < 0.6 and not boss.rum_buff_active and boss.e_timer == 0:
+		boss.e_timer = 480
+		_set_skill(boss, "e", 90)
+		if target == null or not target.alive:
+			return
+		var ship_delta := target.position - boss.position
+		var ship_length := ship_delta.length()
+		if ship_length <= 0.0:
+			return
+		var ship_direction := ship_delta / ship_length
+		for enemy in enemies:
+			var ship_relative := enemy.position - boss.position
+			var ship_projection := ship_relative.dot(ship_direction)
+			var ship_perpendicular := absf(
+				ship_relative.x * -ship_direction.y + ship_relative.y * ship_direction.x
+			)
+			if ship_projection > 0.0 and ship_projection < 300.0 and ship_perpendicular < 80.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+				_attack_lock(enemy, 90)
+		boss.rum_buff_active = true
+		boss.rum_buff_timer = 480
+		boss.damage = int(float(boss.base_damage) * 1.3)
+		_heal(boss, 0.15)
+		return
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = 300
+		_set_skill(boss, "w", 80)
+		if target != null and target.alive:
+			boss.x_mark_target_id = target.id
+			boss.x_mark_timer = 120
+		return
+	if distance < 220.0 and boss.q_timer == 0:
+		boss.q_timer = 240
+		_set_skill(boss, "q", 45)
+		if target == null or not target.alive:
+			return
+		var tide_delta := target.position - boss.position
+		var tide_length := tide_delta.length()
+		if tide_length <= 0.0:
+			return
+		var tide_direction := tide_delta / tide_length
+		for enemy in enemies:
+			var tide_relative := enemy.position - boss.position
+			var tide_projection := tide_relative.dot(tide_direction)
+			var tide_perpendicular := absf(
+				tide_relative.x * -tide_direction.y + tide_relative.y * tide_direction.x
+			)
+			if tide_projection > 0.0 and tide_projection < 250.0 and tide_perpendicular < 70.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
 
 
 static func _set_skill(boss: BossState, key: String, duration: int) -> void:
