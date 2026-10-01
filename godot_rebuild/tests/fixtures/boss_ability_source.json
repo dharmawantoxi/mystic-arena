@@ -24,6 +24,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -66,6 +68,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -106,6 +110,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -168,6 +174,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -210,6 +218,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -252,6 +262,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 240,
@@ -299,6 +311,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -351,6 +365,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -391,6 +407,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 30,
@@ -438,6 +456,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -478,6 +498,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -530,6 +552,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": true,
         "defense_timer": 180,
         "flux_active_timer": 0,
@@ -570,6 +594,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -612,6 +638,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -654,6 +682,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -696,6 +726,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -738,6 +770,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -800,6 +834,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -862,6 +898,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -902,6 +940,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -964,6 +1004,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1006,6 +1048,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1058,6 +1102,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1110,6 +1156,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1157,6 +1205,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1199,6 +1249,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1261,6 +1313,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1323,6 +1377,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1375,6 +1431,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1422,6 +1480,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1474,6 +1534,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1514,6 +1576,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1566,6 +1630,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1608,6 +1674,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1670,6 +1738,8 @@
         "presence_timer": 360,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1710,6 +1780,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1762,6 +1834,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1804,6 +1878,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1866,6 +1942,8 @@
         "presence_timer": 0,
         "morph_buff_active": true,
         "morph_buff_timer": 300,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1906,6 +1984,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1956,6 +2036,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,
@@ -1985,6 +2067,255 @@
       }
     },
     {
+      "label": "syrentha_song_of_siren",
+      "result": {
+        "type": "syrentha",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 8360,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9475,
+            "alive": true,
+            "hits": [
+              525
+            ],
+            "attack_timer": 150,
+            "slows": [
+              [
+                0.8,
+                300
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9475,
+            "alive": true,
+            "hits": [
+              525
+            ],
+            "attack_timer": 150,
+            "slows": [
+              [
+                0.8,
+                300
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "syrentha_mirror_image",
+      "result": {
+        "type": "syrentha",
+        "skill": "e",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 420,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 12958,
+        "damage": 191,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": true,
+        "mirror_buff_timer": 360,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "syrentha_enchanting_song",
+      "result": {
+        "type": "syrentha",
+        "skill": "w",
+        "active_skill_timer": 80,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9775,
+            "alive": true,
+            "hits": [
+              225
+            ],
+            "attack_timer": 120,
+            "slows": [
+              [
+                0.7,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9775,
+            "alive": true,
+            "hits": [
+              225
+            ],
+            "attack_timer": 120,
+            "slows": [
+              [
+                0.7,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "c",
+            "hp": 9775,
+            "alive": true,
+            "hits": [
+              225
+            ],
+            "attack_timer": 120,
+            "slows": [
+              [
+                0.7,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "syrentha_riptide",
+      "result": {
+        "type": "syrentha",
+        "skill": "q",
+        "active_skill_timer": 45,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9688,
+            "alive": true,
+            "hits": [
+              312
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          },
+          {
+            "name": "splash",
+            "hp": 9688,
+            "alive": true,
+            "hits": [
+              312
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",
@@ -2008,6 +2339,8 @@
         "presence_timer": 0,
         "morph_buff_active": false,
         "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
         "defense_boost": false,
         "defense_timer": 0,
         "flux_active_timer": 0,

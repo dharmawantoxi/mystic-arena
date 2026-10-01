@@ -43,6 +43,8 @@ static func tick(
 			_nyxarath(world, boss, enemies, target, target_distance)
 		"thalgryn":
 			_thalgryn(world, boss, enemies, target, target_distance)
+		"syrentha":
+			_syrentha(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -559,6 +561,63 @@ static func _thalgryn(
 						enemy,
 						_skill_damage(boss, int(float(boss.skill_w_damage) / 3.0))
 					)
+
+
+static func _syrentha(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_syrentha: Mirror Image buff clock, then R/E/W/Q priority.
+	if boss.mirror_buff_active:
+		boss.mirror_buff_timer -= 1
+		if boss.mirror_buff_timer <= 0:
+			boss.mirror_buff_active = false
+			boss.damage = boss.base_damage
+	var nearby_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.45 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_attack_lock(enemy, 150)
+				_slow(enemy, 0.8, 300)
+		_heal(boss, 0.1)
+		return
+	if hp_ratio < 0.6 and not boss.mirror_buff_active and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 70)
+		boss.mirror_buff_active = true
+		boss.mirror_buff_timer = 360
+		boss.damage = int(float(boss.base_damage) * 1.4)
+		_heal(boss, 0.12)
+		return
+	if nearby_count >= 3 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 80)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 150.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+				_attack_lock(enemy, 120)
+				_slow(enemy, 0.7, 240)
+		return
+	if distance < 260.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 45)
+		if target == null or not target.alive:
+			return
+		var delta := target.position - boss.position
+		var length := delta.length()
+		if length <= 0.0:
+			return
+		var direction := delta / length
+		for enemy in enemies:
+			var relative := enemy.position - boss.position
+			var projection := relative.dot(direction)
+			var perpendicular := absf(relative.x * -direction.y + relative.y * direction.x)
+			if projection > 0.0 and projection < 250.0 and perpendicular < 70.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+				_slow(enemy, 0.5, 180)
 
 
 static func _set_skill(boss: BossState, key: String, duration: int) -> void:

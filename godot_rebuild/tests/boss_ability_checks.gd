@@ -18,7 +18,7 @@ func run(check: Callable) -> void:
 	if not fixture is Dictionary or not fixture.has("cases"):
 		return
 	var cases: Array = fixture["cases"]
-	check.call(cases.size() == 42, "boss ability fixture has all first-slice cases")
+	check.call(cases.size() == 46, "boss ability fixture has all first-slice cases")
 	_case(check, cases, "gornak_q", "gornak", 1.0, [[80, 0, 10000, "target"]], 80.0)
 	_case(check, cases, "gornak_blink", "gornak", 1.0, [[200, 0, 10000, "target"]], 200.0)
 	_case(
@@ -222,6 +222,36 @@ func run(check: Callable) -> void:
 		[[100, 0, 10000, "target"], [150, 0, 10000, "splash"]],
 		100.0
 	)
+	_case(
+		check,
+		cases,
+		"syrentha_song_of_siren",
+		"syrentha",
+		0.3,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check, cases, "syrentha_mirror_image", "syrentha", 0.5, [[300, 0, 10000, "target"]], 300.0
+	)
+	_case(
+		check,
+		cases,
+		"syrentha_enchanting_song",
+		"syrentha",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"syrentha_riptide",
+		"syrentha",
+		1.0,
+		[[100, 0, 10000, "target"], [150, 50, 10000, "splash"]],
+		100.0
+	)
 	_generic(check, cases)
 	_true_boss_heal(check)
 
@@ -338,6 +368,7 @@ func _compare(check: Callable, expected: Dictionary, boss, enemies: Array[UnitSt
 		"necro_buff_timer",
 		"presence_timer",
 		"morph_buff_timer",
+		"mirror_buff_timer",
 		"defense_timer",
 		"flux_active_timer",
 		"clones_active_timer"
@@ -359,6 +390,7 @@ func _compare(check: Callable, expected: Dictionary, boss, enemies: Array[UnitSt
 	check.call(boss.necro_buff_active == bool(expected["necro_buff_active"]), "necromastery flag")
 	check.call(boss.presence_active == bool(expected["presence_active"]), "presence flag")
 	check.call(boss.morph_buff_active == bool(expected["morph_buff_active"]), "morph flag")
+	check.call(boss.mirror_buff_active == bool(expected["mirror_buff_active"]), "mirror flag")
 	check.call(boss.defense_boost == bool(expected["defense_boost"]), "defense flag")
 	var expected_targets: Array = expected["targets"]
 	check.call(enemies.size() == expected_targets.size(), "target count")
