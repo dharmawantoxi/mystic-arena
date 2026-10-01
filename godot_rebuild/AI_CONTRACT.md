@@ -828,12 +828,20 @@ Ravage, Kraken Shell, Tidebringer dan Anchor Smash, termasuk state eksplisit
 `shell_active`/`shell_timer`, radius nearby 180, AOE Tidebringer 120 yang
 berpusat pada target hidup (posisi boss sebagai fallback), heal 12%/10% max HP,
 attack lock 90/60 tick, slow 0.5 selama 180 tick, knockback 18px dan line
-Anchor Smash (maksimum 200, lebar 60). Oracle AST mengeksekusi metode Python
-asli untuk empat skenario per boss; fixture menjadi 50 kasus dan native replay
-mengunci parity tanpa mengklaim roster boss lengkap. CI push Godot 4.7.2 hijau
-pada run
-[36866940620](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36866940620):
-**1.187.164 native checks**; `validate_project.py` **5968 static checks**.
+Anchor Smash (maksimum 200, lebar 60); commit `8858530` menambah Kunkka:
+Torrent, Ghost Ship, X Marks the Spot dan Tide Bringer, termasuk state eksplisit
+`rum_buff_active`/`rum_buff_timer` dan `x_mark_target_id`/`x_mark_timer`,
+cooldown literal 720/480/300/240 yang di-hardcode boss ini, burst X Marks 120
+tick (`skill_w_damage` dalam radius 120 dari mark + attack lock 60), rum buff
+480 tick dengan damage `int(base_damage * 1.3)`, lintasan Ghost Ship 300×80,
+line Tide Bringer 250×70, Torrent 200 berpusat target dengan attack lock 120
+dan knockback 20px, serta heal 20%/15% max HP. Oracle AST mengeksekusi metode
+Python asli untuk empat skenario per boss — lima untuk Kunkka karena burst
+X Marks turun satu tick kemudian, mengikuti preseden flux tick Morgath; fixture
+menjadi 55 kasus dan native replay mengunci parity tanpa mengklaim roster boss
+lengkap. CI push Godot 4.7.2 hijau pada run
+[36872709694](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36872709694):
+**1.187.529 native checks**; `validate_project.py` **5968 static checks**.
 
 Lapisan **8e** (`c635a06`) memindahkan clock gameplay entrance/enrage:
 `BossState` memajukan `anim_time`/`pulse`, menahan seluruh gerak/serangan/heal/
@@ -860,8 +868,8 @@ belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
 CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
-([run 36866940620](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36866940620)):
-**1.187.164 native checks**; `validate_project.py` 5968 static;
+([run 36872709694](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36872709694)):
+**1.187.529 native checks**; `validate_project.py` 5968 static;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0f717-mystic-arena` (PR
@@ -874,9 +882,10 @@ CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
 > (`61184e0`, run 36710717265) memindahkan ability/smart AI slice awal,
 > generic ability, active-skill/cooldown clocks, dan true-boss heal; sub-layer
 > **8d-1** (`6ac3bc5` + `1b21813` + `7cfdf7f` + `937fa7e` + `2b3ba1e` +
-> `3057043` + `a82b3be` + `27f73f1`, run 36866940620) menambah smart AI
-> Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath, Thalgryn, Syrentha dan
-> Gravewake saja; fixture oracle/native replay kini 50 kasus;
+> `3057043` + `a82b3be` + `27f73f1` + `8858530`, run 36872709694) menambah
+> smart AI Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath, Thalgryn,
+> Syrentha, Gravewake dan Kunkka saja; fixture oracle/native replay kini
+> 55 kasus;
 > layer **8e** (`c635a06`, run 36716265830) memindahkan entrance/enrage clock
 > dan gate gameplay; layer **8f** (`8c8787f`, run 36725358545) memindahkan
 > presentasi intro/death boss saja, termasuk entrance aura/text, death
