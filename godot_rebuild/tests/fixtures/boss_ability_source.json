@@ -1026,6 +1026,205 @@
       }
     },
     {
+      "label": "akashari_sonic_scream",
+      "result": {
+        "type": "akashari",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 8360,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9438,
+            "alive": true,
+            "hits": [
+              562
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9438,
+            "alive": true,
+            "hits": [
+              562
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "akashari_scream_of_pain",
+      "result": {
+        "type": "akashari",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 260,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9625,
+            "alive": true,
+            "hits": [
+              375
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9625,
+            "alive": true,
+            "hits": [
+              375
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9625,
+            "alive": true,
+            "hits": [
+              375
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "akashari_shadow_strike",
+      "result": {
+        "type": "akashari",
+        "skill": "w",
+        "active_skill_timer": 55,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 12122,
+        "damage": 137,
+        "x": 150.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9688,
+            "alive": true,
+            "hits": [
+              312
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "near",
+            "hp": 9688,
+            "alive": true,
+            "hits": [
+              312
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "akashari_scream",
+      "result": {
+        "type": "akashari",
+        "skill": "q",
+        "active_skill_timer": 50,
+        "q_timer": 220,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9600,
+            "alive": true,
+            "hits": [
+              400
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.4,
+                120
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",
