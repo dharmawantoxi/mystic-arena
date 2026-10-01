@@ -813,12 +813,13 @@ menambah dispatch smart AI Alchemist yang dipakai match, dengan prioritas
 R/E/W/Q, timer dan active-skill window, Chemical Rage (rage/damage/heal),
 Greevil's Greed AOE/kill-heal, Unstable Concoction AOE/slow, dan Acid Spray.
 Commit lanjutan `1b21813` menambah Malzareth: Death Pulse, Shadow Word,
-Nether Blast dan Void dengan prioritas source yang sama. Oracle AST
-mengeksekusi metode Python asli untuk empat skenario per boss; fixture menjadi
-26 kasus dan native replay mengunci parity tanpa mengklaim roster boss
-lengkap. CI push Godot 4.7.2 hijau pada run
-[36783014065](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36783014065);
-`validate_project.py` **5968 static checks**.
+Nether Blast dan Void; commit `7cfdf7f` menambah Akashari: Sonic Scream,
+Scream of Pain, Shadow Strike dan Scream, semuanya dengan prioritas source yang
+sama. Oracle AST mengeksekusi metode Python asli untuk empat skenario per boss;
+fixture menjadi 30 kasus dan native replay mengunci parity tanpa mengklaim
+roster boss lengkap. CI push Godot 4.7.2 hijau pada run
+[36802874003](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36802874003):
+**1.186.109 native checks**; `validate_project.py` **5968 static checks**.
 
 Lapisan **8e** (`c635a06`) memindahkan clock gameplay entrance/enrage:
 `BossState` memajukan `anim_time`/`pulse`, menahan seluruh gerak/serangan/heal/
@@ -845,8 +846,8 @@ belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
 CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
-([run 36783014065](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36783014065)):
-**1.185.993 native checks**; `validate_project.py` 5968 static;
+([run 36802874003](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36802874003)):
+**1.186.109 native checks**; `validate_project.py` 5968 static;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ed0e-mystic-arena` (PR
@@ -858,8 +859,8 @@ CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
 > cooldown/facing, cleave dan death registry tanpa reward ganda; layer **8d**
 > (`61184e0`, run 36710717265) memindahkan ability/smart AI slice awal,
 > generic ability, active-skill/cooldown clocks, dan true-boss heal; sub-layer
-> **8d-1** (`6ac3bc5` + `1b21813`, run 36783014065) menambah smart AI
-> Alchemist dan Malzareth saja;
+> **8d-1** (`6ac3bc5` + `1b21813` + `7cfdf7f`, run 36802874003)
+> menambah smart AI Alchemist, Malzareth dan Akashari saja;
 > layer **8e** (`c635a06`, run 36716265830) memindahkan entrance/enrage clock
 > dan gate gameplay; layer **8f** (`8c8787f`, run 36725358545) memindahkan
 > presentasi intro/death boss saja, termasuk entrance aura/text, death
