@@ -49,6 +49,8 @@ static func tick(
 			_gravewake(world, boss, enemies, target, target_distance)
 		"kunkka":
 			_kunkka(world, boss, enemies, target, target_distance)
+		"razak":
+			_razak(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -778,6 +780,52 @@ static func _kunkka(
 			)
 			if tide_projection > 0.0 and tide_projection < 250.0 and tide_perpendicular < 70.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+
+
+static func _razak(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_razak: Firestorm when crowded, then the distance gates
+	# E (120 < dist < 260), W (dist <= 220) and Q (dist <= 260).
+	var nearby_count := _count_near(boss, enemies, 180.0)
+	if nearby_count >= 3 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 180.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+	if distance > 120.0 and distance < 260.0 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 35)
+		if target != null and target.alive:
+			var delta := target.position - boss.position
+			var length := delta.length()
+			if length > 0.0:
+				var jump := minf(110.0, maxf(40.0, length - 50.0))
+				boss.position += delta / length * jump
+				boss.direction = 1 if delta.x > 0.0 else -1
+			for enemy in enemies:
+				if boss.position.distance_to(enemy.position) <= 80.0:
+					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+	if distance <= 220.0 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 50)
+		if target != null and target.alive:
+			for enemy in enemies:
+				if target.position.distance_to(enemy.position) <= 95.0:
+					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+					_attack_lock(enemy, 45)
+		return
+	if distance <= 260.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		if target != null and target.alive:
+			for enemy in enemies:
+				if target.position.distance_to(enemy.position) <= 75.0:
+					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+					_slow(enemy, 0.35, 120)
 
 
 static func _set_skill(boss: BossState, key: String, duration: int) -> void:

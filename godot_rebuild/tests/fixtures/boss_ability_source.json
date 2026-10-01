@@ -3090,6 +3090,268 @@
       }
     },
     {
+      "label": "razak_firestorm",
+      "result": {
+        "type": "razak",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 520,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 13640,
+        "damage": 95,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9575,
+            "alive": true,
+            "hits": [
+              425
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9575,
+            "alive": true,
+            "hits": [
+              425
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9575,
+            "alive": true,
+            "hits": [
+              425
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "razak_firefly",
+      "result": {
+        "type": "razak",
+        "skill": "e",
+        "active_skill_timer": 35,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 280,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 13640,
+        "damage": 95,
+        "x": 110.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "near",
+            "hp": 9775,
+            "alive": true,
+            "hits": [
+              225
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "razak_flame_cone",
+      "result": {
+        "type": "razak",
+        "skill": "w",
+        "active_skill_timer": 50,
+        "q_timer": 0,
+        "w_timer": 260,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 13640,
+        "damage": 95,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 45,
+            "slows": []
+          },
+          {
+            "name": "near",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 45,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "razak_molotov",
+      "result": {
+        "type": "razak",
+        "skill": "q",
+        "active_skill_timer": 40,
+        "q_timer": 220,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 13640,
+        "damage": 95,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9800,
+            "alive": true,
+            "hits": [
+              200
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.35,
+                120
+              ]
+            ]
+          },
+          {
+            "name": "near",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "splash",
+            "hp": 9800,
+            "alive": true,
+            "hits": [
+              200
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.35,
+                120
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",

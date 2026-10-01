@@ -3,7 +3,7 @@
 The fixture executes the original Boss smart-AI and cast methods from
 bosses/base_boss.py. It covers the first smart-AI slice (Gornak, Morgath,
 Drakar, Abaddon, Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath,
-Thalgryn, Syrentha, Gravewake and Kunkka), plus the source generic
+Thalgryn, Syrentha, Gravewake, Kunkka and Razak), plus the source generic
 _use_ability fallback.
 It does not execute entrance/enrage or render hooks; those are separate
 sub-layers.
@@ -115,6 +115,11 @@ def source_class():
         "_cast_w_x_marks",
         "_cast_e_ghost_ship",
         "_cast_r_torrent",
+        "_smart_ai_razak",
+        "_razak_q",
+        "_razak_w",
+        "_razak_e",
+        "_razak_r",
         "_cast_w_aphotic_shield",
         "_cast_e_darkness_gale",
         "_cast_r_death_sever",
@@ -641,6 +646,42 @@ def source_fixture():
             "_smart_ai_kunkka",
         ),
         persistent_kunkka(cls),
+        smart_case(
+            cls,
+            "razak",
+            "razak_firestorm",
+            1.0,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b"), (60, 0, 10000, "c")],
+            20,
+            "_smart_ai_razak",
+        ),
+        smart_case(
+            cls,
+            "razak",
+            "razak_firefly",
+            1.0,
+            [(200, 0, 10000, "target"), (60, 0, 10000, "near")],
+            200,
+            "_smart_ai_razak",
+        ),
+        smart_case(
+            cls,
+            "razak",
+            "razak_flame_cone",
+            1.0,
+            [(100, 0, 10000, "target"), (150, 40, 10000, "near")],
+            100,
+            "_smart_ai_razak",
+        ),
+        smart_case(
+            cls,
+            "razak",
+            "razak_molotov",
+            1.0,
+            [(260, 0, 10000, "target"), (100, 0, 10000, "near"), (300, 40, 10000, "splash")],
+            260,
+            "_smart_ai_razak",
+        ),
         generic_case(cls),
     ]
     return {"cases": cases}
