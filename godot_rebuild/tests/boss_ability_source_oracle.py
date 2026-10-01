@@ -2,8 +2,8 @@
 
 The fixture executes the original Boss smart-AI and cast methods from
 bosses/base_boss.py. It covers the first smart-AI slice (Gornak, Morgath,
-Drakar, Abaddon, Alchemist, Malzareth, Akashari and Vorenmarr), plus the
-source generic _use_ability fallback.
+Drakar, Abaddon, Alchemist, Malzareth, Akashari, Vorenmarr and Nyxarath), plus
+the source generic _use_ability fallback.
 It does not execute entrance/enrage or render hooks; those are separate
 sub-layers.
 """
@@ -31,6 +31,7 @@ class Target:
         self.name = name
         self.alive = True
         self.team = "blue"
+        self.speed = 1.0
         self.attack_timer = 0
         self.hits = []
         self.slows = []
@@ -88,6 +89,11 @@ def source_class():
         "_vorenmarr_w",
         "_vorenmarr_e",
         "_vorenmarr_r",
+        "_smart_ai_nyxarath",
+        "_nyxarath_q",
+        "_nyxarath_w",
+        "_nyxarath_e",
+        "_nyxarath_r",
         "_cast_w_aphotic_shield",
         "_cast_e_darkness_gale",
         "_cast_r_death_sever",
@@ -151,6 +157,10 @@ def row(boss, targets):
         "y": float(boss.y),
         "rage_active": bool(getattr(boss, "rage_active", False)),
         "rage_timer": int(getattr(boss, "rage_timer", 0)),
+        "necro_buff_active": bool(getattr(boss, "necro_buff_active", False)),
+        "necro_buff_timer": int(getattr(boss, "necro_buff_timer", 0)),
+        "presence_active": bool(getattr(boss, "presence_active", False)),
+        "presence_timer": int(getattr(boss, "presence_timer", 0)),
         "defense_boost": bool(getattr(boss, "defense_boost", False)),
         "defense_timer": int(getattr(boss, "defense_timer", 0)),
         "flux_active_timer": int(getattr(boss, "flux_active_timer", 0)),
@@ -400,6 +410,42 @@ def source_fixture():
             [(270, 0, 10000, "target")],
             270,
             "_smart_ai_vorenmarr",
+        ),
+        smart_case(
+            cls,
+            "nyxarath",
+            "nyxarath_requiem",
+            0.3,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_nyxarath",
+        ),
+        smart_case(
+            cls,
+            "nyxarath",
+            "nyxarath_presence",
+            0.5,
+            [(300, 0, 10000, "target")],
+            300,
+            "_smart_ai_nyxarath",
+        ),
+        smart_case(
+            cls,
+            "nyxarath",
+            "nyxarath_necromastery",
+            1.0,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_nyxarath",
+        ),
+        smart_case(
+            cls,
+            "nyxarath",
+            "nyxarath_shadowraze",
+            1.0,
+            [(100, 0, 10000, "target")],
+            100,
+            "_smart_ai_nyxarath",
         ),
         generic_case(cls),
     ]
