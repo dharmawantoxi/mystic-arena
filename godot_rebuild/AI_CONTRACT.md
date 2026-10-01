@@ -823,12 +823,17 @@ perpindahan Waveform; commit `a82b3be` menambah Syrentha: Song of the Siren,
 Mirror Image, Enchanting Song dan Riptide, termasuk state eksplisit
 `mirror_buff_active`/`mirror_buff_timer`, buff damage `int(base_damage * 1.4)`,
 heal 12%/10% max HP, attack lock 150/120 tick, slow 0.8/0.7/0.5 dan gelombang
-Riptide (line maksimum 250, lebar 70). Oracle AST mengeksekusi metode Python
-asli untuk empat skenario per boss; fixture menjadi 46 kasus dan native replay
+Riptide (line maksimum 250, lebar 70); commit `27f73f1` menambah Gravewake:
+Ravage, Kraken Shell, Tidebringer dan Anchor Smash, termasuk state eksplisit
+`shell_active`/`shell_timer`, radius nearby 180, AOE Tidebringer 120 yang
+berpusat pada target hidup (posisi boss sebagai fallback), heal 12%/10% max HP,
+attack lock 90/60 tick, slow 0.5 selama 180 tick, knockback 18px dan line
+Anchor Smash (maksimum 200, lebar 60). Oracle AST mengeksekusi metode Python
+asli untuk empat skenario per boss; fixture menjadi 50 kasus dan native replay
 mengunci parity tanpa mengklaim roster boss lengkap. CI push Godot 4.7.2 hijau
 pada run
-[36853149013](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36853149013):
-**1.186.916 native checks**; `validate_project.py` **5968 static checks**.
+[36866940620](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36866940620):
+**1.187.164 native checks**; `validate_project.py` **5968 static checks**.
 
 Lapisan **8e** (`c635a06`) memindahkan clock gameplay entrance/enrage:
 `BossState` memajukan `anim_time`/`pulse`, menahan seluruh gerak/serangan/heal/
@@ -855,8 +860,8 @@ belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
 CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
-([run 36853149013](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36853149013)):
-**1.186.916 native checks**; `validate_project.py` 5968 static;
+([run 36866940620](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36866940620)):
+**1.187.164 native checks**; `validate_project.py` 5968 static;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0f717-mystic-arena` (PR
@@ -869,9 +874,9 @@ CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
 > (`61184e0`, run 36710717265) memindahkan ability/smart AI slice awal,
 > generic ability, active-skill/cooldown clocks, dan true-boss heal; sub-layer
 > **8d-1** (`6ac3bc5` + `1b21813` + `7cfdf7f` + `937fa7e` + `2b3ba1e` +
-> `3057043` + `a82b3be`, run 36853149013) menambah smart AI Alchemist,
-> Malzareth, Akashari, Vorenmarr, Nyxarath, Thalgryn dan Syrentha saja;
-> fixture oracle/native replay kini 46 kasus;
+> `3057043` + `a82b3be` + `27f73f1`, run 36866940620) menambah smart AI
+> Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath, Thalgryn, Syrentha dan
+> Gravewake saja; fixture oracle/native replay kini 50 kasus;
 > layer **8e** (`c635a06`, run 36716265830) memindahkan entrance/enrage clock
 > dan gate gameplay; layer **8f** (`8c8787f`, run 36725358545) memindahkan
 > presentasi intro/death boss saja, termasuk entrance aura/text, death
