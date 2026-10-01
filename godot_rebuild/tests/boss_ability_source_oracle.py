@@ -3,7 +3,8 @@
 The fixture executes the original Boss smart-AI and cast methods from
 bosses/base_boss.py. It covers the first smart-AI slice (Gornak, Morgath,
 Drakar, Abaddon, Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath,
-Thalgryn and Syrentha), plus the source generic _use_ability fallback.
+Thalgryn, Syrentha and Gravewake), plus the source generic _use_ability
+fallback.
 It does not execute entrance/enrage or render hooks; those are separate
 sub-layers.
 """
@@ -104,6 +105,11 @@ def source_class():
         "_syrentha_w",
         "_syrentha_e",
         "_syrentha_r",
+        "_smart_ai_gravewake",
+        "_gravewake_q",
+        "_gravewake_w",
+        "_gravewake_e",
+        "_gravewake_r",
         "_cast_w_aphotic_shield",
         "_cast_e_darkness_gale",
         "_cast_r_death_sever",
@@ -175,6 +181,8 @@ def row(boss, targets):
         "morph_buff_timer": int(getattr(boss, "morph_buff_timer", 0)),
         "mirror_buff_active": bool(getattr(boss, "mirror_buff_active", False)),
         "mirror_buff_timer": int(getattr(boss, "mirror_buff_timer", 0)),
+        "shell_active": bool(getattr(boss, "shell_active", False)),
+        "shell_timer": int(getattr(boss, "shell_timer", 0)),
         "defense_boost": bool(getattr(boss, "defense_boost", False)),
         "defense_timer": int(getattr(boss, "defense_timer", 0)),
         "flux_active_timer": int(getattr(boss, "flux_active_timer", 0)),
@@ -532,6 +540,42 @@ def source_fixture():
             [(100, 0, 10000, "target"), (150, 50, 10000, "splash")],
             100,
             "_smart_ai_syrentha",
+        ),
+        smart_case(
+            cls,
+            "gravewake",
+            "gravewake_ravage",
+            0.3,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_gravewake",
+        ),
+        smart_case(
+            cls,
+            "gravewake",
+            "gravewake_kraken_shell",
+            0.5,
+            [(300, 0, 10000, "target")],
+            300,
+            "_smart_ai_gravewake",
+        ),
+        smart_case(
+            cls,
+            "gravewake",
+            "gravewake_tidebringer",
+            1.0,
+            [(100, 0, 10000, "target"), (150, 60, 10000, "near"), (300, 0, 10000, "far")],
+            100,
+            "_smart_ai_gravewake",
+        ),
+        smart_case(
+            cls,
+            "gravewake",
+            "gravewake_anchor_smash",
+            1.0,
+            [(100, 0, 10000, "target"), (190, 0, 10000, "wave")],
+            100,
+            "_smart_ai_gravewake",
         ),
         generic_case(cls),
     ]
