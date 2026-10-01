@@ -41,6 +41,8 @@ static func tick(
 			_vorenmarr(world, boss, enemies, target, target_distance)
 		"nyxarath":
 			_nyxarath(world, boss, enemies, target, target_distance)
+		"thalgryn":
+			_thalgryn(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -498,6 +500,65 @@ static func _nyxarath(
 			if projection > 0.0 and projection < 280.0 and perpendicular < 50.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
 				_attack_lock(enemy, 45)
+
+
+static func _thalgryn(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	if boss.morph_buff_active:
+		boss.morph_buff_timer -= 1
+		if boss.morph_buff_timer <= 0:
+			boss.morph_buff_active = false
+			boss.damage = boss.base_damage
+	var nearby_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 80)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_slow(enemy, 0.4, 180)
+		_heal(boss, 0.1)
+		return
+	if hp_ratio < 0.55 and not boss.morph_buff_active and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		boss.morph_buff_active = true
+		boss.morph_buff_timer = 300
+		boss.damage = int(float(boss.base_damage) * 1.35)
+		_heal(boss, 0.14)
+		return
+	if distance > 150.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 60)
+		if target != null and target.alive:
+			var delta := target.position - boss.position
+			var length := delta.length()
+			if length > 0.0:
+				var direction := delta / length
+				for enemy in enemies:
+					var relative := enemy.position - boss.position
+					var projection := relative.dot(direction)
+					var perpendicular := absf(relative.x * -direction.y + relative.y * direction.x)
+					if projection > 0.0 and projection < 250.0 and perpendicular < 50.0:
+						_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+				boss.position += direction * minf(length, 200.0)
+		return
+	if distance < 280.0 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 50)
+		if target != null and target.alive:
+			_hit(world, boss, target, _skill_damage(boss, boss.skill_w_damage))
+			_attack_lock(target, 60)
+			for enemy in enemies:
+				if enemy != target and target.position.distance_to(enemy.position) <= 60.0:
+					_hit(
+						world,
+						boss,
+						enemy,
+						_skill_damage(boss, int(float(boss.skill_w_damage) / 3.0))
+					)
 
 
 static func _set_skill(boss: BossState, key: String, duration: int) -> void:
