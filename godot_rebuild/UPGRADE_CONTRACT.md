@@ -34,7 +34,7 @@ Harga upgrade adalah harga **level tujuan**. Refund level 2+ adalah `int(0.5 × 
 Tabel level 6 menyebut “DOUBLE SHOT”, tetapi metode `_shoot_archer` menghasilkan **dua panah pada level 5 dan tiga pada level 6**. Setiap panah memiliki damage penuh, bukan damage dibagi jumlah panah.
 
 1. Panah pertama menuju target utama hasil targeting lama.
-2. Cari target tambahan dari urutan enemy minion yang stabil, melewati target utama, unit mati, kawan dan yang di luar range. Hero behavior belum dipindahkan. Boss layer 8c sudah memiliki target hero, movement, basic physical attack dan cleave; layer 8d + sub-layer 8d-1 menambah generic ability serta smart-AI slice awal (Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn); layer 8e menambah entrance/enrage clock dan gate gameplay; layer 8f menambah presentasi intro/death boss.
+2. Cari target tambahan dari urutan enemy minion yang stabil, melewati target utama, unit mati, kawan dan yang di luar range. Hero behavior belum dipindahkan. Boss layer 8c sudah memiliki target hero, movement, basic physical attack dan cleave; layer 8d + sub-layer 8d-1 menambah generic ability serta smart-AI slice awal (Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha); layer 8e menambah entrance/enrage clock dan gate gameplay; layer 8f menambah presentasi intro/death boss.
 3. Jika target tambahan kurang, isi sisa dengan target utama. Tidak menghilangkan panah saat hanya satu lawan.
 4. Semua panah memakai orientasi muzzle dari target utama, bukan mengubah arah bow untuk target sekunder.
 5. Height platform untuk level 1–6: 38/42/46/52/56/62. Muzzle memakai float double lalu truncation `int` seperti helper sumber.
