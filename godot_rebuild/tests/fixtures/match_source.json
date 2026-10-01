@@ -420,7 +420,8 @@
           0,
           0
         ]
-      ]
+      ],
+      "bosses": []
     },
     {
       "blocked_until": 2050,
@@ -842,7 +843,8 @@
           0,
           0
         ]
-      ]
+      ],
+      "bosses": []
     }
   ],
   "composition": {
@@ -2154,6 +2156,91 @@
         "red_level": 2
       }
     ]
+  },
+  "boss_layer": {
+    "schedule": {
+      "normal": {
+        "16": "gornak",
+        "17": "morgath",
+        "29": "drakar"
+      },
+      "easy": {
+        "33": "gornak",
+        "36": "morgath",
+        "40": "drakar"
+      },
+      "hard": {
+        "21": "gornak",
+        "22": "morgath",
+        "23": "drakar"
+      }
+    },
+    "pending": {
+      "first": [
+        null,
+        "gornak",
+        2
+      ],
+      "second": [
+        null,
+        "morgath",
+        1
+      ]
+    },
+    "true_boss": [
+      {
+        "destroyed": 5,
+        "spawned": false,
+        "boss": null
+      },
+      {
+        "destroyed": 6,
+        "spawned": true,
+        "boss": "abaddon"
+      }
+    ],
+    "tower_rewards": {
+      "gold": 11,
+      "score": 11,
+      "red_towers_destroyed": 1,
+      "ai_gold": 13,
+      "rewarded": [
+        true,
+        true,
+        false
+      ]
+    },
+    "boss_reward": {
+      "gold": 77,
+      "score": 77,
+      "defeated": 1,
+      "match": [
+        "gornak"
+      ],
+      "unlocked": [
+        "gornak"
+      ],
+      "active": null
+    },
+    "victory_unlocks": {
+      "newly": [
+        "gornak",
+        "abaddon"
+      ],
+      "purchased": [
+        "kaizen",
+        "gornak",
+        "abaddon"
+      ],
+      "unlocked": [
+        "gornak",
+        "abaddon"
+      ],
+      "match": [
+        "gornak",
+        "abaddon"
+      ]
+    }
   },
   "level_one": {
     "level_number": 1,

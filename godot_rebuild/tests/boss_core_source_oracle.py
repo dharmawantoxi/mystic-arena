@@ -131,6 +131,7 @@ def boss_class(env):
 
 
 def row_of(boss):
+    source_stats = get_all_boss_types()[boss.boss_type]
     return {
         "name": boss.name,
         "title": boss.title,
@@ -147,6 +148,15 @@ def row_of(boss):
         "ability_range": int(boss.ability_range),
         "ability2_cooldown": int(boss.ability2_cooldown_max),
         "ability2_heal_pct": float(boss.ability2_heal_pct),
+        "skill_q_damage": int(source_stats.get("skill_q_damage", 0)),
+        "skill_w_damage": int(source_stats.get("skill_w_damage", 0)),
+        "skill_e_damage": int(source_stats.get("skill_e_damage", 0)),
+        "skill_r_damage": int(source_stats.get("skill_r_damage", 0)),
+        "skill_w_shield": int(source_stats.get("skill_w_shield", 0)),
+        "skill_q_cooldown": int(source_stats.get("skill_q_cooldown", 0)),
+        "skill_w_cooldown": int(source_stats.get("skill_w_cooldown", 0)),
+        "skill_e_cooldown": int(source_stats.get("skill_e_cooldown", 0)),
+        "skill_r_cooldown": int(source_stats.get("skill_r_cooldown", 0)),
         "armor": int(boss.armor),
         "magic_resist": float(boss.magic_resist),
         "resist_profile": str(boss.resist_profile),

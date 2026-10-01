@@ -1,0 +1,124 @@
+{
+  "cases": [
+    {
+      "label": "mini_entrance",
+      "result": {
+        "anim_time": 1,
+        "pulse": 0.1,
+        "entrance_timer": 1,
+        "hurt_flash_timer": 1,
+        "timer": 5,
+        "ability_timer": 7,
+        "ability2_timer": 9,
+        "ability_active": true,
+        "ability_active_timer": 4,
+        "speed": 10.0,
+        "damage": 100,
+        "attack_cooldown": 30,
+        "enrage_triggered": false,
+        "is_enraged": false,
+        "enrage_pulse": 0.0
+      }
+    },
+    {
+      "label": "mini_entrance_release",
+      "result": {
+        "anim_time": 1,
+        "pulse": 0.1,
+        "entrance_timer": 0,
+        "hurt_flash_timer": 1,
+        "timer": 5,
+        "ability_timer": 7,
+        "ability2_timer": 9,
+        "ability_active": true,
+        "ability_active_timer": 4,
+        "speed": 10.0,
+        "damage": 100,
+        "attack_cooldown": 30,
+        "enrage_triggered": false,
+        "is_enraged": false,
+        "enrage_pulse": 0.0
+      }
+    },
+    {
+      "label": "mini_enrage_odd",
+      "result": {
+        "anim_time": 1,
+        "pulse": 0.1,
+        "entrance_timer": 0,
+        "hurt_flash_timer": 1,
+        "timer": 4,
+        "ability_timer": 6,
+        "ability2_timer": 8,
+        "ability_active": true,
+        "ability_active_timer": 3,
+        "speed": 11.5,
+        "damage": 120,
+        "attack_cooldown": 24,
+        "enrage_triggered": true,
+        "is_enraged": true,
+        "enrage_pulse": 0.08
+      }
+    },
+    {
+      "label": "mini_enrage_slow",
+      "result": {
+        "anim_time": 1,
+        "pulse": 0.1,
+        "entrance_timer": 0,
+        "hurt_flash_timer": 1,
+        "timer": 4,
+        "ability_timer": 6,
+        "ability2_timer": 8,
+        "ability_active": true,
+        "ability_active_timer": 3,
+        "speed": 2.875,
+        "damage": 120,
+        "attack_cooldown": 24,
+        "enrage_triggered": true,
+        "is_enraged": true,
+        "enrage_pulse": 0.08
+      }
+    },
+    {
+      "label": "true_enrage_even",
+      "result": {
+        "anim_time": 2,
+        "pulse": 0.1,
+        "entrance_timer": 0,
+        "hurt_flash_timer": 1,
+        "timer": 3,
+        "ability_timer": 5,
+        "ability2_timer": 8,
+        "ability_active": true,
+        "ability_active_timer": 3,
+        "speed": 12.5,
+        "damage": 125,
+        "attack_cooldown": 22,
+        "enrage_triggered": true,
+        "is_enraged": true,
+        "enrage_pulse": 0.08
+      }
+    },
+    {
+      "label": "mini_enrage_once",
+      "result": {
+        "anim_time": 2,
+        "pulse": 0.2,
+        "entrance_timer": 0,
+        "hurt_flash_timer": 0,
+        "timer": 2,
+        "ability_timer": 4,
+        "ability2_timer": 7,
+        "ability_active": true,
+        "ability_active_timer": 2,
+        "speed": 11.5,
+        "damage": 120,
+        "attack_cooldown": 24,
+        "enrage_triggered": true,
+        "is_enraged": true,
+        "enrage_pulse": 0.16
+      }
+    }
+  ]
+}

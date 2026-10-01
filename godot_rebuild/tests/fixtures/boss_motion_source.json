@@ -1,0 +1,39 @@
+{
+  "forward": {
+    "first": [
+      17.0,
+      0.0,
+      1,
+      -1
+    ],
+    "second": [
+      14.0,
+      0.0,
+      1,
+      -1
+    ]
+  },
+  "facing": {
+    "horizontal": 1,
+    "locked": -1,
+    "near_vertical": -1
+  },
+  "attack": {
+    "target_hits": [
+      100
+    ],
+    "near_hits": [
+      40
+    ],
+    "target_hp": 900,
+    "near_hp": 960,
+    "timer": 30,
+    "basic_attack_seq": 1,
+    "direction": 1
+  },
+  "chase": {
+    "x": 3.0,
+    "y": 0.0,
+    "direction": 1
+  }
+}

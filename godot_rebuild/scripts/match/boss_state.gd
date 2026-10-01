@@ -1,5 +1,6 @@
+# gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
-## Layer 8a: source Boss entity core.
+## Layer 8a/8c/8e/8f: Boss entity core, lane combat, clocks and presentation.
 ##
 ## Ports the scalar identity/stats of `Boss.__init__`, `apply_scaling`, the
 ## tenacity slow/atk_slow rule, the `TowerDebuffMixin` stun cut and the numeric
@@ -8,13 +9,12 @@ extends "res://scripts/combat/unit_state.gd"
 ## `data/bosses/boss_stats.json`, rendered from the source tables by
 ## `tests/boss_core_source_oracle.py`.
 ##
-## Not ported here (next layers): movement/attack/cleave, abilities and smart
-## AI, entrance/enrage animation clocks, intro/defeat presentation, and the
-## match wiring that rolls the schedule, spawns the boss, counts destroyed red
-## towers and unlocks the defeated boss.
+## Not ported here (next layer): the remaining match UI wiring and production
+## effects outside the boss intro/death presentation contract.
 
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
 const Damage = preload("res://scripts/combat/damage_rules.gd")
+const LaneLayout = preload("res://scripts/data/lane_layout.gd")
 
 var boss_type := ""
 var display_name := ""
@@ -44,6 +44,15 @@ var ability_damage_value := 0
 var ability_range := 0.0
 var ability2_cooldown := 0
 var ability2_heal_pct := 0.0
+var skill_q_damage := 0
+var skill_w_damage := 0
+var skill_e_damage := 0
+var skill_r_damage := 0
+var skill_w_shield := 0
+var skill_q_cooldown := 0
+var skill_w_cooldown := 0
+var skill_e_cooldown := 0
+var skill_r_cooldown := 0
 var color := Color.BLACK
 var color_dark := Color.BLACK
 var entrance_color := Color.BLACK
@@ -56,7 +65,23 @@ var ability_active := false
 var ability_active_timer := 0
 var hurt_flash_timer := 0
 var entrance_timer := 0
+var anim_time := 0
+var pulse := 0.0
+var enrage_triggered := false
+var enrage_pulse := 0.0
 var defeated := false
+# Layer 8f presentation-only death effect snapshot. Gameplay removes the boss
+# from the registry immediately; PrototypeBattle retains this immutable payload
+# until the source large explosion's particle lifetime has elapsed.
+var death_fx_active := false
+var death_fx_timer := 0
+var death_fx_max_timer := 35
+var death_fx_flash_timer := 0
+var death_fx_flash_max := 8
+var death_fx_particle_count := 25
+var death_fx_particle_min := 4
+var death_fx_particle_max := 6
+var death_fx_shake_intensity := 0
 var defense_boost := false
 var stun_timer := 0
 var cleave_radius := 0.0
@@ -65,6 +90,41 @@ var hp_scaling_mult := 1.0
 var dmg_scaling_mult := 1.0
 var spd_scaling_mult := 1.0
 var direction := -1
+var lane_path := PackedVector2Array()
+# Layer 8c motion/attack state. The source renderer consumes the movement
+# cache and the attack edge; presentation itself remains a later layer.
+var is_moving := false
+var moving_cached := false
+var previous_position := Vector2.ZERO
+var attack_facing := 0.0
+var attack_lock_timer := 0
+var basic_attack_seq := 0
+var last_hit_source_id := -1
+# Layer 8d source smart-ability state. These fields are gameplay state; the
+# renderer may consume active_skill later, but presentation is not here.
+var q_timer := 0
+var w_timer := 0
+var e_timer := 0
+var r_timer := 0
+var active_skill := ""
+var active_skill_timer := 0
+var rage_active := false
+var rage_timer := 0
+var necro_buff_active := false
+var necro_buff_timer := 0
+var presence_active := false
+var presence_timer := 0
+var morph_buff_active := false
+var morph_buff_timer := 0
+var is_enraged := false
+var defense_timer := 0
+var flux_target_id := -1
+var flux_active_timer := 0
+var clones_active_timer := 0
+var clones_positions: Array[Vector2] = []
+var blink_from := Vector2.ZERO
+var blink_to := Vector2.ZERO
+var mana_void_origin := Vector2.ZERO
 # Source Boss.speed property reads `tenacity` (0.50 for every boss).
 var tenacity := 0.50
 # Injectable draw so tests can replay the recorded source roll.
@@ -97,6 +157,15 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	ability_range = float(stats["ability_range"])
 	ability2_cooldown = int(stats["ability2_cooldown"])
 	ability2_heal_pct = float(stats["ability2_heal_pct"])
+	skill_q_damage = int(stats.get("skill_q_damage", 0))
+	skill_w_damage = int(stats.get("skill_w_damage", 0))
+	skill_e_damage = int(stats.get("skill_e_damage", 0))
+	skill_r_damage = int(stats.get("skill_r_damage", 0))
+	skill_w_shield = int(stats.get("skill_w_shield", 0))
+	skill_q_cooldown = int(stats.get("skill_q_cooldown", 0))
+	skill_w_cooldown = int(stats.get("skill_w_cooldown", 0))
+	skill_e_cooldown = int(stats.get("skill_e_cooldown", 0))
+	skill_r_cooldown = int(stats.get("skill_r_cooldown", 0))
 	armor = int(stats["armor"])
 	magic_resist = float(stats["magic_resist"])
 	resist_profile = String(stats["resist_profile"])
@@ -115,6 +184,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	rebuild_definition()
 	direction = -1
 	facing = -1.0
+	self.lane_path = lane_path.duplicate()
 	# Source position: the last waypoint of the (mid) lane path, else
 	# (RED_BASE_X - 50, RED_BASE_Y) = (1130, 100) with waypoint_index -1.
 	if lane_path.size() > 0:
@@ -124,6 +194,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 		var fallback: Array = rules.get("fallback_position", [1130.0, 100.0])
 		position = Vector2(float(fallback[0]), float(fallback[1]))
 		waypoint_index = -1
+	previous_position = position
 	# Source Boss.__init__ ends with _init_tower_debuffs(), which is also what
 	# clear_tower_debuffs() re-runs (burn_tick_cd starts at the burn interval).
 	clear_tower_debuffs()
@@ -160,6 +231,160 @@ func _definition_for() -> MinionDefinition:
 
 func rebuild_definition() -> void:
 	definition = _definition_for()
+
+
+func advance_animation_clock() -> void:
+	# Source Boss.update advances these renderer-facing clocks before stun and
+	# entrance gating. The prototype view consumes them immediately.
+	anim_time += 1
+	pulse += 0.1
+
+
+func entrance_presentation_state() -> Dictionary:
+	# Exact scalar decisions from Boss._draw_entrance; the view turns these
+	# values into Godot draw calls without changing gameplay state.
+	var maximum := maxf(1.0, float(entrance_ticks))
+	var progress := 1.0 - float(entrance_timer) / maximum
+	var pulse_alpha := clampf(sin(float(anim_time) * 0.2) * 0.3 + 0.7, 0.0, 1.0)
+	return {
+		"progress": progress,
+		"aura_radius": int(radius * progress * 2.0),
+		"aura_alpha": clampi(int(200.0 * (1.0 - progress)), 0, 255),
+		"text_visible": entrance_timer > int(maximum * 0.5),
+		"text_alpha": clampi(int(255.0 * pulse_alpha), 0, 255)
+	}
+
+
+func advance_combat_clock() -> bool:
+	# Port of the source entrance gate and one-shot enrage/frenzy transition.
+	# Return false while the boss is entering, so no movement, attack, heal or
+	# smart ability is consumed on those ticks.
+	if hurt_flash_timer > 0:
+		hurt_flash_timer -= 1
+	if entrance_timer > 0:
+		entrance_timer -= 1
+		return false
+	if not enrage_triggered:
+		if boss_class == "true" and hp <= float(max_hp) * 0.50:
+			enrage_triggered = true
+			is_enraged = true
+			# Source writes through the speed property, so an active slow is
+			# included once before the new base speed is stored.
+			speed_px_per_tick = eff_speed() * 1.25
+			damage = int(float(damage) * 1.25)
+			attack_cooldown = maxi(18, int(float(attack_cooldown) * 0.75))
+		elif boss_class == "mini" and hp <= float(max_hp) * 0.40:
+			enrage_triggered = true
+			is_enraged = true
+			# Match the source speed property's getter/setter path under slow.
+			speed_px_per_tick = eff_speed() * 1.15
+			damage = int(float(damage) * 1.20)
+			attack_cooldown = maxi(20, int(float(attack_cooldown) * 0.80))
+		if enrage_triggered:
+			rebuild_definition()
+	if is_enraged:
+		enrage_pulse += 0.08
+		# Source enrage recovers the ordinary and generic ability clocks twice
+		# on even animation ticks; the regular match tick performs the second
+		# decrement after this method returns.
+		if anim_time % 2 == 0:
+			timer = maxi(0, timer - 1)
+			ability_timer = maxi(0, ability_timer - 1)
+	return true
+
+
+func begin_motion_tick() -> void:
+	# Source Boss.update measures real displacement before this frame's move;
+	# the cached flag is what the later renderer will read for WALK/IDLE.
+	var moved := position.distance_to(previous_position)
+	previous_position = position
+	is_moving = moved > 0.05
+	moving_cached = is_moving
+	if attack_lock_timer > 0:
+		attack_lock_timer -= 1
+		if attack_lock_timer <= 0:
+			attack_facing = 0.0
+
+
+func face_motion(dx: float, dy: float) -> void:
+	# Port of Boss._face: an attack lock wins, and near-vertical travel does
+	# not flap the horizontal sprite direction.
+	if attack_lock_timer > 0:
+		if absf(attack_facing) > 0.5:
+			direction = int(attack_facing)
+			facing = attack_facing
+		return
+	if absf(dx) < 0.35 * maxf(0.000001, absf(dy)):
+		return
+	direction = 1 if dx > 0.0 else -1
+	facing = float(direction)
+
+
+func lane_target() -> Vector2:
+	# Port of Boss._lane_target: red starts at the last point and walks the
+	# path backwards toward the blue base.
+	if lane_path.size() > 0 and waypoint_index >= 0 and waypoint_index < lane_path.size():
+		return lane_path[waypoint_index]
+	return LaneLayout.BLUE_BASE
+
+
+func advance_waypoint() -> bool:
+	if lane_path.is_empty():
+		return false
+	waypoint_index -= 1
+	return waypoint_index >= 0
+
+
+func move_forward() -> void:
+	# Port of the source budgeted waypoint walk: leftover speed crosses more
+	# than one waypoint in a single tick, with no artificial stall frame.
+	var budget := eff_speed()
+	if budget <= 0.0:
+		return
+	var guard := 0
+	while budget > 0.001 and guard < 16:
+		guard += 1
+		var target := lane_target()
+		var offset := target - position
+		var distance := offset.length()
+		var has_next := not lane_path.is_empty() and waypoint_index >= 0
+		if distance <= 0.000001:
+			if not has_next:
+				break
+			advance_waypoint()
+			continue
+		if distance <= budget:
+			position = target
+			budget -= distance
+			face_motion(offset.x, offset.y)
+			if has_next:
+				advance_waypoint()
+			continue
+		position += offset / distance * budget
+		face_motion(offset.x, offset.y)
+		budget = 0.0
+
+
+func move_toward(target: Vector2) -> void:
+	# Source chase branch clamps speed to the remaining distance.
+	var offset := target - position
+	var distance := offset.length()
+	var speed := eff_speed()
+	if distance <= 0.0 or speed <= 0.0:
+		return
+	var step := minf(speed, distance)
+	position += offset / distance * step
+	face_motion(offset.x, offset.y)
+
+
+func effective_attack_cooldown() -> int:
+	# Port of TowerDebuffMixin._eff_attack_cd used by Boss.update.
+	if stun_timer > 0:
+		return 9999
+	if atk_slow_timer <= 0:
+		return attack_cooldown
+	var factor := maxf(0.05, 1.0 - atk_slow_amount)
+	return maxi(1, Damage.rounded_like_python(float(attack_cooldown) / factor))
 
 
 func eff_speed() -> float:
@@ -326,8 +551,8 @@ func take_damage(
 ) -> int:
 	# Port of the numeric tail of Boss.take_damage. Returns the damage applied,
 	# or -1 when the source would return before touching hp (blind miss).
-	# Presentation hooks (damage numbers, particles, shake, death FX) and the
-	# kill attribution helper are out of scope for this layer.
+	# Damage numbers and hit particles remain outside the prototype view, but
+	# the source death explosion/shake snapshot is retained for Layer 8f.
 	if source != null and raw_damage > 0 and blind_live(source, damage_type):
 		if blind_roll() < float(source.get("blind_amount")):
 			return -1
@@ -358,5 +583,32 @@ func take_damage(
 		hp = 0.0
 		alive = false
 		defeated = true
+		death_fx_active = true
+		death_fx_timer = death_fx_max_timer
+		death_fx_flash_timer = death_fx_flash_max
+		death_fx_shake_intensity = 28 if boss_class == "true" else 20
 		clear_tower_debuffs()
 	return effective
+
+
+func death_presentation() -> Dictionary:
+	# Source EffectManager.add_death_explosion(..., size="large") plus the
+	# boss-class shake values. This is a copy so retiring the BossState cannot
+	# invalidate the renderer's pending effect.
+	return {
+		"boss_type": boss_type,
+		"boss_class": boss_class,
+		"position": position,
+		"color": color,
+		"color_dark": color_dark,
+		"entrance_color": entrance_color,
+		"radius": radius,
+		"timer": death_fx_timer,
+		"max_timer": death_fx_max_timer,
+		"flash_timer": death_fx_flash_timer,
+		"flash_max": death_fx_flash_max,
+		"particle_count": death_fx_particle_count,
+		"particle_min": death_fx_particle_min,
+		"particle_max": death_fx_particle_max,
+		"shake_intensity": death_fx_shake_intensity
+	}

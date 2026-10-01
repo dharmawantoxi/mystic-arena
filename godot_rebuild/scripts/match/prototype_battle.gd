@@ -19,8 +19,11 @@ const AiShields = preload("res://scripts/match/ai_shields.gd")
 const AiDraft = preload("res://scripts/match/ai_draft.gd")
 const ItemShopUI = preload("res://scripts/match/item_shop_ui.gd")
 const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
+const BossAI = preload("res://scripts/match/boss_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
+const BOSS_DATA := "res://data/bosses/boss_stats.json"
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
@@ -90,6 +93,28 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
+# Layer 8b/8c/8d/8e/8f: match conditions, live boss combat, clocks and
+# presentation payloads. Rendering remains in prototype_view.gd.
+var boss_table: Dictionary = {}
+var boss_rng := RandomNumberGenerator.new()
+var active_boss: BossState = null
+var pending_mini_bosses: Array[Dictionary] = []
+var true_boss_spawned := false
+var red_towers_destroyed := 0
+var _pending_red_tower_deaths := 0
+var _mini_boss_schedule: Dictionary = {}
+var bosses_defeated_this_run := 0
+var bosses_defeated_this_match: Array[String] = []
+var unlocked_bosses: Array[String] = []
+var purchased_heroes: Array[String] = []
+var heroes_unlocked_this_match: Array[String] = []
+var boss_rewards: Array[Dictionary] = []
+# Layer 8f: death FX survives registry retirement, like source EffectManager.
+var boss_death_presentations: Array[Dictionary] = []
+var boss_screen_shake_intensity := 0.0
+var boss_screen_shake_timer := 0
+var score := 0
+var _victory_unlocks_granted := false
 
 
 func _init() -> void:
@@ -97,6 +122,10 @@ func _init() -> void:
 	spawn_rng.seed = SPAWN_SEED
 	var parsed = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_DATA))
 	level_config = parsed if parsed is Dictionary else {}
+	var boss_parsed = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
+	boss_table = boss_parsed if boss_parsed is Dictionary else {}
+	boss_rng.randomize()
+	_mini_boss_schedule = _roll_mini_boss_schedule()
 	_apply_difficulty()
 
 
@@ -158,6 +187,9 @@ func set_difficulty(value: String) -> void:
 	# (including an unknown one) leaves every multiplier at 1.0.
 	difficulty = value
 	_apply_difficulty()
+	# A new source run rolls its schedule after difficulty is fixed. Re-roll
+	# here too for callers that configure the rebuild before setup_arena().
+	_mini_boss_schedule = _roll_mini_boss_schedule()
 
 
 func _apply_difficulty() -> void:
@@ -236,6 +268,7 @@ func nexus_level(team: int) -> int:
 func step_tick() -> void:
 	if not is_running():
 		return
+	_tick_boss_death_presentations()
 	# Input transactions are handled by the session before this method.
 	economy.step_tick(wave_count)
 	# Source wave gate ignores heroes; only living minions hold the field.
@@ -248,11 +281,25 @@ func step_tick() -> void:
 		for nexus in nexuses:
 			if nexus != null:
 				nexus.set_wave(wave_count)
+		# Source update_waves queues the scheduled boss before it fills the
+		# ordinary minion queues. A live boss does not block later waves.
+		_queue_scheduled_mini_boss(wave_count)
+		_try_spawn_pending_mini_boss()
 		# Source update_waves: the AI castle auto-levels while the wave starts.
 		_auto_scale_ai_castle()
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
+	# The Python true-boss check runs before the death-reward pass. Keep tower
+	# deaths in a pending counter so a sixth tower triggers on the next tick,
+	# exactly after the source reward loop has committed the event.
+	_spawn_true_boss_if_ready()
+	_step_active_boss()
+	_process_boss_result()
+	_flush_red_tower_deaths()
+	if winner == BLUE and not _victory_unlocks_granted:
+		_auto_unlock_defeated_boss_heroes()
+		_victory_unlocks_granted = true
 	if is_running():
 		_tick_auras_and_items()
 		_tick_item_debuffs()
@@ -396,8 +443,280 @@ func _on_death(source_team: int, target: UnitState) -> void:
 	var before := credited_gold[source_team]
 	super._on_death(source_team, target)
 	economy.credit_kill(source_team, credited_gold[source_team] - before)
+	# The source increments red_towers_destroyed in its later reward loop,
+	# not inside Tower.take_damage. Defer the counter until after the true-boss
+	# check in this tick.
+	if target is StructureState and target.team == RED:
+		var structure := target as StructureState
+		if structure.settings().structure_kind == "tower":
+			_pending_red_tower_deaths += 1
 	if not is_running():
 		scheduler.cancel()
+
+
+func _mini_boss_entries() -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	var source: Dictionary = level_config.get("mini_bosses", {})
+	# Dictionary iteration preserves the source level literal order; the
+	# source rolls waves independently, then zips them to these values.
+	for raw_key in source.keys():
+		result.append({"wave": int(raw_key), "boss_type": String(source[raw_key])})
+	return result
+
+
+func _roll_mini_boss_schedule() -> Dictionary:
+	# Port of Game._roll_mini_boss_schedule: sample unique wave numbers, sort
+	# them, then zip them to the source dictionary's boss order.
+	var entries: Array[Dictionary] = _mini_boss_entries()
+	if entries.is_empty():
+		return {}
+	var boss_count: int = entries.size()
+	var low: int = 20 if difficulty == "easy" else 11
+	var high: int = 40 if difficulty == "easy" else 30
+	if high - low + 1 < boss_count:
+		high = low + boss_count * 5
+	var candidates: Array[int] = []
+	for wave in range(low, high + 1):
+		candidates.append(wave)
+	var picked: Array[int] = []
+	for index in range(boss_count):
+		var selected_index: int = boss_rng.randi_range(index, candidates.size() - 1)
+		var selected_wave: int = candidates[selected_index]
+		candidates[selected_index] = candidates[index]
+		candidates[index] = selected_wave
+		picked.append(selected_wave)
+	picked.sort()
+	var schedule: Dictionary = {}
+	for index in range(boss_count):
+		schedule[picked[index]] = String(entries[index]["boss_type"])
+	return schedule
+
+
+func _queue_scheduled_mini_boss(wave: int) -> void:
+	var boss_value: Variant = _mini_boss_schedule.get(wave, null)
+	if boss_value == null:
+		return
+	pending_mini_bosses.append({"wave": wave, "boss_type": String(boss_value)})
+
+
+func _spawn_boss(boss_type: String) -> BossState:
+	if active_boss != null or boss_type.is_empty():
+		return null
+	var boss := BossState.new()
+	if not boss.setup(boss_type, paths[1], boss_table):
+		return null
+	boss.id = _next_id
+	_next_id += 1
+	_by_id[boss.id] = boss
+	if enemy_scaling_enabled:
+		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
+	active_boss = boss
+	return boss
+
+
+func _boss_enemies() -> Array[UnitState]:
+	# Source Boss.update order: living units, then enemy towers, then enemy
+	# bases. Nexuses are kept separate because `structures` stores them first.
+	var enemies: Array[UnitState] = []
+	if active_boss == null:
+		return enemies
+	for unit in units:
+		if unit.alive and unit.team != active_boss.team:
+			enemies.append(unit)
+	for structure in structures:
+		if (
+			structure.alive
+			and structure.team != active_boss.team
+			and structure.settings().structure_kind == "tower"
+		):
+			enemies.append(structure)
+	for nexus in nexuses:
+		if nexus != null and nexus.alive and nexus.team != active_boss.team:
+			enemies.append(nexus)
+	return enemies
+
+
+func _boss_target(enemies: Array[UnitState]) -> UnitState:
+	if active_boss == null:
+		return null
+	var target: UnitState = null
+	var best_distance := active_boss.attack_range + 100.0
+	for enemy in enemies:
+		var distance := active_boss.position.distance_to(enemy.position)
+		if distance < best_distance:
+			best_distance = distance
+			target = enemy
+	return target
+
+
+func _boss_basic_attack(target: UnitState, enemies: Array[UnitState]) -> void:
+	if active_boss == null:
+		return
+	var boss := active_boss
+	boss.basic_attack_seq += 1
+	boss.attack_facing = boss.facing
+	boss.attack_lock_timer = mini(15, maxi(6, int(boss.attack_cooldown / 3)))
+	_deliver_hit(-1, boss.team, target, boss.damage, "physical", boss.position)
+	var cleave_damage := int(boss.damage * boss.cleave_ratio)
+	if cleave_damage > 0:
+		for enemy in enemies:
+			if (
+				enemy != target
+				and enemy.alive
+				and boss.position.distance_to(enemy.position) <= boss.cleave_radius
+			):
+				# The source omits a school on cleave. Heroes still resolve that
+				# normal hit through their physical armor/evasion path; the
+				# generic unit path remains neutral when no school exists.
+				var cleave_school := "physical" if enemy is HeroState else "neutral"
+				_deliver_hit(-1, boss.team, enemy, cleave_damage, cleave_school, boss.position)
+	boss.timer = boss.effective_attack_cooldown()
+
+
+func _step_active_boss() -> void:
+	# Layer 8e owns the source entrance gate and one-shot enrage transition;
+	# Layer 8f view code consumes the stored intro/death presentation state.
+	if active_boss == null or not active_boss.alive:
+		return
+	var boss := active_boss
+	boss.advance_animation_clock()
+	boss.begin_motion_tick()
+	if boss.stun_timer > 0:
+		return
+	if not boss.advance_combat_clock():
+		return
+	boss.timer = maxi(0, boss.timer - 1)
+	if boss.ability_timer > 0:
+		boss.ability_timer -= 1
+	if boss.ability2_timer > 0:
+		boss.ability2_timer -= 1
+	if boss.ability_active_timer > 0:
+		boss.ability_active_timer -= 1
+		if boss.ability_active_timer <= 0:
+			boss.ability_active = false
+	var enemies := _boss_enemies()
+	var target := _boss_target(enemies)
+	if target == null:
+		boss.target_id = -1
+		boss.move_forward()
+		BossAI.tick(self, boss, enemies, null, INF)
+		return
+	boss.target_id = target.id
+	var distance := boss.position.distance_to(target.position)
+	if distance <= boss.attack_range:
+		boss.face_motion(target.position.x - boss.position.x, target.position.y - boss.position.y)
+		if boss.timer == 0:
+			_boss_basic_attack(target, enemies)
+	else:
+		boss.move_toward(target.position)
+	BossAI.tick(self, boss, enemies, target, distance)
+
+
+func _try_spawn_pending_mini_boss() -> bool:
+	# Port of Game._try_spawn_pending_mini_boss: an active living boss holds
+	# the queue; a dead one is cleared before the oldest pending wave is used.
+	if active_boss != null:
+		if active_boss.alive:
+			return false
+		_by_id.erase(active_boss.id)
+		active_boss = null
+	if pending_mini_bosses.is_empty():
+		return false
+	var entry: Dictionary = pending_mini_bosses.pop_front()
+	var spawned := _spawn_boss(String(entry["boss_type"]))
+	return spawned != null
+
+
+func _spawn_true_boss_if_ready() -> bool:
+	# Port of the true-boss condition in Game.update. The source threshold is
+	# an event count, not the current number of missing red towers.
+	if true_boss_spawned or red_towers_destroyed < 6 or active_boss != null:
+		return false
+	var boss_type := String(level_config.get("true_boss", ""))
+	if boss_type.is_empty():
+		return false
+	var spawned := _spawn_boss(boss_type)
+	if spawned == null:
+		return false
+	true_boss_spawned = true
+	return true
+
+
+func _queue_boss_death_presentation(boss: BossState) -> void:
+	var snapshot := boss.death_presentation()
+	if not snapshot.is_empty():
+		boss_death_presentations.append(snapshot)
+		boss_screen_shake_intensity = maxf(
+			boss_screen_shake_intensity, float(snapshot.get("shake_intensity", 0))
+		)
+		boss_screen_shake_timer = maxi(boss_screen_shake_timer, 8)
+
+
+func boss_presentation_offset() -> Vector2:
+	if boss_screen_shake_timer <= 0 or boss_screen_shake_intensity <= 0.0:
+		return Vector2.ZERO
+	var phase := float(tick_count) * 1.7
+	return Vector2(cos(phase), sin(phase * 1.23)) * boss_screen_shake_intensity
+
+
+func _tick_boss_death_presentations() -> void:
+	# DeathExplosion owns 20–35 tick sparks and an 8 tick central flash in the
+	# source. Keep the payload independent from active_boss retirement.
+	boss_screen_shake_timer = maxi(0, boss_screen_shake_timer - 1)
+	boss_screen_shake_intensity *= 0.85
+	if boss_screen_shake_intensity < 0.5:
+		boss_screen_shake_intensity = 0.0
+	var standing: Array[Dictionary] = []
+	for snapshot in boss_death_presentations:
+		var timer := int(snapshot.get("timer", 0))
+		var flash := int(snapshot.get("flash_timer", 0))
+		snapshot["timer"] = maxi(0, timer - 1)
+		snapshot["flash_timer"] = maxi(0, flash - 1)
+		if int(snapshot.get("timer", 0)) > 0 or int(snapshot.get("flash_timer", 0)) > 0:
+			standing.append(snapshot)
+	boss_death_presentations = standing
+
+
+func _process_boss_result() -> void:
+	# Port of the source defeated-boss reward/unlock pass. The death
+	# presentation payload has already been copied before registry retirement.
+	if active_boss == null or active_boss.alive or not active_boss.defeated:
+		return
+	var boss := active_boss
+	var boss_type := boss.boss_type
+	economy.credit_kill(BLUE, boss.gold_reward)
+	score += boss.gold_reward
+	boss_rewards.append({"boss_type": boss_type, "gold": boss.gold_reward})
+	bosses_defeated_this_run += 1
+	if not bosses_defeated_this_match.has(boss_type):
+		bosses_defeated_this_match.append(boss_type)
+	if not unlocked_bosses.has(boss_type):
+		unlocked_bosses.append(boss_type)
+	_by_id.erase(boss.id)
+	active_boss = null
+	_try_spawn_pending_mini_boss()
+
+
+func _flush_red_tower_deaths() -> void:
+	if _pending_red_tower_deaths <= 0:
+		return
+	red_towers_destroyed += _pending_red_tower_deaths
+	_pending_red_tower_deaths = 0
+
+
+func _auto_unlock_defeated_boss_heroes() -> Array[String]:
+	# Source _auto_unlock_defeated_boss_heroes: victory makes every boss
+	# defeated during this match a free permanent hero unlock. This rebuild has
+	# no save backend yet, so the match-local purchased list is the persistence
+	# boundary exposed to the next layer.
+	for boss_type in bosses_defeated_this_match:
+		if not unlocked_bosses.has(boss_type):
+			unlocked_bosses.append(boss_type)
+		if purchased_heroes.has(boss_type):
+			continue
+		purchased_heroes.append(boss_type)
+		heroes_unlocked_this_match.append(boss_type)
+	return heroes_unlocked_this_match
 
 
 func _on_hero_death(hero: HeroState, source_id: int) -> void:
@@ -621,6 +940,11 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 		if dist <= best_dist:
 			best_dist = dist
 			best = unit
+	if active_boss != null and active_boss.alive and active_boss.team != hero.team:
+		var boss_dist := hero.position.distance_to(active_boss.position)
+		if boss_dist <= best_dist:
+			best_dist = boss_dist
+			best = active_boss
 	return best
 
 
@@ -629,6 +953,8 @@ func _tick_item_debuffs() -> void:
 	# (source TowerDebuffMixin._tick_tower_debuffs).
 	for unit in units:
 		unit.tick_item_debuffs()
+	if active_boss != null and active_boss.alive:
+		active_boss.tick_item_debuffs()
 
 
 func apply_slow(target_id: int, amount: float, duration: int) -> bool:
@@ -779,6 +1105,9 @@ func _hero_skill_nearby(hero: HeroState) -> int:
 			continue
 		if hero.position.distance_to(structure.position) <= reach:
 			count += 1
+	if active_boss != null and active_boss.alive and active_boss.team != hero.team:
+		if hero.position.distance_to(active_boss.position) <= reach:
+			count += 1
 	return count
 
 
@@ -799,6 +1128,29 @@ func _deliver_hit(
 		and _evaded(source_id, target as HeroState, raw_damage, school, damage_type)
 	):
 		return false
+	if target is BossState:
+		var boss := target as BossState
+		if not is_running() or not boss.alive or source_team == boss.team:
+			return false
+		var attacker: Object = get_unit(source_id)
+		var dealt := boss.take_damage(attacker, raw_damage, damage_type, school)
+		if dealt < 0:
+			return false
+		boss.last_hit_source_id = source_id
+		_record(
+			{
+				"kind": "hit",
+				"source_id": source_id,
+				"target_id": boss.id,
+				"from": origin,
+				"to": boss.position,
+				"damage": dealt,
+			}
+		)
+		if not boss.alive:
+			_queue_boss_death_presentation(boss)
+			_record({"kind": "death", "source_id": source_id, "target_id": boss.id})
+		return true
 	return super._deliver_hit(
 		source_id, source_team, target, raw_damage, school, origin, damage_type
 	)
@@ -902,6 +1254,11 @@ func _hero_pick_target(hero: HeroState, reach: float, inclusive: bool) -> UnitSt
 		if (distance <= best_dist) if inclusive else (distance < best_dist):
 			best = structure
 			best_dist = distance
+	if active_boss != null and active_boss.alive and active_boss.team != hero.team:
+		var boss_distance := hero.position.distance_to(active_boss.position)
+		if (boss_distance <= best_dist) if inclusive else (boss_distance < best_dist):
+			best = active_boss
+			best_dist = boss_distance
 	return best
 
 
@@ -1284,6 +1641,19 @@ func _hero_enemy_list() -> Array:
 				}
 			)
 		)
+	if active_boss != null and active_boss.alive:
+		(
+			enemies
+			. append(
+				{
+					"id": active_boss.id,
+					"pos": active_boss.position,
+					"team": active_boss.team,
+					"alive": true,
+					"max_hp": active_boss.max_hp,
+				}
+			)
+		)
 	return enemies
 
 
@@ -1363,12 +1733,13 @@ func _tick_auras_and_items() -> void:
 
 
 func _collect_all_units() -> Array:
-	# Source _collect_all_units: all living heroes + minions + boss. This
-	# rebuild tracks no boss yet, so units alone is sufficient.
+	# Source _collect_all_units: all living heroes + minions + active boss.
 	var out: Array = []
 	for unit in units:
 		if unit != null and unit.alive:
 			out.append(unit)
+	if active_boss != null and active_boss.alive:
+		out.append(active_boss)
 	return out
 
 

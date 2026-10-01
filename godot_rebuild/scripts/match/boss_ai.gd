@@ -1,0 +1,628 @@
+# gdlint:disable=max-file-lines
+extends RefCounted
+## Layer 8d: source Boss smart ability dispatch for the first active slice.
+## The generic Boss ability path is also retained for boss IDs without a native
+## recipe in this active match. Entrance/enrage clocks and presentation stay in
+## later layers.
+
+const BossState = preload("res://scripts/match/boss_state.gd")
+const Damage = preload("res://scripts/combat/damage_rules.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
+const StructureState = preload("res://scripts/combat/structure_state.gd")
+const UnitState = preload("res://scripts/combat/unit_state.gd")
+
+
+static func tick(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, target_distance: float
+) -> void:
+	if boss == null or not boss.alive:
+		return
+	# Boss.update checks the true-boss heal before it looks for a target.
+	_heal_ability_if_ready(boss)
+	if target == null:
+		return
+	_tick_smart_clocks(world, boss, target)
+	match boss.boss_type:
+		"gornak":
+			_gornak(world, boss, enemies, target, target_distance)
+		"morgath":
+			_morgath(world, boss, enemies, target, target_distance)
+		"drakar":
+			_drakar(world, boss, enemies, target, target_distance)
+		"abaddon":
+			_abaddon(world, boss, enemies, target, target_distance)
+		"alchemist":
+			_alchemist(world, boss, enemies, target, target_distance)
+		"malzareth":
+			_malzareth(world, boss, enemies, target, target_distance)
+		"akashari":
+			_akashari(world, boss, enemies, target, target_distance)
+		"vorenmarr":
+			_vorenmarr(world, boss, enemies, target, target_distance)
+		"nyxarath":
+			_nyxarath(world, boss, enemies, target, target_distance)
+		"thalgryn":
+			_thalgryn(world, boss, enemies, target, target_distance)
+		_:
+			_generic(world, boss, enemies)
+
+
+static func _tick_smart_clocks(world, boss: BossState, target: UnitState) -> void:
+	if boss.q_timer > 0:
+		boss.q_timer -= 1
+	if boss.w_timer > 0:
+		boss.w_timer -= 1
+	if boss.e_timer > 0:
+		boss.e_timer -= 1
+	if boss.r_timer > 0:
+		boss.r_timer -= 1
+	if boss.active_skill_timer > 0:
+		boss.active_skill_timer -= 1
+		if boss.active_skill_timer <= 0:
+			boss.active_skill = ""
+	if boss.rage_active:
+		boss.rage_timer -= 1
+		if boss.rage_timer <= 0:
+			boss.rage_active = false
+			boss.damage = _source_damage(boss)
+	if boss.defense_timer > 0:
+		boss.defense_timer -= 1
+		if boss.defense_timer <= 0:
+			boss.defense_boost = false
+	if boss.boss_type == "morgath":
+		_tick_morgath_effects(world, boss, target)
+
+
+static func _tick_morgath_effects(world, boss: BossState, target: UnitState) -> void:
+	if boss.flux_active_timer > 0:
+		boss.flux_active_timer -= 1
+		if boss.flux_active_timer % 30 == 0:
+			var flux_target: UnitState = world.get_unit(boss.flux_target_id)
+			if flux_target != null and flux_target.alive:
+				_hit(world, boss, flux_target, int(_skill_damage(boss, boss.skill_w_damage) / 4.0))
+				_slow(flux_target, 0.4, 60)
+	if boss.clones_active_timer > 0:
+		boss.clones_active_timer -= 1
+		if boss.clones_active_timer % 40 == 0 and target != null and target.alive:
+			_hit(world, boss, target, int(float(boss.damage) * 0.5))
+
+
+static func _heal_ability_if_ready(boss: BossState) -> void:
+	if (
+		boss.boss_class == "true"
+		and boss.ability2_cooldown > 0
+		and boss.ability2_timer == 0
+		and boss.hp < boss.max_hp * 0.3
+	):
+		boss.ability2_timer = boss.ability2_cooldown
+		var heal_amount := int(boss.max_hp * boss.ability2_heal_pct)
+		boss.hp = minf(float(boss.max_hp), boss.hp + heal_amount)
+
+
+static func _generic(world, boss: BossState, enemies: Array[UnitState]) -> void:
+	# Exact source _use_ability fallback: one AOE, then the generic cooldown.
+	if boss.ability_timer != 0:
+		return
+	boss.ability_timer = boss.ability_cooldown
+	boss.ability_active = true
+	boss.ability_active_timer = 60
+	for enemy in enemies:
+		if boss.position.distance_to(enemy.position) <= boss.ability_range:
+			_hit(world, boss, enemy, boss.eff_ability_damage())
+			_attack_lock(enemy, 60)
+
+
+static func _gornak(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 150.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		boss.mana_void_origin = boss.position
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 180.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+	if distance > 120.0 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 25)
+		var delta := target.position - boss.position
+		var length := delta.length()
+		if length > 0.0:
+			boss.blink_from = boss.position
+			boss.position += delta / length * maxf(0.0, length - 60.0)
+			boss.blink_to = boss.position
+		return
+	if nearby_count >= 3 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 100.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+				_attack_lock(enemy, 60)
+		return
+	if distance < 200.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+
+
+static func _morgath(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var close_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.5 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 60)
+		boss.clones_active_timer = 480
+		boss.clones_positions = [Vector2(-60, 0), Vector2(60, 0)]
+		_heal(boss, 0.15)
+		return
+	if close_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 90.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+				_attack_lock(enemy, 45)
+		_heal(boss, 0.08)
+		return
+	if distance < 300.0 and boss.w_timer == 0 and boss.flux_active_timer <= 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 40)
+		boss.flux_target_id = target.id
+		boss.flux_active_timer = 240
+		_hit(world, boss, target, int(_skill_damage(boss, boss.skill_w_damage) / 2.0))
+		_slow(target, 0.5, 240)
+		return
+	if distance < 350.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 50)
+		_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+
+
+static func _drakar(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 120.0)
+	var low_hp_target := false
+	var target_max := _max_hp(target)
+	if target.alive and target.hp / maxf(1.0, target_max) < 0.3:
+		low_hp_target = true
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if low_hp_target and distance < 100.0 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 60)
+		var damage := _skill_damage(boss, boss.skill_r_damage)
+		if target.hp / maxf(1.0, target_max) < 0.3:
+			damage *= 2
+			boss.r_timer = 120
+		_hit(world, boss, target, damage)
+		return
+	if hp_ratio < 0.4 and not boss.rage_active and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 90)
+		boss.rage_active = true
+		boss.rage_timer = 300
+		boss.damage = int(float(_source_damage(boss)) * 1.5)
+		_heal(boss, 0.1)
+		return
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 45)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 100.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+	if hp_ratio < 0.6 and not boss.defense_boost and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		boss.defense_boost = true
+		boss.defense_timer = 180
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 120.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+				_attack_lock(enemy, 30)
+
+
+static func _abaddon(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 150.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.3 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 100.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		_heal(boss, float(boss.skill_w_shield) / maxf(1.0, float(boss.max_hp)))
+		return
+	if nearby_count >= 3 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 180.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+	if distance < 130.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 30)
+		_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+		return
+	if distance > 100.0 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 40)
+		var delta := target.position - boss.position
+		var length := delta.length()
+		if length > 0.0:
+			boss.position += delta / length * 80.0
+		_hit(world, boss, target, _skill_damage(boss, boss.skill_e_damage))
+
+
+static func _alchemist(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 180.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 3 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		var kills_count := 0
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				var was_alive := enemy.alive
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				if was_alive and not enemy.alive:
+					kills_count += 1
+		if kills_count > 0:
+			boss.hp = minf(float(boss.max_hp), boss.hp + kills_count * 100.0)
+		return
+	if hp_ratio < 0.6 and not boss.rage_active and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		boss.rage_active = true
+		boss.rage_timer = 360
+		boss.damage = int(float(boss.damage) * 1.5)
+		_heal(boss, 0.15)
+		return
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 60)
+		var target_position := target.position if target != null and target.alive else boss.position
+		for enemy in enemies:
+			if enemy.position.distance_to(target_position) <= 100.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+				_slow(enemy, 0.5, 180)
+		return
+	if distance < 200.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+
+
+static func _malzareth(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_attack_lock(enemy, 90)
+		_heal(boss, 0.12)
+		return
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 50)
+		if target != null and target.alive:
+			_hit(world, boss, target, _skill_damage(boss, boss.skill_w_damage))
+			for enemy in enemies:
+				if enemy != target and target.position.distance_to(enemy.position) <= 60.0:
+					_hit(
+						world,
+						boss,
+						enemy,
+						_skill_damage(boss, int(float(boss.skill_w_damage) / 2.0))
+					)
+		return
+	if distance < 260.0 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 45)
+		_hit(world, boss, target, _skill_damage(boss, boss.skill_e_damage))
+		_slow(target, 0.5, 180)
+		return
+	if distance < 280.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 60)
+		if target != null and target.alive:
+			for enemy in enemies:
+				if target.position.distance_to(enemy.position) <= 100.0:
+					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+
+
+static func _akashari(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_slow(enemy, 0.5, 240)
+		_heal(boss, 0.1)
+		return
+	if nearby_count >= 3 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 150.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+	if hp_ratio < 0.6 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		if target != null and target.alive:
+			var delta := target.position - boss.position
+			var length := delta.length()
+			if length > 0.0:
+				var step := minf(length, 150.0)
+				boss.position += delta / length * step
+				boss.direction = 1 if delta.x > 0.0 else -1
+			for enemy in enemies:
+				if boss.position.distance_to(enemy.position) <= 80.0:
+					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		_heal(boss, 0.08)
+		return
+	if distance < 280.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 50)
+		_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+		_slow(target, 0.4, 120)
+
+
+static func _vorenmarr(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	var nearby_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 100)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_attack_lock(enemy, 90)
+		_heal(boss, 0.12)
+		return
+	if hp_ratio < 0.6 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 70)
+		_heal(boss, 0.14)
+		return
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 80)
+		if target != null and target.alive:
+			for enemy in enemies:
+				if target.position.distance_to(enemy.position) <= 120.0:
+					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+					_attack_lock(enemy, 60)
+		return
+	if distance < 280.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 70)
+		if target != null and target.alive:
+			_hit(world, boss, target, _skill_damage(boss, boss.skill_q_damage))
+
+
+static func _nyxarath(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	if boss.necro_buff_active:
+		boss.necro_buff_timer -= 1
+		if boss.necro_buff_timer <= 0:
+			boss.necro_buff_active = false
+			boss.damage = boss.base_damage
+	if boss.presence_active:
+		boss.presence_timer -= 1
+		if boss.presence_timer <= 0:
+			boss.presence_active = false
+	var nearby_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 110)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_attack_lock(enemy, 120)
+				_slow(enemy, 0.6, 240)
+				if enemy is HeroState:
+					var delta := enemy.position - boss.position
+					var length := delta.length()
+					if length > 0.0:
+						enemy.position += delta / length * 20.0
+		_heal(boss, 0.13)
+		return
+	if hp_ratio < 0.6 and not boss.presence_active and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 80)
+		boss.presence_active = true
+		boss.presence_timer = 360
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_attack_lock(enemy, 90)
+				_slow(enemy, 0.5, 240)
+		_heal(boss, 0.1)
+		return
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 70)
+		var kills_count := 0
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 180.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+				if not enemy.alive:
+					kills_count += 1
+		boss.necro_buff_active = true
+		boss.necro_buff_timer = 480
+		boss.damage = int(float(boss.base_damage) * 1.4)
+		var heal_amount := int(float(boss.max_hp) * 0.06) + kills_count * 30
+		boss.hp = minf(float(boss.max_hp), boss.hp + heal_amount)
+		return
+	if distance < 280.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest: UnitState = null
+		var closest_distance := INF
+		for enemy in enemies:
+			var enemy_distance := boss.position.distance_to(enemy.position)
+			if enemy_distance < closest_distance:
+				closest_distance = enemy_distance
+				closest = enemy
+		if closest == null or closest_distance > 300.0:
+			return
+		var direction := (closest.position - boss.position).normalized()
+		for enemy in enemies:
+			var relative := enemy.position - boss.position
+			var projection := relative.dot(direction)
+			var perpendicular := absf(relative.x * -direction.y + relative.y * direction.x)
+			if projection > 0.0 and projection < 280.0 and perpendicular < 50.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+				_attack_lock(enemy, 45)
+
+
+static func _thalgryn(
+	world, boss: BossState, enemies: Array[UnitState], target: UnitState, distance: float
+) -> void:
+	if boss.morph_buff_active:
+		boss.morph_buff_timer -= 1
+		if boss.morph_buff_timer <= 0:
+			boss.morph_buff_active = false
+			boss.damage = boss.base_damage
+	var nearby_count := _count_near(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if hp_ratio < 0.4 and nearby_count >= 2 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 80)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+				_slow(enemy, 0.4, 180)
+		_heal(boss, 0.1)
+		return
+	if hp_ratio < 0.55 and not boss.morph_buff_active and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		boss.morph_buff_active = true
+		boss.morph_buff_timer = 300
+		boss.damage = int(float(boss.base_damage) * 1.35)
+		_heal(boss, 0.14)
+		return
+	if distance > 150.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 60)
+		if target != null and target.alive:
+			var delta := target.position - boss.position
+			var length := delta.length()
+			if length > 0.0:
+				var direction := delta / length
+				for enemy in enemies:
+					var relative := enemy.position - boss.position
+					var projection := relative.dot(direction)
+					var perpendicular := absf(relative.x * -direction.y + relative.y * direction.x)
+					if projection > 0.0 and projection < 250.0 and perpendicular < 50.0:
+						_hit(world, boss, enemy, _skill_damage(boss, boss.skill_q_damage))
+				boss.position += direction * minf(length, 200.0)
+		return
+	if distance < 280.0 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 50)
+		if target != null and target.alive:
+			_hit(world, boss, target, _skill_damage(boss, boss.skill_w_damage))
+			_attack_lock(target, 60)
+			for enemy in enemies:
+				if enemy != target and target.position.distance_to(enemy.position) <= 60.0:
+					_hit(
+						world,
+						boss,
+						enemy,
+						_skill_damage(boss, int(float(boss.skill_w_damage) / 3.0))
+					)
+
+
+static func _set_skill(boss: BossState, key: String, duration: int) -> void:
+	boss.active_skill = key
+	boss.active_skill_timer = duration
+
+
+static func _count_near(boss: BossState, enemies: Array[UnitState], radius: float) -> int:
+	var result := 0
+	for enemy in enemies:
+		if boss.position.distance_to(enemy.position) <= radius:
+			result += 1
+	return result
+
+
+static func _skill_damage(boss: BossState, base: int) -> int:
+	var multiplier := 1.0
+	if boss.skill_down_timer > 0:
+		multiplier *= maxf(0.0, 1.0 - boss.skill_down_amount)
+	multiplier *= boss.dmg_scaling_mult
+	if boss.is_enraged:
+		multiplier *= 1.25
+	return Damage.rounded_like_python(float(base) * multiplier)
+
+
+static func _source_damage(boss: BossState) -> int:
+	var multiplier := 1.0
+	if boss.skill_down_timer > 0:
+		multiplier *= maxf(0.0, 1.0 - boss.skill_down_amount)
+	if boss.is_enraged:
+		multiplier *= 1.25
+	return Damage.rounded_like_python(float(boss.base_damage) * multiplier)
+
+
+static func _max_hp(target: UnitState) -> float:
+	if target is HeroState:
+		return (target as HeroState).max_hp
+	return target.definition.max_hp
+
+
+static func _heal(boss: BossState, fraction: float) -> void:
+	boss.hp = minf(float(boss.max_hp), boss.hp + int(float(boss.max_hp) * fraction))
+
+
+static func _hit(world, boss: BossState, target: UnitState, raw_damage: int) -> void:
+	if target == null or not target.alive or raw_damage <= 0:
+		return
+	var school := "physical" if target is HeroState else "neutral"
+	world._deliver_hit(boss.id, boss.team, target, raw_damage, school, boss.position)
+
+
+static func _slow(target: UnitState, amount: float, duration: int) -> void:
+	if target == null or not target.alive or target is StructureState:
+		return
+	if amount > target.slow_amount or target.slow_timer < duration:
+		target.slow_amount = amount
+		target.slow_timer = duration
+
+
+static func _attack_lock(target: UnitState, duration: int) -> void:
+	if target == null or not target.alive or target is StructureState:
+		return
+	if target is HeroState:
+		var hero := target as HeroState
+		hero.attack_timer = maxi(hero.attack_timer, duration)
+	else:
+		target.cooldown_ticks = maxi(target.cooldown_ticks, duration)

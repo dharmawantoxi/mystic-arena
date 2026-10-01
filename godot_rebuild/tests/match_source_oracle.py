@@ -1,10 +1,14 @@
-"""Oracle for the level-1 subset: original source scheduler, economy, slot, build/sell methods.
-Only presentation, bosses, random spawn jitter and AI auto-upgrades are stubbed.
+"""Oracle for the level-1 subset and the source boss match conditions.
+The scheduler, mini-boss queue, true-boss gate, tower counter, boss reward and
+victory unlock method are executed from the original AST. Presentation, RNG
+visuals and AI auto-upgrades remain outside this fixture.
 No pygame/game import and no previous migration converter is used.
 """
 import ast
 import json
+import random
 import sys
+import types
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -21,12 +25,62 @@ def compile_method(node, env):
     return env[node.name]
 
 
+class OracleBoss:
+    """Only the fields touched by the original match methods."""
+
+    def __init__(self, boss_type, lane_path):
+        self.boss_type = boss_type
+        self.name = str(boss_type).title()
+        self.boss_class = "true" if boss_type == "abaddon" else "mini"
+        self.alive = True
+        self.defeated = False
+        self.gold_reward = 77 if boss_type == "gornak" else 99
+        self.x, self.y = lane_path[-1] if lane_path else (0, 0)
+        self.scaling = None
+
+    def apply_scaling(self, hp_mult, damage_mult, speed_mult):
+        self.scaling = [hp_mult, damage_mult, speed_mult]
+
+
+class OracleCinematic:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def is_active(self):
+        return False
+
+
+class OracleSaveManager:
+    @staticmethod
+    def save(_data):
+        pass
+
+
+def install_boss_imports():
+    """Keep imports inside the original methods while avoiding pygame."""
+    bosses = types.ModuleType("bosses")
+    base_boss = types.ModuleType("bosses.base_boss")
+    base_boss.Boss = OracleBoss
+    render = types.ModuleType("_render")
+    render.BossIntroCinematic = OracleCinematic
+    render.BossDeathAnimation = OracleCinematic
+    system = types.ModuleType("_system")
+    system.SaveManager = OracleSaveManager
+    sys.modules["bosses"] = bosses
+    sys.modules["bosses.base_boss"] = base_boss
+    sys.modules["_render"] = render
+    sys.modules["_system"] = system
+
+
 def source_fixture():
     env = namespace()
+    install_boss_imports()
     tree = ast.parse((ROOT / "_core.py").read_text(encoding="utf-8"))
     game_class = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "Game")
     methods = {n.name: n for n in game_class.body if isinstance(n, ast.FunctionDef)}
-    selected = [methods[n] for n in ("update_waves", "_get_wave_composition", "_generate_build_slots_from_lanes", "try_build_tower")]
+    selected = [methods[n] for n in ("update_waves", "_try_spawn_pending_mini_boss",
+                                     "_roll_mini_boss_schedule", "_get_wave_composition",
+                                     "_generate_build_slots_from_lanes", "try_build_tower")]
     cls = ast.ClassDef(name="SourceGame", bases=[], keywords=[], body=selected, decorator_list=[])
     exec(compile(ast.fix_missing_locations(ast.Module(body=[cls], type_ignores=[])), "<source match subset>", "exec"), env)
     for name in ("compute_starting_gold", "compute_gold_per_second"):
@@ -35,6 +89,8 @@ def source_fixture():
     lane_ids = {"top": 0, "mid": 1, "bot": 2}
     noop = lambda *args, **kwargs: None
     env["Minion"] = lambda kind, team, lane, level, path: SimpleNamespace(kind=kind, team=team, lane=lane, alive=True)
+
+    level_one = level_config("LEVEL_1")
 
     def game():
         g = env["SourceGame"]()
@@ -45,16 +101,24 @@ def source_fixture():
         g.red_base = SimpleNamespace(level=1, set_wave=noop)
         g.minions = []
         g.map_renderer = SimpleNamespace(get_lane_path=lambda lane: path_data[lane])
-        g.level_config = {"mini_bosses": {}}
+        g.level_config = level_one
+        g._mini_boss_schedule = {10: "gornak", 15: "morgath", 25: "drakar"}
+        g.pending_mini_bosses = []
+        g.active_boss = None
+        g.boss_intro = None
+        g.enemy_scaling_enabled = False
+        g.enemy_hp_mult, g.enemy_damage_mult, g.enemy_speed_mult = 1.0, 1.0, 1.0
         g.effects = SimpleNamespace(announce_wave=noop, show_path_preview=noop)
-        g._try_spawn_pending_mini_boss = noop
         g._auto_scale_ai_castle = noop
+        g.level_number = 1
         return g
 
     result = {"traces": [], "composition": {}, "slots": [], "economy": []}
     for blocked_until in (0, 2050):
         g = game()
-        trace = {"blocked_until": blocked_until, "spawns": [], "starts": [], "snapshots": []}
+        trace = {"blocked_until": blocked_until, "spawns": [], "starts": [], "snapshots": [], "bosses": []}
+        previous_boss = None
+        previous_pending = 0
         for tick in range(1, 3801):
             g.minions = [SimpleNamespace(alive=True)] if 301 < tick < blocked_until else []
             previous_wave = g.wave_number
@@ -64,6 +128,11 @@ def source_fixture():
             for unit in g.minions:
                 if hasattr(unit, "kind"):
                     trace["spawns"].append([tick, 0 if unit.team == "blue" else 1, unit.kind, lane_ids[unit.lane]])
+            current_boss = g.active_boss.boss_type if g.active_boss is not None else None
+            current_pending = len(g.pending_mini_bosses)
+            if current_boss != previous_boss or current_pending != previous_pending:
+                trace["bosses"].append([tick, current_boss, current_pending])
+            previous_boss, previous_pending = current_boss, current_pending
             if tick in (300, 301, 320, 321, 461, 1801, 1802, 2049, 2050, 3303, 3800):
                 trace["snapshots"].append([tick, g.wave_number, g.wave_timer, len(g.spawn_queue_blue), len(g.spawn_queue_red)])
         result["traces"].append(trace)
@@ -121,8 +190,134 @@ def source_fixture():
     result["castle_auto_scale"] = castle_auto_scale(env)
     result["minion_spawn_offsets"] = minion_spawn_offsets(env)
     result["enemy_scaling"] = enemy_scaling(env)
+    result["boss_layer"] = boss_layer(env, env["SourceGame"], methods, level_one, path_data)
     result["level_one"] = level_config("LEVEL_1")
     return result
+
+
+def boss_layer(env, game_type, methods, level_one, path_data):
+    """Execute the original 8b methods/blocks against small source-shaped stubs."""
+    schedule_rows = {}
+    for difficulty, seed in (("normal", 8128), ("easy", 8129), ("hard", 8130)):
+        random.seed(seed)
+        game = SimpleNamespace(level_config=level_one, difficulty=difficulty)
+        game_type._roll_mini_boss_schedule(game)
+        schedule_rows[difficulty] = {str(k): v for k, v in
+                                     game_type._roll_mini_boss_schedule(game).items()}
+
+    path = path_data["mid"]
+    queue_game = SimpleNamespace(
+        active_boss=None,
+        pending_mini_bosses=[(10, "gornak"), (15, "morgath"), (25, "drakar")],
+        map_renderer=SimpleNamespace(get_lane_path=lambda lane: path_data[lane]),
+        enemy_scaling_enabled=False,
+        boss_intro=None,
+        enemy_hp_mult=1.0,
+        enemy_damage_mult=1.0,
+        enemy_speed_mult=1.0,
+    )
+    first = game_type._try_spawn_pending_mini_boss(queue_game)
+    first_state = [first, queue_game.active_boss.boss_type,
+                   len(queue_game.pending_mini_bosses)]
+    queue_game.active_boss.alive = False
+    second = game_type._try_spawn_pending_mini_boss(queue_game)
+    queue_state = [second, queue_game.active_boss.boss_type,
+                   len(queue_game.pending_mini_bosses)]
+
+    # The true-boss if block is copied from Game.update's source AST, not
+    # reimplemented here. Its imports resolve to the harmless source-shaped
+    # modules installed above.
+    update = methods["update"]
+    true_if = next(node for node in ast.walk(update)
+                   if isinstance(node, ast.If) and "true_boss_spawned" in ast.unparse(node.test))
+    true_fn = ast.fix_missing_locations(ast.FunctionDef(
+        name="spawn_true_boss", args=ast.arguments(
+            posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=[true_if], decorator_list=[]))
+    exec(compile(ast.Module(body=[true_fn], type_ignores=[]), "<source true boss gate>", "exec"), env)
+    true_rows = []
+    for count in (5, 6):
+        game = SimpleNamespace(
+            true_boss_spawned=False, red_towers_destroyed=count, active_boss=None,
+            level_config=level_one, map_renderer=SimpleNamespace(get_lane_path=lambda lane: path),
+            enemy_scaling_enabled=False, level_number=1, boss_intro=None,
+            enemy_hp_mult=1.0, enemy_damage_mult=1.0, enemy_speed_mult=1.0,
+        )
+        env["spawn_true_boss"](game)
+        true_rows.append({"destroyed": count,
+                          "spawned": game.true_boss_spawned,
+                          "boss": game.active_boss.boss_type if game.active_boss else None})
+
+    tower_for = next(node for node in ast.walk(update)
+                     if isinstance(node, ast.For) and isinstance(node.target, ast.Name)
+                     and node.target.id == "t" and "red_towers_destroyed" in ast.unparse(node))
+    tower_fn = ast.fix_missing_locations(ast.FunctionDef(
+        name="reward_towers", args=ast.arguments(
+            posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=[tower_for], decorator_list=[]))
+    exec(compile(ast.Module(body=[tower_fn], type_ignores=[]), "<source tower rewards>", "exec"), env)
+    towers = [SimpleNamespace(team="red", alive=False, gold_reward=11),
+              SimpleNamespace(team="blue", alive=False, gold_reward=13),
+              SimpleNamespace(team="red", alive=True, gold_reward=17)]
+    tower_game = SimpleNamespace(towers=towers, gold=0, score=0,
+                                 red_towers_destroyed=0,
+                                 ai=SimpleNamespace(gold=0))
+    env["reward_towers"](tower_game)
+    tower_rows = {"gold": tower_game.gold, "score": tower_game.score,
+                  "red_towers_destroyed": tower_game.red_towers_destroyed,
+                  "ai_gold": tower_game.ai.gold,
+                  "rewarded": [bool(getattr(t, "_rewarded", False)) for t in towers]}
+
+    boss_if = next(node for node in ast.walk(update)
+                   if isinstance(node, ast.If) and "defeated" in ast.unparse(node.test)
+                   and "active_boss" in ast.unparse(node.test))
+    boss_fn = ast.fix_missing_locations(ast.FunctionDef(
+        name="reward_boss", args=ast.arguments(
+            posonlyargs=[], args=[ast.arg(arg="self")], kwonlyargs=[], kw_defaults=[], defaults=[]),
+        body=[boss_if], decorator_list=[]))
+    exec(compile(ast.Module(body=[boss_fn], type_ignores=[]), "<source boss reward>", "exec"), env)
+    defeated = OracleBoss("gornak", path)
+    defeated.alive = False
+    defeated.defeated = True
+    reward_game = SimpleNamespace(
+        active_boss=defeated, gold=0, score=0, bosses_defeated_this_run=0,
+        bosses_defeated_this_match=[], unlocked_bosses=[], purchased_heroes=[],
+        save_data={"unlocked_bosses": []}, effects=SimpleNamespace(
+            add_gold_popup=lambda *args: None,
+            unlock_achievement=lambda *args: None,
+            register_kill=lambda *args, **kwargs: None),
+        _process_boss_kill=lambda *args: None,
+        _try_spawn_pending_mini_boss=lambda: None,
+    )
+    env["reward_boss"](reward_game)
+    reward_row = {"gold": reward_game.gold, "score": reward_game.score,
+                  "defeated": reward_game.bosses_defeated_this_run,
+                  "match": reward_game.bosses_defeated_this_match,
+                  "unlocked": reward_game.unlocked_bosses,
+                  "active": reward_game.active_boss}
+
+    unlock_fn = next(node for node in game_type.__dict__.values() if False) if False else None
+    unlock_ast = next(n for n in next(n for n in ast.parse(
+        (ROOT / "_core.py").read_text(encoding="utf-8")).body
+        if isinstance(n, ast.ClassDef) and n.name == "Game").body
+        if isinstance(n, ast.FunctionDef) and n.name == "_auto_unlock_defeated_boss_heroes")
+    compile_method(unlock_ast, env)
+    env["get_all_hero_types"] = lambda: {"gornak": {"name": "Gornak"},
+                                          "abaddon": {"name": "Abaddon"}}
+    unlock_game = SimpleNamespace(
+        save_data={"purchased_heroes": ["kaizen"], "unlocked_bosses": []},
+        purchased_heroes=["kaizen"], unlocked_bosses=[],
+        bosses_defeated_this_match=["gornak", "abaddon", "gornak"],
+        heroes_unlocked_this_match=[],
+        effects=SimpleNamespace(unlock_achievement=lambda *args: None),
+    )
+    newly = env["_auto_unlock_defeated_boss_heroes"](unlock_game)
+    unlock_row = {"newly": newly, "purchased": unlock_game.purchased_heroes,
+                  "unlocked": unlock_game.unlocked_bosses,
+                  "match": unlock_game.heroes_unlocked_this_match}
+    return {"schedule": schedule_rows, "pending": {"first": first_state, "second": queue_state},
+            "true_boss": true_rows, "tower_rewards": tower_rows,
+            "boss_reward": reward_row, "victory_unlocks": unlock_row}
 
 
 def minion_spawn_offsets(env):
