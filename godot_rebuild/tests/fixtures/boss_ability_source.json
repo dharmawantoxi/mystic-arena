@@ -3352,6 +3352,232 @@
       }
     },
     {
+      "label": "kenshiro_supremacy",
+      "result": {
+        "type": "kenshiro",
+        "skill": "r",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 640,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 8960,
+        "damage": 143,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9350,
+            "alive": true,
+            "hits": [
+              650
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9350,
+            "alive": true,
+            "hits": [
+              650
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9350,
+            "alive": true,
+            "hits": [
+              650
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "kenshiro_assault",
+      "result": {
+        "type": "kenshiro",
+        "skill": "w",
+        "active_skill_timer": 45,
+        "q_timer": 0,
+        "w_timer": 260,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 11200,
+        "damage": 143,
+        "x": 90.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9575,
+            "alive": true,
+            "hits": [
+              425
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "kenshiro_gale",
+      "result": {
+        "type": "kenshiro",
+        "skill": "e",
+        "active_skill_timer": 55,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 300,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 22400,
+        "damage": 143,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9600,
+            "alive": true,
+            "hits": [
+              400
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9600,
+            "alive": true,
+            "hits": [
+              400
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "kenshiro_swiftslash",
+      "result": {
+        "type": "kenshiro",
+        "skill": "q",
+        "active_skill_timer": 35,
+        "q_timer": 200,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 22400,
+        "damage": 143,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9625,
+            "alive": true,
+            "hits": [
+              375
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",

@@ -123,6 +123,12 @@ def source_class():
         "_cast_w_aphotic_shield",
         "_cast_e_darkness_gale",
         "_cast_r_death_sever",
+        "_init_l9_timers",
+        "_tick_l9_timers",
+        "_l9_stats",
+        "_l9_target",
+        "_l9_aoe",
+        "_smart_ai_kenshiro",
     }
     body = [node for node in original.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
     assert {node.name for node in body} == wanted, "Boss ability methods drifted"
@@ -135,7 +141,11 @@ def source_class():
     def stats(self):
         return dict(SOURCE_STATS[self.boss_type])
 
+    def l9_stats(self):
+        return dict(SOURCE_STATS[self.boss_type])
+
     result._get_boss_stats = stats
+    result._l9_stats = l9_stats
     result._shake_screen = lambda self, _intensity: None
     return result
 
@@ -151,6 +161,7 @@ def make_boss(cls, kind, hp_ratio=1.0, target=None):
     boss.max_hp = int(source["hp"])
     boss.hp = int(boss.max_hp * hp_ratio)
     boss.damage = int(source["damage"])
+    boss.direction = -1
     boss.ability_cooldown_max = int(source.get("ability_cooldown", 0))
     boss.ability_damage = int(source.get("ability_damage", 0))
     boss.ability_range = int(source.get("ability_range", 0))
@@ -681,6 +692,42 @@ def source_fixture():
             [(260, 0, 10000, "target"), (100, 0, 10000, "near"), (300, 40, 10000, "splash")],
             260,
             "_smart_ai_razak",
+        ),
+        smart_case(
+            cls,
+            "kenshiro",
+            "kenshiro_supremacy",
+            0.4,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b"), (60, 0, 10000, "c")],
+            20,
+            "_smart_ai_kenshiro",
+        ),
+        smart_case(
+            cls,
+            "kenshiro",
+            "kenshiro_assault",
+            0.5,
+            [(200, 0, 10000, "target")],
+            200,
+            "_smart_ai_kenshiro",
+        ),
+        smart_case(
+            cls,
+            "kenshiro",
+            "kenshiro_gale",
+            1.0,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_kenshiro",
+        ),
+        smart_case(
+            cls,
+            "kenshiro",
+            "kenshiro_swiftslash",
+            1.0,
+            [(80, 0, 10000, "target")],
+            80,
+            "_smart_ai_kenshiro",
         ),
         generic_case(cls),
     ]

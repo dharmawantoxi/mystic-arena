@@ -51,6 +51,8 @@ static func tick(
 			_kunkka(world, boss, enemies, target, target_distance)
 		"razak":
 			_razak(world, boss, enemies, target, target_distance)
+		"kenshiro":
+			_kenshiro(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -828,6 +830,52 @@ static func _razak(
 					_slow(enemy, 0.35, 120)
 
 
+static func _kenshiro(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_kenshiro: R when crowded + low HP, W when HP < 0.55,
+	# E AOE when 2+, Q to closest when dist < 140.
+	# Helpers _init_l9_timers / _tick_l9_timers are handled by _tick_smart_clocks;
+	# _l9_stats maps to boss.skill_*_cooldown/damage; _l9_target is closest alive;
+	# _l9_aoe is inclusive radial hit.
+	var nearby_count := _count_near_alive(boss, enemies, 200.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if nearby_count >= 3 and hp_ratio < 0.5 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 70)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+	if hp_ratio < 0.55 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			var delta := closest.position - boss.position
+			var length := delta.length()
+			if length > 1.0:
+				var step := minf(length, 90.0)
+				boss.position += delta / length * step
+				boss.direction = 1 if delta.x > 0.0 else -1
+				boss.facing = float(boss.direction)
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 150.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+	if distance < 140.0 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest_q := _closest_alive(boss, enemies)
+		if closest_q != null and closest_q.alive:
+			_hit(world, boss, closest_q, _skill_damage(boss, boss.skill_q_damage))
+
+
 static func _set_skill(boss: BossState, key: String, duration: int) -> void:
 	boss.active_skill = key
 	boss.active_skill_timer = duration
@@ -839,6 +887,29 @@ static func _count_near(boss: BossState, enemies: Array[UnitState], radius: floa
 		if boss.position.distance_to(enemy.position) <= radius:
 			result += 1
 	return result
+
+
+static func _count_near_alive(boss: BossState, enemies: Array[UnitState], radius: float) -> int:
+	var result := 0
+	for enemy in enemies:
+		if not enemy.alive:
+			continue
+		if boss.position.distance_to(enemy.position) <= radius:
+			result += 1
+	return result
+
+
+static func _closest_alive(boss: BossState, enemies: Array[UnitState]) -> UnitState:
+	var best: UnitState = null
+	var best_distance := INF
+	for enemy in enemies:
+		if not enemy.alive:
+			continue
+		var distance := boss.position.distance_to(enemy.position)
+		if distance < best_distance:
+			best_distance = distance
+			best = enemy
+	return best
 
 
 static func _skill_damage(boss: BossState, base: int) -> int:
