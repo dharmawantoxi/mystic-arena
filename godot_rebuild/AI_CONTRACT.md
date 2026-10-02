@@ -848,10 +848,15 @@ dan Swiftslash, dengan helper L9 `_init_l9_timers`/`_tick_l9_timers`/`_l9_stats`
 `_l9_target`/`_l9_aoe`, gerbang source (R saat 3+ enemy dalam 200 + HP < 0.5
 dengan AOE 190, W saat HP < 0.55 dengan dash `min(d, 90)` + hit closest, E saat
 2+ enemy dalam 200 dengan AOE 150, Q saat dist < 140 dengan hit closest) dan
-active window 70/45/55/35 tick. Fixture menjadi 63 kasus dan native replay
-mengunci parity tanpa mengklaim roster boss lengkap. CI kode Kenshiro Godot
-4.7.2 hijau pada run [36951758718](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36951758718):
-**1.187.870 native checks**; `validate_project.py` **5968 static checks**.
+active window 70/45/55/35 tick; commit `3ccd59c` menambah Khazan: Vanishing
+Execution, Spin Carnage, Leap Smash dan Chained Blade, dengan gerbang source
+(R saat 2+ enemy dalam 210 + HP < 0.45 dengan AOE 210, E saat 3+ enemy dalam
+210 dengan AOE 160, W saat dist > 120 dengan dash `min(d, 110)` lalu AOE 90 dari
+posisi BARU, Q saat dist < 150 dengan hit closest) dan active window 75/60/50/40
+tick. Fixture menjadi 67 kasus dan native replay mengunci parity tanpa
+mengklaim roster boss lengkap. CI kode Khazan Godot 4.7.2 hijau pada run
+[36954023758](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36954023758):
+**1.188.033 native checks**; `validate_project.py` **5968 static checks**.
 
 Lapisan **8e** (`c635a06`) memindahkan clock gameplay entrance/enrage:
 `BossState` memajukan `anim_time`/`pulse`, menahan seluruh gerak/serangan/heal/
@@ -878,8 +883,8 @@ belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
 CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
-(Kenshiro code [36951758718](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36951758718));
-**1.187.870 native checks**; `validate_project.py` 5968 static;
+(Khazan code [36954023758](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36954023758));
+**1.188.033 native checks**; `validate_project.py` 5968 static;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0fa38-mystic-arena` (PR
@@ -892,10 +897,10 @@ CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
 > (`61184e0`, run 36710717265) memindahkan ability/smart AI slice awal,
 > generic ability, active-skill/cooldown clocks, dan true-boss heal; sub-layer
 > **8d-1** (`6ac3bc5` + `1b21813` + `7cfdf7f` + `937fa7e` + `2b3ba1e` +
-> `3057043` + `a82b3be` + `27f73f1` + `8858530` + `c23b6b7` + `fcca743`, code run 36951758718)
+> `3057043` + `a82b3be` + `27f73f1` + `8858530` + `c23b6b7` + `fcca743` + `3ccd59c`, code run 36954023758)
 > menambah smart AI Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath,
-> Thalgryn, Syrentha, Gravewake, Kunkka, Razak dan Kenshiro saja; fixture oracle/native
-> replay kini 63 kasus;
+> Thalgryn, Syrentha, Gravewake, Kunkka, Razak, Kenshiro dan Khazan saja; fixture oracle/native
+> replay kini 67 kasus;
 > layer **8e** (`c635a06`, run 36716265830) memindahkan entrance/enrage clock
 > dan gate gameplay; layer **8f** (`8c8787f`, run 36725358545) memindahkan
 > presentasi intro/death boss saja, termasuk entrance aura/text, death
