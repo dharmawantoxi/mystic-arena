@@ -1,4 +1,4 @@
-# gdlint:disable=max-file-lines
+# gdlint:disable=max-file-lines,max-public-methods,max-line-length,max-returns,function-arguments-number
 extends RefCounted
 ## Layer 8d: source Boss smart ability dispatch for the first active slice.
 ## The generic Boss ability path is also retained for boss IDs without a native

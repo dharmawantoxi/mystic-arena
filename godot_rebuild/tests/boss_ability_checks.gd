@@ -489,169 +489,907 @@ func run(check: Callable) -> void:
 		20.0
 	)
 	_case(check, cases, "vraskhan_thorned", "vraskhan", 1.0, [[80, 0, 10000, "target"]], 80.0)
-	_case(check, cases, "aurethzar_r", "aurethzar", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "aurethzar_w", "aurethzar", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"aurethzar_r",
+		"aurethzar",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"aurethzar_w",
+		"aurethzar",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "aurethzar_e", "aurethzar", 1.0, [[140, 0, 10000, "target"]], 140.0)
 	_case(check, cases, "aurethzar_q", "aurethzar", 1.0, [[300, 0, 10000, "target"]], 300.0)
-	_case(check, cases, "aeralith_r", "aeralith", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "aeralith_e", "aeralith", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "aeralith_w", "aeralith", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"aeralith_r",
+		"aeralith",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"aeralith_e",
+		"aeralith",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"aeralith_w",
+		"aeralith",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "aeralith_q", "aeralith", 1.0, [[300, 0, 10000, "target"]], 300.0)
-	_case(check, cases, "aurex_r", "aurex", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
+	_case(
+		check,
+		cases,
+		"aurex_r",
+		"aurex",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
 	_case(check, cases, "aurex_e", "aurex", 0.5, [[200, 0, 10000, "target"]], 200.0)
 	_case(check, cases, "aurex_w", "aurex", 1.0, [[260, 0, 10000, "target"]], 260.0)
 	_case(check, cases, "aurex_q", "aurex", 1.0, [[140, 0, 10000, "target"]], 140.0)
-	_case(check, cases, "nyxareva_r", "nyxareva", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "nyxareva_e", "nyxareva", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"nyxareva_r",
+		"nyxareva",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"nyxareva_e",
+		"nyxareva",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "nyxareva_w", "nyxareva", 0.5, [[200, 0, 10000, "target"]], 200.0)
 	_case(check, cases, "nyxareva_q", "nyxareva", 1.0, [[150, 0, 10000, "target"]], 150.0)
-	_case(check, cases, "thalakryon_r", "thalakryon", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "thalakryon_e", "thalakryon", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "thalakryon_w", "thalakryon", 0.5499999999999999, [[200, 0, 10000, "target"]], 200.0)
+	_case(
+		check,
+		cases,
+		"thalakryon_r",
+		"thalakryon",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"thalakryon_e",
+		"thalakryon",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"thalakryon_w",
+		"thalakryon",
+		0.5499999999999999,
+		[[200, 0, 10000, "target"]],
+		200.0
+	)
 	_case(check, cases, "thalakryon_q", "thalakryon", 1.0, [[320, 0, 10000, "target"]], 320.0)
-	_case(check, cases, "aurelix_r", "aurelix", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "aurelix_e", "aurelix", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"aurelix_r",
+		"aurelix",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check, cases, "aurelix_e", "aurelix", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
 	_case(check, cases, "aurelix_w", "aurelix", 0.5, [[200, 0, 10000, "target"]], 200.0)
 	_case(check, cases, "aurelix_q", "aurelix", 1.0, [[300, 0, 10000, "target"]], 300.0)
-	_case(check, cases, "aurelyssa_r", "aurelyssa", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "aurelyssa_e", "aurelyssa", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"aurelyssa_r",
+		"aurelyssa",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"aurelyssa_e",
+		"aurelyssa",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "aurelyssa_w", "aurelyssa", 0.5, [[200, 0, 10000, "target"]], 200.0)
 	_case(check, cases, "aurelyssa_q", "aurelyssa", 1.0, [[140, 0, 10000, "target"]], 140.0)
-	_case(check, cases, "vargrath_r", "vargrath", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
+	_case(
+		check,
+		cases,
+		"vargrath_r",
+		"vargrath",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
 	_case(check, cases, "vargrath_w", "vargrath", 1.0, [[220, 0, 10000, "target"]], 220.0)
-	_case(check, cases, "vargrath_e", "vargrath", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"vargrath_e",
+		"vargrath",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "vargrath_q", "vargrath", 1.0, [[140, 0, 10000, "target"]], 140.0)
-	_case(check, cases, "nazulmor_r", "nazulmor", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "nazulmor_e", "nazulmor", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "nazulmor_w", "nazulmor", 0.5499999999999999, [[200, 0, 10000, "target"]], 200.0)
+	_case(
+		check,
+		cases,
+		"nazulmor_r",
+		"nazulmor",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"nazulmor_e",
+		"nazulmor",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"nazulmor_w",
+		"nazulmor",
+		0.5499999999999999,
+		[[200, 0, 10000, "target"]],
+		200.0
+	)
 	_case(check, cases, "nazulmor_q", "nazulmor", 1.0, [[330, 0, 10000, "target"]], 330.0)
-	_case(check, cases, "kaeldris_r", "kaeldris", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "kaeldris_e", "kaeldris", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"kaeldris_r",
+		"kaeldris",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"kaeldris_e",
+		"kaeldris",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "kaeldris_w", "kaeldris", 1.0, [[220, 0, 10000, "target"]], 220.0)
 	_case(check, cases, "kaeldris_q", "kaeldris", 1.0, [[140, 0, 10000, "target"]], 140.0)
-	_case(check, cases, "pyraklos_r", "pyraklos", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
+	_case(
+		check,
+		cases,
+		"pyraklos_r",
+		"pyraklos",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
 	_case(check, cases, "pyraklos_e", "pyraklos", 0.45, [[200, 0, 10000, "target"]], 200.0)
-	_case(check, cases, "pyraklos_w", "pyraklos", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"pyraklos_w",
+		"pyraklos",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "pyraklos_q", "pyraklos", 1.0, [[160, 0, 10000, "target"]], 160.0)
-	_case(check, cases, "velmyrth_r", "velmyrth", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
+	_case(
+		check,
+		cases,
+		"velmyrth_r",
+		"velmyrth",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
 	_case(check, cases, "velmyrth_w", "velmyrth", 1.0, [[230, 0, 10000, "target"]], 230.0)
-	_case(check, cases, "velmyrth_e", "velmyrth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"velmyrth_e",
+		"velmyrth",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "velmyrth_q", "velmyrth", 1.0, [[140, 0, 10000, "target"]], 140.0)
-	_case(check, cases, "solvarin_r", "solvarin", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "solvarin_e", "solvarin", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "solvarin_w", "solvarin", 0.5499999999999999, [[200, 0, 10000, "target"]], 200.0)
+	_case(
+		check,
+		cases,
+		"solvarin_r",
+		"solvarin",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"solvarin_e",
+		"solvarin",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"solvarin_w",
+		"solvarin",
+		0.5499999999999999,
+		[[200, 0, 10000, "target"]],
+		200.0
+	)
 	_case(check, cases, "solvarin_q", "solvarin", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "azureth_r", "azureth", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "azureth_e", "azureth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "azureth_w", "azureth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"azureth_r",
+		"azureth",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check, cases, "azureth_e", "azureth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
+	_case(
+		check, cases, "azureth_w", "azureth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
 	_case(check, cases, "azureth_q", "azureth", 1.0, [[380, 0, 10000, "target"]], 380.0)
-	_case(check, cases, "luminar_r", "luminar", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "luminar_e", "luminar", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "luminar_w", "luminar", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"luminar_r",
+		"luminar",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check, cases, "luminar_e", "luminar", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
+	_case(
+		check, cases, "luminar_w", "luminar", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
 	_case(check, cases, "luminar_q", "luminar", 1.0, [[390, 0, 10000, "target"]], 390.0)
-	_case(check, cases, "solara_r", "solara", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
+	_case(
+		check,
+		cases,
+		"solara_r",
+		"solara",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
 	_case(check, cases, "solara_w", "solara", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
 	_case(check, cases, "solara_e", "solara", 0.6, [[200, 0, 10000, "target"]], 200.0)
 	_case(check, cases, "solara_q", "solara", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "pyraethis_r", "pyraethis", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "pyraethis_e", "pyraethis", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "pyraethis_w", "pyraethis", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"pyraethis_r",
+		"pyraethis",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"pyraethis_e",
+		"pyraethis",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"pyraethis_w",
+		"pyraethis",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "pyraethis_q", "pyraethis", 1.0, [[410, 0, 10000, "target"]], 410.0)
-	_case(check, cases, "auroth_r", "auroth", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
+	_case(
+		check,
+		cases,
+		"auroth_r",
+		"auroth",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
 	_case(check, cases, "auroth_e", "auroth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "auroth_w", "auroth", 0.5499999999999999, [[200, 0, 10000, "target"]], 200.0)
+	_case(
+		check, cases, "auroth_w", "auroth", 0.5499999999999999, [[200, 0, 10000, "target"]], 200.0
+	)
 	_case(check, cases, "auroth_q", "auroth", 1.0, [[330, 0, 10000, "target"]], 330.0)
-	_case(check, cases, "morvein_r", "morvein", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "morvein_e", "morvein", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "morvein_w", "morvein", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"morvein_r",
+		"morvein",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check, cases, "morvein_e", "morvein", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
+	_case(
+		check, cases, "morvein_w", "morvein", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
 	_case(check, cases, "morvein_q", "morvein", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "thorvak_r", "thorvak", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "thorvak_w", "thorvak", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"thorvak_r",
+		"thorvak",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check, cases, "thorvak_w", "thorvak", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
 	_case(check, cases, "thorvak_e", "thorvak", 0.6, [[200, 0, 10000, "target"]], 200.0)
 	_case(check, cases, "thorvak_q", "thorvak", 1.0, [[330, 0, 10000, "target"]], 330.0)
-	_case(check, cases, "yamako_r", "yamako", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
+	_case(
+		check,
+		cases,
+		"yamako_r",
+		"yamako",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
 	_case(check, cases, "yamako_e", "yamako", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
 	_case(check, cases, "yamako_w", "yamako", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
 	_case(check, cases, "yamako_q", "yamako", 1.0, [[380, 0, 10000, "target"]], 380.0)
-	_case(check, cases, "ignirus_r", "ignirus", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "ignirus_e", "ignirus", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "ignirus_w", "ignirus", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"ignirus_r",
+		"ignirus",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check, cases, "ignirus_e", "ignirus", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
+	_case(
+		check, cases, "ignirus_w", "ignirus", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
 	_case(check, cases, "ignirus_q", "ignirus", 1.0, [[390, 0, 10000, "target"]], 390.0)
 	_case(check, cases, "leoric_r", "leoric", 0.4, [[200, 0, 10000, "target"]], 200.0)
 	_case(check, cases, "leoric_e", "leoric", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
 	_case(check, cases, "leoric_w", "leoric", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
 	_case(check, cases, "leoric_q", "leoric", 1.0, [[330, 0, 10000, "target"]], 330.0)
-	_case(check, cases, "shirotaka_r", "shirotaka", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "shirotaka_e", "shirotaka", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "shirotaka_w", "shirotaka", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"shirotaka_r",
+		"shirotaka",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"shirotaka_e",
+		"shirotaka",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"shirotaka_w",
+		"shirotaka",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "shirotaka_q", "shirotaka", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "seiryukong_r", "seiryukong", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "seiryukong_e", "seiryukong", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "seiryukong_w", "seiryukong", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"seiryukong_r",
+		"seiryukong",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"seiryukong_e",
+		"seiryukong",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"seiryukong_w",
+		"seiryukong",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "seiryukong_q", "seiryukong", 1.0, [[380, 0, 10000, "target"]], 380.0)
-	_case(check, cases, "kaelthorn_r", "kaelthorn", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "kaelthorn_e", "kaelthorn", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "kaelthorn_w", "kaelthorn", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"kaelthorn_r",
+		"kaelthorn",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"kaelthorn_e",
+		"kaelthorn",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"kaelthorn_w",
+		"kaelthorn",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "kaelthorn_q", "kaelthorn", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "solvanth_r", "solvanth", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "solvanth_e", "solvanth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "solvanth_w", "solvanth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"solvanth_r",
+		"solvanth",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"solvanth_e",
+		"solvanth",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"solvanth_w",
+		"solvanth",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "solvanth_q", "solvanth", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "xyrael_r", "xyrael", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
+	_case(
+		check,
+		cases,
+		"xyrael_r",
+		"xyrael",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
 	_case(check, cases, "xyrael_e", "xyrael", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
 	_case(check, cases, "xyrael_w", "xyrael", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
 	_case(check, cases, "xyrael_q", "xyrael", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "nyxareth_4", "nyxareth", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "nyxareth_3", "nyxareth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "nyxareth_2", "nyxareth", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"nyxareth_4",
+		"nyxareth",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"nyxareth_3",
+		"nyxareth",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"nyxareth_2",
+		"nyxareth",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "nyxareth_1", "nyxareth", 1.0, [[400, 0, 10000, "target"]], 400.0)
-	_case(check, cases, "cryssalia_r", "cryssalia", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "cryssalia_e", "cryssalia", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "cryssalia_w", "cryssalia", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"cryssalia_r",
+		"cryssalia",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"cryssalia_e",
+		"cryssalia",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"cryssalia_w",
+		"cryssalia",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "cryssalia_q", "cryssalia", 1.0, [[400, 0, 10000, "target"]], 400.0)
-	_case(check, cases, "kaelthar_r", "kaelthar", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "kaelthar_e", "kaelthar", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "kaelthar_w", "kaelthar", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"kaelthar_r",
+		"kaelthar",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"kaelthar_e",
+		"kaelthar",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"kaelthar_w",
+		"kaelthar",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "kaelthar_q", "kaelthar", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "morkhaera_r", "morkhaera", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "morkhaera_e", "morkhaera", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "morkhaera_w", "morkhaera", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"morkhaera_r",
+		"morkhaera",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"morkhaera_e",
+		"morkhaera",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"morkhaera_w",
+		"morkhaera",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "morkhaera_q", "morkhaera", 1.0, [[400, 0, 10000, "target"]], 400.0)
-	_case(check, cases, "aurelion_r", "aurelion", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "aurelion_e", "aurelion", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "aurelion_w", "aurelion", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"aurelion_r",
+		"aurelion",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"aurelion_e",
+		"aurelion",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"aurelion_w",
+		"aurelion",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "aurelion_q", "aurelion", 1.0, [[380, 0, 10000, "target"]], 380.0)
-	_case(check, cases, "akahime_r", "akahime", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "akahime_e", "akahime", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "akahime_w", "akahime", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"akahime_r",
+		"akahime",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check, cases, "akahime_e", "akahime", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
+	_case(
+		check, cases, "akahime_w", "akahime", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
 	_case(check, cases, "akahime_q", "akahime", 1.0, [[390, 0, 10000, "target"]], 390.0)
-	_case(check, cases, "nyxthrael_r", "nyxthrael", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "nyxthrael_e", "nyxthrael", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "nyxthrael_w", "nyxthrael", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"nyxthrael_r",
+		"nyxthrael",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"nyxthrael_e",
+		"nyxthrael",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"nyxthrael_w",
+		"nyxthrael",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "nyxthrael_q", "nyxthrael", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "sylvantheros_r", "sylvantheros", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "sylvantheros_e", "sylvantheros", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "sylvantheros_w", "sylvantheros", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"sylvantheros_r",
+		"sylvantheros",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"sylvantheros_e",
+		"sylvantheros",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"sylvantheros_w",
+		"sylvantheros",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "sylvantheros_q", "sylvantheros", 1.0, [[400, 0, 10000, "target"]], 400.0)
-	_case(check, cases, "vaelindra_r", "vaelindra", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "vaelindra_e", "vaelindra", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "vaelindra_w", "vaelindra", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"vaelindra_r",
+		"vaelindra",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"vaelindra_e",
+		"vaelindra",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"vaelindra_w",
+		"vaelindra",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "vaelindra_q", "vaelindra", 1.0, [[410, 0, 10000, "target"]], 410.0)
-	_case(check, cases, "astraelion_r", "astraelion", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "astraelion_e", "astraelion", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "astraelion_w", "astraelion", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"astraelion_r",
+		"astraelion",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"astraelion_e",
+		"astraelion",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"astraelion_w",
+		"astraelion",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "astraelion_q", "astraelion", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "morvaenthir_r", "morvaenthir", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "morvaenthir_e", "morvaenthir", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "morvaenthir_w", "morvaenthir", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"morvaenthir_r",
+		"morvaenthir",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"morvaenthir_e",
+		"morvaenthir",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"morvaenthir_w",
+		"morvaenthir",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "morvaenthir_q", "morvaenthir", 1.0, [[400, 0, 10000, "target"]], 400.0)
-	_case(check, cases, "thornvaegrim_r", "thornvaegrim", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "thornvaegrim_e", "thornvaegrim", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "thornvaegrim_w", "thornvaegrim", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"thornvaegrim_r",
+		"thornvaegrim",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"thornvaegrim_e",
+		"thornvaegrim",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"thornvaegrim_w",
+		"thornvaegrim",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "thornvaegrim_q", "thornvaegrim", 1.0, [[340, 0, 10000, "target"]], 340.0)
-	_case(check, cases, "morthraxis_r", "morthraxis", 0.4, [[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]], 20.0)
-	_case(check, cases, "morthraxis_e", "morthraxis", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
-	_case(check, cases, "morthraxis_w", "morthraxis", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(
+		check,
+		cases,
+		"morthraxis_r",
+		"morthraxis",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"morthraxis_e",
+		"morthraxis",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"morthraxis_w",
+		"morthraxis",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
 	_case(check, cases, "morthraxis_q", "morthraxis", 1.0, [[410, 0, 10000, "target"]], 410.0)
 	_generic(check, cases)
 	_true_boss_heal(check)
