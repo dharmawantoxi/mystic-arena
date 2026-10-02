@@ -1700,7 +1700,7 @@ func _case(
 		boss.x_mark_target_id = enemies[0].id
 		boss.x_mark_timer = 1
 	BossAI.tick(world, boss, enemies, enemies[0], distance)
-	_compare(check, expected["result"], boss, enemies)
+	_compare(check, expected["result"], boss, enemies, label)
 
 
 func _persistent_flux(check: Callable, cases: Array) -> void:
@@ -1720,7 +1720,7 @@ func _generic(check: Callable, cases: Array) -> void:
 	for spec in [[20, 0, 10000, "near"], [100, 0, 10000, "far"]]:
 		enemies.append(_target(world, spec))
 	BossAI._generic(world, boss, enemies)
-	_compare(check, expected["result"], boss, enemies)
+	_compare(check, expected["result"], boss, enemies, "generic_ability")
 	check.call(boss.ability_active_timer == 60, "generic ability active window is sixty ticks")
 
 
@@ -1742,13 +1742,15 @@ func _fixture_case(cases: Array, label: String) -> Dictionary:
 	return {}
 
 
-func _compare(check: Callable, expected: Dictionary, boss, enemies: Array[UnitState]) -> void:
+func _compare(
+	check: Callable, expected: Dictionary, boss, enemies: Array[UnitState], label: String = ""
+) -> void:
 	var expected_skill: Variant = expected.get("skill", null)
 	var actual_skill: Variant = boss.active_skill if not boss.active_skill.is_empty() else null
-	check.call(actual_skill == expected_skill, "%s active skill" % expected["type"])
+	check.call(actual_skill == expected_skill, "%s %s active skill" % [label, expected["type"]])
 	check.call(
 		boss.active_skill_timer == int(expected["active_skill_timer"]),
-		"%s active skill timer" % expected["type"]
+		"%s %s active skill timer" % [label, expected["type"]]
 	)
 	for field in [
 		"q_timer",
@@ -1771,28 +1773,41 @@ func _compare(check: Callable, expected: Dictionary, boss, enemies: Array[UnitSt
 		"clones_active_timer"
 	]:
 		var actual: Variant = boss.hp if field == "hp" else boss.get(field)
-		check.call(int(actual) == int(expected[field]), "%s %s" % [expected["type"], field])
+		check.call(
+			int(actual) == int(expected[field]), "%s %s %s" % [label, expected["type"], field]
+		)
 	check.call(
 		boss.ability_active == bool(expected["ability_active"]),
-		"%s generic active flag" % expected["type"]
+		"%s %s generic active flag" % [label, expected["type"]]
 	)
 	check.call(
 		(
 			is_equal_approx(boss.position.x, float(expected["x"]))
 			and is_equal_approx(boss.position.y, float(expected["y"]))
 		),
-		"%s position" % expected["type"]
+		"%s %s position" % [label, expected["type"]]
 	)
-	check.call(boss.rage_active == bool(expected["rage_active"]), "rage flag")
-	check.call(boss.necro_buff_active == bool(expected["necro_buff_active"]), "necromastery flag")
-	check.call(boss.presence_active == bool(expected["presence_active"]), "presence flag")
-	check.call(boss.morph_buff_active == bool(expected["morph_buff_active"]), "morph flag")
-	check.call(boss.mirror_buff_active == bool(expected["mirror_buff_active"]), "mirror flag")
-	check.call(boss.shell_active == bool(expected["shell_active"]), "kraken shell flag")
-	check.call(boss.rum_buff_active == bool(expected["rum_buff_active"]), "rum buff flag")
-	check.call(boss.defense_boost == bool(expected["defense_boost"]), "defense flag")
+	check.call(boss.rage_active == bool(expected["rage_active"]), "%s rage flag" % label)
+	check.call(
+		boss.necro_buff_active == bool(expected["necro_buff_active"]),
+		"%s necromastery flag" % label
+	)
+	check.call(
+		boss.presence_active == bool(expected["presence_active"]), "%s presence flag" % label
+	)
+	check.call(
+		boss.morph_buff_active == bool(expected["morph_buff_active"]), "%s morph flag" % label
+	)
+	check.call(
+		boss.mirror_buff_active == bool(expected["mirror_buff_active"]), "%s mirror flag" % label
+	)
+	check.call(boss.shell_active == bool(expected["shell_active"]), "%s kraken shell flag" % label)
+	check.call(
+		boss.rum_buff_active == bool(expected["rum_buff_active"]), "%s rum buff flag" % label
+	)
+	check.call(boss.defense_boost == bool(expected["defense_boost"]), "%s defense flag" % label)
 	var expected_targets: Array = expected["targets"]
-	check.call(enemies.size() == expected_targets.size(), "target count")
+	check.call(enemies.size() == expected_targets.size(), "%s target count" % label)
 	for index in range(mini(enemies.size(), expected_targets.size())):
 		var target := enemies[index] as HeroState
 		var row: Dictionary = expected_targets[index]
@@ -1800,24 +1815,30 @@ func _compare(check: Callable, expected: Dictionary, boss, enemies: Array[UnitSt
 		var start_hp := 10000
 		if row["name"] == "target" and expected["type"] == "drakar" and row["hp"] == 0:
 			start_hp = 1000
-		check.call(target.hp == float(row["hp"]), "%s target hp" % row["name"])
-		check.call(target.alive == bool(row["alive"]), "%s target alive" % row["name"])
+		if label == "gorath_r_low" and row["name"] == "target":
+			start_hp = 1000
+		check.call(target.hp == float(row["hp"]), "%s %s target hp" % [label, row["name"]])
+		check.call(target.alive == bool(row["alive"]), "%s %s target alive" % [label, row["name"]])
 		var damage_taken := start_hp - int(target.hp)
 		var expected_damage := 0
 		for hit in expected_hits:
 			expected_damage += int(hit)
 		check.call(
-			damage_taken == mini(start_hp, expected_damage), "%s target damage" % row["name"]
+			damage_taken == mini(start_hp, expected_damage),
+			"%s %s target damage" % [label, row["name"]]
 		)
-		check.call(target.attack_timer == int(row["attack_timer"]), "%s attack lock" % row["name"])
+		check.call(
+			target.attack_timer == int(row["attack_timer"]),
+			"%s %s attack lock" % [label, row["name"]]
+		)
 		var slows: Array = row["slows"]
 		if slows.is_empty():
-			check.call(target.slow_timer == 0, "%s has no slow" % row["name"])
+			check.call(target.slow_timer == 0, "%s %s has no slow" % [label, row["name"]])
 		else:
 			check.call(
 				(
 					is_equal_approx(target.slow_amount, float(slows[0][0]))
 					and target.slow_timer == int(slows[0][1])
 				),
-				"%s slow" % row["name"]
+				"%s %s slow" % [label, row["name"]]
 			)
