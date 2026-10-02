@@ -3578,6 +3578,232 @@
       }
     },
     {
+      "label": "khazan_vanishing_execution",
+      "result": {
+        "type": "khazan",
+        "skill": "r",
+        "active_skill_timer": 75,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 660,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 9280,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9300,
+            "alive": true,
+            "hits": [
+              700
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9300,
+            "alive": true,
+            "hits": [
+              700
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "khazan_spin_carnage",
+      "result": {
+        "type": "khazan",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 300,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 23200,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9575,
+            "alive": true,
+            "hits": [
+              425
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9575,
+            "alive": true,
+            "hits": [
+              425
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9575,
+            "alive": true,
+            "hits": [
+              425
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "khazan_leap_smash",
+      "result": {
+        "type": "khazan",
+        "skill": "w",
+        "active_skill_timer": 50,
+        "q_timer": 0,
+        "w_timer": 280,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 23200,
+        "damage": 150,
+        "x": 110.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9550,
+            "alive": true,
+            "hits": [
+              450
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "khazan_chained_blade",
+      "result": {
+        "type": "khazan",
+        "skill": "q",
+        "active_skill_timer": 40,
+        "q_timer": 200,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 23200,
+        "damage": 150,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9600,
+            "alive": true,
+            "hits": [
+              400
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",

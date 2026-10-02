@@ -129,6 +129,7 @@ def source_class():
         "_l9_target",
         "_l9_aoe",
         "_smart_ai_kenshiro",
+        "_smart_ai_khazan",
     }
     body = [node for node in original.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
     assert {node.name for node in body} == wanted, "Boss ability methods drifted"
@@ -728,6 +729,42 @@ def source_fixture():
             [(80, 0, 10000, "target")],
             80,
             "_smart_ai_kenshiro",
+        ),
+        smart_case(
+            cls,
+            "khazan",
+            "khazan_vanishing_execution",
+            0.4,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_khazan",
+        ),
+        smart_case(
+            cls,
+            "khazan",
+            "khazan_spin_carnage",
+            1.0,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b"), (60, 0, 10000, "c")],
+            20,
+            "_smart_ai_khazan",
+        ),
+        smart_case(
+            cls,
+            "khazan",
+            "khazan_leap_smash",
+            1.0,
+            [(200, 0, 10000, "target")],
+            200,
+            "_smart_ai_khazan",
+        ),
+        smart_case(
+            cls,
+            "khazan",
+            "khazan_chained_blade",
+            1.0,
+            [(80, 0, 10000, "target")],
+            80,
+            "_smart_ai_khazan",
         ),
         generic_case(cls),
     ]
