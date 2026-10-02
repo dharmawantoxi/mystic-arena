@@ -18,7 +18,7 @@ func run(check: Callable) -> void:
 	if not fixture is Dictionary or not fixture.has("cases"):
 		return
 	var cases: Array = fixture["cases"]
-	check.call(cases.size() == 251, "boss ability fixture has all first-slice cases")
+	check.call(cases.size() == 319, "boss ability fixture has all first-slice cases")
 	_case(check, cases, "gornak_q", "gornak", 1.0, [[80, 0, 10000, "target"]], 80.0)
 	_case(check, cases, "gornak_blink", "gornak", 1.0, [[200, 0, 10000, "target"]], 200.0)
 	_case(
@@ -1391,6 +1391,254 @@ func run(check: Callable) -> void:
 		20.0
 	)
 	_case(check, cases, "morthraxis_q", "morthraxis", 1.0, [[410, 0, 10000, "target"]], 410.0)
+	_case(
+		check,
+		cases,
+		"ancient_apparition_r",
+		"ancient_apparition",
+		0.3,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"ancient_apparition_q",
+		"ancient_apparition",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"ancient_apparition_e",
+		"ancient_apparition",
+		1.0,
+		[[300, 0, 10000, "target"]],
+		300.0
+	)
+	_case(
+		check,
+		cases,
+		"ancient_apparition_w",
+		"ancient_apparition",
+		1.0,
+		[[100, 0, 10000, "target"]],
+		100.0
+	)
+	_case(
+		check,
+		cases,
+		"ignis_drachorn_r",
+		"ignis_drachorn",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(check, cases, "ignis_drachorn_e", "ignis_drachorn", 0.6, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check,
+		cases,
+		"ignis_drachorn_w",
+		"ignis_drachorn",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check, cases, "ignis_drachorn_q", "ignis_drachorn", 1.0, [[100, 0, 10000, "target"]], 100.0
+	)
+	_case(
+		check,
+		cases,
+		"vhorethzir_r",
+		"vhorethzir",
+		0.3,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(check, cases, "vhorethzir_e", "vhorethzir", 0.5, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check,
+		cases,
+		"vhorethzir_w",
+		"vhorethzir",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(check, cases, "vhorethzir_q", "vhorethzir", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "vaerith_r", "vaerith", 0.4, [[20, 0, 10000, "target"]], 20.0)
+	_case(check, cases, "vaerith_e", "vaerith", 0.6, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check, cases, "vaerith_w", "vaerith", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0
+	)
+	_case(check, cases, "vaerith_q", "vaerith", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "xirthalis_r", "xirthalis", 0.3, [[20, 0, 10000, "target"]], 20.0)
+	_case(check, cases, "xirthalis_q", "xirthalis", 0.6, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check,
+		cases,
+		"xirthalis_w",
+		"xirthalis",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(check, cases, "xirthalis_e", "xirthalis", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(
+		check,
+		cases,
+		"vhyssarion_r",
+		"vhyssarion",
+		0.4,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"vhyssarion_q",
+		"vhyssarion",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"vhyssarion_e",
+		"vhyssarion",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(check, cases, "vhyssarion_w", "vhyssarion", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(
+		check,
+		cases,
+		"khalros_r",
+		"khalros",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(check, cases, "khalros_w", "khalros", 0.6, [[20, 0, 10000, "target"]], 20.0)
+	_case(check, cases, "khalros_e", "khalros", 1.0, [[200, 0, 10000, "target"]], 200.0)
+	_case(check, cases, "khalros_q", "khalros", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "gorath_r_low", "gorath", 1.0, [[20, 0, 1000, "target", 10000]], 20.0)
+	_case(check, cases, "gorath_q", "gorath", 0.6, [[20, 0, 10000, "target"]], 20.0)
+	_case(check, cases, "gorath_w", "gorath", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(check, cases, "gorath_e", "gorath", 1.0, [[200, 0, 10000, "target"]], 200.0)
+	_case(
+		check,
+		cases,
+		"varkul_r",
+		"varkul",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(check, cases, "varkul_e", "varkul", 0.4, [[20, 0, 10000, "target"]], 20.0)
+	_case(check, cases, "varkul_w", "varkul", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "varkul_q", "varkul", 1.0, [[260, 0, 10000, "target"]], 260.0)
+	_case(
+		check,
+		cases,
+		"xerathis_r",
+		"xerathis",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"], [80, 0, 10000, "d"]],
+		20.0
+	)
+	_case(check, cases, "xerathis_e", "xerathis", 1.0, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check,
+		cases,
+		"xerathis_q",
+		"xerathis",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(check, cases, "xerathis_w", "xerathis", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "nyzrak_r", "nyzrak", 0.4, [[20, 0, 10000, "target"]], 20.0)
+	_case(check, cases, "nyzrak_e", "nyzrak", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "nyzrak_w", "nyzrak", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(check, cases, "nyzrak_q", "nyzrak", 1.0, [[200, 0, 10000, "target"]], 200.0)
+	_case(check, cases, "zharok_r", "zharok", 0.3, [[20, 0, 10000, "target"]], 20.0)
+	_case(check, cases, "zharok_e", "zharok", 1.0, [[20, 0, 10000, "a"], [40, 0, 10000, "b"]], 20.0)
+	_case(check, cases, "zharok_w", "zharok", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "zharok_q", "zharok", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "pyrenth_r", "pyrenth", 0.3, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check,
+		cases,
+		"pyrenth_e",
+		"pyrenth",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(check, cases, "pyrenth_w", "pyrenth", 0.5, [[20, 0, 10000, "target"]], 20.0)
+	_case(check, cases, "pyrenth_q", "pyrenth", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "vokrahn_r", "vokrahn", 0.4, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check,
+		cases,
+		"vokrahn_w",
+		"vokrahn",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(check, cases, "vokrahn_e", "vokrahn", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "vokrahn_q", "vokrahn", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "nyxara_r", "nyxara", 0.4, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check,
+		cases,
+		"nyxara_e",
+		"nyxara",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(check, cases, "nyxara_w", "nyxara", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(check, cases, "nyxara_q", "nyxara", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(
+		check,
+		cases,
+		"gravefang_r",
+		"gravefang",
+		0.3,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(check, cases, "gravefang_w", "gravefang", 1.0, [[200, 0, 10000, "target"]], 200.0)
+	_case(check, cases, "gravefang_e", "gravefang", 1.0, [[100, 0, 10000, "target"]], 100.0)
+	_case(
+		check,
+		cases,
+		"gravefang_q",
+		"gravefang",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(check, cases, "vhalzun_r", "vhalzun", 0.3, [[20, 0, 10000, "target"]], 20.0)
+	_case(
+		check,
+		cases,
+		"vhalzun_w",
+		"vhalzun",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(check, cases, "vhalzun_e", "vhalzun", 1.0, [[150, 0, 10000, "target"]], 150.0)
+	_case(check, cases, "vhalzun_q", "vhalzun", 1.0, [[20, 0, 10000, "target"]], 20.0)
 	_generic(check, cases)
 	_true_boss_heal(check)
 

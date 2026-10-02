@@ -133,6 +133,22 @@ var clones_positions: Array[Vector2] = []
 var blink_from := Vector2.ZERO
 var blink_to := Vector2.ZERO
 var mana_void_origin := Vector2.ZERO
+var dragon_form_active := false
+var dragon_form_timer := 0
+var dragon_blood_active := false
+var dragon_blood_timer := 0
+var corrosive_active := false
+var corrosive_timer := 0
+var shukuchi_active := false
+var shukuchi_timer := 0
+var timelapse_hp_mark := 0.0
+var timelapse_mark_timer := 0
+var shield_active := false
+var shield_timer := 0
+var arcane_buff_active := false
+var arcane_buff_timer := 0
+var vortex_origin := Vector2.ZERO
+var vortex_active_timer := 0
 # Source Boss.speed property reads `tenacity` (0.50 for every boss).
 var tenacity := 0.50
 # Injectable draw so tests can replay the recorded source roll.

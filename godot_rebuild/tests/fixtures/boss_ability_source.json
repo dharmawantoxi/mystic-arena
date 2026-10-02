@@ -14419,6 +14419,3818 @@
       }
     },
     {
+      "label": "ancient_apparition_r",
+      "result": {
+        "type": "ancient_apparition",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 720,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 12960,
+        "damage": 152,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9190,
+            "alive": true,
+            "hits": [
+              810
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.7,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9190,
+            "alive": true,
+            "hits": [
+              810
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.7,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "ancient_apparition_q",
+      "result": {
+        "type": "ancient_apparition",
+        "skill": "q",
+        "active_skill_timer": 60,
+        "q_timer": 300,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 43200,
+        "damage": 152,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9879,
+            "alive": true,
+            "hits": [
+              121
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9879,
+            "alive": true,
+            "hits": [
+              121
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9879,
+            "alive": true,
+            "hits": [
+              121
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "ancient_apparition_e",
+      "result": {
+        "type": "ancient_apparition",
+        "skill": "e",
+        "active_skill_timer": 50,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 360,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 43200,
+        "damage": 152,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9393,
+            "alive": true,
+            "hits": [
+              607
+            ],
+            "attack_timer": 90,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "ancient_apparition_w",
+      "result": {
+        "type": "ancient_apparition",
+        "skill": "w",
+        "active_skill_timer": 45,
+        "q_timer": 0,
+        "w_timer": 240,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 43200,
+        "damage": 152,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9663,
+            "alive": true,
+            "hits": [
+              337
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.6,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "ignis_drachorn_r",
+      "result": {
+        "type": "ignis_drachorn",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 780,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 32500,
+        "damage": 280,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9190,
+            "alive": true,
+            "hits": [
+              810
+            ],
+            "attack_timer": 90,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9190,
+            "alive": true,
+            "hits": [
+              810
+            ],
+            "attack_timer": 90,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "ignis_drachorn_e",
+      "result": {
+        "type": "ignis_drachorn",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 420,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 40000,
+        "damage": 202,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "ignis_drachorn_w",
+      "result": {
+        "type": "ignis_drachorn",
+        "skill": "w",
+        "active_skill_timer": 40,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 50000,
+        "damage": 156,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9487,
+            "alive": true,
+            "hits": [
+              513
+            ],
+            "attack_timer": 60,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9487,
+            "alive": true,
+            "hits": [
+              513
+            ],
+            "attack_timer": 60,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "ignis_drachorn_q",
+      "result": {
+        "type": "ignis_drachorn",
+        "skill": "q",
+        "active_skill_timer": 45,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 50000,
+        "damage": 156,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9568,
+            "alive": true,
+            "hits": [
+              432
+            ],
+            "attack_timer": 45,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhorethzir_r",
+      "result": {
+        "type": "vhorethzir",
+        "skill": "r",
+        "active_skill_timer": 100,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 780,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 23520,
+        "damage": 182,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9028,
+            "alive": true,
+            "hits": [
+              972
+            ],
+            "attack_timer": 120,
+            "slows": [
+              [
+                0.65,
+                300
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9028,
+            "alive": true,
+            "hits": [
+              972
+            ],
+            "attack_timer": 120,
+            "slows": [
+              [
+                0.65,
+                300
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhorethzir_e",
+      "result": {
+        "type": "vhorethzir",
+        "skill": "e",
+        "active_skill_timer": 80,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 420,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 33600,
+        "damage": 182,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 90,
+            "slows": [
+              [
+                0.5,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhorethzir_w",
+      "result": {
+        "type": "vhorethzir",
+        "skill": "w",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 56000,
+        "damage": 182,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9514,
+            "alive": true,
+            "hits": [
+              486
+            ],
+            "attack_timer": 60,
+            "slows": [
+              [
+                0.6,
+                180
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9514,
+            "alive": true,
+            "hits": [
+              486
+            ],
+            "attack_timer": 60,
+            "slows": [
+              [
+                0.6,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhorethzir_q",
+      "result": {
+        "type": "vhorethzir",
+        "skill": "q",
+        "active_skill_timer": 45,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 56000,
+        "damage": 182,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9460,
+            "alive": true,
+            "hits": [
+              540
+            ],
+            "attack_timer": 45,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vaerith_r",
+      "result": {
+        "type": "vaerith",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 620,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 12760,
+        "damage": 143,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9413,
+            "alive": true,
+            "hits": [
+              587
+            ],
+            "attack_timer": 100,
+            "slows": [
+              [
+                0.6,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "vaerith_e",
+      "result": {
+        "type": "vaerith",
+        "skill": "e",
+        "active_skill_timer": 55,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 260,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 14167,
+        "damage": 143,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9588,
+            "alive": true,
+            "hits": [
+              412
+            ],
+            "attack_timer": 60,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vaerith_w",
+      "result": {
+        "type": "vaerith",
+        "skill": "w",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 23200,
+        "damage": 143,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9700,
+            "alive": true,
+            "hits": [
+              300
+            ],
+            "attack_timer": 75,
+            "slows": [
+              [
+                0.7,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9700,
+            "alive": true,
+            "hits": [
+              300
+            ],
+            "attack_timer": 75,
+            "slows": [
+              [
+                0.7,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "vaerith_q",
+      "result": {
+        "type": "vaerith",
+        "skill": "q",
+        "active_skill_timer": 50,
+        "q_timer": 200,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 23200,
+        "damage": 143,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9625,
+            "alive": true,
+            "hits": [
+              375
+            ],
+            "attack_timer": 40,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "xirthalis_r",
+      "result": {
+        "type": "xirthalis",
+        "skill": "r",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 9600,
+        "damage": 140,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 90,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "xirthalis_q",
+      "result": {
+        "type": "xirthalis",
+        "skill": "q",
+        "active_skill_timer": 60,
+        "q_timer": 180,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 11520,
+        "damage": 140,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "xirthalis_w",
+      "result": {
+        "type": "xirthalis",
+        "skill": "w",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 280,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 19200,
+        "damage": 140,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9675,
+            "alive": true,
+            "hits": [
+              325
+            ],
+            "attack_timer": 60,
+            "slows": [
+              [
+                0.6,
+                200
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9675,
+            "alive": true,
+            "hits": [
+              325
+            ],
+            "attack_timer": 60,
+            "slows": [
+              [
+                0.6,
+                200
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "xirthalis_e",
+      "result": {
+        "type": "xirthalis",
+        "skill": "e",
+        "active_skill_timer": 45,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 220,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 19200,
+        "damage": 140,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9320,
+            "alive": true,
+            "hits": [
+              425,
+              255
+            ],
+            "attack_timer": 50,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhyssarion_r",
+      "result": {
+        "type": "vhyssarion",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 640,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 8360,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9463,
+            "alive": true,
+            "hits": [
+              537
+            ],
+            "attack_timer": 110,
+            "slows": [
+              [
+                0.6,
+                260
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9463,
+            "alive": true,
+            "hits": [
+              537
+            ],
+            "attack_timer": 110,
+            "slows": [
+              [
+                0.6,
+                260
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhyssarion_q",
+      "result": {
+        "type": "vhyssarion",
+        "skill": "q",
+        "active_skill_timer": 90,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 70,
+            "slows": [
+              [
+                0.65,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 70,
+            "slows": [
+              [
+                0.65,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhyssarion_e",
+      "result": {
+        "type": "vhyssarion",
+        "skill": "q",
+        "active_skill_timer": 90,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 70,
+            "slows": [
+              [
+                0.65,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 70,
+            "slows": [
+              [
+                0.65,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhyssarion_w",
+      "result": {
+        "type": "vhyssarion",
+        "skill": "w",
+        "active_skill_timer": 40,
+        "q_timer": 0,
+        "w_timer": 200,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 137,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9563,
+            "alive": true,
+            "hits": [
+              437
+            ],
+            "attack_timer": 55,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "khalros_r",
+      "result": {
+        "type": "khalros",
+        "skill": "r",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 560,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17160,
+        "damage": 114,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 30,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 30,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 30,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "khalros_w",
+      "result": {
+        "type": "khalros",
+        "skill": "w",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 11668,
+        "damage": 114,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9800,
+            "alive": true,
+            "hits": [
+              200
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                90
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "khalros_e",
+      "result": {
+        "type": "khalros",
+        "skill": "e",
+        "active_skill_timer": 45,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 280,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17160,
+        "damage": 114,
+        "x": 90.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "khalros_q",
+      "result": {
+        "type": "khalros",
+        "skill": "q",
+        "active_skill_timer": 50,
+        "q_timer": 220,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17160,
+        "damage": 114,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9738,
+            "alive": true,
+            "hits": [
+              262
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gorath_r_low",
+      "result": {
+        "type": "gorath",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 560,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20460,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 213,
+            "alive": true,
+            "hits": [
+              525,
+              262
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gorath_q",
+      "result": {
+        "type": "gorath",
+        "skill": "q",
+        "active_skill_timer": 90,
+        "q_timer": 420,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 13912,
+        "damage": 183,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": true,
+        "rage_timer": 300,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gorath_w",
+      "result": {
+        "type": "gorath",
+        "skill": "w",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 240,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20460,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9738,
+            "alive": true,
+            "hits": [
+              262
+            ],
+            "attack_timer": 50,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9738,
+            "alive": true,
+            "hits": [
+              262
+            ],
+            "attack_timer": 50,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gorath_e",
+      "result": {
+        "type": "gorath",
+        "skill": "e",
+        "active_skill_timer": 35,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 260,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20460,
+        "damage": 131,
+        "x": 120.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9763,
+            "alive": true,
+            "hits": [
+              237
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "varkul_r",
+      "result": {
+        "type": "varkul",
+        "skill": "r",
+        "active_skill_timer": 80,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 540,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17600,
+        "damage": 112,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          },
+          {
+            "name": "c",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "varkul_e",
+      "result": {
+        "type": "varkul",
+        "skill": "e",
+        "active_skill_timer": 50,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 360,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 9152,
+        "damage": 112,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9800,
+            "alive": true,
+            "hits": [
+              200
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "varkul_w",
+      "result": {
+        "type": "varkul",
+        "skill": "w",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17600,
+        "damage": 112,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 60,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "varkul_q",
+      "result": {
+        "type": "varkul",
+        "skill": "q",
+        "active_skill_timer": 50,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17600,
+        "damage": 112,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.4,
+                120
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "xerathis_r",
+      "result": {
+        "type": "xerathis",
+        "skill": "r",
+        "active_skill_timer": 100,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 580,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 95,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9550,
+            "alive": true,
+            "hits": [
+              450
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.55,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 9550,
+            "alive": true,
+            "hits": [
+              450
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.55,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "c",
+            "hp": 9550,
+            "alive": true,
+            "hits": [
+              450
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.55,
+                240
+              ]
+            ]
+          },
+          {
+            "name": "d",
+            "hp": 9550,
+            "alive": true,
+            "hits": [
+              450
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.55,
+                240
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "xerathis_e",
+      "result": {
+        "type": "xerathis",
+        "skill": "e",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 420,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 123,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "xerathis_q",
+      "result": {
+        "type": "xerathis",
+        "skill": "e",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 420,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 123,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "xerathis_w",
+      "result": {
+        "type": "xerathis",
+        "skill": "e",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 420,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 123,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "nyzrak_r",
+      "result": {
+        "type": "nyzrak",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 560,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 11495,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9500,
+            "alive": true,
+            "hits": [
+              500
+            ],
+            "attack_timer": 0,
+            "slows": [
+              [
+                0.5,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "nyzrak_e",
+      "result": {
+        "type": "nyzrak",
+        "skill": "e",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 340,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 90,
+            "slows": [
+              [
+                0.7,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "nyzrak_w",
+      "result": {
+        "type": "nyzrak",
+        "skill": "e",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 340,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 90,
+            "slows": [
+              [
+                0.7,
+                180
+              ]
+            ]
+          },
+          {
+            "name": "b",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "nyzrak_q",
+      "result": {
+        "type": "nyzrak",
+        "skill": "e",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 340,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9725,
+            "alive": true,
+            "hits": [
+              275
+            ],
+            "attack_timer": 90,
+            "slows": [
+              [
+                0.7,
+                180
+              ]
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "zharok_r",
+      "result": {
+        "type": "zharok",
+        "skill": "r",
+        "active_skill_timer": 80,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 5412,
+        "damage": 105,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9500,
+            "alive": true,
+            "hits": [
+              500
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "zharok_e",
+      "result": {
+        "type": "zharok",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 280,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 105,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "zharok_w",
+      "result": {
+        "type": "zharok",
+        "skill": "w",
+        "active_skill_timer": 40,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 105,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "zharok_q",
+      "result": {
+        "type": "zharok",
+        "skill": "w",
+        "active_skill_timer": 40,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 105,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "pyrenth_r",
+      "result": {
+        "type": "pyrenth",
+        "skill": "r",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 6270,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9313,
+            "alive": true,
+            "hits": [
+              687
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "pyrenth_e",
+      "result": {
+        "type": "pyrenth",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 300,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "pyrenth_w",
+      "result": {
+        "type": "pyrenth",
+        "skill": "w",
+        "active_skill_timer": 40,
+        "q_timer": 0,
+        "w_timer": 360,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 12122,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "pyrenth_q",
+      "result": {
+        "type": "pyrenth",
+        "skill": "q",
+        "active_skill_timer": 50,
+        "q_timer": 240,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9600,
+            "alive": true,
+            "hits": [
+              400
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vokrahn_r",
+      "result": {
+        "type": "vokrahn",
+        "skill": "r",
+        "active_skill_timer": 80,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 600,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 7040,
+        "damage": 125,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9850,
+            "alive": true,
+            "hits": [
+              150
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vokrahn_w",
+      "result": {
+        "type": "vokrahn",
+        "skill": "w",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17600,
+        "damage": 125,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9688,
+            "alive": true,
+            "hits": [
+              312
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9688,
+            "alive": true,
+            "hits": [
+              312
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9688,
+            "alive": true,
+            "hits": [
+              312
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vokrahn_e",
+      "result": {
+        "type": "vokrahn",
+        "skill": "e",
+        "active_skill_timer": 50,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 280,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17600,
+        "damage": 125,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9500,
+            "alive": true,
+            "hits": [
+              500
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vokrahn_q",
+      "result": {
+        "type": "vokrahn",
+        "skill": "e",
+        "active_skill_timer": 50,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 280,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 17600,
+        "damage": 125,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9500,
+            "alive": true,
+            "hits": [
+              500
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "nyxara_r",
+      "result": {
+        "type": "nyxara",
+        "skill": "r",
+        "active_skill_timer": 90,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 560,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 9651,
+        "damage": 105,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9600,
+            "alive": true,
+            "hits": [
+              400
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "nyxara_e",
+      "result": {
+        "type": "nyxara",
+        "skill": "e",
+        "active_skill_timer": 80,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 280,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 105,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9800,
+            "alive": true,
+            "hits": [
+              200
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9800,
+            "alive": true,
+            "hits": [
+              200
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9800,
+            "alive": true,
+            "hits": [
+              200
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "nyxara_w",
+      "result": {
+        "type": "nyxara",
+        "skill": "w",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 105,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9825,
+            "alive": true,
+            "hits": [
+              175
+            ],
+            "attack_timer": 75,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "nyxara_q",
+      "result": {
+        "type": "nyxara",
+        "skill": "w",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 18040,
+        "damage": 105,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9825,
+            "alive": true,
+            "hits": [
+              175
+            ],
+            "attack_timer": 75,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gravefang_r",
+      "result": {
+        "type": "gravefang",
+        "skill": "r",
+        "active_skill_timer": 100,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 620,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 6270,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9525,
+            "alive": true,
+            "hits": [
+              475
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gravefang_w",
+      "result": {
+        "type": "gravefang",
+        "skill": "w",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9700,
+            "alive": true,
+            "hits": [
+              300
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gravefang_e",
+      "result": {
+        "type": "gravefang",
+        "skill": "w",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9700,
+            "alive": true,
+            "hits": [
+              300
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "gravefang_q",
+      "result": {
+        "type": "gravefang",
+        "skill": "e",
+        "active_skill_timer": 70,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 280,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20900,
+        "damage": 131,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9763,
+            "alive": true,
+            "hits": [
+              237
+            ],
+            "attack_timer": 60,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhalzun_r",
+      "result": {
+        "type": "vhalzun",
+        "skill": "r",
+        "active_skill_timer": 100,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 620,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 9820,
+        "damage": 125,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 10000,
+            "alive": true,
+            "hits": [],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhalzun_w",
+      "result": {
+        "type": "vhalzun",
+        "skill": "w",
+        "active_skill_timer": 80,
+        "q_timer": 0,
+        "w_timer": 300,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20460,
+        "damage": 125,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "a",
+            "hp": 9788,
+            "alive": true,
+            "hits": [
+              212
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "b",
+            "hp": 9788,
+            "alive": true,
+            "hits": [
+              212
+            ],
+            "attack_timer": 0,
+            "slows": []
+          },
+          {
+            "name": "c",
+            "hp": 9788,
+            "alive": true,
+            "hits": [
+              212
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhalzun_e",
+      "result": {
+        "type": "vhalzun",
+        "skill": "e",
+        "active_skill_timer": 60,
+        "q_timer": 0,
+        "w_timer": 0,
+        "e_timer": 320,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20460,
+        "damage": 125,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9650,
+            "alive": true,
+            "hits": [
+              350
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
+      "label": "vhalzun_q",
+      "result": {
+        "type": "vhalzun",
+        "skill": "q",
+        "active_skill_timer": 60,
+        "q_timer": 220,
+        "w_timer": 0,
+        "e_timer": 0,
+        "r_timer": 0,
+        "ability_timer": 0,
+        "ability_active": false,
+        "hp": 20460,
+        "damage": 125,
+        "x": 0.0,
+        "y": 0.0,
+        "rage_active": false,
+        "rage_timer": 0,
+        "necro_buff_active": false,
+        "necro_buff_timer": 0,
+        "presence_active": false,
+        "presence_timer": 0,
+        "morph_buff_active": false,
+        "morph_buff_timer": 0,
+        "mirror_buff_active": false,
+        "mirror_buff_timer": 0,
+        "shell_active": false,
+        "shell_timer": 0,
+        "rum_buff_active": false,
+        "rum_buff_timer": 0,
+        "x_mark_timer": 0,
+        "defense_boost": false,
+        "defense_timer": 0,
+        "flux_active_timer": 0,
+        "clones_active_timer": 0,
+        "targets": [
+          {
+            "name": "target",
+            "hp": 9713,
+            "alive": true,
+            "hits": [
+              287
+            ],
+            "attack_timer": 0,
+            "slows": []
+          }
+        ]
+      }
+    },
+    {
       "label": "generic_ability",
       "result": {
         "type": "abaddon",
