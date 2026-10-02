@@ -1671,8 +1671,16 @@ static func _velmyrth(
 	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
 ) -> void:
 	# Source _smart_ai_velmyrth: auto-generated from base_boss.py
+	# R: execute saat ada musuh HP rendah ATAU ramai
 	var nearby_count := _count_near_alive(boss, enemies, 220.0)
 	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	var low_target := false
+	for enemy in enemies:
+		if not enemy.alive:
+			continue
+		if enemy.hp / maxf(1.0, _max_hp(enemy)) < 0.3:
+			low_target = true
+			break
 	if boss.r_timer == 0 and (low_target or nearby_count >= 3 or hp_ratio < 0.4):
 		boss.r_timer = boss.skill_r_cooldown
 		_set_skill(boss, "r", 80)
