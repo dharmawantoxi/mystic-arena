@@ -65,6 +65,88 @@ static func tick(
 			_raz(world, boss, enemies, target, target_distance)
 		"vraskhan":
 			_vraskhan(world, boss, enemies, target, target_distance)
+		"aurethzar":
+			_aurethzar(world, boss, enemies, target, target_distance)
+		"aeralith":
+			_aeralith(world, boss, enemies, target, target_distance)
+		"aurex":
+			_aurex(world, boss, enemies, target, target_distance)
+		"nyxareva":
+			_nyxareva(world, boss, enemies, target, target_distance)
+		"thalakryon":
+			_thalakryon(world, boss, enemies, target, target_distance)
+		"aurelix":
+			_aurelix(world, boss, enemies, target, target_distance)
+		"aurelyssa":
+			_aurelyssa(world, boss, enemies, target, target_distance)
+		"vargrath":
+			_vargrath(world, boss, enemies, target, target_distance)
+		"nazulmor":
+			_nazulmor(world, boss, enemies, target, target_distance)
+		"kaeldris":
+			_kaeldris(world, boss, enemies, target, target_distance)
+		"pyraklos":
+			_pyraklos(world, boss, enemies, target, target_distance)
+		"velmyrth":
+			_velmyrth(world, boss, enemies, target, target_distance)
+		"solvarin":
+			_solvarin(world, boss, enemies, target, target_distance)
+		"azureth":
+			_azureth(world, boss, enemies, target, target_distance)
+		"luminar":
+			_luminar(world, boss, enemies, target, target_distance)
+		"solara":
+			_solara(world, boss, enemies, target, target_distance)
+		"pyraethis":
+			_pyraethis(world, boss, enemies, target, target_distance)
+		"auroth":
+			_auroth(world, boss, enemies, target, target_distance)
+		"morvein":
+			_morvein(world, boss, enemies, target, target_distance)
+		"thorvak":
+			_thorvak(world, boss, enemies, target, target_distance)
+		"yamako":
+			_yamako(world, boss, enemies, target, target_distance)
+		"ignirus":
+			_ignirus(world, boss, enemies, target, target_distance)
+		"leoric":
+			_leoric(world, boss, enemies, target, target_distance)
+		"shirotaka":
+			_shirotaka(world, boss, enemies, target, target_distance)
+		"seiryukong":
+			_seiryukong(world, boss, enemies, target, target_distance)
+		"kaelthorn":
+			_kaelthorn(world, boss, enemies, target, target_distance)
+		"solvanth":
+			_solvanth(world, boss, enemies, target, target_distance)
+		"xyrael":
+			_xyrael(world, boss, enemies, target, target_distance)
+		"nyxareth":
+			_nyxareth(world, boss, enemies, target, target_distance)
+		"cryssalia":
+			_cryssalia(world, boss, enemies, target, target_distance)
+		"kaelthar":
+			_kaelthar(world, boss, enemies, target, target_distance)
+		"morkhaera":
+			_morkhaera(world, boss, enemies, target, target_distance)
+		"aurelion":
+			_aurelion(world, boss, enemies, target, target_distance)
+		"akahime":
+			_akahime(world, boss, enemies, target, target_distance)
+		"nyxthrael":
+			_nyxthrael(world, boss, enemies, target, target_distance)
+		"sylvantheros":
+			_sylvantheros(world, boss, enemies, target, target_distance)
+		"vaelindra":
+			_vaelindra(world, boss, enemies, target, target_distance)
+		"astraelion":
+			_astraelion(world, boss, enemies, target, target_distance)
+		"morvaenthir":
+			_morvaenthir(world, boss, enemies, target, target_distance)
+		"thornvaegrim":
+			_thornvaegrim(world, boss, enemies, target, target_distance)
+		"morthraxis":
+			_morthraxis(world, boss, enemies, target, target_distance)
 		_:
 			_generic(world, boss, enemies)
 
@@ -1146,6 +1228,1616 @@ static func _vraskhan(
 				boss.direction = 1 if delta.x > 0.0 else -1
 				boss.facing = float(boss.direction)
 			_hit(world, boss, closest_q, _skill_damage(boss, boss.skill_q_damage))
+
+
+static func _aurethzar(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_aurethzar: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 260.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 250.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 160 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_e_damage))
+			_slow(closest, 0.5, 90)
+		return
+
+	if distance < 320 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _aeralith(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_aeralith: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 240.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 80)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 240.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 170.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 45)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 320 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _aurex(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_aurex: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 220.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if nearby_count >= 3 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 75)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 210.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if hp_ratio < 0.55 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 130.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if distance < 280 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 160 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _nyxareva(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_nyxareva: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 220.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.45):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 85)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 170.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if hp_ratio < 0.55 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 170 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _thalakryon(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_thalakryon: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 260.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 260.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if hp_ratio < 0.6 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 340 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _aurelix(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_aurelix: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 240.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 85)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 240.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 170.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if hp_ratio < 0.55 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 60)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 320 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _aurelyssa(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_aurelyssa: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 220.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.45):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 80)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 160.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if hp_ratio < 0.55 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 160 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _vargrath(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_vargrath: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 220.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 85)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 230.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if distance > 140 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 45)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 100.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 170.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if distance < 160 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _nazulmor(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_nazulmor: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 270.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 270.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if hp_ratio < 0.6 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 350 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _kaeldris(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_kaeldris: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 220.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.45):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 80)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 170.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if distance > 140 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			var delta := closest.position - boss.position
+			var length := delta.length()
+			if length > 1.0:
+				var step := minf(length, 110.0)
+				boss.position += delta / length * step
+				boss.direction = 1 if delta.x > 0.0 else -1
+				boss.facing = float(boss.direction)
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 160 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _pyraklos(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_pyraklos: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 220.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if nearby_count >= 3 and boss.r_timer == 0:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 85)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 230.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if hp_ratio < 0.5 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 130.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 170.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 180 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _velmyrth(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_velmyrth: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 220.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (low_target or nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 80)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if distance > 150 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			boss.position = closest.position + Vector2(0.0, -20.0)
+			boss.direction = 1 if closest.position.x > boss.position.x else -1
+			boss.facing = float(boss.direction)
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 170.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if distance < 160 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 35)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _solvarin(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_solvarin: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 280.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 280.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if hp_ratio < 0.6 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 180.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _azureth(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_azureth: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 270.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 85)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 270.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 400 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _luminar(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_luminar: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 280.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 280.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 410 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _solara(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_solara: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 240.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 240.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 185.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if hp_ratio < 0.65 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _pyraethis(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_pyraethis: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 300.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 300.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 430 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _auroth(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_auroth: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 240.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 240.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if hp_ratio < 0.6 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 185.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 350 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _morvein(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_morvein: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 250.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 250.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _thorvak(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_thorvak: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 250.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 250.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if hp_ratio < 0.65 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if distance < 350 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _yamako(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_yamako: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 300.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 300.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 400 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _ignirus(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_ignirus: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 280.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 280.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 210.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 410 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _leoric(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_leoric: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 250.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and hp_ratio < 0.45:
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 250.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 350 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _shirotaka(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_shirotaka: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 250.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 250.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _seiryukong(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_seiryukong: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 300.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 300.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 400 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _kaelthorn(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_kaelthorn: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 250.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 250.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _solvanth(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_solvanth: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 260.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 260.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 210.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _xyrael(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_xyrael: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 250.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 250.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _nyxareth(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_nyxareth: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 300.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "4", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 300.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "3", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "2", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 420 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "1", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _cryssalia(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_cryssalia: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 280.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 280.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 215.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 420 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _kaelthar(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_kaelthar: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 250.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 250.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 190.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _morkhaera(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_morkhaera: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 280.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 280.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 215.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 420 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _aurelion(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_aurelion: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 300.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 300.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 225.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 210.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 400 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _akahime(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_akahime: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 270.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 270.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 210.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 410 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _nyxthrael(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_nyxthrael: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 260.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 260.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 210.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _sylvantheros(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_sylvantheros: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 280.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 280.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 215.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 420 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _vaelindra(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_vaelindra: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 310.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 310.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 230.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 215.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 430 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _astraelion(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_astraelion: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 260.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 260.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 195.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _morvaenthir(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_morvaenthir: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 290.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 290.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 220.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 205.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 420 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _thornvaegrim(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_thornvaegrim: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 270.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 90)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 270.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 60)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 215.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 200.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 360 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 40)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
+
+
+static func _morthraxis(
+	world, boss: BossState, enemies: Array[UnitState], _target: UnitState, distance: float
+) -> void:
+	# Source _smart_ai_morthraxis: auto-generated from base_boss.py
+	var nearby_count := _count_near_alive(boss, enemies, 310.0)
+	var hp_ratio := boss.hp / maxf(1.0, float(boss.max_hp))
+	if boss.r_timer == 0 and (nearby_count >= 3 or hp_ratio < 0.4):
+		boss.r_timer = boss.skill_r_cooldown
+		_set_skill(boss, "r", 95)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 310.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		return
+
+	if nearby_count >= 2 and boss.e_timer == 0:
+		boss.e_timer = boss.skill_e_cooldown
+		_set_skill(boss, "e", 65)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 225.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		return
+
+	if nearby_count >= 2 and boss.w_timer == 0:
+		boss.w_timer = boss.skill_w_cooldown
+		_set_skill(boss, "w", 55)
+		for enemy in enemies:
+			if boss.position.distance_to(enemy.position) <= 210.0:
+				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		return
+
+	if distance < 430 and boss.q_timer == 0:
+		boss.q_timer = boss.skill_q_cooldown
+		_set_skill(boss, "q", 45)
+		var closest := _closest_alive(boss, enemies)
+		if closest != null and closest.alive:
+			_hit(world, boss, closest, _skill_damage(boss, boss.skill_q_damage))
+		return
 
 
 static func _set_skill(boss: BossState, key: String, duration: int) -> void:
