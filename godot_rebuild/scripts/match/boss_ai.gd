@@ -1518,12 +1518,21 @@ static func _vargrath(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
 		return
 
-	if distance > 140 and boss.w_timer == 0:
+	if distance > 140.0 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
 		_set_skill(boss, "w", 45)
-		for enemy in enemies:
-			if boss.position.distance_to(enemy.position) <= 100.0:
-				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		var closest_w := _closest_alive(boss, enemies)
+		if closest_w != null and closest_w.alive:
+			var delta_w := closest_w.position - boss.position
+			var length_w := delta_w.length()
+			if length_w > 1.0:
+				var step_w := minf(length_w, 110.0)
+				boss.position += delta_w / length_w * step_w
+				boss.direction = 1 if delta_w.x > 0.0 else -1
+				boss.facing = float(boss.direction)
+			for enemy in enemies:
+				if boss.position.distance_to(enemy.position) <= 100.0:
+					_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
 		return
 
 	if nearby_count >= 2 and boss.e_timer == 0:
@@ -1534,7 +1543,7 @@ static func _vargrath(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
 		return
 
-	if distance < 160 and boss.q_timer == 0:
+	if distance < 160.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 35)
 		var closest := _closest_alive(boss, enemies)
@@ -1862,9 +1871,10 @@ static func _solara(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 195.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_e_damage))
+		_heal(boss, 0.1)
 		return
 
-	if distance < 360 and boss.q_timer == 0:
+	if distance < 360.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 40)
 		var closest := _closest_alive(boss, enemies)
@@ -1940,9 +1950,10 @@ static func _auroth(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 185.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
+		_heal(boss, 0.1)
 		return
 
-	if distance < 350 and boss.q_timer == 0:
+	if distance < 350.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 40)
 		var closest := _closest_alive(boss, enemies)
@@ -2119,6 +2130,7 @@ static func _leoric(
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 250.0:
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_r_damage))
+		_heal(boss, 0.2)
 		return
 
 	if nearby_count >= 2 and boss.e_timer == 0:
@@ -2137,7 +2149,7 @@ static func _leoric(
 				_hit(world, boss, enemy, _skill_damage(boss, boss.skill_w_damage))
 		return
 
-	if distance < 350 and boss.q_timer == 0:
+	if distance < 350.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
 		_set_skill(boss, "q", 40)
 		var closest := _closest_alive(boss, enemies)

@@ -9958,15 +9958,15 @@
       "label": "leoric_r",
       "result": {
         "type": "leoric",
-        "skill": "e",
-        "active_skill_timer": 60,
+        "skill": "r",
+        "active_skill_timer": 95,
         "q_timer": 0,
         "w_timer": 0,
-        "e_timer": 310,
-        "r_timer": 0,
+        "e_timer": 0,
+        "r_timer": 700,
         "ability_timer": 0,
         "ability_active": false,
-        "hp": 30099,
+        "hp": 18058,
         "damage": 212,
         "x": 0.0,
         "y": 0.0,
@@ -9991,21 +9991,11 @@
         "clones_active_timer": 0,
         "targets": [
           {
-            "name": "a",
-            "hp": 9450,
+            "name": "target",
+            "hp": 9000,
             "alive": true,
             "hits": [
-              550
-            ],
-            "attack_timer": 0,
-            "slows": []
-          },
-          {
-            "name": "b",
-            "hp": 9450,
-            "alive": true,
-            "hits": [
-              550
+              1000
             ],
             "attack_timer": 0,
             "slows": []

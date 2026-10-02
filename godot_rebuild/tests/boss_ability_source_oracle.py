@@ -1788,9 +1788,9 @@ def source_fixture():
             cls,
             "leoric",
             "leoric_r",
-            1.0,
-            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
-            20,
+            0.4,
+            [(200, 0, 10000, "target")],
+            200,
             "_smart_ai_leoric",
         ),
         smart_case(
