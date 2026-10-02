@@ -2,8 +2,9 @@
 
 The fixture executes the original Boss smart-AI and cast methods from
 bosses/base_boss.py. It covers the first smart-AI slice (Gornak, Morgath,
-Drakar, Abaddon, Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath and
-Thalgryn), plus the source generic _use_ability fallback.
+Drakar, Abaddon, Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath,
+Thalgryn, Syrentha, Gravewake, Kunkka and Razak), plus the source generic
+_use_ability fallback.
 It does not execute entrance/enrage or render hooks; those are separate
 sub-layers.
 """
@@ -99,6 +100,26 @@ def source_class():
         "_thalgryn_w",
         "_thalgryn_e",
         "_thalgryn_r",
+        "_smart_ai_syrentha",
+        "_syrentha_q",
+        "_syrentha_w",
+        "_syrentha_e",
+        "_syrentha_r",
+        "_smart_ai_gravewake",
+        "_gravewake_q",
+        "_gravewake_w",
+        "_gravewake_e",
+        "_gravewake_r",
+        "_smart_ai_kunkka",
+        "_cast_q_tide_bringer",
+        "_cast_w_x_marks",
+        "_cast_e_ghost_ship",
+        "_cast_r_torrent",
+        "_smart_ai_razak",
+        "_razak_q",
+        "_razak_w",
+        "_razak_e",
+        "_razak_r",
         "_cast_w_aphotic_shield",
         "_cast_e_darkness_gale",
         "_cast_r_death_sever",
@@ -168,6 +189,13 @@ def row(boss, targets):
         "presence_timer": int(getattr(boss, "presence_timer", 0)),
         "morph_buff_active": bool(getattr(boss, "morph_buff_active", False)),
         "morph_buff_timer": int(getattr(boss, "morph_buff_timer", 0)),
+        "mirror_buff_active": bool(getattr(boss, "mirror_buff_active", False)),
+        "mirror_buff_timer": int(getattr(boss, "mirror_buff_timer", 0)),
+        "shell_active": bool(getattr(boss, "shell_active", False)),
+        "shell_timer": int(getattr(boss, "shell_timer", 0)),
+        "rum_buff_active": bool(getattr(boss, "rum_buff_active", False)),
+        "rum_buff_timer": int(getattr(boss, "rum_buff_timer", 0)),
+        "x_mark_timer": int(getattr(boss, "x_mark_timer", 0)),
         "defense_boost": bool(getattr(boss, "defense_boost", False)),
         "defense_timer": int(getattr(boss, "defense_timer", 0)),
         "flux_active_timer": int(getattr(boss, "flux_active_timer", 0)),
@@ -209,6 +237,25 @@ def persistent_morgath(cls):
     boss.clones_active_timer = 0
     boss._smart_ai_morgath([target], 400)
     return {"label": "morgath_flux_tick", "result": row(boss, [target])}
+
+
+def persistent_kunkka(cls):
+    # X Marks the Spot burst lands on a later tick, so hold every cooldown the
+    # way the Morgath flux tick case does and let the mark expire.
+    marked = Target(60, 0, name="marked")
+    enemies = [marked, Target(150, 0, name="near"), Target(400, 0, name="far")]
+    boss = make_boss(cls, "kunkka", target=marked)
+    boss.q_timer = 999
+    boss.w_timer = 999
+    boss.e_timer = 999
+    boss.r_timer = 999
+    boss.active_skill_timer = 0
+    boss.rum_buff_active = False
+    boss.rum_buff_timer = 0
+    boss.x_mark_target = marked
+    boss.x_mark_timer = 1
+    boss._smart_ai_kunkka(enemies, 60)
+    return {"label": "kunkka_x_mark_burst", "result": row(boss, enemies)}
 
 
 def generic_case(cls):
@@ -489,6 +536,151 @@ def source_fixture():
             [(100, 0, 10000, "target"), (150, 0, 10000, "splash")],
             100,
             "_smart_ai_thalgryn",
+        ),
+        smart_case(
+            cls,
+            "syrentha",
+            "syrentha_song_of_siren",
+            0.3,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_syrentha",
+        ),
+        smart_case(
+            cls,
+            "syrentha",
+            "syrentha_mirror_image",
+            0.5,
+            [(300, 0, 10000, "target")],
+            300,
+            "_smart_ai_syrentha",
+        ),
+        smart_case(
+            cls,
+            "syrentha",
+            "syrentha_enchanting_song",
+            1.0,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b"), (60, 0, 10000, "c")],
+            20,
+            "_smart_ai_syrentha",
+        ),
+        smart_case(
+            cls,
+            "syrentha",
+            "syrentha_riptide",
+            1.0,
+            [(100, 0, 10000, "target"), (150, 50, 10000, "splash")],
+            100,
+            "_smart_ai_syrentha",
+        ),
+        smart_case(
+            cls,
+            "gravewake",
+            "gravewake_ravage",
+            0.3,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_gravewake",
+        ),
+        smart_case(
+            cls,
+            "gravewake",
+            "gravewake_kraken_shell",
+            0.5,
+            [(300, 0, 10000, "target")],
+            300,
+            "_smart_ai_gravewake",
+        ),
+        smart_case(
+            cls,
+            "gravewake",
+            "gravewake_tidebringer",
+            1.0,
+            [(100, 0, 10000, "target"), (150, 60, 10000, "near"), (300, 0, 10000, "far")],
+            100,
+            "_smart_ai_gravewake",
+        ),
+        smart_case(
+            cls,
+            "gravewake",
+            "gravewake_anchor_smash",
+            1.0,
+            [(100, 0, 10000, "target"), (190, 0, 10000, "wave")],
+            100,
+            "_smart_ai_gravewake",
+        ),
+        smart_case(
+            cls,
+            "kunkka",
+            "kunkka_torrent",
+            0.35,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b")],
+            20,
+            "_smart_ai_kunkka",
+        ),
+        smart_case(
+            cls,
+            "kunkka",
+            "kunkka_ghost_ship",
+            0.5,
+            [(250, 0, 10000, "target"), (200, 100, 10000, "off_path")],
+            250,
+            "_smart_ai_kunkka",
+        ),
+        smart_case(
+            cls,
+            "kunkka",
+            "kunkka_x_marks",
+            1.0,
+            [(100, 0, 10000, "target"), (150, 60, 10000, "near")],
+            100,
+            "_smart_ai_kunkka",
+        ),
+        smart_case(
+            cls,
+            "kunkka",
+            "kunkka_tide_bringer",
+            1.0,
+            [(100, 0, 10000, "target"), (240, 0, 10000, "wave")],
+            100,
+            "_smart_ai_kunkka",
+        ),
+        persistent_kunkka(cls),
+        smart_case(
+            cls,
+            "razak",
+            "razak_firestorm",
+            1.0,
+            [(20, 0, 10000, "a"), (40, 0, 10000, "b"), (60, 0, 10000, "c")],
+            20,
+            "_smart_ai_razak",
+        ),
+        smart_case(
+            cls,
+            "razak",
+            "razak_firefly",
+            1.0,
+            [(200, 0, 10000, "target"), (60, 0, 10000, "near")],
+            200,
+            "_smart_ai_razak",
+        ),
+        smart_case(
+            cls,
+            "razak",
+            "razak_flame_cone",
+            1.0,
+            [(100, 0, 10000, "target"), (150, 40, 10000, "near")],
+            100,
+            "_smart_ai_razak",
+        ),
+        smart_case(
+            cls,
+            "razak",
+            "razak_molotov",
+            1.0,
+            [(260, 0, 10000, "target"), (100, 0, 10000, "near"), (300, 40, 10000, "splash")],
+            260,
+            "_smart_ai_razak",
         ),
         generic_case(cls),
     ]

@@ -18,7 +18,7 @@ func run(check: Callable) -> void:
 	if not fixture is Dictionary or not fixture.has("cases"):
 		return
 	var cases: Array = fixture["cases"]
-	check.call(cases.size() == 42, "boss ability fixture has all first-slice cases")
+	check.call(cases.size() == 59, "boss ability fixture has all first-slice cases")
 	_case(check, cases, "gornak_q", "gornak", 1.0, [[80, 0, 10000, "target"]], 80.0)
 	_case(check, cases, "gornak_blink", "gornak", 1.0, [[200, 0, 10000, "target"]], 200.0)
 	_case(
@@ -222,6 +222,149 @@ func run(check: Callable) -> void:
 		[[100, 0, 10000, "target"], [150, 0, 10000, "splash"]],
 		100.0
 	)
+	_case(
+		check,
+		cases,
+		"syrentha_song_of_siren",
+		"syrentha",
+		0.3,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check, cases, "syrentha_mirror_image", "syrentha", 0.5, [[300, 0, 10000, "target"]], 300.0
+	)
+	_case(
+		check,
+		cases,
+		"syrentha_enchanting_song",
+		"syrentha",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"syrentha_riptide",
+		"syrentha",
+		1.0,
+		[[100, 0, 10000, "target"], [150, 50, 10000, "splash"]],
+		100.0
+	)
+	_case(
+		check,
+		cases,
+		"gravewake_ravage",
+		"gravewake",
+		0.3,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check, cases, "gravewake_kraken_shell", "gravewake", 0.5, [[300, 0, 10000, "target"]], 300.0
+	)
+	_case(
+		check,
+		cases,
+		"gravewake_tidebringer",
+		"gravewake",
+		1.0,
+		[[100, 0, 10000, "target"], [150, 60, 10000, "near"], [300, 0, 10000, "far"]],
+		100.0
+	)
+	_case(
+		check,
+		cases,
+		"gravewake_anchor_smash",
+		"gravewake",
+		1.0,
+		[[100, 0, 10000, "target"], [190, 0, 10000, "wave"]],
+		100.0
+	)
+	_case(
+		check,
+		cases,
+		"kunkka_torrent",
+		"kunkka",
+		0.35,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"kunkka_ghost_ship",
+		"kunkka",
+		0.5,
+		[[250, 0, 10000, "target"], [200, 100, 10000, "off_path"]],
+		250.0
+	)
+	_case(
+		check,
+		cases,
+		"kunkka_x_marks",
+		"kunkka",
+		1.0,
+		[[100, 0, 10000, "target"], [150, 60, 10000, "near"]],
+		100.0
+	)
+	_case(
+		check,
+		cases,
+		"kunkka_tide_bringer",
+		"kunkka",
+		1.0,
+		[[100, 0, 10000, "target"], [240, 0, 10000, "wave"]],
+		100.0
+	)
+	# The X Marks the Spot burst lands on a later tick, so hold every cooldown
+	# and expire the mark, mirroring the Morgath flux tick case.
+	_case(
+		check,
+		cases,
+		"kunkka_x_mark_burst",
+		"kunkka",
+		1.0,
+		[[60, 0, 10000, "marked"], [150, 0, 10000, "near"], [400, 0, 10000, "far"]],
+		60.0
+	)
+	_case(
+		check,
+		cases,
+		"razak_firestorm",
+		"razak",
+		1.0,
+		[[20, 0, 10000, "a"], [40, 0, 10000, "b"], [60, 0, 10000, "c"]],
+		20.0
+	)
+	_case(
+		check,
+		cases,
+		"razak_firefly",
+		"razak",
+		1.0,
+		[[200, 0, 10000, "target"], [60, 0, 10000, "near"]],
+		200.0
+	)
+	_case(
+		check,
+		cases,
+		"razak_flame_cone",
+		"razak",
+		1.0,
+		[[100, 0, 10000, "target"], [150, 40, 10000, "near"]],
+		100.0
+	)
+	_case(
+		check,
+		cases,
+		"razak_molotov",
+		"razak",
+		1.0,
+		[[260, 0, 10000, "target"], [100, 0, 10000, "near"], [300, 40, 10000, "splash"]],
+		260.0
+	)
 	_generic(check, cases)
 	_true_boss_heal(check)
 
@@ -275,6 +418,13 @@ func _case(
 		boss.r_timer = 999
 		boss.flux_target_id = enemies[0].id
 		boss.flux_active_timer = 31
+	if label == "kunkka_x_mark_burst":
+		boss.q_timer = 999
+		boss.w_timer = 999
+		boss.e_timer = 999
+		boss.r_timer = 999
+		boss.x_mark_target_id = enemies[0].id
+		boss.x_mark_timer = 1
 	BossAI.tick(world, boss, enemies, enemies[0], distance)
 	_compare(check, expected["result"], boss, enemies)
 
@@ -338,6 +488,10 @@ func _compare(check: Callable, expected: Dictionary, boss, enemies: Array[UnitSt
 		"necro_buff_timer",
 		"presence_timer",
 		"morph_buff_timer",
+		"mirror_buff_timer",
+		"shell_timer",
+		"rum_buff_timer",
+		"x_mark_timer",
 		"defense_timer",
 		"flux_active_timer",
 		"clones_active_timer"
@@ -359,6 +513,9 @@ func _compare(check: Callable, expected: Dictionary, boss, enemies: Array[UnitSt
 	check.call(boss.necro_buff_active == bool(expected["necro_buff_active"]), "necromastery flag")
 	check.call(boss.presence_active == bool(expected["presence_active"]), "presence flag")
 	check.call(boss.morph_buff_active == bool(expected["morph_buff_active"]), "morph flag")
+	check.call(boss.mirror_buff_active == bool(expected["mirror_buff_active"]), "mirror flag")
+	check.call(boss.shell_active == bool(expected["shell_active"]), "kraken shell flag")
+	check.call(boss.rum_buff_active == bool(expected["rum_buff_active"]), "rum buff flag")
 	check.call(boss.defense_boost == bool(expected["defense_boost"]), "defense flag")
 	var expected_targets: Array = expected["targets"]
 	check.call(enemies.size() == expected_targets.size(), "target count")
