@@ -138,7 +138,10 @@ func _live_step_tower_and_nexus(check: Callable) -> void:
 	check.call(boss != null, "live structure step boss spawns")
 	if boss == null:
 		return
-	# 100 px: inside the 180 px tower range and the 150 px nexus range.
+	# Both structures sit on the same spot for this scenario; the boss stays
+	# inside the 180 px tower range and the 150 px nexus range.
+	tower.position = STRUCTURE_POSITION
+	nexus.position = STRUCTURE_POSITION
 	boss.position = STRUCTURE_POSITION + Vector2(100.0, 0.0)
 	boss.previous_position = boss.position
 	var boss_hp := boss.hp
