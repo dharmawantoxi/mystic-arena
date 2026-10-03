@@ -899,15 +899,15 @@ Audit atribusi burn (`1aa2352`, CI [37098998782](https://github.com/dharmawantox
 
 Lapisan **8i** (`4c34f0c`, CI [37118164879](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37118164879)) memindahkan jarak kiting dan hysteresis source ke native untuk 12 boss ranged: ancient_apparition, morgath, razak, varkul, xerathis, nyzrak, syrentha, thalgryn, nyxarath, malzareth, akashari dan vorenmarr. `boss_core_source_oracle.py` kini mengekspor `min_distance`/`prefer_distance` ke `boss_stats.json`; `BossState.move_ranged_kite()` meniru mode `back`/`in`/`hold` dengan band 12 px, dan `_step_active_boss()` hanya memilih jalur ini untuk daftar ranged tersebut. Oracle AST `boss_motion_source_oracle.py` mengunci tepat empat trace per boss (48 total), termasuk masuk/keluar hysteresis untuk kedua arah; `boss_motion_checks.gd` mereplay semuanya dan memeriksa handoff pada tick match aktif. Boss lain tetap memakai chase native sebelumnya. CI Godot 4.7.2 hijau: **1.198.870 native checks**, `validate_project.py` **6.030 static checks**.
 
-Lapisan **8j** (`433a2e6`, CI [37119656491](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37119656491)) menyelaraskan gerbang smart AI dengan cabang sumber `Boss.update`: ability dispatcher hanya menerima target ketika jaraknya berada di dalam `attack_range` inklusif. Di luar jarak, boss tetap bergerak/kiting; `BossAI.tick()` dipanggil dengan target null agar heal true-boss sebelum pemilihan target tetap terjaga tanpa men-tick timer atau menjalankan smart ability. Oracle AST mengeksekusi update sumber dan merekam empat batas pemilihan/dispatch untuk masing-masing 12 boss ranged (48 kasus); native checks memeriksa target window/predicate serta skenario Ancient Apparition pada 150 px vs 151 px. CI Godot 4.7.2 hijau: **1.199.131 native checks**, `validate_project.py` **6.033 static checks**.
+Lapisan **8j** (`433a2e6`; perluasan matriks oracle `a1d6d0f`, CI [37120800125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37120800125)) menyelaraskan gerbang smart AI dengan cabang sumber `Boss.update`: ability dispatcher hanya menerima target ketika jaraknya berada di dalam `attack_range` inklusif. Di luar jarak, boss tetap bergerak/kiting; `BossAI.tick()` dipanggil dengan target null agar heal true-boss sebelum pemilihan target tetap terjaga tanpa men-tick timer atau menjalankan smart ability. Oracle AST mengeksekusi update sumber dan merekam empat batas pemilihan/dispatch untuk **seluruh 79 recipe smart AI (316 kasus)**; native checks memeriksa target window/range dan cakupan 79 cabang dispatcher, ditambah skenario Ancient Apparition pada 150 px vs 151 px. CI Godot 4.7.2 hijau: **1.200.538 native checks**, `validate_project.py` **6.112 static checks**.
 
 Sistem produksi serta sisa perilaku scene/AI yang belum dipindahkan masih
 belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 terbaru hijau setelah gate dispatch smart-AI layer 8j
-([37119656491](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37119656491));
-**1.199.131 native checks**; `validate_project.py` **6.033 static checks**;
+CI Godot 4.7.2 terbaru hijau setelah cakupan range gate untuk seluruh recipe smart-AI
+([37120800125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37120800125));
+**1.200.538 native checks**; `validate_project.py` **6.112 static checks**;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ff99-mystic-arena` (PR
@@ -937,9 +937,10 @@ CI Godot 4.7.2 terbaru hijau setelah gate dispatch smart-AI layer 8j
 > boss hero sebelum lane assignment; audit burn-team (`1aa2352`, code run
 > 37098998782) meneruskan atribusi ke damage boss dan kill ledger unit; layer
 > **8i** (`4c34f0c`, code run 37118164879) menambah kiting/hysteresis pada 12
-> boss ranged dengan tepat 4 oracle trace per boss; **8j** (`433a2e6`, code run
-> 37119656491) membatasi dispatch smart AI ke jarak serang source.
-> CI terakhir: **1.199.131 native checks** dan **6.033 static checks**.
+> boss ranged dengan tepat 4 oracle trace per boss; **8j** (`433a2e6`, coverage
+> `a1d6d0f`, code run 37120800125) membatasi dispatch smart AI ke jarak source,
+> dengan 316 trace untuk semua 79 recipe.
+> CI terakhir: **1.200.538 native checks** dan **6.112 static checks**.
 > Berikutnya sistem produksi, lalu sisa perilaku scene/AI. Satu sub-layer per
 > commit; pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
 > commit -> push -> gh run watch.

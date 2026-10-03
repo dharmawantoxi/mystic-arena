@@ -106,14 +106,15 @@ mereplay trace dan menguji routing pada fixed tick aktif.
 Code commit lulus CI Godot 4.7.2
 [run 37118164879](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37118164879):
 **1.198.870 native checks**, `validate_project.py` **6.030 static checks**.
-**Layer 8j** (`433a2e6`) membatasi `BossAI.tick()` ke target dalam `attack_range`
-inklusif, sesuai cabang `Boss.update`; saat di luar range, native tetap bergerak
-namun memberi dispatcher target null agar heal true-boss tetap berjalan tanpa
-smart-AI cast/timer tick. Oracle `boss_motion_source_oracle.py` mencatat empat
-kasus range/aggro per 12 ranged boss (48 kasus), dan native menguji batas 150/151
-px pada Ancient Apparition. CI Godot 4.7.2
-[run 37119656491](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37119656491):
-**1.199.131 native checks**, `validate_project.py` **6.033 static checks**.
+**Layer 8j** (`433a2e6`; perluasan oracle `a1d6d0f`) membatasi `BossAI.tick()`
+ke target dalam `attack_range` inklusif, sesuai cabang `Boss.update`; saat di luar
+range, native tetap bergerak namun memberi dispatcher target null agar heal
+true-boss tetap berjalan tanpa smart-AI cast/timer tick. Oracle
+`boss_motion_source_oracle.py` mencatat empat kasus range/aggro untuk seluruh
+79 recipe (316 kasus); native memeriksa target window dan semua cabang dispatcher,
+serta menguji batas 150/151 px pada Ancient Apparition. CI Godot 4.7.2
+[run 37120800125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37120800125):
+**1.200.538 native checks**, `validate_project.py` **6.112 static checks**.
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
