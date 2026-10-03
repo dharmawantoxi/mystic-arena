@@ -11,6 +11,7 @@ HeroState and BossState match helpers. No Python source is modified.
 """
 import ast
 import json
+import sys
 from pathlib import Path
 
 from boss_motion_source_oracle import source_boss_types

@@ -390,6 +390,10 @@ check("BossStructureTargetsChecks.new().run(_check)" in ai_tests,
       "Boss structure targeting suite must run")
 check("BossMinionTargetsChecks.new().run(_check)" in ai_tests,
       "Boss minion targeting suite must run")
+check('const BossPhaseOrderChecks = preload("res://tests/boss_phase_order_checks.gd")' in ai_tests,
+      "Boss hero-before-boss phase order suite must be preloaded")
+check("BossPhaseOrderChecks.new().run(_check)" in ai_tests,
+      "Boss hero-before-boss phase order suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
