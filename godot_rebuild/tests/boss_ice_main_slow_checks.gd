@@ -80,6 +80,7 @@ func _shot(input: Dictionary, main: UnitState) -> Projectile:
 	shot.slow_amount = float(input.get("slow", 0.0))
 	shot.slow_duration = int(input.get("slow_duration", 0))
 	shot.atk_slow_amount = float(input.get("atk_slow", 0.0))
+	shot.slow_aoe = float(input.get("slow_aoe", 0.0))
 	return shot
 
 
