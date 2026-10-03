@@ -309,6 +309,10 @@ func step_tick() -> void:
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
+	# Source Game.update runs living Hero.update calls before Boss.update. Keep
+	# the boss's target/attack phase after hero hits and movement from this tick.
+	if is_running():
+		_step_hero_act()
 	# The Python true-boss check runs before the death-reward pass. Keep tower
 	# deaths in a pending counter so a sixth tower triggers on the next tick,
 	# exactly after the source reward loop has committed the event.
@@ -322,7 +326,7 @@ func step_tick() -> void:
 	if is_running():
 		_tick_auras_and_items()
 		_tick_item_debuffs()
-		_step_hero_act()
+		_step_hero_respawns()
 		# Source Game.update runs the AI right after the entity loop.
 		_step_ai_heroes()
 		_step_ai()
@@ -531,6 +535,35 @@ func _spawn_boss(boss_type: String) -> BossState:
 		boss.apply_scaling(enemy_hp_mult, enemy_damage_mult, enemy_speed_mult)
 	active_boss = boss
 	return boss
+
+
+func _find_target(unit: UnitState) -> UnitState:
+	# Layer 8n: port of the boss arm of `Minion._get_enemies`. The source reads
+	# its candidates from the spatial grid, and `Game.update` indexes the live
+	# boss there (`spatial_heroes = spatial_heroes + [self.active_boss]`), so a
+	# minion sees the boss inside `self.range + 30` (inclusive squared radius)
+	# and `_find_target_smart` may return it. The native registry never holds
+	# the boss (`active_boss` only lives in `_by_id`), so minions used to walk
+	# straight through a boss without ever swinging at it.
+	#
+	# Order matters: the boss is the LAST indexed entry, while towers and bases
+	# are appended by `_get_enemies` only after the grid results. The candidate
+	# list is therefore units, boss, structures - which is what the source siege
+	# group (`max_hp >= 1500`, first match wins) observes.
+	var boss := active_boss
+	if boss == null or not boss.alive or boss.team == unit.team:
+		return super._find_target(unit)
+	if unit.position.distance_to(boss.position) > unit.definition.attack_range_px + 30.0:
+		return super._find_target(unit)
+	var ordered: Array[UnitState] = []
+	for candidate in units:
+		if candidate.alive and candidate.team != unit.team:
+			ordered.append(candidate)
+	ordered.append(boss)
+	for structure in structures:
+		if structure.alive and structure.team != unit.team:
+			ordered.append(structure)
+	return _select_ai_target(unit, ordered)
 
 
 func _structure_target(structure: StructureState) -> UnitState:
@@ -884,13 +917,20 @@ func _set_hero_follow(hero_id: int, target_id: int) -> bool:
 
 
 func _step_hero_act() -> void:
-	# Port of Hero.update states 1–6 plus Game respawn. No items.
+	# Port living Hero.update states 1–6. Source runs this before Boss.update.
 	var roster: Array = []
 	for unit in units:
-		if unit.is_hero:
+		if unit.is_hero and unit.alive:
 			roster.append(unit)
 	for entry in roster:
 		_step_one_hero(entry as HeroState)
+
+
+func _step_hero_respawns() -> void:
+	# Source processes respawn timers after Boss.update and its reward pass.
+	for unit in units:
+		if unit.is_hero and not unit.alive:
+			_step_hero_respawn(unit as HeroState)
 
 
 func _step_one_hero(hero: HeroState) -> void:

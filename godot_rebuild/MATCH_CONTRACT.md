@@ -151,10 +151,33 @@ struktur source: 8 skenario x 216 tipe boss (**1728 kasus**, termasuk kolom
 dan menguji tick hidup tower+nexus, guard tim sama dan boss mati. CI Godot 4.7.2
 [run 37126929202](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37126929202):
 **1.218.942 native checks**, `validate_project.py` **6.186 static checks**.
+
+**Layer 8n** (`f94583e`; perbaikan CI `bb69832` dan `4e88687`, final code run
+[37134838416](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37134838416))
+port visibilitas boss pada targeting minion. Boss hidup tim lawan masuk kandidat
+sesuai kueri source `range + 30` inklusif, setelah unit musuh dan sebelum tower/
+nexus; boss mati, setim, atau di luar radius didelegasikan ke target dasar.
+Boss tidak ikut grup `Minion` untuk AI lane/low-HP, tetapi tetap dapat dipilih
+secara umum dan tetap memenuhi prioritas siege `max_hp >= 1500`. Oracle
+`boss_minion_targeting_source_oracle.py` dan replay `boss_minion_targets_checks.gd`
+mencakup empat skenario untuk tiap 216 tipe boss (**864 kasus**) serta tick
+minion hidup yang mengejar dan memukul boss. CI Godot 4.7.2 hijau:
+**1.223.709 native checks**, `validate_project.py` **6.220 static checks**.
+
+**Layer 8o** (`1436fc9`; perbaikan registrasi suite `4c4f057`, CI final
+[37136981760](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37136981760))
+menyelaraskan urutan combat: source `Game.update` dan `_update_gameplay` menjalankan
+hero hidup sebelum `Boss.update`, sedangkan native sebelumnya men-tick boss dulu.
+Kini aksi hero terjadi setelah unit/struktur dan sebelum true-boss check serta
+fase boss; respawn tetap sesudah hasil boss. Oracle AST dan `boss_phase_order_checks.gd`
+menguji empat kasus untuk tiap 216 boss (**864 kasus**): hit hero lethal/nonlethal,
+masuk ke attack range dan keluar dari radius target source. CI Godot 4.7.2 hijau:
+**1.227.818 native checks**, `validate_project.py` **6.249 static checks**.
+
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
-- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), source ID hit dasar (8k), dan atribusi kill boss `Game._process_boss_kill` (8l), dan visibilitas boss pada targeting tower/nexus (8m) sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, kredit kills hero pada kematian boss beserta counter mini/true boss, boss sebagai sasaran serangan tower/nexus (batas inklusif + seri), generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
+- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), source ID hit dasar (8k), atribusi kill boss `Game._process_boss_kill` (8l), visibilitas boss pada targeting tower/nexus (8m) dan targeting minion (8n), serta urutan aksi hero sebelum tick boss (8o), juga sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, kredit kills hero pada kematian boss beserta counter mini/true boss, boss sebagai sasaran serangan tower/nexus (batas inklusif + seri), generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
 
 ## Bukti dan batas pengujian
 
@@ -162,4 +185,4 @@ Checkpoint Kaizen-1 `0078e79`: [CI Godot 4.7.2 Linux](https://github.com/dharmaw
 
 JSON memuat angka sebagai float. Trace membandingkan nilai scalar numerik secara exact, bukan nested `Array` yang membedakan tipe Variant. Tidak menggunakan toleransi untuk gold/tick/spawn.
 
-**Belum diuji:** GPU/screenshot, Windows fisik, multi-touch/perangkat Android, pertandingan manual panjang dan balance/performa. Headless lifecycle/input adapter bukan pengganti pengujian tersebut. Upgrade Archer ([kontrak](UPGRADE_CONTRACT.md), 1.905 checks pada `7c96c83`), upgrade nexus ([kontrak](NEXUS_CONTRACT.md)), jalur Cannon ([kontrak](CANNON_CONTRACT.md), 3.713 checks pada `81765fd`), jalur Ice ([kontrak](ICE_CONTRACT.md), 4.035 checks pada `3e8ad59`), dan jalur Mage ([kontrak](MAGE_CONTRACT.md), 4.452 checks pada `f1b80b9`) sudah tersedia di mode ini. Scope berikutnya: hero/AI sebelum memperluas konten; jangan mengklaim prototipe ini sudah game lengkap.
+**Belum diuji:** GPU/screenshot, Windows fisik, multi-touch/perangkat Android, pertandingan manual panjang dan balance/performa. Headless lifecycle/input adapter bukan pengganti pengujian tersebut. Upgrade Archer ([kontrak](UPGRADE_CONTRACT.md), 1.905 checks pada `7c96c83`), upgrade nexus ([kontrak](NEXUS_CONTRACT.md)), jalur Cannon ([kontrak](CANNON_CONTRACT.md), 3.713 checks pada `81765fd`), jalur Ice ([kontrak](ICE_CONTRACT.md), 4.035 checks pada `3e8ad59`), dan jalur Mage ([kontrak](MAGE_CONTRACT.md), 4.452 checks pada `f1b80b9`) sudah tersedia di mode ini. Scope berikutnya: hanya satu slice gameplay boss yang terbukti dari source; bila tidak ada gap jelas, berhenti dan jangan beralih ke hero/AI. Jangan mengklaim prototipe ini sudah game lengkap.
