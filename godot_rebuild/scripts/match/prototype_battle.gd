@@ -123,6 +123,11 @@ var unlocked_bosses: Array[String] = []
 var purchased_heroes: Array[String] = []
 var heroes_unlocked_this_match: Array[String] = []
 var boss_rewards: Array[Dictionary] = []
+# Layer 8l: source Game.miniboss_kill_count / trueboss_kill_count. Only a real
+# enemy hero landing the last hit moves them; the achievement banner they feed
+# in the source is presentation and stays outside this port.
+var miniboss_kill_count := 0
+var trueboss_kill_count := 0
 # Layer 8f: death FX survives registry retirement, like source EffectManager.
 var boss_death_presentations: Array[Dictionary] = []
 var boss_screen_shake_intensity := 0.0
@@ -710,6 +715,31 @@ func _tick_boss_death_presentations() -> void:
 	boss_death_presentations = standing
 
 
+func _process_boss_kill(boss: BossState) -> void:
+	# Port of Game._process_boss_kill: the boss kill is credited only when the
+	# last hit came from a real hero of the other team (not None, not the
+	# victim, not a tower/minion/castle). Source reads `boss._killed_by`, which
+	# `Boss.take_damage` writes only on the lethal blow; the native boundary is
+	# the attacker ID that `_deliver_hit` stores on every damaging hit (boss
+	# basic hit with source in layer 8k, source-omitted cleave/burn in 8g),
+	# which is the same blow because a missed hit never kills. Dead heroes stay
+	# addressable in the registry, so a killer that died in the same tick still
+	# resolves. Source also guards `killer is victim`, impossible here: a
+	# BossState can never come back from the HeroState cast.
+	var killer := get_unit(boss.last_hit_source_id) as HeroState
+	if killer == null or killer.team == boss.team:
+		return
+	# Source `_killer_is_hero` requires `hero_type` and `skills`; HeroState is
+	# the only native unit carrying both, so the cast above is the whole gate.
+	killer.kills += 1
+	if killer.team != BLUE:
+		return
+	if boss.boss_class == "true":
+		trueboss_kill_count += 1
+	else:
+		miniboss_kill_count += 1
+
+
 func _process_boss_result() -> void:
 	# Port of the source defeated-boss reward/unlock pass. The death
 	# presentation payload has already been copied before registry retirement.
@@ -717,6 +747,8 @@ func _process_boss_result() -> void:
 		return
 	var boss := active_boss
 	var boss_type := boss.boss_type
+	# Source runs the kill-attribution pass before it pays out the reward.
+	_process_boss_kill(boss)
 	economy.credit_kill(BLUE, boss.gold_reward)
 	score += boss.gold_reward
 	boss_rewards.append({"boss_type": boss_type, "gold": boss.gold_reward})

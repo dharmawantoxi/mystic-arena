@@ -371,6 +371,7 @@ from boss_ability_source_oracle import source_fixture as boss_ability_fixture
 from boss_clock_source_oracle import source_fixture as boss_clock_fixture
 from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_fixture
 from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
+from boss_kill_credit_source_oracle import source_fixture as boss_kill_credit_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -381,6 +382,7 @@ check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite mu
 check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite must run")
 check("BossClockChecks.new().run(_check)" in ai_tests, "Boss clock suite must run")
 check("BossDebuffClockChecks.new().run(_check)" in ai_tests, "Boss debuff clock suite must run")
+check("BossKillCreditChecks.new().run(_check)" in ai_tests, "Boss kill credit suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -409,6 +411,29 @@ if (ROOT / "tests/fixtures/boss_motion_source.json").is_file():
           and all(sum(case["boss_type"] == _boss for case in _basic_attack_cases) == 4
                   for _boss in _basic_attack_types),
           "Boss basic attacks require four source-attribution cases for all 216 types")
+check((ROOT / "tests/fixtures/boss_kill_credit_source.json").is_file(),
+      "Boss kill credit requires source fixture")
+if (ROOT / "tests/fixtures/boss_kill_credit_source.json").is_file():
+    _boss_kill_credit = boss_kill_credit_fixture()
+    check(_boss_kill_credit == json.loads(
+        (ROOT / "tests/fixtures/boss_kill_credit_source.json").read_text(encoding="utf-8")),
+        "Boss kill credit source attribution drift")
+    _kill_credit_cases = _boss_kill_credit.get("killer_cases", [])
+    _kill_credit_types = {case["boss_type"] for case in _kill_credit_cases}
+    check(len(_kill_credit_cases) == 864
+          and _kill_credit_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _kill_credit_cases) == 4
+                  for _boss in _kill_credit_types),
+          "Boss kill credit requires four source cases for all 216 boss types")
+    check(all(case["credited_kills"] == (1 if case["label"] == "blue_hero_lethal_hit" else 0)
+              for case in _kill_credit_cases),
+          "Only an enemy hero last hit may credit the source kill")
+    check(all((case["achievement"] is not None)
+              == (case["label"] == "blue_hero_lethal_hit")
+              and case["miniboss_kill_count"] + case["trueboss_kill_count"]
+              == case["credited_kills"]
+              for case in _kill_credit_cases),
+          "Boss kill counters must advance exactly with the credited source kills")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -488,6 +513,17 @@ check(not re.search(r"^\s*boss\.hp\s*=", boss_ai_text, re.M),
       "Boss AI hp increases must pass through the anti-heal setter")
 check(boss_ai_text.count("boss.set_hp_value(") == 6,
       "All source Boss AI healing writes must use the anti-heal setter")
+boss_kill_credit = prototype_battle.split("func _process_boss_kill(", 1)[1].split(
+    "\nfunc _process_boss_result()", 1)[0]
+check("get_unit(boss.last_hit_source_id) as HeroState" in boss_kill_credit
+      and "killer.kills += 1" in boss_kill_credit
+      and "if killer.team != BLUE:" in boss_kill_credit,
+      "Boss kill attribution must credit only a real enemy hero, then blue-side counters")
+check("_process_boss_kill(boss)\n\teconomy.credit_kill(BLUE, boss.gold_reward)" in prototype_battle,
+      "Boss kill attribution must run before the source reward pass")
+check("var miniboss_kill_count := 0" in prototype_battle
+      and "var trueboss_kill_count := 0" in prototype_battle,
+      "Native match must keep the source mini/true boss kill counters")
 check("boss_death_presentations" in prototype_battle
       and "_queue_boss_death_presentation" in prototype_battle,
       "Boss death presentation must survive registry retirement")
