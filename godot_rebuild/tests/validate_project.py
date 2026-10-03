@@ -372,6 +372,7 @@ from boss_clock_source_oracle import source_fixture as boss_clock_fixture
 from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_fixture
 from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
 from boss_kill_credit_source_oracle import source_fixture as boss_kill_credit_fixture
+from boss_structure_targeting_source_oracle import source_fixture as boss_structure_targeting_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -383,6 +384,8 @@ check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite mus
 check("BossClockChecks.new().run(_check)" in ai_tests, "Boss clock suite must run")
 check("BossDebuffClockChecks.new().run(_check)" in ai_tests, "Boss debuff clock suite must run")
 check("BossKillCreditChecks.new().run(_check)" in ai_tests, "Boss kill credit suite must run")
+check("BossStructureTargetsChecks.new().run(_check)" in ai_tests,
+      "Boss structure targeting suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -434,6 +437,33 @@ if (ROOT / "tests/fixtures/boss_kill_credit_source.json").is_file():
               == case["credited_kills"]
               for case in _kill_credit_cases),
           "Boss kill counters must advance exactly with the credited source kills")
+check((ROOT / "tests/fixtures/boss_structure_targeting_source.json").is_file(),
+      "Boss structure targeting requires source fixture")
+if (ROOT / "tests/fixtures/boss_structure_targeting_source.json").is_file():
+    _boss_structure_targeting = boss_structure_targeting_fixture()
+    check(_boss_structure_targeting == json.loads(
+        (ROOT / "tests/fixtures/boss_structure_targeting_source.json").read_text(encoding="utf-8")),
+        "Boss structure targeting source behavior drift")
+    _structure_targeting_source = _boss_structure_targeting.get("source", {})
+    check(all(bool(_structure_targeting_source.get(key, False)) for key in (
+        "tower_boss_scan", "castle_uses_all_units", "all_units_includes_boss", "grid_includes_boss")),
+        "Source must keep the boss in both structure targeting paths")
+    _structure_targeting_cases = _boss_structure_targeting.get("cases", [])
+    _structure_targeting_types = {case["boss_type"] for case in _structure_targeting_cases}
+    check(len(_structure_targeting_cases) == 1728
+          and _structure_targeting_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _structure_targeting_cases) == 8
+                  for _boss in _structure_targeting_types),
+          "Boss structure targeting requires eight source cases for all 216 boss types")
+    check(all(case["expected"] != case["expected_without_boss"] or case["expected"] != "boss"
+              for case in _structure_targeting_cases)
+          and sum(case["expected"] == "boss" for case in _structure_targeting_cases) == 864
+          and all(
+              (case["expected"] == "boss")
+              == (case["label"] in ("boss_at_range_unit_out_of_range", "boss_ties_nearest_unit"))
+              for case in _structure_targeting_cases
+          ),
+          "In-range boss must win at the range edge and on exact ties for tower and castle")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -503,6 +533,12 @@ boss_basic_attack = prototype_battle.split("func _boss_basic_attack(", 1)[1].spl
 check('_deliver_hit(boss.id, boss.team, target, boss.damage, "physical", boss.position)' in boss_basic_attack
       and "_deliver_hit(-1, boss.team, enemy, cleave_damage" in boss_basic_attack,
       "Boss primary hit must preserve source ID while source-omitted cleave remains uncredited")
+boss_structure_target = prototype_battle.split("func _structure_target(", 1)[1].split(
+    "\nfunc _boss_enemies()", 1)[0]
+check("super._structure_target(structure)" in boss_structure_target
+      and "distance > structure.definition.attack_range_px" in boss_structure_target
+      and "distance <= structure.position.distance_to(target.position)" in boss_structure_target,
+      "Towers and the nexus must append the living enemy boss like the source scans")
 check("active_boss.tick_item_debuffs()" not in prototype_battle,
       "Boss item debuffs must not tick twice in one match step")
 boss_ai_text = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")

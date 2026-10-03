@@ -533,6 +533,34 @@ func _spawn_boss(boss_type: String) -> BossState:
 	return boss
 
 
+func _structure_target(structure: StructureState) -> UnitState:
+	# Port of the boss scan that `Tower.update` and `Castle.update` run after
+	# their spatial-grid query in the source:
+	#
+	#     for u in all_units:
+	#         if not getattr(u, "boss_type", None): continue
+	#         if not u.alive or u.team == self.team: continue
+	#         if math.hypot(u.x - self.x, u.y - self.y) <= self.range:
+	#             if u not in enemies: enemies.append(u)
+	#
+	# That scan appends the boss LAST and `_find_target` keeps the later
+	# candidate on an exact tie (`dist <= best_dist`), so an in-range boss wins
+	# ties. The native base only scans `units`, which never holds the boss (it
+	# is registered as `active_boss` in `_by_id`), so towers and the nexus used
+	# to ignore a boss walking right past them. Range is inclusive, and only a
+	# living enemy boss is appended, exactly like the source loop.
+	var target := super._structure_target(structure)
+	var boss := active_boss
+	if boss == null or not boss.alive or boss.team == structure.team:
+		return target
+	var distance := structure.position.distance_to(boss.position)
+	if distance > structure.definition.attack_range_px:
+		return target
+	if target == null or distance <= structure.position.distance_to(target.position):
+		return boss
+	return target
+
+
 func _boss_enemies() -> Array[UnitState]:
 	# Source Boss.update order: living units, then enemy towers, then enemy
 	# bases. Nexuses are kept separate because `structures` stores them first.
