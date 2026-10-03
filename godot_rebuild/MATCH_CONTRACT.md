@@ -189,10 +189,26 @@ es level-6 dan guard tim sama/boss mati/tanpa AOE di bawah level 6. CI Godot
 4.7.2 hijau: **1.232.368 native checks**, `validate_project.py`
 **6.292 static checks**.
 
+**Layer 8q** (`79feb79`, CI
+[37142715818](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37142715818))
+meluruskan damage proyektil menara/nexus pada boss. Source menembak dengan
+`damage_type='projectile'` tanpa `school=`/`source=`, dan
+`_entity.resolve_damage_school` mengembalikan `None`, jadi `Boss.take_damage`
+tidak menerapkan mitigasi armor maupun magic-resist - hanya resilience dan cap
+anti-burst. Native menyerahkan sekolah deklarasi penembak, sehingga damage
+terpotong armor boss (Gornak 62 vs 42 pada es L6, Abaddon 108 vs 43 pada cannon
+L6). `_update_projectiles()` kini memakai `_projectile_school()`; match layer
+mengembalikan `"neutral"` untuk `BossState` sementara minion/hero tetap pada
+sekolah deklarasi. Oracle `boss_tower_damage_source_oracle.py` dan replay
+`boss_tower_damage_checks.gd` mencakup empat jenis peluru untuk tiap 216 tipe
+boss (**864 kasus**), masing-masing dengan kolom hasil sebelum layer, plus tick
+hidup archer L1. CI Godot 4.7.2 hijau: **1.236.052 native checks**,
+`validate_project.py` **6.333 static checks**.
+
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
-- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), source ID hit dasar (8k), atribusi kill boss `Game._process_boss_kill` (8l), visibilitas boss pada targeting tower/nexus (8m) dan targeting minion (8n), urutan aksi hero sebelum tick boss (8o), serta AOE freeze es level-6 yang mengenai boss dengan tenacity source (8p), juga sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, kredit kills hero pada kematian boss beserta counter mini/true boss, boss sebagai sasaran serangan tower/nexus (batas inklusif + seri), generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
+- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), source ID hit dasar (8k), atribusi kill boss `Game._process_boss_kill` (8l), visibilitas boss pada targeting tower/nexus (8m) dan targeting minion (8n), urutan aksi hero sebelum tick boss (8o), AOE freeze es level-6 yang mengenai boss dengan tenacity source (8p), serta damage proyektil menara/nexus pada boss yang bebas mitigasi sekolah sesuai `resolve_damage_school` (8q), juga sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, kredit kills hero pada kematian boss beserta counter mini/true boss, boss sebagai sasaran serangan tower/nexus (batas inklusif + seri), generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
 
 ## Bukti dan batas pengujian
 
