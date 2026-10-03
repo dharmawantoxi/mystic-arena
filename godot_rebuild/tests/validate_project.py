@@ -380,6 +380,9 @@ from boss_tower_damage_source_oracle import source_fixture as boss_tower_damage_
 from boss_cannon_splash_source_oracle import source_fixture as boss_cannon_splash_fixture
 from boss_ice_main_slow_source_oracle import source_fixture as boss_ice_main_slow_fixture
 from boss_tower_volley_source_oracle import source_fixture as boss_tower_volley_fixture
+from boss_ability_source_attribution_oracle import (
+    source_fixture as boss_ability_source_attribution_fixture,
+)
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -419,6 +422,15 @@ check('const BossTowerVolleyChecks = preload("res://tests/boss_tower_volley_chec
       "Boss tower volley suite must be preloaded")
 check("BossTowerVolleyChecks.new().run(_check)" in ai_tests,
       "Boss tower volley suite must run")
+check(
+    'const BossAbilitySourceAttributionChecks = preload(\n\t"res://tests/boss_ability_source_attribution_checks.gd"\n)'
+    in ai_tests
+    or 'const BossAbilitySourceAttributionChecks = preload("res://tests/boss_ability_source_attribution_checks.gd")'
+    in ai_tests,
+    "Boss ability source attribution suite must be preloaded",
+)
+check("BossAbilitySourceAttributionChecks.new().run(_check)" in ai_tests,
+      "Boss ability source attribution suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -775,6 +787,67 @@ if (ROOT / "tests/fixtures/boss_tower_volley_source.json").is_file():
               and case["expected_without_boss"]["shot_count"] == 1
               for case in _volley_cases if case["label"] == "mage_l2_boss_at_range_edge"),
           "Mage L2 must emit a second chain bolt to the in-range boss and omit it without the boss")
+check((ROOT / "tests/fixtures/boss_ability_source_attribution.json").is_file(),
+      "Boss ability source attribution requires source fixture")
+if (ROOT / "tests/fixtures/boss_ability_source_attribution.json").is_file():
+    _boss_ability_attr = boss_ability_source_attribution_fixture()
+    check(_boss_ability_attr == json.loads(
+        (ROOT / "tests/fixtures/boss_ability_source_attribution.json").read_text(encoding="utf-8")),
+        "Boss ability source attribution source behavior drift")
+    _attr_source = _boss_ability_attr.get("source", {})
+    check(all(bool(_attr_source.get(_flag)) for _flag in (
+        "basic_attack_passes_source_self", "cleave_omits_source",
+        "generic_ability_omits_source", "all_ability_take_damage_calls_omit_source",
+        "hero_blind_requires_source", "bristleback_reflect_requires_source",
+        "razor_carapace_reflect_requires_source", "hero_killed_by_requires_source")),
+          "Boss ability source attribution shape must keep source=None on all ability/skill hits")
+    check(_attr_source.get("ability_take_damage_call_count") == 177
+          and _attr_source.get("razor_carapace_armor") == 12
+          and _attr_source.get("razor_carapace_reflect_pct") == 0.35
+          and _attr_source.get("leviathan_combat_timeout") == 300,
+          "Boss ability source attribution metadata must match source call count and item constants")
+    _attr_cases = _boss_ability_attr.get("cases", [])
+    _attr_types = {case["boss_type"] for case in _attr_cases}
+    _attr_scenarios = {
+        "blind_boss_ability_lands",
+        "bristleback_mitigates_without_reflect",
+        "razor_carapace_combat_timer_without_reflect",
+        "lethal_ability_preserves_uncredited_killed_by",
+    }
+    check(len(_attr_cases) == 864
+          and _attr_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _attr_cases) == 4
+                  for _boss in _attr_types),
+          "Boss ability source attribution requires four source cases for all 216 boss types")
+    check(all({case["scenario"] for case in _attr_cases
+               if case["boss_type"] == _boss} == _attr_scenarios
+              for _boss in _attr_types),
+          "Boss ability source attribution covers blind, Bristleback, Razor Carapace and lethal killed_by")
+    check(all(case["expected"] != case["expected_with_boss_source"]
+              and not case["expected"]["hit_source_attributed"]
+              and case["expected_with_boss_source"]["hit_source_attributed"]
+              for case in _attr_cases),
+          "Every boss ability attribution case must differ between source=None and source=boss")
+    check(all(case["expected"]["damage_taken"] > 0
+              and case["expected_with_boss_source"]["damage_taken"] == 0
+              for case in _attr_cases if case["scenario"] == "blind_boss_ability_lands"),
+          "Blinded boss abilities must land when uncredited and miss only when source=boss is injected")
+    check(all(case["expected"]["reflect_raw"] == 0
+              and case["expected_with_boss_source"]["reflect_raw"] > 0
+              and case["expected"]["target_hp"] == case["expected_with_boss_source"]["target_hp"]
+              for case in _attr_cases
+              if case["scenario"] in (
+                  "bristleback_mitigates_without_reflect",
+                  "razor_carapace_combat_timer_without_reflect",
+              )),
+          "Bristleback and Razor Carapace must mitigate boss abilities without reflecting onto the boss")
+    check(all(not case["expected"]["target_alive"]
+              and case["expected"]["target_deaths"] == 1
+              and not case["expected"]["killed_by_boss"]
+              and case["expected_with_boss_source"]["killed_by_boss"]
+              for case in _attr_cases
+              if case["scenario"] == "lethal_ability_preserves_uncredited_killed_by"),
+          "Lethal boss abilities must not overwrite hero killed_by with the boss")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -967,6 +1040,11 @@ check(not re.search(r"^\s*boss\.hp\s*=", boss_ai_text, re.M),
       "Boss AI hp increases must pass through the anti-heal setter")
 check(boss_ai_text.count("boss.set_hp_value(") == 6,
       "All source Boss AI healing writes must use the anti-heal setter")
+boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
+    "\nstatic func _slow(", 1)[0]
+check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit
+      and "world._deliver_hit(boss.id," not in boss_ai_hit,
+      "Boss AI ability/skill hits must omit source attribution like source Boss._use_ability/_smart_ai_*")
 boss_kill_credit = prototype_battle.split("func _process_boss_kill(", 1)[1].split(
     "\nfunc _process_boss_result()", 1)[0]
 check("get_unit(boss.last_hit_source_id) as HeroState" in boss_kill_credit
