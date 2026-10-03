@@ -370,6 +370,7 @@ from boss_core_source_oracle import source_fixture as boss_core_fixture
 from boss_ability_source_oracle import source_fixture as boss_ability_fixture
 from boss_clock_source_oracle import source_fixture as boss_clock_fixture
 from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_fixture
+from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
 from boss_presentation_source_oracle import source_fixture as boss_presentation_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
 check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite must run")
@@ -392,6 +393,14 @@ if (ROOT / "tests/fixtures/boss_debuff_clock_source.json").is_file():
     check(boss_debuff_clock_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_debuff_clock_source.json").read_text(encoding="utf-8")),
         "Boss debuff clock source behavior drift")
+check("BossHeroAIChecks.new().run(_check)" in ai_tests,
+      "Boss hero AI target handoff suite must run")
+check((ROOT / "tests/fixtures/boss_hero_ai_source.json").is_file(),
+      "Boss hero AI target handoff requires source fixture")
+if (ROOT / "tests/fixtures/boss_hero_ai_source.json").is_file():
+    check(boss_hero_ai_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_hero_ai_source.json").read_text(encoding="utf-8")),
+        "Boss hero AI target handoff source behavior drift")
 check((ROOT / "tests/fixtures/boss_ability_source.json").is_file(), "Boss abilities require source fixture")
 if (ROOT / "tests/fixtures/boss_ability_source.json").is_file():
     check(boss_ability_fixture() == json.loads(

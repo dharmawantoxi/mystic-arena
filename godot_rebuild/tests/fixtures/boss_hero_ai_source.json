@@ -1,0 +1,252 @@
+{
+  "boss_type": "gornak",
+  "cases": [
+    {
+      "label": "nearest_living_enemy",
+      "input": {
+        "label": "nearest_living_enemy",
+        "hero": {
+          "id": 1,
+          "team": "red",
+          "x": 500.0,
+          "y": 380.0,
+          "skill_range": 100.0,
+          "initial_target_id": null
+        },
+        "units": [
+          {
+            "id": 11,
+            "team": "blue",
+            "alive": true,
+            "x": 560.0,
+            "y": 380.0
+          },
+          {
+            "id": 12,
+            "team": "blue",
+            "alive": true,
+            "x": 520.0,
+            "y": 408.0
+          },
+          {
+            "id": 13,
+            "team": "red",
+            "alive": true,
+            "x": 501.0,
+            "y": 380.0
+          },
+          {
+            "id": 14,
+            "team": "blue",
+            "alive": false,
+            "x": 502.0,
+            "y": 380.0
+          }
+        ],
+        "active_boss": null,
+        "towers": [],
+        "bases": [],
+        "expects_lane_assignment": false
+      },
+      "target_id": 12
+    },
+    {
+      "label": "stable_tie_keeps_first_unit",
+      "input": {
+        "label": "stable_tie_keeps_first_unit",
+        "hero": {
+          "id": 2,
+          "team": "red",
+          "x": 0.0,
+          "y": 0.0,
+          "skill_range": 100.0,
+          "initial_target_id": null
+        },
+        "units": [
+          {
+            "id": 21,
+            "team": "blue",
+            "alive": true,
+            "x": 25.0,
+            "y": 0.0
+          },
+          {
+            "id": 22,
+            "team": "blue",
+            "alive": true,
+            "x": 0.0,
+            "y": 25.0
+          }
+        ],
+        "active_boss": {
+          "id": 23,
+          "team": "blue",
+          "alive": true,
+          "x": -25.0,
+          "y": 0.0
+        },
+        "towers": [],
+        "bases": [],
+        "expects_lane_assignment": false
+      },
+      "target_id": 21
+    },
+    {
+      "label": "nearest_base_beats_unit_boss_and_tower",
+      "input": {
+        "label": "nearest_base_beats_unit_boss_and_tower",
+        "hero": {
+          "id": 3,
+          "team": "red",
+          "x": 0.0,
+          "y": 0.0,
+          "skill_range": 100.0,
+          "initial_target_id": null
+        },
+        "units": [
+          {
+            "id": 31,
+            "team": "blue",
+            "alive": true,
+            "x": 75.0,
+            "y": 0.0
+          }
+        ],
+        "active_boss": {
+          "id": 32,
+          "team": "blue",
+          "alive": true,
+          "x": 10.0,
+          "y": 0.0
+        },
+        "towers": [
+          {
+            "id": 33,
+            "team": "blue",
+            "alive": true,
+            "x": 20.0,
+            "y": 0.0
+          }
+        ],
+        "bases": [
+          {
+            "id": 34,
+            "team": "blue",
+            "alive": true,
+            "x": 5.0,
+            "y": 0.0
+          }
+        ],
+        "expects_lane_assignment": false
+      },
+      "target_id": 34
+    },
+    {
+      "label": "inclusive_skill_range_boundary",
+      "input": {
+        "label": "inclusive_skill_range_boundary",
+        "hero": {
+          "id": 4,
+          "team": "red",
+          "x": 0.0,
+          "y": 0.0,
+          "skill_range": 100.0,
+          "initial_target_id": null
+        },
+        "units": [
+          {
+            "id": 41,
+            "team": "blue",
+            "alive": true,
+            "x": 100.0,
+            "y": 0.0
+          }
+        ],
+        "active_boss": null,
+        "towers": [],
+        "bases": [],
+        "expects_lane_assignment": false
+      },
+      "target_id": 41
+    },
+    {
+      "label": "no_nearby_enemy_preserves_existing_target",
+      "input": {
+        "label": "no_nearby_enemy_preserves_existing_target",
+        "hero": {
+          "id": 5,
+          "team": "red",
+          "x": 0.0,
+          "y": 0.0,
+          "skill_range": 100.0,
+          "initial_target_id": 99
+        },
+        "units": [
+          {
+            "id": 51,
+            "team": "red",
+            "alive": true,
+            "x": 1.0,
+            "y": 0.0
+          },
+          {
+            "id": 52,
+            "team": "blue",
+            "alive": false,
+            "x": 2.0,
+            "y": 0.0
+          },
+          {
+            "id": 53,
+            "team": "blue",
+            "alive": true,
+            "x": 101.0,
+            "y": 0.0
+          }
+        ],
+        "active_boss": null,
+        "towers": [],
+        "bases": [],
+        "expects_lane_assignment": false
+      },
+      "target_id": 99
+    },
+    {
+      "label": "no_skill_range_target_allows_lane_assignment",
+      "input": {
+        "label": "no_skill_range_target_allows_lane_assignment",
+        "hero": {
+          "id": 6,
+          "team": "red",
+          "x": 500.0,
+          "y": 380.0,
+          "skill_range": 100.0,
+          "initial_target_id": null
+        },
+        "units": [
+          {
+            "id": 61,
+            "team": "blue",
+            "alive": true,
+            "lane": 1,
+            "x": 1000.0,
+            "y": 380.0
+          }
+        ],
+        "active_boss": null,
+        "towers": [
+          {
+            "id": 62,
+            "team": "blue",
+            "alive": true,
+            "x": 1100.0,
+            "y": 380.0
+          }
+        ],
+        "bases": [],
+        "expects_lane_assignment": true
+      },
+      "target_id": null
+    }
+  ]
+}
