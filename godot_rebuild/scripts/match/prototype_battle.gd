@@ -533,6 +533,35 @@ func _spawn_boss(boss_type: String) -> BossState:
 	return boss
 
 
+func _find_target(unit: UnitState) -> UnitState:
+	# Layer 8n: port of the boss arm of `Minion._get_enemies`. The source reads
+	# its candidates from the spatial grid, and `Game.update` indexes the live
+	# boss there (`spatial_heroes = spatial_heroes + [self.active_boss]`), so a
+	# minion sees the boss inside `self.range + 30` (inclusive squared radius)
+	# and `_find_target_smart` may return it. The native registry never holds
+	# the boss (`active_boss` only lives in `_by_id`), so minions used to walk
+	# straight through a boss without ever swinging at it.
+	#
+	# Order matters: the boss is the LAST indexed entry, while towers and bases
+	# are appended by `_get_enemies` only after the grid results. The candidate
+	# list is therefore units, boss, structures - which is what the source siege
+	# group (`max_hp >= 1500`, first match wins) observes.
+	var boss := active_boss
+	if boss == null or not boss.alive or boss.team == unit.team:
+		return super._find_target(unit)
+	if unit.position.distance_to(boss.position) > unit.definition.attack_range_px + 30.0:
+		return super._find_target(unit)
+	var ordered: Array[UnitState] = []
+	for candidate in units:
+		if candidate.alive and candidate.team != unit.team:
+			ordered.append(candidate)
+	ordered.append(boss)
+	for structure in structures:
+		if structure.alive and structure.team != unit.team:
+			ordered.append(structure)
+	return _select_ai_target(unit, ordered)
+
+
 func _structure_target(structure: StructureState) -> UnitState:
 	# Port of the boss scan that `Tower.update` and `Castle.update` run after
 	# their spatial-grid query in the source:

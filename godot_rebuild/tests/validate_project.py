@@ -373,6 +373,7 @@ from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_
 from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
 from boss_kill_credit_source_oracle import source_fixture as boss_kill_credit_fixture
 from boss_structure_targeting_source_oracle import source_fixture as boss_structure_targeting_fixture
+from boss_minion_targeting_source_oracle import source_fixture as boss_minion_targeting_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -386,6 +387,8 @@ check("BossDebuffClockChecks.new().run(_check)" in ai_tests, "Boss debuff clock 
 check("BossKillCreditChecks.new().run(_check)" in ai_tests, "Boss kill credit suite must run")
 check("BossStructureTargetsChecks.new().run(_check)" in ai_tests,
       "Boss structure targeting suite must run")
+check("BossMinionTargetsChecks.new().run(_check)" in ai_tests,
+      "Boss minion targeting suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -464,6 +467,36 @@ if (ROOT / "tests/fixtures/boss_structure_targeting_source.json").is_file():
               for case in _structure_targeting_cases
           ),
           "In-range boss must win at the range edge and on exact ties for tower and castle")
+check((ROOT / "tests/fixtures/boss_minion_targeting_source.json").is_file(),
+      "Boss minion targeting requires source fixture")
+if (ROOT / "tests/fixtures/boss_minion_targeting_source.json").is_file():
+    _boss_minion_targeting = boss_minion_targeting_fixture()
+    check(_boss_minion_targeting == json.loads(
+        (ROOT / "tests/fixtures/boss_minion_targeting_source.json").read_text(encoding="utf-8")),
+        "Boss minion targeting source behavior drift")
+    _minion_targeting_source = _boss_minion_targeting.get("source", {})
+    check(all(bool(_minion_targeting_source.get(key, False)) for key in (
+        "query_radius_source", "grid_indexes_boss", "grid_inserts_heroes", "selection_order",
+        "minion_groups_exclude_boss", "siege_group_uses_max_hp")),
+        "Source must keep the boss inside the minion lookup path")
+    _minion_targeting_cases = _boss_minion_targeting.get("cases", [])
+    _minion_targeting_types = {case["boss_type"] for case in _minion_targeting_cases}
+    check(len(_minion_targeting_cases) == 864
+          and _minion_targeting_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _minion_targeting_cases) == 4
+                  for _boss in _minion_targeting_types),
+          "Boss minion targeting requires four source cases for all 216 boss types")
+    check(all(case["expected"] == "boss" or case["expected"] == case["expected_without_boss"]
+              for case in _minion_targeting_cases)
+          and sum(case["expected"] == "boss" for case in _minion_targeting_cases) == 432
+          and all((case["expected"] == "boss")
+                  == (case["label"] in ("boss_at_attack_range_edge", "boss_precedes_siege_tower"))
+                  for case in _minion_targeting_cases),
+          "Minions must see the boss at the attack-range edge and ahead of appended towers")
+    check(all(case["grid_radius"] == case["range"] + 30.0
+              and case["boss_distance"] <= case["grid_radius"]
+              for case in _minion_targeting_cases),
+          "Every recorded case keeps the boss inside the source grid radius")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -539,6 +572,18 @@ check("super._structure_target(structure)" in boss_structure_target
       and "distance > structure.definition.attack_range_px" in boss_structure_target
       and "distance <= structure.position.distance_to(target.position)" in boss_structure_target,
       "Towers and the nexus must append the living enemy boss like the source scans")
+minion_battle = (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8")
+boss_minion_target = prototype_battle.split("func _find_target(unit: UnitState)", 1)[1].split(
+    "\nfunc _structure_target(", 1)[0]
+check("super._find_target(unit)" in boss_minion_target
+      and "unit.definition.attack_range_px + 30.0" in boss_minion_target
+      and boss_minion_target.index("ordered.append(boss)")
+      < boss_minion_target.index("for structure in structures:"),
+      "Minions must index the living enemy boss inside the source grid radius, before structures")
+check(minion_battle.count("_is_minion_candidate(") == 4
+      and 'candidate.get("boss_type") == null' in minion_battle
+      and "not (pair[0] is StructureState)" not in minion_battle,
+      "Source Minion groups must exclude the boss from the lane/lowest-hp minion picks")
 check("active_boss.tick_item_debuffs()" not in prototype_battle,
       "Boss item debuffs must not tick twice in one match step")
 boss_ai_text = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")

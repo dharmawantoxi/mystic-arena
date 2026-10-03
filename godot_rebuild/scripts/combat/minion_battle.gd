@@ -485,10 +485,18 @@ func _fallback_target(unit: UnitState, ordered: Array[UnitState]) -> UnitState:
 	return best
 
 
+func _is_minion_candidate(candidate: UnitState) -> bool:
+	# Layer 8n: the source `_find_target_smart` groups filter with
+	# `isinstance(e, Minion)`, which excludes towers/bases AND the boss (Boss
+	# extends TowerDebuffMixin, never Minion). A boss is a valid target, but it
+	# is not a member of the lane/lowest-hp minion groups.
+	return not (candidate is StructureState) and candidate.get("boss_type") == null
+
+
 func _ai_same_lane(pairs: Array, lane: int) -> UnitState:
 	for pair in pairs:
 		var cand: UnitState = pair[0]
-		if not (cand is StructureState) and cand.lane == lane:
+		if _is_minion_candidate(cand) and cand.lane == lane:
 			return cand
 	return pairs[0][0] as UnitState
 
@@ -496,7 +504,7 @@ func _ai_same_lane(pairs: Array, lane: int) -> UnitState:
 func _ai_minion_or_nearest(pairs: Array) -> UnitState:
 	var minions: Array = []
 	for pair in pairs:
-		if not (pair[0] is StructureState):
+		if _is_minion_candidate(pair[0]):
 			minions.append(pair)
 	if not minions.is_empty():
 		return _lowest_hp(minions)
@@ -520,7 +528,7 @@ func _ai_siege_priority(pairs: Array) -> UnitState:
 		return _lowest_hp(towers)
 	var minions: Array = []
 	for pair in pairs:
-		if not (pair[0] is StructureState):
+		if _is_minion_candidate(pair[0]):
 			minions.append(pair)
 	if not minions.is_empty():
 		return _lowest_hp(minions)
