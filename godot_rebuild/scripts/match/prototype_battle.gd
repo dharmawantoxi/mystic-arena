@@ -594,6 +594,30 @@ func _structure_target(structure: StructureState) -> UnitState:
 	return target
 
 
+func _ice_aoe(shot: Projectile, main: UnitState) -> void:
+	# Layer 8p: port of the boss arm of the ice level-6 freeze AOE. The source
+	# loop runs over `all_units`, whose last element is the live boss
+	# (`all_units = all_units + [self.active_boss]`), and slows each victim
+	# polymorphically: `u.apply_slow(...)` plus `u.apply_debuff('atk_slow', ...)`.
+	# A boss therefore runs `Boss.apply_slow` / `Boss.apply_debuff`, which cut
+	# magnitude AND duration by tenacity (0.50) and cap the magnitude at 0.35.
+	# The native registry never holds the boss (`active_boss` only lives in
+	# `_by_id`), so the AOE froze every minion around a boss while the boss kept
+	# full speed and full attack speed. Same-team, dead and primary-target
+	# bosses stay out, exactly like the source `continue` guard.
+	super._ice_aoe(shot, main)
+	var boss := active_boss
+	if shot.slow_aoe <= 0.0 or boss == null or boss == main:
+		return
+	if not boss.alive or boss.team == shot.team:
+		return
+	if boss.position.distance_to(main.position) > shot.slow_aoe:
+		return
+	boss.apply_slow(shot.slow_amount, shot.slow_duration)
+	if shot.atk_slow_amount > 0.0:
+		boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)
+
+
 func _boss_enemies() -> Array[UnitState]:
 	# Source Boss.update order: living units, then enemy towers, then enemy
 	# bases. Nexuses are kept separate because `structures` stores them first.

@@ -394,6 +394,15 @@ func _ice_impact(shot: Projectile, main: UnitState) -> void:
 		apply_slow(main.id, shot.slow_amount, shot.slow_duration)
 		if shot.atk_slow_amount > 0:
 			apply_atk_slow(main.id, shot.atk_slow_amount, shot.slow_duration)
+	_ice_aoe(shot, main)
+
+
+func _ice_aoe(shot: Projectile, main: UnitState) -> void:
+	# Port of the `'slow_aoe' in self.special_data and all_units` arm of
+	# Bullet._on_hit (ice level 6): every enemy of the shooter inside `slow_aoe`
+	# of the impact point takes the same slows, without damage. The candidate
+	# list here is the `all_units` that `Tower.update` passes down from
+	# `Game.update`; the match layer widens it, see Prototype._ice_aoe.
 	if shot.slow_aoe <= 0:
 		return
 	for victim in units:

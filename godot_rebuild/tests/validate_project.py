@@ -375,6 +375,7 @@ from boss_kill_credit_source_oracle import source_fixture as boss_kill_credit_fi
 from boss_structure_targeting_source_oracle import source_fixture as boss_structure_targeting_fixture
 from boss_minion_targeting_source_oracle import source_fixture as boss_minion_targeting_fixture
 from boss_phase_order_source_oracle import source_fixture as boss_phase_order_fixture
+from boss_ice_aoe_source_oracle import source_fixture as boss_ice_aoe_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -394,6 +395,10 @@ check('const BossPhaseOrderChecks = preload("res://tests/boss_phase_order_checks
       "Boss hero-before-boss phase order suite must be preloaded")
 check("BossPhaseOrderChecks.new().run(_check)" in ai_tests,
       "Boss hero-before-boss phase order suite must run")
+check('const BossIceAoeChecks = preload("res://tests/boss_ice_aoe_checks.gd")' in ai_tests,
+      "Boss ice AOE suite must be preloaded")
+check("BossIceAoeChecks.new().run(_check)" in ai_tests,
+      "Boss ice AOE suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -531,6 +536,49 @@ if (ROOT / "tests/fixtures/boss_phase_order_source.json").is_file():
                if case["boss_type"] == _boss} == _phase_order_labels
               for _boss in _phase_order_types),
           "Boss phase order covers lethal/nonlethal hits and both movement boundaries")
+check((ROOT / "tests/fixtures/boss_ice_aoe_source.json").is_file(),
+      "Boss ice AOE requires source fixture")
+if (ROOT / "tests/fixtures/boss_ice_aoe_source.json").is_file():
+    _boss_ice_aoe = boss_ice_aoe_fixture()
+    check(_boss_ice_aoe == json.loads(
+        (ROOT / "tests/fixtures/boss_ice_aoe_source.json").read_text(encoding="utf-8")),
+          "Boss ice AOE source drift")
+    _ice_aoe_source = _boss_ice_aoe.get("source", {})
+    check(all(bool(_ice_aoe_source.get(_flag, False)) for _flag in (
+        "tower_passes_all_units", "castle_omits_all_units", "all_units_includes_boss",
+        "ice_aoe_gated", "ice_aoe_radius_inclusive", "ice_aoe_skips_main_allies_dead",
+        "ice_aoe_slow_is_polymorphic", "ice_aoe_atk_slow_is_polymorphic",
+        "shoot_ice_gates_aoe", "boss_slow_uses_tenacity")),
+          "Ice AOE source shape must gate on slow_aoe and slow victims polymorphically")
+    _ice_aoe_levels = _ice_aoe_source.get("levels", {})
+    check(_ice_aoe_levels.get("6", {}).get("slow_aoe") == 80.0
+          and _ice_aoe_levels.get("5", {}).get("slow_aoe") == 0.0
+          and _ice_aoe_levels.get("6", {}).get("atk_slow") == 0.4,
+          "Only the source level-6 ice tower carries a freeze AOE")
+    _ice_aoe_cases = _boss_ice_aoe.get("cases", [])
+    _ice_aoe_types = {case["boss_type"] for case in _ice_aoe_cases}
+    _ice_aoe_labels = {"aoe_inside_half", "aoe_edge_inclusive", "aoe_outside",
+                       "no_aoe_below_level_six"}
+    check(len(_ice_aoe_cases) == 864
+          and _ice_aoe_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _ice_aoe_cases) == 4
+                  for _boss in _ice_aoe_types),
+          "Boss ice AOE requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _ice_aoe_cases
+               if case["boss_type"] == _boss} == _ice_aoe_labels for _boss in _ice_aoe_types),
+          "Boss ice AOE covers the inclusive edge, the outside guard and the level-5 gate")
+    check(all((case["expected"]["slow_timer"] > 0)
+              == (case["label"] in ("aoe_inside_half", "aoe_edge_inclusive"))
+              and case["expected_without_boss"]["slow_timer"] == 0
+              for case in _ice_aoe_cases),
+          "Only the in-radius level-6 AOE slows the boss, never the pre-layer candidate list")
+    check(all(case["expected"]["slow_amount"]
+              == min(0.35, case["slow_amount_in"] * (1.0 - case["tenacity"]))
+              and case["expected"]["slow_timer"]
+              == int(case["slow_duration_in"] * (1.0 - case["tenacity"]))
+              and case["expected"]["atk_slow_timer"] == case["expected"]["slow_timer"]
+              for case in _ice_aoe_cases if case["expected"]["slow_timer"] > 0),
+          "Boss AOE slow must keep the source tenacity cut, 0.35 cap and shared duration")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -606,6 +654,20 @@ check("super._structure_target(structure)" in boss_structure_target
       and "distance > structure.definition.attack_range_px" in boss_structure_target
       and "distance <= structure.position.distance_to(target.position)" in boss_structure_target,
       "Towers and the nexus must append the living enemy boss like the source scans")
+siege_battle = (ROOT / "scripts/combat/siege_battle.gd").read_text(encoding="utf-8")
+ice_aoe_base = siege_battle.split("func _ice_aoe(", 1)[1].split("\nfunc ", 1)[0]
+check("for victim in units:" in ice_aoe_base
+      and "victim.position.distance_to(main.position) > shot.slow_aoe" in ice_aoe_base
+      and "if shot.slow_aoe <= 0:" in ice_aoe_base,
+      "Base ice AOE must keep the source candidate scan, gate and inclusive radius")
+boss_ice_aoe = prototype_battle.split("func _ice_aoe(", 1)[1].split("\nfunc ", 1)[0]
+check("super._ice_aoe(shot, main)" in boss_ice_aoe
+      and "boss.position.distance_to(main.position) > shot.slow_aoe" in boss_ice_aoe
+      and "boss.apply_slow(shot.slow_amount, shot.slow_duration)" in boss_ice_aoe
+      and 'boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)'
+      in boss_ice_aoe
+      and "not boss.alive or boss.team == shot.team" in boss_ice_aoe,
+      "Match layer must add the living boss to the ice AOE with the source tenacity dispatch")
 minion_battle = (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8")
 boss_minion_target = prototype_battle.split("func _find_target(unit: UnitState)", 1)[1].split(
     "\nfunc _structure_target(", 1)[0]
