@@ -64,10 +64,21 @@ mini/true, `anim_time`/`pulse`, threshold enrage, modifier sekali, cooldown puls
 dan interaksi slow. **Layer 8f** menambah presentasi intro/death boss saja:
 `boss_presentation_source_oracle.py` + `boss_presentation_checks.gd` mengunci
 entrance aura/text, death snapshot dan FX tick setelah registry cleanup.
+**Layer 8g** menambah jam status/item debuff `TowerDebuffMixin`, burn dan
+modifikasi heal boss: `BossState.tick_tower_debuffs()` memajukan clock satu kali
+sebelum stun/entrance gate; burn mengakumulasi `burn_dps / 60` dan mengirim
+damage tiap 30 tick melalui jalur damage/death boss. Pass item global mengecualikan
+`active_boss` agar item clock tidak turun dua kali. Semua enam kenaikan HP AI
+boss memakai setter parity sumber: anti-heal lebih dulu, lalu heal amplification;
+penurunan HP tidak diubah. Oracle AST `boss_debuff_clock_source_oracle.py`
+menjaga lima kasus clock/burn dan empat kasus setter HP, sedangkan
+`boss_debuff_clock_checks.gd` memeriksa parity state/payload, tick order,
+anti-double-tick, burn death/reward dan kedua jalur heal. Code commit `5e06a24`
+lulus CI Godot 4.7.2 [run 37092769125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37092769125): **1.198.460 native checks**, `validate_project.py` **5.993 static checks**.
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
-- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (layer 8b), perilaku dasar (layer 8c), ability/smart AI slice awal (layer 8d + sub-layer 8d-1), entrance/enrage clock (layer 8e) dan presentasi intro/death boss (layer 8f) sudah dipindahkan, termasuk owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward, daftar unlock, target hero, basic attack, cleave, generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance gate, death flash/sparks dan screen shake.
+- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f) dan TowerDebuffMixin clocks/heal setter (8g) sudah dipindahkan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave, generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
 
 ## Bukti dan batas pengujian
 

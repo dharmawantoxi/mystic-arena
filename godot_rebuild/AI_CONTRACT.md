@@ -753,7 +753,7 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-## Entity boss mini/true (layer 8a–8f, paritas kondisi match)
+## Entity boss mini/true (layer 8a–8g, paritas kondisi match)
 
 Port `bosses/base_boss.py` (±8 ribu baris) dimulai dengan memecahnya per lapisan.
 Lapisan **8a** (`d50c86c`) memindahkan **inti entity tanpa spawn**:
@@ -891,16 +891,18 @@ shake. `boss_presentation_source_oracle.py` mengeksekusi metode Python asli dan
 menulis fixture; `boss_presentation_checks.gd` menguji entrance parity, payload
 death, retirement registry dan tick FX independen.
 
+Lapisan **8g** (`5e06a24`, CI [37092769125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37092769125)) memindahkan siklus status/debuff boss dari `TowerDebuffMixin`. `BossState.tick_tower_debuffs()` mengurangi clock tower dan item satu kali per fixed tick, termasuk burn accumulator (`burn_dps / 60`) yang mengirim damage tiap 30 tick; `_step_active_boss()` menjalankannya sebelum stun/entrance gate dan mengirim burn melalui jalur damage/death boss. Pass global item-debuff tidak lagi men-tick `active_boss` kedua kali. `BossState.set_hp_value()` menyalin aturan setter HP sumber: hanya kenaikan HP yang dimodifikasi, anti-heal diterapkan lebih dulu lalu heal amplification; keenam titik kenaikan HP di `boss_ai.gd` kini memakai setter ini. Oracle `boss_debuff_clock_source_oracle.py` mengeksekusi AST `TowerDebuffMixin` sumber tanpa mengubah Python dan menghasilkan lima kasus clock/burn serta empat kasus setter HP; `boss_debuff_clock_checks.gd` menguji state/tick payload, urutan match, burn sampai death/reward, anti-heal pada heal true boss dan helper smart-AI. CI Godot 4.7.2 hijau: **1.198.460 native checks**, `validate_project.py` **5.993 static checks**; `gdformat`, `gdlint`, `gdparse` dan `git diff --check` bersih.
+
 Sistem produksi serta sisa perilaku scene/AI yang belum dipindahkan masih
 belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
-(final 17 non-L9 code [37020039663](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37020039663));
-**1.198.332 native checks**; `validate_project.py` 5968 static;
+CI Godot 4.7.2 terbaru hijau pada layer `8g`
+([37092769125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37092769125));
+**1.198.460 native checks**; `validate_project.py` **5.993 static checks**;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
-> Pesan siap-salin: lanjutkan di branch `arena/01a0fa38-mystic-arena` (PR
+> Pesan siap-salin: lanjutkan di branch `arena/01a0ff99-mystic-arena` (PR
 > selalu draft; jangan merge tanpa perintah "merge now"). Layer **8a**
 > (`d50c86c`) memindahkan inti entity + data 216 boss; layer **8b**
 > (`fed2c6a`, run 36569775154) memindahkan jadwal/spawn mini–true boss,
@@ -921,8 +923,11 @@ CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
 > layer **8e** (`c635a06`, run 36716265830) memindahkan entrance/enrage clock
 > dan gate gameplay; layer **8f** (`8c8787f`, run 36725358545) memindahkan
 > presentasi intro/death boss saja, termasuk entrance aura/text, death
-> flash/sparks dan screen shake. Berikutnya sistem produksi, lalu sisa
-> perilaku scene/AI. Satu sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
-> validate_project.py -> commit -> push -> gh run watch.
+> flash/sparks dan screen shake; layer **8g** (`5e06a24`, code run 37092769125)
+> memindahkan status/item-debuff clocks, burn tick dan setter anti-heal/heal-amp.
+> CI Godot 4.7.2 akhir: **1.198.460 native checks** dan **5.993 static checks**.
+> Berikutnya sistem produksi, lalu sisa perilaku scene/AI. Satu sub-layer per
+> commit; pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
+> commit -> push -> gh run watch.
 > Sumber read-only: _core.py, _entity.py, bosses/, levels/, hero_items.py,
 > minions/. Hanya ubah godot_rebuild.
