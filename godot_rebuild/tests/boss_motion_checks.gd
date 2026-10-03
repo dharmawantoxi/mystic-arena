@@ -1,7 +1,7 @@
 # gdlint:disable=max-file-lines
 extends RefCounted
-## Layer 8c native suite: boss lane movement, target registry, basic attack,
-## cooldown/cleave and one-shot hero damage/death reward wiring.
+## Layers 8c/8i: boss lane movement, ranged kiting, target registry, basic
+## attacks, cooldown/cleave and one-shot hero damage/death reward wiring.
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
@@ -12,10 +12,15 @@ const FIXTURE := "res://tests/fixtures/boss_motion_source.json"
 
 func run(check: Callable) -> void:
 	var fixture = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
-	check.call(fixture is Dictionary and fixture.has("forward"), "boss motion fixture parses")
+	check.call(
+		fixture is Dictionary and fixture.has("forward") and fixture.has("ranged_kiting"),
+		"boss motion fixture parses"
+	)
 	if not fixture is Dictionary:
 		return
 	_motion(check, fixture)
+	_ranged_kiting(check, fixture)
+	_ranged_kiting_match_step(check)
 	_attack_and_registry(check, fixture)
 
 
@@ -72,6 +77,102 @@ func _motion(check: Callable, fixture: Dictionary) -> void:
 	boss.atk_slow_timer = 4
 	boss.attack_cooldown = 38
 	check.call(boss.effective_attack_cooldown() == 76, "boss attack cooldown honors attack slow")
+
+
+func _ranged_kiting(check: Callable, fixture: Dictionary) -> void:
+	var world := _world()
+	var cases: Array = fixture.get("ranged_kiting", [])
+	check.call(cases.size() == 48, "ranged kiting oracle has four cases for all twelve bosses")
+	var boss_counts := {}
+	for entry in cases:
+		var boss := BossState.new()
+		var boss_type := String(entry.get("boss_type", ""))
+		boss_counts[boss_type] = int(boss_counts.get(boss_type, 0)) + 1
+		check.call(
+			boss.setup(boss_type, PackedVector2Array(), world.boss_table),
+			"ranged kiting boss data loads: %s" % boss_type
+		)
+		if boss.boss_type.is_empty():
+			continue
+		check.call(
+			(
+				is_equal_approx(boss.min_distance, float(entry.get("min_distance", -1.0)))
+				and is_equal_approx(boss.prefer_distance, float(entry.get("prefer_distance", -1.0)))
+			),
+			"ranged kiting source distances match boss data: %s" % boss_type
+		)
+		boss.position = Vector2.ZERO
+		boss.speed_px_per_tick = float(entry.get("speed", 0.0))
+		boss.kite_mode = String(entry.get("kite_mode", "hold"))
+		boss.direction = -1
+		boss.facing = -1.0
+		var steps: Array = entry.get("steps", [])
+		check.call(not steps.is_empty(), "ranged kiting trace has movement steps: %s" % boss_type)
+		for step_index in range(steps.size()):
+			var step: Dictionary = steps[step_index]
+			boss.attack_range = float(step.get("attack_range", 0.0))
+			var distance := float(step.get("distance", 0.0))
+			boss.move_ranged_kite(Vector2(boss.position.x + distance, boss.position.y))
+			var expected: Dictionary = step.get("expected", {})
+			var label := "%s/%s/%d" % [boss_type, String(entry.get("label", "unknown")), step_index]
+			check.call(
+				(
+					is_equal_approx(boss.position.x, float(expected.get("x", 0.0)))
+					and is_equal_approx(boss.position.y, float(expected.get("y", 0.0)))
+				),
+				"ranged kiting position matches source: %s" % label
+			)
+			check.call(
+				boss.kite_mode == String(expected.get("kite_mode", "")),
+				"ranged kiting mode matches source: %s" % label
+			)
+			check.call(
+				boss.direction == int(expected.get("direction", -99)),
+				"ranged kiting facing matches source: %s" % label
+			)
+	check.call(boss_counts.size() == 12, "ranged kiting oracle covers exactly twelve bosses")
+	for boss_type in boss_counts:
+		check.call(
+			int(boss_counts[boss_type]) == 4,
+			"ranged kiting oracle has exactly four cases for %s" % String(boss_type)
+		)
+
+
+func _ranged_kiting_match_step(check: Callable) -> void:
+	var world := _world()
+	var boss := world._spawn_boss("ancient_apparition")
+	check.call(boss != null, "ranged kiting match boss spawns")
+	if boss == null:
+		return
+	var target: HeroState = null
+	for unit in world.units:
+		if unit.team == world.BLUE and unit is HeroState:
+			target = unit as HeroState
+			break
+	check.call(target != null, "ranged kiting match has a blue hero target")
+	if target == null:
+		return
+	boss.entrance_timer = 0
+	boss.position = Vector2(400, 300)
+	boss.previous_position = boss.position
+	boss.speed_px_per_tick = 3.0
+	boss.attack_range = 150.0
+	boss.timer = 999
+	boss.ability_timer = 999
+	boss.ability2_timer = 999
+	boss.q_timer = 999
+	boss.w_timer = 999
+	boss.e_timer = 999
+	boss.r_timer = 999
+	boss.active_skill_timer = 999
+	boss.kite_mode = "hold"
+	target.position = Vector2(555, 300)
+	world._step_active_boss()
+	check.call(boss.target_id == target.id, "ranged kiting match selects the in-handoff target")
+	check.call(
+		boss.kite_mode == "in" and is_equal_approx(boss.position.x, 403.0),
+		"ranged boss uses source kite movement in the live match step"
+	)
 
 
 func _attack_and_registry(check: Callable, fixture: Dictionary) -> void:

@@ -35,5 +35,1207 @@
     "x": 3.0,
     "y": 0.0,
     "direction": 1
-  }
+  },
+  "ranged_kiting": [
+    {
+      "boss_type": "ancient_apparition",
+      "label": "back_entry",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 89.0,
+          "attack_range": 88.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "ancient_apparition",
+      "label": "back_hysteresis_exit",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 96.0,
+          "attack_range": 95.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 115.0,
+          "attack_range": 114.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "ancient_apparition",
+      "label": "in_entry",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 150.0,
+          "attack_range": 145.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "ancient_apparition",
+      "label": "in_hysteresis_exit",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 134.0,
+          "attack_range": 133.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 115.0,
+          "attack_range": 114.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "morgath",
+      "label": "back_entry",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 99.0,
+          "attack_range": 98.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "morgath",
+      "label": "back_hysteresis_exit",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 106.0,
+          "attack_range": 105.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 125.0,
+          "attack_range": 124.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "morgath",
+      "label": "in_entry",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 160.0,
+          "attack_range": 155.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "morgath",
+      "label": "in_hysteresis_exit",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 144.0,
+          "attack_range": 143.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 125.0,
+          "attack_range": 124.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "razak",
+      "label": "back_entry",
+      "min_distance": 40.0,
+      "prefer_distance": 60.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 39.0,
+          "attack_range": 38.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "razak",
+      "label": "back_hysteresis_exit",
+      "min_distance": 40.0,
+      "prefer_distance": 60.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 46.0,
+          "attack_range": 45.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 50.0,
+          "attack_range": 49.0,
+          "expected": {
+            "x": -5.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "razak",
+      "label": "in_entry",
+      "min_distance": 40.0,
+      "prefer_distance": 60.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 70.0,
+          "attack_range": 65.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "razak",
+      "label": "in_hysteresis_exit",
+      "min_distance": 40.0,
+      "prefer_distance": 60.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 54.0,
+          "attack_range": 53.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 50.0,
+          "attack_range": 49.0,
+          "expected": {
+            "x": 5.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "varkul",
+      "label": "back_entry",
+      "min_distance": 60.0,
+      "prefer_distance": 85.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 59.0,
+          "attack_range": 58.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "varkul",
+      "label": "back_hysteresis_exit",
+      "min_distance": 60.0,
+      "prefer_distance": 85.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 66.0,
+          "attack_range": 65.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 72.5,
+          "attack_range": 71.5,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "varkul",
+      "label": "in_entry",
+      "min_distance": 60.0,
+      "prefer_distance": 85.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 95.0,
+          "attack_range": 90.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "varkul",
+      "label": "in_hysteresis_exit",
+      "min_distance": 60.0,
+      "prefer_distance": 85.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 79.0,
+          "attack_range": 78.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 72.5,
+          "attack_range": 71.5,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "xerathis",
+      "label": "back_entry",
+      "min_distance": 70.0,
+      "prefer_distance": 100.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 69.0,
+          "attack_range": 68.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "xerathis",
+      "label": "back_hysteresis_exit",
+      "min_distance": 70.0,
+      "prefer_distance": 100.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 76.0,
+          "attack_range": 75.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 85.0,
+          "attack_range": 84.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "xerathis",
+      "label": "in_entry",
+      "min_distance": 70.0,
+      "prefer_distance": 100.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 110.0,
+          "attack_range": 105.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "xerathis",
+      "label": "in_hysteresis_exit",
+      "min_distance": 70.0,
+      "prefer_distance": 100.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 94.0,
+          "attack_range": 93.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 85.0,
+          "attack_range": 84.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "nyzrak",
+      "label": "back_entry",
+      "min_distance": 65.0,
+      "prefer_distance": 90.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 64.0,
+          "attack_range": 63.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "nyzrak",
+      "label": "back_hysteresis_exit",
+      "min_distance": 65.0,
+      "prefer_distance": 90.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 71.0,
+          "attack_range": 70.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 77.5,
+          "attack_range": 76.5,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "nyzrak",
+      "label": "in_entry",
+      "min_distance": 65.0,
+      "prefer_distance": 90.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 100.0,
+          "attack_range": 95.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "nyzrak",
+      "label": "in_hysteresis_exit",
+      "min_distance": 65.0,
+      "prefer_distance": 90.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 84.0,
+          "attack_range": 83.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 77.5,
+          "attack_range": 76.5,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "syrentha",
+      "label": "back_entry",
+      "min_distance": 80.0,
+      "prefer_distance": 110.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 79.0,
+          "attack_range": 78.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "syrentha",
+      "label": "back_hysteresis_exit",
+      "min_distance": 80.0,
+      "prefer_distance": 110.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 86.0,
+          "attack_range": 85.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 95.0,
+          "attack_range": 94.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "syrentha",
+      "label": "in_entry",
+      "min_distance": 80.0,
+      "prefer_distance": 110.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 120.0,
+          "attack_range": 115.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "syrentha",
+      "label": "in_hysteresis_exit",
+      "min_distance": 80.0,
+      "prefer_distance": 110.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 104.0,
+          "attack_range": 103.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 95.0,
+          "attack_range": 94.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "thalgryn",
+      "label": "back_entry",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 99.0,
+          "attack_range": 98.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "thalgryn",
+      "label": "back_hysteresis_exit",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 106.0,
+          "attack_range": 105.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 125.0,
+          "attack_range": 124.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "thalgryn",
+      "label": "in_entry",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 160.0,
+          "attack_range": 155.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "thalgryn",
+      "label": "in_hysteresis_exit",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 144.0,
+          "attack_range": 143.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 125.0,
+          "attack_range": 124.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "nyxarath",
+      "label": "back_entry",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 99.0,
+          "attack_range": 98.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "nyxarath",
+      "label": "back_hysteresis_exit",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 106.0,
+          "attack_range": 105.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 125.0,
+          "attack_range": 124.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "nyxarath",
+      "label": "in_entry",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 160.0,
+          "attack_range": 155.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "nyxarath",
+      "label": "in_hysteresis_exit",
+      "min_distance": 100.0,
+      "prefer_distance": 150.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 144.0,
+          "attack_range": 143.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 125.0,
+          "attack_range": 124.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "malzareth",
+      "label": "back_entry",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 89.0,
+          "attack_range": 88.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "malzareth",
+      "label": "back_hysteresis_exit",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 96.0,
+          "attack_range": 95.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 115.0,
+          "attack_range": 114.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "malzareth",
+      "label": "in_entry",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 150.0,
+          "attack_range": 145.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "malzareth",
+      "label": "in_hysteresis_exit",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 134.0,
+          "attack_range": 133.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 115.0,
+          "attack_range": 114.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "akashari",
+      "label": "back_entry",
+      "min_distance": 85.0,
+      "prefer_distance": 130.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 84.0,
+          "attack_range": 83.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "akashari",
+      "label": "back_hysteresis_exit",
+      "min_distance": 85.0,
+      "prefer_distance": 130.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 91.0,
+          "attack_range": 90.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 107.5,
+          "attack_range": 106.5,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "akashari",
+      "label": "in_entry",
+      "min_distance": 85.0,
+      "prefer_distance": 130.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 140.0,
+          "attack_range": 135.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "akashari",
+      "label": "in_hysteresis_exit",
+      "min_distance": 85.0,
+      "prefer_distance": 130.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 124.0,
+          "attack_range": 123.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 107.5,
+          "attack_range": 106.5,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "vorenmarr",
+      "label": "back_entry",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 89.0,
+          "attack_range": 88.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "vorenmarr",
+      "label": "back_hysteresis_exit",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "back",
+      "steps": [
+        {
+          "distance": 96.0,
+          "attack_range": 95.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "back",
+            "direction": -1
+          }
+        },
+        {
+          "distance": 115.0,
+          "attack_range": 114.0,
+          "expected": {
+            "x": -3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": -1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "vorenmarr",
+      "label": "in_entry",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "hold",
+      "steps": [
+        {
+          "distance": 150.0,
+          "attack_range": 145.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        }
+      ]
+    },
+    {
+      "boss_type": "vorenmarr",
+      "label": "in_hysteresis_exit",
+      "min_distance": 90.0,
+      "prefer_distance": 140.0,
+      "speed": 3.0,
+      "kite_mode": "in",
+      "steps": [
+        {
+          "distance": 134.0,
+          "attack_range": 133.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "in",
+            "direction": 1
+          }
+        },
+        {
+          "distance": 115.0,
+          "attack_range": 114.0,
+          "expected": {
+            "x": 3.0,
+            "y": 0.0,
+            "kite_mode": "hold",
+            "direction": 1
+          }
+        }
+      ]
+    }
+  ]
 }

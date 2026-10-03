@@ -140,6 +140,8 @@ def row_of(boss):
         "damage": int(boss.damage),
         "speed": float(boss.speed),
         "attack_range": int(boss.range),
+        "min_distance": int(source_stats.get("min_distance", 200)),
+        "prefer_distance": int(source_stats.get("prefer_distance", 280)),
         "attack_cooldown": int(boss.attack_cooldown),
         "radius": int(boss.radius),
         "gold_reward": int(boss.gold_reward),

@@ -371,12 +371,25 @@ from boss_ability_source_oracle import source_fixture as boss_ability_fixture
 from boss_clock_source_oracle import source_fixture as boss_clock_fixture
 from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_fixture
 from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
+from boss_motion_source_oracle import source_fixture as boss_motion_fixture
 from boss_presentation_source_oracle import source_fixture as boss_presentation_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
 check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite must run")
 check("BossClockChecks.new().run(_check)" in ai_tests, "Boss clock suite must run")
 check("BossDebuffClockChecks.new().run(_check)" in ai_tests, "Boss debuff clock suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
+check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
+check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
+if (ROOT / "tests/fixtures/boss_motion_source.json").is_file():
+    _boss_motion = boss_motion_fixture()
+    check(_boss_motion == json.loads(
+        (ROOT / "tests/fixtures/boss_motion_source.json").read_text(encoding="utf-8")),
+        "Boss motion and ranged kiting source behavior drift")
+    _ranged_motion_cases = _boss_motion.get("ranged_kiting", [])
+    check(len(_ranged_motion_cases) == 48
+          and all(sum(case["boss_type"] == _boss for case in _ranged_motion_cases) == 4
+                  for _boss in {case["boss_type"] for case in _ranged_motion_cases}),
+          "Ranged kiting requires exactly four oracle cases per boss")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -424,7 +437,7 @@ for _method in ("apply_scaling", "apply_slow", "apply_debuff", "apply_stun",
                 "take_damage", "eff_speed", "eff_ability_damage", "blind_live",
                 "true_strike_of", "advance_animation_clock",
                 "entrance_presentation_state", "advance_combat_clock",
-                "death_presentation"):
+                "move_ranged_kite", "death_presentation"):
     check("func %s(" % _method in boss_state, "Boss entity core must port %s" % _method)
 prototype_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
 check("advance_animation_clock()" in prototype_battle
@@ -434,6 +447,9 @@ boss_step = prototype_battle.split("func _step_active_boss()", 1)[1].split(
     "func _try_spawn_pending_mini_boss()", 1)[0]
 check(boss_step.index("tick_tower_debuffs()") < boss_step.index("if boss.stun_timer > 0"),
       "Boss debuffs must tick before the stun and entrance gates")
+check("boss.move_ranged_kite(target.position)" in boss_step
+      and "RANGED_BOSS_KITERS" in prototype_battle,
+      "Ranged boss movement must use the source hysteresis kiting branch")
 check("active_boss.tick_item_debuffs()" not in prototype_battle,
       "Boss item debuffs must not tick twice in one match step")
 boss_ai_text = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")

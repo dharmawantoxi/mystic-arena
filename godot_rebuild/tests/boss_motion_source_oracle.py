@@ -1,18 +1,34 @@
-"""Source AST oracle for Boss lane motion and basic attack/cleave.
+"""Source AST oracle for Boss lane motion, ranged kiting and basic attacks.
 
-Only the original Boss methods are executed: _face, _advance_waypoint,
-_lane_target, _move_forward and update. The update test supplies source-shaped
-entities and disables the later smart-ability dispatch with a no-op method;
-that keeps this fixture on the movement/attack sub-layer.
+Only original Boss methods are executed: _face, _advance_waypoint,
+_lane_target, _move_forward, _get_boss_stats and update. The update test
+supplies source-shaped entities and disables smart-ability dispatch with a
+no-op method, isolating movement, hysteresis and attack behavior.
 """
 import ast
 import json
 import math
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 FIXTURE = Path(__file__).parent / "fixtures/boss_motion_source.json"
+RANGED_BOSSES = (
+    "ancient_apparition",
+    "morgath",
+    "razak",
+    "varkul",
+    "xerathis",
+    "nyzrak",
+    "syrentha",
+    "thalgryn",
+    "nyxarath",
+    "malzareth",
+    "akashari",
+    "vorenmarr",
+)
 
 
 class Target:
@@ -35,7 +51,7 @@ class Target:
 def source_class():
     tree = ast.parse((ROOT / "bosses/base_boss.py").read_text(encoding="utf-8"))
     original = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "Boss")
-    wanted = {"_face", "_advance_waypoint", "_lane_target", "_move_forward", "update"}
+    wanted = {"_face", "_advance_waypoint", "_lane_target", "_move_forward", "_get_boss_stats", "update"}
     body = [node for node in original.body if isinstance(node, ast.FunctionDef) and node.name in wanted]
     assert {node.name for node in body} == wanted, "Boss motion methods drifted"
     cls = ast.ClassDef(name="SourceBossMotion", bases=[], keywords=[], body=body, decorator_list=[])
@@ -95,6 +111,71 @@ def base_boss(cls, x=20.0, y=0.0):
     return boss
 
 
+def ranged_kiting_cases(cls):
+    from bosses.boss_data import get_all_boss_types
+
+    cases = []
+    for boss_type in RANGED_BOSSES:
+        stats = get_all_boss_types()[boss_type]
+        min_distance = float(stats.get("min_distance", 200))
+        prefer_distance = float(stats.get("prefer_distance", 280))
+        hold_distance = (min_distance + prefer_distance) / 2.0
+        scenarios = (
+            ("back_entry", "hold", ((min_distance - 1.0, min_distance - 2.0),)),
+            (
+                "back_hysteresis_exit",
+                "back",
+                (
+                    (min_distance + 6.0, min_distance + 5.0),
+                    (hold_distance, hold_distance - 1.0),
+                ),
+            ),
+            ("in_entry", "hold", ((prefer_distance + 10.0, prefer_distance + 5.0),)),
+            (
+                "in_hysteresis_exit",
+                "in",
+                (
+                    (prefer_distance - 6.0, prefer_distance - 7.0),
+                    (hold_distance, hold_distance - 1.0),
+                ),
+            ),
+        )
+        for label, initial_mode, inputs in scenarios:
+            boss = base_boss(cls, 0.0, 0.0)
+            boss.boss_type = boss_type
+            boss.speed = 3.0
+            boss._kite_mode = initial_mode
+            steps = []
+            for distance, attack_range in inputs:
+                boss.range = attack_range
+                target = Target(boss.x + distance, boss.y)
+                boss.update([target], [], [])
+                steps.append(
+                    {
+                        "distance": distance,
+                        "attack_range": attack_range,
+                        "expected": {
+                            "x": boss.x,
+                            "y": boss.y,
+                            "kite_mode": boss._kite_mode,
+                            "direction": boss.direction,
+                        },
+                    }
+                )
+            cases.append(
+                {
+                    "boss_type": boss_type,
+                    "label": label,
+                    "min_distance": min_distance,
+                    "prefer_distance": prefer_distance,
+                    "speed": 3.0,
+                    "kite_mode": initial_mode,
+                    "steps": steps,
+                }
+            )
+    return cases
+
+
 def source_fixture():
     cls = source_class()
 
@@ -141,6 +222,7 @@ def source_fixture():
         "facing": {"horizontal": horizontal, "locked": locked, "near_vertical": near_vertical},
         "attack": attack_row,
         "chase": chase_row,
+        "ranged_kiting": ranged_kiting_cases(cls),
     }
 
 
@@ -151,7 +233,7 @@ def main():
         print("WROTE: %s" % FIXTURE)
     else:
         assert actual == json.loads(FIXTURE.read_text(encoding="utf-8")), "Boss motion source drift"
-        print("PASS: Boss motion — waypoint budget, facing lock, chase and cleave")
+        print("PASS: Boss motion — waypoint/facing/chase/cleave plus 48 ranged kiting cases")
 
 
 if __name__ == "__main__":

@@ -24,6 +24,20 @@ const BossAI = preload("res://scripts/match/boss_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
+const RANGED_BOSS_KITERS := [
+	"ancient_apparition",
+	"morgath",
+	"razak",
+	"varkul",
+	"xerathis",
+	"nyzrak",
+	"syrentha",
+	"thalgryn",
+	"nyxarath",
+	"malzareth",
+	"akashari",
+	"vorenmarr"
+]
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
@@ -93,7 +107,7 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
-# Layer 8b/8c/8d/8e/8f: match conditions, live boss combat, clocks and
+# Layers 8b/8c/8d/8e/8f/8i: match combat, boss movement, clocks and
 # presentation payloads. Rendering remains in prototype_view.gd.
 var boss_table: Dictionary = {}
 var boss_rng := RandomNumberGenerator.new()
@@ -615,7 +629,10 @@ func _step_active_boss() -> void:
 		if boss.timer == 0:
 			_boss_basic_attack(target, enemies)
 	else:
-		boss.move_toward(target.position)
+		if boss.boss_type in RANGED_BOSS_KITERS:
+			boss.move_ranged_kite(target.position)
+		else:
+			boss.move_toward(target.position)
 	BossAI.tick(self, boss, enemies, target, distance)
 
 

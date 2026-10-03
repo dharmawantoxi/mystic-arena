@@ -1,6 +1,6 @@
 # gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
-## Layer 8a/8c/8e/8f/8g: Boss entity core, lane combat, status clocks and presentation.
+## Layers 8a/8c/8e/8f/8g/8i: Boss entity core, movement, clocks and presentation.
 ##
 ## Ports the scalar identity/stats of `Boss.__init__`, `apply_scaling`, the
 ## tenacity slow/atk_slow rule, the `TowerDebuffMixin` stun cut and the numeric
@@ -29,6 +29,9 @@ var base_damage := 0
 var speed_px_per_tick := 0.0
 var base_speed := 0.0
 var attack_range := 0.0
+var min_distance := 200.0
+var prefer_distance := 280.0
+var kite_mode := "hold"
 var attack_cooldown := 0
 var radius := 0.0
 var gold_reward := 0
@@ -92,8 +95,8 @@ var dmg_scaling_mult := 1.0
 var spd_scaling_mult := 1.0
 var direction := -1
 var lane_path := PackedVector2Array()
-# Layer 8c motion/attack state. The source renderer consumes the movement
-# cache and the attack edge; presentation itself remains a later layer.
+# Layers 8c/8i: motion/attack and ranged-kiting state. The source renderer
+# consumes the movement cache and attack edge; presentation remains separate.
 var is_moving := false
 var moving_cached := false
 var previous_position := Vector2.ZERO
@@ -176,6 +179,9 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	speed_px_per_tick = float(stats["speed"])
 	base_speed = speed_px_per_tick
 	attack_range = float(stats["attack_range"])
+	min_distance = float(stats.get("min_distance", 200))
+	prefer_distance = float(stats.get("prefer_distance", 280))
+	kite_mode = "hold"
 	attack_cooldown = int(stats["attack_cooldown"])
 	radius = float(stats["radius"])
 	gold_reward = int(stats["gold_reward"])
@@ -403,6 +409,37 @@ func move_toward(target: Vector2) -> void:
 	var step := minf(speed, distance)
 	position += offset / distance * step
 	face_motion(offset.x, offset.y)
+
+
+func move_ranged_kite(target: Vector2) -> void:
+	# Port of Boss.update's ranged chase/retreat mode with a 12 px hysteresis band.
+	var offset := target - position
+	var distance := offset.length()
+	if distance <= 0.0:
+		return
+	if distance < min_distance:
+		kite_mode = "back"
+	elif distance > prefer_distance:
+		kite_mode = "in"
+	elif kite_mode == "back" and distance < min_distance + 12.0:
+		pass
+	elif kite_mode == "in" and distance > prefer_distance - 12.0:
+		pass
+	else:
+		kite_mode = "hold"
+	var speed := eff_speed()
+	if speed <= 0.0:
+		return
+	if kite_mode == "back":
+		var step := minf(speed, maxf(0.0, (min_distance + 12.0) - distance))
+		if step > 0.0:
+			position -= offset / distance * step
+			face_motion(-offset.x, -offset.y)
+	elif kite_mode == "in":
+		var step := minf(speed, maxf(0.0, distance - (prefer_distance - 12.0)))
+		if step > 0.0:
+			position += offset / distance * step
+			face_motion(offset.x, offset.y)
 
 
 func effective_attack_cooldown() -> int:
