@@ -112,13 +112,21 @@ range, native tetap bergerak namun memberi dispatcher target null agar heal
 true-boss tetap berjalan tanpa smart-AI cast/timer tick. Oracle
 `boss_motion_source_oracle.py` mencatat empat kasus range/aggro untuk seluruh
 79 recipe (316 kasus); native memeriksa target window dan semua cabang dispatcher,
-serta menguji batas 150/151 px pada Ancient Apparition. CI Godot 4.7.2
-[run 37120800125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37120800125):
-**1.200.538 native checks**, `validate_project.py` **6.112 static checks**.
+serta menguji batas 150/151 px pada Ancient Apparition.
+
+**Layer 8k** (`b2fd3ad`) mempertahankan source ID Boss pada pukulan dasar utama:
+`Boss.update` meneruskan `source=self`, sehingga native `_deliver_hit()` memakai
+`boss.id` dan reaktif target/item dapat melihat penyerang. Cleave tetap
+`source_id=-1`, sama dengan sumber yang tidak memberi `source`. Oracle AST
+merekam 4 skenario × 216 tipe boss (**864 kasus**); native replay memeriksa
+pemilihan target, hit/source ID, cooldown/sequence dan batas akuisisi, serta
+integrasi refleksi Bristleback tanpa mengubah implementasi hero.
+CI Godot 4.7.2 [run 37122525909](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37122525909):
+**1.206.378 native checks**, `validate_project.py` **6.120 static checks**.
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
-- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), dan smart-AI attack-range gate (8j) sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave, generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
+- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), dan source ID hit dasar (8k) sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
 
 ## Bukti dan batas pengujian
 

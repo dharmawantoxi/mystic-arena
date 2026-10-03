@@ -753,7 +753,7 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-## Entity boss mini/true + AI boss hero (layers 8a–8j, paritas kondisi match)
+## Entity boss mini/true + AI boss hero (layers 8a–8k, paritas kondisi match)
 
 Port `bosses/base_boss.py` (±8 ribu baris) dimulai dengan memecahnya per lapisan.
 Lapisan **8a** (`d50c86c`) memindahkan **inti entity tanpa spawn**:
@@ -901,13 +901,15 @@ Lapisan **8i** (`4c34f0c`, CI [37118164879](https://github.com/dharmawantoxi/mys
 
 Lapisan **8j** (`433a2e6`; perluasan matriks oracle `a1d6d0f`, CI [37120800125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37120800125)) menyelaraskan gerbang smart AI dengan cabang sumber `Boss.update`: ability dispatcher hanya menerima target ketika jaraknya berada di dalam `attack_range` inklusif. Di luar jarak, boss tetap bergerak/kiting; `BossAI.tick()` dipanggil dengan target null agar heal true-boss sebelum pemilihan target tetap terjaga tanpa men-tick timer atau menjalankan smart ability. Oracle AST mengeksekusi update sumber dan merekam empat batas pemilihan/dispatch untuk **seluruh 79 recipe smart AI (316 kasus)**; native checks memeriksa target window/range dan cakupan 79 cabang dispatcher, ditambah skenario Ancient Apparition pada 150 px vs 151 px. CI Godot 4.7.2 hijau: **1.200.538 native checks**, `validate_project.py` **6.112 static checks**.
 
+Lapisan **8k** (`b2fd3ad`, CI [37122525909](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37122525909)) memulihkan identitas sumber pada serangan dasar boss. `Boss.update` mengirim pukulan utama lewat `target.take_damage(..., school='physical', source=self)`; `_boss_basic_attack()` kini meneruskan `boss.id` ke `_deliver_hit()`, sehingga evasion/blind, refleksi reaktif, notifikasi item dan event kill dapat melihat penyerang hidup. Cleave tetap tanpa source (`source_id=-1`) sesuai pemanggilan sumber yang memang tidak memberi argumen `source`. Oracle mengeksekusi update Boss asli untuk **semua 216 tipe**, empat skenario per tipe (864 kasus: hit/cleave, cooldown, di luar attack range, batas akuisisi eksklusif); native match-step memeriksa hit source, cooldown/sequence serta interaksi refleksi Thorne. CI Godot 4.7.2 hijau: **1.206.378 native checks**, `validate_project.py` **6.120 static checks**.
+
 Sistem produksi serta sisa perilaku scene/AI yang belum dipindahkan masih
 belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 terbaru hijau setelah cakupan range gate untuk seluruh recipe smart-AI
-([37120800125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37120800125));
-**1.200.538 native checks**; `validate_project.py` **6.112 static checks**;
+CI Godot 4.7.2 terbaru hijau setelah preservasi source ID serangan dasar boss
+([37122525909](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37122525909));
+**1.206.378 native checks**; `validate_project.py` **6.120 static checks**;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ff99-mystic-arena` (PR
@@ -937,12 +939,13 @@ CI Godot 4.7.2 terbaru hijau setelah cakupan range gate untuk seluruh recipe sma
 > boss hero sebelum lane assignment; audit burn-team (`1aa2352`, code run
 > 37098998782) meneruskan atribusi ke damage boss dan kill ledger unit; layer
 > **8i** (`4c34f0c`, code run 37118164879) menambah kiting/hysteresis pada 12
-> boss ranged dengan tepat 4 oracle trace per boss; **8j** (`433a2e6`, coverage
-> `a1d6d0f`, code run 37120800125) membatasi dispatch smart AI ke jarak source,
-> dengan 316 trace untuk semua 79 recipe.
-> CI terakhir: **1.200.538 native checks** dan **6.112 static checks**.
-> Berikutnya sistem produksi, lalu sisa perilaku scene/AI. Satu sub-layer per
-> commit; pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
-> commit -> push -> gh run watch.
-> Sumber read-only: _core.py, _entity.py, bosses/, levels/, hero_items.py,
-> minions/. Hanya ubah godot_rebuild.
+> boss ranged; **8j** (`433a2e6`, coverage `a1d6d0f`, code run 37120800125)
+> membatasi smart-AI ke attack range dengan 316 trace untuk semua 79 recipe;
+> **8k** (`b2fd3ad`, code run 37122525909) mempertahankan source ID pukulan utama
+> boss dan menguji empat skenario untuk masing-masing 216 tipe (864 kasus),
+> sementara cleave tetap tanpa source.
+> CI terakhir: **1.206.378 native checks** dan **6.120 static checks**.
+> Lanjutkan audit slice gameplay-only `Boss.update`; jangan masuk FX, balance,
+> atau hero. Satu sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
+> validate_project.py -> commit -> push -> gh run watch, lalu docs commit/push
+> terpisah. Sumber Python read-only. Hanya ubah godot_rebuild.
