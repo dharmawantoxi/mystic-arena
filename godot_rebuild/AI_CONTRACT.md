@@ -843,12 +843,33 @@ gerbang jarak source (R saat 3+ enemy dalam 180, E saat 120 < dist < 260 dengan
 dash `min(110, max(40, dist - 50))` lalu AOE 80 dari posisi BARU, W saat
 dist <= 220 dengan AOE 95 di sekitar target + attack lock 45, Q saat
 dist <= 260 dengan AOE 75 di sekitar target + slow 0.35 selama 120 tick) tanpa
-state buff baru. Fixture menjadi 59 kasus dan native replay mengunci parity
-tanpa mengklaim roster boss lengkap. CI kode Razak Godot 4.7.2 hijau pada
-run [36880094191](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36880094191)
-dan CI dokumentasi hijau pada run
-[36892462481](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36892462481):
-**1.187.707 native checks**; `validate_project.py` **5968 static checks**.
+state buff baru; commit `fcca743` menambah Kenshiro: Supremacy, Assault, Gale
+dan Swiftslash, dengan helper L9 `_init_l9_timers`/`_tick_l9_timers`/`_l9_stats`/
+`_l9_target`/`_l9_aoe`, gerbang source (R saat 3+ enemy dalam 200 + HP < 0.5
+dengan AOE 190, W saat HP < 0.55 dengan dash `min(d, 90)` + hit closest, E saat
+2+ enemy dalam 200 dengan AOE 150, Q saat dist < 140 dengan hit closest) dan
+active window 70/45/55/35 tick; commit `3ccd59c` menambah Khazan: Vanishing
+Execution, Spin Carnage, Leap Smash dan Chained Blade, dengan gerbang source
+(R saat 2+ enemy dalam 210 + HP < 0.45 dengan AOE 210, E saat 3+ enemy dalam
+210 dengan AOE 160, W saat dist > 120 dengan dash `min(d, 110)` lalu AOE 90 dari
+posisi BARU, Q saat dist < 150 dengan hit closest) dan active window 75/60/50/40
+tick; commit `32d03b5` menambah Wiro, Naraka, Krognarr, Raz, Vraskhan (5 boss L9,
+fixture 87); commit `655fba4`+`cb760ef` menambah 41 boss L9 tersisa
+(Aurethzar, Aeralith, Aurex, Nyxareva, Thalakryon, Aurelix, Aurelyssa, Vargrath,
+Nazulmor, Kaeldris, Pyraklos, Velmyrth, Solvarin, Azureth, Luminar, Solara,
+Pyraethis, Auroth, Morvein, Thorvak, Yamako, Ignirus, Leoric, Shirotaka,
+Seiryukong, Kaelthorn, Solvanth, Xyrael, Nyxareth, Cryssalia, Kaelthar,
+Morkhaera, Aurelion, Akahime, Nyxthrael, Sylvantheros, Vaelindra, Astraelion,
+Morvaenthir, Thornvaegrim, Morthraxis) dengan fix heal/dash+AOE/low_target,
+fixture 251. Commit `cd68825`+`b10e666` menambah final 17 non-L9
+(ancient_apparition, ignis_drachorn, vhorethzir, vaerith, xirthalis,
+vhyssarion, khalros, gorath, varkul, xerathis, nyzrak, zharok, pyrenth,
+vokrahn, nyxara, gravefang, vhalzun) dengan state dragon_form, vortex,
+shield, shukuchi, timelapse, arcane_buff, lifesteal dll; fixture menjadi
+319 kasus (79 boss) dan native replay mengunci parity source. CI final
+Godot 4.7.2 hijau pada run
+[37020039663](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37020039663):
+**1.198.332 native checks**; `validate_project.py` **5968 static checks**.
 
 Lapisan **8e** (`c635a06`) memindahkan clock gameplay entrance/enrage:
 `BossState` memajukan `anim_time`/`pulse`, menahan seluruh gerak/serangan/heal/
@@ -875,12 +896,11 @@ belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
 CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
-(Razak code [36880094191](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36880094191)
-+ docs [36892462481](https://github.com/dharmawantoxi/mystic-arena/actions/runs/36892462481));
-**1.187.707 native checks**; `validate_project.py` 5968 static;
+(final 17 non-L9 code [37020039663](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37020039663));
+**1.198.332 native checks**; `validate_project.py` 5968 static;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
-> Pesan siap-salin: lanjutkan di branch `arena/01a0f717-mystic-arena` (PR
+> Pesan siap-salin: lanjutkan di branch `arena/01a0fa38-mystic-arena` (PR
 > selalu draft; jangan merge tanpa perintah "merge now"). Layer **8a**
 > (`d50c86c`) memindahkan inti entity + data 216 boss; layer **8b**
 > (`fed2c6a`, run 36569775154) memindahkan jadwal/spawn mini–true boss,
@@ -890,10 +910,14 @@ CI Godot 4.7.2 terbaru hijau pada sub-layer `8d-1`
 > (`61184e0`, run 36710717265) memindahkan ability/smart AI slice awal,
 > generic ability, active-skill/cooldown clocks, dan true-boss heal; sub-layer
 > **8d-1** (`6ac3bc5` + `1b21813` + `7cfdf7f` + `937fa7e` + `2b3ba1e` +
-> `3057043` + `a82b3be` + `27f73f1` + `8858530` + `c23b6b7`, code run 36880094191 + docs run 36892462481)
+> `3057043` + `a82b3be` + `27f73f1` + `8858530` + `c23b6b7` + `fcca743` + `3ccd59c` + `32d03b5` + `655fba4` + `cb760ef` + `cd68825` + `b10e666`, code run 37020039663)
 > menambah smart AI Alchemist, Malzareth, Akashari, Vorenmarr, Nyxarath,
-> Thalgryn, Syrentha, Gravewake, Kunkka dan Razak saja; fixture oracle/native
-> replay kini 59 kasus;
+> Thalgryn, Syrentha, Gravewake, Kunkka, Razak, Kenshiro, Khazan, Wiro, Naraka,
+> Krognarr, Raz, Vraskhan, 41 boss L9 tersisa dan final 17 non-L9
+> (ancient_apparition, ignis_drachorn, vhorethzir, vaerith, xirthalis,
+> vhyssarion, khalros, gorath, varkul, xerathis, nyzrak, zharok, pyrenth,
+> vokrahn, nyxara, gravefang, vhalzun); fixture oracle/native replay kini
+> 319 kasus (79 boss);
 > layer **8e** (`c635a06`, run 36716265830) memindahkan entrance/enrage clock
 > dan gate gameplay; layer **8f** (`8c8787f`, run 36725358545) memindahkan
 > presentasi intro/death boss saja, termasuk entrance aura/text, death
