@@ -1,6 +1,6 @@
 # gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
-## Layer 8a/8c/8e/8f: Boss entity core, lane combat, clocks and presentation.
+## Layers 8a/8c/8e/8f/8g/8i/8j: Boss entity core, movement, clocks and presentation.
 ##
 ## Ports the scalar identity/stats of `Boss.__init__`, `apply_scaling`, the
 ## tenacity slow/atk_slow rule, the `TowerDebuffMixin` stun cut and the numeric
@@ -15,6 +15,7 @@ extends "res://scripts/combat/unit_state.gd"
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
 const Damage = preload("res://scripts/combat/damage_rules.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
+const DEBUFF_FPS := 60.0
 
 var boss_type := ""
 var display_name := ""
@@ -28,6 +29,9 @@ var base_damage := 0
 var speed_px_per_tick := 0.0
 var base_speed := 0.0
 var attack_range := 0.0
+var min_distance := 200.0
+var prefer_distance := 280.0
+var kite_mode := "hold"
 var attack_cooldown := 0
 var radius := 0.0
 var gold_reward := 0
@@ -91,8 +95,8 @@ var dmg_scaling_mult := 1.0
 var spd_scaling_mult := 1.0
 var direction := -1
 var lane_path := PackedVector2Array()
-# Layer 8c motion/attack state. The source renderer consumes the movement
-# cache and the attack edge; presentation itself remains a later layer.
+# Layers 8c/8i/8j: movement, kiting and attack-range dispatch state. The source
+# renderer consumes the movement cache and attack edge; presentation stays separate.
 var is_moving := false
 var moving_cached := false
 var previous_position := Vector2.ZERO
@@ -100,6 +104,8 @@ var attack_facing := 0.0
 var attack_lock_timer := 0
 var basic_attack_seq := 0
 var last_hit_source_id := -1
+# Preserve `TowerDebuffMixin._tick_tower_debuffs` from_team at the boss damage boundary.
+var last_damage_from_team := -1
 # Layer 8d source smart-ability state. These fields are gameplay state; the
 # renderer may consume active_skill later, but presentation is not here.
 var q_timer := 0
@@ -173,6 +179,9 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	speed_px_per_tick = float(stats["speed"])
 	base_speed = speed_px_per_tick
 	attack_range = float(stats["attack_range"])
+	min_distance = float(stats.get("min_distance", 200))
+	prefer_distance = float(stats.get("prefer_distance", 280))
+	kite_mode = "hold"
 	attack_cooldown = int(stats["attack_cooldown"])
 	radius = float(stats["radius"])
 	gold_reward = int(stats["gold_reward"])
@@ -205,6 +214,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	entrance_text = String(stats["entrance_text"])
 	_set_colors(stats)
 	team = 1  # Source Boss.__init__: team = "red".
+	last_damage_from_team = -1
 	rebuild_definition()
 	direction = -1
 	facing = -1.0
@@ -389,6 +399,11 @@ func move_forward() -> void:
 		budget = 0.0
 
 
+func is_in_attack_range(distance: float) -> bool:
+	# Source Boss.update uses an inclusive attack range for smart-AI dispatch.
+	return distance <= attack_range
+
+
 func move_toward(target: Vector2) -> void:
 	# Source chase branch clamps speed to the remaining distance.
 	var offset := target - position
@@ -399,6 +414,37 @@ func move_toward(target: Vector2) -> void:
 	var step := minf(speed, distance)
 	position += offset / distance * step
 	face_motion(offset.x, offset.y)
+
+
+func move_ranged_kite(target: Vector2) -> void:
+	# Port of Boss.update's ranged chase/retreat mode with a 12 px hysteresis band.
+	var offset := target - position
+	var distance := offset.length()
+	if distance <= 0.0:
+		return
+	if distance < min_distance:
+		kite_mode = "back"
+	elif distance > prefer_distance:
+		kite_mode = "in"
+	elif kite_mode == "back" and distance < min_distance + 12.0:
+		pass
+	elif kite_mode == "in" and distance > prefer_distance - 12.0:
+		pass
+	else:
+		kite_mode = "hold"
+	var speed := eff_speed()
+	if speed <= 0.0:
+		return
+	if kite_mode == "back":
+		var step := minf(speed, maxf(0.0, (min_distance + 12.0) - distance))
+		if step > 0.0:
+			position -= offset / distance * step
+			face_motion(-offset.x, -offset.y)
+	elif kite_mode == "in":
+		var step := minf(speed, maxf(0.0, distance - (prefer_distance - 12.0)))
+		if step > 0.0:
+			position += offset / distance * step
+			face_motion(offset.x, offset.y)
 
 
 func effective_attack_cooldown() -> int:
@@ -499,6 +545,11 @@ func store_debuff(kind: String, amount: float, duration: int, source_team: int =
 				burn_team = source_team
 
 
+func burn_source_team() -> int:
+	# Source calls take_damage(burn_team or self.team); team 0 is valid here.
+	return burn_team if burn_team >= 0 else team
+
+
 func apply_stun(duration: int) -> void:
 	# Port of TowerDebuffMixin.apply_stun (Boss does not override it): a boss
 	# resists 55% of the stun duration so it cannot be stun-locked.
@@ -537,6 +588,58 @@ func clear_tower_debuffs() -> void:
 	blind_timer = 0
 
 
+func set_hp_value(requested_hp: float) -> void:
+	# Port of TowerDebuffMixin.hp.setter: only upward writes are modified;
+	# anti-heal is applied before heal amplification, exactly as in Python.
+	var previous_hp := hp
+	var next_hp := requested_hp
+	if next_hp > previous_hp and anti_heal_timer > 0:
+		next_hp = previous_hp + (next_hp - previous_hp) * (1.0 - anti_heal_amount)
+	if next_hp > previous_hp and heal_amp_timer > 0:
+		next_hp = previous_hp + (next_hp - previous_hp) * (1.0 + heal_amp_amount)
+	hp = next_hp
+
+
+func tick_tower_debuffs() -> int:
+	# Port of TowerDebuffMixin._tick_tower_debuffs. This runs before the stun
+	# gate in Boss.update; the caller applies any returned fire tick through
+	# the boss damage path after all status clocks have advanced.
+	if slow_timer > 0:
+		slow_timer -= 1
+		if slow_timer <= 0:
+			slow_amount = 0.0
+	if atk_slow_timer > 0:
+		atk_slow_timer -= 1
+		if atk_slow_timer <= 0:
+			atk_slow_amount = 0.0
+	if skill_down_timer > 0:
+		skill_down_timer -= 1
+		if skill_down_timer <= 0:
+			skill_down_amount = 0.0
+	if anti_heal_timer > 0:
+		anti_heal_timer -= 1
+		if anti_heal_timer <= 0:
+			anti_heal_amount = 0.0
+	if stun_timer > 0:
+		stun_timer -= 1
+	tick_item_debuffs()
+	var burn_damage := 0
+	if burn_timer > 0:
+		burn_timer -= 1
+		burn_accum += burn_dps / DEBUFF_FPS
+		burn_tick_cd -= 1
+		if burn_tick_cd <= 0:
+			burn_tick_cd = int(rules.get("burn_tick", 30))
+			var accumulated_damage := int(burn_accum)
+			if accumulated_damage > 0 and alive:
+				burn_accum -= float(accumulated_damage)
+				burn_damage = accumulated_damage
+		if burn_timer <= 0:
+			burn_dps = 0.0
+			burn_accum = 0.0
+	return burn_damage
+
+
 func blind_roll() -> float:
 	if blind_roll_override.is_valid():
 		return float(blind_roll_override.call())
@@ -571,15 +674,25 @@ func blind_live(source: Object, damage_type: String) -> bool:
 
 
 func take_damage(
-	source: Object, raw_damage: int, damage_type: String = "normal", school: String = "neutral"
+	source: Object,
+	raw_damage: int,
+	damage_type: String = "normal",
+	school: String = "neutral",
+	from_team: int = -1
 ) -> int:
 	# Port of the numeric tail of Boss.take_damage. Returns the damage applied,
 	# or -1 when the source would return before touching hp (blind miss).
 	# Damage numbers and hit particles remain outside the prototype view, but
 	# the source death explosion/shake snapshot is retained for Layer 8f.
+	# Source accepts from_team but doesn't otherwise consume it; retain it here
+	# so burn damage does not discard TowerDebuffMixin attribution.
 	if source != null and raw_damage > 0 and blind_live(source, damage_type):
 		if blind_roll() < float(source.get("blind_amount")):
 			return -1
+	if from_team >= 0:
+		last_damage_from_team = from_team
+	elif source != null:
+		last_damage_from_team = int(source.get("team"))
 	var damage := raw_damage
 	if damage > 0:
 		if dmg_amp_timer > 0:

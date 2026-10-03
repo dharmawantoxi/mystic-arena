@@ -249,7 +249,10 @@ func _tick_burn(unit: UnitState) -> void:
 				if unit.hp <= 0:
 					unit.alive = false
 					_record({"kind": "death", "burn": true, "source_id": -1, "target_id": unit.id})
-					_on_death(1 - unit.team, unit)
+					var credit_team := 1 - unit.team
+					if unit.burn_team in [BLUE, RED]:
+						credit_team = unit.burn_team
+					_on_death(credit_team, unit)
 					if unit.is_hero:
 						_on_hero_death(unit as HeroState, -1)
 	if unit.burn_timer <= 0:

@@ -64,10 +64,69 @@ mini/true, `anim_time`/`pulse`, threshold enrage, modifier sekali, cooldown puls
 dan interaksi slow. **Layer 8f** menambah presentasi intro/death boss saja:
 `boss_presentation_source_oracle.py` + `boss_presentation_checks.gd` mengunci
 entrance aura/text, death snapshot dan FX tick setelah registry cleanup.
+**Layer 8g** menambah jam status/item debuff `TowerDebuffMixin`, burn dan
+modifikasi heal boss: `BossState.tick_tower_debuffs()` memajukan clock satu kali
+sebelum stun/entrance gate; burn mengakumulasi `burn_dps / 60` dan mengirim
+damage tiap 30 tick melalui jalur damage/death boss. Pass item global mengecualikan
+`active_boss` agar item clock tidak turun dua kali. Semua enam kenaikan HP AI
+boss memakai setter parity sumber: anti-heal lebih dulu, lalu heal amplification;
+penurunan HP tidak diubah. Oracle AST `boss_debuff_clock_source_oracle.py`
+menjaga lima kasus clock/burn dan empat kasus setter HP, sedangkan
+`boss_debuff_clock_checks.gd` memeriksa parity state/payload, tick order,
+anti-double-tick, burn death/reward dan kedua jalur heal. Code commit `5e06a24`
+lulus CI Godot 4.7.2 [run 37092769125](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37092769125): **1.198.460 native checks**, `validate_project.py` **5.993 static checks**.
+**Layer 8h** port target handoff auto-cast untuk boss hero merah: dari unit,
+boss aktif, tower dan base hidup, pilih musuh terdekat dalam `skill_range`
+inklusif (tie mempertahankan urutan sumber), tetapkan `target_id`/`target_struct`
+sebelum auto-cast dan jangan berikan lane order saat target ada. Cakupan sengaja
+khusus boss hero; starter tidak berubah. Oracle AST read-only
+`boss_hero_ai_source_oracle.py` mengunci enam kasus; `boss_hero_ai_checks.gd`
+menguji Gornak, target/lane handoff, serta guard starter. Commit `b728cb6`
+lulus CI Godot 4.7.2 [run 37097737800](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37097737800): **1.198.481 native checks**, `validate_project.py` **6.021 static checks**.
+**Audit atribusi burn** (`1aa2352`) menutup selisih handoff: `_core.TowerDebuffMixin`
+memanggil `take_damage` dengan `burn_team` atau tim entity sebagai fallback;
+BossState kini meneruskan/merekam nilai itu, dan unit burn lethal memakai tim
+sumber valid untuk kill ledger alih-alih selalu menebak lawan. Jika tim tidak
+valid, fallback kill unit sebelumnya tetap dipakai. Fixture oracle yang sudah
+menyimpan `damage_calls.from_team` kini dibandingkan pada native; checks juga
+meliputi BLUE (`0`) vs fallback red, boss burn lethal dan burn same-team.
+Sumber Boss menerima `from_team` tapi tidak menggunakannya lagi; pelacakan boss
+menjaga batas pemanggilan, sedangkan ledger unit mengonsumsi tim secara eksplisit.
+Audit commit lulus CI Godot 4.7.2
+[run 37098998782](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37098998782):
+**1.198.492 native checks**, `validate_project.py` **6.024 static checks**.
+**Layer 8i** (`4c34f0c`) memindahkan kiting ranged dari `Boss.update` untuk
+ancient_apparition, morgath, razak, varkul, xerathis, nyzrak, syrentha,
+thalgryn, nyxarath, malzareth, akashari dan vorenmarr. Ekspor stats native kini
+membawa `min_distance`/`prefer_distance`; `BossState.move_ranged_kite()`
+memilih `back`/`in`/`hold` dengan band histeresis 12 px, hanya untuk 12 tipe
+tersebut. `boss_motion_source_oracle.py` mengunci tepat empat trace per boss
+(48 kasus; masuk/keluar band untuk kedua mode), sementara `boss_motion_checks.gd`
+mereplay trace dan menguji routing pada fixed tick aktif.
+Code commit lulus CI Godot 4.7.2
+[run 37118164879](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37118164879):
+**1.198.870 native checks**, `validate_project.py` **6.030 static checks**.
+**Layer 8j** (`433a2e6`; perluasan oracle `a1d6d0f`) membatasi `BossAI.tick()`
+ke target dalam `attack_range` inklusif, sesuai cabang `Boss.update`; saat di luar
+range, native tetap bergerak namun memberi dispatcher target null agar heal
+true-boss tetap berjalan tanpa smart-AI cast/timer tick. Oracle
+`boss_motion_source_oracle.py` mencatat empat kasus range/aggro untuk seluruh
+79 recipe (316 kasus); native memeriksa target window dan semua cabang dispatcher,
+serta menguji batas 150/151 px pada Ancient Apparition.
+
+**Layer 8k** (`b2fd3ad`) mempertahankan source ID Boss pada pukulan dasar utama:
+`Boss.update` meneruskan `source=self`, sehingga native `_deliver_hit()` memakai
+`boss.id` dan reaktif target/item dapat melihat penyerang. Cleave tetap
+`source_id=-1`, sama dengan sumber yang tidak memberi `source`. Oracle AST
+merekam 4 skenario × 216 tipe boss (**864 kasus**); native replay memeriksa
+pemilihan target, hit/source ID, cooldown/sequence dan batas akuisisi, serta
+integrasi refleksi Bristleback tanpa mengubah implementasi hero.
+CI Godot 4.7.2 [run 37122525909](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37122525909):
+**1.206.378 native checks**, `validate_project.py` **6.120 static checks**.
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
-- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (layer 8b), perilaku dasar (layer 8c), ability/smart AI slice awal (layer 8d + sub-layer 8d-1), entrance/enrage clock (layer 8e) dan presentasi intro/death boss (layer 8f) sudah dipindahkan, termasuk owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward, daftar unlock, target hero, basic attack, cleave, generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance gate, death flash/sparks dan screen shake.
+- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), dan source ID hit dasar (8k) sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
 
 ## Bukti dan batas pengujian
 

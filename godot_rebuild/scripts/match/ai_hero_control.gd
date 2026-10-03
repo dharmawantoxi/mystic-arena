@@ -2,7 +2,8 @@ extends RefCounted
 ## Port of AIPlayer._control_heroes / _assign_hero_lane (layer 6a): the AI keeps
 ## every living red hero busy each tick through the same auto-cast path the
 ## player uses, and only assigns a lane when the hero has neither an attack
-## target nor a destination.
+## target nor a destination. Layer 8h mirrors Hero._try_auto_cast's nearest
+## target handoff for boss heroes before this lane gate.
 ##
 ## Source constants: lane y values LANE_Y_TOP/MID/BOT = 150/380/610, the lane
 ## tie-break is the dict insertion order top -> mid -> bot, the fallback park x
@@ -24,6 +25,8 @@ const LANE_Y := [150.0, 380.0, 610.0]
 const LANE_COUNT := 3
 const PARK_X := 600.0
 const TOWER_STANDOFF := 60.0
+const StructureState = preload("res://scripts/combat/structure_state.gd")
+const HeroState = preload("res://scripts/combat/hero_state.gd")
 
 var total_skills_cast := 0
 
@@ -35,13 +38,54 @@ func control_heroes(world: Object, towers: Array) -> void:
 		if not unit.is_hero or unit.team != RED_TEAM or not unit.alive:
 			continue
 		var hero: Object = unit
+		var boss_hero_target: Object = null
 		if hero.skill_timer == 0:
+			if hero is HeroState and hero.settings().is_boss_hero:
+				boss_hero_target = _nearest_skill_enemy(world, hero, towers)
+				if boss_hero_target != null:
+					hero.target_id = boss_hero_target.id
+					hero.target_struct = (
+						boss_hero_target as StructureState
+						if boss_hero_target is StructureState
+						else null
+					)
 			var before: int = hero.active_skill_timer
 			world.try_auto_cast(hero)
 			if hero.active_skill_timer > before:
 				total_skills_cast += 1
-		if hero.target_id < 0 and hero.target_struct == null and not hero.has_destination:
+		if (
+			hero.target_id < 0
+			and hero.target_struct == null
+			and not hero.has_destination
+			and boss_hero_target == null
+		):
 			assign_hero_lane(world, hero, towers)
+
+
+func _nearest_skill_enemy(world: Object, hero: Object, towers: Array) -> Object:
+	# Source Hero._try_auto_cast builds enemies in this order, then uses a stable
+	# distance sort: all units (the active boss last), towers, then both bases.
+	var candidates: Array = []
+	var units: Variant = world.get("units")
+	if units is Array:
+		candidates.append_array(units)
+	var active_boss: Object = world.get("active_boss")
+	if active_boss != null and active_boss.alive:
+		candidates.append(active_boss)
+	candidates.append_array(towers)
+	var bases: Variant = world.get("nexuses")
+	if bases is Array:
+		candidates.append_array(bases)
+	var best: Object = null
+	var best_distance := INF
+	for enemy in candidates:
+		if enemy == null or not enemy.alive or enemy.team == hero.team:
+			continue
+		var distance: float = hero.position.distance_to(enemy.position)
+		if distance <= hero.skill_range and distance < best_distance:
+			best = enemy
+			best_distance = distance
+	return best
 
 
 func lane_threats(world: Object, hero: Object) -> Array:

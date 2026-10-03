@@ -369,11 +369,46 @@ if (ROOT / "data/levels/level_1.json").is_file() and (ROOT / "tests/fixtures/mat
 from boss_core_source_oracle import source_fixture as boss_core_fixture
 from boss_ability_source_oracle import source_fixture as boss_ability_fixture
 from boss_clock_source_oracle import source_fixture as boss_clock_fixture
+from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_fixture
+from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
+from boss_motion_source_oracle import (
+    smart_ai_boss_types as boss_motion_ai_types,
+    source_boss_types as boss_motion_source_types,
+    source_fixture as boss_motion_fixture,
+)
 from boss_presentation_source_oracle import source_fixture as boss_presentation_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
 check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite must run")
 check("BossClockChecks.new().run(_check)" in ai_tests, "Boss clock suite must run")
+check("BossDebuffClockChecks.new().run(_check)" in ai_tests, "Boss debuff clock suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
+check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
+check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
+if (ROOT / "tests/fixtures/boss_motion_source.json").is_file():
+    _boss_motion = boss_motion_fixture()
+    check(_boss_motion == json.loads(
+        (ROOT / "tests/fixtures/boss_motion_source.json").read_text(encoding="utf-8")),
+        "Boss motion and ranged kiting source behavior drift")
+    _ranged_motion_cases = _boss_motion.get("ranged_kiting", [])
+    check(len(_ranged_motion_cases) == 48
+          and all(sum(case["boss_type"] == _boss for case in _ranged_motion_cases) == 4
+                  for _boss in {case["boss_type"] for case in _ranged_motion_cases}),
+          "Ranged kiting requires exactly four oracle cases per boss")
+    _smart_ai_dispatch_cases = _boss_motion.get("smart_ai_dispatch", [])
+    _smart_ai_dispatch_types = {case["boss_type"] for case in _smart_ai_dispatch_cases}
+    check(len(_smart_ai_dispatch_cases) == 316
+          and len(_smart_ai_dispatch_types) == 79
+          and _smart_ai_dispatch_types == set(boss_motion_ai_types())
+          and all(sum(case["boss_type"] == _boss for case in _smart_ai_dispatch_cases) == 4
+                  for _boss in _smart_ai_dispatch_types),
+          "Boss smart-AI dispatch requires four oracle cases for all 79 source recipes")
+    _basic_attack_cases = _boss_motion.get("basic_attack_source", [])
+    _basic_attack_types = {case["boss_type"] for case in _basic_attack_cases}
+    check(len(_basic_attack_cases) == 864
+          and _basic_attack_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _basic_attack_cases) == 4
+                  for _boss in _basic_attack_types),
+          "Boss basic attacks require four source-attribution cases for all 216 types")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -384,6 +419,20 @@ if (ROOT / "tests/fixtures/boss_clock_source.json").is_file():
     check(boss_clock_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_clock_source.json").read_text(encoding="utf-8")),
         "Boss clock source behavior drift")
+check((ROOT / "tests/fixtures/boss_debuff_clock_source.json").is_file(),
+      "Boss debuff clock requires source fixture")
+if (ROOT / "tests/fixtures/boss_debuff_clock_source.json").is_file():
+    check(boss_debuff_clock_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_debuff_clock_source.json").read_text(encoding="utf-8")),
+        "Boss debuff clock source behavior drift")
+check("BossHeroAIChecks.new().run(_check)" in ai_tests,
+      "Boss hero AI target handoff suite must run")
+check((ROOT / "tests/fixtures/boss_hero_ai_source.json").is_file(),
+      "Boss hero AI target handoff requires source fixture")
+if (ROOT / "tests/fixtures/boss_hero_ai_source.json").is_file():
+    check(boss_hero_ai_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_hero_ai_source.json").read_text(encoding="utf-8")),
+        "Boss hero AI target handoff source behavior drift")
 check((ROOT / "tests/fixtures/boss_ability_source.json").is_file(), "Boss abilities require source fixture")
 if (ROOT / "tests/fixtures/boss_ability_source.json").is_file():
     check(boss_ability_fixture() == json.loads(
@@ -403,15 +452,42 @@ if (ROOT / "tests/fixtures/boss_core_source.json").is_file():
           "Update the boss core suite when the source boss tables change")
 boss_state = (ROOT / "scripts/match/boss_state.gd").read_text(encoding="utf-8")
 for _method in ("apply_scaling", "apply_slow", "apply_debuff", "apply_stun",
-                "clear_tower_debuffs", "take_damage", "eff_speed", "eff_ability_damage",
-                "blind_live", "true_strike_of", "advance_animation_clock",
+                "clear_tower_debuffs", "set_hp_value", "tick_tower_debuffs",
+                "take_damage", "eff_speed", "eff_ability_damage", "blind_live",
+                "true_strike_of", "advance_animation_clock",
                 "entrance_presentation_state", "advance_combat_clock",
-                "death_presentation"):
+                "move_ranged_kite", "is_in_attack_range", "death_presentation"):
     check("func %s(" % _method in boss_state, "Boss entity core must port %s" % _method)
 prototype_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
 check("advance_animation_clock()" in prototype_battle
       and "advance_combat_clock()" in prototype_battle,
       "Boss match step must consume entrance and enrage clocks")
+boss_step = prototype_battle.split("func _step_active_boss()", 1)[1].split(
+    "func _try_spawn_pending_mini_boss()", 1)[0]
+check(boss_step.index("tick_tower_debuffs()") < boss_step.index("if boss.stun_timer > 0"),
+      "Boss debuffs must tick before the stun and entrance gates")
+check("boss.move_ranged_kite(target.position)" in boss_step
+      and "RANGED_BOSS_KITERS" in prototype_battle,
+      "Ranged boss movement must use the source hysteresis kiting branch")
+check("boss.is_in_attack_range(distance)" in boss_step
+      and "ai_target = null" in boss_step
+      and "BossAI.tick(self, boss, enemies, ai_target, ai_distance)" in boss_step,
+      "Boss smart AI must dispatch only inside source attack range")
+boss_basic_attack = prototype_battle.split("func _boss_basic_attack(", 1)[1].split(
+    "func _step_active_boss()", 1)[0]
+check('_deliver_hit(boss.id, boss.team, target, boss.damage, "physical", boss.position)' in boss_basic_attack
+      and "_deliver_hit(-1, boss.team, enemy, cleave_damage" in boss_basic_attack,
+      "Boss primary hit must preserve source ID while source-omitted cleave remains uncredited")
+check("active_boss.tick_item_debuffs()" not in prototype_battle,
+      "Boss item debuffs must not tick twice in one match step")
+boss_ai_text = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+for _boss_type in boss_motion_ai_types():
+    check('"%s":' % _boss_type in boss_ai_text,
+          "Native boss AI dispatch must include source recipe %s" % _boss_type)
+check(not re.search(r"^\s*boss\.hp\s*=", boss_ai_text, re.M),
+      "Boss AI hp increases must pass through the anti-heal setter")
+check(boss_ai_text.count("boss.set_hp_value(") == 6,
+      "All source Boss AI healing writes must use the anti-heal setter")
 check("boss_death_presentations" in prototype_battle
       and "_queue_boss_death_presentation" in prototype_battle,
       "Boss death presentation must survive registry retirement")

@@ -24,6 +24,20 @@ const BossAI = preload("res://scripts/match/boss_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
 const LEVEL_DATA := "res://data/levels/level_1.json"
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
+const RANGED_BOSS_KITERS := [
+	"ancient_apparition",
+	"morgath",
+	"razak",
+	"varkul",
+	"xerathis",
+	"nyzrak",
+	"syrentha",
+	"thalgryn",
+	"nyxarath",
+	"malzareth",
+	"akashari",
+	"vorenmarr"
+]
 const SlotLayout = preload("res://scripts/match/slot_layout.gd")
 const Slot = preload("res://scripts/match/build_slot.gd")
 const ItemEffects = preload("res://scripts/match/item_effects.gd")
@@ -93,7 +107,7 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
-# Layer 8b/8c/8d/8e/8f: match conditions, live boss combat, clocks and
+# Layers 8b/8c/8d/8e/8f/8i/8j: match combat, boss movement, clocks and
 # presentation payloads. Rendering remains in prototype_view.gd.
 var boss_table: Dictionary = {}
 var boss_rng := RandomNumberGenerator.new()
@@ -556,7 +570,10 @@ func _boss_basic_attack(target: UnitState, enemies: Array[UnitState]) -> void:
 	boss.basic_attack_seq += 1
 	boss.attack_facing = boss.facing
 	boss.attack_lock_timer = mini(15, maxi(6, int(boss.attack_cooldown / 3)))
-	_deliver_hit(-1, boss.team, target, boss.damage, "physical", boss.position)
+	# Boss.update passes source=self for its primary hit. Preserve the live
+	# attacker ID so hero blind/evasion, reactive damage and item hooks can
+	# resolve the boss; source cleave deliberately omits source.
+	_deliver_hit(boss.id, boss.team, target, boss.damage, "physical", boss.position)
 	var cleave_damage := int(boss.damage * boss.cleave_ratio)
 	if cleave_damage > 0:
 		for enemy in enemies:
@@ -581,6 +598,13 @@ func _step_active_boss() -> void:
 	var boss := active_boss
 	boss.advance_animation_clock()
 	boss.begin_motion_tick()
+	var burn_from_team := boss.burn_source_team()
+	var burn_damage := boss.tick_tower_debuffs()
+	if burn_damage > 0:
+		boss.take_damage(null, burn_damage, "fire", "neutral", burn_from_team)
+		boss.last_hit_source_id = -1
+		if not boss.alive:
+			_queue_boss_death_presentation(boss)
 	if boss.stun_timer > 0:
 		return
 	if not boss.advance_combat_clock():
@@ -603,13 +627,22 @@ func _step_active_boss() -> void:
 		return
 	boss.target_id = target.id
 	var distance := boss.position.distance_to(target.position)
-	if distance <= boss.attack_range:
+	var ai_target: UnitState = target
+	var ai_distance := distance
+	if boss.is_in_attack_range(distance):
 		boss.face_motion(target.position.x - boss.position.x, target.position.y - boss.position.y)
 		if boss.timer == 0:
 			_boss_basic_attack(target, enemies)
 	else:
-		boss.move_toward(target.position)
-	BossAI.tick(self, boss, enemies, target, distance)
+		if boss.boss_type in RANGED_BOSS_KITERS:
+			boss.move_ranged_kite(target.position)
+		else:
+			boss.move_toward(target.position)
+		# Source Boss.update only dispatches smart AI from its in-range branch.
+		# Null still preserves the true-boss heal checked before target handling.
+		ai_target = null
+		ai_distance = INF
+	BossAI.tick(self, boss, enemies, ai_target, ai_distance)
 
 
 func _try_spawn_pending_mini_boss() -> bool:
@@ -949,12 +982,11 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 
 
 func _tick_item_debuffs() -> void:
-	# Layer 5b-3: every unit decays its target-side item debuffs once per tick
-	# (source TowerDebuffMixin._tick_tower_debuffs).
+	# Layer 5b-3: every ordinary unit decays its target-side item debuffs.
+	# BossState ticks both item and tower debuffs inside _step_active_boss(),
+	# before its stun/entrance gates, so it must not be advanced a second time.
 	for unit in units:
 		unit.tick_item_debuffs()
-	if active_boss != null and active_boss.alive:
-		active_boss.tick_item_debuffs()
 
 
 func apply_slow(target_id: int, amount: float, duration: int) -> bool:
