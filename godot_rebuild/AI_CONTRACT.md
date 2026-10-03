@@ -753,7 +753,7 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-## Entity boss mini/true + AI boss hero (layers 8a–8h, paritas kondisi match)
+## Entity boss mini/true + AI boss hero (layers 8a–8i, paritas kondisi match)
 
 Port `bosses/base_boss.py` (±8 ribu baris) dimulai dengan memecahnya per lapisan.
 Lapisan **8a** (`d50c86c`) memindahkan **inti entity tanpa spawn**:
@@ -897,13 +897,15 @@ Lapisan **8h** (`b728cb6`, CI [37097737800](https://github.com/dharmawantoxi/mys
 
 Audit atribusi burn (`1aa2352`, CI [37098998782](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37098998782)): `_core.TowerDebuffMixin` meneruskan `burn_team` (atau tim entity sebagai fallback) ke `take_damage` setiap tick; path boss native sebelumnya membuangnya dan mengirim `neutral`, sementara kill ledger unit menebak tim lawan. Native kini meneruskan dan merekam tim burn boss, serta memakai `burn_team` valid untuk kredit kill unit (fallback lama dipertahankan jika tidak ada tim valid). Oracle sumber sudah memuat `damage_calls.from_team`; native replay sekarang membandingkan tim juga, termasuk BLUE bernilai `0` dan fallback boss merah. Tes integrasi menutup burn boss lethal dan unit same-team. Catatan: `Boss.take_damage` sumber menerima `from_team` tetapi tidak menggunakannya lagi; penyimpanan native menjaga handoff, sedangkan ledger kill unit memakai tim sumber secara eksplisit. CI Godot 4.7.2 hijau: **1.198.492 native checks**; `validate_project.py` **6.024 static checks**.
 
+Lapisan **8i** (`4c34f0c`, CI [37118164879](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37118164879)) memindahkan jarak kiting dan hysteresis source ke native untuk 12 boss ranged: ancient_apparition, morgath, razak, varkul, xerathis, nyzrak, syrentha, thalgryn, nyxarath, malzareth, akashari dan vorenmarr. `boss_core_source_oracle.py` kini mengekspor `min_distance`/`prefer_distance` ke `boss_stats.json`; `BossState.move_ranged_kite()` meniru mode `back`/`in`/`hold` dengan band 12 px, dan `_step_active_boss()` hanya memilih jalur ini untuk daftar ranged tersebut. Oracle AST `boss_motion_source_oracle.py` mengunci tepat empat trace per boss (48 total), termasuk masuk/keluar hysteresis untuk kedua arah; `boss_motion_checks.gd` mereplay semuanya dan memeriksa handoff pada tick match aktif. Boss lain tetap memakai chase native sebelumnya. CI Godot 4.7.2 hijau: **1.198.870 native checks**, `validate_project.py` **6.030 static checks**.
+
 Sistem produksi serta sisa perilaku scene/AI yang belum dipindahkan masih
 belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 terbaru hijau setelah audit atribusi burn
-([37098998782](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37098998782));
-**1.198.492 native checks**; `validate_project.py` **6.024 static checks**;
+CI Godot 4.7.2 terbaru hijau setelah port ranged-boss kiting layer 8i
+([37118164879](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37118164879));
+**1.198.870 native checks**; `validate_project.py` **6.030 static checks**;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ff99-mystic-arena` (PR
@@ -931,8 +933,10 @@ CI Godot 4.7.2 terbaru hijau setelah audit atribusi burn
 > memindahkan status/item-debuff clocks, burn tick dan setter anti-heal/heal-amp;
 > layer **8h** (`b728cb6`, code run 37097737800) menambah target handoff AI
 > boss hero sebelum lane assignment; audit burn-team (`1aa2352`, code run
-> 37098998782) meneruskan atribusi ke damage boss dan kill ledger unit.
-> CI terakhir: **1.198.492 native checks** dan **6.024 static checks**.
+> 37098998782) meneruskan atribusi ke damage boss dan kill ledger unit; layer
+> **8i** (`4c34f0c`, code run 37118164879) menambah kiting/hysteresis pada 12
+> boss ranged dengan tepat 4 oracle trace per boss.
+> CI terakhir: **1.198.870 native checks** dan **6.030 static checks**.
 > Berikutnya sistem produksi, lalu sisa perilaku scene/AI. Satu sub-layer per
 > commit; pipeline gdformat -> gdlint -> gdparse -> validate_project.py ->
 > commit -> push -> gh run watch.
