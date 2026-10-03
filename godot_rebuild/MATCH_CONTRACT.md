@@ -83,10 +83,22 @@ khusus boss hero; starter tidak berubah. Oracle AST read-only
 `boss_hero_ai_source_oracle.py` mengunci enam kasus; `boss_hero_ai_checks.gd`
 menguji Gornak, target/lane handoff, serta guard starter. Commit `b728cb6`
 lulus CI Godot 4.7.2 [run 37097737800](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37097737800): **1.198.481 native checks**, `validate_project.py` **6.021 static checks**.
+**Audit atribusi burn** (`1aa2352`) menutup selisih handoff: `_core.TowerDebuffMixin`
+memanggil `take_damage` dengan `burn_team` atau tim entity sebagai fallback;
+BossState kini meneruskan/merekam nilai itu, dan unit burn lethal memakai tim
+sumber valid untuk kill ledger alih-alih selalu menebak lawan. Jika tim tidak
+valid, fallback kill unit sebelumnya tetap dipakai. Fixture oracle yang sudah
+menyimpan `damage_calls.from_team` kini dibandingkan pada native; checks juga
+meliputi BLUE (`0`) vs fallback red, boss burn lethal dan burn same-team.
+Sumber Boss menerima `from_team` tapi tidak menggunakannya lagi; pelacakan boss
+menjaga batas pemanggilan, sedangkan ledger unit mengonsumsi tim secara eksplisit.
+Audit commit lulus CI Godot 4.7.2
+[run 37098998782](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37098998782):
+**1.198.492 native checks**, `validate_project.py` **6.024 static checks**.
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
-- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), dan target handoff AI boss hero sebelum lane assignment (8h) sudah dipindahkan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave, generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
+- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), dan audit atribusi `burn_team` (`1aa2352`) sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave, generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
 
 ## Bukti dan batas pengujian
 
