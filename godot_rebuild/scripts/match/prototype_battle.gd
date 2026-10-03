@@ -570,7 +570,10 @@ func _boss_basic_attack(target: UnitState, enemies: Array[UnitState]) -> void:
 	boss.basic_attack_seq += 1
 	boss.attack_facing = boss.facing
 	boss.attack_lock_timer = mini(15, maxi(6, int(boss.attack_cooldown / 3)))
-	_deliver_hit(-1, boss.team, target, boss.damage, "physical", boss.position)
+	# Boss.update passes source=self for its primary hit. Preserve the live
+	# attacker ID so hero blind/evasion, reactive damage and item hooks can
+	# resolve the boss; source cleave deliberately omits source.
+	_deliver_hit(boss.id, boss.team, target, boss.damage, "physical", boss.position)
 	var cleave_damage := int(boss.damage * boss.cleave_ratio)
 	if cleave_damage > 0:
 		for enemy in enemies:

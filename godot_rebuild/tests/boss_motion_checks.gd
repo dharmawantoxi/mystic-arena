@@ -7,6 +7,8 @@ const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const UnitState = preload("res://scripts/combat/unit_state.gd")
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const KAIZEN = preload("res://data/heroes/kaizen.tres")
+const THORNE = preload("res://data/heroes/thorne.tres")
 const FIXTURE := "res://tests/fixtures/boss_motion_source.json"
 
 
@@ -18,6 +20,7 @@ func run(check: Callable) -> void:
 			and fixture.has("forward")
 			and fixture.has("ranged_kiting")
 			and fixture.has("smart_ai_dispatch")
+			and fixture.has("basic_attack_source")
 		),
 		"boss motion fixture parses"
 	)
@@ -26,6 +29,8 @@ func run(check: Callable) -> void:
 	_motion(check, fixture)
 	_ranged_kiting(check, fixture)
 	_smart_ai_dispatch(check, fixture)
+	_basic_attack_source(check, fixture)
+	_basic_attack_reactive_reflect(check)
 	_ranged_kiting_match_step(check)
 	_ranged_ai_dispatch_match_step(check)
 	_attack_and_registry(check, fixture)
@@ -198,6 +203,142 @@ func _smart_ai_dispatch(check: Callable, fixture: Dictionary) -> void:
 			int(boss_counts[boss_type]) == 4,
 			"smart-AI range gate has exactly four cases for %s" % String(boss_type)
 		)
+
+
+func _basic_attack_source(check: Callable, fixture: Dictionary) -> void:
+	var cases: Array = fixture.get("basic_attack_source", [])
+	check.call(
+		cases.size() == 864, "basic boss attack has four source cases for all 216 boss types"
+	)
+	var boss_counts := {}
+	var world := _world()
+	world.units.clear()
+	for entry in cases:
+		var boss_type := String(entry.get("boss_type", ""))
+		boss_counts[boss_type] = int(boss_counts.get(boss_type, 0)) + 1
+		world.active_boss = null
+		world.units.clear()
+		world.recent_events.clear()
+		var boss: BossState = world._spawn_boss(boss_type)
+		check.call(boss != null, "basic attack source boss data loads: %s" % boss_type)
+		if boss == null:
+			continue
+		boss.team = world.RED
+		boss.position = Vector2(700.0, 300.0)
+		boss.previous_position = boss.position
+		boss.entrance_timer = 0
+		boss.timer = int(entry.get("initial_timer", 0))
+		boss.ability_timer = 999
+		boss.ability2_timer = 999
+		boss.q_timer = 999
+		boss.w_timer = 999
+		boss.e_timer = 999
+		boss.r_timer = 999
+		boss.active_skill = ""
+		boss.active_skill_timer = 0
+		var distance := float(entry.get("distance", 0.0))
+		var target := world.spawn_hero(KAIZEN, world.BLUE, boss.position + Vector2(distance, 0.0))
+		check.call(target != null, "basic attack source target spawns: %s" % boss_type)
+		if target == null:
+			continue
+		var expected: Dictionary = entry.get("expected", {})
+		var expected_cleave: Array = expected.get("cleave_calls", [])
+		var cleave: HeroState = null
+		if not expected_cleave.is_empty():
+			cleave = world.spawn_hero(KAIZEN, world.BLUE, boss.position + Vector2(20.0, 0.0))
+		var selected := world._boss_target(world._boss_enemies())
+		check.call(
+			(selected == target) == bool(expected.get("target_selected", false)),
+			(
+				"basic attack target acquisition matches source: %s/%s"
+				% [boss_type, String(entry.get("label", ""))]
+			)
+		)
+		world._step_active_boss()
+		var primary_hits: Array[Dictionary] = []
+		var cleave_hits: Array[Dictionary] = []
+		for event in world.recent_events:
+			if String(event.get("kind", "")) != "hit":
+				continue
+			if int(event.get("target_id", -1)) == target.id:
+				primary_hits.append(event)
+			elif cleave != null and int(event.get("target_id", -1)) == cleave.id:
+				cleave_hits.append(event)
+		var expected_primary: Array = expected.get("target_calls", [])
+		check.call(
+			primary_hits.size() == expected_primary.size(),
+			(
+				"basic attack hit edge matches source: %s/%s"
+				% [boss_type, String(entry.get("label", ""))]
+			)
+		)
+		if not primary_hits.is_empty():
+			check.call(
+				int(primary_hits[0].get("source_id", -1)) == boss.id,
+				"basic attack preserves boss source ID: %s" % boss_type
+			)
+		check.call(
+			cleave_hits.size() == expected_cleave.size(),
+			(
+				"basic attack cleave edge matches source: %s/%s"
+				% [boss_type, String(entry.get("label", ""))]
+			)
+		)
+		if not cleave_hits.is_empty():
+			check.call(
+				int(cleave_hits[0].get("source_id", -2)) == -1,
+				"source-omitted cleave stays unattributed: %s" % boss_type
+			)
+		check.call(
+			(
+				boss.basic_attack_seq == int(expected.get("basic_attack_seq", -1))
+				and boss.timer == int(expected.get("timer", -1))
+			),
+			(
+				"basic attack sequence and cooldown match source: %s/%s"
+				% [boss_type, String(entry.get("label", ""))]
+			)
+		)
+	check.call(boss_counts.size() == 216, "basic attack source oracle covers all 216 boss types")
+	for boss_type in boss_counts:
+		check.call(
+			int(boss_counts[boss_type]) == 4,
+			"basic attack source oracle has exactly four cases for %s" % String(boss_type)
+		)
+
+
+func _basic_attack_reactive_reflect(check: Callable) -> void:
+	var world := _world()
+	world.units.clear()
+	world.recent_events.clear()
+	var boss: BossState = world._spawn_boss("gornak")
+	check.call(boss != null, "boss attacker registers for reactive hit effects")
+	if boss == null:
+		return
+	boss.team = world.RED
+	boss.position = Vector2(700.0, 300.0)
+	boss.entrance_timer = 0
+	var thorne := world.spawn_hero(THORNE, world.BLUE, boss.position + Vector2(10.0, 0.0))
+	check.call(thorne != null, "Thorne defender spawns for boss hit interaction")
+	if thorne == null:
+		return
+	thorne.bristleback_timer = 120
+	var hero_hp := thorne.hp
+	var boss_hp := boss.hp
+	world._boss_basic_attack(thorne, [thorne])
+	check.call(thorne.hp < hero_hp, "boss basic hit damages the reactive defender")
+	check.call(boss.hp < boss_hp, "boss basic hit preserves attacker for Bristleback reflect")
+	var credited_primary := false
+	var reflected_to_boss := false
+	for event in world.recent_events:
+		if String(event.get("kind", "")) != "hit":
+			continue
+		if int(event.get("target_id", -1)) == thorne.id:
+			credited_primary = int(event.get("source_id", -1)) == boss.id
+		if int(event.get("target_id", -1)) == boss.id:
+			reflected_to_boss = true
+	check.call(credited_primary, "boss primary attack event names its live source ID")
+	check.call(reflected_to_boss, "Thorne reflect returns through active boss damage path")
 
 
 func _ranged_kiting_match_step(check: Callable) -> void:

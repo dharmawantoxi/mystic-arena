@@ -373,6 +373,7 @@ from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_
 from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
+    source_boss_types as boss_motion_source_types,
     source_fixture as boss_motion_fixture,
 )
 from boss_presentation_source_oracle import source_fixture as boss_presentation_fixture
@@ -401,6 +402,13 @@ if (ROOT / "tests/fixtures/boss_motion_source.json").is_file():
           and all(sum(case["boss_type"] == _boss for case in _smart_ai_dispatch_cases) == 4
                   for _boss in _smart_ai_dispatch_types),
           "Boss smart-AI dispatch requires four oracle cases for all 79 source recipes")
+    _basic_attack_cases = _boss_motion.get("basic_attack_source", [])
+    _basic_attack_types = {case["boss_type"] for case in _basic_attack_cases}
+    check(len(_basic_attack_cases) == 864
+          and _basic_attack_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _basic_attack_cases) == 4
+                  for _boss in _basic_attack_types),
+          "Boss basic attacks require four source-attribution cases for all 216 types")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -465,6 +473,11 @@ check("boss.is_in_attack_range(distance)" in boss_step
       and "ai_target = null" in boss_step
       and "BossAI.tick(self, boss, enemies, ai_target, ai_distance)" in boss_step,
       "Boss smart AI must dispatch only inside source attack range")
+boss_basic_attack = prototype_battle.split("func _boss_basic_attack(", 1)[1].split(
+    "func _step_active_boss()", 1)[0]
+check('_deliver_hit(boss.id, boss.team, target, boss.damage, "physical", boss.position)' in boss_basic_attack
+      and "_deliver_hit(-1, boss.team, enemy, cleave_damage" in boss_basic_attack,
+      "Boss primary hit must preserve source ID while source-omitted cleave remains uncredited")
 check("active_boss.tick_item_debuffs()" not in prototype_battle,
       "Boss item debuffs must not tick twice in one match step")
 boss_ai_text = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")

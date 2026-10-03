@@ -39,9 +39,11 @@ class Target:
         self.alive = True
         self.hp = hp
         self.hits = []
+        self.damage_calls = []
 
     def take_damage(self, damage, *args, **kwargs):
         self.hits.append(int(damage))
+        self.damage_calls.append({"damage": int(damage), "args": args, "kwargs": kwargs})
         self.hp -= int(damage)
         if self.hp <= 0:
             self.hp = 0
@@ -58,6 +60,14 @@ def smart_ai_boss_types():
     )
     assert len(names) == 79, "Boss smart-AI roster drifted"
     return tuple(names)
+
+
+def source_boss_types():
+    from bosses.boss_data import get_all_boss_types
+
+    names = tuple(sorted(get_all_boss_types()))
+    assert len(names) == 216, "Boss type roster drifted"
+    return names
 
 
 def source_class():
@@ -231,6 +241,80 @@ def smart_ai_dispatch_cases(cls):
     return cases
 
 
+def _damage_call_rows(target, boss):
+    rows = []
+    for call in target.damage_calls:
+        kwargs = call["kwargs"]
+        args = call["args"]
+        rows.append(
+            {
+                "damage": call["damage"],
+                "from_team": args[0] if args else None,
+                "school": kwargs.get("school"),
+                "source_is_boss": kwargs.get("source") is boss,
+                "source_supplied": "source" in kwargs,
+            }
+        )
+    return rows
+
+
+def basic_attack_source_cases(cls):
+    from bosses.boss_data import get_all_boss_types
+
+    all_bosses = get_all_boss_types()
+    smart_types = set(smart_ai_boss_types())
+    cases = []
+    for boss_type in source_boss_types():
+        stats = all_bosses[boss_type]
+        attack_range = float(stats.get("range", 40))
+        scenarios = (
+            ("ready_basic_hit", 10.0, 0, True),
+            ("cooldown_blocks_basic_hit", 10.0, 2, False),
+            ("outside_attack_range", attack_range + 1.0, 0, False),
+            ("strict_target_acquisition_edge", attack_range + 100.0, 0, False),
+        )
+        for label, distance, initial_timer, include_cleave in scenarios:
+            boss = base_boss(cls, 0.0, 0.0)
+            boss.boss_type = boss_type
+            boss.boss_class = str(stats.get("boss_class", "mini"))
+            boss.range = attack_range
+            boss.damage = int(stats.get("damage", 100))
+            boss.attack_cooldown = int(stats.get("attack_cooldown", 30))
+            boss.timer = initial_timer
+            boss.ability_timer = 999
+            boss.ability2_timer = 999
+            boss._move_forward = lambda: None
+            if boss_type in smart_types:
+                setattr(
+                    boss,
+                    "_smart_ai_" + boss_type,
+                    lambda _enemies, _target_distance: None,
+                )
+            target = Target(distance, 0.0)
+            enemies = [target]
+            cleave = Target(20.0, 0.0) if include_cleave else None
+            if cleave is not None:
+                enemies.append(cleave)
+            boss.update(enemies, [], [])
+            cases.append(
+                {
+                    "boss_type": boss_type,
+                    "label": label,
+                    "attack_range": attack_range,
+                    "distance": distance,
+                    "initial_timer": initial_timer,
+                    "expected": {
+                        "target_selected": boss.target is target,
+                        "basic_attack_seq": int(getattr(boss, "_basic_attack_seq", 0)),
+                        "timer": boss.timer,
+                        "target_calls": _damage_call_rows(target, boss),
+                        "cleave_calls": _damage_call_rows(cleave, boss) if cleave else [],
+                    },
+                }
+            )
+    return cases
+
+
 def source_fixture():
     cls = source_class()
 
@@ -279,6 +363,7 @@ def source_fixture():
         "chase": chase_row,
         "ranged_kiting": ranged_kiting_cases(cls),
         "smart_ai_dispatch": smart_ai_dispatch_cases(cls),
+        "basic_attack_source": basic_attack_source_cases(cls),
     }
 
 
@@ -289,7 +374,7 @@ def main():
         print("WROTE: %s" % FIXTURE)
     else:
         assert actual == json.loads(FIXTURE.read_text(encoding="utf-8")), "Boss motion source drift"
-        print("PASS: Boss motion — waypoint/facing/chase/cleave, 48 kiting and 316 smart-AI gate cases")
+        print("PASS: Boss motion — waypoint/facing/chase, 48 kiting, 316 smart-AI gates and 864 source-attributed basic hits")
 
 
 if __name__ == "__main__":
