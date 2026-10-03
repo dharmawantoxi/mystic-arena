@@ -753,7 +753,7 @@ Catatan runtime 5e-2: `_hero_enemy_list()` harus memakai `unit.get("max_hp")`
 (null-safe) karena `UnitState` belum punya `max_hp`; akses langsung
 `unit.max_hp` mematikan seluruh scene battle.
 
-## Entity boss mini/true + AI boss hero (layers 8a–8l, paritas kondisi match)
+## Entity boss mini/true + AI boss hero (layers 8a–8m, paritas kondisi match)
 
 Port `bosses/base_boss.py` (±8 ribu baris) dimulai dengan memecahnya per lapisan.
 Lapisan **8a** (`d50c86c`) memindahkan **inti entity tanpa spawn**:
@@ -905,13 +905,15 @@ Lapisan **8k** (`b2fd3ad`, CI [37122525909](https://github.com/dharmawantoxi/mys
 
 Lapisan **8l** (`7584830`, koreksi fixture `2d4255a`, CI [37125084934](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37125084934)) memindahkan atribusi kill boss dari `Game._process_boss_kill`. `Boss.take_damage` hanya menulis `_killed_by` pada pukulan yang benar-benar mematikan; native memakai batas yang sudah ada, `boss.last_hit_source_id` yang diisi `_deliver_hit()` pada setiap hit (hit utama bersource dari 8k, cleave/burn tanpa source dari 8g) - pukulan meleset tidak pernah mematikan, jadi blow terakhir selalu identik. Penyerang hanya dikreditkan kalau unit itu hero sungguhan tim lawan (`get_unit(...) as HeroState`, padanan `hasattr(hero_type) and hasattr(skills)`); `killer.kills += 1` terjadi sebelum cabang tim, lalu hanya hero biru menaikkan `miniboss_kill_count`/`trueboss_kill_count` (field baru di `prototype_battle.gd`). `_process_boss_result()` memanggil `_process_boss_kill()` sebelum reward, sama seperti urutan `Game.update`. Banner achievement `MINI/TRUE BOSS SLAYER` beserta map text dan SFX tetap di luar scope karena presentasi. Oracle AST read-only `boss_kill_credit_source_oracle.py` mengeksekusi cabang kematian `Boss.take_damage` asli plus method `_killer_is_hero`, `_process_boss_kill` dan `_unlock_achievement` asli terhadap stub game yang merekam payload achievement sumber: **864 kasus, empat skenario per 216 tipe boss** (last hit hero biru, tanpa source ala cleave/burn, penyerang non-hero, hero tim sendiri). `boss_kill_credit_checks.gd` mereplay keempat kasus itu (kills, kedua counter, plus kecocokan suffix id `miniboss_kill_N`/`trueboss_kill_N`), lalu menguji handoff `_deliver_hit` -> `step_tick`, jalur tanpa source/non-hero, killer yang mati sebelum death pass dan guard retirement agar tidak ada kredit ganda. Batas: jalur skill hero yang di Python tidak meneruskan `source=` tidak diaudit di sini - native tetap memakai id penyerang yang dicatat `_deliver_hit`. CI Godot 4.7.2 hijau: **1.210.074 native checks**, `validate_project.py` **6.154 static checks**.
 
+Lapisan **8m** (`8b6b1a4`, koreksi checks `76580db`, CI [37126929202](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37126929202)) memindahkan jalur targeting struktur yang melihat boss. Di sumber, `Tower.update` menambahkan setiap boss musuh hidup dalam `self.range` (scan `all_units` setelah hasil grid) dan `Castle.update` membangun `enemies` langsung dari `all_units` - dan `Game.update` menaruh `active_boss` sebagai elemen terakhir daftar itu. Karena `_find_target` memakai `dist <= best_dist`, boss yang jaraknya seri dengan kandidat lain menang. Registri native tidak pernah berisi boss (`active_boss` hanya ada di `_by_id`), jadi tower dan nexus native melewati boss yang lewat tepat di depannya. `PrototypeBattle._structure_target()` kini memanggil `super._structure_target()` lalu menambahkan boss hidup tim lawan dengan batas jarak inklusif dan aturan seri yang sama, sehingga jalur proyektil - damage - death boss yang sudah ada (8k/8l) menjadi hidup untuk serangan struktur. Oracle AST read-only `boss_structure_targeting_source_oracle.py` mengeksekusi `Tower._find_target` dan `Castle._find_target` asli di atas daftar musuh yang dibentuk persis seperti kedua call site itu, plus empat cek struktur source (scan boss `Tower.update`, `Castle.update` via `all_units`, `all_units` dan `spatial_heroes` di `Game.update`): **1728 kasus = 8 skenario x 216 tipe boss**, masing-masing dengan kolom `expected_without_boss` yang merekam hasil base native sebelum layer ini. `boss_structure_targets_checks.gd` mereplay keduanya, memastikan jarak native tower/nexus level 1 sama (180/150), lalu menguji tick hidup (tower + nexus mengakuisisi dan menembak boss sampai damage masuk dengan source id tower) serta guard tim sama dan boss mati. CI Godot 4.7.2 hijau: **1.218.942 native checks**, `validate_project.py` **6.186 static checks**.
+
 Sistem produksi serta sisa perilaku scene/AI yang belum dipindahkan masih
 belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 terbaru hijau setelah atribusi kill boss
-([37125084934](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37125084934));
-**1.210.074 native checks**; `validate_project.py` **6.154 static checks**;
+CI Godot 4.7.2 terbaru hijau setelah boss terlihat oleh targeting tower/nexus
+([37126929202](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37126929202));
+**1.218.942 native checks**; `validate_project.py` **6.186 static checks**;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ff99-mystic-arena` (PR
@@ -948,8 +950,11 @@ CI Godot 4.7.2 terbaru hijau setelah atribusi kill boss
 > sementara cleave tetap tanpa source; **8l** (`7584830` + `2d4255a`, code run
 > 37125084934) memindahkan `Game._process_boss_kill` (kredit kills hanya untuk
 > hero tim lawan, counter mini/true boss hanya untuk hero biru) dengan 864 kasus
-> oracle dan replay native penuh.
-> CI terakhir: **1.210.074 native checks** dan **6.154 static checks**.
+> oracle dan replay native penuh; **8m** (`8b6b1a4` + `76580db`, code run
+> 37126929202) memindahkan scan boss `Tower.update`/`all_units` `Castle.update`
+> ke `_structure_target()` dengan 1728 kasus oracle (8 skenario x 216 tipe boss)
+> plus tick hidup tower/nexus.
+> CI terakhir: **1.218.942 native checks** dan **6.186 static checks**.
 > Lanjutkan audit slice gameplay-only `Boss.update`; jangan masuk FX, balance,
 > atau hero. Satu sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
 > validate_project.py -> commit -> push -> gh run watch, lalu docs commit/push
