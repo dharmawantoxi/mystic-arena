@@ -378,6 +378,7 @@ from boss_phase_order_source_oracle import source_fixture as boss_phase_order_fi
 from boss_ice_aoe_source_oracle import source_fixture as boss_ice_aoe_fixture
 from boss_tower_damage_source_oracle import source_fixture as boss_tower_damage_fixture
 from boss_cannon_splash_source_oracle import source_fixture as boss_cannon_splash_fixture
+from boss_ice_main_slow_source_oracle import source_fixture as boss_ice_main_slow_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -409,6 +410,10 @@ check('const BossCannonSplashChecks = preload("res://tests/boss_cannon_splash_ch
       "Boss cannon splash suite must be preloaded")
 check("BossCannonSplashChecks.new().run(_check)" in ai_tests,
       "Boss cannon splash suite must run")
+check('const BossIceMainSlowChecks = preload("res://tests/boss_ice_main_slow_checks.gd")' in ai_tests,
+      "Boss ice main slow suite must be preloaded")
+check("BossIceMainSlowChecks.new().run(_check)" in ai_tests,
+      "Boss ice main slow suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -673,6 +678,51 @@ if (ROOT / "tests/fixtures/boss_cannon_splash_source.json").is_file():
     check(all(case["expected"]["hp"] <= case["expected_physical_hp_after"]
               for case in _splash_cases if case["expected"]["hp"] < case["hp_before"]),
           "School-free splash must land at least as hard as the declared-school path")
+check((ROOT / "tests/fixtures/boss_ice_main_slow_source.json").is_file(),
+      "Boss ice main slow requires source fixture")
+if (ROOT / "tests/fixtures/boss_ice_main_slow_source.json").is_file():
+    _boss_ice_main = boss_ice_main_slow_fixture()
+    check(_boss_ice_main == json.loads(
+        (ROOT / "tests/fixtures/boss_ice_main_slow_source.json").read_text(encoding="utf-8")),
+          "Boss ice main slow source drift")
+    _ice_main_source = _boss_ice_main.get("source", {})
+    check(all(bool(_ice_main_source.get(_flag, False)) for _flag in (
+        "main_slow_is_polymorphic", "main_atk_slow_is_polymorphic", "main_atk_slow_gated",
+        "boss_slow_requires_alive", "boss_slow_uses_tenacity", "boss_slow_cuts_duration",
+        "boss_atk_slow_uses_tenacity", "mixin_slow_has_no_tenacity")),
+          "Ice main-target slow must stay polymorphic and boss-only tenacity-gated")
+    _ice_main_cases = _boss_ice_main.get("cases", [])
+    _ice_main_types = {case["boss_type"] for case in _ice_main_cases}
+    _ice_main_labels = {"level_six_single", "level_five_single",
+                        "strong_then_weak_keeps_strongest", "weak_then_strong_refreshes"}
+    check(len(_ice_main_cases) == 864
+          and _ice_main_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _ice_main_cases) == 4
+                  for _boss in _ice_main_types),
+          "Boss ice main slow requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _ice_main_cases
+               if case["boss_type"] == _boss} == _ice_main_labels
+              for _boss in _ice_main_types),
+          "Boss ice main slow covers both ice levels and both store-rule directions")
+    check(all(case["expected"]["slow_amount"] < case["expected_mixin"]["slow_amount"]
+              and case["expected"]["slow_timer"] < case["expected_mixin"]["slow_timer"]
+              and case["expected"]["atk_slow_amount"] < case["expected_mixin"]["atk_slow_amount"]
+              for case in _ice_main_cases),
+          "Boss tenacity must cut both slow magnitude and duration below the mixin store")
+    check(all(case["expected"]["slow_amount"]
+              == min(0.35, max(row["slow"] for row in case["inputs"])
+                     * (1.0 - case["tenacity"]))
+              and case["expected"]["atk_slow_amount"]
+              == min(0.35, max(row["atk_slow"] for row in case["inputs"])
+                     * (1.0 - case["tenacity"]))
+              for case in _ice_main_cases),
+          "Boss main-target slow must equal the tenacity cut of the strongest ice level")
+    check(all(case["expected_mixin"]["slow_amount"]
+              == max(row["slow"] for row in case["inputs"])
+              and case["expected_mixin"]["atk_slow_amount"]
+              == max(row["atk_slow"] for row in case["inputs"])
+              for case in _ice_main_cases),
+          "Non-boss main targets must keep the raw mixin store")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -749,6 +799,20 @@ check("super._structure_target(structure)" in boss_structure_target
       and "distance <= structure.position.distance_to(target.position)" in boss_structure_target,
       "Towers and the nexus must append the living enemy boss like the source scans")
 siege_battle = (ROOT / "scripts/combat/siege_battle.gd").read_text(encoding="utf-8")
+ice_impact = siege_battle.split("func _ice_impact(", 1)[1].split("\nfunc ", 1)[0]
+check("_ice_main(shot, main)" in ice_impact and "_ice_aoe(shot, main)" in ice_impact,
+      "Ice impact must delegate both the main-target and the AOE arm")
+ice_main_base = siege_battle.split("func _ice_main(", 1)[1].split("\nfunc ", 1)[0]
+check("apply_slow(main.id, shot.slow_amount, shot.slow_duration)" in ice_main_base
+      and "apply_atk_slow(main.id, shot.atk_slow_amount, shot.slow_duration)" in ice_main_base,
+      "Base ice main target must keep the world-level mixin stores")
+boss_ice_main = prototype_battle.split("func _ice_main(", 1)[1].split("\nfunc ", 1)[0]
+check("main as BossState" in boss_ice_main
+      and "super._ice_main(shot, main)" in boss_ice_main
+      and "boss.apply_slow(shot.slow_amount, shot.slow_duration)" in boss_ice_main
+      and 'boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)'
+      in boss_ice_main,
+      "Boss main target must take the ice slow through its own tenacity methods")
 cannon_impact = siege_battle.split("func _cannon_impact(", 1)[1].split("\nfunc ", 1)[0]
 check("_cannon_splash(shot, main)" in cannon_impact,
       "Cannon impact must delegate its splash arm so the match layer can widen it")

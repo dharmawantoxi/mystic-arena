@@ -421,11 +421,20 @@ func _ice_impact(shot: Projectile, main: UnitState) -> void:
 	# Port of Bullet._on_hit "ice": slow + attack-slow the main target,
 	# then (level 6 only) the same slows, without damage, to enemy units
 	# within slow_aoe of the impact point.
+	_ice_main(shot, main)
+	_ice_aoe(shot, main)
+
+
+func _ice_main(shot: Projectile, main: UnitState) -> void:
+	# Port of the main-target arm of Bullet._on_hit "ice": the source calls
+	# `self.target.apply_slow(...)` and `self.target.apply_debuff('atk_slow',
+	# ...)` polymorphically. The base keeps the world-level stores, which mirror
+	# the TowerDebuffMixin rule; the match layer narrows it for the boss, whose
+	# own apply_slow/apply_debuff cut by tenacity (see Prototype._ice_main).
 	if main.alive:
 		apply_slow(main.id, shot.slow_amount, shot.slow_duration)
 		if shot.atk_slow_amount > 0:
 			apply_atk_slow(main.id, shot.atk_slow_amount, shot.slow_duration)
-	_ice_aoe(shot, main)
 
 
 func _ice_aoe(shot: Projectile, main: UnitState) -> void:

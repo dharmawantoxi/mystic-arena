@@ -644,6 +644,26 @@ func _cannon_splash(shot: Projectile, main: UnitState) -> void:
 		boss.apply_debuff("burn", shot.burn_dps, shot.burn_duration, shot.team)
 
 
+func _ice_main(shot: Projectile, main: UnitState) -> void:
+	# Layer 8s: port of the polymorphic main-target arm of the ice impact. The
+	# source calls `self.target.apply_slow(...)` /
+	# `self.target.apply_debuff('atk_slow', ...)`, so a boss primary target runs
+	# `Boss.apply_slow` / `Boss.apply_debuff`: tenacity (0.50) halves magnitude
+	# AND duration and caps the magnitude at 0.35 (ice L6: 0.65/150 becomes
+	# 0.325/75, atk 0.40 becomes 0.20). The world-level `apply_slow` stores the
+	# raw mixin values instead, so an ice tower that aimed at the boss used to
+	# freeze it twice as hard and twice as long as the source does.
+	# Non-boss targets keep the base path untouched; the boss methods carry the
+	# source `alive` guard themselves.
+	var boss := main as BossState
+	if boss == null:
+		super._ice_main(shot, main)
+		return
+	boss.apply_slow(shot.slow_amount, shot.slow_duration)
+	if shot.atk_slow_amount > 0.0:
+		boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)
+
+
 func _ice_aoe(shot: Projectile, main: UnitState) -> void:
 	# Layer 8p: port of the boss arm of the ice level-6 freeze AOE. The source
 	# loop runs over `all_units`, whose last element is the live boss
