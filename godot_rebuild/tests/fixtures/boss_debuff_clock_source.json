@@ -1,0 +1,281 @@
+{
+  "cases": [
+    {
+      "label": "mixed_status_expiry",
+      "input": {
+        "slow_amount": 0.3,
+        "slow_timer": 1,
+        "atk_slow_amount": 0.2,
+        "atk_slow_timer": 2,
+        "skill_down_amount": 0.4,
+        "skill_down_timer": 1,
+        "anti_heal_amount": 0.6,
+        "anti_heal_timer": 2,
+        "stun_timer": 1,
+        "armor_shred_amount": 0.5,
+        "armor_shred_timer": 1,
+        "dmg_amp_amount": 0.25,
+        "dmg_amp_timer": 2,
+        "heal_amp_amount": 0.3,
+        "heal_amp_timer": 1,
+        "blind_amount": 0.2,
+        "blind_timer": 3,
+        "burn_dps": 30.0,
+        "burn_timer": 2,
+        "burn_accum": 0.25,
+        "burn_tick_cd": 30,
+        "burn_team": "blue"
+      },
+      "ticks": 1,
+      "result": {
+        "state": {
+          "hp": 100000.0,
+          "slow_amount": 0.0,
+          "slow_timer": 0,
+          "atk_slow_amount": 0.2,
+          "atk_slow_timer": 1,
+          "skill_down_amount": 0.0,
+          "skill_down_timer": 0,
+          "anti_heal_amount": 0.6,
+          "anti_heal_timer": 1,
+          "stun_timer": 0,
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.25,
+          "dmg_amp_timer": 1,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "blind_amount": 0.2,
+          "blind_timer": 2,
+          "burn_dps": 30.0,
+          "burn_timer": 1,
+          "burn_accum": 0.75,
+          "burn_tick_cd": 29,
+          "burn_team": "blue"
+        },
+        "damage_calls": []
+      }
+    },
+    {
+      "label": "first_burn_tick",
+      "input": {
+        "burn_dps": 120.0,
+        "burn_timer": 35,
+        "burn_accum": 0.0,
+        "burn_tick_cd": 1,
+        "burn_team": "blue"
+      },
+      "ticks": 1,
+      "result": {
+        "state": {
+          "hp": 100000.0,
+          "slow_amount": 0.0,
+          "slow_timer": 0,
+          "atk_slow_amount": 0.0,
+          "atk_slow_timer": 0,
+          "skill_down_amount": 0.0,
+          "skill_down_timer": 0,
+          "anti_heal_amount": 0.0,
+          "anti_heal_timer": 0,
+          "stun_timer": 0,
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "blind_amount": 0.0,
+          "blind_timer": 0,
+          "burn_dps": 120.0,
+          "burn_timer": 34,
+          "burn_accum": 0.0,
+          "burn_tick_cd": 30,
+          "burn_team": "blue"
+        },
+        "damage_calls": [
+          {
+            "damage": 2,
+            "from_team": "blue",
+            "damage_type": "fire"
+          }
+        ]
+      }
+    },
+    {
+      "label": "repeated_burn_ticks",
+      "input": {
+        "burn_dps": 90.0,
+        "burn_timer": 65,
+        "burn_accum": 0.0,
+        "burn_tick_cd": 2,
+        "burn_team": null
+      },
+      "ticks": 32,
+      "result": {
+        "state": {
+          "hp": 100000.0,
+          "slow_amount": 0.0,
+          "slow_timer": 0,
+          "atk_slow_amount": 0.0,
+          "atk_slow_timer": 0,
+          "skill_down_amount": 0.0,
+          "skill_down_timer": 0,
+          "anti_heal_amount": 0.0,
+          "anti_heal_timer": 0,
+          "stun_timer": 0,
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "blind_amount": 0.0,
+          "blind_timer": 0,
+          "burn_dps": 90.0,
+          "burn_timer": 33,
+          "burn_accum": 0.0,
+          "burn_tick_cd": 30,
+          "burn_team": null
+        },
+        "damage_calls": [
+          {
+            "damage": 3,
+            "from_team": "red",
+            "damage_type": "fire"
+          },
+          {
+            "damage": 45,
+            "from_team": "red",
+            "damage_type": "fire"
+          }
+        ]
+      }
+    },
+    {
+      "label": "burn_expiry_boundary",
+      "input": {
+        "burn_dps": 120.0,
+        "burn_timer": 1,
+        "burn_accum": 29.5,
+        "burn_tick_cd": 1,
+        "burn_team": null
+      },
+      "ticks": 1,
+      "result": {
+        "state": {
+          "hp": 100000.0,
+          "slow_amount": 0.0,
+          "slow_timer": 0,
+          "atk_slow_amount": 0.0,
+          "atk_slow_timer": 0,
+          "skill_down_amount": 0.0,
+          "skill_down_timer": 0,
+          "anti_heal_amount": 0.0,
+          "anti_heal_timer": 0,
+          "stun_timer": 0,
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "blind_amount": 0.0,
+          "blind_timer": 0,
+          "burn_dps": 0.0,
+          "burn_timer": 0,
+          "burn_accum": 0.0,
+          "burn_tick_cd": 30,
+          "burn_team": null
+        },
+        "damage_calls": [
+          {
+            "damage": 31,
+            "from_team": "red",
+            "damage_type": "fire"
+          }
+        ]
+      }
+    },
+    {
+      "label": "burn_accumulator_without_tick",
+      "input": {
+        "burn_dps": 30.0,
+        "burn_timer": 4,
+        "burn_accum": 0.5,
+        "burn_tick_cd": 7,
+        "burn_team": "blue"
+      },
+      "ticks": 1,
+      "result": {
+        "state": {
+          "hp": 100000.0,
+          "slow_amount": 0.0,
+          "slow_timer": 0,
+          "atk_slow_amount": 0.0,
+          "atk_slow_timer": 0,
+          "skill_down_amount": 0.0,
+          "skill_down_timer": 0,
+          "anti_heal_amount": 0.0,
+          "anti_heal_timer": 0,
+          "stun_timer": 0,
+          "armor_shred_amount": 0.0,
+          "armor_shred_timer": 0,
+          "dmg_amp_amount": 0.0,
+          "dmg_amp_timer": 0,
+          "heal_amp_amount": 0.0,
+          "heal_amp_timer": 0,
+          "blind_amount": 0.0,
+          "blind_timer": 0,
+          "burn_dps": 30.0,
+          "burn_timer": 3,
+          "burn_accum": 1.0,
+          "burn_tick_cd": 6,
+          "burn_team": "blue"
+        },
+        "damage_calls": []
+      }
+    }
+  ],
+  "hp_writes": [
+    {
+      "label": "anti_heal_then_heal_amp",
+      "previous": 400.0,
+      "requested": 700.0,
+      "anti_heal": 0.4,
+      "anti_heal_timer": 10,
+      "heal_amp": 0.25,
+      "heal_amp_timer": 10,
+      "result": 625.0
+    },
+    {
+      "label": "anti_heal_only",
+      "previous": 400.0,
+      "requested": 800.0,
+      "anti_heal": 0.5,
+      "anti_heal_timer": 10,
+      "heal_amp": 0.0,
+      "heal_amp_timer": 0,
+      "result": 600.0
+    },
+    {
+      "label": "heal_amp_only",
+      "previous": 400.0,
+      "requested": 600.0,
+      "anti_heal": 0.0,
+      "anti_heal_timer": 0,
+      "heal_amp": 0.5,
+      "heal_amp_timer": 10,
+      "result": 700.0
+    },
+    {
+      "label": "downward_hp_write",
+      "previous": 500.0,
+      "requested": 300.0,
+      "anti_heal": 0.5,
+      "anti_heal_timer": 10,
+      "heal_amp": 0.5,
+      "heal_amp_timer": 10,
+      "result": 300.0
+    }
+  ]
+}

@@ -369,10 +369,12 @@ if (ROOT / "data/levels/level_1.json").is_file() and (ROOT / "tests/fixtures/mat
 from boss_core_source_oracle import source_fixture as boss_core_fixture
 from boss_ability_source_oracle import source_fixture as boss_ability_fixture
 from boss_clock_source_oracle import source_fixture as boss_clock_fixture
+from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_fixture
 from boss_presentation_source_oracle import source_fixture as boss_presentation_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
 check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite must run")
 check("BossClockChecks.new().run(_check)" in ai_tests, "Boss clock suite must run")
+check("BossDebuffClockChecks.new().run(_check)" in ai_tests, "Boss debuff clock suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
@@ -384,6 +386,12 @@ if (ROOT / "tests/fixtures/boss_clock_source.json").is_file():
     check(boss_clock_fixture() == json.loads(
         (ROOT / "tests/fixtures/boss_clock_source.json").read_text(encoding="utf-8")),
         "Boss clock source behavior drift")
+check((ROOT / "tests/fixtures/boss_debuff_clock_source.json").is_file(),
+      "Boss debuff clock requires source fixture")
+if (ROOT / "tests/fixtures/boss_debuff_clock_source.json").is_file():
+    check(boss_debuff_clock_fixture() == json.loads(
+        (ROOT / "tests/fixtures/boss_debuff_clock_source.json").read_text(encoding="utf-8")),
+        "Boss debuff clock source behavior drift")
 check((ROOT / "tests/fixtures/boss_ability_source.json").is_file(), "Boss abilities require source fixture")
 if (ROOT / "tests/fixtures/boss_ability_source.json").is_file():
     check(boss_ability_fixture() == json.loads(
@@ -403,8 +411,9 @@ if (ROOT / "tests/fixtures/boss_core_source.json").is_file():
           "Update the boss core suite when the source boss tables change")
 boss_state = (ROOT / "scripts/match/boss_state.gd").read_text(encoding="utf-8")
 for _method in ("apply_scaling", "apply_slow", "apply_debuff", "apply_stun",
-                "clear_tower_debuffs", "take_damage", "eff_speed", "eff_ability_damage",
-                "blind_live", "true_strike_of", "advance_animation_clock",
+                "clear_tower_debuffs", "set_hp_value", "tick_tower_debuffs",
+                "take_damage", "eff_speed", "eff_ability_damage", "blind_live",
+                "true_strike_of", "advance_animation_clock",
                 "entrance_presentation_state", "advance_combat_clock",
                 "death_presentation"):
     check("func %s(" % _method in boss_state, "Boss entity core must port %s" % _method)
@@ -412,6 +421,17 @@ prototype_battle = (ROOT / "scripts/match/prototype_battle.gd").read_text(encodi
 check("advance_animation_clock()" in prototype_battle
       and "advance_combat_clock()" in prototype_battle,
       "Boss match step must consume entrance and enrage clocks")
+boss_step = prototype_battle.split("func _step_active_boss()", 1)[1].split(
+    "func _try_spawn_pending_mini_boss()", 1)[0]
+check(boss_step.index("tick_tower_debuffs()") < boss_step.index("if boss.stun_timer > 0"),
+      "Boss debuffs must tick before the stun and entrance gates")
+check("active_boss.tick_item_debuffs()" not in prototype_battle,
+      "Boss item debuffs must not tick twice in one match step")
+boss_ai_text = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+check(not re.search(r"^\s*boss\.hp\s*=", boss_ai_text, re.M),
+      "Boss AI hp increases must pass through the anti-heal setter")
+check(boss_ai_text.count("boss.set_hp_value(") == 6,
+      "All source Boss AI healing writes must use the anti-heal setter")
 check("boss_death_presentations" in prototype_battle
       and "_queue_boss_death_presentation" in prototype_battle,
       "Boss death presentation must survive registry retirement")

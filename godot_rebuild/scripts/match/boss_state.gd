@@ -1,6 +1,6 @@
 # gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
-## Layer 8a/8c/8e/8f: Boss entity core, lane combat, clocks and presentation.
+## Layer 8a/8c/8e/8f/8g: Boss entity core, lane combat, status clocks and presentation.
 ##
 ## Ports the scalar identity/stats of `Boss.__init__`, `apply_scaling`, the
 ## tenacity slow/atk_slow rule, the `TowerDebuffMixin` stun cut and the numeric
@@ -15,6 +15,7 @@ extends "res://scripts/combat/unit_state.gd"
 const MinionDefinition = preload("res://scripts/data/minion_definition.gd")
 const Damage = preload("res://scripts/combat/damage_rules.gd")
 const LaneLayout = preload("res://scripts/data/lane_layout.gd")
+const DEBUFF_FPS := 60.0
 
 var boss_type := ""
 var display_name := ""
@@ -535,6 +536,58 @@ func clear_tower_debuffs() -> void:
 	heal_amp_timer = 0
 	blind_amount = 0.0
 	blind_timer = 0
+
+
+func set_hp_value(requested_hp: float) -> void:
+	# Port of TowerDebuffMixin.hp.setter: only upward writes are modified;
+	# anti-heal is applied before heal amplification, exactly as in Python.
+	var previous_hp := hp
+	var next_hp := requested_hp
+	if next_hp > previous_hp and anti_heal_timer > 0:
+		next_hp = previous_hp + (next_hp - previous_hp) * (1.0 - anti_heal_amount)
+	if next_hp > previous_hp and heal_amp_timer > 0:
+		next_hp = previous_hp + (next_hp - previous_hp) * (1.0 + heal_amp_amount)
+	hp = next_hp
+
+
+func tick_tower_debuffs() -> int:
+	# Port of TowerDebuffMixin._tick_tower_debuffs. This runs before the stun
+	# gate in Boss.update; the caller applies any returned fire tick through
+	# the boss damage path after all status clocks have advanced.
+	if slow_timer > 0:
+		slow_timer -= 1
+		if slow_timer <= 0:
+			slow_amount = 0.0
+	if atk_slow_timer > 0:
+		atk_slow_timer -= 1
+		if atk_slow_timer <= 0:
+			atk_slow_amount = 0.0
+	if skill_down_timer > 0:
+		skill_down_timer -= 1
+		if skill_down_timer <= 0:
+			skill_down_amount = 0.0
+	if anti_heal_timer > 0:
+		anti_heal_timer -= 1
+		if anti_heal_timer <= 0:
+			anti_heal_amount = 0.0
+	if stun_timer > 0:
+		stun_timer -= 1
+	tick_item_debuffs()
+	var burn_damage := 0
+	if burn_timer > 0:
+		burn_timer -= 1
+		burn_accum += burn_dps / DEBUFF_FPS
+		burn_tick_cd -= 1
+		if burn_tick_cd <= 0:
+			burn_tick_cd = int(rules.get("burn_tick", 30))
+			var accumulated_damage := int(burn_accum)
+			if accumulated_damage > 0 and alive:
+				burn_accum -= float(accumulated_damage)
+				burn_damage = accumulated_damage
+		if burn_timer <= 0:
+			burn_dps = 0.0
+			burn_accum = 0.0
+	return burn_damage
 
 
 func blind_roll() -> float:

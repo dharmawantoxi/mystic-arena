@@ -581,6 +581,12 @@ func _step_active_boss() -> void:
 	var boss := active_boss
 	boss.advance_animation_clock()
 	boss.begin_motion_tick()
+	var burn_damage := boss.tick_tower_debuffs()
+	if burn_damage > 0:
+		boss.take_damage(null, burn_damage, "fire", "neutral")
+		boss.last_hit_source_id = -1
+		if not boss.alive:
+			_queue_boss_death_presentation(boss)
 	if boss.stun_timer > 0:
 		return
 	if not boss.advance_combat_clock():
@@ -949,12 +955,11 @@ func hero_aggro_target(hero: HeroState) -> UnitState:
 
 
 func _tick_item_debuffs() -> void:
-	# Layer 5b-3: every unit decays its target-side item debuffs once per tick
-	# (source TowerDebuffMixin._tick_tower_debuffs).
+	# Layer 5b-3: every ordinary unit decays its target-side item debuffs.
+	# BossState ticks both item and tower debuffs inside _step_active_boss(),
+	# before its stun/entrance gates, so it must not be advanced a second time.
 	for unit in units:
 		unit.tick_item_debuffs()
-	if active_boss != null and active_boss.alive:
-		active_boss.tick_item_debuffs()
 
 
 func apply_slow(target_id: int, amount: float, duration: int) -> bool:

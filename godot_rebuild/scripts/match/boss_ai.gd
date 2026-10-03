@@ -268,7 +268,7 @@ static func _heal_ability_if_ready(boss: BossState) -> void:
 	):
 		boss.ability2_timer = boss.ability2_cooldown
 		var heal_amount := int(boss.max_hp * boss.ability2_heal_pct)
-		boss.hp = minf(float(boss.max_hp), boss.hp + heal_amount)
+		boss.set_hp_value(minf(float(boss.max_hp), boss.hp + heal_amount))
 
 
 static func _generic(world, boss: BossState, enemies: Array[UnitState]) -> void:
@@ -451,7 +451,7 @@ static func _alchemist(
 				if was_alive and not enemy.alive:
 					kills_count += 1
 		if kills_count > 0:
-			boss.hp = minf(float(boss.max_hp), boss.hp + kills_count * 100.0)
+			boss.set_hp_value(minf(float(boss.max_hp), boss.hp + kills_count * 100.0))
 		return
 	if hp_ratio < 0.6 and not boss.rage_active and boss.e_timer == 0:
 		boss.e_timer = boss.skill_e_cooldown
@@ -650,7 +650,7 @@ static func _nyxarath(
 		boss.necro_buff_timer = 480
 		boss.damage = int(float(boss.base_damage) * 1.4)
 		var heal_amount := int(float(boss.max_hp) * 0.06) + kills_count * 30
-		boss.hp = minf(float(boss.max_hp), boss.hp + heal_amount)
+		boss.set_hp_value(minf(float(boss.max_hp), boss.hp + heal_amount))
 		return
 	if distance < 280.0 and boss.q_timer == 0:
 		boss.q_timer = boss.skill_q_cooldown
@@ -3107,7 +3107,7 @@ static func _vaerith(
 			_hit(world, boss, closest, _skill_damage(boss, boss.skill_e_damage))
 			_attack_lock(closest, 60)
 			var heal_amount := int(float(_skill_damage(boss, boss.skill_e_damage)) * 0.6)
-			boss.hp = minf(float(boss.max_hp), boss.hp + float(heal_amount))
+			boss.set_hp_value(minf(float(boss.max_hp), boss.hp + float(heal_amount)))
 		return
 	if nearby >= 2 and boss.w_timer == 0:
 		boss.w_timer = boss.skill_w_cooldown
@@ -3141,7 +3141,7 @@ static func _xirthalis(
 		if mark <= 0.0:
 			mark = float(boss.max_hp) * 0.5
 		if mark > boss.hp:
-			boss.hp = minf(float(boss.max_hp), mark)
+			boss.set_hp_value(minf(float(boss.max_hp), mark))
 		for enemy in enemies:
 			if boss.position.distance_to(enemy.position) <= 160.0:
 				_attack_lock(enemy, 90)
@@ -3689,7 +3689,7 @@ static func _max_hp(target: UnitState) -> float:
 
 
 static func _heal(boss: BossState, fraction: float) -> void:
-	boss.hp = minf(float(boss.max_hp), boss.hp + int(float(boss.max_hp) * fraction))
+	boss.set_hp_value(minf(float(boss.max_hp), boss.hp + int(float(boss.max_hp) * fraction)))
 
 
 static func _hit(world, boss: BossState, target: UnitState, raw_damage: int) -> void:
