@@ -383,6 +383,7 @@ from boss_tower_volley_source_oracle import source_fixture as boss_tower_volley_
 from boss_ability_source_attribution_oracle import (
     source_fixture as boss_ability_source_attribution_fixture,
 )
+from boss_item_stun_source_oracle import source_fixture as boss_item_stun_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -431,6 +432,10 @@ check(
 )
 check("BossAbilitySourceAttributionChecks.new().run(_check)" in ai_tests,
       "Boss ability source attribution suite must run")
+check('const BossItemStunChecks = preload("res://tests/boss_item_stun_checks.gd")' in ai_tests,
+      "Boss item stun suite must be preloaded")
+check("BossItemStunChecks.new().run(_check)" in ai_tests,
+      "Boss item stun suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -848,6 +853,60 @@ if (ROOT / "tests/fixtures/boss_ability_source_attribution.json").is_file():
               for case in _attr_cases
               if case["scenario"] == "lethal_ability_preserves_uncredited_killed_by"),
           "Lethal boss abilities must not overwrite hero killed_by with the boss")
+check((ROOT / "tests/fixtures/boss_item_stun_source.json").is_file(),
+      "Boss item stun requires source fixture")
+if (ROOT / "tests/fixtures/boss_item_stun_source.json").is_file():
+    _boss_item_stun = boss_item_stun_fixture()
+    check(_boss_item_stun == json.loads(
+        (ROOT / "tests/fixtures/boss_item_stun_source.json").read_text(encoding="utf-8")),
+        "Boss item stun source behavior drift")
+    _stun_source = _boss_item_stun.get("source", {})
+    check(all(bool(_stun_source.get(_flag)) for _flag in (
+        "apply_stun_to_uses_getattr_apply_stun",
+        "boss_apply_stun_scales_by_0_45",
+        "boss_apply_stun_uses_max_timer",
+        "boss_update_ticks_debuffs_before_stun_gate",
+        "boss_update_stun_gate_returns_before_combat")),
+          "Boss item stun shape must delegate _apply_stun_to to boss.apply_stun and gate Boss.update")
+    check(_stun_source.get("sundering_cudgel_stun_ticks") == 15
+          and _stun_source.get("sundering_cudgel_cooldown") == 120
+          and _stun_source.get("abyss_breaker_bash_stun_ticks") == 54
+          and _stun_source.get("abyss_breaker_bash_cooldown") == 140
+          and _stun_source.get("abyss_breaker_overwhelm_stun_ticks") == 72
+          and _stun_source.get("abyss_breaker_overwhelm_cooldown") == 1500
+          and _stun_source.get("fenrir_chain_root_duration") == 72
+          and _stun_source.get("fenrir_chain_cooldown") == 1080
+          and _stun_source.get("hex_idol_stun_ticks") == 150
+          and _stun_source.get("hex_idol_cooldown") == 1800,
+          "Boss item stun metadata must match source item stun durations and cooldowns")
+    _stun_cases = _boss_item_stun.get("cases", [])
+    _stun_types = {case["boss_type"] for case in _stun_cases}
+    _stun_scenarios = {
+        "sundering_cudgel_pierce_bash",
+        "abyss_breaker_bash",
+        "abyss_breaker_overwhelm",
+        "hex_idol_hexcraft",
+    }
+    check(len(_stun_cases) == 864
+          and _stun_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _stun_cases) == 4
+                  for _boss in _stun_types),
+          "Boss item stun requires four source cases for all 216 boss types")
+    check(all({case["scenario"] for case in _stun_cases
+               if case["boss_type"] == _boss} == _stun_scenarios
+              for _boss in _stun_types),
+          "Boss item stun covers Sundering Cudgel, Abyss Breaker Bash/Overwhelm and Hex Idol")
+    check(all(case["expected"] != case["expected_without_boss_stun"]
+              and case["expected"]["stun_on_apply"] == int(case["expected"]["raw_stun"] * 0.45)
+              and case["expected"]["stun_after_step"] == case["expected"]["stun_on_apply"] - 1
+              and not case["expected"]["boss_basic_attack_fired"]
+              and case["expected_without_boss_stun"]["boss_basic_attack_fired"]
+              for case in _stun_cases),
+          "Every boss item stun case must apply 45% stun duration and gate Boss.update")
+    check(all(case["expected"]["boss_ability2_timer_after"] == 0
+              and case["expected_without_boss_stun"]["boss_ability2_timer_after"] > 0
+              for case in _stun_cases if case["boss_class"] == "true"),
+          "Stunned true bosses must not cast their low-HP heal until stun_timer reaches zero")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -1045,6 +1104,12 @@ boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
 check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit
       and "world._deliver_hit(boss.id," not in boss_ai_hit,
       "Boss AI ability/skill hits must omit source attribution like source Boss._use_ability/_smart_ai_*")
+battle_item_effects_text = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
+battle_item_apply_stun = battle_item_effects_text.split("func apply_stun(", 1)[1].split(
+    "\nfunc apply_silence(", 1)[0]
+check('elif t != null and t.has_method("apply_stun"):' in battle_item_apply_stun
+      and "t.apply_stun(duration)" in battle_item_apply_stun,
+      "BattleItemEffects.apply_stun must delegate to BossState.apply_stun like source _apply_stun_to")
 boss_kill_credit = prototype_battle.split("func _process_boss_kill(", 1)[1].split(
     "\nfunc _process_boss_result()", 1)[0]
 check("get_unit(boss.last_hit_source_id) as HeroState" in boss_kill_credit

@@ -67,6 +67,7 @@ const BossTowerVolleyChecks = preload("res://tests/boss_tower_volley_checks.gd")
 const BossAbilitySourceAttributionChecks = preload(
 	"res://tests/boss_ability_source_attribution_checks.gd"
 )
+const BossItemStunChecks = preload("res://tests/boss_item_stun_checks.gd")
 const BossHeroAIChecks = preload("res://tests/boss_hero_ai_checks.gd")
 const BossPresentationChecks = preload("res://tests/boss_presentation_checks.gd")
 const SiegeChecks = preload("res://tests/siege_checks.gd")
@@ -155,6 +156,7 @@ func _run() -> void:
 	BossIceMainSlowChecks.new().run(_check)
 	BossTowerVolleyChecks.new().run(_check)
 	BossAbilitySourceAttributionChecks.new().run(_check)
+	BossItemStunChecks.new().run(_check)
 	BossHeroAIChecks.new().run(_check)
 	BossPresentationChecks.new().run(_check)
 	PrototypeChecks.new().run(_check)
