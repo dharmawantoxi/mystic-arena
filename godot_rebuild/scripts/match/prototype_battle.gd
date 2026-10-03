@@ -309,6 +309,10 @@ func step_tick() -> void:
 	for spawn in batch.spawns:
 		_spawn_match_minion(MINIONS[spawn.kind], spawn.team, spawn.lane)
 	super.step_tick()
+	# Source Game.update runs living Hero.update calls before Boss.update. Keep
+	# the boss's target/attack phase after hero hits and movement from this tick.
+	if is_running():
+		_step_hero_act()
 	# The Python true-boss check runs before the death-reward pass. Keep tower
 	# deaths in a pending counter so a sixth tower triggers on the next tick,
 	# exactly after the source reward loop has committed the event.
@@ -322,7 +326,7 @@ func step_tick() -> void:
 	if is_running():
 		_tick_auras_and_items()
 		_tick_item_debuffs()
-		_step_hero_act()
+		_step_hero_respawns()
 		# Source Game.update runs the AI right after the entity loop.
 		_step_ai_heroes()
 		_step_ai()
@@ -913,13 +917,20 @@ func _set_hero_follow(hero_id: int, target_id: int) -> bool:
 
 
 func _step_hero_act() -> void:
-	# Port of Hero.update states 1–6 plus Game respawn. No items.
+	# Port living Hero.update states 1–6. Source runs this before Boss.update.
 	var roster: Array = []
 	for unit in units:
-		if unit.is_hero:
+		if unit.is_hero and unit.alive:
 			roster.append(unit)
 	for entry in roster:
 		_step_one_hero(entry as HeroState)
+
+
+func _step_hero_respawns() -> void:
+	# Source processes respawn timers after Boss.update and its reward pass.
+	for unit in units:
+		if unit.is_hero and not unit.alive:
+			_step_hero_respawn(unit as HeroState)
 
 
 func _step_one_hero(hero: HeroState) -> void:

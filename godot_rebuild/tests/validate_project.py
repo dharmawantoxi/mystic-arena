@@ -374,6 +374,7 @@ from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
 from boss_kill_credit_source_oracle import source_fixture as boss_kill_credit_fixture
 from boss_structure_targeting_source_oracle import source_fixture as boss_structure_targeting_fixture
 from boss_minion_targeting_source_oracle import source_fixture as boss_minion_targeting_fixture
+from boss_phase_order_source_oracle import source_fixture as boss_phase_order_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -497,6 +498,35 @@ if (ROOT / "tests/fixtures/boss_minion_targeting_source.json").is_file():
               and case["boss_distance"] <= case["grid_radius"]
               for case in _minion_targeting_cases),
           "Every recorded case keeps the boss inside the source grid radius")
+check((ROOT / "tests/fixtures/boss_phase_order_source.json").is_file(),
+      "Boss phase ordering requires source fixture")
+if (ROOT / "tests/fixtures/boss_phase_order_source.json").is_file():
+    _boss_phase_order = boss_phase_order_fixture()
+    _phase_order_path = ROOT / "tests/fixtures/boss_phase_order_source.json"
+    check(_boss_phase_order == json.loads(_phase_order_path.read_text(encoding="utf-8")),
+          "Boss hero-before-boss source phase order drift")
+    _phase_order_source = _boss_phase_order.get("source", {})
+    check(_phase_order_source.get("game_update_order") == ["heroes", "boss"]
+          and _phase_order_source.get("speed_multiplier_update_order") == ["heroes", "boss"]
+          and bool(_phase_order_source.get("boss_update_skips_dead", False)),
+          "Both source Game paths update heroes before a live boss")
+    _phase_order_cases = _boss_phase_order.get("cases", [])
+    _phase_order_types = {case["boss_type"] for case in _phase_order_cases}
+    _phase_order_labels = {
+        "hero_lethal_hit_precedes_boss",
+        "hero_wound_precedes_boss_attack",
+        "hero_enters_attack_range_before_boss",
+        "hero_exits_target_radius_before_boss",
+    }
+    check(len(_phase_order_cases) == 864
+          and _phase_order_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _phase_order_cases) == 4
+                  for _boss in _phase_order_types),
+          "Boss phase order requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _phase_order_cases
+               if case["boss_type"] == _boss} == _phase_order_labels
+              for _boss in _phase_order_types),
+          "Boss phase order covers lethal/nonlethal hits and both movement boundaries")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -584,6 +614,26 @@ check(minion_battle.count("_is_minion_candidate(") == 4
       and 'candidate.get("boss_type") == null' in minion_battle
       and "not (pair[0] is StructureState)" not in minion_battle,
       "Source Minion groups must exclude the boss from the lane/lowest-hp minion picks")
+boss_phase_step = prototype_battle.split("func step_tick()", 1)[1].split("\nfunc ", 1)[0]
+_phase_positions = [
+    boss_phase_step.index("super.step_tick()"),
+    boss_phase_step.index("_step_hero_act()"),
+    boss_phase_step.index("_spawn_true_boss_if_ready()"),
+    boss_phase_step.index("_step_active_boss()"),
+    boss_phase_step.index("_process_boss_result()"),
+    boss_phase_step.index("_step_hero_respawns()"),
+]
+check(_phase_positions == sorted(_phase_positions),
+      "Match tick must update live heroes, spawn/check boss, then tick boss before respawns")
+boss_hero_phase = prototype_battle.split("func _step_hero_act()", 1)[1].split("\nfunc ", 1)[0]
+check("unit.is_hero and unit.alive" in boss_hero_phase
+      and "_step_hero_respawn(" not in boss_hero_phase,
+      "Only living heroes act in the source pre-boss entity phase")
+boss_respawn_phase = prototype_battle.split("func _step_hero_respawns()", 1)[1].split(
+    "\nfunc ", 1)[0]
+check("unit.is_hero and not unit.alive" in boss_respawn_phase
+      and "_step_hero_respawn(" in boss_respawn_phase,
+      "Dead hero respawn timers stay in the source post-boss phase")
 check("active_boss.tick_item_debuffs()" not in prototype_battle,
       "Boss item debuffs must not tick twice in one match step")
 boss_ai_text = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")

@@ -139,6 +139,7 @@ func _run() -> void:
 	BossKillCreditChecks.new().run(_check)
 	BossStructureTargetsChecks.new().run(_check)
 	BossMinionTargetsChecks.new().run(_check)
+	BossPhaseOrderChecks.new().run(_check)
 	BossHeroAIChecks.new().run(_check)
 	BossPresentationChecks.new().run(_check)
 	PrototypeChecks.new().run(_check)
