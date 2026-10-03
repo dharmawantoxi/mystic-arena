@@ -23,6 +23,8 @@ const GOBLIN = preload("res://data/minions/goblin.tres")
 const ICE_SIX = preload("res://data/structures/ice_level_6.tres")
 const ICE_FIVE = preload("res://data/structures/ice_level_5.tres")
 const FIXTURE := "res://tests/fixtures/boss_ice_aoe_source.json"
+# Prototype.BLUE: the shooter team of every replayed shot.
+const BLUE := 0
 
 # Source `Bullet` impact point: the fixture measures the boss from the primary
 # target, so both stay at the source offsets.
@@ -84,7 +86,7 @@ func _shot(level: Dictionary, main: UnitState) -> Projectile:
 	shot.id = 0
 	shot.source_id = -1
 	shot.target_id = main.id
-	shot.team = world.BLUE
+	shot.team = BLUE
 	shot.damage = int(level.get("damage", 0))
 	shot.kind = "ice"
 	shot.slow_amount = float(level.get("slow", 0.0))
