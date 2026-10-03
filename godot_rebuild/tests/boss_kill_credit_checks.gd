@@ -40,13 +40,15 @@ func _world() -> Prototype:
 
 
 func _team_of(entry: Dictionary, world: Prototype) -> int:
-	return world.BLUE if String(entry.get("killer_team", "")) == "blue" else world.RED
+	# The fixture stores `killer_team: null` for the source-omitted case, and
+	# JSON null survives Dictionary.get(), so compare the raw Variant.
+	return world.BLUE if entry.get("killer_team") == "blue" else world.RED
 
 
 func _killer_of(world: Prototype, entry: Dictionary) -> UnitState:
 	# Source shapes: a Hero carries `hero_type`+`skills`, a Minion/Tower carries
 	# neither, and `source=None` is how cleave splash and the burn tick call.
-	var kind := String(entry.get("killer_kind", "none"))
+	var kind: Variant = entry.get("killer_kind", "none")
 	var team := _team_of(entry, world)
 	if kind == "hero":
 		return world.spawn_hero(KAIZEN, team, Vector2(620.0, 300.0))
@@ -128,7 +130,7 @@ func _replay_killer_cases(check: Callable, fixture: Dictionary) -> void:
 	for boss_type in boss_counts:
 		check.call(
 			int(boss_counts[boss_type]) == 4,
-			"boss kill credit has exactly four cases for %s" % String(boss_type)
+			"boss kill credit has exactly four cases for %s" % boss_type
 		)
 
 
