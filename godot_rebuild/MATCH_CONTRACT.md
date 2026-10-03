@@ -280,10 +280,31 @@ attack `boss.id` vs ability `-1`) dan tick persisten Morgath/Kunkka. CI Godot
 4.7.2 hijau: **1.252.306 native checks**, `validate_project.py` **6.504 static
 checks**.
 
+**Layer 8v** (`a67a04b`, CI [run 37161245400](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37161245400))
+memindahkan pengiriman stun item hero ke boss aktif. Di `hero_items.py`
+(`_apply_stun_to`, baris 2681-2690), seluruh stun item (`fenrir_chain`,
+`abyss_breaker` Overwhelm & Bash, `sundering_cudgel` Pierce Bash, dan
+`hex_idol` Hex) memanggil `target.apply_stun(int(duration))`, sehingga boss
+menjalankan `TowerDebuffMixin.apply_stun` (`_core.py:870-879`, 55% resist stun
+`int(duration * 0.45)`, `max(stun_timer, duration)`) dan `Boss.update`
+(`bosses/base_boss.py:595-600`) mendekremen `stun_timer` serta menahan gerak,
+serangan dasar, dan ability selama `stun_timer > 0`. Sebelumnya
+`BattleItemEffects` (`battle_item_effects.gd`) lupa meng-override `apply_stun`,
+sehingga terwarisi `ItemEffects.apply_stun` (`item_effects.gd:65-75`) yang
+hanya menerima `UnitState` dan mengabaikan `BossState`.
+`BattleItemEffects.apply_stun()` kini mendelegasikan ke `t.apply_stun(duration)`
+saat `t != null and t.has_method("apply_stun")`. Oracle
+`boss_item_stun_source_oracle.py` dan replay `boss_item_stun_checks.gd` mencakup
+empat skenario untuk tiap 216 tipe boss (**864 kasus**), masing-masing dengan
+kolom kontras `expected_without_boss_stun`, plus `fenrir_chain`, aturan stacking
+durasi maksimum, dan kontras hidup `_tick_auras_and_items()` +
+`_step_active_boss()`. CI Godot 4.7.2 hijau: **1.254.911 native checks**,
+`validate_project.py` **6.546 static checks**.
+
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
-- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), source ID hit dasar (8k), atribusi kill boss `Game._process_boss_kill` (8l), visibilitas boss pada targeting tower/nexus (8m) dan targeting minion (8n), urutan aksi hero sebelum tick boss (8o), AOE freeze es level-6 yang mengenai boss dengan tenacity source (8p), damage proyektil menara/nexus pada boss yang bebas mitigasi sekolah sesuai `resolve_damage_school` (8q), splash/burn cannon yang mengenai boss dengan atribusi tanpa source (8r), slow target utama es pada boss yang memakai tenacity source (8s), visibilitas boss pada target sekunder volley archer L5/L6 dan chain mage L2..L6 (8t), serta atribusi tanpa source (`source_id=-1`) pada seluruh hit ability dan skill boss (8u), juga sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, kredit kills hero pada kematian boss beserta counter mini/true boss, boss sebagai sasaran serangan tower/nexus (batas inklusif + seri), generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
+- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), source ID hit dasar (8k), atribusi kill boss `Game._process_boss_kill` (8l), visibilitas boss pada targeting tower/nexus (8m) dan targeting minion (8n), urutan aksi hero sebelum tick boss (8o), AOE freeze es level-6 yang mengenai boss dengan tenacity source (8p), damage proyektil menara/nexus pada boss yang bebas mitigasi sekolah sesuai `resolve_damage_school` (8q), splash/burn cannon yang mengenai boss dengan atribusi tanpa source (8r), slow target utama es pada boss yang memakai tenacity source (8s), visibilitas boss pada target sekunder volley archer L5/L6 dan chain mage L2..L6 (8t), atribusi tanpa source (`source_id=-1`) pada seluruh hit ability dan skill boss (8u), serta pengiriman stun item hero ke boss aktif lewat `BattleItemEffects.apply_stun` dengan 55% resist stun boss (8v), juga sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, kredit kills hero pada kematian boss beserta counter mini/true boss, boss sebagai sasaran serangan tower/nexus (batas inklusif + seri), generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
 
 ## Bukti dan batas pengujian
 
