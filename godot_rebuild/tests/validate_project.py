@@ -379,6 +379,7 @@ from boss_ice_aoe_source_oracle import source_fixture as boss_ice_aoe_fixture
 from boss_tower_damage_source_oracle import source_fixture as boss_tower_damage_fixture
 from boss_cannon_splash_source_oracle import source_fixture as boss_cannon_splash_fixture
 from boss_ice_main_slow_source_oracle import source_fixture as boss_ice_main_slow_fixture
+from boss_tower_volley_source_oracle import source_fixture as boss_tower_volley_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -414,6 +415,10 @@ check('const BossIceMainSlowChecks = preload("res://tests/boss_ice_main_slow_che
       "Boss ice main slow suite must be preloaded")
 check("BossIceMainSlowChecks.new().run(_check)" in ai_tests,
       "Boss ice main slow suite must run")
+check('const BossTowerVolleyChecks = preload("res://tests/boss_tower_volley_checks.gd")' in ai_tests,
+      "Boss tower volley suite must be preloaded")
+check("BossTowerVolleyChecks.new().run(_check)" in ai_tests,
+      "Boss tower volley suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -723,6 +728,53 @@ if (ROOT / "tests/fixtures/boss_ice_main_slow_source.json").is_file():
               == max(row["atk_slow"] for row in case["inputs"])
               for case in _ice_main_cases),
           "Non-boss main targets must keep the raw mixin store")
+check((ROOT / "tests/fixtures/boss_tower_volley_source.json").is_file(),
+      "Boss tower volley requires source fixture")
+if (ROOT / "tests/fixtures/boss_tower_volley_source.json").is_file():
+    _boss_tower_volley = boss_tower_volley_fixture()
+    check(_boss_tower_volley == json.loads(
+        (ROOT / "tests/fixtures/boss_tower_volley_source.json").read_text(encoding="utf-8")),
+          "Boss tower volley source drift")
+    _volley_source = _boss_tower_volley.get("source", {})
+    check(all(bool(_volley_source.get(_flag, False)) for _flag in (
+        "tower_boss_scan_in_update", "tower_update_passes_enemies_to_shoot",
+        "shoot_dispatches_archer_and_mage", "archer_volley_scans_enemies_inclusive",
+        "archer_volley_refills_primary", "mage_chain_scans_enemies_inclusive",
+        "mage_chain_has_no_refill", "all_units_includes_boss")),
+          "Tower volley and chain source shape must keep the boss scan, inclusive range and refill split")
+    check(_volley_source.get("archer_l5", {}).get("volley_count") == 2
+          and _volley_source.get("archer_l6", {}).get("volley_count") == 3
+          and _volley_source.get("mage_l2", {}).get("chain") == 2
+          and _volley_source.get("mage_l6", {}).get("chain") == 4,
+          "Source archer volley and mage chain counts must match the tier tables")
+    _volley_cases = _boss_tower_volley.get("cases", [])
+    _volley_types = {case["boss_type"] for case in _volley_cases}
+    _volley_labels = {"archer_l5_boss_at_range_edge", "archer_l6_unit_fills_before_boss",
+                      "mage_l2_boss_at_range_edge", "mage_l6_boss_outside_range"}
+    check(len(_volley_cases) == 864
+          and _volley_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _volley_cases) == 4
+                  for _boss in _volley_types),
+          "Boss tower volley requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _volley_cases
+               if case["boss_type"] == _boss} == _volley_labels
+              for _boss in _volley_types),
+          "Boss tower volley covers archer L5/L6 volleys, mage L2 chain edge and mage L6 outside guard")
+    check(all((case["expected"]["boss_shots"] == 1) == case["boss_in_range"]
+              and case["expected_without_boss"]["boss_shots"] == 0
+              for case in _volley_cases),
+          "Only an in-range boss takes a secondary volley/chain shot, never the pre-layer scan")
+    check(all(case["expected"]["shot_targets"] != case["expected_without_boss"]["shot_targets"]
+              for case in _volley_cases if case["boss_in_range"]),
+          "Every in-range boss case must diverge from the pre-layer units-only target list")
+    check(all(case["expected"]["shot_count"] == case["slot_count"]
+              and case["expected_without_boss"]["shot_count"] == case["slot_count"]
+              for case in _volley_cases if case["tower_path"] == "archer"),
+          "Archer volleys must always emit their full arrow count via secondary targets or primary refill")
+    check(all(case["expected"]["shot_count"] == 2
+              and case["expected_without_boss"]["shot_count"] == 1
+              for case in _volley_cases if case["label"] == "mage_l2_boss_at_range_edge"),
+          "Mage L2 must emit a second chain bolt to the in-range boss and omit it without the boss")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -854,6 +906,25 @@ check("super._ice_aoe(shot, main)" in boss_ice_aoe
       in boss_ice_aoe
       and "not boss.alive or boss.team == shot.team" in boss_ice_aoe,
       "Match layer must add the living boss to the ice AOE with the source tenacity dispatch")
+fire_projectile_base = siege_battle.split("func fire_projectile(", 1)[1].split("\nfunc ", 1)[0]
+check("_append_volley_targets(source, target, targets, count)" in fire_projectile_base
+      and "if not is_mage:" in fire_projectile_base,
+      "Structure fire_projectile must delegate secondary volley/chain target selection before archer refill")
+volley_targets_base = siege_battle.split("func _append_volley_targets(", 1)[1].split("\nfunc ", 1)[0]
+check("for candidate in units:" in volley_targets_base
+      and "if targets.size() >= count:" in volley_targets_base
+      and "source.position.distance_to(candidate.position) <= source.definition.attack_range_px"
+      in volley_targets_base,
+      "Base volley target scan must keep the source order, slot cap and inclusive range")
+boss_volley_targets = prototype_battle.split("func _append_volley_targets(", 1)[1].split(
+    "\nfunc ", 1)[0]
+check("super._append_volley_targets(source, target, targets, count)" in boss_volley_targets
+      and "if targets.size() >= count or boss == null or boss == target:" in boss_volley_targets
+      and "if not boss.alive or boss.team == source.team:" in boss_volley_targets
+      and "source.position.distance_to(boss.position) <= source.definition.attack_range_px"
+      in boss_volley_targets
+      and "targets.append(boss)" in boss_volley_targets,
+      "Match layer must append the living in-range enemy boss after ordinary volley/chain candidates")
 minion_battle = (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8")
 boss_minion_target = prototype_battle.split("func _find_target(unit: UnitState)", 1)[1].split(
     "\nfunc _structure_target(", 1)[0]
