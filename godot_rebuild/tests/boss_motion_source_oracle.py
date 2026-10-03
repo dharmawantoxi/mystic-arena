@@ -48,6 +48,18 @@ class Target:
             self.alive = False
 
 
+def smart_ai_boss_types():
+    tree = ast.parse((ROOT / "bosses/base_boss.py").read_text(encoding="utf-8"))
+    original = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "Boss")
+    names = sorted(
+        node.name[len("_smart_ai_") :]
+        for node in original.body
+        if isinstance(node, ast.FunctionDef) and node.name.startswith("_smart_ai_")
+    )
+    assert len(names) == 79, "Boss smart-AI roster drifted"
+    return tuple(names)
+
+
 def source_class():
     tree = ast.parse((ROOT / "bosses/base_boss.py").read_text(encoding="utf-8"))
     original = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == "Boss")
@@ -181,7 +193,7 @@ def smart_ai_dispatch_cases(cls):
 
     cases = []
     all_bosses = get_all_boss_types()
-    for boss_type in RANGED_BOSSES:
+    for boss_type in smart_ai_boss_types():
         attack_range = float(all_bosses[boss_type].get("range", 40))
         scenarios = (
             ("attack_range_inclusive", attack_range),
@@ -277,7 +289,7 @@ def main():
         print("WROTE: %s" % FIXTURE)
     else:
         assert actual == json.loads(FIXTURE.read_text(encoding="utf-8")), "Boss motion source drift"
-        print("PASS: Boss motion — waypoint/facing/chase/cleave plus 48 kiting and 48 smart-AI gate cases")
+        print("PASS: Boss motion — waypoint/facing/chase/cleave, 48 kiting and 316 smart-AI gate cases")
 
 
 if __name__ == "__main__":

@@ -148,7 +148,7 @@ func _ranged_kiting(check: Callable, fixture: Dictionary) -> void:
 func _smart_ai_dispatch(check: Callable, fixture: Dictionary) -> void:
 	var world := _world()
 	var cases: Array = fixture.get("smart_ai_dispatch", [])
-	check.call(cases.size() == 48, "smart-AI range gate has four source cases for twelve bosses")
+	check.call(cases.size() == 316, "smart-AI range gate has four source cases for 79 boss recipes")
 	var boss_counts := {}
 	for entry in cases:
 		var boss := BossState.new()
@@ -192,7 +192,7 @@ func _smart_ai_dispatch(check: Callable, fixture: Dictionary) -> void:
 			),
 			"smart-AI dispatch decision matches source: %s" % label
 		)
-	check.call(boss_counts.size() == 12, "smart-AI range gate covers twelve ranged bosses")
+	check.call(boss_counts.size() == 79, "smart-AI range gate covers all 79 source recipes")
 	for boss_type in boss_counts:
 		check.call(
 			int(boss_counts[boss_type]) == 4,

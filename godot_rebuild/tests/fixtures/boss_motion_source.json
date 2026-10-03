@@ -1240,6 +1240,226 @@
   ],
   "smart_ai_dispatch": [
     {
+      "boss_type": "abaddon",
+      "label": "attack_range_inclusive",
+      "attack_range": 50.0,
+      "distance": 50.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "abaddon",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 50.0,
+      "distance": 51.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "abaddon",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 50.0,
+      "distance": 149.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "abaddon",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 50.0,
+      "distance": 150.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aeralith",
+      "label": "attack_range_inclusive",
+      "attack_range": 150.0,
+      "distance": 150.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "aeralith",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 150.0,
+      "distance": 151.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aeralith",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 150.0,
+      "distance": 249.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aeralith",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 150.0,
+      "distance": 250.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "akahime",
+      "label": "attack_range_inclusive",
+      "attack_range": 260.0,
+      "distance": 260.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "akahime",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 260.0,
+      "distance": 261.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "akahime",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 260.0,
+      "distance": 359.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "akahime",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 260.0,
+      "distance": 360.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "akashari",
+      "label": "attack_range_inclusive",
+      "attack_range": 140.0,
+      "distance": 140.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "akashari",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 140.0,
+      "distance": 141.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "akashari",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 140.0,
+      "distance": 239.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "akashari",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 140.0,
+      "distance": 240.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "alchemist",
+      "label": "attack_range_inclusive",
+      "attack_range": 50.0,
+      "distance": 50.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "alchemist",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 50.0,
+      "distance": 51.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "alchemist",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 50.0,
+      "distance": 149.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "alchemist",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 50.0,
+      "distance": 150.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
       "boss_type": "ancient_apparition",
       "label": "attack_range_inclusive",
       "attack_range": 150.0,
@@ -1274,6 +1494,1194 @@
     },
     {
       "boss_type": "ancient_apparition",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 150.0,
+      "distance": 250.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "astraelion",
+      "label": "attack_range_inclusive",
+      "attack_range": 80.0,
+      "distance": 80.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "astraelion",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 80.0,
+      "distance": 81.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "astraelion",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 80.0,
+      "distance": 179.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "astraelion",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 80.0,
+      "distance": 180.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelion",
+      "label": "attack_range_inclusive",
+      "attack_range": 90.0,
+      "distance": 90.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "aurelion",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 90.0,
+      "distance": 91.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelion",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 90.0,
+      "distance": 189.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelion",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 90.0,
+      "distance": 190.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelix",
+      "label": "attack_range_inclusive",
+      "attack_range": 130.0,
+      "distance": 130.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "aurelix",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 130.0,
+      "distance": 131.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelix",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 130.0,
+      "distance": 229.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelix",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 130.0,
+      "distance": 230.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelyssa",
+      "label": "attack_range_inclusive",
+      "attack_range": 62.0,
+      "distance": 62.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "aurelyssa",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 62.0,
+      "distance": 63.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelyssa",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 62.0,
+      "distance": 161.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurelyssa",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 62.0,
+      "distance": 162.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurethzar",
+      "label": "attack_range_inclusive",
+      "attack_range": 190.0,
+      "distance": 190.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "aurethzar",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 190.0,
+      "distance": 191.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurethzar",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 190.0,
+      "distance": 289.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurethzar",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 190.0,
+      "distance": 290.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurex",
+      "label": "attack_range_inclusive",
+      "attack_range": 65.0,
+      "distance": 65.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "aurex",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 65.0,
+      "distance": 66.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurex",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 65.0,
+      "distance": 164.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "aurex",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 65.0,
+      "distance": 165.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "auroth",
+      "label": "attack_range_inclusive",
+      "attack_range": 70.0,
+      "distance": 70.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "auroth",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 70.0,
+      "distance": 71.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "auroth",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 70.0,
+      "distance": 169.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "auroth",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 70.0,
+      "distance": 170.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "azureth",
+      "label": "attack_range_inclusive",
+      "attack_range": 260.0,
+      "distance": 260.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "azureth",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 260.0,
+      "distance": 261.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "azureth",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 260.0,
+      "distance": 359.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "azureth",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 260.0,
+      "distance": 360.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "cryssalia",
+      "label": "attack_range_inclusive",
+      "attack_range": 270.0,
+      "distance": 270.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "cryssalia",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 270.0,
+      "distance": 271.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "cryssalia",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 270.0,
+      "distance": 369.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "cryssalia",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 270.0,
+      "distance": 370.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "drakar",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "drakar",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "drakar",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "drakar",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gorath",
+      "label": "attack_range_inclusive",
+      "attack_range": 58.0,
+      "distance": 58.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "gorath",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 58.0,
+      "distance": 59.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gorath",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 58.0,
+      "distance": 157.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gorath",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 58.0,
+      "distance": 158.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gornak",
+      "label": "attack_range_inclusive",
+      "attack_range": 50.0,
+      "distance": 50.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "gornak",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 50.0,
+      "distance": 51.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gornak",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 50.0,
+      "distance": 149.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gornak",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 50.0,
+      "distance": 150.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gravefang",
+      "label": "attack_range_inclusive",
+      "attack_range": 65.0,
+      "distance": 65.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "gravefang",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 65.0,
+      "distance": 66.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gravefang",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 65.0,
+      "distance": 164.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gravefang",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 65.0,
+      "distance": 165.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gravewake",
+      "label": "attack_range_inclusive",
+      "attack_range": 65.0,
+      "distance": 65.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "gravewake",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 65.0,
+      "distance": 66.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gravewake",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 65.0,
+      "distance": 164.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "gravewake",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 65.0,
+      "distance": 165.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "ignirus",
+      "label": "attack_range_inclusive",
+      "attack_range": 280.0,
+      "distance": 280.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "ignirus",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 280.0,
+      "distance": 281.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "ignirus",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 280.0,
+      "distance": 379.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "ignirus",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 280.0,
+      "distance": 380.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "ignis_drachorn",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "ignis_drachorn",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "ignis_drachorn",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "ignis_drachorn",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaeldris",
+      "label": "attack_range_inclusive",
+      "attack_range": 65.0,
+      "distance": 65.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "kaeldris",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 65.0,
+      "distance": 66.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaeldris",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 65.0,
+      "distance": 164.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaeldris",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 65.0,
+      "distance": 165.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaelthar",
+      "label": "attack_range_inclusive",
+      "attack_range": 75.0,
+      "distance": 75.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "kaelthar",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 75.0,
+      "distance": 76.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaelthar",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 75.0,
+      "distance": 174.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaelthar",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 75.0,
+      "distance": 175.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaelthorn",
+      "label": "attack_range_inclusive",
+      "attack_range": 80.0,
+      "distance": 80.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "kaelthorn",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 80.0,
+      "distance": 81.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaelthorn",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 80.0,
+      "distance": 179.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kaelthorn",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 80.0,
+      "distance": 180.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kenshiro",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "kenshiro",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kenshiro",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kenshiro",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "khalros",
+      "label": "attack_range_inclusive",
+      "attack_range": 70.0,
+      "distance": 70.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "khalros",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 70.0,
+      "distance": 71.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "khalros",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 70.0,
+      "distance": 169.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "khalros",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 70.0,
+      "distance": 170.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "khazan",
+      "label": "attack_range_inclusive",
+      "attack_range": 60.0,
+      "distance": 60.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "khazan",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 60.0,
+      "distance": 61.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "khazan",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 60.0,
+      "distance": 159.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "khazan",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 60.0,
+      "distance": 160.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "krognarr",
+      "label": "attack_range_inclusive",
+      "attack_range": 60.0,
+      "distance": 60.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "krognarr",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 60.0,
+      "distance": 61.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "krognarr",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 60.0,
+      "distance": 159.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "krognarr",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 60.0,
+      "distance": 160.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kunkka",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "kunkka",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kunkka",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "kunkka",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "leoric",
+      "label": "attack_range_inclusive",
+      "attack_range": 75.0,
+      "distance": 75.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "leoric",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 75.0,
+      "distance": 76.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "leoric",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 75.0,
+      "distance": 174.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "leoric",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 75.0,
+      "distance": 175.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "luminar",
+      "label": "attack_range_inclusive",
+      "attack_range": 270.0,
+      "distance": 270.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "luminar",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 270.0,
+      "distance": 271.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "luminar",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 270.0,
+      "distance": 369.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "luminar",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 270.0,
+      "distance": 370.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "malzareth",
+      "label": "attack_range_inclusive",
+      "attack_range": 150.0,
+      "distance": 150.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "malzareth",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 150.0,
+      "distance": 151.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "malzareth",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 150.0,
+      "distance": 249.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "malzareth",
       "label": "strict_target_acquisition_edge",
       "attack_range": 150.0,
       "distance": 250.0,
@@ -1328,10 +2736,10 @@
       }
     },
     {
-      "boss_type": "razak",
+      "boss_type": "morkhaera",
       "label": "attack_range_inclusive",
-      "attack_range": 55.0,
-      "distance": 55.0,
+      "attack_range": 280.0,
+      "distance": 280.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 1,
@@ -1339,10 +2747,10 @@
       }
     },
     {
-      "boss_type": "razak",
+      "boss_type": "morkhaera",
       "label": "one_pixel_outside_attack_range",
-      "attack_range": 55.0,
-      "distance": 56.0,
+      "attack_range": 280.0,
+      "distance": 281.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1350,10 +2758,10 @@
       }
     },
     {
-      "boss_type": "razak",
+      "boss_type": "morkhaera",
       "label": "inside_target_acquisition_only",
-      "attack_range": 55.0,
-      "distance": 154.0,
+      "attack_range": 280.0,
+      "distance": 379.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1361,10 +2769,10 @@
       }
     },
     {
-      "boss_type": "razak",
+      "boss_type": "morkhaera",
       "label": "strict_target_acquisition_edge",
-      "attack_range": 55.0,
-      "distance": 155.0,
+      "attack_range": 280.0,
+      "distance": 380.0,
       "expected": {
         "target_selected": false,
         "smart_ai_call_count": 0,
@@ -1372,10 +2780,10 @@
       }
     },
     {
-      "boss_type": "varkul",
+      "boss_type": "morthraxis",
       "label": "attack_range_inclusive",
-      "attack_range": 100.0,
-      "distance": 100.0,
+      "attack_range": 290.0,
+      "distance": 290.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 1,
@@ -1383,10 +2791,10 @@
       }
     },
     {
-      "boss_type": "varkul",
+      "boss_type": "morthraxis",
       "label": "one_pixel_outside_attack_range",
-      "attack_range": 100.0,
-      "distance": 101.0,
+      "attack_range": 290.0,
+      "distance": 291.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1394,10 +2802,10 @@
       }
     },
     {
-      "boss_type": "varkul",
+      "boss_type": "morthraxis",
       "label": "inside_target_acquisition_only",
-      "attack_range": 100.0,
-      "distance": 199.0,
+      "attack_range": 290.0,
+      "distance": 389.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1405,10 +2813,10 @@
       }
     },
     {
-      "boss_type": "varkul",
+      "boss_type": "morthraxis",
       "label": "strict_target_acquisition_edge",
-      "attack_range": 100.0,
-      "distance": 200.0,
+      "attack_range": 290.0,
+      "distance": 390.0,
       "expected": {
         "target_selected": false,
         "smart_ai_call_count": 0,
@@ -1416,10 +2824,10 @@
       }
     },
     {
-      "boss_type": "xerathis",
+      "boss_type": "morvaenthir",
       "label": "attack_range_inclusive",
-      "attack_range": 100.0,
-      "distance": 100.0,
+      "attack_range": 285.0,
+      "distance": 285.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 1,
@@ -1427,10 +2835,10 @@
       }
     },
     {
-      "boss_type": "xerathis",
+      "boss_type": "morvaenthir",
       "label": "one_pixel_outside_attack_range",
-      "attack_range": 100.0,
-      "distance": 101.0,
+      "attack_range": 285.0,
+      "distance": 286.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1438,10 +2846,10 @@
       }
     },
     {
-      "boss_type": "xerathis",
+      "boss_type": "morvaenthir",
       "label": "inside_target_acquisition_only",
-      "attack_range": 100.0,
-      "distance": 199.0,
+      "attack_range": 285.0,
+      "distance": 384.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1449,10 +2857,362 @@
       }
     },
     {
-      "boss_type": "xerathis",
+      "boss_type": "morvaenthir",
       "label": "strict_target_acquisition_edge",
-      "attack_range": 100.0,
-      "distance": 200.0,
+      "attack_range": 285.0,
+      "distance": 385.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "morvein",
+      "label": "attack_range_inclusive",
+      "attack_range": 75.0,
+      "distance": 75.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "morvein",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 75.0,
+      "distance": 76.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "morvein",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 75.0,
+      "distance": 174.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "morvein",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 75.0,
+      "distance": 175.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "naraka",
+      "label": "attack_range_inclusive",
+      "attack_range": 65.0,
+      "distance": 65.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "naraka",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 65.0,
+      "distance": 66.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "naraka",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 65.0,
+      "distance": 164.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "naraka",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 65.0,
+      "distance": 165.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nazulmor",
+      "label": "attack_range_inclusive",
+      "attack_range": 75.0,
+      "distance": 75.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "nazulmor",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 75.0,
+      "distance": 76.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nazulmor",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 75.0,
+      "distance": 174.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nazulmor",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 75.0,
+      "distance": 175.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxara",
+      "label": "attack_range_inclusive",
+      "attack_range": 130.0,
+      "distance": 130.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "nyxara",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 130.0,
+      "distance": 131.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxara",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 130.0,
+      "distance": 229.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxara",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 130.0,
+      "distance": 230.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxarath",
+      "label": "attack_range_inclusive",
+      "attack_range": 160.0,
+      "distance": 160.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "nyxarath",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 160.0,
+      "distance": 161.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxarath",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 160.0,
+      "distance": 259.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxarath",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 160.0,
+      "distance": 260.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxareth",
+      "label": "attack_range_inclusive",
+      "attack_range": 290.0,
+      "distance": 290.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "nyxareth",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 290.0,
+      "distance": 291.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxareth",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 290.0,
+      "distance": 389.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxareth",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 290.0,
+      "distance": 390.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxareva",
+      "label": "attack_range_inclusive",
+      "attack_range": 60.0,
+      "distance": 60.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "nyxareva",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 60.0,
+      "distance": 61.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxareva",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 60.0,
+      "distance": 159.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxareva",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 60.0,
+      "distance": 160.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxthrael",
+      "label": "attack_range_inclusive",
+      "attack_range": 85.0,
+      "distance": 85.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "nyxthrael",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 85.0,
+      "distance": 86.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxthrael",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 85.0,
+      "distance": 184.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "nyxthrael",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 85.0,
+      "distance": 185.0,
       "expected": {
         "target_selected": false,
         "smart_ai_call_count": 0,
@@ -1504,6 +3264,490 @@
       }
     },
     {
+      "boss_type": "pyraethis",
+      "label": "attack_range_inclusive",
+      "attack_range": 300.0,
+      "distance": 300.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "pyraethis",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 300.0,
+      "distance": 301.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "pyraethis",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 300.0,
+      "distance": 399.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "pyraethis",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 300.0,
+      "distance": 400.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "pyraklos",
+      "label": "attack_range_inclusive",
+      "attack_range": 65.0,
+      "distance": 65.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "pyraklos",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 65.0,
+      "distance": 66.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "pyraklos",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 65.0,
+      "distance": 164.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "pyraklos",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 65.0,
+      "distance": 165.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "pyrenth",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "pyrenth",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "pyrenth",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "pyrenth",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "raz",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "raz",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "raz",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "raz",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "razak",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "razak",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "razak",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "razak",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "seiryukong",
+      "label": "attack_range_inclusive",
+      "attack_range": 90.0,
+      "distance": 90.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "seiryukong",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 90.0,
+      "distance": 91.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "seiryukong",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 90.0,
+      "distance": 189.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "seiryukong",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 90.0,
+      "distance": 190.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "shirotaka",
+      "label": "attack_range_inclusive",
+      "attack_range": 80.0,
+      "distance": 80.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "shirotaka",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 80.0,
+      "distance": 81.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "shirotaka",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 80.0,
+      "distance": 179.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "shirotaka",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 80.0,
+      "distance": 180.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solara",
+      "label": "attack_range_inclusive",
+      "attack_range": 70.0,
+      "distance": 70.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "solara",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 70.0,
+      "distance": 71.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solara",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 70.0,
+      "distance": 169.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solara",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 70.0,
+      "distance": 170.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solvanth",
+      "label": "attack_range_inclusive",
+      "attack_range": 85.0,
+      "distance": 85.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "solvanth",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 85.0,
+      "distance": 86.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solvanth",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 85.0,
+      "distance": 184.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solvanth",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 85.0,
+      "distance": 185.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solvarin",
+      "label": "attack_range_inclusive",
+      "attack_range": 75.0,
+      "distance": 75.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "solvarin",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 75.0,
+      "distance": 76.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solvarin",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 75.0,
+      "distance": 174.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "solvarin",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 75.0,
+      "distance": 175.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "sylvantheros",
+      "label": "attack_range_inclusive",
+      "attack_range": 275.0,
+      "distance": 275.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "sylvantheros",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 275.0,
+      "distance": 276.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "sylvantheros",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 275.0,
+      "distance": 374.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "sylvantheros",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 275.0,
+      "distance": 375.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
       "boss_type": "syrentha",
       "label": "attack_range_inclusive",
       "attack_range": 120.0,
@@ -1548,6 +3792,50 @@
       }
     },
     {
+      "boss_type": "thalakryon",
+      "label": "attack_range_inclusive",
+      "attack_range": 70.0,
+      "distance": 70.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "thalakryon",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 70.0,
+      "distance": 71.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "thalakryon",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 70.0,
+      "distance": 169.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "thalakryon",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 70.0,
+      "distance": 170.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
       "boss_type": "thalgryn",
       "label": "attack_range_inclusive",
       "attack_range": 160.0,
@@ -1592,10 +3880,10 @@
       }
     },
     {
-      "boss_type": "nyxarath",
+      "boss_type": "thornvaegrim",
       "label": "attack_range_inclusive",
-      "attack_range": 160.0,
-      "distance": 160.0,
+      "attack_range": 90.0,
+      "distance": 90.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 1,
@@ -1603,9 +3891,680 @@
       }
     },
     {
-      "boss_type": "nyxarath",
+      "boss_type": "thornvaegrim",
       "label": "one_pixel_outside_attack_range",
-      "attack_range": 160.0,
+      "attack_range": 90.0,
+      "distance": 91.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "thornvaegrim",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 90.0,
+      "distance": 189.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "thornvaegrim",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 90.0,
+      "distance": 190.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "thorvak",
+      "label": "attack_range_inclusive",
+      "attack_range": 80.0,
+      "distance": 80.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "thorvak",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 80.0,
+      "distance": 81.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "thorvak",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 80.0,
+      "distance": 179.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "thorvak",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 80.0,
+      "distance": 180.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vaelindra",
+      "label": "attack_range_inclusive",
+      "attack_range": 300.0,
+      "distance": 300.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vaelindra",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 300.0,
+      "distance": 301.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vaelindra",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 300.0,
+      "distance": 399.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vaelindra",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 300.0,
+      "distance": 400.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vaerith",
+      "label": "attack_range_inclusive",
+      "attack_range": 60.0,
+      "distance": 60.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vaerith",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 60.0,
+      "distance": 61.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vaerith",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 60.0,
+      "distance": 159.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vaerith",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 60.0,
+      "distance": 160.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vargrath",
+      "label": "attack_range_inclusive",
+      "attack_range": 65.0,
+      "distance": 65.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vargrath",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 65.0,
+      "distance": 66.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vargrath",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 65.0,
+      "distance": 164.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vargrath",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 65.0,
+      "distance": 165.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "varkul",
+      "label": "attack_range_inclusive",
+      "attack_range": 100.0,
+      "distance": 100.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "varkul",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 100.0,
+      "distance": 101.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "varkul",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 100.0,
+      "distance": 199.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "varkul",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 100.0,
+      "distance": 200.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "velmyrth",
+      "label": "attack_range_inclusive",
+      "attack_range": 60.0,
+      "distance": 60.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "velmyrth",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 60.0,
+      "distance": 61.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "velmyrth",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 60.0,
+      "distance": 159.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "velmyrth",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 60.0,
+      "distance": 160.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhalzun",
+      "label": "attack_range_inclusive",
+      "attack_range": 150.0,
+      "distance": 150.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vhalzun",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 150.0,
+      "distance": 151.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhalzun",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 150.0,
+      "distance": 249.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhalzun",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 150.0,
+      "distance": 250.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhorethzir",
+      "label": "attack_range_inclusive",
+      "attack_range": 165.0,
+      "distance": 165.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vhorethzir",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 165.0,
+      "distance": 166.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhorethzir",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 165.0,
+      "distance": 264.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhorethzir",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 165.0,
+      "distance": 265.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhyssarion",
+      "label": "attack_range_inclusive",
+      "attack_range": 150.0,
+      "distance": 150.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vhyssarion",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 150.0,
+      "distance": 151.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhyssarion",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 150.0,
+      "distance": 249.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vhyssarion",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 150.0,
+      "distance": 250.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vokrahn",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vokrahn",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vokrahn",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vokrahn",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vorenmarr",
+      "label": "attack_range_inclusive",
+      "attack_range": 150.0,
+      "distance": 150.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vorenmarr",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 150.0,
+      "distance": 151.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vorenmarr",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 150.0,
+      "distance": 249.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vorenmarr",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 150.0,
+      "distance": 250.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vraskhan",
+      "label": "attack_range_inclusive",
+      "attack_range": 58.0,
+      "distance": 58.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "vraskhan",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 58.0,
+      "distance": 59.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vraskhan",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 58.0,
+      "distance": 157.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "vraskhan",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 58.0,
+      "distance": 158.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "wiro",
+      "label": "attack_range_inclusive",
+      "attack_range": 55.0,
+      "distance": 55.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "wiro",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 55.0,
+      "distance": 56.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "wiro",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 55.0,
+      "distance": 154.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "wiro",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 55.0,
+      "distance": 155.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "xerathis",
+      "label": "attack_range_inclusive",
+      "attack_range": 100.0,
+      "distance": 100.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "xerathis",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 100.0,
+      "distance": 101.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "xerathis",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 100.0,
+      "distance": 199.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "xerathis",
+      "label": "strict_target_acquisition_edge",
+      "attack_range": 100.0,
+      "distance": 200.0,
+      "expected": {
+        "target_selected": false,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "xirthalis",
+      "label": "attack_range_inclusive",
+      "attack_range": 62.0,
+      "distance": 62.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 1,
+        "smart_ai_dispatched": true
+      }
+    },
+    {
+      "boss_type": "xirthalis",
+      "label": "one_pixel_outside_attack_range",
+      "attack_range": 62.0,
+      "distance": 63.0,
+      "expected": {
+        "target_selected": true,
+        "smart_ai_call_count": 0,
+        "smart_ai_dispatched": false
+      }
+    },
+    {
+      "boss_type": "xirthalis",
+      "label": "inside_target_acquisition_only",
+      "attack_range": 62.0,
       "distance": 161.0,
       "expected": {
         "target_selected": true,
@@ -1614,21 +4573,10 @@
       }
     },
     {
-      "boss_type": "nyxarath",
-      "label": "inside_target_acquisition_only",
-      "attack_range": 160.0,
-      "distance": 259.0,
-      "expected": {
-        "target_selected": true,
-        "smart_ai_call_count": 0,
-        "smart_ai_dispatched": false
-      }
-    },
-    {
-      "boss_type": "nyxarath",
+      "boss_type": "xirthalis",
       "label": "strict_target_acquisition_edge",
-      "attack_range": 160.0,
-      "distance": 260.0,
+      "attack_range": 62.0,
+      "distance": 162.0,
       "expected": {
         "target_selected": false,
         "smart_ai_call_count": 0,
@@ -1636,10 +4584,10 @@
       }
     },
     {
-      "boss_type": "malzareth",
+      "boss_type": "xyrael",
       "label": "attack_range_inclusive",
-      "attack_range": 150.0,
-      "distance": 150.0,
+      "attack_range": 75.0,
+      "distance": 75.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 1,
@@ -1647,10 +4595,10 @@
       }
     },
     {
-      "boss_type": "malzareth",
+      "boss_type": "xyrael",
       "label": "one_pixel_outside_attack_range",
-      "attack_range": 150.0,
-      "distance": 151.0,
+      "attack_range": 75.0,
+      "distance": 76.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1658,10 +4606,10 @@
       }
     },
     {
-      "boss_type": "malzareth",
+      "boss_type": "xyrael",
       "label": "inside_target_acquisition_only",
-      "attack_range": 150.0,
-      "distance": 249.0,
+      "attack_range": 75.0,
+      "distance": 174.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1669,10 +4617,10 @@
       }
     },
     {
-      "boss_type": "malzareth",
+      "boss_type": "xyrael",
       "label": "strict_target_acquisition_edge",
-      "attack_range": 150.0,
-      "distance": 250.0,
+      "attack_range": 75.0,
+      "distance": 175.0,
       "expected": {
         "target_selected": false,
         "smart_ai_call_count": 0,
@@ -1680,10 +4628,10 @@
       }
     },
     {
-      "boss_type": "akashari",
+      "boss_type": "yamako",
       "label": "attack_range_inclusive",
-      "attack_range": 140.0,
-      "distance": 140.0,
+      "attack_range": 85.0,
+      "distance": 85.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 1,
@@ -1691,10 +4639,10 @@
       }
     },
     {
-      "boss_type": "akashari",
+      "boss_type": "yamako",
       "label": "one_pixel_outside_attack_range",
-      "attack_range": 140.0,
-      "distance": 141.0,
+      "attack_range": 85.0,
+      "distance": 86.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1702,10 +4650,10 @@
       }
     },
     {
-      "boss_type": "akashari",
+      "boss_type": "yamako",
       "label": "inside_target_acquisition_only",
-      "attack_range": 140.0,
-      "distance": 239.0,
+      "attack_range": 85.0,
+      "distance": 184.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1713,10 +4661,10 @@
       }
     },
     {
-      "boss_type": "akashari",
+      "boss_type": "yamako",
       "label": "strict_target_acquisition_edge",
-      "attack_range": 140.0,
-      "distance": 240.0,
+      "attack_range": 85.0,
+      "distance": 185.0,
       "expected": {
         "target_selected": false,
         "smart_ai_call_count": 0,
@@ -1724,10 +4672,10 @@
       }
     },
     {
-      "boss_type": "vorenmarr",
+      "boss_type": "zharok",
       "label": "attack_range_inclusive",
-      "attack_range": 150.0,
-      "distance": 150.0,
+      "attack_range": 180.0,
+      "distance": 180.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 1,
@@ -1735,10 +4683,10 @@
       }
     },
     {
-      "boss_type": "vorenmarr",
+      "boss_type": "zharok",
       "label": "one_pixel_outside_attack_range",
-      "attack_range": 150.0,
-      "distance": 151.0,
+      "attack_range": 180.0,
+      "distance": 181.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1746,10 +4694,10 @@
       }
     },
     {
-      "boss_type": "vorenmarr",
+      "boss_type": "zharok",
       "label": "inside_target_acquisition_only",
-      "attack_range": 150.0,
-      "distance": 249.0,
+      "attack_range": 180.0,
+      "distance": 279.0,
       "expected": {
         "target_selected": true,
         "smart_ai_call_count": 0,
@@ -1757,10 +4705,10 @@
       }
     },
     {
-      "boss_type": "vorenmarr",
+      "boss_type": "zharok",
       "label": "strict_target_acquisition_edge",
-      "attack_range": 150.0,
-      "distance": 250.0,
+      "attack_range": 180.0,
+      "distance": 280.0,
       "expected": {
         "target_selected": false,
         "smart_ai_call_count": 0,

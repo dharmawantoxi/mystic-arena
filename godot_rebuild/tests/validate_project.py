@@ -371,7 +371,10 @@ from boss_ability_source_oracle import source_fixture as boss_ability_fixture
 from boss_clock_source_oracle import source_fixture as boss_clock_fixture
 from boss_debuff_clock_source_oracle import source_fixture as boss_debuff_clock_fixture
 from boss_hero_ai_source_oracle import source_fixture as boss_hero_ai_fixture
-from boss_motion_source_oracle import source_fixture as boss_motion_fixture
+from boss_motion_source_oracle import (
+    smart_ai_boss_types as boss_motion_ai_types,
+    source_fixture as boss_motion_fixture,
+)
 from boss_presentation_source_oracle import source_fixture as boss_presentation_fixture
 check("BossCoreChecks.new().run(_check)" in ai_tests, "Boss entity core suite must run")
 check("BossAbilityChecks.new().run(_check)" in ai_tests, "Boss ability suite must run")
@@ -391,10 +394,13 @@ if (ROOT / "tests/fixtures/boss_motion_source.json").is_file():
                   for _boss in {case["boss_type"] for case in _ranged_motion_cases}),
           "Ranged kiting requires exactly four oracle cases per boss")
     _smart_ai_dispatch_cases = _boss_motion.get("smart_ai_dispatch", [])
-    check(len(_smart_ai_dispatch_cases) == 48
+    _smart_ai_dispatch_types = {case["boss_type"] for case in _smart_ai_dispatch_cases}
+    check(len(_smart_ai_dispatch_cases) == 316
+          and len(_smart_ai_dispatch_types) == 79
+          and _smart_ai_dispatch_types == set(boss_motion_ai_types())
           and all(sum(case["boss_type"] == _boss for case in _smart_ai_dispatch_cases) == 4
-                  for _boss in {case["boss_type"] for case in _smart_ai_dispatch_cases}),
-          "Ranged smart-AI dispatch requires exactly four oracle cases per boss")
+                  for _boss in _smart_ai_dispatch_types),
+          "Boss smart-AI dispatch requires four oracle cases for all 79 source recipes")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -462,6 +468,9 @@ check("boss.is_in_attack_range(distance)" in boss_step
 check("active_boss.tick_item_debuffs()" not in prototype_battle,
       "Boss item debuffs must not tick twice in one match step")
 boss_ai_text = (ROOT / "scripts/match/boss_ai.gd").read_text(encoding="utf-8")
+for _boss_type in boss_motion_ai_types():
+    check('"%s":' % _boss_type in boss_ai_text,
+          "Native boss AI dispatch must include source recipe %s" % _boss_type)
 check(not re.search(r"^\s*boss\.hp\s*=", boss_ai_text, re.M),
       "Boss AI hp increases must pass through the anti-heal setter")
 check(boss_ai_text.count("boss.set_hp_value(") == 6,
