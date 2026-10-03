@@ -345,7 +345,14 @@ func _update_projectiles(source: StructureState) -> void:
 			var school := "magic" if shot.kind == "mage" else "physical"
 			if _hero_blocks_projectile(target, school):
 				continue
-			_deliver_hit(shot.source_id, shot.team, target, shot.damage, school, shot.position)
+			_deliver_hit(
+				shot.source_id,
+				shot.team,
+				target,
+				shot.damage,
+				_projectile_school(target, school),
+				shot.position
+			)
 			if shot.kind == "cannon":
 				_cannon_impact(shot, target)
 			elif shot.kind == "ice":
@@ -361,6 +368,14 @@ func _hero_blocks_projectile(target: UnitState, school: String) -> bool:
 	if not target.is_hero or school == "magic":
 		return false
 	return (target as HeroState).wind_wall_timer > 0
+
+
+func _projectile_school(_target: UnitState, school: String) -> String:
+	# School the impact delivers its damage under. The base keeps the shooter's
+	# declared school, which is what the minion/hero mitigation layers recorded;
+	# the match layer narrows it for the boss, whose source hit resolves to no
+	# school at all (see Prototype._projectile_school).
+	return school
 
 
 func _cannon_impact(shot: Projectile, main: UnitState) -> void:

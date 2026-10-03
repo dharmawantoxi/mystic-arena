@@ -376,6 +376,7 @@ from boss_structure_targeting_source_oracle import source_fixture as boss_struct
 from boss_minion_targeting_source_oracle import source_fixture as boss_minion_targeting_fixture
 from boss_phase_order_source_oracle import source_fixture as boss_phase_order_fixture
 from boss_ice_aoe_source_oracle import source_fixture as boss_ice_aoe_fixture
+from boss_tower_damage_source_oracle import source_fixture as boss_tower_damage_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -399,6 +400,10 @@ check('const BossIceAoeChecks = preload("res://tests/boss_ice_aoe_checks.gd")' i
       "Boss ice AOE suite must be preloaded")
 check("BossIceAoeChecks.new().run(_check)" in ai_tests,
       "Boss ice AOE suite must run")
+check('const BossTowerDamageChecks = preload("res://tests/boss_tower_damage_checks.gd")' in ai_tests,
+      "Boss tower damage suite must be preloaded")
+check("BossTowerDamageChecks.new().run(_check)" in ai_tests,
+      "Boss tower damage suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -579,6 +584,42 @@ if (ROOT / "tests/fixtures/boss_ice_aoe_source.json").is_file():
               and case["expected"]["atk_slow_timer"] == case["expected"]["slow_timer"]
               for case in _ice_aoe_cases if case["expected"]["slow_timer"] > 0),
           "Boss AOE slow must keep the source tenacity cut, 0.35 cap and shared duration")
+check((ROOT / "tests/fixtures/boss_tower_damage_source.json").is_file(),
+      "Boss tower damage requires source fixture")
+if (ROOT / "tests/fixtures/boss_tower_damage_source.json").is_file():
+    _boss_tower_damage = boss_tower_damage_fixture()
+    check(_boss_tower_damage == json.loads(
+        (ROOT / "tests/fixtures/boss_tower_damage_source.json").read_text(encoding="utf-8")),
+          "Boss tower damage source drift")
+    _tower_damage_source = _boss_tower_damage.get("source", {})
+    check(all(bool(_tower_damage_source.get(_flag, False)) for _flag in (
+        "main_hit_is_projectile", "hit_passes_no_school", "resolver_none_for_projectile",
+        "resolver_rejects_unknown_school", "resolver_reads_source_school",
+        "boss_mitigation_gated_by_school", "resolver_documented_none")),
+          "Structure shots must resolve to no school and boss mitigation must stay school-gated")
+    _tower_damage_cases = _boss_tower_damage.get("cases", [])
+    _tower_damage_types = {case["boss_type"] for case in _tower_damage_cases}
+    _tower_damage_labels = {"archer_level_one", "cannon_level_six", "ice_level_six",
+                            "mage_level_six"}
+    check(len(_tower_damage_cases) == 864
+          and _tower_damage_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _tower_damage_cases) == 4
+                  for _boss in _tower_damage_types),
+          "Boss tower damage requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _tower_damage_cases
+               if case["boss_type"] == _boss} == _tower_damage_labels
+              for _boss in _tower_damage_types),
+          "Boss tower damage covers all four structure bullet kinds")
+    check(all(case["expected_hp_after"] <= case["expected_physical_hp_after"]
+              and case["alive"]
+              for case in _tower_damage_cases),
+          "School-free source hits must land at least as hard as the declared-school path")
+    check(sum(case["expected_hp_after"] != case["expected_physical_hp_after"]
+              for case in _tower_damage_cases) == 864,
+          "Every boss armor value must make the two paths differ")
+    check(all(case["hp_before"] - case["expected_hp_after"] >= 1
+              for case in _tower_damage_cases),
+          "Every recorded tower hit must damage the boss")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -655,6 +696,18 @@ check("super._structure_target(structure)" in boss_structure_target
       and "distance <= structure.position.distance_to(target.position)" in boss_structure_target,
       "Towers and the nexus must append the living enemy boss like the source scans")
 siege_battle = (ROOT / "scripts/combat/siege_battle.gd").read_text(encoding="utf-8")
+projectile_delivery = siege_battle.split("func _update_projectiles(", 1)[1].split("\nfunc ", 1)[0]
+check("_projectile_school(target, school)" in projectile_delivery
+      and "_hero_blocks_projectile(target, school)" in projectile_delivery,
+      "Structure impacts must deliver damage under the resolved projectile school")
+projectile_school_base = siege_battle.split("func _projectile_school(", 1)[1].split("\nfunc ", 1)[0]
+check("return school" in projectile_school_base,
+      "Base projectile school must stay the declared school for units and heroes")
+boss_projectile_school = prototype_battle.split("func _projectile_school(", 1)[1].split(
+    "\nfunc ", 1)[0]
+check("if target is BossState:" in boss_projectile_school
+      and 'return "neutral"' in boss_projectile_school,
+      "Boss targets must take structure shots without school mitigation, like the source")
 ice_aoe_base = siege_battle.split("func _ice_aoe(", 1)[1].split("\nfunc ", 1)[0]
 check("for victim in units:" in ice_aoe_base
       and "victim.position.distance_to(main.position) > shot.slow_aoe" in ice_aoe_base
