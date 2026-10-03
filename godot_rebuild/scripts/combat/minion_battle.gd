@@ -504,7 +504,8 @@ func _ai_same_lane(pairs: Array, lane: int) -> UnitState:
 func _ai_minion_or_nearest(pairs: Array) -> UnitState:
 	var minions: Array = []
 	for pair in pairs:
-		if _is_minion_candidate(pair[0]):
+		var cand: UnitState = pair[0]
+		if _is_minion_candidate(cand):
 			minions.append(pair)
 	if not minions.is_empty():
 		return _lowest_hp(minions)
@@ -528,7 +529,8 @@ func _ai_siege_priority(pairs: Array) -> UnitState:
 		return _lowest_hp(towers)
 	var minions: Array = []
 	for pair in pairs:
-		if _is_minion_candidate(pair[0]):
+		var cand: UnitState = pair[0]
+		if _is_minion_candidate(cand):
 			minions.append(pair)
 	if not minions.is_empty():
 		return _lowest_hp(minions)

@@ -37,7 +37,7 @@ const SOURCE_FLAGS := [
 
 func run(check: Callable) -> void:
 	var fixture = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
-	var parsed := fixture is Dictionary and fixture.has("source") and fixture.has("cases")
+	var parsed: bool = fixture is Dictionary and fixture.has("source") and fixture.has("cases")
 	if parsed:
 		for flag in SOURCE_FLAGS:
 			parsed = parsed and bool(fixture.source.get(flag, false))
@@ -70,7 +70,7 @@ func _park_structures(world: Prototype) -> void:
 
 func _red_tower(world: Prototype) -> StructureState:
 	for structure in world.structures:
-		if structure.team == world.RED and structure.definition.structure_kind == "tower":
+		if structure.team == world.RED and structure.settings().structure_kind == "tower":
 			return structure
 	return null
 
@@ -180,12 +180,16 @@ func _live_minion_engages_boss(check: Callable) -> void:
 		striker.target_id == boss.id, "live blue minion acquires the boss inside the grid radius"
 	)
 	check.call(striker.position.x > QUERIER.x, "live blue minion walks toward the acquired boss")
+	# The goblin swing lands inside the boss entrance window (120 ticks), so the
+	# boss cannot retaliate; stop on the first hit this striker is credited with.
 	var ticks := 0
-	while boss.hp >= boss_hp and ticks < 120:
+	var struck := false
+	while ticks < 120 and not struck:
 		world.step_tick()
 		ticks += 1
+		struck = boss.last_hit_source_id == striker.id
 	check.call(
-		boss.hp < boss_hp and boss.last_hit_source_id == striker.id,
+		struck and boss.hp < boss_hp,
 		"live minion damage reaches the boss and preserves the source id"
 	)
 
