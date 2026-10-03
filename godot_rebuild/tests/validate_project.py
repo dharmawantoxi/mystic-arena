@@ -377,6 +377,7 @@ from boss_minion_targeting_source_oracle import source_fixture as boss_minion_ta
 from boss_phase_order_source_oracle import source_fixture as boss_phase_order_fixture
 from boss_ice_aoe_source_oracle import source_fixture as boss_ice_aoe_fixture
 from boss_tower_damage_source_oracle import source_fixture as boss_tower_damage_fixture
+from boss_cannon_splash_source_oracle import source_fixture as boss_cannon_splash_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -404,6 +405,10 @@ check('const BossTowerDamageChecks = preload("res://tests/boss_tower_damage_chec
       "Boss tower damage suite must be preloaded")
 check("BossTowerDamageChecks.new().run(_check)" in ai_tests,
       "Boss tower damage suite must run")
+check('const BossCannonSplashChecks = preload("res://tests/boss_cannon_splash_checks.gd")' in ai_tests,
+      "Boss cannon splash suite must be preloaded")
+check("BossCannonSplashChecks.new().run(_check)" in ai_tests,
+      "Boss cannon splash suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -620,6 +625,54 @@ if (ROOT / "tests/fixtures/boss_tower_damage_source.json").is_file():
     check(all(case["hp_before"] - case["expected_hp_after"] >= 1
               for case in _tower_damage_cases),
           "Every recorded tower hit must damage the boss")
+check((ROOT / "tests/fixtures/boss_cannon_splash_source.json").is_file(),
+      "Boss cannon splash requires source fixture")
+if (ROOT / "tests/fixtures/boss_cannon_splash_source.json").is_file():
+    _boss_cannon_splash = boss_cannon_splash_fixture()
+    check(_boss_cannon_splash == json.loads(
+        (ROOT / "tests/fixtures/boss_cannon_splash_source.json").read_text(encoding="utf-8")),
+          "Boss cannon splash source drift")
+    _splash_source = _boss_cannon_splash.get("source", {})
+    check(all(bool(_splash_source.get(_flag, False)) for _flag in (
+        "tower_passes_all_units", "all_units_includes_boss", "splash_damage_scale",
+        "splash_radius_inclusive", "splash_skips_main_allies_dead", "splash_hit_has_no_source",
+        "splash_burn_uses_source_team", "burn_gated_by_dps", "kill_credit_written_on_lethal")),
+          "Cannon splash source shape must stay inclusive, source-omitted and burn-gated")
+    _splash_cannon = _splash_source.get("cannon", {})
+    check(_splash_cannon.get("splash") == 100.0
+          and _splash_cannon.get("splash_damage") == int(_splash_cannon.get("damage", 0) * 0.6),
+          "Level-6 cannon splash radius and 60% damage must match the source table")
+    _splash_cases = _boss_cannon_splash.get("cases", [])
+    _splash_types = {case["boss_type"] for case in _splash_cases}
+    _splash_labels = {"splash_inside_half", "splash_edge_inclusive", "splash_outside",
+                      "splash_lethal_no_source"}
+    check(len(_splash_cases) == 864
+          and _splash_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _splash_cases) == 4
+                  for _boss in _splash_types),
+          "Boss cannon splash requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _splash_cases
+               if case["boss_type"] == _boss} == _splash_labels for _boss in _splash_types),
+          "Boss cannon splash covers the inclusive edge, the outside guard and a lethal splash")
+    check(all((case["expected"]["hp"] < case["hp_before"])
+              == (case["label"] != "splash_outside")
+              and case["expected_without_boss"]["hp"] == case["hp_before"]
+              and case["expected_without_boss"]["burn_timer"] == 0
+              for case in _splash_cases),
+          "Only the in-radius splash hurts the boss, never the pre-layer candidate list")
+    check(all((case["expected"]["burn_timer"] == case["burn_duration_in"])
+              == (case["expected"]["hp"] < case["hp_before"] and case["expected"]["alive"])
+              and (case["expected"]["burn_team"] == "blue")
+              == (case["expected"]["burn_timer"] > 0)
+              for case in _splash_cases),
+          "Splash burn must land on survivors only and keep the shooter team")
+    check(all((not case["expected"]["alive"]) == (case["label"] == "splash_lethal_no_source")
+              and (case["expected"]["killed_by_none"] or case["expected"]["alive"])
+              for case in _splash_cases),
+          "A lethal splash must kill without crediting any source")
+    check(all(case["expected"]["hp"] <= case["expected_physical_hp_after"]
+              for case in _splash_cases if case["expected"]["hp"] < case["hp_before"]),
+          "School-free splash must land at least as hard as the declared-school path")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -696,6 +749,22 @@ check("super._structure_target(structure)" in boss_structure_target
       and "distance <= structure.position.distance_to(target.position)" in boss_structure_target,
       "Towers and the nexus must append the living enemy boss like the source scans")
 siege_battle = (ROOT / "scripts/combat/siege_battle.gd").read_text(encoding="utf-8")
+cannon_impact = siege_battle.split("func _cannon_impact(", 1)[1].split("\nfunc ", 1)[0]
+check("_cannon_splash(shot, main)" in cannon_impact,
+      "Cannon impact must delegate its splash arm so the match layer can widen it")
+cannon_splash_base = siege_battle.split("func _cannon_splash(", 1)[1].split("\nfunc ", 1)[0]
+check("for victim in units:" in cannon_splash_base
+      and "_projectile_school(victim, \"physical\")" in cannon_splash_base
+      and "victim.position.distance_to(main.position) > shot.splash_radius" in cannon_splash_base,
+      "Base cannon splash must keep the source scan, inclusive radius and resolved school")
+boss_cannon_splash = prototype_battle.split("func _cannon_splash(", 1)[1].split("\nfunc ", 1)[0]
+check("super._cannon_splash(shot, main)" in boss_cannon_splash
+      and "boss.position.distance_to(main.position) > shot.splash_radius" in boss_cannon_splash
+      and "_deliver_hit(" in boss_cannon_splash
+      and "-1, shot.team, boss, splash_damage" in boss_cannon_splash
+      and 'boss.apply_debuff("burn", shot.burn_dps, shot.burn_duration, shot.team)'
+      in boss_cannon_splash,
+      "Match layer must splash the living boss with source-omitted attribution and burn")
 projectile_delivery = siege_battle.split("func _update_projectiles(", 1)[1].split("\nfunc ", 1)[0]
 check("_projectile_school(target, school)" in projectile_delivery
       and "_hero_blocks_projectile(target, school)" in projectile_delivery,

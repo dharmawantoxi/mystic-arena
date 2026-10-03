@@ -611,6 +611,39 @@ func _projectile_school(target: UnitState, school: String) -> String:
 	return school
 
 
+func _cannon_splash(shot: Projectile, main: UnitState) -> void:
+	# Layer 8r: port of the boss arm of the cannon splash. `Bullet._on_hit` runs
+	# its splash loop over `all_units`, whose last element is the live boss
+	# (`all_units = all_units + [self.active_boss]`), so a boss standing inside
+	# `d <= splash_radius` of the impact point takes `int(damage * 0.6)` and
+	# burns. The native registry never holds the boss (`active_boss` only lives
+	# in `_by_id`), so cannon splash used to scorch every minion around a boss
+	# while the boss itself took nothing.
+	#
+	# The source splash hit passes neither school nor source
+	# (`u.take_damage(int(self.damage * 0.6), self.team)`), so the hit resolves
+	# school-free and a lethal splash writes `_killed_by = None`: `-1` keeps that
+	# attribution, exactly like the source-omitted cleave from layer 8k. The burn
+	# goes through `BossState.apply_debuff`, whose alive guard is why a boss the
+	# splash just killed stays unburned.
+	super._cannon_splash(shot, main)
+	var boss := active_boss
+	if shot.splash_radius <= 0.0 or boss == null or boss == main:
+		return
+	if not boss.alive or boss.team == shot.team:
+		return
+	if boss.position.distance_to(main.position) > shot.splash_radius:
+		return
+	var splash_damage := int(float(shot.damage) * 0.6)
+	if splash_damage <= 0:
+		return
+	_deliver_hit(
+		-1, shot.team, boss, splash_damage, _projectile_school(boss, "physical"), shot.position
+	)
+	if boss.alive and shot.burn_dps > 0.0:
+		boss.apply_debuff("burn", shot.burn_dps, shot.burn_duration, shot.team)
+
+
 func _ice_aoe(shot: Projectile, main: UnitState) -> void:
 	# Layer 8p: port of the boss arm of the ice level-6 freeze AOE. The source
 	# loop runs over `all_units`, whose last element is the live boss

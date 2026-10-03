@@ -384,6 +384,15 @@ func _cannon_impact(shot: Projectile, main: UnitState) -> void:
 	# Source all_units never contains structures, so towers take no splash.
 	if main.alive and shot.burn_dps > 0:
 		apply_burn(main.id, shot.burn_dps, shot.burn_duration, shot.team)
+	_cannon_splash(shot, main)
+
+
+func _cannon_splash(shot: Projectile, main: UnitState) -> void:
+	# Port of the splash arm of Bullet._on_hit "cannon": 60% damage plus burn to
+	# every enemy of the shooter inside `splash_radius` of the impact point,
+	# inclusive. The candidate list here is the `all_units` that `Tower.update`
+	# passes down from `Game.update`; the match layer widens it, see
+	# Prototype._cannon_splash.
 	if shot.splash_radius <= 0:
 		return
 	var splash_damage := int(float(shot.damage) * 0.6)
@@ -396,7 +405,14 @@ func _cannon_impact(shot: Projectile, main: UnitState) -> void:
 			continue
 		if _hero_blocks_projectile(victim, "physical"):
 			continue
-		_deliver_hit(shot.source_id, shot.team, victim, splash_damage, "physical", shot.position)
+		_deliver_hit(
+			shot.source_id,
+			shot.team,
+			victim,
+			splash_damage,
+			_projectile_school(victim, "physical"),
+			shot.position
+		)
 		if victim.alive and shot.burn_dps > 0:
 			apply_burn(victim.id, shot.burn_dps, shot.burn_duration, shot.team)
 
