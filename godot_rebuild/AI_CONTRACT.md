@@ -911,9 +911,9 @@ Sistem produksi serta sisa perilaku scene/AI yang belum dipindahkan masih
 belum dikerjakan. Forge player scene sudah mencakup transaksi, panel dan
 background input; tidak ada panel Forge terpisah untuk hero AI di sumber.
 Jangan mengklaim parity seluruh pertandingan Python.
-CI Godot 4.7.2 terbaru hijau setelah boss terlihat oleh targeting tower/nexus
-([37126929202](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37126929202));
-**1.218.942 native checks**; `validate_project.py` **6.186 static checks**;
+CI Godot 4.7.2 terbaru hijau pada layer 8n: boss terlihat oleh targeting
+minion ([37134838416](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37134838416));
+**1.223.709 native checks**; `validate_project.py` **6.220 static checks**;
 `gdformat`/`gdlint`/`gdparse` bersih.
 
 > Pesan siap-salin: lanjutkan di branch `arena/01a0ff99-mystic-arena` (PR
@@ -959,3 +959,5 @@ CI Godot 4.7.2 terbaru hijau setelah boss terlihat oleh targeting tower/nexus
 > atau hero. Satu sub-layer per commit; pipeline gdformat -> gdlint -> gdparse ->
 > validate_project.py -> commit -> push -> gh run watch, lalu docs commit/push
 > terpisah. Sumber Python read-only. Hanya ubah godot_rebuild.
+
+Lapisan **8n** (`f94583e`; perbaikan parse CI `bb69832` dan fixture `4e88687`, run final [37134838416](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37134838416)) membuat boss aktif terlihat oleh targeting minion. `prototype_battle._find_target()` menyisipkan boss hidup/tim lawan ke kandidat pada batas kueri source `attack_range_px + 30` (inklusif), setelah unit musuh dan sebelum tower/nexus; boss mati, setim, atau di luar radius memakai jalur dasar. `_is_minion_candidate()` mengecualikan boss dari grup `Minion` pada prioritas lane/HP, sementara boss tetap menjadi kandidat biasa dan tetap menangkap cabang siege `max_hp >= 1500` sebelum struktur. Oracle AST read-only `boss_minion_targeting_source_oracle.py` merekam empat kasus per 216 tipe boss (864 total, termasuk batas range/grid, prioritas tower dan baseline tanpa boss); `boss_minion_targets_checks.gd` mereplay fixture, guard dan tick hidup minion sampai memukul boss. CI Godot 4.7.2 hijau: **1.223.709 native checks**, `validate_project.py` **6.220 static checks**.
