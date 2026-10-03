@@ -107,7 +107,7 @@ var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
 var enemy_damage_mult := 1.0
 var enemy_speed_mult := 1.0
-# Layers 8b/8c/8d/8e/8f/8i: match combat, boss movement, clocks and
+# Layers 8b/8c/8d/8e/8f/8i/8j: match combat, boss movement, clocks and
 # presentation payloads. Rendering remains in prototype_view.gd.
 var boss_table: Dictionary = {}
 var boss_rng := RandomNumberGenerator.new()
@@ -624,7 +624,9 @@ func _step_active_boss() -> void:
 		return
 	boss.target_id = target.id
 	var distance := boss.position.distance_to(target.position)
-	if distance <= boss.attack_range:
+	var ai_target: UnitState = target
+	var ai_distance := distance
+	if boss.is_in_attack_range(distance):
 		boss.face_motion(target.position.x - boss.position.x, target.position.y - boss.position.y)
 		if boss.timer == 0:
 			_boss_basic_attack(target, enemies)
@@ -633,7 +635,11 @@ func _step_active_boss() -> void:
 			boss.move_ranged_kite(target.position)
 		else:
 			boss.move_toward(target.position)
-	BossAI.tick(self, boss, enemies, target, distance)
+		# Source Boss.update only dispatches smart AI from its in-range branch.
+		# Null still preserves the true-boss heal checked before target handling.
+		ai_target = null
+		ai_distance = INF
+	BossAI.tick(self, boss, enemies, ai_target, ai_distance)
 
 
 func _try_spawn_pending_mini_boss() -> bool:

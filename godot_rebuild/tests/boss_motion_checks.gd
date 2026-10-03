@@ -1,7 +1,7 @@
 # gdlint:disable=max-file-lines
 extends RefCounted
-## Layers 8c/8i: boss lane movement, ranged kiting, target registry, basic
-## attacks, cooldown/cleave and one-shot hero damage/death reward wiring.
+## Layers 8c/8i/8j: lane movement, ranged kiting/AI range gate, target
+## registry, basic attacks, cooldown/cleave and one-shot death reward wiring.
 
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
@@ -13,14 +13,21 @@ const FIXTURE := "res://tests/fixtures/boss_motion_source.json"
 func run(check: Callable) -> void:
 	var fixture = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE))
 	check.call(
-		fixture is Dictionary and fixture.has("forward") and fixture.has("ranged_kiting"),
+		(
+			fixture is Dictionary
+			and fixture.has("forward")
+			and fixture.has("ranged_kiting")
+			and fixture.has("smart_ai_dispatch")
+		),
 		"boss motion fixture parses"
 	)
 	if not fixture is Dictionary:
 		return
 	_motion(check, fixture)
 	_ranged_kiting(check, fixture)
+	_smart_ai_dispatch(check, fixture)
 	_ranged_kiting_match_step(check)
+	_ranged_ai_dispatch_match_step(check)
 	_attack_and_registry(check, fixture)
 
 
@@ -138,6 +145,61 @@ func _ranged_kiting(check: Callable, fixture: Dictionary) -> void:
 		)
 
 
+func _smart_ai_dispatch(check: Callable, fixture: Dictionary) -> void:
+	var world := _world()
+	var cases: Array = fixture.get("smart_ai_dispatch", [])
+	check.call(cases.size() == 48, "smart-AI range gate has four source cases for twelve bosses")
+	var boss_counts := {}
+	for entry in cases:
+		var boss := BossState.new()
+		var boss_type := String(entry.get("boss_type", ""))
+		boss_counts[boss_type] = int(boss_counts.get(boss_type, 0)) + 1
+		check.call(
+			boss.setup(boss_type, PackedVector2Array(), world.boss_table),
+			"smart-AI gate boss data loads: %s" % boss_type
+		)
+		if boss.boss_type.is_empty():
+			continue
+		check.call(
+			is_equal_approx(boss.attack_range, float(entry.get("attack_range", -1.0))),
+			"smart-AI gate range matches source stats: %s" % boss_type
+		)
+		boss.position = Vector2.ZERO
+		world.active_boss = boss
+		var distance := float(entry.get("distance", 0.0))
+		var enemy := UnitState.new()
+		enemy.team = world.BLUE
+		enemy.alive = true
+		enemy.position = Vector2(distance, 0.0)
+		var enemies: Array[UnitState] = []
+		enemies.append(enemy)
+		var selected := world._boss_target(enemies) != null
+		var dispatch := selected and boss.is_in_attack_range(distance)
+		var expected: Dictionary = entry.get("expected", {})
+		var label := "%s/%s" % [boss_type, String(entry.get("label", "unknown"))]
+		check.call(
+			selected == bool(expected.get("target_selected", false)),
+			"smart-AI target window matches source: %s" % label
+		)
+		check.call(
+			boss.is_in_attack_range(distance) == (distance <= boss.attack_range),
+			"smart-AI inclusive attack-range predicate: %s" % label
+		)
+		check.call(
+			(
+				dispatch == bool(expected.get("smart_ai_dispatched", false))
+				and int(expected.get("smart_ai_call_count", -1)) == (1 if dispatch else 0)
+			),
+			"smart-AI dispatch decision matches source: %s" % label
+		)
+	check.call(boss_counts.size() == 12, "smart-AI range gate covers twelve ranged bosses")
+	for boss_type in boss_counts:
+		check.call(
+			int(boss_counts[boss_type]) == 4,
+			"smart-AI range gate has exactly four cases for %s" % String(boss_type)
+		)
+
+
 func _ranged_kiting_match_step(check: Callable) -> void:
 	var world := _world()
 	var boss := world._spawn_boss("ancient_apparition")
@@ -173,6 +235,82 @@ func _ranged_kiting_match_step(check: Callable) -> void:
 		boss.kite_mode == "in" and is_equal_approx(boss.position.x, 403.0),
 		"ranged boss uses source kite movement in the live match step"
 	)
+
+
+func _ranged_ai_dispatch_match_step(check: Callable) -> void:
+	var outside_world := _world()
+	var outside_boss := outside_world._spawn_boss("ancient_apparition")
+	check.call(outside_boss != null, "ranged AI gate boss spawns for outside-range case")
+	if outside_boss == null:
+		return
+	var outside_target := _blue_hero_only(outside_world)
+	check.call(outside_target != null, "ranged AI gate isolates a live blue hero")
+	if outside_target == null:
+		return
+	_prime_ancient_dispatch_case(outside_boss, outside_target, 151.0)
+	outside_world._step_active_boss()
+	check.call(
+		outside_boss.target_id == outside_target.id,
+		"out-of-range ranged boss still selects its target"
+	)
+	check.call(
+		outside_boss.w_timer == 0 and outside_boss.active_skill != "w",
+		"out-of-range ranged boss does not dispatch its smart AI"
+	)
+
+	var inside_world := _world()
+	var inside_boss := inside_world._spawn_boss("ancient_apparition")
+	check.call(inside_boss != null, "ranged AI gate boss spawns for inclusive-edge case")
+	if inside_boss == null:
+		return
+	var inside_target := _blue_hero_only(inside_world)
+	check.call(inside_target != null, "ranged AI gate has a live target at attack edge")
+	if inside_target == null:
+		return
+	_prime_ancient_dispatch_case(inside_boss, inside_target, inside_boss.attack_range)
+	inside_world._step_active_boss()
+	check.call(
+		inside_boss.active_skill == "w" and inside_boss.w_timer > 0,
+		"inclusive attack-range edge still dispatches ranged smart AI"
+	)
+
+
+func _prime_ancient_dispatch_case(boss: BossState, target: HeroState, distance: float) -> void:
+	boss.entrance_timer = 0
+	boss.position = Vector2(400, 300)
+	boss.previous_position = boss.position
+	boss.speed_px_per_tick = 3.0
+	boss.attack_range = 150.0
+	boss.timer = 999
+	boss.ability_timer = 999
+	boss.ability2_timer = 999
+	boss.q_timer = 999
+	boss.w_timer = 0
+	boss.e_timer = 999
+	boss.r_timer = 999
+	boss.active_skill_timer = 0
+	boss.kite_mode = "hold"
+	target.position = boss.position + Vector2(distance, 0)
+
+
+func _blue_hero_only(world: Prototype) -> HeroState:
+	var target: HeroState = null
+	for unit in world.units:
+		if unit.team == world.BLUE and unit is HeroState:
+			target = unit as HeroState
+			break
+	if target == null:
+		return null
+	for unit in world.units:
+		if unit.team == world.BLUE and unit != target:
+			unit.alive = false
+	for structure in world.structures:
+		if structure.team == world.BLUE:
+			structure.alive = false
+	for nexus in world.nexuses:
+		if nexus != null and nexus.team == world.BLUE:
+			nexus.alive = false
+	return target
 
 
 func _attack_and_registry(check: Callable, fixture: Dictionary) -> void:

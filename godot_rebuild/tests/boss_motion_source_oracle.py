@@ -1,9 +1,9 @@
-"""Source AST oracle for Boss lane motion, ranged kiting and basic attacks.
+"""Source AST oracle for boss lane motion, ranged kiting and AI range gating.
 
 Only original Boss methods are executed: _face, _advance_waypoint,
-_lane_target, _move_forward, _get_boss_stats and update. The update test
-supplies source-shaped entities and disables smart-ability dispatch with a
-no-op method, isolating movement, hysteresis and attack behavior.
+_lane_target, _move_forward, _get_boss_stats and update. The motion trace
+supplies source-shaped entities and stubs smart abilities; the dispatch trace
+records the source's inclusive attack-range gate.
 """
 import ast
 import json
@@ -176,6 +176,49 @@ def ranged_kiting_cases(cls):
     return cases
 
 
+def smart_ai_dispatch_cases(cls):
+    from bosses.boss_data import get_all_boss_types
+
+    cases = []
+    all_bosses = get_all_boss_types()
+    for boss_type in RANGED_BOSSES:
+        attack_range = float(all_bosses[boss_type].get("range", 40))
+        scenarios = (
+            ("attack_range_inclusive", attack_range),
+            ("one_pixel_outside_attack_range", attack_range + 1.0),
+            ("inside_target_acquisition_only", attack_range + 99.0),
+            ("strict_target_acquisition_edge", attack_range + 100.0),
+        )
+        for label, distance in scenarios:
+            boss = base_boss(cls, 0.0, 0.0)
+            boss.boss_type = boss_type
+            boss.range = attack_range
+            boss.timer = 999
+            boss._move_forward = lambda: None
+            calls = []
+            setattr(
+                boss,
+                "_smart_ai_" + boss_type,
+                lambda _enemies, target_distance: calls.append(float(target_distance)),
+            )
+            target = Target(distance, 0.0)
+            boss.update([target], [], [])
+            cases.append(
+                {
+                    "boss_type": boss_type,
+                    "label": label,
+                    "attack_range": attack_range,
+                    "distance": distance,
+                    "expected": {
+                        "target_selected": boss.target is not None,
+                        "smart_ai_call_count": len(calls),
+                        "smart_ai_dispatched": bool(calls),
+                    },
+                }
+            )
+    return cases
+
+
 def source_fixture():
     cls = source_class()
 
@@ -223,6 +266,7 @@ def source_fixture():
         "attack": attack_row,
         "chase": chase_row,
         "ranged_kiting": ranged_kiting_cases(cls),
+        "smart_ai_dispatch": smart_ai_dispatch_cases(cls),
     }
 
 
@@ -233,7 +277,7 @@ def main():
         print("WROTE: %s" % FIXTURE)
     else:
         assert actual == json.loads(FIXTURE.read_text(encoding="utf-8")), "Boss motion source drift"
-        print("PASS: Boss motion — waypoint/facing/chase/cleave plus 48 ranged kiting cases")
+        print("PASS: Boss motion — waypoint/facing/chase/cleave plus 48 kiting and 48 smart-AI gate cases")
 
 
 if __name__ == "__main__":

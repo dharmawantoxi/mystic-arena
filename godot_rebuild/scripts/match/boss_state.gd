@@ -1,6 +1,6 @@
 # gdlint:disable=max-public-methods
 extends "res://scripts/combat/unit_state.gd"
-## Layers 8a/8c/8e/8f/8g/8i: Boss entity core, movement, clocks and presentation.
+## Layers 8a/8c/8e/8f/8g/8i/8j: Boss entity core, movement, clocks and presentation.
 ##
 ## Ports the scalar identity/stats of `Boss.__init__`, `apply_scaling`, the
 ## tenacity slow/atk_slow rule, the `TowerDebuffMixin` stun cut and the numeric
@@ -95,8 +95,8 @@ var dmg_scaling_mult := 1.0
 var spd_scaling_mult := 1.0
 var direction := -1
 var lane_path := PackedVector2Array()
-# Layers 8c/8i: motion/attack and ranged-kiting state. The source renderer
-# consumes the movement cache and attack edge; presentation remains separate.
+# Layers 8c/8i/8j: movement, kiting and attack-range dispatch state. The source
+# renderer consumes the movement cache and attack edge; presentation stays separate.
 var is_moving := false
 var moving_cached := false
 var previous_position := Vector2.ZERO
@@ -397,6 +397,11 @@ func move_forward() -> void:
 		position += offset / distance * budget
 		face_motion(offset.x, offset.y)
 		budget = 0.0
+
+
+func is_in_attack_range(distance: float) -> bool:
+	# Source Boss.update uses an inclusive attack range for smart-AI dispatch.
+	return distance <= attack_range
 
 
 func move_toward(target: Vector2) -> void:
