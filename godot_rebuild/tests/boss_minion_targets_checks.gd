@@ -72,7 +72,7 @@ func _red_tower(world: Prototype) -> StructureState:
 	for structure in world.structures:
 		if structure.team == world.RED and structure.settings().structure_kind == "tower":
 			return structure
-	return null
+	return world.spawn_structure(ARCHER, world.RED, PARKED, 0)
 
 
 func _placed_minion(world: Prototype, team: int, at: Vector2) -> UnitState:
@@ -210,6 +210,8 @@ func _guard_cases(check: Callable) -> void:
 		red_minion != null and world._find_target(red_minion) == null,
 		"same-team minion never targets the boss even at point blank"
 	)
+	if red_minion != null:
+		red_minion.alive = false
 	var blue_minion := _placed_minion(world, world.BLUE, QUERIER)
 	var alive_unit := _placed_minion(world, world.RED, QUERIER + Vector2(40.0, 0.0))
 	check.call(blue_minion != null and alive_unit != null, "guard world minions spawn")
