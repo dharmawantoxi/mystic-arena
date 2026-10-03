@@ -174,10 +174,72 @@ menguji empat kasus untuk tiap 216 boss (**864 kasus**): hit hero lethal/nonleth
 masuk ke attack range dan keluar dari radius target source. CI Godot 4.7.2 hijau:
 **1.227.818 native checks**, `validate_project.py` **6.249 static checks**.
 
+**Layer 8p** (`b46ef88`; perbaikan scope suite `e2aa540`, CI final
+[37141379984](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37141379984))
+membuat AOE freeze menara es level-6 mengenai boss. Source menjalankan lengan
+`'slow_aoe' in self.special_data and all_units` di atas `all_units` yang berisi
+boss hidup sebagai elemen terakhir, dengan radius inklusif `d <= aoe` dan slow
+polimorfik (`Boss.apply_slow` / `Boss.apply_debuff('atk_slow')`, tenacity 0.50,
+cap 0.35). Native hanya memindai `units`, sehingga boss tidak pernah kena AOE.
+`siege_battle._ice_impact()` kini memakai `_ice_aoe()` yang ditimpa
+`PrototypeBattle` untuk menambahkan boss hidup dengan guard sumber. Oracle
+`boss_ice_aoe_source_oracle.py` dan replay `boss_ice_aoe_checks.gd` mencakup
+empat skenario untuk tiap 216 tipe boss (**864 kasus**) plus tick hidup menara
+es level-6 dan guard tim sama/boss mati/tanpa AOE di bawah level 6. CI Godot
+4.7.2 hijau: **1.232.368 native checks**, `validate_project.py`
+**6.292 static checks**.
+
+**Layer 8q** (`79feb79`, CI
+[37142715818](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37142715818))
+meluruskan damage proyektil menara/nexus pada boss. Source menembak dengan
+`damage_type='projectile'` tanpa `school=`/`source=`, dan
+`_entity.resolve_damage_school` mengembalikan `None`, jadi `Boss.take_damage`
+tidak menerapkan mitigasi armor maupun magic-resist - hanya resilience dan cap
+anti-burst. Native menyerahkan sekolah deklarasi penembak, sehingga damage
+terpotong armor boss (Gornak 62 vs 42 pada es L6, Abaddon 108 vs 43 pada cannon
+L6). `_update_projectiles()` kini memakai `_projectile_school()`; match layer
+mengembalikan `"neutral"` untuk `BossState` sementara minion/hero tetap pada
+sekolah deklarasi. Oracle `boss_tower_damage_source_oracle.py` dan replay
+`boss_tower_damage_checks.gd` mencakup empat jenis peluru untuk tiap 216 tipe
+boss (**864 kasus**), masing-masing dengan kolom hasil sebelum layer, plus tick
+hidup archer L1. CI Godot 4.7.2 hijau: **1.236.052 native checks**,
+`validate_project.py` **6.333 static checks**.
+
+**Layer 8r** (`0397e9e`, CI
+[37144074482](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37144074482))
+membuat splash/burn cannon mengenai boss. Source menjalankan loop splash di atas
+`all_units` (boss hidup adalah elemen terakhirnya), inklusif pada
+`d <= splash_radius`, dengan `int(damage * 0.6)` tanpa school/source lalu burn
+`source_team=self.team`. Native hanya memindai `units`, sehingga boss tidak
+pernah kena splash. `_cannon_impact()` kini memakai `_cannon_splash()` yang
+ditimpa `Prototype` untuk menambahkan boss hidup; pukulannya memakai source id
+`-1` (splash lethal menulis `_killed_by = None`) dan burn lewat
+`BossState.apply_debuff`. Oracle `boss_cannon_splash_source_oracle.py` dan
+replay `boss_cannon_splash_checks.gd` mencakup empat skenario untuk tiap 216
+tipe boss (**864 kasus**), termasuk tepi 100 px dan splash lethal, plus tick
+hidup cannon L6 dan guard tim sama/boss mati/tanpa radius. CI Godot 4.7.2 hijau:
+**1.240.385 native checks**, `validate_project.py` **6.376 static checks**.
+
+**Layer 8s** (`00b7986`; perbaikan guard suite `d2de987`, CI final
+[37145481944](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37145481944))
+membuat slow target utama menara es pada boss lewat aturan boss. Source memanggil
+`self.target.apply_slow(...)` / `self.target.apply_debuff('atk_slow', ...)`
+secara polimorfik, sehingga tenacity 0.50 memotong magnitude dan durasi dengan
+cap 0.35 (es L6 0.65/150 -> 0.325/75, atk 0.40 -> 0.20); native menyimpan nilai
+mentah aturan mixin, jadi boss yang diincar menara es beku dua kali lebih berat
+dan dua kali lebih lama. `_ice_impact()` kini memakai `_ice_main()` yang ditimpa
+`Prototype` untuk target boss, sementara minion/hero tetap pada store dunia.
+Oracle `boss_ice_main_slow_source_oracle.py` dan replay
+`boss_ice_main_slow_checks.gd` mencakup empat skenario untuk tiap 216 tipe boss
+(**864 kasus**), masing-masing dengan kolom `expected_mixin` dari
+`TowerDebuffMixin.apply_slow` asli, plus tick hidup menara es L6 dan guard boss
+mati/AOE. CI Godot 4.7.2 hijau: **1.243.204 native checks**,
+`validate_project.py` **6.417 static checks**.
+
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
 seluruh pertandingan Python.
 - Restart membuat world, scheduler, ledger dan seleksi baru. Tidak ada saldo/progres yang dibawa lintas pertandingan.
-- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), source ID hit dasar (8k), atribusi kill boss `Game._process_boss_kill` (8l), visibilitas boss pada targeting tower/nexus (8m) dan targeting minion (8n), serta urutan aksi hero sebelum tick boss (8o), juga sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, kredit kills hero pada kematian boss beserta counter mini/true boss, boss sebagai sasaran serangan tower/nexus (batas inklusif + seri), generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
+- Kematian nexus pertama menentukan pemenang, membekukan world/economy, membuang antrean spawn/projectile dan membuka hasil otomatis. Entity boss (layer 8a), kondisi match (8b), perilaku dasar (8c), ability/smart AI slice (8d + 8d-1), entrance/enrage clock (8e), presentasi intro/death (8f), TowerDebuffMixin clocks/heal setter (8g), target handoff AI boss hero sebelum lane assignment (8h), audit atribusi `burn_team` (`1aa2352`), ranged-boss kiting/hysteresis (8i), smart-AI attack-range gate (8j), source ID hit dasar (8k), atribusi kill boss `Game._process_boss_kill` (8l), visibilitas boss pada targeting tower/nexus (8m) dan targeting minion (8n), urutan aksi hero sebelum tick boss (8o), AOE freeze es level-6 yang mengenai boss dengan tenacity source (8p), damage proyektil menara/nexus pada boss yang bebas mitigasi sekolah sesuai `resolve_damage_school` (8q), splash/burn cannon yang mengenai boss dengan atribusi tanpa source (8r), serta slow target utama es pada boss yang memakai tenacity source (8s), juga sudah dikerjakan. Cakupan boss yang terport mencakup owner tunggal `active_boss`, jadwal/pending mini, trigger true boss, counter `red_towers_destroyed`, reward/unlock, target hero, basic attack/cleave dengan identitas penyerang pada hit utama, kredit kills hero pada kematian boss beserta counter mini/true boss, boss sebagai sasaran serangan tower/nexus (batas inklusif + seri), generic ability, smart recipe Gornak/Morgath/Drakar/Abaddon/Alchemist/Malzareth/Akashari/Vorenmarr/Nyxarath/Thalgryn/Syrentha/Gravewake/Kunkka/Razak/Kenshiro/Khazan/Wiro/Naraka/Krognarr/Raz/Vraskhan + 41 boss L9 tersisa + final 17 non-L9, true-boss heal, entrance/enrage, status/item-debuff clocks, burn, anti-heal/heal amplification, death flash/sparks dan screen shake.
 
 ## Bukti dan batas pengujian
 

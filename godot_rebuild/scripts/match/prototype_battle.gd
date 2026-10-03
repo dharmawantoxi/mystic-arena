@@ -594,6 +594,100 @@ func _structure_target(structure: StructureState) -> UnitState:
 	return target
 
 
+func _projectile_school(target: UnitState, school: String) -> String:
+	# Layer 8q: port of `_entity.resolve_damage_school` for a structure shot that
+	# lands on the boss. `Bullet._on_hit` calls
+	# `target.take_damage(damage, team, damage_type='projectile')` with no
+	# `school=` and no `source=`, and the resolver returns None for that
+	# combination, so `Boss.take_damage` skips BOTH the armor and the
+	# magic-resist branch - only resilience and the anti-burst cap apply. The
+	# native path handed the shooter's declared school ("physical"/"magic") to
+	# the boss instead, so every tower and nexus hit was cut by the boss armor
+	# (8..32 armor -> 32%..66% less damage than the source).
+	# Hero and minion targets keep the declared school: their callers and their
+	# recorded mitigation are different code paths.
+	if target is BossState:
+		return "neutral"
+	return school
+
+
+func _cannon_splash(shot: Projectile, main: UnitState) -> void:
+	# Layer 8r: port of the boss arm of the cannon splash. `Bullet._on_hit` runs
+	# its splash loop over `all_units`, whose last element is the live boss
+	# (`all_units = all_units + [self.active_boss]`), so a boss standing inside
+	# `d <= splash_radius` of the impact point takes `int(damage * 0.6)` and
+	# burns. The native registry never holds the boss (`active_boss` only lives
+	# in `_by_id`), so cannon splash used to scorch every minion around a boss
+	# while the boss itself took nothing.
+	#
+	# The source splash hit passes neither school nor source
+	# (`u.take_damage(int(self.damage * 0.6), self.team)`), so the hit resolves
+	# school-free and a lethal splash writes `_killed_by = None`: `-1` keeps that
+	# attribution, exactly like the source-omitted cleave from layer 8k. The burn
+	# goes through `BossState.apply_debuff`, whose alive guard is why a boss the
+	# splash just killed stays unburned.
+	super._cannon_splash(shot, main)
+	var boss := active_boss
+	if shot.splash_radius <= 0.0 or boss == null or boss == main:
+		return
+	if not boss.alive or boss.team == shot.team:
+		return
+	if boss.position.distance_to(main.position) > shot.splash_radius:
+		return
+	var splash_damage := int(float(shot.damage) * 0.6)
+	if splash_damage <= 0:
+		return
+	_deliver_hit(
+		-1, shot.team, boss, splash_damage, _projectile_school(boss, "physical"), shot.position
+	)
+	if boss.alive and shot.burn_dps > 0.0:
+		boss.apply_debuff("burn", shot.burn_dps, shot.burn_duration, shot.team)
+
+
+func _ice_main(shot: Projectile, main: UnitState) -> void:
+	# Layer 8s: port of the polymorphic main-target arm of the ice impact. The
+	# source calls `self.target.apply_slow(...)` /
+	# `self.target.apply_debuff('atk_slow', ...)`, so a boss primary target runs
+	# `Boss.apply_slow` / `Boss.apply_debuff`: tenacity (0.50) halves magnitude
+	# AND duration and caps the magnitude at 0.35 (ice L6: 0.65/150 becomes
+	# 0.325/75, atk 0.40 becomes 0.20). The world-level `apply_slow` stores the
+	# raw mixin values instead, so an ice tower that aimed at the boss used to
+	# freeze it twice as hard and twice as long as the source does.
+	# Non-boss targets keep the base path untouched; the boss methods carry the
+	# source `alive` guard themselves.
+	var boss := main as BossState
+	if boss == null:
+		super._ice_main(shot, main)
+		return
+	boss.apply_slow(shot.slow_amount, shot.slow_duration)
+	if shot.atk_slow_amount > 0.0:
+		boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)
+
+
+func _ice_aoe(shot: Projectile, main: UnitState) -> void:
+	# Layer 8p: port of the boss arm of the ice level-6 freeze AOE. The source
+	# loop runs over `all_units`, whose last element is the live boss
+	# (`all_units = all_units + [self.active_boss]`), and slows each victim
+	# polymorphically: `u.apply_slow(...)` plus `u.apply_debuff('atk_slow', ...)`.
+	# A boss therefore runs `Boss.apply_slow` / `Boss.apply_debuff`, which cut
+	# magnitude AND duration by tenacity (0.50) and cap the magnitude at 0.35.
+	# The native registry never holds the boss (`active_boss` only lives in
+	# `_by_id`), so the AOE froze every minion around a boss while the boss kept
+	# full speed and full attack speed. Same-team, dead and primary-target
+	# bosses stay out, exactly like the source `continue` guard.
+	super._ice_aoe(shot, main)
+	var boss := active_boss
+	if shot.slow_aoe <= 0.0 or boss == null or boss == main:
+		return
+	if not boss.alive or boss.team == shot.team:
+		return
+	if boss.position.distance_to(main.position) > shot.slow_aoe:
+		return
+	boss.apply_slow(shot.slow_amount, shot.slow_duration)
+	if shot.atk_slow_amount > 0.0:
+		boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)
+
+
 func _boss_enemies() -> Array[UnitState]:
 	# Source Boss.update order: living units, then enemy towers, then enemy
 	# bases. Nexuses are kept separate because `structures` stores them first.

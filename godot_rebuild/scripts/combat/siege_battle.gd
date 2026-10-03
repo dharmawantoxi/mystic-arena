@@ -345,7 +345,14 @@ func _update_projectiles(source: StructureState) -> void:
 			var school := "magic" if shot.kind == "mage" else "physical"
 			if _hero_blocks_projectile(target, school):
 				continue
-			_deliver_hit(shot.source_id, shot.team, target, shot.damage, school, shot.position)
+			_deliver_hit(
+				shot.source_id,
+				shot.team,
+				target,
+				shot.damage,
+				_projectile_school(target, school),
+				shot.position
+			)
 			if shot.kind == "cannon":
 				_cannon_impact(shot, target)
 			elif shot.kind == "ice":
@@ -363,12 +370,29 @@ func _hero_blocks_projectile(target: UnitState, school: String) -> bool:
 	return (target as HeroState).wind_wall_timer > 0
 
 
+func _projectile_school(_target: UnitState, school: String) -> String:
+	# School the impact delivers its damage under. The base keeps the shooter's
+	# declared school, which is what the minion/hero mitigation layers recorded;
+	# the match layer narrows it for the boss, whose source hit resolves to no
+	# school at all (see Prototype._projectile_school).
+	return school
+
+
 func _cannon_impact(shot: Projectile, main: UnitState) -> void:
 	# Port of Bullet._on_hit "cannon": burn the main target, then 60%
 	# splash + burn to enemy units within radius of the impact point.
 	# Source all_units never contains structures, so towers take no splash.
 	if main.alive and shot.burn_dps > 0:
 		apply_burn(main.id, shot.burn_dps, shot.burn_duration, shot.team)
+	_cannon_splash(shot, main)
+
+
+func _cannon_splash(shot: Projectile, main: UnitState) -> void:
+	# Port of the splash arm of Bullet._on_hit "cannon": 60% damage plus burn to
+	# every enemy of the shooter inside `splash_radius` of the impact point,
+	# inclusive. The candidate list here is the `all_units` that `Tower.update`
+	# passes down from `Game.update`; the match layer widens it, see
+	# Prototype._cannon_splash.
 	if shot.splash_radius <= 0:
 		return
 	var splash_damage := int(float(shot.damage) * 0.6)
@@ -381,7 +405,14 @@ func _cannon_impact(shot: Projectile, main: UnitState) -> void:
 			continue
 		if _hero_blocks_projectile(victim, "physical"):
 			continue
-		_deliver_hit(shot.source_id, shot.team, victim, splash_damage, "physical", shot.position)
+		_deliver_hit(
+			shot.source_id,
+			shot.team,
+			victim,
+			splash_damage,
+			_projectile_school(victim, "physical"),
+			shot.position
+		)
 		if victim.alive and shot.burn_dps > 0:
 			apply_burn(victim.id, shot.burn_dps, shot.burn_duration, shot.team)
 
@@ -390,10 +421,28 @@ func _ice_impact(shot: Projectile, main: UnitState) -> void:
 	# Port of Bullet._on_hit "ice": slow + attack-slow the main target,
 	# then (level 6 only) the same slows, without damage, to enemy units
 	# within slow_aoe of the impact point.
+	_ice_main(shot, main)
+	_ice_aoe(shot, main)
+
+
+func _ice_main(shot: Projectile, main: UnitState) -> void:
+	# Port of the main-target arm of Bullet._on_hit "ice": the source calls
+	# `self.target.apply_slow(...)` and `self.target.apply_debuff('atk_slow',
+	# ...)` polymorphically. The base keeps the world-level stores, which mirror
+	# the TowerDebuffMixin rule; the match layer narrows it for the boss, whose
+	# own apply_slow/apply_debuff cut by tenacity (see Prototype._ice_main).
 	if main.alive:
 		apply_slow(main.id, shot.slow_amount, shot.slow_duration)
 		if shot.atk_slow_amount > 0:
 			apply_atk_slow(main.id, shot.atk_slow_amount, shot.slow_duration)
+
+
+func _ice_aoe(shot: Projectile, main: UnitState) -> void:
+	# Port of the `'slow_aoe' in self.special_data and all_units` arm of
+	# Bullet._on_hit (ice level 6): every enemy of the shooter inside `slow_aoe`
+	# of the impact point takes the same slows, without damage. The candidate
+	# list here is the `all_units` that `Tower.update` passes down from
+	# `Game.update`; the match layer widens it, see Prototype._ice_aoe.
 	if shot.slow_aoe <= 0:
 		return
 	for victim in units:

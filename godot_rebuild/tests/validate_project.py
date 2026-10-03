@@ -375,6 +375,10 @@ from boss_kill_credit_source_oracle import source_fixture as boss_kill_credit_fi
 from boss_structure_targeting_source_oracle import source_fixture as boss_structure_targeting_fixture
 from boss_minion_targeting_source_oracle import source_fixture as boss_minion_targeting_fixture
 from boss_phase_order_source_oracle import source_fixture as boss_phase_order_fixture
+from boss_ice_aoe_source_oracle import source_fixture as boss_ice_aoe_fixture
+from boss_tower_damage_source_oracle import source_fixture as boss_tower_damage_fixture
+from boss_cannon_splash_source_oracle import source_fixture as boss_cannon_splash_fixture
+from boss_ice_main_slow_source_oracle import source_fixture as boss_ice_main_slow_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -394,6 +398,22 @@ check('const BossPhaseOrderChecks = preload("res://tests/boss_phase_order_checks
       "Boss hero-before-boss phase order suite must be preloaded")
 check("BossPhaseOrderChecks.new().run(_check)" in ai_tests,
       "Boss hero-before-boss phase order suite must run")
+check('const BossIceAoeChecks = preload("res://tests/boss_ice_aoe_checks.gd")' in ai_tests,
+      "Boss ice AOE suite must be preloaded")
+check("BossIceAoeChecks.new().run(_check)" in ai_tests,
+      "Boss ice AOE suite must run")
+check('const BossTowerDamageChecks = preload("res://tests/boss_tower_damage_checks.gd")' in ai_tests,
+      "Boss tower damage suite must be preloaded")
+check("BossTowerDamageChecks.new().run(_check)" in ai_tests,
+      "Boss tower damage suite must run")
+check('const BossCannonSplashChecks = preload("res://tests/boss_cannon_splash_checks.gd")' in ai_tests,
+      "Boss cannon splash suite must be preloaded")
+check("BossCannonSplashChecks.new().run(_check)" in ai_tests,
+      "Boss cannon splash suite must run")
+check('const BossIceMainSlowChecks = preload("res://tests/boss_ice_main_slow_checks.gd")' in ai_tests,
+      "Boss ice main slow suite must be preloaded")
+check("BossIceMainSlowChecks.new().run(_check)" in ai_tests,
+      "Boss ice main slow suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -531,6 +551,178 @@ if (ROOT / "tests/fixtures/boss_phase_order_source.json").is_file():
                if case["boss_type"] == _boss} == _phase_order_labels
               for _boss in _phase_order_types),
           "Boss phase order covers lethal/nonlethal hits and both movement boundaries")
+check((ROOT / "tests/fixtures/boss_ice_aoe_source.json").is_file(),
+      "Boss ice AOE requires source fixture")
+if (ROOT / "tests/fixtures/boss_ice_aoe_source.json").is_file():
+    _boss_ice_aoe = boss_ice_aoe_fixture()
+    check(_boss_ice_aoe == json.loads(
+        (ROOT / "tests/fixtures/boss_ice_aoe_source.json").read_text(encoding="utf-8")),
+          "Boss ice AOE source drift")
+    _ice_aoe_source = _boss_ice_aoe.get("source", {})
+    check(all(bool(_ice_aoe_source.get(_flag, False)) for _flag in (
+        "tower_passes_all_units", "castle_omits_all_units", "all_units_includes_boss",
+        "ice_aoe_gated", "ice_aoe_radius_inclusive", "ice_aoe_skips_main_allies_dead",
+        "ice_aoe_slow_is_polymorphic", "ice_aoe_atk_slow_is_polymorphic",
+        "shoot_ice_gates_aoe", "boss_slow_uses_tenacity")),
+          "Ice AOE source shape must gate on slow_aoe and slow victims polymorphically")
+    _ice_aoe_levels = _ice_aoe_source.get("levels", {})
+    check(_ice_aoe_levels.get("6", {}).get("slow_aoe") == 80.0
+          and _ice_aoe_levels.get("5", {}).get("slow_aoe") == 0.0
+          and _ice_aoe_levels.get("6", {}).get("atk_slow") == 0.4,
+          "Only the source level-6 ice tower carries a freeze AOE")
+    _ice_aoe_cases = _boss_ice_aoe.get("cases", [])
+    _ice_aoe_types = {case["boss_type"] for case in _ice_aoe_cases}
+    _ice_aoe_labels = {"aoe_inside_half", "aoe_edge_inclusive", "aoe_outside",
+                       "no_aoe_below_level_six"}
+    check(len(_ice_aoe_cases) == 864
+          and _ice_aoe_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _ice_aoe_cases) == 4
+                  for _boss in _ice_aoe_types),
+          "Boss ice AOE requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _ice_aoe_cases
+               if case["boss_type"] == _boss} == _ice_aoe_labels for _boss in _ice_aoe_types),
+          "Boss ice AOE covers the inclusive edge, the outside guard and the level-5 gate")
+    check(all((case["expected"]["slow_timer"] > 0)
+              == (case["label"] in ("aoe_inside_half", "aoe_edge_inclusive"))
+              and case["expected_without_boss"]["slow_timer"] == 0
+              for case in _ice_aoe_cases),
+          "Only the in-radius level-6 AOE slows the boss, never the pre-layer candidate list")
+    check(all(case["expected"]["slow_amount"]
+              == min(0.35, case["slow_amount_in"] * (1.0 - case["tenacity"]))
+              and case["expected"]["slow_timer"]
+              == int(case["slow_duration_in"] * (1.0 - case["tenacity"]))
+              and case["expected"]["atk_slow_timer"] == case["expected"]["slow_timer"]
+              for case in _ice_aoe_cases if case["expected"]["slow_timer"] > 0),
+          "Boss AOE slow must keep the source tenacity cut, 0.35 cap and shared duration")
+check((ROOT / "tests/fixtures/boss_tower_damage_source.json").is_file(),
+      "Boss tower damage requires source fixture")
+if (ROOT / "tests/fixtures/boss_tower_damage_source.json").is_file():
+    _boss_tower_damage = boss_tower_damage_fixture()
+    check(_boss_tower_damage == json.loads(
+        (ROOT / "tests/fixtures/boss_tower_damage_source.json").read_text(encoding="utf-8")),
+          "Boss tower damage source drift")
+    _tower_damage_source = _boss_tower_damage.get("source", {})
+    check(all(bool(_tower_damage_source.get(_flag, False)) for _flag in (
+        "main_hit_is_projectile", "hit_passes_no_school", "resolver_none_for_projectile",
+        "resolver_rejects_unknown_school", "resolver_reads_source_school",
+        "boss_mitigation_gated_by_school", "resolver_documented_none")),
+          "Structure shots must resolve to no school and boss mitigation must stay school-gated")
+    _tower_damage_cases = _boss_tower_damage.get("cases", [])
+    _tower_damage_types = {case["boss_type"] for case in _tower_damage_cases}
+    _tower_damage_labels = {"archer_level_one", "cannon_level_six", "ice_level_six",
+                            "mage_level_six"}
+    check(len(_tower_damage_cases) == 864
+          and _tower_damage_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _tower_damage_cases) == 4
+                  for _boss in _tower_damage_types),
+          "Boss tower damage requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _tower_damage_cases
+               if case["boss_type"] == _boss} == _tower_damage_labels
+              for _boss in _tower_damage_types),
+          "Boss tower damage covers all four structure bullet kinds")
+    check(all(case["expected_hp_after"] <= case["expected_physical_hp_after"]
+              and case["alive"]
+              for case in _tower_damage_cases),
+          "School-free source hits must land at least as hard as the declared-school path")
+    check(sum(case["expected_hp_after"] != case["expected_physical_hp_after"]
+              for case in _tower_damage_cases) == 864,
+          "Every boss armor value must make the two paths differ")
+    check(all(case["hp_before"] - case["expected_hp_after"] >= 1
+              for case in _tower_damage_cases),
+          "Every recorded tower hit must damage the boss")
+check((ROOT / "tests/fixtures/boss_cannon_splash_source.json").is_file(),
+      "Boss cannon splash requires source fixture")
+if (ROOT / "tests/fixtures/boss_cannon_splash_source.json").is_file():
+    _boss_cannon_splash = boss_cannon_splash_fixture()
+    check(_boss_cannon_splash == json.loads(
+        (ROOT / "tests/fixtures/boss_cannon_splash_source.json").read_text(encoding="utf-8")),
+          "Boss cannon splash source drift")
+    _splash_source = _boss_cannon_splash.get("source", {})
+    check(all(bool(_splash_source.get(_flag, False)) for _flag in (
+        "tower_passes_all_units", "all_units_includes_boss", "splash_damage_scale",
+        "splash_radius_inclusive", "splash_skips_main_allies_dead", "splash_hit_has_no_source",
+        "splash_burn_uses_source_team", "burn_gated_by_dps", "kill_credit_written_on_lethal")),
+          "Cannon splash source shape must stay inclusive, source-omitted and burn-gated")
+    _splash_cannon = _splash_source.get("cannon", {})
+    check(_splash_cannon.get("splash") == 100.0
+          and _splash_cannon.get("splash_damage") == int(_splash_cannon.get("damage", 0) * 0.6),
+          "Level-6 cannon splash radius and 60% damage must match the source table")
+    _splash_cases = _boss_cannon_splash.get("cases", [])
+    _splash_types = {case["boss_type"] for case in _splash_cases}
+    _splash_labels = {"splash_inside_half", "splash_edge_inclusive", "splash_outside",
+                      "splash_lethal_no_source"}
+    check(len(_splash_cases) == 864
+          and _splash_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _splash_cases) == 4
+                  for _boss in _splash_types),
+          "Boss cannon splash requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _splash_cases
+               if case["boss_type"] == _boss} == _splash_labels for _boss in _splash_types),
+          "Boss cannon splash covers the inclusive edge, the outside guard and a lethal splash")
+    check(all((case["expected"]["hp"] < case["hp_before"])
+              == (case["label"] != "splash_outside")
+              and case["expected_without_boss"]["hp"] == case["hp_before"]
+              and case["expected_without_boss"]["burn_timer"] == 0
+              for case in _splash_cases),
+          "Only the in-radius splash hurts the boss, never the pre-layer candidate list")
+    check(all((case["expected"]["burn_timer"] == case["burn_duration_in"])
+              == (case["expected"]["hp"] < case["hp_before"] and case["expected"]["alive"])
+              and (case["expected"]["burn_team"] == "blue")
+              == (case["expected"]["burn_timer"] > 0)
+              for case in _splash_cases),
+          "Splash burn must land on survivors only and keep the shooter team")
+    check(all((not case["expected"]["alive"]) == (case["label"] == "splash_lethal_no_source")
+              and (case["expected"]["killed_by_none"] or case["expected"]["alive"])
+              for case in _splash_cases),
+          "A lethal splash must kill without crediting any source")
+    check(all(case["expected"]["hp"] <= case["expected_physical_hp_after"]
+              for case in _splash_cases if case["expected"]["hp"] < case["hp_before"]),
+          "School-free splash must land at least as hard as the declared-school path")
+check((ROOT / "tests/fixtures/boss_ice_main_slow_source.json").is_file(),
+      "Boss ice main slow requires source fixture")
+if (ROOT / "tests/fixtures/boss_ice_main_slow_source.json").is_file():
+    _boss_ice_main = boss_ice_main_slow_fixture()
+    check(_boss_ice_main == json.loads(
+        (ROOT / "tests/fixtures/boss_ice_main_slow_source.json").read_text(encoding="utf-8")),
+          "Boss ice main slow source drift")
+    _ice_main_source = _boss_ice_main.get("source", {})
+    check(all(bool(_ice_main_source.get(_flag, False)) for _flag in (
+        "main_slow_is_polymorphic", "main_atk_slow_is_polymorphic", "main_atk_slow_gated",
+        "boss_slow_requires_alive", "boss_slow_uses_tenacity", "boss_slow_cuts_duration",
+        "boss_atk_slow_uses_tenacity", "mixin_slow_has_no_tenacity")),
+          "Ice main-target slow must stay polymorphic and boss-only tenacity-gated")
+    _ice_main_cases = _boss_ice_main.get("cases", [])
+    _ice_main_types = {case["boss_type"] for case in _ice_main_cases}
+    _ice_main_labels = {"level_six_single", "level_five_single",
+                        "strong_then_weak_keeps_strongest", "weak_then_strong_refreshes"}
+    check(len(_ice_main_cases) == 864
+          and _ice_main_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _ice_main_cases) == 4
+                  for _boss in _ice_main_types),
+          "Boss ice main slow requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _ice_main_cases
+               if case["boss_type"] == _boss} == _ice_main_labels
+              for _boss in _ice_main_types),
+          "Boss ice main slow covers both ice levels and both store-rule directions")
+    check(all(case["expected"]["slow_amount"] < case["expected_mixin"]["slow_amount"]
+              and case["expected"]["slow_timer"] < case["expected_mixin"]["slow_timer"]
+              and case["expected"]["atk_slow_amount"] < case["expected_mixin"]["atk_slow_amount"]
+              for case in _ice_main_cases),
+          "Boss tenacity must cut both slow magnitude and duration below the mixin store")
+    check(all(case["expected"]["slow_amount"]
+              == min(0.35, max(row["slow"] for row in case["inputs"])
+                     * (1.0 - case["tenacity"]))
+              and case["expected"]["atk_slow_amount"]
+              == min(0.35, max(row["atk_slow"] for row in case["inputs"])
+                     * (1.0 - case["tenacity"]))
+              for case in _ice_main_cases),
+          "Boss main-target slow must equal the tenacity cut of the strongest ice level")
+    check(all(case["expected_mixin"]["slow_amount"]
+              == max(row["slow"] for row in case["inputs"])
+              and case["expected_mixin"]["atk_slow_amount"]
+              == max(row["atk_slow"] for row in case["inputs"])
+              for case in _ice_main_cases),
+          "Non-boss main targets must keep the raw mixin store")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -606,6 +798,62 @@ check("super._structure_target(structure)" in boss_structure_target
       and "distance > structure.definition.attack_range_px" in boss_structure_target
       and "distance <= structure.position.distance_to(target.position)" in boss_structure_target,
       "Towers and the nexus must append the living enemy boss like the source scans")
+siege_battle = (ROOT / "scripts/combat/siege_battle.gd").read_text(encoding="utf-8")
+ice_impact = siege_battle.split("func _ice_impact(", 1)[1].split("\nfunc ", 1)[0]
+check("_ice_main(shot, main)" in ice_impact and "_ice_aoe(shot, main)" in ice_impact,
+      "Ice impact must delegate both the main-target and the AOE arm")
+ice_main_base = siege_battle.split("func _ice_main(", 1)[1].split("\nfunc ", 1)[0]
+check("apply_slow(main.id, shot.slow_amount, shot.slow_duration)" in ice_main_base
+      and "apply_atk_slow(main.id, shot.atk_slow_amount, shot.slow_duration)" in ice_main_base,
+      "Base ice main target must keep the world-level mixin stores")
+boss_ice_main = prototype_battle.split("func _ice_main(", 1)[1].split("\nfunc ", 1)[0]
+check("main as BossState" in boss_ice_main
+      and "super._ice_main(shot, main)" in boss_ice_main
+      and "boss.apply_slow(shot.slow_amount, shot.slow_duration)" in boss_ice_main
+      and 'boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)'
+      in boss_ice_main,
+      "Boss main target must take the ice slow through its own tenacity methods")
+cannon_impact = siege_battle.split("func _cannon_impact(", 1)[1].split("\nfunc ", 1)[0]
+check("_cannon_splash(shot, main)" in cannon_impact,
+      "Cannon impact must delegate its splash arm so the match layer can widen it")
+cannon_splash_base = siege_battle.split("func _cannon_splash(", 1)[1].split("\nfunc ", 1)[0]
+check("for victim in units:" in cannon_splash_base
+      and "_projectile_school(victim, \"physical\")" in cannon_splash_base
+      and "victim.position.distance_to(main.position) > shot.splash_radius" in cannon_splash_base,
+      "Base cannon splash must keep the source scan, inclusive radius and resolved school")
+boss_cannon_splash = prototype_battle.split("func _cannon_splash(", 1)[1].split("\nfunc ", 1)[0]
+check("super._cannon_splash(shot, main)" in boss_cannon_splash
+      and "boss.position.distance_to(main.position) > shot.splash_radius" in boss_cannon_splash
+      and "_deliver_hit(" in boss_cannon_splash
+      and "-1, shot.team, boss, splash_damage" in boss_cannon_splash
+      and 'boss.apply_debuff("burn", shot.burn_dps, shot.burn_duration, shot.team)'
+      in boss_cannon_splash,
+      "Match layer must splash the living boss with source-omitted attribution and burn")
+projectile_delivery = siege_battle.split("func _update_projectiles(", 1)[1].split("\nfunc ", 1)[0]
+check("_projectile_school(target, school)" in projectile_delivery
+      and "_hero_blocks_projectile(target, school)" in projectile_delivery,
+      "Structure impacts must deliver damage under the resolved projectile school")
+projectile_school_base = siege_battle.split("func _projectile_school(", 1)[1].split("\nfunc ", 1)[0]
+check("return school" in projectile_school_base,
+      "Base projectile school must stay the declared school for units and heroes")
+boss_projectile_school = prototype_battle.split("func _projectile_school(", 1)[1].split(
+    "\nfunc ", 1)[0]
+check("if target is BossState:" in boss_projectile_school
+      and 'return "neutral"' in boss_projectile_school,
+      "Boss targets must take structure shots without school mitigation, like the source")
+ice_aoe_base = siege_battle.split("func _ice_aoe(", 1)[1].split("\nfunc ", 1)[0]
+check("for victim in units:" in ice_aoe_base
+      and "victim.position.distance_to(main.position) > shot.slow_aoe" in ice_aoe_base
+      and "if shot.slow_aoe <= 0:" in ice_aoe_base,
+      "Base ice AOE must keep the source candidate scan, gate and inclusive radius")
+boss_ice_aoe = prototype_battle.split("func _ice_aoe(", 1)[1].split("\nfunc ", 1)[0]
+check("super._ice_aoe(shot, main)" in boss_ice_aoe
+      and "boss.position.distance_to(main.position) > shot.slow_aoe" in boss_ice_aoe
+      and "boss.apply_slow(shot.slow_amount, shot.slow_duration)" in boss_ice_aoe
+      and 'boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)'
+      in boss_ice_aoe
+      and "not boss.alive or boss.team == shot.team" in boss_ice_aoe,
+      "Match layer must add the living boss to the ice AOE with the source tenacity dispatch")
 minion_battle = (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8")
 boss_minion_target = prototype_battle.split("func _find_target(unit: UnitState)", 1)[1].split(
     "\nfunc _structure_target(", 1)[0]
