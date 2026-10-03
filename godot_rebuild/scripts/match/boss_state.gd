@@ -101,6 +101,8 @@ var attack_facing := 0.0
 var attack_lock_timer := 0
 var basic_attack_seq := 0
 var last_hit_source_id := -1
+# Preserve `TowerDebuffMixin._tick_tower_debuffs` from_team at the boss damage boundary.
+var last_damage_from_team := -1
 # Layer 8d source smart-ability state. These fields are gameplay state; the
 # renderer may consume active_skill later, but presentation is not here.
 var q_timer := 0
@@ -206,6 +208,7 @@ func setup(boss_type_value: String, lane_path: PackedVector2Array, table: Dictio
 	entrance_text = String(stats["entrance_text"])
 	_set_colors(stats)
 	team = 1  # Source Boss.__init__: team = "red".
+	last_damage_from_team = -1
 	rebuild_definition()
 	direction = -1
 	facing = -1.0
@@ -500,6 +503,11 @@ func store_debuff(kind: String, amount: float, duration: int, source_team: int =
 				burn_team = source_team
 
 
+func burn_source_team() -> int:
+	# Source calls take_damage(burn_team or self.team); team 0 is valid here.
+	return burn_team if burn_team >= 0 else team
+
+
 func apply_stun(duration: int) -> void:
 	# Port of TowerDebuffMixin.apply_stun (Boss does not override it): a boss
 	# resists 55% of the stun duration so it cannot be stun-locked.
@@ -624,15 +632,25 @@ func blind_live(source: Object, damage_type: String) -> bool:
 
 
 func take_damage(
-	source: Object, raw_damage: int, damage_type: String = "normal", school: String = "neutral"
+	source: Object,
+	raw_damage: int,
+	damage_type: String = "normal",
+	school: String = "neutral",
+	from_team: int = -1
 ) -> int:
 	# Port of the numeric tail of Boss.take_damage. Returns the damage applied,
 	# or -1 when the source would return before touching hp (blind miss).
 	# Damage numbers and hit particles remain outside the prototype view, but
 	# the source death explosion/shake snapshot is retained for Layer 8f.
+	# Source accepts from_team but doesn't otherwise consume it; retain it here
+	# so burn damage does not discard TowerDebuffMixin attribution.
 	if source != null and raw_damage > 0 and blind_live(source, damage_type):
 		if blind_roll() < float(source.get("blind_amount")):
 			return -1
+	if from_team >= 0:
+		last_damage_from_team = from_team
+	elif source != null:
+		last_damage_from_team = int(source.get("team"))
 	var damage := raw_damage
 	if damage > 0:
 		if dmg_amp_timer > 0:

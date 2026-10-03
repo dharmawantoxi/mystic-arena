@@ -5,6 +5,7 @@ extends RefCounted
 const BossAI = preload("res://scripts/match/boss_ai.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const Prototype = preload("res://scripts/match/prototype_battle.gd")
+const GOBLIN = preload("res://data/minions/goblin.tres")
 const FIXTURE := "res://tests/fixtures/boss_debuff_clock_source.json"
 
 const COMPARE_FIELDS := [
@@ -60,6 +61,7 @@ func run(check: Callable) -> void:
 		_replay_hp_write(check, world, entry)
 	_match_tick_order(check, world)
 	_burn_damage_and_retirement(check)
+	_unit_burn_attribution(check)
 	_boss_heal_paths(check)
 
 
@@ -69,10 +71,13 @@ func _replay_case(check: Callable, world: Prototype, entry: Dictionary) -> void:
 	var input: Dictionary = entry.get("input", {})
 	_apply_state(boss, input)
 	var damage_ticks: Array[int] = []
+	var damage_teams: Array[int] = []
 	for _tick in range(int(entry.get("ticks", 1))):
+		var burn_from_team := boss.burn_source_team()
 		var burn_damage: int = boss.tick_tower_debuffs()
 		if burn_damage > 0:
 			damage_ticks.append(burn_damage)
+			damage_teams.append(burn_from_team)
 	var result: Dictionary = entry.get("result", {})
 	var expected_state: Dictionary = result.get("state", {})
 	for field in COMPARE_FIELDS:
@@ -85,10 +90,16 @@ func _replay_case(check: Callable, world: Prototype, entry: Dictionary) -> void:
 			matches = actual == expected
 		check.call(matches, "boss debuff clock parity: %s (%s)" % [label, String(field)])
 	var expected_damage: Array[int] = []
+	var expected_teams: Array[int] = []
 	for damage_call in result.get("damage_calls", []):
 		expected_damage.append(int(damage_call.get("damage", 0)))
+		expected_teams.append(_source_team_code(String(damage_call.get("from_team", ""))))
 	check.call(
 		damage_ticks == expected_damage, "boss debuff burn tick payload matches source: %s" % label
+	)
+	check.call(
+		damage_teams == expected_teams,
+		"boss debuff burn team attribution matches source: %s" % label
 	)
 
 
@@ -133,6 +144,10 @@ func _match_tick_order(check: Callable, world: Prototype) -> void:
 	)
 	check.call(is_equal_approx(boss.hp, hp_before - 1.0), "boss burn uses native damage mitigation")
 	check.call(
+		boss.last_damage_from_team == world.RED,
+		"boss burn without a source team falls back to the boss team"
+	)
+	check.call(
 		boss.burn_timer == 1 and boss.burn_tick_cd == 30 and boss.blind_timer == 1,
 		"boss burn and item-debuff clocks advance once before gates"
 	)
@@ -151,8 +166,13 @@ func _burn_damage_and_retirement(check: Callable) -> void:
 	boss.burn_dps = 60.0
 	boss.burn_timer = 2
 	boss.burn_tick_cd = 1
+	boss.burn_team = world.BLUE
 	world._step_active_boss()
 	check.call(not boss.alive and boss.defeated, "burn can defeat an active boss")
+	check.call(
+		boss.last_damage_from_team == world.BLUE,
+		"lethal boss burn retains its attacking team's attribution"
+	)
 	check.call(
 		world.boss_death_presentations.size() == 1,
 		"burn defeat queues the existing boss death snapshot once"
@@ -161,6 +181,26 @@ func _burn_damage_and_retirement(check: Callable) -> void:
 	check.call(
 		world.active_boss == null and world.boss_rewards.size() == 1,
 		"burn defeat retires boss and commits one source reward"
+	)
+
+
+func _unit_burn_attribution(check: Callable) -> void:
+	var world := _world()
+	var victim := world.spawn_unit(GOBLIN, world.BLUE, 1)
+	check.call(victim != null, "unit burn attribution victim spawns")
+	if victim == null:
+		return
+	victim.hp = 1.0
+	check.call(
+		world.apply_burn(victim.id, 60.0, 30, world.BLUE),
+		"same-team unit burn can be assigned without target-team filtering"
+	)
+	victim.burn_tick_cd = 1
+	world._tick_burn(victim)
+	check.call(not victim.alive, "unit burn applies its lethal tick")
+	check.call(
+		world.kills[world.BLUE] == 1 and world.kills[world.RED] == 0,
+		"unit burn death is credited to burn_team rather than inferred enemy team"
 	)
 
 
@@ -187,6 +227,14 @@ func _boss_heal_paths(check: Callable) -> void:
 		is_equal_approx(boss.hp, before_skill_heal + float(int(float(boss.max_hp) * 0.1)) * 0.5),
 		"smart-AI heal helper honors anti-heal"
 	)
+
+
+func _source_team_code(team: String) -> int:
+	if team == "blue":
+		return 0
+	if team == "red":
+		return 1
+	return -1
 
 
 func _world() -> Prototype:

@@ -581,9 +581,10 @@ func _step_active_boss() -> void:
 	var boss := active_boss
 	boss.advance_animation_clock()
 	boss.begin_motion_tick()
+	var burn_from_team := boss.burn_source_team()
 	var burn_damage := boss.tick_tower_debuffs()
 	if burn_damage > 0:
-		boss.take_damage(null, burn_damage, "fire", "neutral")
+		boss.take_damage(null, burn_damage, "fire", "neutral", burn_from_team)
 		boss.last_hit_source_id = -1
 		if not boss.alive:
 			_queue_boss_death_presentation(boss)
