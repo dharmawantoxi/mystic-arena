@@ -123,6 +123,11 @@ var unlocked_bosses: Array[String] = []
 var purchased_heroes: Array[String] = []
 var heroes_unlocked_this_match: Array[String] = []
 var boss_rewards: Array[Dictionary] = []
+# Layer 8l: source Game.miniboss_kill_count / trueboss_kill_count. Only a real
+# enemy hero landing the last hit moves them; the achievement banner they feed
+# in the source is presentation and stays outside this port.
+var miniboss_kill_count := 0
+var trueboss_kill_count := 0
 # Layer 8f: death FX survives registry retirement, like source EffectManager.
 var boss_death_presentations: Array[Dictionary] = []
 var boss_screen_shake_intensity := 0.0
@@ -528,6 +533,34 @@ func _spawn_boss(boss_type: String) -> BossState:
 	return boss
 
 
+func _structure_target(structure: StructureState) -> UnitState:
+	# Port of the boss scan that `Tower.update` and `Castle.update` run after
+	# their spatial-grid query in the source:
+	#
+	#     for u in all_units:
+	#         if not getattr(u, "boss_type", None): continue
+	#         if not u.alive or u.team == self.team: continue
+	#         if math.hypot(u.x - self.x, u.y - self.y) <= self.range:
+	#             if u not in enemies: enemies.append(u)
+	#
+	# That scan appends the boss LAST and `_find_target` keeps the later
+	# candidate on an exact tie (`dist <= best_dist`), so an in-range boss wins
+	# ties. The native base only scans `units`, which never holds the boss (it
+	# is registered as `active_boss` in `_by_id`), so towers and the nexus used
+	# to ignore a boss walking right past them. Range is inclusive, and only a
+	# living enemy boss is appended, exactly like the source loop.
+	var target := super._structure_target(structure)
+	var boss := active_boss
+	if boss == null or not boss.alive or boss.team == structure.team:
+		return target
+	var distance := structure.position.distance_to(boss.position)
+	if distance > structure.definition.attack_range_px:
+		return target
+	if target == null or distance <= structure.position.distance_to(target.position):
+		return boss
+	return target
+
+
 func _boss_enemies() -> Array[UnitState]:
 	# Source Boss.update order: living units, then enemy towers, then enemy
 	# bases. Nexuses are kept separate because `structures` stores them first.
@@ -710,6 +743,31 @@ func _tick_boss_death_presentations() -> void:
 	boss_death_presentations = standing
 
 
+func _process_boss_kill(boss: BossState) -> void:
+	# Port of Game._process_boss_kill: the boss kill is credited only when the
+	# last hit came from a real hero of the other team (not None, not the
+	# victim, not a tower/minion/castle). Source reads `boss._killed_by`, which
+	# `Boss.take_damage` writes only on the lethal blow; the native boundary is
+	# the attacker ID that `_deliver_hit` stores on every damaging hit (boss
+	# basic hit with source in layer 8k, source-omitted cleave/burn in 8g),
+	# which is the same blow because a missed hit never kills. Dead heroes stay
+	# addressable in the registry, so a killer that died in the same tick still
+	# resolves. Source also guards `killer is victim`, impossible here: a
+	# BossState can never come back from the HeroState cast.
+	var killer := get_unit(boss.last_hit_source_id) as HeroState
+	if killer == null or killer.team == boss.team:
+		return
+	# Source `_killer_is_hero` requires `hero_type` and `skills`; HeroState is
+	# the only native unit carrying both, so the cast above is the whole gate.
+	killer.kills += 1
+	if killer.team != BLUE:
+		return
+	if boss.boss_class == "true":
+		trueboss_kill_count += 1
+	else:
+		miniboss_kill_count += 1
+
+
 func _process_boss_result() -> void:
 	# Port of the source defeated-boss reward/unlock pass. The death
 	# presentation payload has already been copied before registry retirement.
@@ -717,6 +775,8 @@ func _process_boss_result() -> void:
 		return
 	var boss := active_boss
 	var boss_type := boss.boss_type
+	# Source runs the kill-attribution pass before it pays out the reward.
+	_process_boss_kill(boss)
 	economy.credit_kill(BLUE, boss.gold_reward)
 	score += boss.gold_reward
 	boss_rewards.append({"boss_type": boss_type, "gold": boss.gold_reward})
