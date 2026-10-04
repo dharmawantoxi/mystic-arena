@@ -1915,6 +1915,18 @@ func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:
 	return bus
 
 
+func _aura_item_effects() -> BattleItemEffects:
+	# Layer 8y: enemy unit auras (Everfrost Freezing Aura, Solar Brand
+	# Scorched Earth, Searbrand Cauterize) call `u.apply_debuff(...)` /
+	# `u.apply_miss_chance(...)` on every living unit in the source, so the
+	# aura debuff arms go through the item bus where a BossState target runs
+	# `BossState.apply_debuff`. Dealer identity is unused by the debuff
+	# methods, so the bus only needs the world.
+	var bus := BattleItemEffects.new()
+	bus.world = self
+	return bus
+
+
 func _reflect_item_effects(_defender_team: int) -> ReflectItemEffects:
 	var bus := ReflectItemEffects.new()
 	bus.world = self
@@ -2046,6 +2058,7 @@ func _update_auras() -> void:
 		var se_r := float(se_cat.get("enemy_radius", 0))
 		var se_heal := float(se_cat.get("enemy_anti_heal", 0.0))
 		var se_burn := float(se_cat.get("burn_dps", 0.0))
+		var aura_bus := _aura_item_effects()
 		for u in _collect_all_units():
 			if u is HeroState and (u as HeroState).shadow_realm_timer > 0:
 				continue
@@ -2053,7 +2066,14 @@ func _update_auras() -> void:
 				if u.team == src.team:
 					continue
 				if src.position.distance_to(u.position) <= f_r:
-					apply_atk_slow(u.id, f_as, AURA_DEBUFF_DURATION)
+					# Layer 8y: the source Freezing Aura calls
+					# `u.apply_debuff('atk_slow', f_as, 30)`
+					# (`hero_items.py:2843-2844`), so a boss inside the 300 px
+					# radius has to run the boss store (tenacity 0.50 cuts the
+					# 0.30 payload to 0.15 and the 30 tick payload to 15)
+					# instead of the world store the aura used before.
+					# Minions/heroes keep the identical world path.
+					aura_bus.apply_atk_slow(u.id, f_as, AURA_DEBUFF_DURATION)
 					apply_anti_heal(u.id, f_heal, AURA_DEBUFF_DURATION)
 					break
 			for src in solar_src:

@@ -386,6 +386,7 @@ from boss_ability_source_attribution_oracle import (
 from boss_item_stun_source_oracle import source_fixture as boss_item_stun_fixture
 from boss_item_silence_source_oracle import source_fixture as boss_item_silence_fixture
 from boss_item_slow_source_oracle import source_fixture as boss_item_slow_fixture
+from boss_item_aura_source_oracle import source_fixture as boss_item_aura_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -446,6 +447,10 @@ check('const BossItemSlowChecks = preload("res://tests/boss_item_slow_checks.gd"
       "Boss item slow suite must be preloaded")
 check("BossItemSlowChecks.new().run(_check)" in ai_tests,
       "Boss item slow suite must run")
+check('const BossItemAuraChecks = preload("res://tests/boss_item_aura_checks.gd")' in ai_tests,
+      "Boss item aura suite must be preloaded")
+check("BossItemAuraChecks.new().run(_check)" in ai_tests,
+      "Boss item aura suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -1064,6 +1069,104 @@ if (ROOT / "tests/fixtures/boss_item_slow_source.json").is_file():
               for case in _slow_cases
               if case["scenario"] == "everfrost_arctic_blast_on_boss"),
           "Everfrost Arctic Blast must arm its 1440-tick cooldown in both columns")
+check((ROOT / "tests/fixtures/boss_item_aura_source.json").is_file(),
+      "Boss item aura requires source fixture")
+if (ROOT / "tests/fixtures/boss_item_aura_source.json").is_file():
+    _boss_item_aura = boss_item_aura_fixture()
+    check(_boss_item_aura == json.loads(
+        (ROOT / "tests/fixtures/boss_item_aura_source.json").read_text(encoding="utf-8")),
+        "Boss item aura source behavior drift")
+    _aura_source = _boss_item_aura.get("source", {})
+    check(all(bool(_aura_source.get(_flag)) for _flag in (
+        "auras_loop_over_collected_units",
+        "collect_all_units_appends_live_boss",
+        "collect_all_units_requires_alive_boss",
+        "everfrost_aura_applies_atk_slow_and_anti_heal",
+        "solar_aura_burns_with_source_team",
+        "solar_aura_blinds_via_miss_chance",
+        "searbrand_aura_applies_anti_heal_and_burn",
+        "aura_arms_skip_the_source_team",
+        "boss_apply_debuff_cuts_only_atk_slow",
+        "tower_store_resets_expired_burn_clock")),
+          "Boss item aura shape must route the aura arms through Boss.apply_debuff")
+    check(_aura_source.get("everfrost_aura_radius") == 300
+          and _aura_source.get("everfrost_aura_atk_slow") == 0.30
+          and _aura_source.get("everfrost_aura_anti_heal") == 0.40
+          and _aura_source.get("solar_aura_radius") == 280
+          and _aura_source.get("solar_aura_burn_dps") == 28.0
+          and _aura_source.get("solar_aura_blind") == 0.18
+          and _aura_source.get("searbrand_aura_radius") == 300
+          and _aura_source.get("searbrand_aura_anti_heal") == 0.50
+          and _aura_source.get("searbrand_aura_burn_dps") == 6.0
+          and _aura_source.get("searbrand_burst_burn_dps") == 22.0
+          and _aura_source.get("searbrand_burst_burn_duration") == 180
+          and _aura_source.get("aura_debuff_ticks") == 30
+          and _aura_source.get("burn_tick") == 30,
+          "Boss item aura metadata must match the source aura payloads")
+    _aura_cases = _boss_item_aura.get("cases", [])
+    _aura_types = {case["boss_type"] for case in _aura_cases}
+    _aura_scenarios = {
+        "everfrost_freezing_aura_on_boss",
+        "solar_scorched_earth_on_boss",
+        "searbrand_cauterize_on_boss",
+        "brand_burst_burn_after_expired_burn",
+    }
+    check(len(_aura_cases) == 864
+          and _aura_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _aura_cases) == 4
+                  for _boss in _aura_types),
+          "Boss item aura requires four source cases for all 216 boss types")
+    check(all({case["scenario"] for case in _aura_cases if case["boss_type"] == _boss}
+              == _aura_scenarios for _boss in _aura_types),
+          "Boss item aura covers Freezing Aura, Scorched Earth, Cauterize and the burn clock")
+    _frost = [case for case in _aura_cases
+              if case["scenario"] == "everfrost_freezing_aura_on_boss"]
+    _solar = [case for case in _aura_cases
+              if case["scenario"] == "solar_scorched_earth_on_boss"]
+    _sear = [case for case in _aura_cases
+             if case["scenario"] == "searbrand_cauterize_on_boss"]
+    _burst = [case for case in _aura_cases
+              if case["scenario"] == "brand_burst_burn_after_expired_burn"]
+    check(all(case["expected"]["boss_atk_slow_amount"] == 0.15
+              and case["expected"]["boss_atk_slow_timer"] == 15
+              and case["expected_without_boss_store"]["boss_atk_slow_amount"] == 0.30
+              and case["expected_without_boss_store"]["boss_atk_slow_timer"] == 30
+              and case["expected"]["boss_atk_slow_amount"]
+              < case["expected_without_boss_store"]["boss_atk_slow_amount"]
+              and case["expected"]["boss_anti_heal_amount"] == 0.40
+              and case["expected"]["boss_anti_heal_amount"]
+              == case["expected_without_boss_store"]["boss_anti_heal_amount"]
+              and case["expected"]["apply_atk_slow_calls"] == [[0.3, 30]]
+              and case["expected_without_boss_store"]["apply_atk_slow_calls"] == [[0.3, 30]]
+              for case in _frost),
+          "Freezing Aura must cut the boss atk_slow to 0.15/15 and keep anti_heal 0.40/30")
+    check(all(case["expected"]["boss_burn_dps"] == 28.0
+              and case["expected"]["boss_burn_timer"] == 30
+              and case["expected"]["boss_burn_team"] == 0
+              and case["expected"]["boss_burn_tick_cd"] == 30
+              and case["expected_without_boss_store"]["boss_burn_tick_cd"] == 30
+              and case["expected"]["boss_blind_amount"] == 0.18
+              and case["expected"]["boss_blind_timer"] == 30
+              and case["expected"]["apply_burn_calls"] == [[28.0, 30, 0]]
+              and case["expected"]["apply_miss_chance_calls"] == [[0.18, 30]]
+              for case in _solar),
+          "Scorched Earth must burn 28/30 in blue and blind 0.18/30 on the boss")
+    check(all(case["expected"]["boss_anti_heal_amount"] == 0.50
+              and case["expected"]["boss_anti_heal_timer"] == 30
+              and case["expected"]["boss_burn_dps"] == 6.0
+              and case["expected"]["boss_burn_team"] == 0
+              and case["expected"]["apply_anti_heal_calls"] == [[0.5, 30]]
+              and case["expected"]["apply_burn_calls"] == [[6.0, 30, 0]]
+              for case in _sear),
+          "Cauterize must anti-heal 0.50/30 and burn 6/30 on the boss")
+    check(all(case["expected"]["after_delivery"]["burn_tick_cd"] == 30
+              and case["expected"]["burn_damage_after_23_ticks"] == 0
+              and case["expected_without_boss_store"]["after_delivery"]["burn_tick_cd"] == 23
+              and case["expected_without_boss_store"]["burn_damage_after_23_ticks"] == 8
+              and case["expected"]["apply_burn_calls"] == [[22.0, 180, 0]]
+              and case["pre_fix_delivery"] == "burn_field_write"
+              for case in _burst),
+          "Brand Burst burn must restart the boss clock instead of reusing the stale tick")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(

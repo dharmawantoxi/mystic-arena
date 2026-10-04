@@ -82,6 +82,18 @@ func apply_burn(target_id: int, dps: float, duration: int, source_team: int) -> 
 	var t: Object = world.get_unit(target_id)
 	if t == null:
 		return
+	# Layer 8y: every item burn arm calls `u.apply_debuff('burn', ...)` in the
+	# source (Searbrand Brand Burst, `hero_items.py:614-622`), so a boss target
+	# must run `BossState.apply_debuff` -> `store_debuff`
+	# (`boss_state.gd:527-540`): a fresh burn on a boss whose previous burn
+	# already expired resets `burn_accum` and `burn_tick_cd` to
+	# `rules.burn_tick` and only follows a real team id for `burn_team`.
+	# The raw field write below kept the stale tick clock of the expired burn,
+	# so the first tick fired early and burned for a different amount
+	# (measured: int(22/60 * 23) = 8 damage at frame 23 instead of none).
+	if t.has_method("apply_debuff"):
+		t.apply_debuff("burn", dps, duration, source_team)
+		return
 	t.burn_dps = maxf(t.burn_dps, dps)
 	t.burn_timer = maxi(t.burn_timer, duration)
 	t.burn_team = source_team
