@@ -112,6 +112,9 @@ var enemy_speed_mult := 1.0
 var boss_table: Dictionary = {}
 var boss_rng := RandomNumberGenerator.new()
 var active_boss: BossState = null
+# Layer 9b: all hero inventories in this match share the source's target-keyed
+# Miasma registry; tracker owner fields retain last-applier credit.
+var _miasma_registry: Dictionary = {}
 var pending_mini_bosses: Array[Dictionary] = []
 var true_boss_spawned := false
 var red_towers_destroyed := 0
@@ -1907,6 +1910,7 @@ func _hero_enemy_list() -> Array:
 
 
 func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:
+	source_hero.items.miasma = _miasma_registry
 	var bus := BattleItemEffects.new()
 	bus.world = self
 	bus.dealer_id = source_hero.id

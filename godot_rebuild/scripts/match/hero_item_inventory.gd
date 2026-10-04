@@ -14,9 +14,9 @@ extends RefCounted
 ## - Hero runtime state (hp/pos/alive/facing/target_id) must be refreshed via
 ##   set_hero_runtime() every tick before tick_auto(); the inventory keeps no
 ##   hero reference.
-## - Layer 5e-2 keeps the Miasma registry per inventory; the source registry is
-##   module-level and keyed by id(target), so two owners poisoning one target
-##   stack here. Every other Miasma rule (clamp, refresh, 30-tick reset) matches.
+## - Layer 9b binds every match inventory to PrototypeBattle's shared,
+##   target-keyed Miasma registry. Reapplication replaces source id/team while
+##   retaining strongest damage, longest timer and shortest tick countdown.
 ## The source-side values are locked in `tests/fixtures/ai_items_source.json`
 ## ("auto_triggers", "notify_damage"), so this contract updates as each layer
 ## lands.
@@ -775,11 +775,17 @@ func apply_miasma(target_id: int, target_alive: bool, target_max_hp: int, data: 
 	var prev: Dictionary = miasma.get(target_id, {})
 	if prev.is_empty():
 		miasma[target_id] = {
+			"source_id": hero_id,
+			"source_team": hero_team,
+			"source_pos": hero_position,
 			"damage": dmg,
 			"timer": int(data.get("duration", 0)),
 			"tick_cd": int(data.get("tick", 0)),
 		}
 		return
+	prev["source_id"] = hero_id
+	prev["source_team"] = hero_team
+	prev["source_pos"] = hero_position
 	prev["damage"] = maxi(int(prev["damage"]), dmg)
 	prev["timer"] = maxi(int(prev["timer"]), int(data.get("duration", 0)))
 	prev["tick_cd"] = mini(int(prev["tick_cd"]), int(data.get("tick", 0)))
@@ -804,8 +810,11 @@ func tick_miasma(dt: int, enemies: Array, effects: ItemEffects) -> void:
 		if int(m["tick_cd"]) <= 0:
 			m["tick_cd"] = 30
 			var dmg: int = int(m["damage"])
+			var source_id: int = int(m.get("source_id", hero_id))
+			var source_team: int = int(m.get("source_team", hero_team))
+			var source_pos: Vector2 = m.get("source_pos", hero_position) as Vector2
 			if dmg > 0:
-				effects.deal_damage(tgt_id, hero_team, dmg, "magic")
+				effects.deal_damage_from(source_id, source_team, source_pos, tgt_id, dmg, "magic")
 			effects.notify(tgt_id, "POISON")
 		if int(m["timer"]) <= 0:
 			expired.append(tgt_id)

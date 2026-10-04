@@ -16,6 +16,18 @@ func deal_damage(
 	return 0
 
 
+## Deal damage attributed to a stored effect owner rather than the ticking hero.
+func deal_damage_from(
+	_source_id: int,
+	_source_team: int,
+	_source_pos: Vector2,
+	target_id: int,
+	amount: int,
+	school: String = "magic"
+) -> int:
+	return deal_damage(target_id, _source_team, amount, school)
+
+
 ## Apply a stun for `duration` ticks.
 func apply_stun(_target_id: int, _duration: int) -> void:
 	pass
