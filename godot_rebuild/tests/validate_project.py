@@ -387,6 +387,9 @@ from boss_item_stun_source_oracle import source_fixture as boss_item_stun_fixtur
 from boss_item_silence_source_oracle import source_fixture as boss_item_silence_fixture
 from boss_item_slow_source_oracle import source_fixture as boss_item_slow_fixture
 from boss_item_aura_source_oracle import source_fixture as boss_item_aura_fixture
+from boss_item_cleave_chain_source_oracle import (
+    source_fixture as boss_item_cleave_chain_fixture,
+)
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -451,6 +454,11 @@ check('const BossItemAuraChecks = preload("res://tests/boss_item_aura_checks.gd"
       "Boss item aura suite must be preloaded")
 check("BossItemAuraChecks.new().run(_check)" in ai_tests,
       "Boss item aura suite must run")
+check('const BossItemCleaveChainChecks = preload(' in ai_tests
+      and '"res://tests/boss_item_cleave_chain_checks.gd")' in ai_tests,
+      "Boss item cleave/chain suite must be preloaded")
+check("BossItemCleaveChainChecks.new().run(_check)" in ai_tests,
+      "Boss item cleave/chain suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -1069,6 +1077,86 @@ if (ROOT / "tests/fixtures/boss_item_slow_source.json").is_file():
               for case in _slow_cases
               if case["scenario"] == "everfrost_arctic_blast_on_boss"),
           "Everfrost Arctic Blast must arm its 1440-tick cooldown in both columns")
+check((ROOT / "tests/fixtures/boss_item_cleave_chain_source.json").is_file(),
+      "Boss item cleave/chain requires source fixture")
+if (ROOT / "tests/fixtures/boss_item_cleave_chain_source.json").is_file():
+    _boss_item_cc = boss_item_cleave_chain_fixture()
+    check(_boss_item_cc == json.loads(
+        (ROOT / "tests/fixtures/boss_item_cleave_chain_source.json").read_text(encoding="utf-8")),
+        "Boss item cleave/chain source behavior drift")
+    _cc_source = _boss_item_cc.get("source", {})
+    check(all(bool(_cc_source.get(_flag)) for _flag in (
+        "melee_onhit_list_appends_live_boss",
+        "collect_onhit_units_appends_live_boss",
+        "cleave_iterates_all_units",
+        "cleave_radius_is_inclusive",
+        "cleave_skips_same_team",
+        "cleave_skips_the_main_target",
+        "chain_iterates_all_units",
+        "chain_appends_inside_radius",
+        "chain_breaks_when_slots_are_full",
+        "chain_damage_is_magic")),
+          "Boss item cleave/chain shape must scan the source on-hit unit list")
+    check(_cc_source.get("cleave_pct") == 0.50
+          and _cc_source.get("cleave_radius") == 110.0
+          and _cc_source.get("chain_chance") == 0.20
+          and _cc_source.get("chain_damage") == 45
+          and _cc_source.get("chain_targets") == 3
+          and _cc_source.get("chain_radius") == 240.0
+          and _cc_source.get("coil_damage") == 40
+          and _cc_source.get("coil_targets") == 3
+          and _cc_source.get("coil_radius") == 240.0
+          and _cc_source.get("basic_damage") == 50,
+          "Boss item cleave/chain metadata must match the source item payloads")
+    _cc_cases = _boss_item_cc.get("cases", [])
+    _cc_types = {case["boss_type"] for case in _cc_cases}
+    _cc_scenarios = {
+        "cleave_splashes_boss_inside_radius",
+        "cleave_skips_boss_outside_radius",
+        "fenrir_chain_hits_boss",
+        "chain_slots_fill_before_boss",
+    }
+    check(len(_cc_cases) == 864
+          and _cc_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _cc_cases) == 4
+                  for _boss in _cc_types),
+          "Boss item cleave/chain requires four source cases for all 216 boss types")
+    check(all({case["scenario"] for case in _cc_cases if case["boss_type"] == _boss}
+              == _cc_scenarios for _boss in _cc_types),
+          "Boss item cleave/chain covers cleave, cleave radius, arc chain and full slots")
+    _cc_cleave = [case for case in _cc_cases
+                  if case["scenario"] == "cleave_splashes_boss_inside_radius"]
+    _cc_out = [case for case in _cc_cases
+               if case["scenario"] == "cleave_skips_boss_outside_radius"]
+    _cc_chain = [case for case in _cc_cases if case["scenario"] == "fenrir_chain_hits_boss"]
+    _cc_full = [case for case in _cc_cases
+                if case["scenario"] == "chain_slots_fill_before_boss"]
+    check(all(case["expected"]["boss_hits"] == [25]
+              and case["expected"]["minion_hits"] == [25]
+              and case["expected"]["target_hits"] == []
+              and case["expected_without_boss"]["boss_hits"] == []
+              and case["expected_without_boss"]["minion_hits"] == [25]
+              for case in _cc_cleave),
+          "Cleave must splash 25 onto the boss inside the 110 px radius")
+    check(all(case["expected"]["boss_hits"] == []
+              and case["expected_without_boss"]["boss_hits"] == []
+              and case["expected"]["minion_hits"] == [25]
+              for case in _cc_out),
+          "Cleave must skip the boss beyond the radius in both columns")
+    check(all(case["expected"]["boss_hits"] == [45]
+              and case["expected"]["target_hits"] == [45]
+              and case["expected"]["chain_roles"] == ["target", "minion", "boss"]
+              and case["expected"]["chain_damage_type"] == "magic"
+              and case["expected_without_boss"]["boss_hits"] == []
+              and case["expected_without_boss"]["chain_roles"] == ["target", "minion"]
+              for case in _cc_chain),
+          "Arc chain must append the boss as the last slot and deal 45 magic")
+    check(all(case["expected"]["boss_hits"] == []
+              and case["expected_without_boss"]["boss_hits"] == []
+              and case["expected"]["chain_roles"] == ["target", "minion", "minion"]
+              and case["expected_without_boss"]["chain_roles"] == ["target", "minion", "minion"]
+              for case in _cc_full),
+          "Full chain slots must end the scan before the boss in both columns")
 check((ROOT / "tests/fixtures/boss_item_aura_source.json").is_file(),
       "Boss item aura requires source fixture")
 if (ROOT / "tests/fixtures/boss_item_aura_source.json").is_file():
