@@ -1957,6 +1957,7 @@ func _tick_hero_items(hero: HeroState) -> void:
 		)
 	)
 	var enemies: Array = _hero_enemy_list()
+	hero.items.miasma = _miasma_registry
 	hero.items.tick_miasma(1, enemies, _battle_item_effects(hero))
 	hero.items.tick_auto(1, enemies, _battle_item_effects(hero), _item_rng)
 	# Apply HP regen result back to hero.
@@ -2186,6 +2187,7 @@ func hero_basic_attack(hero_id: int, target_id: int) -> bool:
 		if bool(cr[0]):
 			raw = int(float(raw) * float(cr[1]))
 			is_crit = true
+	hero.items.miasma = _miasma_registry
 	var bus := _battle_item_effects(hero)
 	if not hero.is_melee and hero.settings().id != "morgath":
 		_hero_ranged_spawn(hero, target, raw)
