@@ -1531,8 +1531,10 @@ _miasma_inventory = (ROOT / "scripts/match/hero_item_inventory.gd").read_text()
 _miasma_prototype = (ROOT / "scripts/match/prototype_battle.gd").read_text()
 _miasma_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text()
 _miasma_effects = (ROOT / "scripts/match/item_effects.gd").read_text()
-check("source_hero.items.miasma = _miasma_registry" in _miasma_prototype,
-      "9b every ticking/on-hit hero binds the match Miasma registry")
+check("func _bind_miasma_registry(hero: HeroState) -> void" in _miasma_prototype
+      and "source_hero.items.miasma = _miasma_registry" in _miasma_prototype
+      and _miasma_prototype.count("_bind_miasma_registry(hero)") >= 2,
+      "9b on-hit/tick hero inventories bind or merge into the match Miasma registry")
 check('prev["source_id"] = hero_id' in _miasma_inventory
       and 'prev["source_team"] = hero_team' in _miasma_inventory
       and 'effects.deal_damage_from(' in _miasma_inventory,
