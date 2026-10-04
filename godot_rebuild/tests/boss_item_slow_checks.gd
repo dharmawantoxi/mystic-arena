@@ -229,14 +229,16 @@ func _run_single_scenario(
 		hero.position,
 		hero.target_id
 	)
-	var opening_item := (
-		{
-			"vine_rod_root_on_boss": "vine_rod",
-			"everfrost_arctic_blast_on_boss": "everfrost_guard",
-			"frostbound_frostbite_on_boss": "frostbound_eye",
-			"root_then_frostbite_store_rule": "vine_rod",
-		}
-		. get(scenario, "")
+	var opening_item := String(
+		(
+			{
+				"vine_rod_root_on_boss": "vine_rod",
+				"everfrost_arctic_blast_on_boss": "everfrost_guard",
+				"frostbound_frostbite_on_boss": "frostbound_eye",
+				"root_then_frostbite_store_rule": "vine_rod",
+			}
+			. get(scenario, "")
+		)
 	)
 	if opening_item.is_empty() or not hero.items.add(opening_item):
 		return {}
