@@ -116,7 +116,6 @@ func run(check: Callable) -> void:
 
 func _prepare_attacker(hero: Prior.HeroState, boss: Prior.BossState) -> void:
 	hero.position = boss.position + Vector2(-40.0, 0.0)
-	hero.previous_position = hero.position
 	hero.target_id = int(boss.id)
 	hero.attack_timer = 0
 	hero.items.hero_melee_flag = 1
