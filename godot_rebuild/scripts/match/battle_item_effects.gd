@@ -132,6 +132,24 @@ func apply_anti_heal(target_id: int, amount: float, duration: int) -> void:
 	world.apply_anti_heal(target_id, amount, duration)
 
 
+func _onhit_boss(src_team: int, target_id: int) -> Object:
+	# Layer 8z: the boss arm of the source on-hit candidate list. The melee call
+	# site builds `_all_units = list(gi.minions) + list(gi.get_all_heroes())` and
+	# appends the living boss (`_all_units.append(gi.active_boss)`,
+	# `_entity.py:4401-4410`); the ranged call site uses
+	# `Hero._collect_onhit_units()` (`_entity.py:4215-4232`), which appends it the
+	# same way. Cleave (`hero_items.py:2504-2518`) and arc chain
+	# (`hero_items.py:2552-2560`) iterate that list, so the boss is a legal
+	# secondary target. The native registry never holds the boss (`active_boss`
+	# only lives in `_by_id`), so the `world.units` scan alone skipped it.
+	var boss: Object = world.active_boss
+	if boss == null or not boss.alive or boss.team == src_team:
+		return null
+	if int(boss.id) == target_id:
+		return null
+	return boss
+
+
 func cleave_splash(
 	target_id: int, src_team: int, src_pos: Vector2, splash: int, radius: float
 ) -> void:
@@ -144,6 +162,11 @@ func cleave_splash(
 			continue
 		if center_pos.distance_to(u.position) <= radius:
 			world._deliver_hit(dealer_id, src_team, u, splash, "physical", src_pos)
+	# Source cleave radius gate is inclusive (`if d <= radius:`) and measured
+	# from the main target, exactly like the unit loop above.
+	var boss: Object = _onhit_boss(src_team, target_id)
+	if boss != null and center_pos.distance_to(boss.position) <= radius:
+		world._deliver_hit(dealer_id, src_team, boss, splash, "physical", src_pos)
 
 
 func chain_targets(target_id: int, src_team: int, radius: float, count: int) -> Array:
@@ -159,6 +182,14 @@ func chain_targets(target_id: int, src_team: int, radius: float, count: int) -> 
 			hits.append(u.id)
 			if hits.size() >= count:
 				break
+	# The source appends the boss last (`all_units` ends with `active_boss`) and
+	# checks `len(hit) >= chain["targets"]` after every candidate, so full slots
+	# end the scan before the boss is ever examined.
+	if hits.size() >= count:
+		return hits
+	var boss: Object = _onhit_boss(src_team, target_id)
+	if boss != null and center.distance_to(boss.position) <= radius:
+		hits.append(int(boss.id))
 	return hits
 
 
