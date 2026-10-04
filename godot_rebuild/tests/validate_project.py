@@ -385,6 +385,7 @@ from boss_ability_source_attribution_oracle import (
 )
 from boss_item_stun_source_oracle import source_fixture as boss_item_stun_fixture
 from boss_item_silence_source_oracle import source_fixture as boss_item_silence_fixture
+from boss_item_slow_source_oracle import source_fixture as boss_item_slow_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -441,6 +442,10 @@ check('const BossItemSilenceChecks = preload("res://tests/boss_item_silence_chec
       "Boss item silence suite must be preloaded")
 check("BossItemSilenceChecks.new().run(_check)" in ai_tests,
       "Boss item silence suite must run")
+check('const BossItemSlowChecks = preload("res://tests/boss_item_slow_checks.gd")' in ai_tests,
+      "Boss item slow suite must be preloaded")
+check("BossItemSlowChecks.new().run(_check)" in ai_tests,
+      "Boss item slow suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -967,6 +972,98 @@ if (ROOT / "tests/fixtures/boss_item_silence_source.json").is_file():
               == max(case["expected"]["raw_silence_durations"])
               for case in _silence_cases),
           "Every boss item silence case must cut atk_slow by tenacity and keep skill_down raw")
+check((ROOT / "tests/fixtures/boss_item_slow_source.json").is_file(),
+      "Boss item slow requires source fixture")
+if (ROOT / "tests/fixtures/boss_item_slow_source.json").is_file():
+    _boss_item_slow = boss_item_slow_fixture()
+    check(_boss_item_slow == json.loads(
+        (ROOT / "tests/fixtures/boss_item_slow_source.json").read_text(encoding="utf-8")),
+        "Boss item slow source behavior drift")
+    _slow_source = _boss_item_slow.get("source", {})
+    check(all(bool(_slow_source.get(_flag)) for _flag in (
+        "vine_rod_roots_with_full_slow",
+        "vine_rod_cooldown_armed_before_root",
+        "arctic_blast_slows_each_nearby_enemy",
+        "arctic_blast_uses_hasattr_gate",
+        "frostbite_slows_target",
+        "frostbite_applies_atk_slow_and_anti_heal",
+        "boss_apply_slow_cuts_by_tenacity",
+        "boss_apply_slow_uses_amount_or_timer_store",
+        "boss_apply_debuff_cuts_only_atk_slow")),
+          "Boss item slow shape must route target.apply_slow/apply_debuff through Boss.apply_slow")
+    check(_slow_source.get("vine_rod_root_magnitude") == 1.0
+          and _slow_source.get("vine_rod_root_duration") == 60
+          and _slow_source.get("vine_rod_cooldown") == 540
+          and _slow_source.get("everfrost_slow") == 0.45
+          and _slow_source.get("everfrost_slow_duration") == 210
+          and _slow_source.get("everfrost_radius") == 280
+          and _slow_source.get("everfrost_trigger_enemies") == 2
+          and _slow_source.get("everfrost_cooldown") == 1440
+          and _slow_source.get("frostbound_slow") == 0.28
+          and _slow_source.get("frostbound_atk_slow") == 0.28
+          and _slow_source.get("frostbound_anti_heal") == 0.45
+          and _slow_source.get("frostbound_duration") == 180,
+          "Boss item slow metadata must match source item slow payloads and cooldowns")
+    _slow_cases = _boss_item_slow.get("cases", [])
+    _slow_types = {case["boss_type"] for case in _slow_cases}
+    _slow_scenarios = {
+        "vine_rod_root_on_boss",
+        "everfrost_arctic_blast_on_boss",
+        "frostbound_frostbite_on_boss",
+        "root_then_frostbite_store_rule",
+    }
+    check(len(_slow_cases) == 864
+          and _slow_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _slow_cases) == 4
+                  for _boss in _slow_types),
+          "Boss item slow requires four source cases for all 216 boss types")
+    check(all({case["scenario"] for case in _slow_cases
+               if case["boss_type"] == _boss} == _slow_scenarios
+              for _boss in _slow_types),
+          "Boss item slow covers Entangle, Arctic Blast, Frostbite and the stacked store")
+    _slow_want = {
+        "vine_rod_root_on_boss": (0.35, 30),
+        "everfrost_arctic_blast_on_boss": (0.225, 105),
+        "frostbound_frostbite_on_boss": (0.14, 90),
+        "root_then_frostbite_store_rule": (0.14, 90),
+    }
+    _slow_raw = {
+        "vine_rod_root_on_boss": (1.0, 60),
+        "everfrost_arctic_blast_on_boss": (0.45, 210),
+        "frostbound_frostbite_on_boss": (0.28, 180),
+        "root_then_frostbite_store_rule": (1.0, 180),
+    }
+    check(all(case["expected"]["slow_calls"] == case["expected_without_boss_tenacity"]["slow_calls"]
+              and case["expected"]["boss_slow_amount"]
+              == _slow_want[case["scenario"]][0]
+              and case["expected"]["boss_slow_timer"] == _slow_want[case["scenario"]][1]
+              and case["expected_without_boss_tenacity"]["boss_slow_amount"]
+              == _slow_raw[case["scenario"]][0]
+              and case["expected_without_boss_tenacity"]["boss_slow_timer"]
+              == _slow_raw[case["scenario"]][1]
+              and case["expected"]["boss_slow_amount"]
+              < case["expected_without_boss_tenacity"]["boss_slow_amount"]
+              and case["expected"]["boss_slow_timer"]
+              < case["expected_without_boss_tenacity"]["boss_slow_timer"]
+              for case in _slow_cases),
+          "Every boss item slow case must cut magnitude and duration by tenacity 0.50")
+    check(all(case["expected"]["boss_atk_slow_amount"] == 0.14
+              and case["expected"]["boss_atk_slow_timer"] == 90
+              and case["expected_without_boss_tenacity"]["boss_atk_slow_amount"] == 0.28
+              and case["expected"]["boss_anti_heal_amount"] == 0.45
+              and case["expected"]["boss_anti_heal_timer"] == 180
+              for case in _slow_cases
+              if case["scenario"] == "frostbound_frostbite_on_boss"),
+          "Frostbite must cut atk_slow by tenacity and keep anti_heal untempered")
+    check(all(case["expected"]["cooldowns"]["vine_rod"] == 540
+              and case["expected"]["cooldowns"]["everfrost_guard"] == 0
+              for case in _slow_cases if case["scenario"] == "vine_rod_root_on_boss"),
+          "Vine Rod must arm its 540-tick cooldown when the root lands")
+    check(all(case["expected"]["cooldowns"]["everfrost_guard"] == 1440
+              and case["expected_without_boss_tenacity"]["cooldowns"]["everfrost_guard"] == 1440
+              for case in _slow_cases
+              if case["scenario"] == "everfrost_arctic_blast_on_boss"),
+          "Everfrost Arctic Blast must arm its 1440-tick cooldown in both columns")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -1170,6 +1267,16 @@ battle_item_apply_stun = battle_item_effects_text.split("func apply_stun(", 1)[1
 check('elif t != null and t.has_method("apply_stun"):' in battle_item_apply_stun
       and "t.apply_stun(duration)" in battle_item_apply_stun,
       "BattleItemEffects.apply_stun must delegate to BossState.apply_stun like source _apply_stun_to")
+battle_item_apply_slow = battle_item_effects_text.split("func apply_slow(", 1)[1].split(
+    "\nfunc apply_burn(", 1)[0]
+check('if t.has_method("apply_slow"):' in battle_item_apply_slow
+      and "t.apply_slow(amount, duration)" in battle_item_apply_slow,
+      "BattleItemEffects.apply_slow must delegate to BossState.apply_slow like source target.apply_slow")
+battle_item_apply_atk_slow = battle_item_effects_text.split("func apply_atk_slow(", 1)[1].split(
+    "\nfunc apply_anti_heal(", 1)[0]
+check('if t != null and t.has_method("apply_debuff"):' in battle_item_apply_atk_slow
+      and 't.apply_debuff("atk_slow", amount, duration)' in battle_item_apply_atk_slow,
+      "BattleItemEffects.apply_atk_slow must delegate to BossState.apply_debuff like source Frostbite")
 boss_kill_credit = prototype_battle.split("func _process_boss_kill(", 1)[1].split(
     "\nfunc _process_boss_result()", 1)[0]
 check("get_unit(boss.last_hit_source_id) as HeroState" in boss_kill_credit
