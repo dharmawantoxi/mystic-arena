@@ -273,8 +273,16 @@ def _run_scenario(catalog, inv_cls, boss_cls, boss_type, scenario, with_boss):
         chain_damage_type = ""
     else:
         splash = int(chain["damage"])
-        chain_roles = ["target", "minion"]
-        if with_boss and scenario == "fenrir_chain_hits_boss":
+        # Rebuild the source hit list from the recorded damage: `hit` starts with
+        # the main target and then holds every appended unit in `all_units` order
+        # (minions, heroes, boss last), and each entry is damaged exactly once.
+        chain_roles = []
+        if target.hits:
+            chain_roles.append("target")
+        for minion in minions:
+            if minion.hits:
+                chain_roles.append("minion")
+        if boss.hits:
             chain_roles.append("boss")
         # Source passes "magic" as the third positional arg of
         # `u.take_damage(chain["damage"], h.team, "magic")`; the native replay
@@ -333,8 +341,8 @@ def generate_fixture():
             else:
                 assert expected["boss_hits"] == []
                 assert without["boss_hits"] == []
-                assert expected["chain_roles"] == ["target", "minion"]
-                assert without["chain_roles"] == ["target", "minion"]
+                assert expected["chain_roles"] == ["target", "minion", "minion"]
+                assert without["chain_roles"] == ["target", "minion", "minion"]
             cases.append(
                 {
                     "boss_type": boss_type,

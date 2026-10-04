@@ -197,6 +197,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -212,6 +213,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -326,6 +328,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -341,6 +344,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -455,6 +459,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -470,6 +475,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -584,6 +590,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -599,6 +606,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -713,6 +721,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -728,6 +737,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -842,6 +852,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -857,6 +868,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -971,6 +983,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -986,6 +999,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1100,6 +1114,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1115,6 +1130,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1229,6 +1245,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1244,6 +1261,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1358,6 +1376,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1373,6 +1392,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1487,6 +1507,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1502,6 +1523,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1616,6 +1638,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1631,6 +1654,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1745,6 +1769,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1760,6 +1785,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1874,6 +1900,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -1889,6 +1916,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2003,6 +2031,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2018,6 +2047,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2132,6 +2162,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2147,6 +2178,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2261,6 +2293,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2276,6 +2309,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2390,6 +2424,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2405,6 +2440,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2519,6 +2555,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2534,6 +2571,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2648,6 +2686,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2663,6 +2702,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2777,6 +2817,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2792,6 +2833,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2906,6 +2948,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -2921,6 +2964,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3035,6 +3079,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3050,6 +3095,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3164,6 +3210,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3179,6 +3226,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3293,6 +3341,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3308,6 +3357,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3422,6 +3472,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3437,6 +3488,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3551,6 +3603,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3566,6 +3619,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3680,6 +3734,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3695,6 +3750,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3809,6 +3865,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3824,6 +3881,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3938,6 +3996,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -3953,6 +4012,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4067,6 +4127,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4082,6 +4143,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4196,6 +4258,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4211,6 +4274,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4325,6 +4389,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4340,6 +4405,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4454,6 +4520,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4469,6 +4536,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4583,6 +4651,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4598,6 +4667,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4712,6 +4782,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4727,6 +4798,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4841,6 +4913,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4856,6 +4929,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4970,6 +5044,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -4985,6 +5060,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5099,6 +5175,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5114,6 +5191,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5228,6 +5306,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5243,6 +5322,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5357,6 +5437,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5372,6 +5453,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5486,6 +5568,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5501,6 +5584,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5615,6 +5699,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5630,6 +5715,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5744,6 +5830,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5759,6 +5846,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5873,6 +5961,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -5888,6 +5977,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6002,6 +6092,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6017,6 +6108,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6131,6 +6223,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6146,6 +6239,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6260,6 +6354,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6275,6 +6370,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6389,6 +6485,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6404,6 +6501,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6518,6 +6616,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6533,6 +6632,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6647,6 +6747,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6662,6 +6763,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6776,6 +6878,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6791,6 +6894,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6905,6 +7009,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -6920,6 +7025,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7034,6 +7140,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7049,6 +7156,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7163,6 +7271,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7178,6 +7287,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7292,6 +7402,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7307,6 +7418,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7421,6 +7533,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7436,6 +7549,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7550,6 +7664,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7565,6 +7680,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7679,6 +7795,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7694,6 +7811,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7808,6 +7926,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7823,6 +7942,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7937,6 +8057,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -7952,6 +8073,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8066,6 +8188,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8081,6 +8204,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8195,6 +8319,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8210,6 +8335,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8324,6 +8450,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8339,6 +8466,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8453,6 +8581,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8468,6 +8597,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8582,6 +8712,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8597,6 +8728,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8711,6 +8843,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8726,6 +8859,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8840,6 +8974,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8855,6 +8990,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8969,6 +9105,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -8984,6 +9121,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9098,6 +9236,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9113,6 +9252,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9227,6 +9367,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9242,6 +9383,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9356,6 +9498,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9371,6 +9514,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9485,6 +9629,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9500,6 +9645,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9614,6 +9760,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9629,6 +9776,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9743,6 +9891,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9758,6 +9907,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9872,6 +10022,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -9887,6 +10038,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10001,6 +10153,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10016,6 +10169,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10130,6 +10284,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10145,6 +10300,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10259,6 +10415,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10274,6 +10431,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10388,6 +10546,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10403,6 +10562,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10517,6 +10677,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10532,6 +10693,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10646,6 +10808,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10661,6 +10824,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10775,6 +10939,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10790,6 +10955,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10904,6 +11070,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -10919,6 +11086,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11033,6 +11201,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11048,6 +11217,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11162,6 +11332,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11177,6 +11348,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11291,6 +11463,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11306,6 +11479,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11420,6 +11594,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11435,6 +11610,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11549,6 +11725,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11564,6 +11741,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11678,6 +11856,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11693,6 +11872,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11807,6 +11987,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11822,6 +12003,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11936,6 +12118,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -11951,6 +12134,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12065,6 +12249,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12080,6 +12265,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12194,6 +12380,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12209,6 +12396,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12323,6 +12511,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12338,6 +12527,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12452,6 +12642,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12467,6 +12658,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12581,6 +12773,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12596,6 +12789,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12710,6 +12904,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12725,6 +12920,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12839,6 +13035,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12854,6 +13051,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12968,6 +13166,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -12983,6 +13182,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13097,6 +13297,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13112,6 +13313,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13226,6 +13428,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13241,6 +13444,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13355,6 +13559,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13370,6 +13575,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13484,6 +13690,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13499,6 +13706,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13613,6 +13821,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13628,6 +13837,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13742,6 +13952,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13757,6 +13968,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13871,6 +14083,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -13886,6 +14099,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14000,6 +14214,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14015,6 +14230,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14129,6 +14345,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14144,6 +14361,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14258,6 +14476,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14273,6 +14492,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14387,6 +14607,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14402,6 +14623,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14516,6 +14738,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14531,6 +14754,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14645,6 +14869,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14660,6 +14885,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14774,6 +15000,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14789,6 +15016,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14903,6 +15131,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -14918,6 +15147,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15032,6 +15262,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15047,6 +15278,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15161,6 +15393,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15176,6 +15409,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15290,6 +15524,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15305,6 +15540,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15419,6 +15655,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15434,6 +15671,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15548,6 +15786,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15563,6 +15802,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15677,6 +15917,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15692,6 +15933,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15806,6 +16048,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15821,6 +16064,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15935,6 +16179,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -15950,6 +16195,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16064,6 +16310,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16079,6 +16326,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16193,6 +16441,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16208,6 +16457,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16322,6 +16572,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16337,6 +16588,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16451,6 +16703,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16466,6 +16719,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16580,6 +16834,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16595,6 +16850,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16709,6 +16965,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16724,6 +16981,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16838,6 +17096,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16853,6 +17112,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16967,6 +17227,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -16982,6 +17243,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17096,6 +17358,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17111,6 +17374,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17225,6 +17489,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17240,6 +17505,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17354,6 +17620,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17369,6 +17636,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17483,6 +17751,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17498,6 +17767,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17612,6 +17882,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17627,6 +17898,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17741,6 +18013,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17756,6 +18029,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17870,6 +18144,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17885,6 +18160,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -17999,6 +18275,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18014,6 +18291,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18128,6 +18406,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18143,6 +18422,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18257,6 +18537,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18272,6 +18553,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18386,6 +18668,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18401,6 +18684,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18515,6 +18799,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18530,6 +18815,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18644,6 +18930,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18659,6 +18946,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18773,6 +19061,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18788,6 +19077,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18902,6 +19192,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -18917,6 +19208,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19031,6 +19323,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19046,6 +19339,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19160,6 +19454,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19175,6 +19470,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19289,6 +19585,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19304,6 +19601,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19418,6 +19716,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19433,6 +19732,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19547,6 +19847,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19562,6 +19863,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19676,6 +19978,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19691,6 +19994,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19805,6 +20109,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19820,6 +20125,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19934,6 +20240,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -19949,6 +20256,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20063,6 +20371,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20078,6 +20387,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20192,6 +20502,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20207,6 +20518,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20321,6 +20633,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20336,6 +20649,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20450,6 +20764,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20465,6 +20780,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20579,6 +20895,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20594,6 +20911,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20708,6 +21026,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20723,6 +21042,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20837,6 +21157,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20852,6 +21173,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20966,6 +21288,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -20981,6 +21304,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21095,6 +21419,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21110,6 +21435,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21224,6 +21550,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21239,6 +21566,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21353,6 +21681,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21368,6 +21697,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21482,6 +21812,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21497,6 +21828,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21611,6 +21943,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21626,6 +21959,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21740,6 +22074,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21755,6 +22090,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21869,6 +22205,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21884,6 +22221,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -21998,6 +22336,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22013,6 +22352,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22127,6 +22467,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22142,6 +22483,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22256,6 +22598,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22271,6 +22614,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22385,6 +22729,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22400,6 +22745,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22514,6 +22860,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22529,6 +22876,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22643,6 +22991,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22658,6 +23007,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22772,6 +23122,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22787,6 +23138,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22901,6 +23253,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -22916,6 +23269,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23030,6 +23384,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23045,6 +23400,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23159,6 +23515,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23174,6 +23531,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23288,6 +23646,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23303,6 +23662,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23417,6 +23777,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23432,6 +23793,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23546,6 +23908,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23561,6 +23924,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23675,6 +24039,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23690,6 +24055,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23804,6 +24170,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23819,6 +24186,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23933,6 +24301,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -23948,6 +24317,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24062,6 +24432,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24077,6 +24448,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24191,6 +24563,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24206,6 +24579,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24320,6 +24694,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24335,6 +24710,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24449,6 +24825,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24464,6 +24841,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24578,6 +24956,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24593,6 +24972,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24707,6 +25087,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24722,6 +25103,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24836,6 +25218,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24851,6 +25234,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24965,6 +25349,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -24980,6 +25365,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25094,6 +25480,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25109,6 +25496,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25223,6 +25611,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25238,6 +25627,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25352,6 +25742,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25367,6 +25758,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25481,6 +25873,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25496,6 +25889,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25610,6 +26004,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25625,6 +26020,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25739,6 +26135,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25754,6 +26151,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25868,6 +26266,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25883,6 +26282,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -25997,6 +26397,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26012,6 +26413,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26126,6 +26528,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26141,6 +26544,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26255,6 +26659,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26270,6 +26675,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26384,6 +26790,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26399,6 +26806,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26513,6 +26921,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26528,6 +26937,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26642,6 +27052,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26657,6 +27068,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26771,6 +27183,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26786,6 +27199,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26900,6 +27314,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -26915,6 +27330,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27029,6 +27445,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27044,6 +27461,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27158,6 +27576,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27173,6 +27592,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27287,6 +27707,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27302,6 +27723,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27416,6 +27838,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27431,6 +27854,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27545,6 +27969,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27560,6 +27985,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27674,6 +28100,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27689,6 +28116,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27803,6 +28231,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27818,6 +28247,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27932,6 +28362,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"
@@ -27947,6 +28378,7 @@
         "boss_hits": [],
         "chain_roles": [
           "target",
+          "minion",
           "minion"
         ],
         "chain_damage_type": "magic"

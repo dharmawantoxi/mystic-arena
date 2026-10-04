@@ -1153,8 +1153,8 @@ if (ROOT / "tests/fixtures/boss_item_cleave_chain_source.json").is_file():
           "Arc chain must append the boss as the last slot and deal 45 magic")
     check(all(case["expected"]["boss_hits"] == []
               and case["expected_without_boss"]["boss_hits"] == []
-              and case["expected"]["chain_roles"] == ["target", "minion"]
-              and case["expected_without_boss"]["chain_roles"] == ["target", "minion"]
+              and case["expected"]["chain_roles"] == ["target", "minion", "minion"]
+              and case["expected_without_boss"]["chain_roles"] == ["target", "minion", "minion"]
               for case in _cc_full),
           "Full chain slots must end the scan before the boss in both columns")
 check((ROOT / "tests/fixtures/boss_item_aura_source.json").is_file(),

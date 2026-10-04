@@ -108,6 +108,7 @@ class CleaveChainWorld:
 	var pre_fix_mode := false
 	var deliveries: Dictionary = {}
 	var roles: Dictionary = {}
+	var hit_order: Array = []
 
 	func _deliver_hit(
 		source_id: int,
@@ -126,6 +127,7 @@ class CleaveChainWorld:
 			var log: Array = deliveries.get(unit_id, [])
 			log.append([int(raw_damage), school])
 			deliveries[unit_id] = log
+			hit_order.append(unit_id)
 		return landed
 
 	func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:
@@ -262,8 +264,8 @@ func _check_fixture_payloads(check: Callable, fixture: Dictionary) -> void:
 				full_rows
 				and exp.get("boss_hits", []) == []
 				and without.get("boss_hits", []) == []
-				and _same_roles(exp.get("chain_roles", []), ["target", "minion"])
-				and _same_roles(without.get("chain_roles", []), ["target", "minion"])
+				and _same_roles(exp.get("chain_roles", []), ["target", "minion", "minion"])
+				and _same_roles(without.get("chain_roles", []), ["target", "minion", "minion"])
 			)
 	check.call(cleave_rows, "cleave splashes 25 onto the boss inside the 110 px radius")
 	check.call(cleave_out_rows, "cleave skips the boss outside the radius in both columns")
@@ -276,6 +278,7 @@ func _reset_world(world: CleaveChainWorld, pre_fix_mode: bool) -> void:
 	world.pre_fix_mode = pre_fix_mode
 	world.deliveries = {}
 	world.roles = {}
+	world.hit_order = []
 	world.units.clear()
 	world.projectiles.clear()
 	world.recent_events.clear()
@@ -373,9 +376,10 @@ func _run_scenario(
 	hero.items.on_basic_attack_hit(int(target.id), BASIC_DAMAGE, [], rng, bus)
 	var roles: Array = []
 	if String(layout.get("item", "")) == CHAIN_ITEM:
-		var arc_radius := float(src.get("chain_radius", 240.0))
-		var arc_count := int(src.get("chain_targets", 3))
-		for tid in bus.chain_targets(int(target.id), world.BLUE, arc_radius, arc_count):
+		# Roles come from the delivery order, which is the source `hit` list order
+		# (`for u in hit: u.take_damage(...)`); re-running `chain_targets` after
+		# the damage would drop any victim the arc killed.
+		for tid in world.hit_order:
 			roles.append(String(world.roles.get(int(tid), "unknown")))
 	return {
 		"target_hits": world.deliveries.get(int(target.id), []),
