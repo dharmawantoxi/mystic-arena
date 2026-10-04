@@ -360,7 +360,7 @@ minion/hero tetap pada store dunia. Oracle `boss_item_aura_source_oracle.py` dan
 masing-masing dengan kolom kontras `expected_without_boss_store`, plus kontras hidup
 Everfrost (boss 0.15/15 vs minion 0.30/30), tick burn Scorched Earth dan gate heal
 Cauterize. Anti-heal/burn aura dan blind Scorched Earth terbukti identik di kedua kolom
-(non-gap, tidak diport). CI Godot 4.7.2 hijau: **1.262.735 native checks**,
+(non-gap, tidak diport). Perbaikan suite `29d7bff` (CI final [run 37203602541](https://github.com/dharmawantoxi/mystic-arena/actions/runs/37203602541)) membuang graph pertempuran tiap dunia uji lewat `_reset_world` dan memindahkan rekaman panggilan bus ke dictionary milik dunia sehingga tidak ada siklus RefCounted `world <-> bus` yang bocor di akhir proses Godot. CI Godot 4.7.2 hijau: **1.262.735 native checks**,
 `validate_project.py` **6.671 static checks**.
 
 Yang belum: sebagian besar sistem produksi. Jangan menyebut replay ini parity
