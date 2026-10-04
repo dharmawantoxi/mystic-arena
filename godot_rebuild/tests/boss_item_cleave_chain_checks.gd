@@ -192,6 +192,19 @@ func _same_hits(actual: Variant, exp: Variant) -> bool:
 	return true
 
 
+func _same_numbers(actual: Variant, exp: Variant) -> bool:
+	# Fixture numbers arrive as JSON floats; GDScript `Array ==` compares element
+	# hashes, so `[25.0] == [25]` is false. Compare numerically instead.
+	var left: Array = actual if actual is Array else []
+	var right: Array = exp if exp is Array else []
+	if left.size() != right.size():
+		return false
+	for index in range(left.size()):
+		if int(float(left[index])) != int(float(right[index])):
+			return false
+	return true
+
+
 func _schools_of(actual: Variant) -> Array:
 	var out: Array = []
 	var left: Array = actual if actual is Array else []
@@ -233,37 +246,39 @@ func _check_fixture_payloads(check: Callable, fixture: Dictionary) -> void:
 		var scenario: String = String(entry.get("scenario", ""))
 		var exp: Dictionary = entry.get("expected", {})
 		var without: Dictionary = entry.get("expected_without_boss", {})
-		minion_arm = (minion_arm and exp.get("minion_hits", []) == without.get("minion_hits", []))
+		minion_arm = (
+			minion_arm and _same_numbers(exp.get("minion_hits", []), without.get("minion_hits", []))
+		)
 		if scenario == CLEAVE_BOSS:
 			cleave_rows = (
 				cleave_rows
-				and exp.get("boss_hits", []) == [25]
-				and exp.get("minion_hits", []) == [25]
-				and exp.get("target_hits", []) == []
-				and without.get("boss_hits", []) == []
+				and _same_numbers(exp.get("boss_hits", []), [25])
+				and _same_numbers(exp.get("minion_hits", []), [25])
+				and _same_numbers(exp.get("target_hits", []), [])
+				and _same_numbers(without.get("boss_hits", []), [])
 			)
 		elif scenario == CLEAVE_OUT:
 			cleave_out_rows = (
 				cleave_out_rows
-				and exp.get("boss_hits", []) == []
-				and without.get("boss_hits", []) == []
-				and exp.get("minion_hits", []) == [25]
+				and _same_numbers(exp.get("boss_hits", []), [])
+				and _same_numbers(without.get("boss_hits", []), [])
+				and _same_numbers(exp.get("minion_hits", []), [25])
 			)
 		elif scenario == CHAIN_BOSS:
 			chain_rows = (
 				chain_rows
-				and exp.get("boss_hits", []) == [45]
-				and exp.get("target_hits", []) == [45]
+				and _same_numbers(exp.get("boss_hits", []), [45])
+				and _same_numbers(exp.get("target_hits", []), [45])
 				and _same_roles(exp.get("chain_roles", []), ["target", "minion", "boss"])
-				and without.get("boss_hits", []) == []
+				and _same_numbers(without.get("boss_hits", []), [])
 				and _same_roles(without.get("chain_roles", []), ["target", "minion"])
 				and String(exp.get("chain_damage_type", "")) == CHAIN_SCHOOL
 			)
 		else:
 			full_rows = (
 				full_rows
-				and exp.get("boss_hits", []) == []
-				and without.get("boss_hits", []) == []
+				and _same_numbers(exp.get("boss_hits", []), [])
+				and _same_numbers(without.get("boss_hits", []), [])
 				and _same_roles(exp.get("chain_roles", []), ["target", "minion", "minion"])
 				and _same_roles(without.get("chain_roles", []), ["target", "minion", "minion"])
 			)
