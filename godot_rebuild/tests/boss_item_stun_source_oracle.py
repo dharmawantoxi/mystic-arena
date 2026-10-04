@@ -52,6 +52,9 @@ from boss_ability_source_oracle import (  # noqa: E402
     make_boss,
     source_class as boss_ability_class,
 )
+from boss_item_silence_source_oracle import (  # noqa: E402
+    boss_debuff_functions,
+)
 
 FIXTURE = Path(__file__).parent / "fixtures/boss_item_stun_source.json"
 
@@ -169,6 +172,13 @@ def _build_runtime():
     boss_cls._eff_attack_cd = mixin_ns["_eff_attack_cd"]
     boss_cls._full_update = mixin_ns["update"]
     boss_cls._use_heal_ability = mixin_ns["_use_heal_ability"]
+    # Item silence reaches a boss through the same polymorphic
+    # `target.apply_debuff(...)` the native bus now uses, so the fixture has to
+    # run the real `Boss.apply_debuff` (tenacity cut + mixin store) instead of a
+    # raw field write: Hexcraft's silence is part of the stun scenario.
+    debuff_fns = boss_debuff_functions()
+    boss_cls.apply_debuff = debuff_fns["apply_debuff"]
+    boss_cls.apply_slow = debuff_fns["apply_slow"]
 
     def _begin_motion_tick(self):
         moved = math.hypot(self.x - self._prev_x, self.y - self._prev_y)
@@ -310,16 +320,7 @@ def _prepare_boss(boss_cls, boss_type):
         stats.get("cleave_radius", 110 if boss.boss_class == "true" else 85)
     )
     boss.tenacity = float(stats.get("tenacity", 0.50))
-    def _apply_debuff(kind, amount, duration, source_team=None):
-        if kind == "atk_slow":
-            boss.atk_slow_amount = float(amount)
-            boss.atk_slow_timer = max(boss.atk_slow_timer, int(duration))
-        elif kind == "skill_down":
-            boss.skill_down_amount = float(amount)
-            boss.skill_down_timer = max(boss.skill_down_timer, int(duration))
-
     boss.take_damage = lambda *args, **kwargs: 0
-    boss.apply_debuff = _apply_debuff
     boss.apply_armor_shred = lambda *args, **kwargs: None
     boss.apply_damage_amp = lambda *args, **kwargs: None
     return boss

@@ -133,6 +133,26 @@ def _spliced_boss_debuff():
     return spliced
 
 
+def boss_debuff_functions():
+    """Real `Boss.apply_debuff`/`Boss.apply_slow` with the mixin store bound.
+
+    `Boss.apply_debuff` calls `super().apply_debuff(...)`; the AST splice rewires
+    that single call to the standalone `_tower_debuff` mixin method, so both
+    original bodies (the tenacity cut and the strongest-wins store) run
+    unchanged. Layer 8v's stun oracle reuses this so a silenced boss models the
+    same `atk_slow`/`skill_down` store the native bus produces.
+    """
+    tower_debuff_node = _method_node("TowerDebuffMixin", "apply_debuff", "_core.py")
+    tower_debuff_node.name = "_tower_debuff"
+    slow_node = _method_node("Boss", "apply_slow", "bosses/base_boss.py")
+    debuff_node = _spliced_boss_debuff()
+    module = ast.Module(body=[tower_debuff_node, slow_node, debuff_node], type_ignores=[])
+    ast.fix_missing_locations(module)
+    env = {"__builtins__": __builtins__, "math": math}
+    exec(compile(module, "_boss_debuff_source", "exec"), env)
+    return {"apply_debuff": env["apply_debuff"], "apply_slow": env["apply_slow"]}
+
+
 def _build_runtime():
     item_env = item_source_namespace(with_inventory=True)
     _install_effect_stubs(item_env)
@@ -156,35 +176,24 @@ def _build_runtime():
 
     boss_cls = boss_ability_class()
 
-    tower_debuff_node = _method_node("TowerDebuffMixin", "apply_debuff", "_core.py")
-    tower_debuff_node.name = "_tower_debuff"
+    debuff_fns = boss_debuff_functions()
     tower_stun_node = _method_node("TowerDebuffMixin", "apply_stun", "_core.py")
     tower_amp_node = _method_node("TowerDebuffMixin", "apply_damage_amp", "_core.py")
     eff_cd_node = _method_node("TowerDebuffMixin", "_eff_attack_cd", "_core.py")
-    boss_apply_slow_node = _method_node("Boss", "apply_slow", "bosses/base_boss.py")
-    boss_debuff_node = _spliced_boss_debuff()
     ability_getter = _method_node("Boss", "ability_damage", "bosses/base_boss.py")
     ability_getter.decorator_list = []
     ability_getter.name = "_ability_damage_getter"
 
     module = ast.Module(
-        body=[
-            tower_debuff_node,
-            tower_stun_node,
-            tower_amp_node,
-            eff_cd_node,
-            boss_apply_slow_node,
-            boss_debuff_node,
-            ability_getter,
-        ],
+        body=[tower_stun_node, tower_amp_node, eff_cd_node, ability_getter],
         type_ignores=[],
     )
     ast.fix_missing_locations(module)
     env = {"__builtins__": __builtins__, "math": math}
     exec(compile(module, "_boss_item_silence_source", "exec"), env)
 
-    boss_cls.apply_debuff = env["apply_debuff"]
-    boss_cls.apply_slow = env["apply_slow"]
+    boss_cls.apply_debuff = debuff_fns["apply_debuff"]
+    boss_cls.apply_slow = debuff_fns["apply_slow"]
     boss_cls.apply_stun = env["apply_stun"]
     boss_cls.apply_damage_amp = env["apply_damage_amp"]
     boss_cls._eff_attack_cd = env["_eff_attack_cd"]

@@ -146,7 +146,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -156,12 +156,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -286,7 +286,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -296,12 +296,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -426,7 +426,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -436,12 +436,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -566,7 +566,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -576,12 +576,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -706,7 +706,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -716,12 +716,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -846,7 +846,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -856,12 +856,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -986,7 +986,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 940
       },
       "expected_without_boss_stun": {
@@ -996,12 +996,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 940,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 940
       }
     },
@@ -1126,7 +1126,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -1136,12 +1136,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -1266,7 +1266,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 480
       },
       "expected_without_boss_stun": {
@@ -1276,12 +1276,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 480,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 480
       }
     },
@@ -1406,7 +1406,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 480
       },
       "expected_without_boss_stun": {
@@ -1416,12 +1416,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 480,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 480
       }
     },
@@ -1546,7 +1546,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -1556,12 +1556,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -1686,7 +1686,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -1696,12 +1696,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -1826,7 +1826,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -1836,12 +1836,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -1966,7 +1966,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -1976,12 +1976,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -2106,7 +2106,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -2116,12 +2116,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -2246,7 +2246,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -2256,12 +2256,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -2386,7 +2386,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -2396,12 +2396,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -2526,7 +2526,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -2536,12 +2536,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -2666,7 +2666,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -2676,12 +2676,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -2806,7 +2806,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -2816,12 +2816,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -2946,7 +2946,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -2956,12 +2956,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -3086,7 +3086,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -3096,12 +3096,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -3226,7 +3226,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -3236,12 +3236,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -3366,7 +3366,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -3376,12 +3376,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -3506,7 +3506,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 920
       },
       "expected_without_boss_stun": {
@@ -3516,12 +3516,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 920,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 920
       }
     },
@@ -3646,7 +3646,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -3656,12 +3656,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -3786,7 +3786,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 890
       },
       "expected_without_boss_stun": {
@@ -3796,12 +3796,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 890,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 890
       }
     },
@@ -3926,7 +3926,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -3936,12 +3936,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -4066,7 +4066,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -4076,12 +4076,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -4206,7 +4206,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -4216,12 +4216,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -4346,7 +4346,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -4356,12 +4356,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -4486,7 +4486,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -4496,12 +4496,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -4626,7 +4626,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -4636,12 +4636,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -4766,7 +4766,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -4776,12 +4776,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -4906,7 +4906,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -4916,12 +4916,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -5046,7 +5046,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -5056,12 +5056,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -5186,7 +5186,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -5196,12 +5196,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -5326,7 +5326,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -5336,12 +5336,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -5466,7 +5466,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 850
       },
       "expected_without_boss_stun": {
@@ -5476,12 +5476,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 850,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 850
       }
     },
@@ -5606,7 +5606,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -5616,12 +5616,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -5746,7 +5746,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -5756,12 +5756,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -5886,7 +5886,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 740,
+        "boss_timer_on_resume": 57,
         "boss_ability2_timer_on_resume": 780
       },
       "expected_without_boss_stun": {
@@ -5896,12 +5896,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 740,
+        "boss_timer_after": 57,
         "boss_ability2_timer_after": 780,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 740,
+        "boss_timer_on_resume": 57,
         "boss_ability2_timer_on_resume": 780
       }
     },
@@ -6026,7 +6026,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -6036,12 +6036,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -6166,7 +6166,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 980
       },
       "expected_without_boss_stun": {
@@ -6176,12 +6176,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 980,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 980
       }
     },
@@ -6306,7 +6306,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -6316,12 +6316,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -6446,7 +6446,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -6456,12 +6456,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -6586,7 +6586,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 480
       },
       "expected_without_boss_stun": {
@@ -6596,12 +6596,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 620,
+        "boss_timer_after": 48,
         "boss_ability2_timer_after": 480,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 480
       }
     },
@@ -6726,7 +6726,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -6736,12 +6736,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -6866,7 +6866,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -6876,12 +6876,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -7006,7 +7006,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -7016,12 +7016,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -7146,7 +7146,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -7156,12 +7156,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -7286,7 +7286,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -7296,12 +7296,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -7426,7 +7426,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -7436,12 +7436,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -7566,7 +7566,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -7576,12 +7576,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -7706,7 +7706,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 800
       },
       "expected_without_boss_stun": {
@@ -7716,12 +7716,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 800,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 800
       }
     },
@@ -7846,7 +7846,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -7856,12 +7856,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -7986,7 +7986,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -7996,12 +7996,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -8126,7 +8126,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 880
       },
       "expected_without_boss_stun": {
@@ -8136,12 +8136,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 880,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 880
       }
     },
@@ -8266,7 +8266,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 860
       },
       "expected_without_boss_stun": {
@@ -8276,12 +8276,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 860,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 860
       }
     },
@@ -8406,7 +8406,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -8416,12 +8416,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -8546,7 +8546,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 950
       },
       "expected_without_boss_stun": {
@@ -8556,12 +8556,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 950,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 950
       }
     },
@@ -8686,7 +8686,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -8696,12 +8696,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -8826,7 +8826,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -8836,12 +8836,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -8966,7 +8966,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -8976,12 +8976,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -9106,7 +9106,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -9116,12 +9116,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -9246,7 +9246,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -9256,12 +9256,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -9386,7 +9386,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -9396,12 +9396,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -9526,7 +9526,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -9536,12 +9536,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -9666,7 +9666,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -9676,12 +9676,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -9806,7 +9806,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -9816,12 +9816,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -9946,7 +9946,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -9956,12 +9956,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -10086,7 +10086,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -10096,12 +10096,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -10226,7 +10226,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -10236,12 +10236,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -10366,7 +10366,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 720
       },
       "expected_without_boss_stun": {
@@ -10376,12 +10376,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 720,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 720
       }
     },
@@ -10506,7 +10506,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -10516,12 +10516,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -10646,7 +10646,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -10656,12 +10656,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -10786,7 +10786,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -10796,12 +10796,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 620,
+        "boss_timer_after": 48,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -10926,7 +10926,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -10936,12 +10936,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -11066,7 +11066,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 820
       },
       "expected_without_boss_stun": {
@@ -11076,12 +11076,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 820,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 820
       }
     },
@@ -11206,7 +11206,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -11216,12 +11216,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -11346,7 +11346,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -11356,12 +11356,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -11486,7 +11486,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 740,
+        "boss_timer_on_resume": 57,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -11496,12 +11496,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 740,
+        "boss_timer_after": 57,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 740,
+        "boss_timer_on_resume": 57,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -11626,7 +11626,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -11636,12 +11636,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -11766,7 +11766,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -11776,12 +11776,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -11906,7 +11906,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 790
       },
       "expected_without_boss_stun": {
@@ -11916,12 +11916,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 790,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 790
       }
     },
@@ -12046,7 +12046,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -12056,12 +12056,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -12186,7 +12186,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 760
       },
       "expected_without_boss_stun": {
@@ -12196,12 +12196,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 760,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 760
       }
     },
@@ -12326,7 +12326,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 740,
+        "boss_timer_on_resume": 57,
         "boss_ability2_timer_on_resume": 640
       },
       "expected_without_boss_stun": {
@@ -12336,12 +12336,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 740,
+        "boss_timer_after": 57,
         "boss_ability2_timer_after": 640,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 740,
+        "boss_timer_on_resume": 57,
         "boss_ability2_timer_on_resume": 640
       }
     },
@@ -12466,7 +12466,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -12476,12 +12476,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -12606,7 +12606,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -12616,12 +12616,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -12746,7 +12746,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -12756,12 +12756,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -12886,7 +12886,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -12896,12 +12896,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -13026,7 +13026,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -13036,12 +13036,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -13166,7 +13166,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -13176,12 +13176,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -13306,7 +13306,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -13316,12 +13316,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -13446,7 +13446,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -13456,12 +13456,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -13586,7 +13586,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -13596,12 +13596,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -13726,7 +13726,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -13736,12 +13736,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -13866,7 +13866,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -13876,12 +13876,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -14006,7 +14006,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -14016,12 +14016,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -14146,7 +14146,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -14156,12 +14156,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -14286,7 +14286,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -14296,12 +14296,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -14426,7 +14426,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -14436,12 +14436,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -14566,7 +14566,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 620
       },
       "expected_without_boss_stun": {
@@ -14576,12 +14576,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 620,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 620
       }
     },
@@ -14706,7 +14706,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -14716,12 +14716,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -14846,7 +14846,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 720
       },
       "expected_without_boss_stun": {
@@ -14856,12 +14856,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 720,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 720
       }
     },
@@ -14986,7 +14986,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 710
       },
       "expected_without_boss_stun": {
@@ -14996,12 +14996,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 710,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 710
       }
     },
@@ -15126,7 +15126,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -15136,12 +15136,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -15266,7 +15266,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -15276,12 +15276,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -15406,7 +15406,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -15416,12 +15416,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -15546,7 +15546,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -15556,12 +15556,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -15686,7 +15686,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -15696,12 +15696,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -15826,7 +15826,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -15836,12 +15836,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -15966,7 +15966,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 960
       },
       "expected_without_boss_stun": {
@@ -15976,12 +15976,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 960,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 960
       }
     },
@@ -16106,7 +16106,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 740,
+        "boss_timer_on_resume": 57,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -16116,12 +16116,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 740,
+        "boss_timer_after": 57,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 740,
+        "boss_timer_on_resume": 57,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -16246,7 +16246,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 740
       },
       "expected_without_boss_stun": {
@@ -16256,12 +16256,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 740,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 740
       }
     },
@@ -16386,7 +16386,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -16396,12 +16396,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -16526,7 +16526,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -16536,12 +16536,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -16666,7 +16666,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -16676,12 +16676,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -16806,7 +16806,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -16816,12 +16816,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -16946,7 +16946,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 680
       },
       "expected_without_boss_stun": {
@@ -16956,12 +16956,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 680,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 680
       }
     },
@@ -17086,7 +17086,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 910
       },
       "expected_without_boss_stun": {
@@ -17096,12 +17096,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 910,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 910
       }
     },
@@ -17226,7 +17226,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -17236,12 +17236,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -17366,7 +17366,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -17376,12 +17376,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -17506,7 +17506,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -17516,12 +17516,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -17646,7 +17646,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -17656,12 +17656,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -17786,7 +17786,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -17796,12 +17796,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -17926,7 +17926,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 750
       },
       "expected_without_boss_stun": {
@@ -17936,12 +17936,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 750,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 750
       }
     },
@@ -18066,7 +18066,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -18076,12 +18076,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -18206,7 +18206,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -18216,12 +18216,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -18346,7 +18346,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -18356,12 +18356,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -18486,7 +18486,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -18496,12 +18496,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -18626,7 +18626,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -18636,12 +18636,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -18766,7 +18766,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -18776,12 +18776,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -18906,7 +18906,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -18916,12 +18916,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 620,
+        "boss_timer_after": 48,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -19046,7 +19046,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -19056,12 +19056,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -19186,7 +19186,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 660
       },
       "expected_without_boss_stun": {
@@ -19196,12 +19196,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 660,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 660
       }
     },
@@ -19326,7 +19326,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -19336,12 +19336,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -19466,7 +19466,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -19476,12 +19476,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -19606,7 +19606,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -19616,12 +19616,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -19746,7 +19746,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -19756,12 +19756,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -19886,7 +19886,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -19896,12 +19896,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -20026,7 +20026,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 670
       },
       "expected_without_boss_stun": {
@@ -20036,12 +20036,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 670,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 670
       }
     },
@@ -20166,7 +20166,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -20176,12 +20176,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -20306,7 +20306,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -20316,12 +20316,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 620,
+        "boss_timer_after": 48,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -20446,7 +20446,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 900
       },
       "expected_without_boss_stun": {
@@ -20456,12 +20456,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 900,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 900
       }
     },
@@ -20586,7 +20586,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -20596,12 +20596,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -20726,7 +20726,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -20736,12 +20736,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -20866,7 +20866,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -20876,12 +20876,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -21006,7 +21006,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -21016,12 +21016,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -21146,7 +21146,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -21156,12 +21156,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -21286,7 +21286,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 840
       },
       "expected_without_boss_stun": {
@@ -21296,12 +21296,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 840,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 840
       }
     },
@@ -21426,7 +21426,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 800,
+        "boss_timer_on_resume": 62,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -21436,12 +21436,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 800,
+        "boss_timer_after": 62,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 800,
+        "boss_timer_on_resume": 62,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -21566,7 +21566,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -21576,12 +21576,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -21706,7 +21706,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -21716,12 +21716,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -21846,7 +21846,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -21856,12 +21856,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -21986,7 +21986,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -21996,12 +21996,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -22126,7 +22126,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -22136,12 +22136,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -22266,7 +22266,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 970
       },
       "expected_without_boss_stun": {
@@ -22276,12 +22276,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 970,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 970
       }
     },
@@ -22406,7 +22406,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -22416,12 +22416,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -22546,7 +22546,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -22556,12 +22556,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -22686,7 +22686,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -22696,12 +22696,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -22826,7 +22826,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -22836,12 +22836,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -22966,7 +22966,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 690
       },
       "expected_without_boss_stun": {
@@ -22976,12 +22976,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 690,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 690
       }
     },
@@ -23106,7 +23106,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -23116,12 +23116,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -23246,7 +23246,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -23256,12 +23256,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -23386,7 +23386,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -23396,12 +23396,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -23526,7 +23526,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -23536,12 +23536,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -23666,7 +23666,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -23676,12 +23676,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -23806,7 +23806,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -23816,12 +23816,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -23946,7 +23946,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -23956,12 +23956,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -24086,7 +24086,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -24096,12 +24096,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -24226,7 +24226,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 540,
+        "boss_timer_on_resume": 42,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -24236,12 +24236,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 540,
+        "boss_timer_after": 42,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 540,
+        "boss_timer_on_resume": 42,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -24366,7 +24366,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -24376,12 +24376,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -24506,7 +24506,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -24516,12 +24516,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -24646,7 +24646,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -24656,12 +24656,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -24786,7 +24786,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -24796,12 +24796,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -24926,7 +24926,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -24936,12 +24936,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -25066,7 +25066,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -25076,12 +25076,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -25206,7 +25206,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -25216,12 +25216,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -25346,7 +25346,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -25356,12 +25356,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -25486,7 +25486,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -25496,12 +25496,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -25626,7 +25626,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -25636,12 +25636,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -25766,7 +25766,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -25776,12 +25776,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -25906,7 +25906,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -25916,12 +25916,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -26046,7 +26046,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -26056,12 +26056,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -26186,7 +26186,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -26196,12 +26196,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -26326,7 +26326,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -26336,12 +26336,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -26466,7 +26466,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -26476,12 +26476,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -26606,7 +26606,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 830
       },
       "expected_without_boss_stun": {
@@ -26616,12 +26616,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 830,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 830
       }
     },
@@ -26746,7 +26746,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -26756,12 +26756,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -26886,7 +26886,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -26896,12 +26896,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -27026,7 +27026,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -27036,12 +27036,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -27166,7 +27166,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -27176,12 +27176,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -27306,7 +27306,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 810
       },
       "expected_without_boss_stun": {
@@ -27316,12 +27316,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 680,
+        "boss_timer_after": 52,
         "boss_ability2_timer_after": 810,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 680,
+        "boss_timer_on_resume": 52,
         "boss_ability2_timer_on_resume": 810
       }
     },
@@ -27446,7 +27446,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -27456,12 +27456,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -27586,7 +27586,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -27596,12 +27596,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -27726,7 +27726,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -27736,12 +27736,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -27866,7 +27866,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -27876,12 +27876,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 760,
+        "boss_timer_after": 58,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 760,
+        "boss_timer_on_resume": 58,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -28006,7 +28006,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -28016,12 +28016,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -28146,7 +28146,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -28156,12 +28156,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -28286,7 +28286,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 600
       },
       "expected_without_boss_stun": {
@@ -28296,12 +28296,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 620,
+        "boss_timer_after": 48,
         "boss_ability2_timer_after": 600,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 620,
+        "boss_timer_on_resume": 48,
         "boss_ability2_timer_on_resume": 600
       }
     },
@@ -28426,7 +28426,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -28436,12 +28436,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -28566,7 +28566,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 930
       },
       "expected_without_boss_stun": {
@@ -28576,12 +28576,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 930,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 930
       }
     },
@@ -28706,7 +28706,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -28716,12 +28716,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -28846,7 +28846,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 700
       },
       "expected_without_boss_stun": {
@@ -28856,12 +28856,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 700,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 700
       }
     },
@@ -28986,7 +28986,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -28996,12 +28996,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 560,
+        "boss_timer_after": 43,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 560,
+        "boss_timer_on_resume": 43,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -29126,7 +29126,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 770
       },
       "expected_without_boss_stun": {
@@ -29136,12 +29136,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 770,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 770
       }
     },
@@ -29266,7 +29266,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -29276,12 +29276,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -29406,7 +29406,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -29416,12 +29416,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 640,
+        "boss_timer_after": 49,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 640,
+        "boss_timer_on_resume": 49,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -29546,7 +29546,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -29556,12 +29556,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 600,
+        "boss_timer_after": 46,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 600,
+        "boss_timer_on_resume": 46,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -29686,7 +29686,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -29696,12 +29696,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 700,
+        "boss_timer_after": 54,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 700,
+        "boss_timer_on_resume": 54,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -29826,7 +29826,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -29836,12 +29836,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -29966,7 +29966,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -29976,12 +29976,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -30106,7 +30106,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       },
       "expected_without_boss_stun": {
@@ -30116,12 +30116,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 720,
+        "boss_timer_after": 55,
         "boss_ability2_timer_after": 0,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 720,
+        "boss_timer_on_resume": 55,
         "boss_ability2_timer_on_resume": 0
       }
     },
@@ -30246,7 +30246,7 @@
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 870
       },
       "expected_without_boss_stun": {
@@ -30256,12 +30256,12 @@
         "stun_after_step": 0,
         "boss_enraged": true,
         "boss_basic_attack_fired": true,
-        "boss_timer_after": 660,
+        "boss_timer_after": 51,
         "boss_ability2_timer_after": 870,
         "stun_on_resume": 0,
         "boss_enraged_on_resume": true,
         "boss_basic_attack_fired_on_resume": true,
-        "boss_timer_on_resume": 660,
+        "boss_timer_on_resume": 51,
         "boss_ability2_timer_on_resume": 870
       }
     }
