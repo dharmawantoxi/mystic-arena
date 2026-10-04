@@ -688,6 +688,29 @@ func _ice_aoe(shot: Projectile, main: UnitState) -> void:
 		boss.apply_debuff("atk_slow", shot.atk_slow_amount, shot.slow_duration)
 
 
+func _append_volley_targets(
+	source: StructureState, target: UnitState, targets: Array[UnitState], count: int
+) -> void:
+	# Layer 8t: port of the boss arm of `Tower._shoot_archer` (level 5/6 volley)
+	# and `Tower._shoot_mage` (level 2..6 chain bolts). `Tower.update` appends
+	# the living in-range enemy boss to `enemies` after the spatial-grid unit
+	# query and passes that same `enemies` list to `self._shoot(enemies)`, so
+	# both `_shoot_archer` and `_shoot_mage` pick up the boss as a secondary
+	# target once ordinary in-range enemy units have been added and
+	# `len(targets) < num_shots` / `self.chain`. The native `units` array never
+	# holds `active_boss` (`active_boss` only lives in `_by_id`), so an archer
+	# volley used to refill its extra arrow(s) onto the primary target and a
+	# mage tower used to drop the chain bolt to the boss completely.
+	super._append_volley_targets(source, target, targets, count)
+	var boss := active_boss
+	if targets.size() >= count or boss == null or boss == target:
+		return
+	if not boss.alive or boss.team == source.team:
+		return
+	if source.position.distance_to(boss.position) <= source.definition.attack_range_px:
+		targets.append(boss)
+
+
 func _boss_enemies() -> Array[UnitState]:
 	# Source Boss.update order: living units, then enemy towers, then enemy
 	# bases. Nexuses are kept separate because `structures` stores them first.

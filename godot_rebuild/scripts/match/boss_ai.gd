@@ -3696,7 +3696,10 @@ static func _hit(world, boss: BossState, target: UnitState, raw_damage: int) -> 
 	if target == null or not target.alive or raw_damage <= 0:
 		return
 	var school := "physical" if target is HeroState else "neutral"
-	world._deliver_hit(boss.id, boss.team, target, raw_damage, school, boss.position)
+	# Layer 8u: Boss._use_ability and every _smart_ai_* skill call
+	# `target.take_damage(damage, self.team)` with no `source=` argument
+	# (only the primary basic attack in Boss.update passes `source=self`).
+	world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)
 
 
 static func _slow(target: UnitState, amount: float, duration: int) -> void:

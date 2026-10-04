@@ -379,6 +379,11 @@ from boss_ice_aoe_source_oracle import source_fixture as boss_ice_aoe_fixture
 from boss_tower_damage_source_oracle import source_fixture as boss_tower_damage_fixture
 from boss_cannon_splash_source_oracle import source_fixture as boss_cannon_splash_fixture
 from boss_ice_main_slow_source_oracle import source_fixture as boss_ice_main_slow_fixture
+from boss_tower_volley_source_oracle import source_fixture as boss_tower_volley_fixture
+from boss_ability_source_attribution_oracle import (
+    source_fixture as boss_ability_source_attribution_fixture,
+)
+from boss_item_stun_source_oracle import source_fixture as boss_item_stun_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -414,6 +419,23 @@ check('const BossIceMainSlowChecks = preload("res://tests/boss_ice_main_slow_che
       "Boss ice main slow suite must be preloaded")
 check("BossIceMainSlowChecks.new().run(_check)" in ai_tests,
       "Boss ice main slow suite must run")
+check('const BossTowerVolleyChecks = preload("res://tests/boss_tower_volley_checks.gd")' in ai_tests,
+      "Boss tower volley suite must be preloaded")
+check("BossTowerVolleyChecks.new().run(_check)" in ai_tests,
+      "Boss tower volley suite must run")
+check(
+    'const BossAbilitySourceAttributionChecks = preload(\n\t"res://tests/boss_ability_source_attribution_checks.gd"\n)'
+    in ai_tests
+    or 'const BossAbilitySourceAttributionChecks = preload("res://tests/boss_ability_source_attribution_checks.gd")'
+    in ai_tests,
+    "Boss ability source attribution suite must be preloaded",
+)
+check("BossAbilitySourceAttributionChecks.new().run(_check)" in ai_tests,
+      "Boss ability source attribution suite must run")
+check('const BossItemStunChecks = preload("res://tests/boss_item_stun_checks.gd")' in ai_tests,
+      "Boss item stun suite must be preloaded")
+check("BossItemStunChecks.new().run(_check)" in ai_tests,
+      "Boss item stun suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -723,6 +745,168 @@ if (ROOT / "tests/fixtures/boss_ice_main_slow_source.json").is_file():
               == max(row["atk_slow"] for row in case["inputs"])
               for case in _ice_main_cases),
           "Non-boss main targets must keep the raw mixin store")
+check((ROOT / "tests/fixtures/boss_tower_volley_source.json").is_file(),
+      "Boss tower volley requires source fixture")
+if (ROOT / "tests/fixtures/boss_tower_volley_source.json").is_file():
+    _boss_tower_volley = boss_tower_volley_fixture()
+    check(_boss_tower_volley == json.loads(
+        (ROOT / "tests/fixtures/boss_tower_volley_source.json").read_text(encoding="utf-8")),
+          "Boss tower volley source drift")
+    _volley_source = _boss_tower_volley.get("source", {})
+    check(all(bool(_volley_source.get(_flag, False)) for _flag in (
+        "tower_boss_scan_in_update", "tower_update_passes_enemies_to_shoot",
+        "shoot_dispatches_archer_and_mage", "archer_volley_scans_enemies_inclusive",
+        "archer_volley_refills_primary", "mage_chain_scans_enemies_inclusive",
+        "mage_chain_has_no_refill", "all_units_includes_boss")),
+          "Tower volley and chain source shape must keep the boss scan, inclusive range and refill split")
+    check(_volley_source.get("archer_l5", {}).get("volley_count") == 2
+          and _volley_source.get("archer_l6", {}).get("volley_count") == 3
+          and _volley_source.get("mage_l2", {}).get("chain") == 2
+          and _volley_source.get("mage_l6", {}).get("chain") == 4,
+          "Source archer volley and mage chain counts must match the tier tables")
+    _volley_cases = _boss_tower_volley.get("cases", [])
+    _volley_types = {case["boss_type"] for case in _volley_cases}
+    _volley_labels = {"archer_l5_boss_at_range_edge", "archer_l6_unit_fills_before_boss",
+                      "mage_l2_boss_at_range_edge", "mage_l6_boss_outside_range"}
+    check(len(_volley_cases) == 864
+          and _volley_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _volley_cases) == 4
+                  for _boss in _volley_types),
+          "Boss tower volley requires four source cases for all 216 boss types")
+    check(all({case["label"] for case in _volley_cases
+               if case["boss_type"] == _boss} == _volley_labels
+              for _boss in _volley_types),
+          "Boss tower volley covers archer L5/L6 volleys, mage L2 chain edge and mage L6 outside guard")
+    check(all((case["expected"]["boss_shots"] == 1) == case["boss_in_range"]
+              and case["expected_without_boss"]["boss_shots"] == 0
+              for case in _volley_cases),
+          "Only an in-range boss takes a secondary volley/chain shot, never the pre-layer scan")
+    check(all(case["expected"]["shot_targets"] != case["expected_without_boss"]["shot_targets"]
+              for case in _volley_cases if case["boss_in_range"]),
+          "Every in-range boss case must diverge from the pre-layer units-only target list")
+    check(all(case["expected"]["shot_count"] == case["slot_count"]
+              and case["expected_without_boss"]["shot_count"] == case["slot_count"]
+              for case in _volley_cases if case["tower_path"] == "archer"),
+          "Archer volleys must always emit their full arrow count via secondary targets or primary refill")
+    check(all(case["expected"]["shot_count"] == 2
+              and case["expected_without_boss"]["shot_count"] == 1
+              for case in _volley_cases if case["label"] == "mage_l2_boss_at_range_edge"),
+          "Mage L2 must emit a second chain bolt to the in-range boss and omit it without the boss")
+check((ROOT / "tests/fixtures/boss_ability_source_attribution.json").is_file(),
+      "Boss ability source attribution requires source fixture")
+if (ROOT / "tests/fixtures/boss_ability_source_attribution.json").is_file():
+    _boss_ability_attr = boss_ability_source_attribution_fixture()
+    check(_boss_ability_attr == json.loads(
+        (ROOT / "tests/fixtures/boss_ability_source_attribution.json").read_text(encoding="utf-8")),
+        "Boss ability source attribution source behavior drift")
+    _attr_source = _boss_ability_attr.get("source", {})
+    check(all(bool(_attr_source.get(_flag)) for _flag in (
+        "basic_attack_passes_source_self", "cleave_omits_source",
+        "generic_ability_omits_source", "all_ability_take_damage_calls_omit_source",
+        "hero_blind_requires_source", "bristleback_reflect_requires_source",
+        "razor_carapace_reflect_requires_source", "hero_killed_by_requires_source")),
+          "Boss ability source attribution shape must keep source=None on all ability/skill hits")
+    check(_attr_source.get("ability_take_damage_call_count") == 177
+          and _attr_source.get("razor_carapace_armor") == 12
+          and _attr_source.get("razor_carapace_reflect_pct") == 0.35
+          and _attr_source.get("leviathan_combat_timeout") == 300,
+          "Boss ability source attribution metadata must match source call count and item constants")
+    _attr_cases = _boss_ability_attr.get("cases", [])
+    _attr_types = {case["boss_type"] for case in _attr_cases}
+    _attr_scenarios = {
+        "blind_boss_ability_lands",
+        "bristleback_mitigates_without_reflect",
+        "razor_carapace_combat_timer_without_reflect",
+        "lethal_ability_preserves_uncredited_killed_by",
+    }
+    check(len(_attr_cases) == 864
+          and _attr_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _attr_cases) == 4
+                  for _boss in _attr_types),
+          "Boss ability source attribution requires four source cases for all 216 boss types")
+    check(all({case["scenario"] for case in _attr_cases
+               if case["boss_type"] == _boss} == _attr_scenarios
+              for _boss in _attr_types),
+          "Boss ability source attribution covers blind, Bristleback, Razor Carapace and lethal killed_by")
+    check(all(case["expected"] != case["expected_with_boss_source"]
+              and not case["expected"]["hit_source_attributed"]
+              and case["expected_with_boss_source"]["hit_source_attributed"]
+              for case in _attr_cases),
+          "Every boss ability attribution case must differ between source=None and source=boss")
+    check(all(case["expected"]["damage_taken"] > 0
+              and case["expected_with_boss_source"]["damage_taken"] == 0
+              for case in _attr_cases if case["scenario"] == "blind_boss_ability_lands"),
+          "Blinded boss abilities must land when uncredited and miss only when source=boss is injected")
+    check(all(case["expected"]["reflect_raw"] == 0
+              and case["expected_with_boss_source"]["reflect_raw"] > 0
+              and case["expected"]["target_hp"] == case["expected_with_boss_source"]["target_hp"]
+              for case in _attr_cases
+              if case["scenario"] in (
+                  "bristleback_mitigates_without_reflect",
+                  "razor_carapace_combat_timer_without_reflect",
+              )),
+          "Bristleback and Razor Carapace must mitigate boss abilities without reflecting onto the boss")
+    check(all(not case["expected"]["target_alive"]
+              and case["expected"]["target_deaths"] == 1
+              and not case["expected"]["killed_by_boss"]
+              and case["expected_with_boss_source"]["killed_by_boss"]
+              for case in _attr_cases
+              if case["scenario"] == "lethal_ability_preserves_uncredited_killed_by"),
+          "Lethal boss abilities must not overwrite hero killed_by with the boss")
+check((ROOT / "tests/fixtures/boss_item_stun_source.json").is_file(),
+      "Boss item stun requires source fixture")
+if (ROOT / "tests/fixtures/boss_item_stun_source.json").is_file():
+    _boss_item_stun = boss_item_stun_fixture()
+    check(_boss_item_stun == json.loads(
+        (ROOT / "tests/fixtures/boss_item_stun_source.json").read_text(encoding="utf-8")),
+        "Boss item stun source behavior drift")
+    _stun_source = _boss_item_stun.get("source", {})
+    check(all(bool(_stun_source.get(_flag)) for _flag in (
+        "apply_stun_to_uses_getattr_apply_stun",
+        "boss_apply_stun_scales_by_0_45",
+        "boss_apply_stun_uses_max_timer",
+        "boss_update_ticks_debuffs_before_stun_gate",
+        "boss_update_stun_gate_returns_before_combat")),
+          "Boss item stun shape must delegate _apply_stun_to to boss.apply_stun and gate Boss.update")
+    check(_stun_source.get("sundering_cudgel_stun_ticks") == 15
+          and _stun_source.get("sundering_cudgel_cooldown") == 120
+          and _stun_source.get("abyss_breaker_bash_stun_ticks") == 54
+          and _stun_source.get("abyss_breaker_bash_cooldown") == 140
+          and _stun_source.get("abyss_breaker_overwhelm_stun_ticks") == 72
+          and _stun_source.get("abyss_breaker_overwhelm_cooldown") == 1500
+          and _stun_source.get("fenrir_chain_root_duration") == 72
+          and _stun_source.get("fenrir_chain_cooldown") == 1080
+          and _stun_source.get("hex_idol_stun_ticks") == 150
+          and _stun_source.get("hex_idol_cooldown") == 1800,
+          "Boss item stun metadata must match source item stun durations and cooldowns")
+    _stun_cases = _boss_item_stun.get("cases", [])
+    _stun_types = {case["boss_type"] for case in _stun_cases}
+    _stun_scenarios = {
+        "sundering_cudgel_pierce_bash",
+        "abyss_breaker_bash",
+        "abyss_breaker_overwhelm",
+        "hex_idol_hexcraft",
+    }
+    check(len(_stun_cases) == 864
+          and _stun_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _stun_cases) == 4
+                  for _boss in _stun_types),
+          "Boss item stun requires four source cases for all 216 boss types")
+    check(all({case["scenario"] for case in _stun_cases
+               if case["boss_type"] == _boss} == _stun_scenarios
+              for _boss in _stun_types),
+          "Boss item stun covers Sundering Cudgel, Abyss Breaker Bash/Overwhelm and Hex Idol")
+    check(all(case["expected"] != case["expected_without_boss_stun"]
+              and case["expected"]["stun_on_apply"] == int(case["expected"]["raw_stun"] * 0.45)
+              and case["expected"]["stun_after_step"] == case["expected"]["stun_on_apply"] - 1
+              and not case["expected"]["boss_basic_attack_fired"]
+              and case["expected_without_boss_stun"]["boss_basic_attack_fired"]
+              for case in _stun_cases),
+          "Every boss item stun case must apply 45% stun duration and gate Boss.update")
+    check(all(case["expected"]["boss_ability2_timer_after"] == 0
+              and case["expected_without_boss_stun"]["boss_ability2_timer_after"] > 0
+              for case in _stun_cases if case["boss_class"] == "true"),
+          "Stunned true bosses must not cast their low-HP heal until stun_timer reaches zero")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(
@@ -854,6 +1038,25 @@ check("super._ice_aoe(shot, main)" in boss_ice_aoe
       in boss_ice_aoe
       and "not boss.alive or boss.team == shot.team" in boss_ice_aoe,
       "Match layer must add the living boss to the ice AOE with the source tenacity dispatch")
+fire_projectile_base = siege_battle.split("func fire_projectile(", 1)[1].split("\nfunc ", 1)[0]
+check("_append_volley_targets(source, target, targets, count)" in fire_projectile_base
+      and "if not is_mage:" in fire_projectile_base,
+      "Structure fire_projectile must delegate secondary volley/chain target selection before archer refill")
+volley_targets_base = siege_battle.split("func _append_volley_targets(", 1)[1].split("\nfunc ", 1)[0]
+check("for candidate in units:" in volley_targets_base
+      and "if targets.size() >= count:" in volley_targets_base
+      and "source.position.distance_to(candidate.position) <= source.definition.attack_range_px"
+      in volley_targets_base,
+      "Base volley target scan must keep the source order, slot cap and inclusive range")
+boss_volley_targets = prototype_battle.split("func _append_volley_targets(", 1)[1].split(
+    "\nfunc ", 1)[0]
+check("super._append_volley_targets(source, target, targets, count)" in boss_volley_targets
+      and "if targets.size() >= count or boss == null or boss == target:" in boss_volley_targets
+      and "if not boss.alive or boss.team == source.team:" in boss_volley_targets
+      and "source.position.distance_to(boss.position) <= source.definition.attack_range_px"
+      in boss_volley_targets
+      and "targets.append(boss)" in boss_volley_targets,
+      "Match layer must append the living in-range enemy boss after ordinary volley/chain candidates")
 minion_battle = (ROOT / "scripts/combat/minion_battle.gd").read_text(encoding="utf-8")
 boss_minion_target = prototype_battle.split("func _find_target(unit: UnitState)", 1)[1].split(
     "\nfunc _structure_target(", 1)[0]
@@ -896,6 +1099,17 @@ check(not re.search(r"^\s*boss\.hp\s*=", boss_ai_text, re.M),
       "Boss AI hp increases must pass through the anti-heal setter")
 check(boss_ai_text.count("boss.set_hp_value(") == 6,
       "All source Boss AI healing writes must use the anti-heal setter")
+boss_ai_hit = boss_ai_text.split("static func _hit(", 1)[1].split(
+    "\nstatic func _slow(", 1)[0]
+check("world._deliver_hit(-1, boss.team, target, raw_damage, school, boss.position)" in boss_ai_hit
+      and "world._deliver_hit(boss.id," not in boss_ai_hit,
+      "Boss AI ability/skill hits must omit source attribution like source Boss._use_ability/_smart_ai_*")
+battle_item_effects_text = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
+battle_item_apply_stun = battle_item_effects_text.split("func apply_stun(", 1)[1].split(
+    "\nfunc apply_silence(", 1)[0]
+check('elif t != null and t.has_method("apply_stun"):' in battle_item_apply_stun
+      and "t.apply_stun(duration)" in battle_item_apply_stun,
+      "BattleItemEffects.apply_stun must delegate to BossState.apply_stun like source _apply_stun_to")
 boss_kill_credit = prototype_battle.split("func _process_boss_kill(", 1)[1].split(
     "\nfunc _process_boss_result()", 1)[0]
 check("get_unit(boss.last_hit_source_id) as HeroState" in boss_kill_credit

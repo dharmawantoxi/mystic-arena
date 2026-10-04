@@ -160,13 +160,7 @@ func fire_projectile(source_id: int, target_id: int) -> bool:
 	if projectiles.size() + count > MAX_PROJECTILES:
 		return false
 	var targets: Array[UnitState] = [target]
-	for candidate in units:
-		if targets.size() >= count:
-			break
-		if candidate == target or not candidate.alive or candidate.team == source.team:
-			continue
-		if source.position.distance_to(candidate.position) <= source.definition.attack_range_px:
-			targets.append(candidate)
+	_append_volley_targets(source, target, targets, count)
 	# Archer refills missing shots with the main target; mage fires fewer
 	# bolts instead. All mage bolts share the main-target muzzle point.
 	if not is_mage:
@@ -327,6 +321,24 @@ func _structure_target(structure: StructureState) -> UnitState:
 			best = distance
 			target = candidate
 	return target
+
+
+func _append_volley_targets(
+	source: StructureState, target: UnitState, targets: Array[UnitState], count: int
+) -> void:
+	# Port of the secondary-target loops in `Tower._shoot_archer` (levels 5/6)
+	# and `Tower._shoot_mage` (levels 2..6): scan `enemies` in stable order,
+	# skipping the primary target, dead entries and enemies outside `range`
+	# (inclusive), up to `num_shots` / `chain`. The match layer widens this
+	# scan with the live boss, which `Tower.update` appends at the tail of
+	# `enemies`; see `Prototype._append_volley_targets`.
+	for candidate in units:
+		if targets.size() >= count:
+			break
+		if candidate == target or not candidate.alive or candidate.team == source.team:
+			continue
+		if source.position.distance_to(candidate.position) <= source.definition.attack_range_px:
+			targets.append(candidate)
 
 
 func _update_projectiles(source: StructureState) -> void:

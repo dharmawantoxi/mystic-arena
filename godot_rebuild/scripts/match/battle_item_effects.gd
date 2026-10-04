@@ -21,6 +21,15 @@ func apply_stun(target_id: int, duration: int) -> void:
 	var t: Object = world.get_unit(target_id)
 	if t is HeroState:
 		(t as HeroState).stun_timer = maxi((t as HeroState).stun_timer, duration)
+	elif t != null and t.has_method("apply_stun"):
+		# Layer 8v: port of `_apply_stun_to(target, duration)` in
+		# `hero_items.py` (`fn = getattr(target, "apply_stun", None)`). When an
+		# item stun (Abyss Breaker Bash / Overwhelm, Fenrir Chain Binding
+		# Chains, Sundering Cudgel Piercing Bash, or Hex Idol Hexcraft) targets
+		# `active_boss`, delegate to `BossState.apply_stun(duration)` so the
+		# 55% boss stun resistance (`int(duration * 0.45)`) lands on
+		# `boss.stun_timer` and gates `_step_active_boss()`.
+		t.apply_stun(duration)
 
 
 func apply_silence(target_id: int, duration: int) -> void:
