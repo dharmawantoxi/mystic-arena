@@ -68,15 +68,21 @@ const BRAND_BURST_TICKS := 23
 
 class ItemAuraBus:
 	extends BattleItemEffects
+	# `calls` is the recording dictionary owned by `ItemAuraWorld`. The bus must
+	# never be stored back on the world: two RefCounted objects referencing each
+	# other form a cycle that survives to engine exit and trips the CI gate with
+	# `ERROR: resources still in use at exit`.
 	var pre_fix_mode := ""
-	var atk_slow_calls: Array = []
-	var anti_heal_calls: Array = []
-	var burn_calls: Array = []
+	var calls: Dictionary = {}
+
+	func _record(kind: String, payload: Array) -> void:
+		var list: Array = calls.get(kind, [])
+		list.append(payload)
 
 	func apply_atk_slow(target_id: int, amount: float, duration: int) -> void:
 		var t: Object = world.get_unit(target_id)
 		if t is BossState:
-			atk_slow_calls.append([amount, duration])
+			_record("atk_slow", [amount, duration])
 			if pre_fix_mode == PRE_FIX_WORLD_STORE:
 				# Pre-8y `world.apply_atk_slow`: strongest-wins store, no tenacity.
 				var boss := t as BossState
@@ -89,7 +95,7 @@ class ItemAuraBus:
 	func apply_anti_heal(target_id: int, amount: float, duration: int) -> void:
 		var t: Object = world.get_unit(target_id)
 		if t is BossState:
-			anti_heal_calls.append([amount, duration])
+			_record("anti_heal", [amount, duration])
 			if not pre_fix_mode.is_empty():
 				# Pre-8y `world.apply_anti_heal`: untempered strongest-wins store.
 				var boss := t as BossState
@@ -102,7 +108,7 @@ class ItemAuraBus:
 	func apply_burn(target_id: int, dps: float, duration: int, source_team: int) -> void:
 		var t: Object = world.get_unit(target_id)
 		if t is BossState:
-			burn_calls.append([dps, duration, source_team])
+			_record("burn", [dps, duration, source_team])
 			var boss := t as BossState
 			if pre_fix_mode == PRE_FIX_WORLD_STORE:
 				# Pre-8y aura arm: `minion_battle.apply_burn` world store, which
@@ -129,19 +135,20 @@ class ItemAuraBus:
 class ItemAuraWorld:
 	extends Prototype
 	var pre_fix_mode := ""
-	var last_aura_bus: ItemAuraBus = null
+	var aura_calls: Dictionary = {"atk_slow": [], "anti_heal": [], "burn": []}
 
 	func _aura_item_effects() -> BattleItemEffects:
 		var bus := ItemAuraBus.new()
 		bus.world = self
 		bus.pre_fix_mode = pre_fix_mode
-		last_aura_bus = bus
+		bus.calls = aura_calls
 		return bus
 
 	func _battle_item_effects(source_hero: HeroState) -> BattleItemEffects:
 		var bus := ItemAuraBus.new()
 		bus.world = self
 		bus.pre_fix_mode = pre_fix_mode
+		bus.calls = aura_calls
 		bus.dealer_id = source_hero.id
 		bus.dealer_team = source_hero.team
 		bus.dealer_pos = source_hero.position
@@ -325,7 +332,7 @@ func _check_fixture_payloads(check: Callable, fixture: Dictionary) -> void:
 
 func _reset_world(world: ItemAuraWorld, pre_fix_mode: String) -> void:
 	world.pre_fix_mode = pre_fix_mode
-	world.last_aura_bus = null
+	world.aura_calls = {"atk_slow": [], "anti_heal": [], "burn": []}
 	world.units.clear()
 	world.projectiles.clear()
 	world.recent_events.clear()
@@ -387,7 +394,6 @@ func _run_scenario(
 	var before: Dictionary = {}
 	var delivered: Dictionary = {}
 	var burn_damage := 0
-	var calls: ItemAuraBus = null
 
 	if scenario == BURST_SCENARIO:
 		# Set-up burn (identical in both columns) through the boss store, then
@@ -403,8 +409,8 @@ func _run_scenario(
 		}
 		# Searbrand Brand Burst item burn delivery onto the active boss
 		# (`hero_item_inventory.gd`: `effects.apply_burn(eid, ...)`).
-		calls = world._battle_item_effects(hero) as ItemAuraBus
-		calls.apply_burn(boss.id, BRAND_BURST_DPS, BRAND_BURST_DURATION, world.BLUE)
+		var bus: ItemAuraBus = world._battle_item_effects(hero) as ItemAuraBus
+		bus.apply_burn(boss.id, BRAND_BURST_DPS, BRAND_BURST_DURATION, world.BLUE)
 		delivered = {
 			"burn_dps": boss.burn_dps,
 			"burn_timer": boss.burn_timer,
@@ -419,16 +425,17 @@ func _run_scenario(
 		if item_id.is_empty() or not hero.items.add(item_id):
 			return {}
 		world._tick_auras_and_items()
-		calls = world.last_aura_bus
 
-	if calls == null:
-		return {}
+	var records: Dictionary = world.aura_calls
+	var atk_slow_calls: Array = records.get("atk_slow", [])
+	var anti_heal_calls: Array = records.get("anti_heal", [])
+	var burn_calls: Array = records.get("burn", [])
 	return {
 		"before_delivery": before,
 		"after_delivery": delivered,
-		"apply_atk_slow_calls": calls.atk_slow_calls,
-		"apply_anti_heal_calls": calls.anti_heal_calls,
-		"apply_burn_calls": calls.burn_calls,
+		"apply_atk_slow_calls": atk_slow_calls,
+		"apply_anti_heal_calls": anti_heal_calls,
+		"apply_burn_calls": burn_calls,
 		"boss_atk_slow_amount": boss.atk_slow_amount,
 		"boss_atk_slow_timer": boss.atk_slow_timer,
 		"boss_anti_heal_amount": boss.anti_heal_amount,
@@ -467,6 +474,8 @@ func _replay_cases(check: Callable, fixture: Dictionary) -> void:
 			_cross_column_ok(actual, contrast, scenario, burst_want),
 			"item aura cross-column contrast %s" % label
 		)
+	# Drop the last case's units so the shared world holds nothing at engine exit.
+	_reset_world(world, "")
 
 
 func _cross_column_ok(
@@ -525,11 +534,15 @@ func _cross_column_ok(
 
 
 func _live_match_contrasts(check: Callable) -> void:
+	# Every world created here is disposed before the suite returns, so no live
+	# battle graph (economy/AI sub-objects included) survives to engine exit.
+	var scratch: Array = []
 	for boss_type in ["gornak", "morgath"]:
 		# 1. Everfrost Freezing Aura through the live _tick_auras_and_items()
 		# path: the boss inside the 300 px radius takes the tenacity-cut
 		# atk_slow, while a minion inside the same radius keeps the raw payload.
 		var world := ItemAuraWorld.new()
+		scratch.append(world)
 		var boss: BossState = world._spawn_boss(boss_type)
 		boss.position = Vector2(300.0, 380.0)
 		boss.previous_position = boss.position
@@ -566,6 +579,7 @@ func _live_match_contrasts(check: Callable) -> void:
 		)
 
 		var bug_world := ItemAuraWorld.new()
+		scratch.append(bug_world)
 		bug_world.pre_fix_mode = PRE_FIX_WORLD_STORE
 		var bug_boss: BossState = bug_world._spawn_boss(boss_type)
 		bug_boss.position = Vector2(300.0, 380.0)
@@ -595,6 +609,7 @@ func _live_match_contrasts(check: Callable) -> void:
 		# 2. Solar Brand Scorched Earth: burn lands with the aura team, the
 		# blind lands on the boss, and the burn clock ticks inside the boss step.
 		var solar_world := ItemAuraWorld.new()
+		scratch.append(solar_world)
 		var solar_boss: BossState = solar_world._spawn_boss(boss_type)
 		solar_boss.position = Vector2(300.0, 380.0)
 		solar_boss.previous_position = solar_boss.position
@@ -635,6 +650,7 @@ func _live_match_contrasts(check: Callable) -> void:
 
 		# 3. Searbrand Cauterize: the boss keeps 50% of every heal.
 		var sear_world := ItemAuraWorld.new()
+		scratch.append(sear_world)
 		var sear_boss: BossState = sear_world._spawn_boss(boss_type)
 		sear_boss.position = Vector2(300.0, 380.0)
 		sear_boss.previous_position = sear_boss.position
@@ -664,3 +680,6 @@ func _live_match_contrasts(check: Callable) -> void:
 				% [boss_type, sear_boss.hp]
 			)
 		)
+	for world in scratch:
+		_reset_world(world, "")
+	scratch.clear()
