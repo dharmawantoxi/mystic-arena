@@ -384,6 +384,7 @@ from boss_ability_source_attribution_oracle import (
     source_fixture as boss_ability_source_attribution_fixture,
 )
 from boss_item_stun_source_oracle import source_fixture as boss_item_stun_fixture
+from boss_item_silence_source_oracle import source_fixture as boss_item_silence_fixture
 from boss_motion_source_oracle import (
     smart_ai_boss_types as boss_motion_ai_types,
     source_boss_types as boss_motion_source_types,
@@ -436,6 +437,10 @@ check('const BossItemStunChecks = preload("res://tests/boss_item_stun_checks.gd"
       "Boss item stun suite must be preloaded")
 check("BossItemStunChecks.new().run(_check)" in ai_tests,
       "Boss item stun suite must run")
+check('const BossItemSilenceChecks = preload("res://tests/boss_item_silence_checks.gd")' in ai_tests,
+      "Boss item silence suite must be preloaded")
+check("BossItemSilenceChecks.new().run(_check)" in ai_tests,
+      "Boss item silence suite must run")
 check("BossPresentationChecks.new().run(_check)" in ai_tests, "Boss presentation suite must run")
 check("BossMotionChecks.new().run(_check)" in ai_tests, "Boss motion and kiting suite must run")
 check((ROOT / "tests/fixtures/boss_motion_source.json").is_file(), "Boss motion requires source fixture")
@@ -907,6 +912,61 @@ if (ROOT / "tests/fixtures/boss_item_stun_source.json").is_file():
               and case["expected_without_boss_stun"]["boss_ability2_timer_after"] > 0
               for case in _stun_cases if case["boss_class"] == "true"),
           "Stunned true bosses must not cast their low-HP heal until stun_timer reaches zero")
+check((ROOT / "tests/fixtures/boss_item_silence_source.json").is_file(),
+      "Boss item silence requires source fixture")
+if (ROOT / "tests/fixtures/boss_item_silence_source.json").is_file():
+    _boss_item_silence = boss_item_silence_fixture()
+    check(_boss_item_silence == json.loads(
+        (ROOT / "tests/fixtures/boss_item_silence_source.json").read_text(encoding="utf-8")),
+        "Boss item silence source behavior drift")
+    _silence_source = _boss_item_silence.get("source", {})
+    check(all(bool(_silence_source.get(_flag)) for _flag in (
+        "silence_applies_atk_slow_then_skill_down",
+        "silence_uses_apply_debuff_branch",
+        "boss_debuff_cuts_atk_slow_by_tenacity",
+        "boss_debuff_leaves_skill_down_untouched",
+        "boss_debuff_delegates_to_mixin_store",
+        "mixin_store_is_strongest_wins")),
+          "Boss item silence shape must route _apply_silence_to through Boss.apply_debuff")
+    check(_silence_source.get("sanguine_thorn_silence_duration") == 300
+          and _silence_source.get("sanguine_thorn_cooldown") == 1080
+          and _silence_source.get("sanguine_thorn_damage_amp") == 0.3
+          and _silence_source.get("astral_codex_silence_duration") == 90
+          and _silence_source.get("astral_codex_trigger_enemies") == 2
+          and _silence_source.get("astral_codex_cooldown") == 1440
+          and _silence_source.get("hex_idol_silence_ticks") == 150
+          and _silence_source.get("hex_idol_stun_ticks") == 150
+          and _silence_source.get("hex_idol_cooldown") == 1800,
+          "Boss item silence metadata must match source item silence durations and cooldowns")
+    _silence_cases = _boss_item_silence.get("cases", [])
+    _silence_types = {case["boss_type"] for case in _silence_cases}
+    _silence_scenarios = {
+        "sanguine_thorn_soul_rend",
+        "astral_codex_arcane_nova",
+        "hex_idol_hexcraft",
+        "soul_rend_and_arcane_nova_keep_longest_store",
+    }
+    check(len(_silence_cases) == 864
+          and _silence_types == set(boss_motion_source_types())
+          and all(sum(case["boss_type"] == _boss for case in _silence_cases) == 4
+                  for _boss in _silence_types),
+          "Boss item silence requires four source cases for all 216 boss types")
+    check(all({case["scenario"] for case in _silence_cases
+               if case["boss_type"] == _boss} == _silence_scenarios
+              for _boss in _silence_types),
+          "Boss item silence covers Soul Rend, Arcane Nova, Hexcraft and the stacked store")
+    check(all(case["expected"] != case["expected_without_boss_tenacity"]
+              and case["expected"]["atk_slow_amount"] == 0.35
+              and case["expected"]["skill_down_amount"] == 1.0
+              and case["expected"]["atk_slow_amount"]
+              < case["expected_without_boss_tenacity"]["atk_slow_amount"]
+              and case["expected"]["atk_slow_timer"]
+              < case["expected_without_boss_tenacity"]["atk_slow_timer"]
+              and case["expected_without_boss_tenacity"]["atk_slow_amount"] == 1.0
+              and case["expected_without_boss_tenacity"]["atk_slow_timer"]
+              == max(case["expected"]["raw_silence_durations"])
+              for case in _silence_cases),
+          "Every boss item silence case must cut atk_slow by tenacity and keep skill_down raw")
 check((ROOT / "tests/fixtures/boss_presentation_source.json").is_file(), "Boss presentation requires source fixture")
 if (ROOT / "tests/fixtures/boss_presentation_source.json").is_file():
     check(boss_presentation_fixture() == json.loads(

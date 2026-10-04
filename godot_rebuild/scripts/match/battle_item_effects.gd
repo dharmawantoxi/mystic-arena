@@ -36,6 +36,20 @@ func apply_silence(target_id: int, duration: int) -> void:
 	var t: Object = world.get_unit(target_id)
 	if t == null:
 		return
+	# Layer 8w: port of `_apply_silence_to(target, duration)` in
+	# `hero_items.py` (`hero_items.py:2693-2697`). The source helper calls
+	# `target.apply_debuff('atk_slow', 1.0, duration)` and then
+	# `target.apply_debuff('skill_down', 1.0, duration)`, and `Boss` overrides
+	# `apply_debuff` (`bosses/base_boss.py:540-552`): `atk_slow` is cut by boss
+	# tenacity (`min(0.35, 1.0 * (1.0 - 0.50))` magnitude, `int(duration * 0.50)`
+	# ticks) while `skill_down` keeps the raw payload, both stored with the
+	# strongest-wins/longer-refresh rule. So every item silence proc
+	# (`sanguine_thorn` Soul Rend, `astral_codex` Arcane Nova, `hex_idol`
+	# Hexcraft) must run `BossState.apply_debuff` instead of writing fields.
+	if t.has_method("apply_debuff"):
+		t.apply_debuff("atk_slow", 1.0, duration)
+		t.apply_debuff("skill_down", 1.0, duration)
+		return
 	# UnitState already carries atk_slow/skill_down fields.
 	t.atk_slow_amount = 1.0
 	t.atk_slow_timer = maxi(t.atk_slow_timer, duration)
