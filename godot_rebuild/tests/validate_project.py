@@ -1490,6 +1490,26 @@ check("PrototypeChecks.new().run(_check)" in ai_tests, "Match prototype suite mu
 from hero_manifest_checks import validate_manifest
 validate_manifest(ROOT, check)
 
+from boss_polycephaly_source_oracle import source_fixture as polycephaly_fixture
+_poly = polycephaly_fixture()
+check(_poly == json.loads((ROOT / "tests/fixtures/boss_polycephaly_source.json").read_text()),
+      "9a Polycephaly fixture matches source")
+check(_poly["source"]["exact_distance_sort"], "9a Python sorts exact distances")
+check(len(_poly["cases"]) == 864 and len({r["boss_type"] for r in _poly["cases"]}) == 216,
+      "9a four cases per 216 boss types")
+check('const BossPolycephalyChecks = preload("res://tests/boss_polycephaly_checks.gd")' in ai_tests
+      and "BossPolycephalyChecks.new().run(_check)" in ai_tests, "9a replay registered")
+for _row in _poly["cases"]:
+    _roles = {
+        "nearer_boss_takes_last_slot": ["unit_a", "boss"],
+        "exact_tie_keeps_unit_slot": ["unit_a", "unit_b"],
+        "boss_first_despite_insertion": ["boss", "unit_a"],
+        "farther_boss_stays_out": ["unit_a", "unit_b"],
+    }[_row["scenario"]]
+    check(_row["expected"] == [[role, 35, "magic"] for role in _roles]
+          and _row["expected_without_exact_sort"] == [["unit_a", 35, "magic"], ["unit_b" if _row["scenario"] != "boss_first_despite_insertion" else "boss", 35, "magic"]],
+          "9a exact and epsilon-sort payload " + _row["boss_type"] + "/" + _row["scenario"])
+
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
 print(f"{'FAIL' if errors else 'PASS'}: {checks} static checks; runtime testing still required.")

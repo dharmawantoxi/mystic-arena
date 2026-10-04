@@ -920,7 +920,7 @@ func _on_hit_common(
 		):
 			var center: Vector2 = entry.get("pos", Vector2.ZERO) as Vector2
 			var extras: Array = _nearby_enemies_sorted_from(
-				enemies, center, float(ms.get("radius", 0.0)), target_id
+				enemies, center, float(ms.get("radius", 0.0)), target_id, true
 			)
 			var count: int = mini(extras.size(), int(ms.get("targets", 0)))
 			var splash: int = int(float(damage) * float(ms.get("damage_pct", 0.0)))
@@ -971,7 +971,7 @@ func _nearby_enemies_sorted(enemies: Array, radius: float) -> Array:
 
 
 func _nearby_enemies_sorted_from(
-	enemies: Array, center: Vector2, radius: float, exclude_id: int
+	enemies: Array, center: Vector2, radius: float, exclude_id: int, exact_distance: bool = false
 ) -> Array:
 	# Source sorts nearby by distance ascending; tie-break by insertion order
 	# (sort_custom is not stable). Polycephaly measures from the hit target.
@@ -991,7 +991,11 @@ func _nearby_enemies_sorted_from(
 	# Python sort is stable: we approximate with (dist, idx) tuple key.
 	entries.sort_custom(
 		func(a: Dictionary, b: Dictionary) -> bool:
-			if absf(float(a.dist) - float(b.dist)) > 0.001:
+			# Layer 9a: Polycephaly uses exact distance, stable only for real ties.
+			if (
+				(exact_distance and float(a.dist) != float(b.dist))
+				or absf(float(a.dist) - float(b.dist)) > 0.001
+			):
 				return float(a.dist) < float(b.dist)
 			return int(a.idx) < int(b.idx)
 	)
