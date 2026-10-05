@@ -9,6 +9,7 @@ var session: Session
 var terrain_palette: Dictionary = {}
 var terrain_river: PackedVector2Array = PackedVector2Array()
 var river_texture: Texture2D
+var lane_texture: Texture2D
 
 
 func _ready() -> void:
@@ -53,14 +54,17 @@ func _draw() -> void:
 		# Fallback for an unavailable cached texture, not the primary path.
 		draw_polyline(terrain_river, terrain_palette["river_mid"], 44, true)
 		draw_polyline(terrain_river, terrain_palette["river_deep"], 32, true)
-	for path in session.world.paths:
-		var stone := Color("314440")
-		var edge := Color("587160")
-		if not terrain_palette.is_empty():
-			stone = terrain_palette["path_stone_1"]
-			edge = terrain_palette["path_stone_3"]
-		draw_polyline(path, stone, 32, true)
-		draw_polyline(path, edge, 1.5, true)
+	if lane_texture != null:
+		draw_texture(lane_texture, Vector2.ZERO)
+	else:
+		for path in session.world.paths:
+			var stone := Color("314440")
+			var edge := Color("587160")
+			if not terrain_palette.is_empty():
+				stone = terrain_palette["path_stone_1"]
+				edge = terrain_palette["path_stone_3"]
+			draw_polyline(path, stone, 32, true)
+			draw_polyline(path, edge, 1.5, true)
 	_draw_base(Layout.BLUE_BASE, Color("73cbbb"))
 	_draw_base(Layout.RED_BASE, Color("d78579"))
 	for unit in session.world.units:

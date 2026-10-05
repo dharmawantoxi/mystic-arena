@@ -12,7 +12,8 @@ SOURCE = ROOT / "map_components/_bundle.py"
 OUTPUT = ROOT / "godot_rebuild/data/levels/theme_palette.json"
 RIVER_OUTPUT = ROOT / "godot_rebuild/data/levels/river_path.json"
 KEYS = ("radiant_grass_1", "radiant_grass_2", "dire_earth_1", "dire_earth_2",
-        "transition_1", "path_stone_1", "path_stone_3", "river_deep", "river_mid",
+        "transition_1", "path_stone_1", "path_stone_2", "path_stone_3", "path_stone_4",
+        "path_moss", "path_crack", "radiant_moss", "river_deep", "river_mid",
         "river_light", "river_glow", "river_foam")
 
 
