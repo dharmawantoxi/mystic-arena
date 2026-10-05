@@ -80,6 +80,9 @@ const BossHeroAIChecks = preload("res://tests/boss_hero_ai_checks.gd")
 const BossPresentationChecks = preload("res://tests/boss_presentation_checks.gd")
 const SiegeChecks = preload("res://tests/siege_checks.gd")
 const CombatChecks = preload("res://tests/combat_checks.gd")
+const LevelCatalogChecks = preload("res://tests/level_catalog_checks.gd")
+const LevelProgressChecks = preload("res://tests/level_progress_checks.gd")
+const LevelProgressStoreChecks = preload("res://tests/level_progress_store_checks.gd")
 const APP = preload("res://app/App.tscn")
 const SIMULATION = preload("res://scripts/simulation/sandbox_simulation.gd")
 
@@ -112,6 +115,9 @@ func _physics_steps(count: int) -> void:
 
 func _run() -> void:
 	_check(Engine.physics_ticks_per_second == 60, "physics frequency is 60 Hz")
+	LevelCatalogChecks.new().run(_check)
+	LevelProgressChecks.new().run(_check)
+	LevelProgressStoreChecks.new().run(_check)
 	ThorneChecks.new().run(_check)
 	GrimjawChecks.new().run(_check)
 	SylaraChecks.new().run(_check)

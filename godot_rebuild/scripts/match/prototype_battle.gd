@@ -22,7 +22,9 @@ const Scheduler = preload("res://scripts/match/wave_scheduler.gd")
 const BossState = preload("res://scripts/match/boss_state.gd")
 const BossAI = preload("res://scripts/match/boss_ai.gd")
 # Layer 7c: level-1 config generated from levels/level_data.py by the oracle.
-const LEVEL_DATA := "res://data/levels/level_1.json"
+const LevelCatalog = preload("res://scripts/match/level_catalog.gd")
+const LevelProgress = preload("res://scripts/match/level_progress.gd")
+const LevelProgressStore = preload("res://scripts/match/level_progress_store.gd")
 const BOSS_DATA := "res://data/bosses/boss_stats.json"
 const RANGED_BOSS_KITERS := [
 	"ancient_apparition",
@@ -102,6 +104,8 @@ var transaction_error := ""
 var spawn_rng := RandomNumberGenerator.new()
 # Layer 7c: level-1 config and the source difficulty rule (Game.reset).
 var level_config: Dictionary = {}
+var level_number := 1
+var _level_result_claimed := false
 var difficulty := "normal"
 var enemy_scaling_enabled := false
 var enemy_hp_mult := 1.0
@@ -142,13 +146,66 @@ var _victory_unlocks_granted := false
 func _init() -> void:
 	slots = SlotLayout.create(paths)
 	spawn_rng.seed = SPAWN_SEED
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(LEVEL_DATA))
-	level_config = parsed if parsed is Dictionary else {}
+	level_config = LevelCatalog.get_level_config(level_number)
 	var boss_parsed = JSON.parse_string(FileAccess.get_file_as_string(BOSS_DATA))
 	boss_table = boss_parsed if boss_parsed is Dictionary else {}
 	boss_rng.randomize()
 	_mini_boss_schedule = _roll_mini_boss_schedule()
 	_apply_difficulty()
+
+
+## Data-only level selection before setup_arena. No menu/save progression is
+## wired yet: the playable scene still starts at level 1.
+func configure_level(number: int) -> bool:
+	if _arena_initialized or not structures.is_empty() or not units.is_empty():
+		return false
+	if economy.spent != [0, 0] or economy.earned != [0, 0] or economy.refunded != [0, 0]:
+		return false
+	if economy.passive != [0, 0] or economy.income_ticks != 0 or economy.income_milli != 0:
+		return false
+	var config := LevelCatalog.get_level_config(number)
+	if config.is_empty():
+		return false
+	level_number = number
+	level_config = config
+	ai_controller.policy.level_number = number
+	ai_draft.level_number = number
+	_apply_difficulty()
+	_apply_opening_economy()
+	_mini_boss_schedule = _roll_mini_boss_schedule()
+	return true
+
+
+## Explicit result boundary for a future save adapter. It is not called from
+## step_tick: only the owner of persistent state may commit the returned copy.
+func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionary:
+	if _level_result_claimed or winner not in [BLUE, RED]:
+		return {}
+	var result := LevelProgress.apply_result(state, level_number, winner == BLUE, is_replay, difficulty)
+	if result.is_empty():
+		return {}
+	_level_result_claimed = true
+	return result
+
+
+## Optional development-save transaction. Unlike claim_level_result, this
+## only consumes the claim AFTER a verified write; on failure it can retry.
+## The scene does not call this until native save tests pass on target devices.
+func commit_level_result(
+	path: String = LevelProgressStore.PATH, is_replay: bool = false
+) -> Dictionary:
+	if _level_result_claimed or winner not in [BLUE, RED]:
+		return {}
+	if FileAccess.file_exists(path + ".bak"):
+		return {}  # Explicit recovery first; never overwrite the older save.
+	var state := LevelProgressStore.load_state(path)
+	if FileAccess.file_exists(path) and state.is_empty():
+		return {}  # Invalid/version-mismatched save is not a fresh account.
+	var result := LevelProgress.apply_result(state, level_number, winner == BLUE, is_replay, difficulty)
+	if result.is_empty() or not LevelProgressStore.save_state(result.state, path):
+		return {}
+	_level_result_claimed = true
+	return result
 
 
 func structure_limit() -> int:
@@ -209,6 +266,7 @@ func set_difficulty(value: String) -> void:
 	# (including an unknown one) leaves every multiplier at 1.0.
 	difficulty = value
 	_apply_difficulty()
+	_apply_opening_economy()
 	# A new source run rolls its schedule after difficulty is fixed. Re-roll
 	# here too for callers that configure the rebuild before setup_arena().
 	_mini_boss_schedule = _roll_mini_boss_schedule()
@@ -224,6 +282,22 @@ func _apply_difficulty() -> void:
 		enemy_hp_mult = 1.0
 		enemy_damage_mult = 1.0
 		enemy_speed_mult = 1.0
+
+
+func _apply_opening_economy() -> void:
+	# Source compute_starting_gold / compute_gold_per_second. Only replace the
+	# untouched opening ledger: reconfiguring difficulty during a live match
+	# must never erase purchases, earned gold or fractional income.
+	if _arena_initialized or not structures.is_empty() or not units.is_empty():
+		return
+	if economy.spent != [0, 0] or economy.earned != [0, 0] or economy.refunded != [0, 0]:
+		return
+	if economy.passive != [0, 0] or economy.income_ticks != 0 or economy.income_milli != 0:
+		return
+	var gold := Economy.starting_gold(int(level_config.get("starting_gold", 1000)), level_number, difficulty)
+	economy.opening[BLUE] = gold
+	economy.gold[BLUE] = gold
+	economy.income_per_second = Economy.passive_rate(level_number, difficulty)
 
 
 func _apply_castle_start_levels() -> void:
@@ -1235,6 +1309,10 @@ func reset_ai(seed_value: int = -1) -> void:
 	# counters, hero-skill counter and the persistent draft all return to their
 	# opening state. One seed drives every AI stream so a restart replays.
 	ai_controller.reset(seed_value)
+	# Restore the selected level, never a stale elite policy or recruitment pool.
+	# The playable scene keeps the default selection of level 1.
+	ai_controller.policy.level_number = level_number
+	ai_draft.level_number = level_number
 	ai_heroes.total_skills_cast = 0
 	ai_build.total_built = 0
 	ai_upgrades.total_upgraded = 0
@@ -1247,6 +1325,9 @@ func reset_ai(seed_value: int = -1) -> void:
 	if seed_value >= 0:
 		ai_build.rng.seed = seed_value + 1
 		ai_draft.rng.seed = seed_value + 2
+	else:
+		ai_build.rng.randomize()
+		ai_draft.rng.randomize()
 
 
 func _step_ai() -> void:

@@ -1,0 +1,23 @@
+{
+  "level_number": 4,
+  "name": "Molten Sanctum",
+  "description": "Face Ignis Drachorn, the Molten Sovereign",
+  "enemy_hp_mult": 1.04,
+  "enemy_damage_mult": 1.04,
+  "enemy_speed_mult": 1.04,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "volcanic",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "zharok",
+    "17": "pyrenth",
+    "25": "vokrahn"
+  },
+  "true_boss": "ignis_drachorn",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 3
+}

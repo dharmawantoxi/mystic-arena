@@ -1,0 +1,23 @@
+{
+  "level_number": 2,
+  "name": "Wraith Wastes",
+  "description": "Confront the Phantom King",
+  "enemy_hp_mult": 1.02,
+  "enemy_damage_mult": 1.02,
+  "enemy_speed_mult": 1.02,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "desert",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "razak",
+    "15": "khalros",
+    "20": "gorath"
+  },
+  "true_boss": "alchemist",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 1
+}

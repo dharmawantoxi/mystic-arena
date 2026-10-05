@@ -1,0 +1,23 @@
+{
+  "level_number": 34,
+  "name": "The Earthborn",
+  "description": "Face Grondmauris, the Earthborn",
+  "enemy_hp_mult": 1.34,
+  "enemy_damage_mult": 1.34,
+  "enemy_speed_mult": 1.34,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "earthborn",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "infrakzaar",
+    "18": "xarnathul",
+    "25": "zhyrakaan"
+  },
+  "true_boss": "grondmauris",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 33
+}

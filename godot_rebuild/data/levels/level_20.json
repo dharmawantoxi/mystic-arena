@@ -1,0 +1,23 @@
+{
+  "level_number": 20,
+  "name": "Crimson Dominion",
+  "description": "Face Morthraxis, the Crimson Sovereign",
+  "enemy_hp_mult": 1.2,
+  "enemy_damage_mult": 1.2,
+  "enemy_speed_mult": 1.2,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "crimson",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "astraelion",
+    "18": "morvaenthir",
+    "25": "thornvaegrim"
+  },
+  "true_boss": "morthraxis",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 19
+}

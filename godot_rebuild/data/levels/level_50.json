@@ -1,0 +1,23 @@
+{
+  "level_number": 50,
+  "name": "The Moonfang Prince",
+  "description": "Face Akirakumo, the Moonfang Prince",
+  "enemy_hp_mult": 1.5,
+  "enemy_damage_mult": 1.5,
+  "enemy_speed_mult": 1.5,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "moonfang",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "kaelthys",
+    "18": "kaoruken",
+    "25": "vaelkorr"
+  },
+  "true_boss": "akirakumo",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 49
+}

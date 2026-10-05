@@ -53,9 +53,13 @@ func reset(seed_value: int = -1) -> void:
 	think_ticks = 0
 	steps_attempted = 0
 	steps_completed = 0
+	match_seed = seed_value
 	if seed_value >= 0:
-		match_seed = seed_value
 		rng.seed = seed_value
+	else:
+		# An unseeded restart represents a fresh AIPlayer, not a continuation
+		# of the previous match's deterministic random stream.
+		rng.randomize()
 
 
 func draw() -> float:

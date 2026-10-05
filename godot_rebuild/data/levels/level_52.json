@@ -1,0 +1,23 @@
+{
+  "level_number": 52,
+  "name": "The Lunar Herald",
+  "description": "Face Nyxaris, the Lunar Herald",
+  "enemy_hp_mult": 1.52,
+  "enemy_damage_mult": 1.52,
+  "enemy_speed_mult": 1.52,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "lunarherald",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "garumenshi",
+    "18": "thoraz",
+    "25": "vhaerith"
+  },
+  "true_boss": "nyxaris",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 51
+}

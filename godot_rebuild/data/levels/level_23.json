@@ -1,0 +1,23 @@
+{
+  "level_number": 23,
+  "name": "The Empyrean Executioner",
+  "description": "Face Seraphienne, the Empyrean Executioner",
+  "enemy_hp_mult": 1.23,
+  "enemy_damage_mult": 1.23,
+  "enemy_speed_mult": 1.23,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "empyrean",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "drav",
+    "18": "lyrienne",
+    "25": "valthar"
+  },
+  "true_boss": "seraphienne",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 22
+}

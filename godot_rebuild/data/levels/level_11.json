@@ -1,0 +1,23 @@
+{
+  "level_number": 11,
+  "name": "Abyssal Depths",
+  "description": "Face Thalakryon, the Abyssal Sovereign",
+  "enemy_hp_mult": 1.11,
+  "enemy_damage_mult": 1.11,
+  "enemy_speed_mult": 1.11,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "abyssal",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "aeralith",
+    "18": "aurex",
+    "25": "nyxareva"
+  },
+  "true_boss": "thalakryon",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 10
+}

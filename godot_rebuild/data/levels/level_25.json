@@ -1,0 +1,23 @@
+{
+  "level_number": 25,
+  "name": "The Deepborn Oracle",
+  "description": "Face Okeanora, the Deepborn Oracle",
+  "enemy_hp_mult": 1.25,
+  "enemy_damage_mult": 1.25,
+  "enemy_speed_mult": 1.25,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "abysstide",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "grimjack",
+    "18": "morvaeth",
+    "25": "vulkareth"
+  },
+  "true_boss": "okeanora",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 24
+}

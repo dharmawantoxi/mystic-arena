@@ -1,0 +1,23 @@
+{
+  "level_number": 28,
+  "name": "The Forsaken Empress",
+  "description": "Face Nyreth'zalvarin, the Forsaken Empress of Shadow-Chains",
+  "enemy_hp_mult": 1.28,
+  "enemy_damage_mult": 1.28,
+  "enemy_speed_mult": 1.28,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "shadowchain",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "morthyrax",
+    "18": "sanguiveth",
+    "25": "xerakhotep"
+  },
+  "true_boss": "nyrethzalv",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 27
+}

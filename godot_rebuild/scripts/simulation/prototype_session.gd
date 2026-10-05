@@ -15,6 +15,15 @@ func _init() -> void:
 	pending_wave = -1
 
 
+## Selection must happen before the node enters the tree (_ready sets up the
+## arena). The public playable menu deliberately still creates level 1.
+func configure_level(number: int, target_difficulty: String = "normal") -> bool:
+	if not (world as Prototype).configure_level(number):
+		return false
+	(world as Prototype).set_difficulty(target_difficulty)
+	return true
+
+
 func _ready() -> void:
 	super._ready()
 	var match_world := world as Prototype

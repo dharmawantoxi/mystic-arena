@@ -1,0 +1,23 @@
+{
+  "level_number": 14,
+  "name": "Eternal Flame",
+  "description": "Face Pyraethis, the Eternal Firebird",
+  "enemy_hp_mult": 1.14,
+  "enemy_damage_mult": 1.14,
+  "enemy_speed_mult": 1.14,
+  "castle_start_level": 1,
+  "starting_gold": 1000,
+  "starting_castle_level": 1,
+  "map_theme": "eternalflame",
+  "bgm_track": "bgm_battle.wav",
+  "mini_bosses": {
+    "10": "azureth",
+    "18": "luminar",
+    "25": "solara"
+  },
+  "true_boss": "pyraethis",
+  "meta_gold_reward_win": 3000,
+  "meta_gold_reward_replay": 1500,
+  "meta_gold_reward_lose": 0,
+  "unlock_after_level": 13
+}
