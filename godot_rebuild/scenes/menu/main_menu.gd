@@ -54,7 +54,7 @@ func refresh_levels() -> void:
 
 
 func _start_selected_level() -> void:
-	var number := %LevelChoice.get_selected_id()
+	var number: int = %LevelChoice.get_selected_id()
 	var progress := ProgressStore.load_state(progress_path)
 	var completed: Array[int] = []
 	for value in progress.get("completed_levels", []):
