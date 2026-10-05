@@ -181,7 +181,9 @@ func configure_level(number: int) -> bool:
 func claim_level_result(state: Dictionary, is_replay: bool = false) -> Dictionary:
 	if _level_result_claimed or winner not in [BLUE, RED]:
 		return {}
-	var result := LevelProgress.apply_result(state, level_number, winner == BLUE, is_replay, difficulty)
+	var result := LevelProgress.apply_result(
+		state, level_number, winner == BLUE, is_replay, difficulty
+	)
 	if result.is_empty():
 		return {}
 	_level_result_claimed = true
@@ -201,7 +203,9 @@ func commit_level_result(
 	var state := LevelProgressStore.load_state(path)
 	if FileAccess.file_exists(path) and state.is_empty():
 		return {}  # Invalid/version-mismatched save is not a fresh account.
-	var result := LevelProgress.apply_result(state, level_number, winner == BLUE, is_replay, difficulty)
+	var result := LevelProgress.apply_result(
+		state, level_number, winner == BLUE, is_replay, difficulty
+	)
 	if result.is_empty() or not LevelProgressStore.save_state(result.state, path):
 		return {}
 	_level_result_claimed = true
@@ -294,7 +298,9 @@ func _apply_opening_economy() -> void:
 		return
 	if economy.passive != [0, 0] or economy.income_ticks != 0 or economy.income_milli != 0:
 		return
-	var gold := Economy.starting_gold(int(level_config.get("starting_gold", 1000)), level_number, difficulty)
+	var gold := Economy.starting_gold(
+		int(level_config.get("starting_gold", 1000)), level_number, difficulty
+	)
 	economy.opening[BLUE] = gold
 	economy.gold[BLUE] = gold
 	economy.income_per_second = Economy.passive_rate(level_number, difficulty)

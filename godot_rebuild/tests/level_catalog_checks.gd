@@ -37,8 +37,10 @@ func run(check: Callable) -> void:
 			check.call(preview.configure_level(int(row.level)), "Configure economy source level")
 			preview.set_difficulty(String(row.difficulty))
 			check.call(
-				preview.economy.gold[0] == int(row.gold)
-				and preview.economy.opening[0] == int(row.gold),
+				(
+					preview.economy.gold[0] == int(row.gold)
+					and preview.economy.opening[0] == int(row.gold)
+				),
 				"Source starting gold L%d %s" % [int(row.level), String(row.difficulty)]
 			)
 			check.call(
@@ -51,9 +53,11 @@ func run(check: Callable) -> void:
 	check.call(world.level_number == 1, "Prototype defaults to level 1")
 	check.call(world.configure_level(54), "Level 54 can be configured before setup")
 	check.call(
-		world.level_config == Catalog.get_level_config(54)
-		and world.ai_controller.policy.level_number == 54
-		and world.ai_draft.level_number == 54,
+		(
+			world.level_config == Catalog.get_level_config(54)
+			and world.ai_controller.policy.level_number == 54
+			and world.ai_draft.level_number == 54
+		),
 		"Selected config and both AI policies stay in sync"
 	)
 	check.call(not world.configure_level(55), "Unknown encounter rejected")
@@ -69,8 +73,7 @@ func run(check: Callable) -> void:
 		"Hard level 54 opening gold"
 	)
 	check.call(
-		is_equal_approx(world.economy.income_per_second, 14.175),
-		"Hard level 54 passive rate"
+		is_equal_approx(world.economy.income_per_second, 14.175), "Hard level 54 passive rate"
 	)
 	check.call(world.economy.is_balanced(), "Configured opening ledger remains balanced")
 	world.reset_ai(19)
@@ -90,10 +93,12 @@ func run(check: Callable) -> void:
 	check.call(session.configure_level(2, "hard"), "Session accepts level before arena setup")
 	var selected := session.world as World
 	check.call(
-		selected.level_number == 2
-		and selected.difficulty == "hard"
-		and selected.economy.gold[0] == 825
-		and selected.ai_draft.level_number == 2,
+		(
+			selected.level_number == 2
+			and selected.difficulty == "hard"
+			and selected.economy.gold[0] == 825
+			and selected.ai_draft.level_number == 2
+		),
 		"Session forwards level and difficulty before entering tree"
 	)
 	check.call(selected.setup_arena(), "Selected session can initialize arena")

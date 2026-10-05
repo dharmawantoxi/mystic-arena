@@ -20,8 +20,10 @@ static func apply_result(
 		var key := str(level)
 		if is_replay or level in completed:
 			var count := int(counts.get(key, 0))
-			reward = int(config.get("meta_gold_reward_replay", 1500)) if count == 0 else int(
-				config.get("meta_gold_reward_replay_repeat", REPEAT_REWARD)
+			reward = (
+				int(config.get("meta_gold_reward_replay", 1500))
+				if count == 0
+				else int(config.get("meta_gold_reward_replay_repeat", REPEAT_REWARD))
 			)
 			counts[key] = count + 1
 		else:

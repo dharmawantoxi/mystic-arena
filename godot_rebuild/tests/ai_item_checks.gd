@@ -2291,8 +2291,7 @@ func _test_ai_restart(check: Callable) -> void:
 	var draft_probe := RandomNumberGenerator.new()
 	draft_probe.seed = 13
 	check.call(
-		world.ai_draft.rng.randf() == draft_probe.randf(),
-		"Restart must reseed the draft RNG"
+		world.ai_draft.rng.randf() == draft_probe.randf(), "Restart must reseed the draft RNG"
 	)
 	# Switching back to an unseeded match must discard the old seed label and
 	# both adapters' seeded streams; no probabilistic draw comparison needed.

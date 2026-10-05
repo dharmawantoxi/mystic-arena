@@ -57,13 +57,17 @@ func run(check: Callable) -> void:
 	world.winner = 0
 	var paid: Dictionary = world.commit_level_result(CLAIM_PATH)
 	check.call(paid.get("reward", -1) == 3000, "Winning match commits first clear")
-	check.call(Store.load_state(CLAIM_PATH) == paid.get("state", {}), "Committed state survives reload")
+	check.call(
+		Store.load_state(CLAIM_PATH) == paid.get("state", {}), "Committed state survives reload"
+	)
 	check.call(world.commit_level_result(CLAIM_PATH).is_empty(), "Same match cannot double-pay")
 	var replay_world := World.new()
 	replay_world.winner = 0
 	var replay_paid: Dictionary = replay_world.commit_level_result(CLAIM_PATH)
 	check.call(replay_paid.get("reward", -1) == 1500, "Next match pays replay once")
-	check.call(Store.load_state(CLAIM_PATH) == replay_paid.get("state", {}), "Replay committed once")
+	check.call(
+		Store.load_state(CLAIM_PATH) == replay_paid.get("state", {}), "Replay committed once"
+	)
 	var corrupt_claim := FileAccess.open(CLAIM_PATH, FileAccess.WRITE)
 	if corrupt_claim != null:
 		corrupt_claim.store_string("invalid save")

@@ -8,17 +8,25 @@ const World = preload("res://scripts/match/prototype_battle.gd")
 
 func run(check: Callable) -> void:
 	var initial := {"meta_gold": 10}
-	check.call(Progress.apply_result(initial, 0, true, false, "normal").is_empty(), "Reject level 0")
-	check.call(Progress.apply_result(initial, 55, true, false, "normal").is_empty(), "Reject level 55")
+	check.call(
+		Progress.apply_result(initial, 0, true, false, "normal").is_empty(), "Reject level 0"
+	)
+	check.call(
+		Progress.apply_result(initial, 55, true, false, "normal").is_empty(), "Reject level 55"
+	)
 	check.call(initial == {"meta_gold": 10}, "Rejected results cannot mutate input")
 	var loss: Dictionary = Progress.apply_result(initial, 1, false, false, "normal")
 	check.call(loss.reward == 0 and loss.state == initial, "Defeat does not complete or pay")
 	var first: Dictionary = Progress.apply_result(initial, 1, true, false, "hard")
-	check.call(first.reward == 3000 and first.state.meta_gold == 3010, "First clear pays win reward")
 	check.call(
-		first.state.completed_levels == [1]
-		and first.state.last_played_level == 1
-		and first.state.run_difficulty == "hard",
+		first.reward == 3000 and first.state.meta_gold == 3010, "First clear pays win reward"
+	)
+	check.call(
+		(
+			first.state.completed_levels == [1]
+			and first.state.last_played_level == 1
+			and first.state.run_difficulty == "hard"
+		),
 		"First clear records completion and run difficulty"
 	)
 	var replay: Dictionary = Progress.apply_result(first.state, 1, true, false, "easy")
@@ -27,7 +35,9 @@ func run(check: Callable) -> void:
 	var repeat: Dictionary = Progress.apply_result(replay.state, 1, true, true, "easy")
 	check.call(repeat.reward == 200 and repeat.state.meta_gold == 4710, "Further replay pays 200")
 	check.call(repeat.state.completed_levels == [1], "Replays cannot duplicate completions")
-	check.call(first.state.meta_gold == 3010 and initial.meta_gold == 10, "Transaction is copy-on-write")
+	check.call(
+		first.state.meta_gold == 3010 and initial.meta_gold == 10, "Transaction is copy-on-write"
+	)
 	var replay_first: Dictionary = Progress.apply_result(initial, 2, true, true, "normal")
 	check.call(
 		replay_first.reward == 1500 and replay_first.state.completed_levels == [2],
