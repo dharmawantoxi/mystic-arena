@@ -51,6 +51,13 @@ func run(check: Callable) -> void:
 		corrupt.store_string("{truncated")
 		corrupt.close()
 	check.call(Store.load_state(TEST_PATH).is_empty(), "Reject truncated JSON")
+	var fractional := FileAccess.open(TEST_PATH, FileAccess.WRITE)
+	if fractional != null:
+		fractional.store_string('{"version":1,"state":{"meta_gold":3.5,"completed_levels":[1]}}')
+		fractional.close()
+	check.call(
+		Store.load_state(TEST_PATH).is_empty(), "Reject fractional currency without truncating"
+	)
 	check.call(not Store.recover_backup(TEST_PATH), "Never overwrite corrupt primary silently")
 	var world := World.new()
 	check.call(world.commit_level_result(CLAIM_PATH).is_empty(), "No result cannot commit")
