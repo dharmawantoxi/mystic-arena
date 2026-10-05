@@ -17,13 +17,17 @@ func deal_damage(
 
 
 ## Deal damage attributed to a stored effect owner rather than the ticking hero.
+## Layer 9c: `damage_type` mirrors the third positional argument that the source
+## passes to `Boss.take_damage`. Item damage is magic there, so a blinded owner
+## cannot have its poison swallowed by the boss blind gate (plain hits only).
 func deal_damage_from(
 	_source_id: int,
 	_source_team: int,
 	_source_pos: Vector2,
 	target_id: int,
 	amount: int,
-	school: String = "magic"
+	school: String = "magic",
+	_damage_type: String = "magic"
 ) -> int:
 	return deal_damage(target_id, _source_team, amount, school)
 

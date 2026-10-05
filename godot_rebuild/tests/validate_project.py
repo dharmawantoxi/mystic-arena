@@ -1541,7 +1541,7 @@ check('prev["source_id"] = hero_id' in _miasma_inventory
       "9b native reapply transfers source and tick uses stored owner")
 check("func deal_damage_from(" in _miasma_effects
       and "func deal_damage_from(" in _miasma_bus
-      and "world._deliver_hit(source_id, source_team, tgt, amount, school, origin)" in _miasma_bus,
+      and "world._deliver_hit(source_id, source_team, tgt, amount, school, origin, damage_type)" in _miasma_bus,
       "9b damage bridge delivers poison using the stored source hero")
 check('const BossMiasmaChecks = preload("res://tests/boss_miasma_checks.gd")' in ai_tests
       and "BossMiasmaChecks.new().run(_check)" in ai_tests,
@@ -1599,6 +1599,81 @@ for _row in _miasma["cases"]:
           and int(_old_b["timer"]) == int(_data["duration"])
           and int(_old_b["tick_cd"]) == int(_data["tick"]),
           "9b per-inventory counterfactual trackers " + _row["boss_type"] + "/" + _scenario)
+
+from boss_miasma_blind_source_oracle import source_fixture as miasma_blind_fixture
+_blind = miasma_blind_fixture()
+_blind_file = json.loads(
+    (ROOT / "tests/fixtures/boss_miasma_blind_source.json").read_text()
+)
+check(_blind == _blind_file, "9c Miasma blind-gate fixture matches Python source execution")
+check(_blind["source"]["ast_shape"] == {
+    "tick_passes_magic": True,
+    "tick_passes_no_source": True,
+    "gate_needs_normal": True,
+    "gate_reads_blind": True,
+    "gate_reads_true_strike": True,
+}, "9c Python AST proves the Miasma tick is magic and carries no source")
+check(len(_blind["cases"]) == 864
+      and len({row["boss_type"] for row in _blind["cases"]}) == 216
+      and _blind["source"]["boss_types"] == 216,
+      "9c four cases for each of 216 bosses")
+_blind_inventory = (ROOT / "scripts/match/hero_item_inventory.gd").read_text()
+_blind_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text()
+_blind_effects = (ROOT / "scripts/match/item_effects.gd").read_text()
+_blind_boss = (ROOT / "scripts/match/boss_state.gd").read_text()
+_blind_proto = (ROOT / "scripts/match/prototype_battle.gd").read_text()
+check('effects.deal_damage_from(' in _blind_inventory
+      and 'damage_type: String = "magic"' in _blind_effects
+      and 'damage_type: String = "magic"' in _blind_bus
+      and "world._deliver_hit(source_id, source_team, tgt, amount, school, origin, damage_type)" in _blind_bus,
+      "9c Miasma tick carries its magic damage_type through the item bus")
+check('if damage_type != "normal":' in _blind_boss
+      and "blind_live(source, damage_type)" in _blind_boss
+      and 'damage_type: String = "normal"' in _blind_proto,
+      "9c boss blind gate stays limited to plain hits from a live attacker")
+check('const BossMiasmaBlindChecks = preload("res://tests/boss_miasma_blind_checks.gd")' in ai_tests
+      and "BossMiasmaBlindChecks.new().run(_check)" in ai_tests,
+      "9c real-path Miasma blind-gate replay registered")
+
+
+def _blind_events_match(actual, expected):
+    if len(actual) != len(expected):
+        return False
+    for actual_row, expected_row in zip(actual, expected):
+        if (int(float(actual_row[0])) != int(float(expected_row[0]))
+                or int(float(actual_row[1])) != int(float(expected_row[1]))):
+            return False
+    return True
+
+
+_expected_tick_frames = {
+    "blind_owner_tick_blocked": [30],
+    "blind_owner_second_tick": [30, 60],
+    "blind_owner_true_strike_pierces": [30],
+    "blind_owner_zero_amount": [30],
+}
+_native_old_tick_frames = {
+    "blind_owner_tick_blocked": [],
+    "blind_owner_second_tick": [30],
+    "blind_owner_true_strike_pierces": [30],
+    "blind_owner_zero_amount": [30],
+}
+for _row in _blind["cases"]:
+    _blind_data = _blind["source"]["on_attack"]
+    _tick_damage = max(6, min(int(_blind_data["cap_damage"]),
+                              int(float(_row["boss_max_hp"]) * float(_blind_data["max_hp_pct_per_tick"]))))
+    _scenario = _row["scenario"]
+    _exp_frames = _expected_tick_frames[_scenario]
+    _old_frames = _native_old_tick_frames[_scenario]
+    check(int(_row["miasma_damage"]) == _tick_damage
+          and _blind_events_match(_row["expected"]["events"],
+                                  [[frame, _tick_damage] for frame in _exp_frames])
+          and _blind_events_match(_row["native_old"]["events"],
+                                  [[frame, _tick_damage] for frame in _old_frames])
+          and int(_row["expected"]["damage_total"]) == _tick_damage * len(_exp_frames)
+          and int(_row["native_old"]["damage_total"]) == _tick_damage * len(_old_frames)
+          and (_row["expected"] != _row["native_old"]) == (len(_exp_frames) != len(_old_frames)),
+          "9c Miasma blind-gate payload " + _row["boss_type"] + "/" + _scenario)
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
