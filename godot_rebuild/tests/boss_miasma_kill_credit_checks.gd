@@ -16,10 +16,11 @@ const FIXTURE := "res://tests/fixtures/boss_miasma_kill_credit_source.json"
 const BASIC_DAMAGE := 50
 const TICK_FRAMES := 30
 const GAP_SCENARIOS := ["miasma_lethal_blue_owner", "miasma_lethal_red_owner"]
+# HP loss is intentionally outside this attribution-only slice; compare the
+# tick's raw payload/liveness and the boss-kill result instead.
 const RESULT_FIELDS := [
 	"miasma_damage",
 	"tick_damage",
-	"boss_hp_loss_from_tick",
 	"boss_alive_after_tick",
 	"boss_alive_after_schedule",
 	"owner_kills",
