@@ -15,6 +15,7 @@ func _draw() -> void:
 		return
 	var world := session.world as Prototype
 	terrain_palette = TerrainPalette.for_level(world.level_config)
+	terrain_river = TerrainPalette.river_path()
 	draw_set_transform(world.boss_presentation_offset(), 0.0, Vector2.ONE)
 	super._draw()
 	var match_session := session as PrototypeSession

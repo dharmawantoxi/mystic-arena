@@ -4,6 +4,7 @@ extends RefCounted
 const Palette = preload("res://scripts/ui/terrain_palette.gd")
 const Catalog = preload("res://scripts/match/level_catalog.gd")
 const DATA := "res://data/levels/theme_palette.json"
+const RIVER := "res://data/levels/river_path.json"
 
 
 func run(check: Callable) -> void:
@@ -25,3 +26,15 @@ func run(check: Callable) -> void:
 			)
 	var forest := Palette.for_theme("forest")
 	check.call(Palette.for_theme("unknown") == forest, "Unknown theme falls back to forest")
+	var rows: Array = JSON.parse_string(FileAccess.get_file_as_string(RIVER))
+	var path := Palette.river_path()
+	check.call(rows.size() == 61 and path.size() == rows.size(), "Source river spline length")
+	for index in range(rows.size()):
+		check.call(
+			path[index] == Vector2(int(rows[index][0]), int(rows[index][1])),
+			"Source river point %d" % index
+		)
+	path[0] = Vector2(-99, -99)
+	check.call(
+		Palette.river_path()[0] == Vector2(0, 200), "River path cache is immutable to callers"
+	)

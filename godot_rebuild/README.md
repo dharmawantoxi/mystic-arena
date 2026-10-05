@@ -311,12 +311,13 @@ dan reset AI. Jalankan oracle tanpa
 `--write` untuk mendeteksi drift. Menu kini menawarkan 54 konfigurasi dengan
 unlock berdasarkan predecessor dan mengunci difficulty sesuai run yang
 tersimpan. Level 2–54 adalah **mode uji eksperimental**, bukan parity penuh:
-geometri map masih arena prototipe, tetapi warna tanah/jalur memakai palet
-sumber per 54 tema. Dekorasi/river/fog/FX, balance, boss/presentasi dan
-kemenangan tiap level tetap perlu validasi manual tersendiri. Oracle
-`level_theme_source_oracle.py` mengekstrak sembilan warna dari setiap tema
-`map_components/_bundle.py` tanpa mengimpor Pygame; laboratorium tetap memakai
-palet asalnya. Ini port warna, **bukan** seluruh renderer peta Python.
+geometri lane masih arena prototipe; warna tanah/jalur dan 61 titik spline
+sungai memakai sumber Python untuk semua 54 tema. Sungai Godot digambar
+sebagai polyline 44px (bukan tile/bank/foam/animasi Python); dekorasi, fog,
+FX, balance, boss/presentasi dan kemenangan tiap level tetap perlu validasi.
+Oracle `level_theme_source_oracle.py` mengekstrak 12 warna/tema dan river
+`PathGenerator.generate_river(1280, 720)` tanpa mengimpor Pygame;
+laboratorium tetap memakai palet asalnya. Ini **belum** seluruh renderer Python.
 
 ## Progres level (domain + save pengembangan terpisah)
 

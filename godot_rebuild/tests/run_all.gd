@@ -603,6 +603,14 @@ func _test_level_selection_scene(app: Node) -> void:
 		screen.arena.terrain_palette["radiant_grass_1"] == Color8(155, 115, 60),
 		"Desert arena uses the source level 2 terrain palette"
 	)
+	_check(
+		(
+			screen.arena.terrain_river.size() == 61
+			and screen.arena.terrain_river[0] == Vector2(0, 200)
+			and screen.arena.terrain_river[60] == Vector2(1280, 520)
+		),
+		"Selected match view follows the source river spline"
+	)
 	screen.get_node("%RestartButton").pressed.emit()
 	await _settle()
 	_check(
