@@ -104,3 +104,4 @@ func run(check: Callable) -> void:
 	check.call(selected.setup_arena(), "Selected session can initialize arena")
 	check.call(not session.configure_level(3), "Session cannot change a running encounter")
 	check.call(selected.level_number == 2, "Rejected session switch preserves level")
+	session.free()  # Node.new() outside the tree is not RefCounted.
