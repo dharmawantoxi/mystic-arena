@@ -3,6 +3,7 @@ extends "res://scripts/match/item_effects.gd"
 ## effect calls into real _deliver_hit / debuff field mutations.
 
 const HeroState = preload("res://scripts/combat/hero_state.gd")
+const BossState = preload("res://scripts/match/boss_state.gd")
 var world: Object = null
 var dealer_id: int = -1
 var dealer_team: int = -1
@@ -38,7 +39,14 @@ func deal_damage_from(
 		var current_pos: Variant = source.get("position")
 		if current_pos is Vector2:
 			origin = current_pos
-	world._deliver_hit(source_id, source_team, tgt, amount, school, origin, damage_type)
+	var landed: bool = world._deliver_hit(
+		source_id, source_team, tgt, amount, school, origin, damage_type
+	)
+	if landed and tgt is BossState:
+		# Layer 9d: `_tick_miasma` calls `Boss.take_damage(damage, team, "magic")`
+		# with no `source=`. Preserve the stored owner ID for 9b hit-event replay,
+		# but mark this hit so `_process_boss_kill` cannot credit that owner.
+		(tgt as BossState).last_hit_is_miasma_tick = true
 	return amount
 
 

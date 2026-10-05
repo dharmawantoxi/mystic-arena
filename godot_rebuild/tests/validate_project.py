@@ -1541,7 +1541,8 @@ check('prev["source_id"] = hero_id' in _miasma_inventory
       "9b native reapply transfers source and tick uses stored owner")
 check("func deal_damage_from(" in _miasma_effects
       and "func deal_damage_from(" in _miasma_bus
-      and "world._deliver_hit(source_id, source_team, tgt, amount, school, origin, damage_type)" in _miasma_bus,
+      and "var landed: bool = world._deliver_hit(" in _miasma_bus
+      and "source_id, source_team, tgt, amount, school, origin, damage_type" in _miasma_bus,
       "9b damage bridge delivers poison using the stored source hero")
 check('const BossMiasmaChecks = preload("res://tests/boss_miasma_checks.gd")' in ai_tests
       and "BossMiasmaChecks.new().run(_check)" in ai_tests,
@@ -1625,7 +1626,8 @@ _blind_proto = (ROOT / "scripts/match/prototype_battle.gd").read_text()
 check('effects.deal_damage_from(' in _blind_inventory
       and 'damage_type: String = "magic"' in _blind_effects
       and 'damage_type: String = "magic"' in _blind_bus
-      and "world._deliver_hit(source_id, source_team, tgt, amount, school, origin, damage_type)" in _blind_bus,
+      and "var landed: bool = world._deliver_hit(" in _blind_bus
+      and "source_id, source_team, tgt, amount, school, origin, damage_type" in _blind_bus,
       "9c Miasma tick carries its magic damage_type through the item bus")
 check('if damage_type != "normal":' in _blind_boss
       and "blind_live(source, damage_type)" in _blind_boss
@@ -1674,6 +1676,59 @@ for _row in _blind["cases"]:
           and int(_row["native_old"]["damage_total"]) == _tick_damage * len(_old_frames)
           and (_row["expected"] != _row["native_old"]) == (len(_exp_frames) != len(_old_frames)),
           "9c Miasma blind-gate payload " + _row["boss_type"] + "/" + _scenario)
+
+from boss_miasma_kill_credit_source_oracle import source_fixture as miasma_kill_credit_fixture
+
+_miasma_kill = miasma_kill_credit_fixture()
+_miasma_kill_file = json.loads(
+    (ROOT / "tests/fixtures/boss_miasma_kill_credit_source.json").read_text(encoding="utf-8")
+)
+check(_miasma_kill == _miasma_kill_file,
+      "9d Miasma boss kill-credit fixture matches source Python execution")
+_miasma_kill_cases = _miasma_kill.get("cases", [])
+_miasma_kill_types = {row["boss_type"] for row in _miasma_kill_cases}
+_miasma_kill_scenarios = {
+    "miasma_lethal_blue_owner",
+    "miasma_lethal_red_owner",
+    "miasma_nonlethal_then_hero_lethal",
+    "miasma_nonlethal_only",
+}
+check(len(_miasma_kill_cases) == 864
+      and _miasma_kill_types == set(boss_motion_source_types())
+      and all(sum(row["boss_type"] == boss for row in _miasma_kill_cases) == 4
+              for boss in _miasma_kill_types)
+      and all({row["scenario"] for row in _miasma_kill_cases
+               if row["boss_type"] == boss} == _miasma_kill_scenarios
+              for boss in _miasma_kill_types)
+      and all("expected" in row and "native_old" in row for row in _miasma_kill_cases),
+      "9d four expected/counterfactual cases cover every boss type")
+_miasma_kill_shape = _miasma_kill.get("source", {}).get("ast_shape", {})
+check(_miasma_kill_shape == {
+    "miasma_tick_calls_magic_without_source": True,
+    "boss_stores_source_only_in_lethal_branch": True,
+    "boss_kill_pass_reads_killed_by": True,
+    "boss_kill_pass_requires_hero": True,
+}, "9d Python AST proves the boss Miasma tick omits source attribution")
+_miasma_kill_gap = {"miasma_lethal_blue_owner", "miasma_lethal_red_owner"}
+check(all(
+    (row["expected"]["owner_kills"] == 0
+     and row["native_old"]["owner_kills"] == 1)
+    if row["scenario"] in _miasma_kill_gap
+    else row["expected"] == row["native_old"]
+    for row in _miasma_kill_cases
+), "9d only lethal Miasma diverges; direct-hero and nonlethal controls match")
+_miasma_kill_bus = (ROOT / "scripts/match/battle_item_effects.gd").read_text(encoding="utf-8")
+_miasma_kill_proto = (ROOT / "scripts/match/prototype_battle.gd").read_text(encoding="utf-8")
+check("if landed and tgt is BossState:" in _miasma_kill_bus
+      and "(tgt as BossState).last_hit_is_miasma_tick = true" in _miasma_kill_bus
+      and "var landed: bool = world._deliver_hit(" in _miasma_kill_bus
+      and "if boss.last_hit_is_miasma_tick:" in _miasma_kill_proto
+      and "boss.last_hit_is_miasma_tick = false" in _miasma_kill_proto,
+      "9d event source is retained while Miasma hits are excluded from boss kill credit")
+check('const BossMiasmaKillCreditChecks = preload("res://tests/boss_miasma_kill_credit_checks.gd")' in ai_tests
+      and "BossMiasmaKillCreditChecks.new().run(_check)" in ai_tests,
+      "9d production-path replay is registered")
+
 
 for error in errors:
     print("FAIL:", error, file=sys.stderr)
