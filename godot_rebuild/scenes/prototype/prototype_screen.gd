@@ -20,6 +20,15 @@ func _ready() -> void:
 	arena.session = simulation
 	UI_THEME.title(%ArenaTitle, 23)
 	UI_THEME.title(%PauseTitle, 32)
+	var selected_world := match_session.world as Prototype
+	$HUD/TopBar/Row/Names/Description.text = (
+		"Lv.%d · %s · %s · uji konfigurasi, belum parity penuh"
+		% [
+			selected_world.level_number,
+			selected_world.difficulty,
+			selected_world.level_config.get("name", "?")
+		]
+	)
 	%BuildButton.pressed.connect(
 		func() -> void: match_session.request_build(match_session.selected_slot_id)
 	)

@@ -308,9 +308,11 @@ Oracle ekonomi mengeksekusi fungsi sumber
 read-only dan merekam 162 kombinasi (54 level × 3 difficulty); suite native
 menguji seluruh saldo awal/passive income selain katalog, seleksi, penolakan
 dan reset AI. Jalankan oracle tanpa
-`--write` untuk mendeteksi drift. Data ini **belum** mengaktifkan pilihan
-level 2–54 di menu: prototipe pemain tetap memuat level 1. Map/theme, reward
-persisten, balancing dan kemenangan tiap level perlu verifikasi tersendiri.
+`--write` untuk mendeteksi drift. Menu kini menawarkan 54 konfigurasi dengan
+unlock berdasarkan predecessor dan mengunci difficulty sesuai run yang
+tersimpan. Level 2–54 adalah **mode uji eksperimental**, bukan parity penuh:
+map/theme masih memakai arena prototipe, sedangkan balance, boss/presentasi,
+reward unlock dan kemenangan tiap level perlu validasi manual tersendiri.
 
 ## Progres level (domain + save pengembangan terpisah)
 
@@ -342,7 +344,7 @@ awal memanggilnya saat hasil dan menampilkan reward pada overlay. Save rusak
 atau backup belum dipulihkan menampilkan kegagalan dan tombol coba lagi;
 file lama tidak ditimpa otomatis. Ini **hanya progres development Godot**:
 belum ada migrasi slot save/cloud/Python, reward boss/shop permanen atau
-pilihan level 2–54 di menu. Uji juga pada Windows sebelum distribusi.
+parity map/theme dan save Python/cloud. Uji juga pada Windows sebelum distribusi.
 
 ## Reset AI tanpa seed
 

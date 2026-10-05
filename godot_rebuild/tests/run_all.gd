@@ -259,6 +259,7 @@ func _run() -> void:
 	await _test_combat_scene(app)
 	await _test_siege_scene(app)
 	await _test_prototype_scene(app)
+	await _test_level_selection_scene(app)
 	await ForgeSceneChecks.new().run(self, app, _check)
 	await AIShieldSceneChecks.new().run(self, app, _check)
 	await UpgradeSceneChecks.new().run(self, app, _check)
@@ -553,6 +554,60 @@ func _test_siege_scene(app: Node) -> void:
 		await _settle()
 		_check(not paused and app.current_screen.name == "MainMenu", "result exits cleanly to menu")
 		_check(get_node_count() == baseline, "siege cycles leave no orphan scene nodes")
+
+
+func _test_level_selection_scene(app: Node) -> void:
+	var path := "user://level_selection_scene_test.json"
+	for suffix in ["", ".tmp", ".bak"]:
+		if FileAccess.file_exists(path + suffix):
+			DirAccess.remove_absolute(path + suffix)
+	_check(
+		LevelProgressStore.save_state(
+			{
+				"meta_gold": 3000,
+				"completed_levels": [1],
+				"replay_reward_counts": {},
+				"run_difficulty": "normal"
+			},
+			path
+		),
+		"Seed isolated level unlock state"
+	)
+	var menu = app.current_screen
+	menu.progress_path = path
+	menu.refresh_levels()
+	_check(
+		(
+			menu.get_node("%LevelChoice").is_item_disabled(2)
+			and not menu.get_node("%LevelChoice").is_item_disabled(1)
+		),
+		"Only completed predecessor unlocks next level in menu"
+	)
+	menu.get_node("%LevelChoice").select(2)
+	menu.get_node("%PrototypeButton").pressed.emit()
+	await _settle()
+	_check(app.current_screen.name == "MainMenu", "Locked level cannot launch via forged selection")
+	menu.get_node("%LevelChoice").select(1)
+	menu.get_node("%PrototypeButton").pressed.emit()
+	await _settle()
+	var screen = app.current_screen
+	screen.progress_path = path
+	var world = screen.simulation.world
+	_check(
+		world.level_number == 2 and world.difficulty == "normal" and world.economy.gold[0] == 1100,
+		"Level 2 selection reaches configured arena and opening economy"
+	)
+	screen.get_node("%RestartButton").pressed.emit()
+	await _settle()
+	_check(
+		app.current_screen.simulation.world.level_number == 2, "Restart retains selected encounter"
+	)
+	app.current_screen.get_node("%BackButton").pressed.emit()
+	await _settle()
+	_check(app.current_screen.name == "MainMenu", "Selected level exits cleanly")
+	for suffix in ["", ".tmp", ".bak"]:
+		if FileAccess.file_exists(path + suffix):
+			DirAccess.remove_absolute(path + suffix)
 
 
 func _test_prototype_scene(app: Node) -> void:
